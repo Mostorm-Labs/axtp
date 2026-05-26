@@ -10,7 +10,7 @@
 | 位置 | 用途 |
 |---|---|
 | `Control.statusCode` | OPEN / ACK / NACK / RESUME / CLOSE 等控制信令结果 |
-| `RPC Response.statusCode` | 一次方法调用是否成功 |
+| `RPC Response.status.code` / Binary `statusCode` | 一次方法调用是否成功 |
 | `STREAM NACK.reasonCode` | 流数据包失败原因 |
 | `Event.data.errorCode` | 异步错误事件 |
 
@@ -19,8 +19,8 @@
 ## 2. 基本设计原则
 
 - 已发布为 `stable` 的 ErrorCode 不允许改变语义；可新增、废弃、保留，但不得复用已发布编号
-- ErrorCode 只表达机器可判断的错误类别；详细错误信息通过 `errorMessage / errorDetail / vendorErrorCode / legacyStatus / traceId` 等字段携带
-- `0x0000 = OK`，所有 Response / ACK 成功时推荐使用该值
+- ErrorCode 只表达机器可判断的错误类别；详细错误信息通过 RPC `status.msg / status.details`、Control `errorDetail`、厂商 `vendorErrorCode / vendorErrorMessage`、legacyStatus、traceId 等字段携带
+- `0x0000 = SUCCESS`，所有 Response / ACK 成功时必须使用该值
 - Control、RPC、Stream、Capability、OTA、File 等错误统一进入 ErrorCode Registry，不各自定义局部状态码
 - ErrorCode 使用 `uint16`，字节序 Little-Endian
 
@@ -52,7 +52,7 @@
 
 | ErrorCode | 名称 | 说明 | MVP |
 |---:|---|---|---|
-| `0x0000` | `OK` | 成功 | 是 |
+| `0x0000` | `SUCCESS` | 成功 | 是 |
 | `0x0001` | `UNKNOWN_ERROR` | 未知错误 | 是 |
 | `0x0002` | `NOT_IMPLEMENTED` | 功能未实现 | 是 |
 | `0x0003` | `NOT_SUPPORTED` | 当前设备或当前模式不支持 | 是 |
@@ -139,22 +139,23 @@
 
 | ErrorCode | 名称 | 说明 | MVP |
 |---:|---|---|---|
-| `0x0401` | `STREAM_PROFILE_UNSUPPORTED` | streamProfile 不支持 | 是 |
-| `0x0402` | `STREAM_PAYLOAD_INVALID` | Stream Payload 结构非法 | 是 |
-| `0x0403` | `STREAM_ID_INVALID` | streamId 无效 | 是 |
-| `0x0404` | `STREAM_NOT_OPEN` | Stream 未打开 | 是 |
-| `0x0405` | `STREAM_ALREADY_OPEN` | Stream 已打开 | 否 |
-| `0x0406` | `STREAM_SEQ_INVALID` | seqId 非法 | 是 |
-| `0x0407` | `STREAM_SEQ_DUPLICATED` | seqId 重复 | 否 |
-| `0x0408` | `STREAM_CHUNK_MISSING` | 缺失 chunk | 是 |
-| `0x0409` | `STREAM_CHUNK_CRC_ERROR` | chunkCrc 校验失败 | 是 |
-| `0x040A` | `STREAM_OFFSET_INVALID` | offset 非法 | 是 |
-| `0x040B` | `STREAM_WINDOW_FULL` | 接收窗口满 | 是 |
-| `0x040C` | `STREAM_BACKPRESSURE` | 接收端反压 | 否 |
-| `0x040D` | `STREAM_RESUME_UNSUPPORTED` | 不支持续传 | 是 |
-| `0x040E` | `STREAM_RESUME_FAILED` | 续传失败 | 是 |
-| `0x040F` | `STREAM_CLOSED` | Stream 已关闭 | 是 |
-| `0x0410` | `STREAM_TRANSFER_ABORTED` | 传输被中止 | 是 |
+| `0x0401` | `STREAM_NOT_FOUND` | streamId 对应的 Stream Context 不存在 | 是 |
+| `0x0402` | `STREAM_TIMEOUT` | Stream 超时 | 是 |
+| `0x0403` | `STREAM_CRC_ERROR` | Stream chunk CRC 校验失败 | 是 |
+| `0x0404` | `STREAM_PAYLOAD_INVALID` | Stream Payload 结构非法 | 是 |
+| `0x0405` | `STREAM_ID_INVALID` | streamId 无效 | 是 |
+| `0x0406` | `STREAM_NOT_OPEN` | Stream 未打开 | 是 |
+| `0x0407` | `STREAM_ALREADY_OPEN` | Stream 已打开 | 否 |
+| `0x0408` | `STREAM_SEQ_INVALID` | seqId 非法 | 是 |
+| `0x0409` | `STREAM_SEQ_DUPLICATED` | seqId 重复 | 否 |
+| `0x040A` | `STREAM_CHUNK_MISSING` | 缺失 chunk | 是 |
+| `0x040B` | `STREAM_OFFSET_INVALID` | offset 非法 | 是 |
+| `0x040C` | `STREAM_WINDOW_FULL` | 接收窗口满 | 是 |
+| `0x040D` | `STREAM_BACKPRESSURE` | 接收端反压 | 否 |
+| `0x040E` | `STREAM_RESUME_UNSUPPORTED` | 不支持续传 | 是 |
+| `0x040F` | `STREAM_RESUME_FAILED` | 续传失败 | 是 |
+| `0x0410` | `STREAM_CLOSED` | Stream 已关闭 | 是 |
+| `0x0411` | `STREAM_TRANSFER_ABORTED` | 传输被中止 | 是 |
 
 ---
 
@@ -329,7 +330,7 @@ legacy:
 | 字段 | 必填 | 说明 |
 |---|---|---|
 | `id` | 是 | uint16，全局唯一 |
-| `name` | 是 | 全大写蛇形，如 `INVALID_PARAM` |
+| `name` | 是 | 全大写蛇形，如 `RPC_PARAM_INVALID` |
 | `kind` | 是 | 固定 `error` |
 | `status` | 是 | 生命周期状态 |
 | `category` | 是 | 所属分类 |
@@ -344,40 +345,55 @@ legacy:
 ## 20. MVP ErrorCode 集合
 
 ```text
-SUCCESS                    0x0000
-UNKNOWN_ERROR              0x0001
-INVALID_PARAM              0x0002
-UNSUPPORTED_METHOD         0x0003
-UNSUPPORTED_PAYLOAD_TYPE   0x0004
-UNSUPPORTED_ENCODING       0x0005
-TIMEOUT                    0x0006
-DEVICE_BUSY                0x0007
-CRC_ERROR                  0x0101
-FRAME_TOO_LARGE            0x0102
-SESSION_EXPIRED            0x0201
-STREAM_NOT_FOUND           0x0401
-STREAM_TIMEOUT             0x0402
-FIRMWARE_VERIFY_FAILED     0x0601
-FIRMWARE_ABORTED           0x0602
+SUCCESS                           0x0000
+UNKNOWN_ERROR                     0x0001
+NOT_IMPLEMENTED                   0x0002
+NOT_SUPPORTED                     0x0003
+INVALID_STATE                     0x0004
+BUSY                              0x0005
+TIMEOUT                           0x0006
+CANCELED                          0x0007
+RESOURCE_EXHAUSTED                0x0008
+PERMISSION_DENIED                 0x0009
+INVALID_ARGUMENT                  0x000A
+OUT_OF_RANGE                      0x000B
+NOT_FOUND                         0x000C
+INTERNAL_ERROR                    0x000E
+FRAME_VERSION_UNSUPPORTED         0x0102
+FRAME_CRC_ERROR                   0x0106
+FRAME_FRAGMENT_MISSING            0x0108
+CONTROL_PAYLOAD_INVALID           0x0202
+CONTROL_OPEN_REJECTED             0x0205
+CONTROL_NEGOTIATION_FAILED        0x0207
+RPC_ENCODING_UNSUPPORTED          0x0301
+RPC_METHOD_NOT_FOUND              0x0306
+RPC_PARAM_INVALID                 0x030B
+STREAM_NOT_FOUND                  0x0401
+STREAM_TIMEOUT                    0x0402
+STREAM_CRC_ERROR                  0x0403
+FW_VERIFY_FAILED                  0x060B
+FW_TRANSFER_NOT_STARTED           0x0605
 ```
 
 ---
 
 ## 21. ErrorCode 与 RPC Response 的关系
 
-RPC Response 中的 `statusCode` 字段直接使用 ErrorCode：
+RPC Response 中的文本 `status.code` 与 Binary `statusCode` 字段直接使用 ErrorCode：
 
 ```text
-statusCode = 0x0000 → SUCCESS
-statusCode = 0x0002 → INVALID_PARAM
-statusCode = 0x0003 → UNSUPPORTED_METHOD
+status.code/statusCode = 0x0000 → SUCCESS
+status.code/statusCode = 0x030B → RPC_PARAM_INVALID
+status.code/statusCode = 0x0306 → RPC_METHOD_NOT_FOUND
 ```
 
 规则：
-- 成功响应必须携带 `statusCode = SUCCESS (0x0000)`
-- 失败响应必须携带非零 `statusCode`
-- `statusCode` 必须引用已注册的 ErrorCode
-- RPC Response 不得使用 Frame 层错误码（0x0101-0x010E）
+- 文本 Response 必须携带 `status.ok` 和 `status.code`
+- 成功响应必须携带 `status.ok=true, status.code=SUCCESS(0x0000)`
+- 失败响应必须携带 `status.ok=false` 和非零 `status.code`
+- Binary Response 的 `statusCode` 必须与文本 `status.code` 语义一致
+- `status.code/statusCode` 必须引用已注册的 ErrorCode
+- RPC Response 不得使用 Frame 层错误码（0x0100-0x01FF）
 
 ---
 
@@ -386,8 +402,8 @@ statusCode = 0x0003 → UNSUPPORTED_METHOD
 CONTROL NACK 的 `reasonCode` 字段使用 ErrorCode：
 
 ```text
-reasonCode = 0x0101 → CRC_ERROR
-reasonCode = 0x0102 → FRAME_TOO_LARGE
+reasonCode = 0x0106 → FRAME_CRC_ERROR
+reasonCode = 0x010A → FRAME_TOO_LARGE
 reasonCode = 0x0401 → STREAM_NOT_FOUND
 ```
 
@@ -410,8 +426,8 @@ Stream 错误通过两种方式上报：
 Stream 错误码使用规则：
 - `STREAM_NOT_FOUND (0x0401)` → streamId 不存在时的 NACK
 - `STREAM_TIMEOUT (0x0402)` → 流超时时的 NACK 或 Event
-- `STREAM_PACKET_TOO_LARGE (0x0403)` → 数据包超过 maxDataSize 时的 NACK
-- `STREAM_SEQ_ERROR (0x0404)` → seqId 不连续时的 NACK
+- `STREAM_PAYLOAD_INVALID (0x0404)` → 数据包超过 maxDataSize 或 Payload 结构非法时的 NACK
+- `STREAM_SEQ_INVALID (0x0408)` → seqId 不连续时的 NACK
 
 ---
 
@@ -427,12 +443,12 @@ legacyErrorMappings:
     axtpErrorName: SUCCESS
   - source: AXDP_HID
     legacyStatus: 0x01
-    axtpErrorCode: 0x0002
-    axtpErrorName: INVALID_PARAM
+    axtpErrorCode: 0x030B
+    axtpErrorName: RPC_PARAM_INVALID
   - source: AXDP_HID
     legacyStatus: 0x02
-    axtpErrorCode: 0x0007
-    axtpErrorName: DEVICE_BUSY
+    axtpErrorCode: 0x0005
+    axtpErrorName: BUSY
 ```
 
 映射规则：

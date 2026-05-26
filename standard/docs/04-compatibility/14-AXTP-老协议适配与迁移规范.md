@@ -465,7 +465,7 @@ data
 ```text
 payloadType = RPC
 rpcEncoding = BINARY
-bodyEncoding = TLV
+bodyEncoding = TLV8
 ```
 
 如果旧 BinaryRPC 携带的是大块数据：
@@ -822,14 +822,14 @@ STREAM NACK reasonCode
 
 | 旧状态 | AXTP ErrorCode | 说明 |
 |---:|---:|---|
-| `0` | `0x0000 OK` | 成功 |
-| `1` | `0x0001 FAILED` | 通用失败 |
-| `2` | `0x0002 BUSY` | 设备忙 |
-| `3` | `0x0301 RPC_INVALID_PARAMS` | 参数错误 |
-| `4` | `0x0103 TRANSPORT_TIMEOUT` | 超时 |
-| `5` | `0x0304 RPC_METHOD_NOT_FOUND` | 命令不支持 |
-| `6` | `0x0402 STREAM_SEQ_MISMATCH` | 分块序号错误 |
-| `7` | `0x0602 FIRMWARE_VERIFY_FAILED` | 固件校验失败 |
+| `0` | `0x0000 SUCCESS` | 成功 |
+| `1` | `0x0001 UNKNOWN_ERROR` | 通用失败 |
+| `2` | `0x0005 BUSY` | 设备忙 |
+| `3` | `0x030B RPC_PARAM_INVALID` | 参数错误 |
+| `4` | `0x0006 TIMEOUT` | 超时 |
+| `5` | `0x0306 RPC_METHOD_NOT_FOUND` | 命令不支持 |
+| `6` | `0x0408 STREAM_SEQ_INVALID` | 分块序号错误 |
+| `7` | `0x060B FW_VERIFY_FAILED` | 固件校验失败 |
 | `>= 0x80` | `0x7000+ VENDOR_ERROR` | 厂商私有 |
 
 ### 14.3 保留旧错误详情
@@ -838,8 +838,8 @@ STREAM NACK reasonCode
 
 ```yaml
 error:
-  code: 0x0301
-  name: RPC_INVALID_PARAMS
+  code: 0x030B
+  name: RPC_PARAM_INVALID
   legacy:
     status: 3
     rawStatus: 0x03
@@ -869,7 +869,7 @@ AXTP 统一映射为：
 payloadType = RPC
 rpcOp = EVENT
 methodOrEventId = eventId
-bodyEncoding = TLV / JSON
+bodyEncoding = TLV8 / JSON
 ```
 
 ### 15.2 高频事件例外
@@ -1111,11 +1111,11 @@ old byte2 -> fieldId 0x03 value
 需要跨语言解析
 ```
 
-#### 方式 B：保留 FIXED_STRUCT
+#### 方式 B：RAW_BYTES 透传（短期兼容）
 
 ```text
-bodyEncoding = FIXED_STRUCT
-schema = LegacyCommonSetVideoModeFixed
+bodyEncoding = RAW_BYTES
+schema = LegacyCommonSetVideoModeRawBytes
 ```
 
 适合：
@@ -1129,17 +1129,17 @@ schema = LegacyCommonSetVideoModeFixed
 MVP 推荐：
 
 ```text
-对新方法使用 TLV
-对旧命令短期允许 FIXED_STRUCT
-但必须登记 schema
+对新方法使用 TLV8
+对旧命令短期允许 RAW_BYTES
+但必须登记 legacyMapping 和兼容 schema
 ```
 
 ### 19.2 字段映射示例
 
 ```yaml
 schemas:
-  LegacyCommonSetVideoModeFixed:
-    encoding: FIXED_STRUCT
+  LegacyCommonSetVideoModeRawBytes:
+    encoding: RAW_BYTES
     fields:
       - name: mode
         offset: 0
@@ -1310,7 +1310,7 @@ public:
 2. Extract legacy protocol / cmdValue / payload / status
 3. Lookup legacy_mapping.yaml generated table
 4. Convert cmdValue -> methodId
-5. Convert old payload -> TLV / FIXED_STRUCT schema
+5. Convert old payload -> TLV8 schema or RAW_BYTES legacy body
 6. Convert old status -> AXTP ErrorCode
 7. Output AxtpMessage
 ```
@@ -1359,12 +1359,12 @@ MVP 阶段只迁移最小闭环，不要求覆盖所有旧命令。
 OK
 FAILED
 BUSY
-INVALID_PARAMS
-METHOD_NOT_FOUND
+RPC_PARAM_INVALID
+RPC_METHOD_NOT_FOUND
 TIMEOUT
-CRC_ERROR
-SEQ_MISMATCH
-FIRMWARE_VERIFY_FAILED
+FRAME_CRC_ERROR
+STREAM_SEQ_INVALID
+FW_VERIFY_FAILED
 LEGACY_UNSUPPORTED_CMD
 LEGACY_PAYLOAD_PARSE_FAILED
 ```
@@ -1446,7 +1446,7 @@ AXTP 老协议迁移的核心不是把旧协议逐字节搬进新协议，而是
 
 ```text
 旧 CmdValue        -> AXTP methodId + legacyCmdValue
-旧 Payload         -> AXTP TLV / FIXED_STRUCT Schema
+旧 Payload         -> AXTP TLV8 Schema / RAW_BYTES legacy body
 旧 Status          -> AXTP ErrorCode
 旧 Event           -> AXTP EventId
 旧 Capability      -> AXTP Capability Registry

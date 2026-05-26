@@ -251,7 +251,7 @@ ackMode 在 RPC 建流阶段确定（初始模式）；CONTROL WINDOW_UPDATE 在
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `targetType` | enum | `STREAM` |
+| `targetType` | enum | `STREAM_CHUNK` |
 | `streamId` | uint32 | 被确认的流 |
 | `ackSeqId` | uint32 | 已确认的最大连续 seqId |
 | `ackCursor` | uint64 | 已确认的位置 |
@@ -261,7 +261,7 @@ ackMode 在 RPC 建流阶段确定（初始模式）；CONTROL WINDOW_UPDATE 在
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `targetType` | enum | `STREAM` |
+| `targetType` | enum | `STREAM_CHUNK` |
 | `streamId` | uint32 | 目标流 |
 | `baseSeqId` | uint32 | 缺失范围起点 |
 | `missingRanges` | bytes | 缺失 seqId 范围 |
@@ -406,11 +406,11 @@ parse AXTP Frame Header
 | 错误 | 处理 |
 | --- | --- |
 | `payloadLength < headerSize` | 丢弃，CONTROL NACK |
-| `streamId = 0` | 丢弃，INVALID_STREAM_ID |
+| `streamId = 0` | 丢弃，CONTROL NACK(`STREAM_ID_INVALID`) |
 | 未找到 Stream Context | 丢弃，STREAM_NOT_FOUND |
 | seqId 重复 | 幂等处理或丢弃 |
 | seqId 缺失 | 根据 ackMode 发送 NACK |
-| data 超过 maxDataSize | STREAM_PACKET_TOO_LARGE |
+| data 超过 maxDataSize | CONTROL NACK(`STREAM_PAYLOAD_INVALID`) |
 
 ---
 

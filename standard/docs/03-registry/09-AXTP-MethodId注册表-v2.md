@@ -96,15 +96,15 @@ rpc:
     - JSON
     - BINARY
   supportedBodyEncodings:
-    - TLV
+    - TLV8
 schema:
   params: BrightnessSetParams
   result: BrightnessSetResult
 errors:
   - SUCCESS
-  - INVALID_PARAM
-  - UNSUPPORTED_METHOD
-  - DEVICE_BUSY
+  - RPC_PARAM_INVALID
+  - RPC_METHOD_NOT_SUPPORTED
+  - BUSY
 events:
   - brightness.changed
 capability:
@@ -430,21 +430,20 @@ TBD 表示需要从老协议表中补充具体 CmdValue，后续在 `legacy_cmd_
 每个 Method 必须声明可能返回的错误码。MVP 方法至少包含：
 
 ```text
-SUCCESS / INVALID_PARAM / UNSUPPORTED_METHOD / DEVICE_BUSY / INTERNAL_ERROR
+SUCCESS / INVALID_ARGUMENT / RPC_METHOD_NOT_SUPPORTED / BUSY / INTERNAL_ERROR
 ```
 
 固件升级类方法还应包含：
 
 ```text
-FIRMWARE_INVALID_IMAGE / FIRMWARE_VERIFY_FAILED / FIRMWARE_VERSION_REJECTED
-FIRMWARE_STORAGE_FULL / FIRMWARE_ROLLBACK_REQUIRED
+FW_IMAGE_INVALID / FW_VERIFY_FAILED / FW_VERSION_UNSUPPORTED
+FW_STORAGE_NOT_ENOUGH / FW_ROLLBACK_FAILED
 ```
 
 Stream 类方法还应包含：
 
 ```text
-STREAM_NOT_FOUND / STREAM_BUSY / STREAM_UNSUPPORTED_KIND
-STREAM_WINDOW_EXHAUSTED / STREAM_TIMEOUT
+STREAM_NOT_FOUND / STREAM_WINDOW_FULL / STREAM_TIMEOUT
 ```
 
 ---
@@ -458,7 +457,7 @@ Method 是否可调用，应结合 Capability Registry 判断。调用流程：
 2. 检查目标 method 是否在 supportedMethods 中
 3. 检查相关 capability 是否满足
 4. 发送 RPC Request
-5. 若设备不支持，返回 UNSUPPORTED_METHOD 或 CAPABILITY_NOT_SUPPORTED
+5. 若设备不支持，返回 RPC_METHOD_NOT_SUPPORTED 或 CAPABILITY_METHOD_UNSUPPORTED
 ```
 
 ---

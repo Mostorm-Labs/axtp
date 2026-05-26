@@ -426,7 +426,7 @@ Event 不携带 `id`（Binary 中 requestId 填 0）。
 
 ### 16.3 与 Binary methodId/eventId 的映射
 
-方法名和事件名与 Binary 中的 uint32 ID 一一对应，由 Registry 统一管理：
+方法名和事件名与 Binary 中的 uint16 ID 一一对应，由 Registry 统一管理：
 
 ```text
 "brightness.set"      ↔ methodId = 0x0602
@@ -849,8 +849,8 @@ RPC Parser 必须满足：
 
 - body 长度不得超过 Frame.payloadLength
 - TLV length 不得越界
-- 未知 methodId 返回 METHOD_NOT_FOUND
-- 不支持的 rpcEncoding 返回 UNSUPPORTED_ENCODING
+- 未知 methodId 返回 `RPC_METHOD_NOT_FOUND`
+- 不支持的 rpcEncoding 返回 `RPC_ENCODING_UNSUPPORTED`
 - requestId 必须原样返回，RequestResponse 必须匹配已有 pending request
 - Event 不得被当作 RequestResponse 处理
 - Identified 之前收到 Request 必须返回 `status.ok=false, status.code=SESSION_NOT_READY`，不得处理业务请求

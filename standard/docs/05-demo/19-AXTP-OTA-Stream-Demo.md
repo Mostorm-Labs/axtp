@@ -178,7 +178,7 @@ MVP 的二进制主路径：
 ```text
 PayloadType = RPC
 rpcEncoding = BINARY
-bodyEncoding = TLV
+bodyEncoding = TLV8
 ```
 
 ---
@@ -969,12 +969,12 @@ CONTROL RESUME
 | `0x0603` | `FIRMWARE_OFFSET_MISMATCH` | offset 不匹配 |
 | `0x0604` | `FIRMWARE_TRANSFER_TIMEOUT` | 传输超时 |
 | `0x0605` | `FIRMWARE_IMAGE_TOO_LARGE` | 固件过大 |
-| `0x0606` | `FIRMWARE_VERIFY_FAILED` | 固件校验失败 |
-| `0x0607` | `FIRMWARE_APPLY_FAILED` | 应用失败 |
-| `0x0608` | `FIRMWARE_UNSUPPORTED_IMAGE` | 不支持的镜像 |
-| `0x0609` | `FIRMWARE_VERSION_REJECTED` | 版本被拒绝 |
-| `0x060A` | `FIRMWARE_ABORTED` | 升级已中止 |
-| `0x060B` | `FIRMWARE_RESUME_FAILED` | 恢复失败 |
+| `0x060B` | `FW_VERIFY_FAILED` | 固件校验失败 |
+| `0x060C` | `FW_APPLY_FAILED` | 应用失败 |
+| `0x0602` | `FW_IMAGE_TYPE_UNSUPPORTED` | 不支持的镜像 |
+| `0x0603` | `FW_VERSION_UNSUPPORTED` | 版本被拒绝 |
+| `0x060F` | `FW_DEVICE_NOT_READY` | 设备不满足升级条件 |
+| `0x040F` | `STREAM_RESUME_FAILED` | 恢复失败 |
 
 ---
 

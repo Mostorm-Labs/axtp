@@ -980,9 +980,9 @@ AXTP TLV parser
 示例：
 
 ```text
-Old status = 0x00 -> AXTP_SUCCESS
-Old status = 0x01 -> AXTP_ERR_INVALID_PARAM
-Old status = 0x02 -> AXTP_ERR_BUSY
+Old status = 0x00 -> SUCCESS
+Old status = 0x01 -> RPC_PARAM_INVALID
+Old status = 0x02 -> BUSY
 ```
 
 ---

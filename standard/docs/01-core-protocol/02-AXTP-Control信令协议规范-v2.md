@@ -59,8 +59,7 @@ Compact 约定：`bodyEncoding = TLV`，`bodyLen = Frame.payloadLength - 2`，`s
 
 | bit | 名称 | 说明 |
 |---:|---|---|
-| 0 | `SUCCESS` | 控制操作成功 |
-| 1 | `ERROR` | 控制操作失败 |
+| 0-1 | `RESERVED` | 保留，发送方置 0，接收方忽略 |
 | 2 | `HAS_BODY` | 存在 body |
 | 3 | `RETRYABLE` | 可重试 |
 | 4 | `URGENT` | 高优先级 |
@@ -101,39 +100,26 @@ HEARTBEAT 用于保活（我还在线），PING 用于 RTT 测量（可携带 ti
 
 ## 5. Control StatusCode
 
-| 范围 | 类别 |
-|---:|---|
-| `0x0000` | NONE（请求或无需状态） |
-| `0x0064` | SUCCESS |
-| `0x0100-0x01FF` | FRAME_ERROR |
-| `0x0200-0x02FF` | CONTROL_ERROR |
-| `0x0300-0x03FF` | SESSION_ERROR |
-| `0x0400-0x04FF` | NEGOTIATION_ERROR |
-| `0x0500-0x05FF` | ACK_ERROR |
-| `0x0600-0x06FF` | RESUME_ERROR |
-| `0x0700-0x07FF` | FLOW_CONTROL_ERROR |
-| `0x7000-0x7FFF` | VENDOR_ERROR |
+Control `statusCode` 直接使用 11《ErrorCode 注册表》，不维护独立 Control 局部状态码。`0x0000 = SUCCESS` 表示成功；非 0 表示失败或异常状态，具体含义必须来自 ErrorCode Registry。
 
-MVP 必须实现的状态码：
+MVP Control 至少需要识别以下错误码：
 
 | statusCode | 名称 |
 |---:|---|
-| `0x0000` | `NONE` |
-| `0x0064` | `SUCCESS` |
-| `0x0201` | `UNSUPPORTED_OPCODE` |
-| `0x0202` | `MALFORMED_CONTROL_PAYLOAD` |
-| `0x0203` | `UNSUPPORTED_BODY_ENCODING` |
-| `0x0301` | `SESSION_NOT_READY` |
-| `0x0302` | `INVALID_SESSION` |
-| `0x0401` | `VERSION_NOT_SUPPORTED` |
-| `0x0402` | `PROFILE_NOT_SUPPORTED` |
-| `0x0403` | `NO_COMMON_PAYLOAD_TYPE` |
-| `0x0404` | `NO_COMMON_RPC_ENCODING` |
-| `0x0501` | `UNKNOWN_MESSAGE_ID` |
-| `0x0502` | `MISSING_FRAGMENT` |
-| `0x0503` | `CRC_ERROR` |
-| `0x0601` | `RESUME_TOKEN_INVALID` |
-| `0x0701` | `WINDOW_OVERFLOW` |
+| `0x0000` | `SUCCESS` |
+| `0x0102` | `FRAME_VERSION_UNSUPPORTED` |
+| `0x0106` | `FRAME_CRC_ERROR` |
+| `0x0108` | `FRAME_FRAGMENT_MISSING` |
+| `0x0201` | `CONTROL_OPCODE_INVALID` |
+| `0x0202` | `CONTROL_PAYLOAD_INVALID` |
+| `0x0203` | `CONTROL_BODY_ENCODING_UNSUPPORTED` |
+| `0x0204` | `CONTROL_OPEN_REQUIRED` |
+| `0x0205` | `CONTROL_OPEN_REJECTED` |
+| `0x0206` | `CONTROL_PROFILE_UNSUPPORTED` |
+| `0x0207` | `CONTROL_NEGOTIATION_FAILED` |
+| `0x0208` | `CONTROL_SESSION_INVALID` |
+| `0x020A` | `CONTROL_RESUME_FAILED` |
+| `0x020C` | `CONTROL_WINDOW_EXCEEDED` |
 
 ---
 
@@ -143,7 +129,6 @@ MVP 必须实现的状态码：
 |---:|---|---|
 | `0x00` | `NONE` | 是 |
 | `0x01` | `TLV` | 是 |
-| `0x02` | `FIXED_STRUCT` | 否 |
 | `0x03` | `CBOR` | 否 |
 | `0x7F` | `VENDOR` | 否 |
 
@@ -342,7 +327,7 @@ Body TLV:
 ### 12.4 ACCEPT 示例（Standard）
 
 ```text
-opcode=0x02 flags=0x05 controlId=0x0001 statusCode=0x0064 bodyEncoding=0x01
+opcode=0x02 flags=0x04 controlId=0x0001 statusCode=0x0000 bodyEncoding=0x01
 
 Body TLV:
 01 04 78 56 34 12  // sessionId = 0x12345678
@@ -360,20 +345,20 @@ Body TLV:
 
 | 失败原因 | statusCode | 处理 |
 |---|---|---|
-| Header Version 不支持 | `VERSION_NOT_SUPPORTED` | 返回 ACCEPT(ERROR)，断开连接 |
-| headerProfile 不支持 | `PROFILE_NOT_SUPPORTED` | 返回 ACCEPT(ERROR)，body 填写支持列表 |
-| payloadType 无交集 | `NO_COMMON_PAYLOAD_TYPE` | 返回 ACCEPT(ERROR) |
-| rpcEncoding 无交集 | `NO_COMMON_RPC_ENCODING` | 返回 ACCEPT(ERROR)，body 填写支持列表 |
-| MTU 不满足最小要求 | `MTU_TOO_SMALL` | 返回 ACCEPT(ERROR) |
+| Header Version 不支持 | `FRAME_VERSION_UNSUPPORTED` | 返回 ACCEPT(非 0 statusCode)，断开连接 |
+| headerProfile 不支持 | `CONTROL_PROFILE_UNSUPPORTED` | 返回 ACCEPT(非 0 statusCode)，body 填写支持列表 |
+| payloadType 无交集 | `CONTROL_NEGOTIATION_FAILED` | 返回 ACCEPT(非 0 statusCode)，details 中说明原因 |
+| rpcEncoding 无交集 | `CONTROL_NEGOTIATION_FAILED` | 返回 ACCEPT(非 0 statusCode)，body 填写支持列表 |
+| MTU 不满足最小要求 | `CONTROL_NEGOTIATION_FAILED` | 返回 ACCEPT(非 0 statusCode) |
 | OPEN 格式非法 | — | 直接断开，不发响应 |
 
-Client 收到 ACCEPT(ERROR) 后可根据 body 调整参数重试，最多 3 次。
+Client 收到 `statusCode != 0` 的 ACCEPT 后可根据 body 调整参数重试，最多 3 次。
 
 ---
 
 ## 13. HEARTBEAT / HEARTBEAT_ACK
 
-HEARTBEAT 可无 body，也可携带 `timestamp(0x0F)`。HEARTBEAT_ACK 必须使用相同 controlId，statusCode = SUCCESS。
+HEARTBEAT 可无 body，也可携带 `timestamp(0x0F)`。HEARTBEAT_ACK 必须使用相同 controlId，statusCode = SUCCESS(0x0000)。
 
 推荐：`heartbeatIntervalMs = 1000~5000`，连续 3 次未收到 HEARTBEAT_ACK 则认为连接异常。
 
@@ -381,17 +366,17 @@ HEARTBEAT 可无 body，也可携带 `timestamp(0x0F)`。HEARTBEAT_ACK 必须使
 
 ## 14. ACK / NACK
 
-ACK 确认 Frame/Message/Control/Stream Chunk 已收到，不表示业务执行成功。业务结果由 `PayloadType=RPC, rpcOp=RESPONSE` 表达。
+ACK 确认 Frame/Message/Control/Stream Chunk 已收到，不表示业务执行成功。业务结果由 `PayloadType=RPC, rpcOp=REQUEST_RESPONSE` 表达。
 
 ACK 示例（确认 Frame）：
 ```text
-opcode=0x05 flags=0x04 controlId=0x0002 statusCode=0x0064 bodyEncoding=TLV
+opcode=0x05 flags=0x04 controlId=0x0002 statusCode=0x0000 bodyEncoding=TLV
 Body: 20 01 01 / 11 02 7B 00 / 12 02 03 00  // targetType=FRAME, messageId=123, frameIndex=3
 ```
 
 NACK 示例（CRC 错误）：
 ```text
-opcode=0x06 flags=ERROR|HAS_BODY controlId=0x0003 statusCode=CRC_ERROR bodyEncoding=TLV
+opcode=0x06 flags=HAS_BODY controlId=0x0003 statusCode=FRAME_CRC_ERROR bodyEncoding=TLV
 Body: 20 01 01 / 11 02 7B 00 / 12 02 03 00 / 10 02 03 05
 ```
 
@@ -405,7 +390,7 @@ RESUME 用于 BLE 重连、USB 重插等场景恢复逻辑会话。MVP 可保留
 
 RESUME 请求字段：`sessionId(0x01)`, `resumeToken(0x18)`, `messageId(0x11)`, `streamId(0x15)`, `seqId(0x16)`, `offset(0x17)`。
 
-RESUME_ACK 成功返回 `sessionId/windowSize/messageId/streamId/seqId/offset`；失败返回 `RESUME_TOKEN_INVALID` 或 `INVALID_SESSION`，客户端应重新 OPEN。
+RESUME_ACK 成功返回 `sessionId/windowSize/messageId/streamId/seqId/offset`；失败返回 `CONTROL_RESUME_FAILED` 或 `CONTROL_SESSION_INVALID`，客户端应重新 OPEN。
 
 ---
 
@@ -423,7 +408,7 @@ CLOSE 可无 body，也可携带 `reasonCode(0x10)`：
 | `0x0006` | `TRANSPORT_LOST` |
 | `0x0007` | `UPGRADE_REQUIRED` |
 
-CLOSE_ACK 使用相同 controlId，statusCode = SUCCESS。严重错误可直接发 SESSION_RESET 或断开连接。
+CLOSE_ACK 使用相同 controlId，statusCode = SUCCESS(0x0000)。严重错误可直接发 SESSION_RESET 或断开连接。
 
 ---
 

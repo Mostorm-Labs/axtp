@@ -11,7 +11,7 @@
 
 本文档定义 AXTP 协议中 Schema 字段编号（fieldId）的分配、复用、废弃、保留和兼容规则。
 
-TLV 数据线上只携带 `fieldId / length / value`，字段名称、类型、含义等信息由外部 schema 解释。因此字段编号规范是 TLV Encoder/Decoder、RPC Binary Body、Control TLV Body、Stream Profile Context、Registry 之间的共同约束。
+TLV 数据线上只携带 `fieldId / length / value`，字段名称、类型、含义等信息由外部 schema 解释。因此字段编号规范是 TLV Encoder/Decoder、RPC Binary Body、Stream Profile Context、Registry 之间的共同约束。Control TLV 使用 02《Control 信令协议规范》定义的独立字段表，不套用本文公共字段编号表。
 
 ---
 
@@ -55,7 +55,7 @@ MVP 阶段建议只使用 `0x01-0x5F` 和 `0x7F`，暂不使用 `0x80-0xFF`。
 
 ## 5. 公共字段编号表
 
-以下字段属于 AXTP 公共字段，在 Control、RPC 或 Stream Profile Context 中出现时，其 fieldId、类型和语义应保持一致：
+以下字段属于 AXTP 公共字段，在 RPC Body 或 Stream Profile Context 中出现时，其 fieldId、类型和语义应保持一致。Control TLV 字段以 02 文档为准：
 
 | fieldId | 字段名 | 类型 | 说明 |
 |---:|---|---|---|
@@ -131,7 +131,7 @@ MVP 支持两种模式：
 | `streamProfile` | 某个 Stream Profile 的 RPC 建流上下文内有效 | 不同 Profile 可复用 |
 | `vendor` | 厂商私有 | 厂商自行维护 |
 
-推荐：Control TLV 使用 `global`，RPC params/result 使用 `method`，RPC event data 使用 `event`，Stream Profile 建流上下文使用 `streamProfile`。
+推荐：Control TLV 使用 02 文档的 `control` 字段命名空间；RPC params/result 使用 `method`，RPC event data 使用 `event`，Stream Profile 建流上下文使用 `streamProfile`。
 
 ---
 

@@ -127,7 +127,7 @@ Client 发送 RPC Request：
 
 ```text
 methodId = device.getInfo
-bodyEncoding = TLV
+bodyEncoding = TLV8
 body = empty
 ```
 
@@ -176,7 +176,7 @@ Client 发送 RPC Request：
 
 ```text
 methodId = firmware.begin
-bodyEncoding = TLV
+bodyEncoding = TLV8
 body:
   profile = firmware.ota
   imageType = application
@@ -236,7 +236,7 @@ Client -> Device: STREAM streamId=9 seqId=1 cursor=N
 Device -> Client: CONTROL ACK targetType=STREAM_CHUNK streamId=9 seqId=1
 
 Client -> Device: STREAM streamId=9 seqId=2 cursor=2N
-Device -> Client: CONTROL NACK targetType=STREAM_CHUNK streamId=9 seqId=2 statusCode=CRC_ERROR
+Device -> Client: CONTROL NACK targetType=STREAM_CHUNK streamId=9 seqId=2 statusCode=STREAM_CRC_ERROR
 
 Client -> Device: STREAM streamId=9 seqId=2 cursor=2N
 Device -> Client: CONTROL ACK targetType=STREAM_CHUNK streamId=9 seqId=2

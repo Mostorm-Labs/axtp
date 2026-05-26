@@ -346,7 +346,7 @@ CmdValue → methodId
 | 超出 min/max | `VALUE_OUT_OF_RANGE` |
 | 字符串非 UTF-8 | `INVALID_ENCODING` |
 | fixedLength 不匹配 | `INVALID_LENGTH` |
-| required object 解析失败 | `INVALID_PARAMETER` |
+| required object 解析失败 | `RPC_PARAM_INVALID` |
 
 ---
 

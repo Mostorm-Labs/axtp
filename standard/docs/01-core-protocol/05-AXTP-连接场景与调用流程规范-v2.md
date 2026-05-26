@@ -144,11 +144,11 @@ Server → Client: RPC Identified (op=3)
 
 ```text
 Client → Server: RPC REQUEST capability.getAll (requestId=0x00000001)
-Server → Client: RPC RESPONSE capability.getAll
+Server → Client: RPC REQUEST_RESPONSE capability.getAll
   body: capabilities=[{domain:"device",...},{domain:"brightness",...},...]
 
 Client → Server: RPC REQUEST device.getInfo (requestId=0x00000002)
-Server → Client: RPC RESPONSE device.getInfo
+Server → Client: RPC REQUEST_RESPONSE device.getInfo
   body: deviceId="screen-001", firmwareVersion="2.1.0", model="AX-Display-Pro"
 ```
 
@@ -157,7 +157,7 @@ Server → Client: RPC RESPONSE device.getInfo
 ```text
 Client → Server: RPC REQUEST brightness.set (requestId=0x00000003)
   body: value=80 (TLV)
-Server → Client: RPC RESPONSE brightness.set, statusCode=SUCCESS
+Server → Client: RPC REQUEST_RESPONSE brightness.set, status.ok=true, status.code=SUCCESS
 Server → Client: RPC EVENT brightness.changed
   body: value=80, previousValue=60
 ```
@@ -167,7 +167,7 @@ Server → Client: RPC EVENT brightness.changed
 ```text
 Client → Server: RPC REQUEST firmware.begin (requestId=0x00000004)
   body: totalSize=1048576, hashAlgo=sha256, hash="abc123...", chunkSize=4096
-Server → Client: RPC RESPONSE firmware.begin
+Server → Client: RPC REQUEST_RESPONSE firmware.begin
   body: streamId=0x00000009, ackMode=STOP_AND_WAIT
 [Stream Context OPEN: streamId=0x00000009]
 
@@ -181,7 +181,7 @@ Server → Client: CONTROL ACK, seqId=1
 
 Client → Server: RPC REQUEST firmware.verify (requestId=0x00000005)
   body: streamId=0x00000009
-Server → Client: RPC RESPONSE firmware.verify, statusCode=SUCCESS
+Server → Client: RPC REQUEST_RESPONSE firmware.verify, status.ok=true, status.code=SUCCESS
 Server → Client: RPC EVENT firmware.updateCompleted
   body: version="2.2.0"
 [Stream Context CLOSED: streamId=0x00000009]
@@ -203,11 +203,11 @@ Server → Client: CONTROL CLOSE_ACK
 
 | 错误场景 | 处理方式 |
 | --- | --- |
-| CRC 校验失败 | 接收方发送 CONTROL NACK(CRC_ERROR)，发送方重传或关闭连接 |
-| RPC 方法不存在 | Server 返回 RPC RESPONSE statusCode=RPC_UNKNOWN_METHOD |
+| CRC 校验失败 | 接收方发送 CONTROL NACK(FRAME_CRC_ERROR)，发送方重传或关闭连接 |
+| RPC 方法不存在 | Server 返回 RPC REQUEST_RESPONSE，`status.ok=false, status.code=RPC_METHOD_NOT_FOUND` |
 | STREAM chunk 丢失 | Server 发送 CONTROL NACK(STREAM_CHUNK_MISSING)，Client 重传对应 seqId |
 | TCP 连接断开 | 重新建立 TCP 连接，重新执行 OPEN 握手（TCP 无 RESUME 语义） |
-| 版本不兼容 | Server 返回 ACCEPT statusCode=VERSION_NOT_SUPPORTED，关闭连接 |
+| 版本不兼容 | Server 返回 ACCEPT statusCode=FRAME_VERSION_UNSUPPORTED，关闭连接 |
 
 ### 4.4 关键约束
 
@@ -288,13 +288,13 @@ Device → Host: HID Report [CONTROL ACCEPT]
 Host → Device: HID Report [RPC REQUEST capability.getAll]
   VT=0x12 Len=12 MsgId=0x02 FrameInfo=0x11
 
-Device → Host: HID Report [RPC RESPONSE frag 0/3]
+Device → Host: HID Report [RPC REQUEST_RESPONSE frag 0/3]
   VT=0x12 Len=54 MsgId=0x03 FrameInfo=0x03 (FrIdx=0, FrCnt=3)
-Device → Host: HID Report [RPC RESPONSE frag 1/3]
+Device → Host: HID Report [RPC REQUEST_RESPONSE frag 1/3]
   VT=0x12 Len=54 MsgId=0x03 FrameInfo=0x13 (FrIdx=1, FrCnt=3)
-Device → Host: HID Report [RPC RESPONSE frag 2/3]
+Device → Host: HID Report [RPC REQUEST_RESPONSE frag 2/3]
   VT=0x12 Len=30 MsgId=0x03 FrameInfo=0x23 (FrIdx=2, FrCnt=3)
-[Host 重组 3 片 → 完整 RPC RESPONSE]
+[Host 重组 3 片 → 完整 RPC REQUEST_RESPONSE]
 
 Host → Device: HID Report [CONTROL ACK]
   opcode=ACK, targetType=MESSAGE, messageId=0x03
@@ -305,7 +305,7 @@ Host → Device: HID Report [CONTROL ACK]
 ```text
 Host → Device: RPC REQUEST firmware.begin
   body: totalSize=1048576, chunkSize=48（适配 HID 58B 可用空间）
-Device → Host: RPC RESPONSE firmware.begin
+Device → Host: RPC REQUEST_RESPONSE firmware.begin
   body: streamId=0x01, ackMode=STOP_AND_WAIT
 
 Host → Device: STREAM chunk seqId=0 [48B data]
@@ -319,8 +319,8 @@ Host → Device: STREAM chunk seqId=1 [48B data]
 
 | 错误场景 | 处理方式 |
 | --- | --- |
-| CRC8 校验失败 | 发送 CONTROL NACK(CRC_ERROR)，重传对应 Frame |
-| 分片超时未完整到达 | 发送 CONTROL NACK(FRAGMENT_TIMEOUT)，重传整个 Message |
+| CRC8 校验失败 | 发送 CONTROL NACK(FRAME_CRC_ERROR)，重传对应 Frame |
+| 分片超时未完整到达 | 发送 CONTROL NACK(FRAME_REASSEMBLY_TIMEOUT)，重传整个 Message |
 | USB 设备拔出 | 传输层断开，重新插入后重新 OPEN 握手 |
 
 ### 6.4 关键约束
@@ -400,7 +400,7 @@ Central → Peripheral: STREAM chunk seqId=674, cursor=1376256, data=[...]
 
 ```text
 Central → Peripheral: CONTROL RESUME
-Peripheral → Central: CONTROL RESUME_ACK statusCode=INVALID_SESSION
+Peripheral → Central: CONTROL RESUME_ACK statusCode=CONTROL_SESSION_INVALID
 (降级为重新 OPEN 握手，OTA 从头开始)
 ```
 
@@ -469,7 +469,7 @@ Device → Host: UART [0x00 + COBS(CONTROL ACCEPT) + 0x00]
 ```text
 [接收到损坏数据，COBS 解码失败]
 [等待下一个 0x00 分隔符，丢弃当前帧]
-Host → Device: CONTROL NACK(CRC_ERROR)（如果 CRC8 校验失败）
+Host → Device: CONTROL NACK(FRAME_CRC_ERROR)（如果 CRC8 校验失败）
 Device → Host: 重传上一帧
 ```
 
@@ -532,8 +532,8 @@ Gateway → App: WS Binary CONTROL ACCEPT
 ```text
 App → Gateway: Standard RPC REQUEST brightness.set (requestId=0x00000003, value=80)
 Gateway → Device: Compact RPC REQUEST brightness.set (requestId=0x00000003, value=80)
-Device → Gateway: Compact RPC RESPONSE statusCode=SUCCESS
-Gateway → App: Standard RPC RESPONSE statusCode=SUCCESS
+Device → Gateway: Compact RPC REQUEST_RESPONSE status.ok=true, status.code=SUCCESS
+Gateway → App: Standard RPC REQUEST_RESPONSE status.ok=true, status.code=SUCCESS
 Device → Gateway: Compact RPC EVENT brightness.changed
 Gateway → App: Standard RPC EVENT brightness.changed
 ```
@@ -543,7 +543,7 @@ requestId 在转发时保持不变，确保 App 能正确匹配 Request/Response
 **STREAM 转发（OTA）：**
 
 ```text
-App → Gateway: Standard RPC firmware.begin → Standard RPC RESPONSE streamId=0x09
+App → Gateway: Standard RPC firmware.begin → Standard RPC REQUEST_RESPONSE streamId=0x09
 App → Gateway: Standard STREAM chunk seqId=0 [4096B data]
 Gateway: 将 4096B 数据按 BLE MTU 拆分为多个 Compact STREAM 分片
 Gateway → Device: Compact STREAM frag 0, seqId=0, cursor=0 [163B]
@@ -608,8 +608,8 @@ Gateway → App: ACCEPT (body: connectedDevices=[0x10, 0x11])
 ```text
 App → Gateway: RPC brightness.set (SrcId=0x01, DstId=0x10)
 Gateway → Device A: RPC brightness.set (SrcId=0x01, DstId=0x10)
-Device A → Gateway: RPC RESPONSE (SrcId=0x10, DstId=0x01)
-Gateway → App: RPC RESPONSE (SrcId=0x10, DstId=0x01)
+Device A → Gateway: RPC REQUEST_RESPONSE (SrcId=0x10, DstId=0x01)
+Gateway → App: RPC REQUEST_RESPONSE (SrcId=0x10, DstId=0x01)
 ```
 
 **广播 RPC（App → 所有设备）：**
@@ -720,7 +720,7 @@ Device → Browser: WebSocket Close Frame
 | Identify (op=2) | RPC Identify |
 | Identified (op=3) | RPC Identified |
 | REQUEST (op=7) | RPC REQUEST |
-| REQUEST_RESPONSE (op=8) | RPC RESPONSE |
+| REQUEST_RESPONSE (op=8) | RPC REQUEST_RESPONSE |
 | EVENT (op=6) | RPC EVENT |
 | WebSocket Close | CONTROL CLOSE |
 | 无对应 | CONTROL HEARTBEAT（WebSocket 有 Ping/Pong） |
@@ -769,7 +769,7 @@ Legacy 兼容：旧版 Debug Adapter 中的 `session.identify` 方法必须在�
 Legacy Client → Adapter: 旧 HID Report (CmdValue=0x0042, Payload=[brightness=80])
 Adapter: 查 legacyMapping: CmdValue=0x0042 → methodId=brightness.set, params={value:80}
 Adapter → Device: AXTP RPC REQUEST brightness.set, body: value=80 (TLV)
-Device → Adapter: AXTP RPC RESPONSE statusCode=SUCCESS
+Device → Adapter: AXTP RPC REQUEST_RESPONSE status.ok=true, status.code=SUCCESS
 Adapter: 反向映射 SUCCESS → 旧 ACK 格式
 Adapter → Legacy Client: 旧 HID ACK (CmdValue=0x0042 OK)
 ```
@@ -780,7 +780,7 @@ Adapter → Legacy Client: 旧 HID ACK (CmdValue=0x0042 OK)
 Legacy Client → Adapter: {"method":"setBrightness","params":{"level":80},"id":1}
 Adapter: 字段映射: setBrightness → brightness.set, params.level → params.value
 Adapter → Device: AXTP RPC REQUEST brightness.set, body: value=80
-Device → Adapter: AXTP RPC RESPONSE
+Device → Adapter: AXTP RPC REQUEST_RESPONSE
 Adapter → Legacy Client: {"result":{"ok":true},"id":1}
 ```
 
@@ -789,7 +789,7 @@ Adapter → Legacy Client: {"result":{"ok":true},"id":1}
 ```text
 Legacy Client → Adapter: 旧 OTA Begin (totalSize=1048576)
 Adapter → Device: AXTP RPC firmware.begin (totalSize=1048576, profile=legacy.ota)
-Device → Adapter: AXTP RPC RESPONSE (streamId=0x09)
+Device → Adapter: AXTP RPC REQUEST_RESPONSE (streamId=0x09)
 Adapter → Legacy Client: 旧 OTA Begin ACK
 
 Legacy Client → Adapter: 旧 OTA Chunk [512B]
