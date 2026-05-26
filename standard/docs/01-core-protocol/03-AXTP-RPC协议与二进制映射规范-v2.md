@@ -213,7 +213,17 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
 ### 9.2 示例
 
 ```json
-{ "sid": "28378462323", "op": 6, "d": { "id": 1, "method": "brightness.set", "params": { "value": 80 } } }
+{
+  "sid": "28378462323",
+  "op": 6,
+  "d": {
+    "id": 1,
+    "method": "brightness.set",
+    "params": {
+      "value": 80
+    }
+  }
+}
 ```
 
 ---
@@ -260,11 +270,30 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
 ### 10.3 示例
 
 ```json
-{ "sid": "28378462323", "op": 7, "d": { "id": 1, "result": { "value": 80 } } }
+{
+  "sid": "28378462323",
+  "op": 7,
+  "d": {
+    "id": 1,
+    "result": {
+      "value": 80
+    }
+  }
+}
 ```
 
 ```json
-{ "sid": "28378462323", "op": 7, "d": { "id": 1, "error": { "code": 603, "message": "Value out of range" } } }
+{
+  "sid": "28378462323",
+  "op": 7,
+  "d": {
+    "id": 1,
+    "error": {
+      "code": 603,
+      "message": "Value out of range"
+    }
+  }
+}
 ```
 
 ---
@@ -293,7 +322,18 @@ Event 不携带 `id`（Binary 中 requestId 填 0）。
 ### 11.1 示例
 
 ```json
-{ "sid": "28378462323", "op": 5, "d": { "event": "brightness.changed", "intent": 1, "data": { "value": 80, "source": "local" } } }
+{
+  "sid": "28378462323",
+  "op": 5,
+  "d": {
+    "event": "brightness.changed",
+    "intent": 1,
+    "data": {
+      "value": 80,
+      "source": "local"
+    }
+  }
+}
 ```
 
 ---
@@ -340,7 +380,13 @@ Event 不携带 `id`（Binary 中 requestId 填 0）。
 ## 14. Cancel（op=10）
 
 ```json
-{ "sid": "28378462323", "op": 10, "d": { "id": 1 } }
+{
+  "sid": "28378462323",
+  "op": 10,
+  "d": {
+    "id": 1
+  }
+}
 ```
 
 取消 `requestId` 对应的进行中请求。服务端可忽略已完成的请求。
@@ -577,25 +623,68 @@ TLV body:    01 01 50
 Request：
 
 ```json
-{ "sid": "28378462323", "op": 6, "d": { "id": 1, "method": "brightness.set", "params": { "value": 80 } } }
+{
+  "sid": "28378462323",
+  "op": 6,
+  "d": {
+    "id": 1,
+    "method": "brightness.set",
+    "params": {
+      "value": 80
+    }
+  }
+}
 ```
 
 Response 成功：
 
 ```json
-{ "sid": "28378462323", "op": 7, "d": { "id": 1, "result": { "value": 80 } } }
+{
+  "sid": "28378462323",
+  "op": 7,
+  "d": {
+    "id": 1,
+    "result": {
+      "value": 80
+    }
+  }
+}
 ```
 
 Response 失败：
 
 ```json
-{ "sid": "28378462323", "op": 7, "d": { "id": 1, "error": { "code": 603, "message": "Value out of range", "data": { "max": 100 } } } }
+{
+  "sid": "28378462323",
+  "op": 7,
+  "d": {
+    "id": 1,
+    "error": {
+      "code": 603,
+      "message": "Value out of range",
+      "data": {
+        "max": 100
+      }
+    }
+  }
+}
 ```
 
 ### 19.2 BrightnessChanged（JSON Event）
 
 ```json
-{ "sid": "28378462323", "op": 5, "d": { "event": "brightness.changed", "intent": 1, "data": { "value": 80, "source": "local" } } }
+{
+  "sid": "28378462323",
+  "op": 5,
+  "d": {
+    "event": "brightness.changed",
+    "intent": 1,
+    "data": {
+      "value": 80,
+      "source": "local"
+    }
+  }
+}
 ```
 
 ### 19.3 SetBrightness（Binary Compact）
@@ -673,17 +762,28 @@ Response：
 
 ```text
 [连接建立]
-Server → Client: { "sid": "", "op": 0, "d": { "obsWebSocketVersion": "1.0.0", "rpcVersion": 1 } }
-Client → Server: { "sid": "", "op": 1, "d": { "rpcVersion": 1, "eventSubscriptions": 33 } }
-Server → Client: { "sid": "28378462323", "op": 2, "d": { "negotiatedRpcVersion": 1 } }
+Server → Client:
+  { "sid": "", "op": 0, "d": { "obsWebSocketVersion": "1.0.0", "rpcVersion": 1 } }
+
+Client → Server:
+  { "sid": "", "op": 1, "d": { "rpcVersion": 1, "eventSubscriptions": 33 } }
+
+Server → Client:
+  { "sid": "28378462323", "op": 2, "d": { "negotiatedRpcVersion": 1 } }
 
 [业务调用]
-Client → Server: { "sid": "28378462323", "op": 6, "d": { "id": 1, "method": "device.getInfo" } }
-Server → Client: { "sid": "28378462323", "op": 7, "d": { "id": 1, "result": { "model": "AX100", "version": "1.0.0" } } }
+Client → Server:
+  { "sid": "28378462323", "op": 6, "d": { "id": 1, "method": "device.getInfo" } }
+
+Server → Client:
+  { "sid": "28378462323", "op": 7, "d": { "id": 1, "result": { "model": "AX100", "version": "1.0.0" } } }
 
 [断线重连]
-Client → Server: { "sid": "", "op": 1, "d": { "rpcVersion": 1, "resumeSid": "28378462323" } }
-Server → Client: { "sid": "28378462323", "op": 2, "d": { "negotiatedRpcVersion": 1 } }
+Client → Server:
+  { "sid": "", "op": 1, "d": { "rpcVersion": 1, "resumeSid": "28378462323" } }
+
+Server → Client:
+  { "sid": "28378462323", "op": 2, "d": { "negotiatedRpcVersion": 1 } }
 ```
 
 ---
