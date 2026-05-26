@@ -34,7 +34,7 @@ Markdown 文档 / C++ enum / struct / descriptor / TLV skeleton / 测试向量
 
 ### 2.2 Header 与业务解耦
 
-Frame Header 只识别 `PayloadType = CONTROL / RPC / STREAM`。业务对象（video/audio/ota/file/brightness 等）必须注册在 Method/Event/Stream/Capability/Schema Registry 中，不得出现在 Frame Header。
+Frame Header 只识别 `PayloadType = CONTROL / RPC / STREAM`。业务对象（video/audio/ota/file/display 等）必须注册在 Method/Event/Stream/Capability/Schema Registry 中，不得出现在 Frame Header。
 
 ### 2.3 ID 稳定优先
 
@@ -147,7 +147,9 @@ legacy:
 
 ### 6.1 Domain 命名
 
-小写单词：`device / capability / brightness / display / video / audio / stream / file / firmware / log / diagnostic / input / network / storage / sensor / vendor`
+小写单词：`device / capability / system / network / audio / camera / video / input / display / stream / firmware / storage / file / log / diagnostic / auth / privacy / sensor / vendor`
+
+说明：`session` 是协议会话上下文，不作为业务 Domain 分配 MethodId；`event` 是 RPC 机制概念，不作为业务 Domain；`config` 仅用于老协议兼容映射，不作为 AXTP 原生业务域。
 
 ### 6.2 Method 命名
 
@@ -155,13 +157,13 @@ legacy:
 
 推荐动词：`get / set / list / open / close / start / stop / begin / end / verify / apply / abort / resume / subscribe / unsubscribe`
 
-示例：`device.getInfo / brightness.set / firmware.begin / stream.open`
+示例：`device.getInfo / display.setBrightness / firmware.begin / stream.open`
 
 ### 6.3 Event 命名
 
 格式：`domain.objectChanged / domain.actionStarted / domain.actionCompleted / domain.actionFailed / domain.error`
 
-示例：`device.statusChanged / brightness.changed / firmware.updateCompleted / stream.error`
+示例：`device.statusChanged / display.brightnessChanged / firmware.updateCompleted / stream.error`
 
 ### 6.4 ErrorCode 命名
 
@@ -171,7 +173,7 @@ legacy:
 
 格式：`domain.capabilityName`
 
-示例：`protocol.payloadType.control / rpc.encoding.binary / firmware.resume / brightness.range`
+示例：`protocol.payloadType.control / rpc.encoding.binary / firmware.resume / display.brightness`
 
 ---
 
@@ -284,23 +286,27 @@ MVP 必须实现：`firmware.ota`。`file.upload / file.download / log.realtime`
 
 | Domain | 说明 | MVP |
 |---|---|---:|
-| `device` | 设备基础信息 | 是 |
-| `capability` | 能力查询 | 是 |
-| `brightness` | 亮度控制 | 是 |
+| `device` | 设备基础信息与生命周期 | 是 |
+| `capability` | 能力查询与协商 | 是 |
+| `system` | 系统控制：重启、时间同步、重置、功耗 | 是 |
 | `firmware` | 固件升级控制面 | 是 |
 | `stream` | 流控制面 | 是 |
-| `event` | 事件订阅 | 是 |
-| `display` | 显示控制 | 否 |
-| `video` | 视频控制 | 否 |
+| `display` | 显示控制：亮度、分辨率、旋转、布局、输入源 | 是 |
+| `camera` | 摄像头：变焦、追踪、镜像、帧率、图像参数 | 否 |
+| `video` | 视频编码与输出控制 | 否 |
 | `audio` | 音频控制 | 否 |
-| `file` | 文件控制 | 否 |
-| `log` | 日志控制 | 否 |
-| `diagnostic` | 诊断 / 产测 | 否 |
-| `input` | 输入 / KVM | 否 |
+| `input` | 输入源管理、KVM、HID | 否 |
 | `network` | 网络配置 | 否 |
 | `storage` | 存储管理 | 否 |
+| `file` | 文件传输控制面 | 否 |
+| `log` | 日志控制 | 否 |
+| `diagnostic` | 诊断 / 产测 | 否 |
 | `sensor` | 传感器 | 否 |
+| `auth` | 认证与访问控制 | 否 |
+| `privacy` | 隐私遮挡与隐私状态 | 否 |
 | `vendor` | 厂商私有扩展 | 否 |
+
+说明：`brightness` 不作为独立域，亮度控制方法、事件和能力归入 `display.*`。`boot / factory / screen / usb / bluetooth / misc` 等旧 HID 域只可映射到 `diagnostic.*` 或 `vendor.*`。`meeting / curtain / osd / mirror / ndi / overlay / amx` 等产品特定域只可映射到 `display.*`、`video.*` 或 `vendor.*` 的子能力。
 
 ---
 
@@ -312,11 +318,11 @@ MethodId 使用 `uint16`，按 domain 分段：
 |---:|---|
 | `0x0000-0x00FF` | reserved |
 | `0x0100-0x01FF` | `device.*` |
-| `0x0200-0x02FF` | `session.*` |
+| `0x0200-0x02FF` | `session.*`（协议层保留，暂缓） |
 | `0x0300-0x03FF` | `capability.*` |
 | `0x0400-0x04FF` | `system.*` |
 | `0x0500-0x05FF` | `display.*` |
-| `0x0600-0x06FF` | `brightness.*` |
+| `0x0600-0x06FF` | `camera.*` |
 | `0x0700-0x07FF` | `video.*` |
 | `0x0800-0x08FF` | `audio.*` |
 | `0x0900-0x09FF` | `stream.*` |
@@ -328,6 +334,8 @@ MethodId 使用 `uint16`，按 domain 分段：
 | `0x0F00-0x0FFF` | `storage.*` |
 | `0x1000-0x10FF` | `input.*` |
 | `0x1100-0x11FF` | `sensor.*` |
+| `0x1200-0x12FF` | `auth.*` |
+| `0x1300-0x13FF` | `privacy.*` |
 | `0x7000-0x7FFF` | `vendor.*` |
 | `0x8000-0xFFFF` | reserved（留给 eventId） |
 
@@ -335,23 +343,23 @@ Method 条目格式：
 
 ```yaml
 methods:
-  - id: 0x0602
-    name: brightness.set
+  - id: 0x0502
+    name: display.setBrightness
     kind: method
     status: mvp
-    domain: brightness
-    description: Set current brightness value.
+    domain: display
+    description: Set display brightness value.
     schema:
-      params: BrightnessSetParams
-      result: BrightnessSetResult
+      params: DisplaySetBrightnessParams
+      result: DisplaySetBrightnessResult
     errors:
       - RPC_PARAM_INVALID
       - BUSY
     events:
-      - brightness.changed
+      - display.brightnessChanged
     legacy:
-      cmdValue: 0xC0021
-      source: AXDP_HID
+      cmdValue: null
+      source: null
     mvp: true
 ```
 
@@ -374,8 +382,9 @@ EventId 使用 `uint16`，采用高位区间与 MethodId 分离：
 | `0x8000-0x80FF` | reserved |
 | `0x8100-0x81FF` | `device.*` |
 | `0x8300-0x83FF` | `capability.*` |
+| `0x8400-0x84FF` | `system.*` |
 | `0x8500-0x85FF` | `display.*` |
-| `0x8600-0x86FF` | `brightness.*` |
+| `0x8600-0x86FF` | `camera.*` |
 | `0x8700-0x87FF` | `video.*` |
 | `0x8800-0x88FF` | `audio.*` |
 | `0x8900-0x89FF` | `stream.*` |
@@ -383,7 +392,11 @@ EventId 使用 `uint16`，采用高位区间与 MethodId 分离：
 | `0x8B00-0x8BFF` | `firmware.*` |
 | `0x8C00-0x8CFF` | `log.*` |
 | `0x8D00-0x8DFF` | `diagnostic.*` |
+| `0x8E00-0x8EFF` | `network.*` |
+| `0x8F00-0x8FFF` | `storage.*` |
 | `0x9000-0x90FF` | `input.*` |
+| `0x9100-0x91FF` | `sensor.*` |
+| `0x9200-0x92FF` | `auth.*` |
 | `0xF000-0xFFFF` | vendor/reserved |
 
 Event 规则：
@@ -492,7 +505,7 @@ Legacy Mapping 规则：
 - 老协议固定 payload 必须映射到 AXTP Schema
 - 老协议状态码必须映射到 AXTP ErrorCode
 
-MVP 优先适配：设备信息 / 能力查询 / 亮度设置查询 / 固件升级 / 基础 ACK/NACK / 基础错误码
+MVP 优先适配：设备信息 / 能力查询 / 显示亮度设置查询 / 固件升级 / 基础 ACK/NACK / 基础错误码
 
 ---
 
@@ -553,16 +566,18 @@ Stream Profile: firmware.ota
 ```text
 device.getInfo / device.getVersion / device.getStatus
 capability.getAll / capability.getDomain
-brightness.get / brightness.set / brightness.getRange
+system.reboot / system.setTime / system.factoryReset
+display.getBrightness / display.setBrightness / display.getBrightnessRange
 firmware.getInfo / firmware.begin / firmware.end / firmware.verify / firmware.apply / firmware.abort
 stream.open / stream.close / stream.getStatus
-event.subscribe / event.unsubscribe
 ```
 
 ### 20.3 MVP Event
 
 ```text
-device.statusChanged / capability.changed / brightness.changed
+device.statusChanged / capability.changed
+system.rebooting
+display.brightnessChanged
 firmware.updateProgress / firmware.updateCompleted / firmware.updateFailed
 stream.opened / stream.closed / stream.error
 ```
@@ -580,8 +595,8 @@ STREAM_NOT_FOUND / STREAM_TIMEOUT / STREAM_CRC_ERROR / FW_VERIFY_FAILED
 
 ```text
 protocol.payloadType.control / protocol.payloadType.rpc / protocol.payloadType.stream
-rpc.encoding.json / rpc.encoding.binary / rpc.encoding.tlvStruct
-stream.kind.ota / brightness.range / firmware.update / firmware.resume
+rpc.encoding.json / rpc.encoding.binary / rpc.bodyEncoding.tlv8
+stream.kind.ota / display.brightness / firmware.update / firmware.resume
 ```
 
 ---

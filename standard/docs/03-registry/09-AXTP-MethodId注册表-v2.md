@@ -58,13 +58,13 @@ EVENT:
 |---:|---|---|---:|
 | `0x0000-0x00FF` | reserved | 保留 | 否 |
 | `0x0100-0x01FF` | `device.*` | 设备基础信息与生命周期 | 是 |
-| `0x0200-0x02FF` | `session.*` | 业务会话管理，暂缓 | 否 |
+| `0x0200-0x02FF` | `session.*` | 协议层保留，暂缓 | 否 |
 | `0x0300-0x03FF` | `capability.*` | 能力查询与能力协商 | 是 |
-| `0x0400-0x04FF` | `system.*` | 系统设置，暂缓 | 否 |
-| `0x0500-0x05FF` | `display.*` | 显示、画面、输入源 | 可选 |
-| `0x0600-0x06FF` | `brightness.*` | 亮度控制 | 是 |
-| `0x0700-0x07FF` | `video.*` | 视频控制面 | 可选 |
-| `0x0800-0x08FF` | `audio.*` | 音频控制面 | 可选 |
+| `0x0400-0x04FF` | `system.*` | 系统控制：重启、时间、重置、功耗 | 是 |
+| `0x0500-0x05FF` | `display.*` | 显示控制：亮度、分辨率、旋转、布局、输入源 | 是 |
+| `0x0600-0x06FF` | `camera.*` | 摄像头：变焦、追踪、镜像、帧率、图像参数 | 可选 |
+| `0x0700-0x07FF` | `video.*` | 视频编码与输出控制 | 可选 |
+| `0x0800-0x08FF` | `audio.*` | 音频控制 | 可选 |
 | `0x0900-0x09FF` | `stream.*` | STREAM 控制面 | 是 |
 | `0x0A00-0x0AFF` | `file.*` | 文件传输控制面 | P1 |
 | `0x0B00-0x0BFF` | `firmware.*` | OTA / 固件升级控制面 | 是 |
@@ -74,6 +74,8 @@ EVENT:
 | `0x0F00-0x0FFF` | `storage.*` | 存储管理 | P2 |
 | `0x1000-0x10FF` | `input.*` | 输入、KVM、HID Raw 控制 | P1 |
 | `0x1100-0x11FF` | `sensor.*` | 传感器控制 | P2 |
+| `0x1200-0x12FF` | `auth.*` | 认证与访问控制 | P2 |
+| `0x1300-0x13FF` | `privacy.*` | 隐私遮挡与隐私状态 | P2 |
 | `0x7000-0x7FFF` | `vendor.*` | 厂商私有方法 | 按需 |
 | `0x8000-0xFFFF` | reserved | 不用于 MethodId，保留给 EventId | 否 |
 
@@ -82,12 +84,12 @@ EVENT:
 ## 4. Method 条目字段
 
 ```yaml
-id: 0x0602
-name: brightness.set
+id: 0x0502
+name: display.setBrightness
 kind: method
 status: mvp
-domain: brightness
-description: Set current brightness value.
+domain: display
+description: Set display brightness value.
 rpc:
   request: true
   response: true
@@ -98,18 +100,18 @@ rpc:
   supportedBodyEncodings:
     - TLV8
 schema:
-  params: BrightnessSetParams
-  result: BrightnessSetResult
+  params: DisplaySetBrightnessParams
+  result: DisplaySetBrightnessResult
 errors:
   - SUCCESS
   - RPC_PARAM_INVALID
   - RPC_METHOD_NOT_SUPPORTED
   - BUSY
 events:
-  - brightness.changed
+  - display.brightnessChanged
 capability:
   required:
-    - brightness.set
+    - display.brightness
 legacy:
   cmdValue: null
   source: null
@@ -154,9 +156,13 @@ MVP 方法表：
 | `0x0302` | `capability.getDomain` | capability | P0 | 获取指定域能力 |
 | `0x0303` | `capability.hasMethod` | capability | P1 | 查询是否支持某方法 |
 | `0x0304` | `capability.getLimits` | capability | P0 | 获取 MTU、Frame、窗口等限制 |
-| `0x0601` | `brightness.get` | brightness | P0 | 获取当前亮度 |
-| `0x0602` | `brightness.set` | brightness | P0 | 设置亮度 |
-| `0x0603` | `brightness.getRange` | brightness | P0 | 获取亮度范围 |
+| `0x0401` | `system.reboot` | system | P0 | 重启设备 |
+| `0x0402` | `system.setTime` | system | P0 | 设置系统时间与时区 |
+| `0x0403` | `system.getTime` | system | P0 | 获取系统时间 |
+| `0x0404` | `system.factoryReset` | system | P1 | 恢复出厂设置 |
+| `0x0501` | `display.getBrightness` | display | P0 | 获取当前亮度 |
+| `0x0502` | `display.setBrightness` | display | P0 | 设置亮度 |
+| `0x0503` | `display.getBrightnessRange` | display | P0 | 获取亮度范围 |
 | `0x0901` | `stream.open` | stream | P0 | 打开 STREAM 数据通道 |
 | `0x0902` | `stream.close` | stream | P0 | 关闭 STREAM 数据通道 |
 | `0x0903` | `stream.getStatus` | stream | P1 | 查询流状态 |
@@ -168,11 +174,8 @@ MVP 方法表：
 | `0x0B05` | `firmware.apply` | firmware | P0 | 应用固件 |
 | `0x0B06` | `firmware.abort` | firmware | P0 | 中止升级 |
 | `0x0B07` | `firmware.resume` | firmware | P1 | 断点续传 |
-| `0x1201` | `event.subscribe` | event | P0 | 订阅事件 |
-| `0x1202` | `event.unsubscribe` | event | P0 | 取消事件订阅 |
-| `0x1203` | `event.list` | event | P1 | 查询可订阅事件 |
 
-说明：`0x1200-0x12FF` 暂作为 event subscription method domain 使用。事件本身仍使用 EventId，通过 `rpcOp = EVENT` 承载。
+说明：事件本身使用 EventId，通过 `rpcOp = EVENT` 承载。事件订阅集合由 RPC `IDENTIFY / REIDENTIFY` 的 `eventSubscriptions` 字段声明和更新，MVP 不再分配 `event.subscribe / event.unsubscribe` MethodId。
 
 ---
 
@@ -209,40 +212,69 @@ MVP 方法表：
 
 协议能力优先通过 CONTROL OPEN / ACCEPT 协商；业务能力通过 `capability.*` RPC 查询。
 
-### 6.3 display.*
+### 6.3 system.*
 
 | methodId | methodName | 状态 | MVP | 说明 |
 |---:|---|---|---:|---|
-| `0x0501` | `display.getInfo` | draft | 否 | 获取显示设备信息 |
-| `0x0502` | `display.getStatus` | draft | 否 | 获取显示状态 |
-| `0x0503` | `display.setPower` | draft | 否 | 设置屏幕电源 |
-| `0x0504` | `display.getPower` | draft | 否 | 获取屏幕电源状态 |
-| `0x0505` | `display.setInputSource` | draft | 否 | 设置输入源 |
-| `0x0506` | `display.getInputSource` | draft | 否 | 获取输入源 |
-| `0x0507` | `display.setResolution` | draft | 否 | 设置输出分辨率 |
-| `0x0508` | `display.getResolution` | draft | 否 | 获取输出分辨率 |
-| `0x0509` | `display.setRotation` | draft | 否 | 设置旋转方向 |
-| `0x050A` | `display.getRotation` | draft | 否 | 获取旋转方向 |
-| `0x050B` | `display.setLayout` | draft | 否 | 设置多画面布局 |
-| `0x050C` | `display.getLayout` | draft | 否 | 获取多画面布局 |
+| `0x0401` | `system.reboot` | mvp | 是 | 重启设备 |
+| `0x0402` | `system.setTime` | mvp | 是 | 设置系统时间与时区 |
+| `0x0403` | `system.getTime` | mvp | 是 | 获取系统时间 |
+| `0x0404` | `system.factoryReset` | mvp | 是 | 恢复出厂设置 |
+| `0x0405` | `system.getUptime` | draft | 否 | 获取系统运行时长 |
+| `0x0406` | `system.setRebootSchedule` | draft | 否 | 设置定时重启 |
+| `0x0407` | `system.getRebootSchedule` | draft | 否 | 获取定时重启配置 |
+| `0x0408` | `system.setPowerSchedule` | draft | 否 | 设置定时开关机 |
+| `0x0409` | `system.getPowerSchedule` | draft | 否 | 获取定时开关机配置 |
+| `0x040A` | `system.shutdown` | draft | 否 | 关机 |
 
-### 6.4 brightness.*
+### 6.4 display.*
+
+`display.*` 涵盖显示输出控制，包含亮度、分辨率、旋转、布局及输入源管理。
 
 | methodId | methodName | 状态 | MVP | 说明 |
 |---:|---|---|---:|---|
-| `0x0601` | `brightness.get` | mvp | 是 | 获取当前亮度 |
-| `0x0602` | `brightness.set` | mvp | 是 | 设置当前亮度 |
-| `0x0603` | `brightness.getRange` | mvp | 是 | 获取亮度范围 |
-| `0x0604` | `brightness.setAutoMode` | draft | 否 | 设置自动亮度 |
-| `0x0605` | `brightness.getAutoMode` | draft | 否 | 获取自动亮度状态 |
-| `0x0606` | `brightness.increase` | draft | 否 | 增加亮度 |
-| `0x0607` | `brightness.decrease` | draft | 否 | 降低亮度 |
-| `0x0608` | `brightness.setSchedule` | draft | 否 | 设置亮度计划 |
-| `0x0609` | `brightness.getSchedule` | draft | 否 | 获取亮度计划 |
+| `0x0501` | `display.getBrightness` | mvp | 是 | 获取当前亮度 |
+| `0x0502` | `display.setBrightness` | mvp | 是 | 设置亮度 |
+| `0x0503` | `display.getBrightnessRange` | mvp | 是 | 获取亮度范围 |
+| `0x0504` | `display.setBrightnessAutoMode` | draft | 否 | 设置自动亮度 |
+| `0x0505` | `display.getBrightnessAutoMode` | draft | 否 | 获取自动亮度状态 |
+| `0x0506` | `display.getInfo` | draft | 否 | 获取显示设备信息 |
+| `0x0507` | `display.getStatus` | draft | 否 | 获取显示状态 |
+| `0x0508` | `display.setPower` | draft | 否 | 设置屏幕电源 |
+| `0x0509` | `display.getPower` | draft | 否 | 获取屏幕电源状态 |
+| `0x050A` | `display.setResolution` | draft | 否 | 设置输出分辨率 |
+| `0x050B` | `display.getResolution` | draft | 否 | 获取输出分辨率 |
+| `0x050C` | `display.setRotation` | draft | 否 | 设置旋转方向 |
+| `0x050D` | `display.getRotation` | draft | 否 | 获取旋转方向 |
+| `0x050E` | `display.setLayout` | draft | 否 | 设置多画面布局 |
+| `0x050F` | `display.getLayout` | draft | 否 | 获取多画面布局 |
+| `0x0510` | `display.setInputSource` | draft | 否 | 设置输入源 |
+| `0x0511` | `display.getInputSource` | draft | 否 | 获取输入源 |
 
-### 6.5 video.*
+### 6.5 camera.*
 
-`video.*` 只定义视频控制面。视频帧数据必须走 STREAM（`profile = media.video`）。
+`camera.*` 只定义摄像头控制面。视频帧数据必须走 STREAM（`profile = media.video`）。
+
+| methodId | methodName | 状态 | MVP | 说明 |
+|---:|---|---|---:|---|
+| `0x0601` | `camera.getInfo` | draft | 否 | 获取摄像头信息 |
+| `0x0602` | `camera.setVideoMode` | draft | 否 | 设置视频模式（自动取景/演讲者追踪等） |
+| `0x0603` | `camera.getVideoMode` | draft | 否 | 获取视频模式 |
+| `0x0604` | `camera.setMirror` | draft | 否 | 设置镜像翻转 |
+| `0x0605` | `camera.getMirror` | draft | 否 | 获取镜像状态 |
+| `0x0606` | `camera.setZoom` | draft | 否 | 设置数字变焦 |
+| `0x0607` | `camera.getZoom` | draft | 否 | 获取变焦信息 |
+| `0x0608` | `camera.setFocusMode` | draft | 否 | 设置对焦模式 |
+| `0x0609` | `camera.getFocusMode` | draft | 否 | 获取对焦模式 |
+| `0x060A` | `camera.setImageParams` | draft | 否 | 设置图像参数（亮度/对比度/饱和度） |
+| `0x060B` | `camera.getImageParams` | draft | 否 | 获取图像参数 |
+| `0x060C` | `camera.setSpeakerTrack` | draft | 否 | 设置演讲者追踪配置 |
+| `0x060D` | `camera.getSpeakerTrack` | draft | 否 | 获取演讲者追踪配置 |
+| `0x060E` | `camera.getPeopleCount` | draft | 否 | 获取人数统计 |
+
+### 6.6 video.*
+
+`video.*` 只定义视频编码与输出控制面。视频帧数据必须走 STREAM（`profile = media.video`）。
 
 | methodId | methodName | 状态 | MVP | 说明 |
 |---:|---|---|---:|---|
@@ -385,16 +417,55 @@ MVP 方法表：
 | `0x100A` | `input.getKvmStatus` | draft | 否 | 获取 KVM 状态 |
 | `0x100B` | `input.sendHidReport` | draft | 否 | 发送 HID Report |
 
-### 6.13 event.*
+### 6.13 network.*
 
-事件本身不是 method，通过 `rpcOp = EVENT` 使用 EventId 承载。事件订阅、取消订阅和列表查询属于 RPC method。
+`network.*` 覆盖 Wi-Fi、以太网、IP、NDI 等网络配置控制面。
 
 | methodId | methodName | 状态 | MVP | 说明 |
 |---:|---|---|---:|---|
-| `0x1201` | `event.subscribe` | mvp | 是 | 订阅事件 |
-| `0x1202` | `event.unsubscribe` | mvp | 是 | 取消事件订阅 |
-| `0x1203` | `event.list` | draft | 否 | 查询可订阅事件列表 |
-| `0x1204` | `event.getLast` | draft | 否 | 获取最近一次事件快照 |
+| `0x0E01` | `network.getStatus` | draft | 否 | 获取网络状态 |
+| `0x0E02` | `network.getInterfaces` | draft | 否 | 获取网络接口 |
+| `0x0E03` | `network.setWifi` | draft | 否 | 设置 Wi-Fi |
+| `0x0E04` | `network.getWifi` | draft | 否 | 获取 Wi-Fi 配置 |
+| `0x0E05` | `network.setIpConfig` | draft | 否 | 设置 IP 配置 |
+| `0x0E06` | `network.getIpConfig` | draft | 否 | 获取 IP 配置 |
+
+### 6.14 storage.*
+
+| methodId | methodName | 状态 | MVP | 说明 |
+|---:|---|---|---:|---|
+| `0x0F01` | `storage.getInfo` | draft | 否 | 获取存储信息 |
+| `0x0F02` | `storage.listVolumes` | draft | 否 | 列出存储卷 |
+| `0x0F03` | `storage.format` | draft | 否 | 格式化存储卷 |
+
+### 6.15 sensor.*
+
+| methodId | methodName | 状态 | MVP | 说明 |
+|---:|---|---|---:|---|
+| `0x1101` | `sensor.getInfo` | draft | 否 | 获取传感器信息 |
+| `0x1102` | `sensor.getValue` | draft | 否 | 获取传感器当前值 |
+| `0x1103` | `sensor.openStream` | draft | 否 | 打开传感器采样流 |
+| `0x1104` | `sensor.closeStream` | draft | 否 | 关闭传感器采样流 |
+
+### 6.16 auth.*
+
+| methodId | methodName | 状态 | MVP | 说明 |
+|---:|---|---|---:|---|
+| `0x1201` | `auth.login` | draft | 否 | 登录或提交凭证 |
+| `0x1202` | `auth.logout` | draft | 否 | 注销 |
+| `0x1203` | `auth.refreshToken` | draft | 否 | 刷新访问令牌 |
+| `0x1204` | `auth.getPermissions` | draft | 否 | 查询权限集合 |
+
+### 6.17 privacy.*
+
+隐私遮挡属于通用业务域；具体云台、镜头盖、麦克风静音联动可以在 `camera.*`、`audio.*` 或 `vendor.*` 中扩展。
+
+| methodId | methodName | 状态 | MVP | 说明 |
+|---:|---|---|---:|---|
+| `0x1301` | `privacy.setMode` | draft | 否 | 设置隐私模式 |
+| `0x1302` | `privacy.getMode` | draft | 否 | 获取隐私模式 |
+| `0x1303` | `privacy.setMask` | draft | 否 | 设置隐私遮挡区域 |
+| `0x1304` | `privacy.getMask` | draft | 否 | 获取隐私遮挡区域 |
 
 ---
 
@@ -409,8 +480,8 @@ MVP 方法表：
 | AXDP_HID | `0xB0002` | BetaDeviceInfo | `0x0101` | `device.getInfo` | 是 | 设备信息查询 |
 | AXDP_HID | `0xC0021` | CommonSetVideoMode | `0x0706` | `video.setMode` | 可选 | 视频模式设置，P1 适配 |
 | AXDP_HID | `0xA0001` | AlphaUpgradeInfo | `0x0B01` | `firmware.getInfo` | 是 | 固件升级信息查询 |
-| Legacy HID/BLE | TBD | GetBrightness | `0x0601` | `brightness.get` | 是 | 若旧协议存在亮度查询命令，应映射到此方法 |
-| Legacy HID/BLE | TBD | SetBrightness | `0x0602` | `brightness.set` | 是 | 若旧协议存在亮度设置命令，应映射到此方法 |
+| Legacy HID/BLE | TBD | GetBrightness | `0x0501` | `display.getBrightness` | 是 | 若旧协议存在亮度查询命令，应映射到此方法 |
+| Legacy HID/BLE | TBD | SetBrightness | `0x0502` | `display.setBrightness` | 是 | 若旧协议存在亮度设置命令，应映射到此方法 |
 | Legacy HID/BLE | TBD | UpgradeBegin | `0x0B02` | `firmware.begin` | 是 | 若旧协议存在升级开始命令，应映射到此方法 |
 | Legacy HID/BLE | TBD | UpgradeEnd | `0x0B03` | `firmware.end` | 是 | 若旧协议存在升级结束命令，应映射到此方法 |
 | Legacy HID/BLE | TBD | UpgradeVerify | `0x0B04` | `firmware.verify` | 是 | 若旧协议存在升级校验命令，应映射到此方法 |
@@ -464,7 +535,7 @@ Method 是否可调用，应结合 Capability Registry 判断。调用流程：
 
 ## 11. Method 与 Event 的关系
 
-如果 Method 会触发事件，应在条目中声明（如 `brightness.set` 触发 `brightness.changed`）。事件本身不使用 MethodId，而使用 EventId，通过 `rpcOp = EVENT` 承载。
+如果 Method 会触发事件，应在条目中声明（如 `display.setBrightness` 触发 `display.brightnessChanged`）。事件本身不使用 MethodId，而使用 EventId，通过 `rpcOp = EVENT` 承载。
 
 ---
 
