@@ -189,14 +189,30 @@ CREATED → OPENING → OPEN → ACTIVE → DRAINING → CLOSED
 **方式 A：通用 stream.open**（适用于日志、传感器、厂商私有流）
 
 ```json
-{ "method": "stream.open", "params": { "profile": "log.realtime", "direction": "download", "reliability": "best_effort", "cursorUnit": "timestampUs" } }
+{
+  "method": "stream.open",
+  "params": {
+    "profile": "log.realtime",
+    "direction": "download",
+    "reliability": "best_effort",
+    "cursorUnit": "timestampUs"
+  }
+}
 ```
 响应返回 `{ "streamId": 17, "maxDataSize": 1024, "ackMode": "none" }`。
 
 **方式 B：领域方法隐式建流**（适用于 OTA、文件、视频等）
 
 ```json
-{ "method": "firmware.begin", "params": { "imageType": "mcu", "totalSize": 1048576, "sha256": "...", "preferredChunkSize": 512 } }
+{
+  "method": "firmware.begin",
+  "params": {
+    "imageType": "mcu",
+    "totalSize": 1048576,
+    "sha256": "...",
+    "preferredChunkSize": 512
+  }
+}
 ```
 响应返回 `{ "streamId": 33, "profile": "firmware.ota", "chunkSize": 512, "ackMode": "stop_and_wait", "cursorUnit": "byteOffset" }`。
 

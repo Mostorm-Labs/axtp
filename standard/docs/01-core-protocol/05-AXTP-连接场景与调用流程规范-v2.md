@@ -644,7 +644,11 @@ Gateway → App: RESPONSE (B)
 每条 WebSocket Text Message 是一个 JSON 对象：
 
 ```json
-{"sid": "a1b2c3d4", "op": 1, "d": { ... }}
+{
+  "sid": "a1b2c3d4",
+  "op": 1,
+  "d": { ... }
+}
 ```
 
 | op 值 | 含义 |
