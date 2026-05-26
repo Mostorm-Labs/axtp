@@ -1,8 +1,8 @@
 # 03《AXTP RPC 协议与二进制映射规范》
 
-版本：v0.2 Draft  
-状态：MVP RPC 子协议规范（精简版）  
-适用范围：`PayloadType = RPC` 的 Payload 结构、DS-RPC Text Profile 映射、Binary-RPC 映射、TLV Body、MethodId/EventId、Request/Response/Event/Batch  
+版本：v1.1 Draft  
+状态：MVP RPC 子协议规范  
+适用范围：`PayloadType = RPC` 的 Payload 结构、op+d Envelope、sid、JSON/MessagePack/Binary 编码、MethodId/EventId、Hello/Identify/Request/Response/Event/Batch  
 前置文档：01《AXTP 整体协议规范》、02《AXTP Control 信令协议规范》  
 后续文档：04《AXTP Stream 流式传输协议规范》、Registry 文档
 
@@ -12,104 +12,514 @@
 
 本文档定义 `PayloadType = RPC` 时的业务控制协议。RPC 负责业务控制面（设备查询、参数设置、能力查询、事件上报等），不负责协议运行时控制（属于 CONTROL）和连续数据传输（属于 STREAM）。
 
-AXTP v1 不再区分 `RPC_JSON` / `RPC_BINARY`，统一为：
+AXTP RPC 采用与 OBS-WebSocket 相同的 `{ "sid": string, "op": number, "d": object }` Envelope 结构，同时支持 JSON 文本帧和 MessagePack 二进制帧两种编码，以及面向嵌入式设备的 Binary-RPC 紧凑编码。op 数值与 OBS-WebSocket 对齐，生命周期 op（Hello/Identify/Identified/Reidentify）保留为独立 op，不映射为 RPC 方法。
+
+---
+
+## 2. 协议分层与编码模式
 
 ```text
-Frame Header.payloadType = RPC
-RPC Payload.rpcEncoding = JSON / BINARY / CBOR / MSGPACK
+Transport
+  ↓
+AXTP Frame Header (payloadType=RPC)
+  ↓
+RPC Payload
+  ├── JSON Mode:        UTF-8 JSON text, { "sid": "...", "op": N, "d": {...} }
+  ├── MessagePack Mode: MessagePack binary, same sid+op+d structure
+  └── Binary Mode:      Fixed binary header + TLV/CBOR body
+```
+
+| 编码模式 | rpcEncoding | 适用场景 |
+| --- | --- | --- |
+| JSON | `0x01` | WebSocket Text、HTTP Debug、CLI、浏览器调试 |
+| MessagePack | `0x04` | WebSocket Binary、高效文本协议场景 |
+| Binary | `0x02` | BLE、HID、UART、TCP、USB Bulk 嵌入式场景 |
+| CBOR | `0x03` | 可选，IoT 场景 |
+
+JSON 和 MessagePack 使用相同的 sid+op+d 语义结构，仅编码格式不同。Binary 使用固定二进制头，语义与 op+d 一一对应（sid 由 CONTROL 层 session 管理，不出现在 Binary Payload 中）。
+
+---
+
+## 3. Envelope 结构
+
+所有 JSON 和 MessagePack 消息使用统一三字段 Envelope：
+
+```json
+{ "sid": "28378462323", "op": 6, "d": { ... } }
+```
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `sid` | string | Session ID，由服务端在 Identified 中分配；TextCodec 边界消费，不透传给业务逻辑 |
+| `op` | uint8 | 操作码，见 §4 |
+| `d` | object | 消息数据块，结构由 op 决定 |
+
+`sid` 的作用：
+
+- **路由**：网关场景下一个连接承载多个逻辑 session，`sid` 区分路由目标
+- **恢复**：断线重连时客户端携带旧 `sid` 发 Identify，服务端可恢复 session 状态
+- Hello（op=0）是连接建立后第一条消息，此时尚无 session，`sid` 填空字符串 `""`
+- Identified（op=2）中服务端分配并返回 `sid`，客户端后续所有消息必须携带此 `sid`
+- Binary 模式下 `sid` 不出现在 Payload 中，session 由 CONTROL OPEN/ACCEPT 管理
+
+---
+
+## 4. RPC op 注册表
+
+op 数值与 OBS-WebSocket 对齐，生命周期 op 保留为独立 op。
+
+| op | 名称 | 方向 | 说明 |
+| ---: | --- | --- | --- |
+| `0` | `Hello` | Server→Client | 连接建立后服务端立即发送，携带版本和认证要求 |
+| `1` | `Identify` | Client→Server | 客户端身份、版本、认证、订阅意图；可携带旧 `sid` 恢复 session |
+| `2` | `Identified` | Server→Client | 确认就绪，分配并返回 `sid` |
+| `3` | `Reidentify` | Client→Server | 修改订阅或会话参数，不重新认证 |
+| `5` | `Event` | Server→Client | 低频状态事件推送 |
+| `6` | `Request` | Client→Server | 发起 RPC 调用 |
+| `7` | `RequestResponse` | Server→Client | 返回 RPC 结果 |
+| `8` | `RequestBatch` | Client→Server | 批量 RPC 请求 |
+| `9` | `RequestBatchResponse` | Server→Client | 批量 RPC 响应 |
+| `10` | `Cancel` | Client→Server | 取消进行中的请求（AXTP 扩展） |
+| `11` | `Progress` | Server→Client | 长操作进度通知（AXTP 扩展） |
+
+op=4 保留，与 OBS-WebSocket 原表一致（OBS 原表无 op=4）。
+
+MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestResponse`。其余可延后。
+
+---
+
+## 5. Hello（op=0）
+
+服务端在 WebSocket/TCP 连接建立后立即发送，无需客户端请求。
+
+```json
+{
+  "sid": "",
+  "op": 0,
+  "d": {
+    "obsWebSocketVersion": "1.0.0",
+    "rpcVersion": 1,
+    "authentication": {
+      "challenge": "...",
+      "salt": "..."
+    }
+  }
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `obsWebSocketVersion` | string | 是 | 服务端协议版本 |
+| `rpcVersion` | uint32 | 是 | RPC 协议版本，当前为 1 |
+| `authentication` | object | 否 | 认证挑战，不需要认证时省略 |
+
+`sid` 填 `""`，此时 session 尚未建立。
+
+---
+
+## 6. Identify（op=1）
+
+客户端收到 Hello 后发送。
+
+```json
+{
+  "sid": "",
+  "op": 1,
+  "d": {
+    "rpcVersion": 1,
+    "authentication": "...",
+    "eventSubscriptions": 33,
+    "resumeSid": "28378462323"
+  }
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `rpcVersion` | uint32 | 是 | 客户端期望的 RPC 版本 |
+| `authentication` | string | 条件 | Hello 要求认证时必填，HMAC 响应 |
+| `eventSubscriptions` | uint32 | 否 | 事件订阅位图，0 表示不订阅任何事件 |
+| `resumeSid` | string | 否 | 断线重连时携带旧 `sid`，请求恢复 session |
+
+新连接时 `sid` 填 `""`；断线重连时 `sid` 填 `""` 但 `d.resumeSid` 携带旧 session ID。
+
+---
+
+## 7. Identified（op=2）
+
+服务端验证通过后发送，分配 `sid`。
+
+```json
+{
+  "sid": "28378462323",
+  "op": 2,
+  "d": {
+    "negotiatedRpcVersion": 1
+  }
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `negotiatedRpcVersion` | uint32 | 是 | 协商后的 RPC 版本 |
+
+客户端收到 Identified 后提取 `sid`，后续所有消息必须携带此 `sid`。
+
+---
+
+## 8. Reidentify（op=3）
+
+客户端在已建立 session 后修改订阅，不重新认证。
+
+```json
+{
+  "sid": "28378462323",
+  "op": 3,
+  "d": {
+    "eventSubscriptions": 65
+  }
+}
+```
+
+服务端处理后再次发送 Identified（op=2）确认。
+
+---
+
+## 9. Request（op=6）
+
+### 9.1 d-block 结构
+
+```json
+{
+  "requestType": "SetBrightness",
+  "requestId": "00000001",
+  "requestData": {
+    "value": 80
+  }
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `requestType` | string | 是 | 方法名，PascalCase，对应 Registry methodId |
+| `requestId` | string | 是 | 固定 8 位十六进制字符串，对应 Binary uint32 requestId |
+| `requestData` | object | 否 | 请求参数，无参数时可省略 |
+
+`requestId` 规则：
+
+- 从 `"00000001"` 开始递增，按 uint32 自然回绕（跳过 `"00000000"`）
+- 同一 Session 内未收到 RequestResponse 的 `requestId` 不得复用
+
+### 9.2 示例
+
+```json
+{ "sid": "28378462323", "op": 6, "d": { "requestType": "SetBrightness", "requestId": "00000001", "requestData": { "value": 80 } } }
 ```
 
 ---
 
-## 2. MessageId 与 requestId 的边界
+## 10. RequestResponse（op=7）
 
-| 字段 | 所属层 | 作用 |
-|---|---|---|
-| `messageId` | Frame Layer | 分片重组、ACK/NACK、传输排错 |
-| `requestId` | RPC Layer | 匹配业务请求和业务响应 |
-| `streamId` | Stream Layer | 标识连续数据流 |
-| `seqId` | Stream Layer | 标识流内数据块序号 |
+### 10.1 成功 d-block
 
-requestId 规则：
-- 保留值：`0x00000000`（EVENT 固定填此值，普通 Request 不得使用）
-- 从 `0x00000001` 开始递增，按 uint32 自然回绕（跳过 0）
-- 同一 Session 内未收到 Response 的 requestId 不得复用
+```json
+{
+  "requestType": "SetBrightness",
+  "requestId": "00000001",
+  "requestStatus": {
+    "result": true,
+    "code": 100
+  },
+  "responseData": {
+    "value": 80
+  }
+}
+```
 
-Text Profile 编码：固定 8 位十六进制字符串（如 `"00000001"`）。Binary Profile：4B little-endian uint32。
+### 10.2 失败 d-block
+
+```json
+{
+  "requestType": "SetBrightness",
+  "requestId": "00000001",
+  "requestStatus": {
+    "result": false,
+    "code": 603,
+    "comment": "Value out of range"
+  }
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `requestType` | string | 是 | 对应 Request 的 requestType |
+| `requestId` | string | 是 | 对应 Request 的 requestId |
+| `requestStatus.result` | bool | 是 | true=成功，false=失败 |
+| `requestStatus.code` | uint16 | 是 | 状态码，成功时为 100，失败时为错误码 |
+| `requestStatus.comment` | string | 否 | 失败时的人类可读描述 |
+| `responseData` | object | 否 | 成功时的返回数据 |
+
+### 10.3 示例
+
+```json
+{ "sid": "28378462323", "op": 7, "d": { "requestType": "SetBrightness", "requestId": "00000001", "requestStatus": { "result": true, "code": 100 }, "responseData": { "value": 80 } } }
+```
 
 ---
 
-## 3. rpcEncoding 注册表
+## 11. Event（op=5）
 
-| rpcEncoding | 名称 | MVP |
-|---:|---|---|
-| `0x00` | `UNSPECIFIED` | 否 |
-| `0x01` | `JSON` | 是 |
-| `0x02` | `BINARY` | 是 |
-| `0x03` | `CBOR` | 可选 |
-| `0x04` | `MSGPACK` | 可选 |
-| `0x05` | `FIXED_STRUCT` | 可选 |
-| `0x7F` | `VENDOR` | 否 |
+```json
+{
+  "eventType": "BrightnessChanged",
+  "eventIntent": 1,
+  "eventData": {
+    "value": 80,
+    "source": "local"
+  }
+}
+```
 
-MVP 必须实现 JSON 和 BINARY，BINARY 的 bodyEncoding 至少支持 NONE 和 TLV。
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `eventType` | string | 是 | 事件名，PascalCase，对应 Registry eventId |
+| `eventIntent` | uint32 | 是 | 事件所属订阅位图分类 |
+| `eventData` | object | 否 | 事件数据，无数据时可省略 |
+
+Event 不携带 `requestId`（Binary 中 requestId 填 0）。
+
+### 11.1 示例
+
+```json
+{ "sid": "28378462323", "op": 5, "d": { "eventType": "BrightnessChanged", "eventIntent": 1, "eventData": { "value": 80, "source": "local" } } }
+```
 
 ---
 
-## 4. rpcOp 注册表
+## 12. RequestBatch（op=8）
 
-| rpcOp | 名称 | requestId | methodId/eventId | MVP |
-|---:|---|---|---|---|
-| `0x01` | `REQUEST` | 是 | methodId | 是 |
-| `0x02` | `RESPONSE` | 是 | methodId | 是 |
-| `0x03` | `EVENT` | 否（填 0） | eventId | 是 |
-| `0x04` | `BATCH_REQUEST` | 是 | batch item 指定 | P1 |
-| `0x05` | `BATCH_RESPONSE` | 是 | batch item 指定 | P1 |
-| `0x06` | `CANCEL` | 是 | 可选 | P1 |
-| `0x07` | `NOTIFY` | 可选 | methodId | P1 |
+```json
+{
+  "requestId": "00000064",
+  "haltOnFailure": true,
+  "executionType": 0,
+  "requests": [
+    { "requestType": "SetBrightness", "requestId": "00000065", "requestData": { "value": 80 } },
+    { "requestType": "SetDisplayContent", "requestId": "00000066", "requestData": { "content": "hello" } }
+  ]
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `requestId` | string | 是 | 批量请求 ID |
+| `haltOnFailure` | bool | 否 | 遇到失败是否停止，默认 false |
+| `executionType` | uint32 | 否 | 0=SerialRealtime，1=SerialFrame，2=Parallel |
+| `requests` | array | 是 | 请求列表，每项含独立 requestType/requestId/requestData |
 
 ---
 
-## 5. RPC Flags
+## 13. RequestBatchResponse（op=9）
+
+```json
+{
+  "requestId": "00000064",
+  "results": [
+    { "requestType": "SetBrightness", "requestId": "00000065", "requestStatus": { "result": true, "code": 100 }, "responseData": { "value": 80 } },
+    { "requestType": "SetDisplayContent", "requestId": "00000066", "requestStatus": { "result": false, "code": 603, "comment": "Content too long" } }
+  ]
+}
+```
+
+`results` 数组与 `requests` 数组一一对应。
+
+---
+
+## 14. Cancel（op=10）
+
+```json
+{ "sid": "28378462323", "op": 10, "d": { "requestId": "00000001" } }
+```
+
+取消 `requestId` 对应的进行中请求。服务端可忽略已完成的请求。
+
+---
+
+## 15. Progress（op=11）
+
+```json
+{
+  "sid": "28378462323",
+  "op": 11,
+  "d": {
+    "requestId": "00000001",
+    "progress": 45,
+    "comment": "Verifying firmware..."
+  }
+}
+```
+
+用于长操作（如 OTA verify）的中间进度通知，不替代最终 RequestResponse。
+
+---
+
+## 16. 方法名与事件名规范
+
+### 16.1 方法名
+
+格式：PascalCase，动词开头
+
+推荐动词：`Get / Set / List / Open / Close / Start / Stop / Begin / End / Verify / Apply / Abort / Resume / Subscribe / Unsubscribe`
+
+示例：`GetDeviceInfo / SetBrightness / BeginFirmwareUpdate / OpenStream`
+
+### 16.2 事件名
+
+格式：PascalCase，名词+状态后缀
+
+示例：`BrightnessChanged / FirmwareUpdateCompleted / StreamError`
+
+### 16.3 与 Binary methodId/eventId 的映射
+
+方法名和事件名与 Binary 中的 uint32 ID 一一对应，由 Registry 统一管理：
+
+```text
+"SetBrightness"      ↔ methodId = 0x0602
+"BrightnessChanged"  ↔ eventId  = 0x8601
+```
+
+---
+
+## 17. 会话生命周期
+
+AXTP 将会话生命周期分为两层，两层职责严格分离：
+
+```text
+Transport 层（CONTROL，Framed Mode）：
+  Physical connected
+    → CONTROL OPEN
+    → CONTROL ACCEPT
+    → TRANSPORT_READY
+
+Application 层（RPC，所有模式）：
+  TRANSPORT_READY / WebSocket connected
+    → Hello (op=0)        Server→Client
+    → Identify (op=1)     Client→Server
+    → Identified (op=2)   Server→Client，分配 sid
+    → APP_READY
+    → Request / Event / Reidentify
+```
+
+| OBS-WebSocket | AXTP 对应 | 说明 |
+| --- | --- | --- |
+| `Hello` | `Hello (op=0)` | 直接对应，服务端主动发送 |
+| `Identify` | `Identify (op=1)` | 直接对应，客户端认证+订阅 |
+| `Identified` | `Identified (op=2)` | 直接对应，分配 sid |
+| `Reidentify` | `Reidentify (op=3)` | 直接对应，修改订阅 |
+
+Unframed 模式（WebSocket Text / MessagePack）下，CONTROL 层不存在，Hello/Identify/Identified 是唯一的连接建立机制。Framed 模式（Binary）下，CONTROL OPEN/ACCEPT 先于 Hello/Identify 执行，两者不冲突。
+
+---
+
+## 18. 事件订阅
+
+低频状态事件走 RPC Event（op=5），高频连续数据走 STREAM。
+
+```text
+低频状态变化（亮度变化、固件进度、设备状态）：
+  RPC Event (op=5)
+
+高频连续数据（视频帧、音频帧、传感器采样、OTA 数据块）：
+  RPC 控制面（Request op=6）+ STREAM 数据面
+```
+
+初始订阅在 Identify（op=1）的 `eventSubscriptions` 位图中声明。运行时修改订阅使用 Reidentify（op=3）。
+
+---
+
+## 19. RPC 与 STREAM 的协作
+
+```text
+OTA:
+  RPC firmware.begin → 返回 streamId, profile=firmware.ota
+  STREAM packet: streamId/seqId/cursor/data
+  RPC firmware.verify → 校验固件
+  RPC firmware.apply → 应用固件
+
+文件传输:
+  RPC file.beginTransfer → 返回 streamId
+  STREAM packet: streamId/seqId/cursor/data
+  RPC file.endTransfer
+
+视频预览:
+  RPC video.startPreview → 返回 streamId
+  STREAM packet: streamId/seqId/cursor/data
+  RPC stream.close
+```
+
+---
+
+## 16. MessagePack 编码
+
+MessagePack 模式与 JSON 模式使用完全相同的 op+d 语义，仅将 JSON 对象序列化为 MessagePack 格式。
+
+Frame Header 中 `rpcEncoding = 0x04`（MSGPACK）。
+
+MessagePack 优势：
+
+- 比 JSON 体积小 20-30%
+- 原生支持 bytes 类型（无需 base64）
+- 解析速度更快
+
+---
+
+## 17. Binary RPC 编码
+
+Binary 模式面向嵌入式设备，使用固定二进制头替代 JSON/MessagePack 文本。
+
+### 17.1 Binary Standard Payload（14B 固定头）
+
+| 字段 | 长度 | 类型 | 说明 |
+| --- | ---: | --- | --- |
+| `rpcEncoding` | 1B | uint8 | `0x02`（BINARY） |
+| `rpcOp` | 1B | uint8 | op 值，见 §4 |
+| `flags` | 1B | uint8 | RPC flags，见 §17.3 |
+| `reserved` | 1B | uint8 | 保留，填 0 |
+| `requestId` | 4B | uint32 | 请求 ID，EVENT 填 0 |
+| `methodOrEventId` | 4B | uint32 | methodId 或 eventId（uint32，支持 legacy CmdValue） |
+| `statusCode` | 2B | uint16 | Response 状态码，见 §17.4 |
+| `body` | N | bytes | TLV / CBOR / RAW_BYTES |
+
+固定头 14B，所有多字节字段 Little-Endian。body 长度 = `Frame.payloadLength - 14`。
+
+### 17.2 Binary Compact Payload（8B 固定头）
+
+| 字段 | 长度 | 类型 | 说明 |
+| --- | ---: | --- | --- |
+| `rpcOp` | 1B | uint8 | op 值 |
+| `flags` | 1B | uint8 | RPC flags |
+| `requestId` | 4B | uint32 | 请求 ID，EVENT 填 0 |
+| `methodOrEventId` | 2B | uint16 | methodId 或 eventId（uint16，BLE/HID 场景） |
+| `body` | N | TLV | 默认 TLV body |
+
+Compact 约定：`rpcEncoding=BINARY`，body 为 TLV，body 长度 = `Frame.payloadLength - 8`。不携带 rpcEncoding/reserved/statusCode 字段（statusCode 通过 flags 的 SUCCESS/ERROR 位表达）。
+
+### 17.3 RPC Flags
 
 | Bit | 名称 | 说明 |
-|---:|---|---|
+| ---: | --- | --- |
 | 0 | `SUCCESS` | Response 成功 |
 | 1 | `ERROR` | Response 失败 |
 | 2 | `HAS_BODY` | 存在 body |
 | 3 | `ONEWAY` | 单向调用，不要求响应 |
-| 4 | `COMPRESSED_BODY` | body 已压缩 |
-| 5 | `BODY_SCHEMA_ID_PRESENT` | 携带 body schemaId |
-| 6-7 | `RESERVED` | 保留，置 0 |
+| 4-7 | `RESERVED` | 保留，置 0 |
 
-约束：SUCCESS 与 ERROR 不应同时置 1；RESPONSE 必须设置 SUCCESS 或 ERROR 之一；EVENT 只根据是否有数据设置 HAS_BODY。
+SUCCESS 与 ERROR 不应同时置 1；RESPONSE 必须设置 SUCCESS 或 ERROR 之一；EVENT 只根据是否有数据设置 HAS_BODY。
 
----
-
-## 6. bodyEncoding 注册表
-
-| bodyEncoding | 名称 | MVP |
-|---:|---|---|
-| `0x00` | `NONE` | 是 |
-| `0x01` | `TLV` | 是 |
-| `0x02` | `JSON` | 是（rpcEncoding=JSON 时） |
-| `0x03` | `CBOR` | 可选 |
-| `0x04` | `MSGPACK` | 可选 |
-| `0x05` | `FIXED_STRUCT` | 可选 |
-| `0x06` | `RAW_BYTES` | 可选（旧协议适配） |
-| `0x7F` | `VENDOR` | 否 |
-
-`RAW_BYTES` 只允许旧协议适配层使用，必须通过 legacyMapping 在 Registry 中声明对应 methodId，不得作为绕过 Registry 的逃生门。
-
----
-
-## 7. statusCode
-
-REQUEST 中填 0，EVENT 中非状态事件填 0。
-
-MVP 必须实现的状态码：
+### 17.4 statusCode
 
 | statusCode | 名称 |
-|---:|---|
+| ---: | --- |
 | `0x0000` | `NONE` |
 | `0x0064` | `SUCCESS` |
 | `0x0100` | `UNKNOWN_ERROR` |
@@ -124,319 +534,267 @@ MVP 必须实现的状态码：
 | `0x0109` | `RESOURCE_NOT_FOUND` |
 | `0x010A` | `INTERNAL_ERROR` |
 
-RPC Error 表达业务失败（methodId 不存在、参数非法、权限不足等）；Control NACK 表达传输失败（CRC 错误、分片缺失、会话未就绪等）。两者不得混用。
+Binary RESPONSE 中 statusCode 与 JSON/MessagePack 中 `error.code` 对应。
+
+### 17.5 Binary 与 op+d 语义映射
+
+| op+d 字段 | Binary 字段 | 说明 |
+| --- | --- | --- |
+| `op` | `rpcOp` | 直接对应 |
+| `d.requestId` | `requestId` | 8 位十六进制字符串 → uint32 |
+| `d.requestType` | `methodOrEventId` | 方法名映射到 uint32 methodId |
+| `d.eventType` | `methodOrEventId` | 事件名映射到 uint32 eventId |
+| `d.requestData` / `d.responseData` / `d.eventData` | `body` | JSON object ↔ TLV |
+| `d.requestStatus.result=true` | `flags.SUCCESS = 1` | 成功 |
+| `d.requestStatus.result=false` | `flags.ERROR = 1` | 失败 |
+| `d.requestStatus.code` | `statusCode` | 状态码 |
 
 ---
 
-## 8. MethodId 与 EventId
-
-methodId 和 eventId 均为 uint16，由 Registry 统一分配。
-
-DS-RPC Text Profile 中的方法名/事件名（PascalCase）与 Binary 中的 uint16 ID 一一对应：
-
-```text
-"SetBrightness" ↔ methodId = 0x0602
-"BrightnessChanged" ↔ eventId = 0x8601
-```
-
-Binary RPC Payload 中 `methodOrEventId` 字段复用：REQUEST/RESPONSE 时为 methodId，EVENT 时为 eventId。
-
----
-
-## 9. DS-RPC Text Profile
-
-DS-RPC 是 AXTP 的 Debug/Legacy Text Adapter，适用于 WebSocket Text、HTTP API、CLI、浏览器调试工具。**不是生产必须路径**，生产路径始终使用 AXTP Framed Mode。
-
-DS-RPC 不使用 AXTP Frame Header。所有消息使用统一三字段 Envelope：
-
-```json
-{ "sid": "<session-id>", "op": <opcode>, "d": { ... } }
-```
-
-`sid` 是 transport-level session routing key，在 TextCodec 边界被消费，不透传给上层业务逻辑。
-
-### 9.1 DS-RPC Opcode 表
-
-| op | 名称 | 方向 | 说明 |
-|---|---|---|---|
-| `0` | `Hello` | Server→Client | Legacy Adapter 连接建立 |
-| `1` | `HelloAck` | Client→Server | Legacy Adapter 确认，返回 sid |
-| `2` | `Heartbeat` | 双向 | Legacy Adapter 心跳 |
-| `3` | `HeartbeatAck` | 双向 | Legacy Adapter 心跳响应 |
-| `5` | `Subscribe` | Client→Server | 订阅事件 |
-| `6` | `Event` | Server→Client | 服务端推送事件 |
-| `7` | `Request` | Client→Server | 发起 RPC 调用 |
-| `8` | `RequestResponse` | Server→Client | 返回 RPC 结果 |
-| `10` | `BatchRequest` | Client→Server | 批量 RPC 请求 |
-| `11` | `BatchResponse` | Server→Client | 批量 RPC 响应 |
-| `12` | `RESERVED_STREAM_DATA` | - | 保留，STREAM 数据必须使用 Framed Mode |
-| `13` | `FragmentAck` | 双向 | 分片确认 |
-| `14` | `Bye` | 双向 | Legacy Adapter 断开 |
-| `15` | `ByeAck` | 双向 | Legacy Adapter 断开确认 |
-
-Hello/HelloAck/Heartbeat/Bye 只属于 DS-RPC Legacy Adapter。新实现如已支持 AXTP Framed Mode，不应把这些 op 作为正式连接生命周期。
-
-### 9.2 Request（op=7）
-
-```json
-{ "sid": "28378462323", "op": 7, "d": { "id": "00000001", "method": "SetBrightness", "params": { "value": 80 } } }
-```
-
-`id` 为固定 8 位十六进制，对应 Binary uint32 requestId；`method` 为 PascalCase，对应 methodId；`params` 对应 Binary body。
-
-### 9.3 RequestResponse（op=8）
-
-成功：
-```json
-{ "sid": "28378462323", "op": 8, "d": { "id": "00000001", "method": "SetBrightness", "status": { "result": true, "code": 100 }, "result": { "value": 80 } } }
-```
-
-失败：
-```json
-{ "sid": "28378462323", "op": 8, "d": { "id": "00000001", "method": "SetBrightness", "status": { "result": false, "code": 300, "comment": "Value out of range" } } }
-```
-
-`status.result=true` → flags.SUCCESS；`status.code=100` → statusCode=SUCCESS。
-
-### 9.4 Event（op=6）
-
-```json
-{ "sid": "28378462323", "op": 6, "d": { "event": "BrightnessChanged", "eventInstanceId": "00000021", "timestamp": 1747649200000, "data": { "value": 80, "source": "local" } } }
-```
-
-### 9.5 方法名与事件名命名规范
-
-方法名：PascalCase，动词开头（`GetDeviceInfo`, `SetBrightness`, `StartScreenShare`）。  
-事件名：PascalCase，名词+状态后缀（`BrightnessChanged`, `FirmwareUpdateCompleted`）。
-
-### 9.6 DS-RPC 与 Binary 字段映射
-
-| DS-RPC 字段 | Binary 字段 | 说明 |
-|---|---|---|
-| `op` | `rpcOp` | op=7→REQUEST, op=8→RESPONSE, op=6→EVENT |
-| `sid` | Session Context（不在 Binary Payload 中） | TextCodec 边界处理 |
-| `d.id` | `requestId` | Text 为 8 位十六进制，Binary 为 4B LE uint32 |
-| `d.method` | `methodId` | PascalCase 名称映射到 uint16 |
-| `d.event` | `eventId` | PascalCase 名称映射到 uint16 |
-| `d.params` / `d.result` / `d.data` | `body` | JSON object ↔ TLV |
-| `d.status.result` | `flags SUCCESS/ERROR` | true→SUCCESS, false→ERROR |
-| `d.status.code` | `statusCode` | 成功时 100 |
-
----
-
-## 10. Binary RPC Standard Payload（17B 固定头）
-
-| 字段 | 长度 | 类型 | 说明 |
-|---|---:|---|---|
-| `rpcEncoding` | 1B | uint8 | Binary 模式为 `0x02` |
-| `rpcOp` | 1B | uint8 | REQUEST/RESPONSE/EVENT |
-| `flags` | 1B | uint8 | RPC flags |
-| `reserved` | 1B | uint8 | 保留，填 0 |
-| `requestId` | 4B | uint32 | 请求 ID，EVENT 填 0 |
-| `methodOrEventId` | 2B | uint16 | methodId 或 eventId |
-| `statusCode` | 2B | uint16 | Response 状态码 |
-| `bodyEncoding` | 1B | uint8 | body 编码 |
-| `bodyLen` | 4B | uint32 | body 长度 |
-| `body` | N | bytes | params/result/event data |
-
-固定头 17B，所有多字节字段 Little-Endian。
-
----
-
-## 11. Binary RPC Compact Payload（10B 固定头）
-
-| 字段 | 长度 | 类型 | 说明 |
-|---|---:|---|---|
-| `rpcOp` | 1B | uint8 | REQUEST/RESPONSE/EVENT |
-| `flags` | 1B | uint8 | RPC flags |
-| `requestId` | 4B | uint32 | 请求 ID，EVENT 填 0 |
-| `methodOrEventId` | 2B | uint16 | methodId 或 eventId |
-| `statusCode` | 2B | uint16 | Response 状态码 |
-| `body` | N | TLV | 默认 TLV body |
-
-Compact 约定：`rpcEncoding=BINARY`，`bodyEncoding=TLV`，`bodyLen=Frame.payloadLength-10`。不携带 rpcEncoding/reserved/bodyEncoding/bodyLen 字段。
-
----
-
-## 12. TLV Body 编码
+## 18. TLV Body 编码
 
 TLV 基本结构：`type(1B) + length(1B) + value(N)`，扩展长度由 TLV Schema 文档定义。
 
 TLV 字段 ID 由 Method Registry 的 schema 定义，不在 RPC 协议中硬编码。
 
-示例（brightness.set）：
+示例（SetBrightness）：
 
 ```text
-JSON params: { "value": 80 }
-TLV body:    01 01 50
-             fieldId=0x01, length=1, value=80
+JSON requestData: { "value": 80 }
+TLV body:         01 01 50
+                  fieldId=0x01, length=1, value=80
 ```
 
 ---
 
-## 13. Request / Response / Event 示例
+## 19. 完整示例
 
-### 13.1 SetBrightness Request（Compact Binary）
+### 19.1 SetBrightness（JSON）
 
-```text
-01 04 01 00 00 00 02 06 00 00 01 01 50
-rpcOp=REQUEST, flags=HAS_BODY, requestId=1, methodId=0x0602, statusCode=NONE
-body: value=80
+Request：
+
+```json
+{ "sid": "28378462323", "op": 6, "d": { "requestType": "SetBrightness", "requestId": "000003E9", "requestData": { "value": 80 } } }
 ```
 
-### 13.2 SetBrightness Response 成功（Compact Binary）
+Response 成功：
 
-```text
-02 05 01 00 00 00 02 06 64 00 01 01 50
-rpcOp=RESPONSE, flags=SUCCESS|HAS_BODY, requestId=1, methodId=0x0602, statusCode=100
-body: value=80
+```json
+{ "sid": "28378462323", "op": 7, "d": { "requestType": "SetBrightness", "requestId": "000003E9", "requestStatus": { "result": true, "code": 100 }, "responseData": { "value": 80 } } }
 ```
 
-### 13.3 BrightnessChanged Event（Compact Binary）
+Response 失败：
+
+```json
+{ "sid": "28378462323", "op": 7, "d": { "requestType": "SetBrightness", "requestId": "000003E9", "requestStatus": { "result": false, "code": 603, "comment": "Value out of range" } } }
+```
+
+### 19.2 BrightnessChanged（JSON Event）
+
+```json
+{ "sid": "28378462323", "op": 5, "d": { "eventType": "BrightnessChanged", "eventIntent": 1, "eventData": { "value": 80, "source": "local" } } }
+```
+
+### 19.3 SetBrightness（Binary Compact）
 
 ```text
-03 04 00 00 00 00 01 86 00 00 01 01 50 02 01 01
-rpcOp=EVENT, flags=HAS_BODY, requestId=0, eventId=0x8601
-body: value=80, source=local
+Request:
+06 04 E9 03 00 00 02 06 01 01 50
+rpcOp=Request(6), flags=HAS_BODY(4), requestId=0x000003E9, methodId=0x0602
+body: fieldId=1, len=1, value=80
+
+Response 成功:
+07 05 E9 03 00 00 02 06 01 01 50
+rpcOp=RequestResponse(7), flags=SUCCESS|HAS_BODY(5), requestId=0x000003E9, methodId=0x0602
+body: fieldId=1, len=1, value=80
+```
+
+### 19.4 OpenStream（JSON）
+
+Request：
+
+```json
+{
+  "sid": "28378462323",
+  "op": 6,
+  "d": {
+    "requestType": "OpenStream",
+    "requestId": "000007D1",
+    "requestData": {
+      "profile": "firmware.ota",
+      "direction": "upload",
+      "totalSize": 1048576,
+      "sha256": "abc123..."
+    }
+  }
+}
+```
+
+Response：
+
+```json
+{
+  "sid": "28378462323",
+  "op": 7,
+  "d": {
+    "requestType": "OpenStream",
+    "requestId": "000007D1",
+    "requestStatus": { "result": true, "code": 100 },
+    "responseData": {
+      "streamId": 33,
+      "profile": "firmware.ota",
+      "chunkSize": 512,
+      "ackMode": "stop_and_wait",
+      "cursorUnit": "byteOffset"
+    }
+  }
+}
+```
+
+### 19.5 FirmwareUpdateCompleted（JSON Event）
+
+```json
+{
+  "sid": "28378462323",
+  "op": 5,
+  "d": {
+    "eventType": "FirmwareUpdateCompleted",
+    "eventIntent": 4,
+    "eventData": {
+      "imageType": "mcu",
+      "version": "2.1.0"
+    }
+  }
+}
+```
+
+### 19.6 完整连接流程（JSON）
+
+```text
+[连接建立]
+Server → Client: { "sid": "", "op": 0, "d": { "obsWebSocketVersion": "1.0.0", "rpcVersion": 1 } }
+Client → Server: { "sid": "", "op": 1, "d": { "rpcVersion": 1, "eventSubscriptions": 33 } }
+Server → Client: { "sid": "28378462323", "op": 2, "d": { "negotiatedRpcVersion": 1 } }
+
+[业务调用]
+Client → Server: { "sid": "28378462323", "op": 6, "d": { "requestType": "GetDeviceInfo", "requestId": "00000001" } }
+Server → Client: { "sid": "28378462323", "op": 7, "d": { "requestType": "GetDeviceInfo", "requestId": "00000001", "requestStatus": { "result": true, "code": 100 }, "responseData": { "model": "AX100", "version": "1.0.0" } } }
+
+[断线重连]
+Client → Server: { "sid": "", "op": 1, "d": { "rpcVersion": 1, "resumeSid": "28378462323" } }
+Server → Client: { "sid": "28378462323", "op": 2, "d": { "negotiatedRpcVersion": 1 } }
 ```
 
 ---
 
-## 14. Batch RPC（P1）
+## 20. 与 MCP 的兼容性
 
-Batch 用于一次发送多个 RPC 请求，减少 RTT。MVP 可暂不实现，收到 Batch 请求时返回 `UNSUPPORTED_RPC_OP`。
-
-外层 RPC：`rpcOp=BATCH_REQUEST`，body 包含 `batchFlags + itemCount + item[]`，每个 item 含 `requestId + methodId + bodyLen + body`。
-
-执行策略：`SERIAL`（顺序，对应 haltOnFailure=true）、`PARALLEL`（并行）、`BEST_EFFORT`（尽力，对应 haltOnFailure=false）。
-
----
-
-## 15. RPC 与 STREAM 的协作
-
-大量业务采用 RPC 控制面 + STREAM 数据面模式：
+AXTP RPC 的 op+d 结构与 JSON-RPC 2.0 / MCP 在语义上高度兼容，后期适配 MCP Server 时：
 
 ```text
-OTA:
-  RPC firmware.begin → 返回 streamId, profile=firmware.ota
-  STREAM packet: streamId/seqId/cursor/data
-  RPC firmware.verify → 校验固件
-  RPC firmware.apply → 应用固件
-
-文件传输:
-  RPC file.beginTransfer → 返回 transferId
-  STREAM packet: streamId/seqId/cursor/data
-  RPC file.endTransfer
-
-视频预览:
-  RPC video.startPreview → 返回 streamId
-  STREAM packet: streamId/seqId/cursor/data
-  RPC stream.close
+AXTP Request (op=6)          → MCP tool call
+AXTP RequestResponse (op=7)  → MCP tool result / error
+AXTP Event (op=5)            → MCP notification / resource update
 ```
+
+主要差异：
+
+- AXTP 使用 `requestType` + `requestId`（8 位十六进制），MCP 使用 `method` + `id`（需字段重命名）
+- AXTP `requestStatus.code` 使用 AXTP ErrorCode Registry，MCP 使用 JSON-RPC 错误码（需映射）
+- AXTP `sid` 无 MCP 对应物，适配层在 MCP 边界消费
 
 ---
 
-## 16. 老协议 CmdValue 适配
+## 21. 老协议 CmdValue 适配
 
-旧协议 CmdValue 可直接映射为 AXTP methodId，不建议推翻旧命令表重新编号。
+旧协议 CmdValue 可直接映射为 AXTP methodId（uint32），不建议推翻旧命令表重新编号。
 
 ```yaml
 legacyMappings:
   - legacyCmdValue: 0xC0021
     axtpMethodId: 0xC0021
-    axtpMethodName: video.setMode
+    axtpMethodName: SetVideoMode
     bodyEncoding: FIXED_STRUCT
 ```
 
-若旧 CmdValue 超过 uint16，三种处理方案：
-- **方案 A**：Standard Binary RPC 扩展字段支持 uint32 methodId（TCP/USB Bulk）
-- **方案 B**：建立 legacyMethodAlias 映射到 uint16 methodId（BLE/HID Compact）
-- **方案 C**：使用 vendor method range `0x7000-0x7FFF`（临时兼容）
+Binary Standard Payload 使用 uint32 methodOrEventId，可直接容纳超过 0xFFFF 的旧 CmdValue。Binary Compact Payload 使用 uint16，超出范围时需建立 legacyMethodAlias 映射。
 
 ---
 
-## 17. Method Schema 与 Generator
+## 22. requestId 与 messageId 的边界
 
-RPC 的 params/result/eventData 必须由 schema 描述：
+| 字段 | 所属层 | 作用 |
+| --- | --- | --- |
+| `messageId` | Frame Layer | 分片重组、ACK/NACK、传输排错 |
+| `sid` | RPC Session Layer | session 路由与恢复，TextCodec 边界消费 |
+| `requestId` | RPC Layer | 匹配业务请求和业务响应 |
+| `streamId` | Stream Layer | 标识连续数据流 |
+| `seqId` | Stream Layer | 标识流内数据块序号 |
 
-```yaml
-methods:
-  - id: 0x0602
-    name: brightness.set
-    params:
-      - fieldId: 0x01
-        name: value
-        type: uint8
-        required: true
-        range: [0, 100]
-    result:
-      - fieldId: 0x01
-        name: value
-        type: uint8
-```
-
-Generator v1 输入：`method_registry.yaml`, `event_registry.yaml`, `error_code.yaml`, `capability_registry.yaml`, `tlv_schema.yaml`。
-
-Generator v1 输出：C++ MethodId/EventId/ErrorCode enum、method/event descriptor table、TLV field constants、JSON methodName↔methodId 映射、legacy CmdValue↔methodId 映射、Markdown 注册表、基础测试向量。
+这五个 ID 服务于不同层级，不得相互替代。
 
 ---
 
-## 18. MVP 实现范围
-
-### 18.1 必须实现
-
-```text
-rpcEncoding = JSON / BINARY
-rpcOp = REQUEST / RESPONSE / EVENT
-Compact Binary RPC Header（10B）
-bodyEncoding = NONE / TLV / JSON
-uint16 methodId / eventId / statusCode
-uint32 requestId
-method name ↔ methodId 映射
-TLV body encode/decode
-```
-
-### 18.2 MVP 方法范围
-
-```text
-device.getInfo / capability.getAll
-brightness.get / brightness.set
-firmware.begin / firmware.verify / firmware.apply
-stream.open / stream.close
-event.subscribe / event.unsubscribe
-```
-
-### 18.3 MVP 事件范围
-
-```text
-device.statusChanged / brightness.changed
-firmware.updateProgress / firmware.updateCompleted / firmware.updateFailed
-stream.opened / stream.closed / stream.error
-```
-
-### 18.4 可暂不实现
-
-```text
-Batch RPC / CANCEL / ONEWAY / CBOR / MSGPACK
-压缩 body / 加密 body / 动态 schema 下载
-```
-
----
-
-## 19. 安全与鲁棒性要求
+## 23. 安全与鲁棒性要求
 
 RPC Parser 必须满足：
-- bodyLen 不得超过 Frame.payloadLength
+
+- body 长度不得超过 Frame.payloadLength
 - TLV length 不得越界
 - 未知 methodId 返回 METHOD_NOT_FOUND
 - 不支持的 rpcEncoding 返回 UNSUPPORTED_ENCODING
-- requestId 必须原样返回，Response 必须匹配已有 pending request
-- Event 不得被当作 Response 处理
+- requestId 必须原样返回，RequestResponse 必须匹配已有 pending request
+- Event 不得被当作 RequestResponse 处理
+- Identified 之前收到 Request 必须返回错误，不得处理业务请求
 - 所有整数解析必须显式处理字节序，不允许直接 reinterpret_cast 网络字节流为 C++ struct
 
 ---
 
-## 20. 版本与兼容策略
+## 24. MVP 实现范围
+
+### 24.1 必须实现
+
+```text
+rpcEncoding = JSON / BINARY
+op = Hello / Identify / Identified / Event / Request / RequestResponse
+sid+op+d Envelope（JSON 和 MessagePack）
+Binary Compact RPC Header（8B）
+TLV body encode/decode
+uint32 methodId / eventId
+requestId 8 位十六进制 ↔ uint32 互转
+requestType ↔ methodId 映射
+requestStatus.result / code / comment 结构
+```
+
+### 24.2 MVP 方法范围
+
+```text
+GetDeviceInfo / GetCapabilities
+GetBrightness / SetBrightness
+BeginFirmwareUpdate / VerifyFirmware / ApplyFirmware
+OpenStream / CloseStream
+```
+
+### 24.3 MVP 事件范围
+
+```text
+DeviceStatusChanged / BrightnessChanged
+FirmwareUpdateProgress / FirmwareUpdateCompleted / FirmwareUpdateFailed
+StreamOpened / StreamClosed / StreamError
+```
+
+### 24.4 可暂不实现
+
+```text
+RequestBatch / RequestBatchResponse / Cancel / Progress
+Reidentify
+MessagePack / CBOR
+压缩 body / 加密 body
+```
+
+---
+
+## 25. 版本与兼容策略
 
 新增 methodId/eventId 不需要修改 RPC 协议版本，只需更新 Registry 和 Generator 输出。
 
@@ -448,10 +806,10 @@ RPC Parser 必须满足：
 
 ---
 
-## 21. 与后续文档的关系
+## 26. 与后续文档的关系
 
 | 文档 | 关系 |
-|---|---|
+| --- | --- |
 | 01《整体协议规范》 | Frame Header、PayloadType、Fragment、CRC |
 | 02《Control 信令规范》 | CONTROL 建立 Session，不承载业务方法 |
 | 04《Stream 流式传输规范》 | STREAM 数据面，RPC 只负责控制面 |
