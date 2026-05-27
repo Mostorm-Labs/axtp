@@ -14,7 +14,7 @@ struct LegacyCmdMapping {
 
 inline constexpr LegacyCmdMapping kLegacyMappings[] = {
     { "axdp_hid", 0x000B0002, 0x0101, "device.getInfo" },
-    { "axdp_hid", 0x000B0042, 0x0602, "brightness.set" },
+    { "axdp_hid", 0x000B0042, 0x0502, "display.setBrightness" },
 };
 
 inline constexpr std::size_t kLegacyMappingCount = 2;

@@ -64,20 +64,20 @@ constexpr std::uint8_t MAX_IMAGE_SIZE = 0x01;
 constexpr std::uint8_t MAX_CHUNK_SIZE = 0x02;
 }
 
-namespace fields::brightness_get_request {
+namespace fields::display_get_brightness_request {
 
 }
 
-namespace fields::brightness_get_response {
+namespace fields::display_get_brightness_response {
 constexpr std::uint8_t VALUE = 0x01;
 }
 
-namespace fields::brightness_set_request {
+namespace fields::display_set_brightness_request {
 constexpr std::uint8_t VALUE = 0x01;
 constexpr std::uint8_t TRANSITION_MS = 0x02;
 }
 
-namespace fields::brightness_changed_event {
+namespace fields::display_brightness_changed_event {
 constexpr std::uint8_t VALUE = 0x01;
 constexpr std::uint8_t PREVIOUS_VALUE = 0x02;
 }
@@ -186,21 +186,21 @@ struct FirmwareOtaCapability {
     std::uint16_t maxChunkSize = 0;
 };
 
-struct BrightnessGetRequest {
+struct DisplayGetBrightnessRequest {
 
 };
 
-struct BrightnessGetResponse {
+struct DisplayGetBrightnessResponse {
     std::uint8_t value = 0;
 };
 
-struct BrightnessSetRequest {
+struct DisplaySetBrightnessRequest {
     std::uint8_t value = 0;
     std::uint16_t transitionMs = 0;
     bool has_transitionMs = false;
 };
 
-struct BrightnessChangedEvent {
+struct DisplayBrightnessChangedEvent {
     std::uint8_t value = 0;
     std::uint8_t previousValue = 0;
     bool has_previousValue = false;
@@ -279,17 +279,17 @@ bool DecodeCapabilityGetAllResponse(TlvReader& reader, CapabilityGetAllResponse*
 bool EncodeFirmwareOtaCapability(const FirmwareOtaCapability& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeFirmwareOtaCapability(TlvReader& reader, FirmwareOtaCapability* output, ErrorCode* error);
 
-bool EncodeBrightnessGetRequest(const BrightnessGetRequest& input, TlvWriter& writer, ErrorCode* error);
-bool DecodeBrightnessGetRequest(TlvReader& reader, BrightnessGetRequest* output, ErrorCode* error);
+bool EncodeDisplayGetBrightnessRequest(const DisplayGetBrightnessRequest& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDisplayGetBrightnessRequest(TlvReader& reader, DisplayGetBrightnessRequest* output, ErrorCode* error);
 
-bool EncodeBrightnessGetResponse(const BrightnessGetResponse& input, TlvWriter& writer, ErrorCode* error);
-bool DecodeBrightnessGetResponse(TlvReader& reader, BrightnessGetResponse* output, ErrorCode* error);
+bool EncodeDisplayGetBrightnessResponse(const DisplayGetBrightnessResponse& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDisplayGetBrightnessResponse(TlvReader& reader, DisplayGetBrightnessResponse* output, ErrorCode* error);
 
-bool EncodeBrightnessSetRequest(const BrightnessSetRequest& input, TlvWriter& writer, ErrorCode* error);
-bool DecodeBrightnessSetRequest(TlvReader& reader, BrightnessSetRequest* output, ErrorCode* error);
+bool EncodeDisplaySetBrightnessRequest(const DisplaySetBrightnessRequest& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDisplaySetBrightnessRequest(TlvReader& reader, DisplaySetBrightnessRequest* output, ErrorCode* error);
 
-bool EncodeBrightnessChangedEvent(const BrightnessChangedEvent& input, TlvWriter& writer, ErrorCode* error);
-bool DecodeBrightnessChangedEvent(TlvReader& reader, BrightnessChangedEvent* output, ErrorCode* error);
+bool EncodeDisplayBrightnessChangedEvent(const DisplayBrightnessChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDisplayBrightnessChangedEvent(TlvReader& reader, DisplayBrightnessChangedEvent* output, ErrorCode* error);
 
 bool EncodeFirmwareBeginRequest(const FirmwareBeginRequest& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeFirmwareBeginRequest(TlvReader& reader, FirmwareBeginRequest* output, ErrorCode* error);

@@ -256,12 +256,12 @@
       ]
     },
     {
-      "name": "BrightnessGetRequest",
+      "name": "DisplayGetBrightnessRequest",
       "type": "object",
       "fields": []
     },
     {
-      "name": "BrightnessGetResponse",
+      "name": "DisplayGetBrightnessResponse",
       "type": "object",
       "fields": [
         {
@@ -276,7 +276,7 @@
       ]
     },
     {
-      "name": "BrightnessSetRequest",
+      "name": "DisplaySetBrightnessRequest",
       "type": "object",
       "fields": [
         {
@@ -300,7 +300,7 @@
       ]
     },
     {
-      "name": "BrightnessChangedEvent",
+      "name": "DisplayBrightnessChangedEvent",
       "type": "object",
       "fields": [
         {

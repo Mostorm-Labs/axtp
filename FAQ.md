@@ -49,8 +49,8 @@
 | 阶段 | 实现内容 |
 | --- | --- |
 | Phase 0（当前） | 只实现 WebSocket JSON，完全不碰 CONTROL |
-| Phase 1（Framed 接入） | 最小 CONTROL 子集：`OPEN / ACCEPT / HEARTBEAT / HEARTBEAT_ACK / CLOSE / CLOSE_ACK`（6 个 opcode） |
-| Phase 2（可靠性） | 补 `ACK / NACK / RESUME / SESSION_RESET` |
+| Phase 1（Framed 接入） | MVP CONTROL 子集：`OPEN / ACCEPT / HEARTBEAT / HEARTBEAT_ACK / ACK / NACK / CLOSE / CLOSE_ACK`（8 个 opcode） |
+| Phase 2（恢复能力） | 补 `RESUME / RESUME_ACK / SESSION_RESET` |
 | Phase 3（流控） | 补 `WINDOW_UPDATE / PING / PONG / GOAWAY` |
 
 Phase 1 的 OPEN/ACCEPT TLV body 可以先只实现必填字段（`protocolVersion`、`headerProfile`、`maxFrameSize`），其余字段用默认值。
@@ -129,7 +129,7 @@ ws://device/legacy  → 老协议（Client 先发 Hello，Server 回 HelloAck）
 **P1：TCP + Framed + Standard Profile + JSON**
 
 - Standard Profile，CONTROL 最小子集（OPEN/ACCEPT/HEARTBEAT/CLOSE）
-- ackMode=NO_ACK，TCP 保可靠性
+- ackMode=NONE，TCP 保可靠性
 - 跑通 Framed 完整状态机，为 HID/BLE 打基础
 
 **P2：HID + Framed + Standard Profile + JSON，含 Compact 降级协商**

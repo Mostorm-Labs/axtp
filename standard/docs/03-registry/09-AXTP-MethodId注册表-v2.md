@@ -145,35 +145,18 @@ priority: P0
 
 ## 5. MVP 最小方法集合
 
-MVP 方法表：
+MVP 方法表以 `standard/registry/method_registry.yaml` 为事实源。当前 AXTP v1 MVP 只包含下列已注册方法；其他方法即使出现在后续规划表中，也不得视为当前实现合同。
 
 | methodId | methodName | Domain | 优先级 | 说明 |
 |---:|---|---|---|---|
 | `0x0101` | `device.getInfo` | device | P0 | 获取设备基础信息 |
-| `0x0102` | `device.getVersion` | device | P0 | 获取固件、硬件、协议版本 |
-| `0x0103` | `device.getStatus` | device | P0 | 获取设备运行状态 |
 | `0x0301` | `capability.getAll` | capability | P0 | 获取完整能力集 |
-| `0x0302` | `capability.getDomain` | capability | P0 | 获取指定域能力 |
-| `0x0303` | `capability.hasMethod` | capability | P1 | 查询是否支持某方法 |
-| `0x0304` | `capability.getLimits` | capability | P0 | 获取 MTU、Frame、窗口等限制 |
-| `0x0401` | `system.reboot` | system | P0 | 重启设备 |
-| `0x0402` | `system.setTime` | system | P0 | 设置系统时间与时区 |
-| `0x0403` | `system.getTime` | system | P0 | 获取系统时间 |
-| `0x0404` | `system.factoryReset` | system | P1 | 恢复出厂设置 |
 | `0x0501` | `display.getBrightness` | display | P0 | 获取当前亮度 |
 | `0x0502` | `display.setBrightness` | display | P0 | 设置亮度 |
-| `0x0503` | `display.getBrightnessRange` | display | P0 | 获取亮度范围 |
-| `0x0901` | `stream.open` | stream | P0 | 打开 STREAM 数据通道 |
-| `0x0902` | `stream.close` | stream | P0 | 关闭 STREAM 数据通道 |
-| `0x0903` | `stream.getStatus` | stream | P1 | 查询流状态 |
-| `0x0904` | `stream.getStats` | stream | P1 | 查询流统计 |
-| `0x0B01` | `firmware.getInfo` | firmware | P0 | 获取当前固件信息 |
 | `0x0B02` | `firmware.begin` | firmware | P0 | 开始升级，返回 transferId/streamId |
 | `0x0B03` | `firmware.end` | firmware | P0 | 结束固件数据传输 |
 | `0x0B04` | `firmware.verify` | firmware | P0 | 校验固件镜像 |
 | `0x0B05` | `firmware.apply` | firmware | P0 | 应用固件 |
-| `0x0B06` | `firmware.abort` | firmware | P0 | 中止升级 |
-| `0x0B07` | `firmware.resume` | firmware | P1 | 断点续传 |
 
 说明：事件本身使用 EventId，通过 `rpcOp = EVENT` 承载。事件订阅集合由 RPC `IDENTIFY / REIDENTIFY` 的 `eventSubscriptions` 字段声明和更新，MVP 不再分配 `event.subscribe / event.unsubscribe` MethodId。
 
@@ -181,13 +164,15 @@ MVP 方法表：
 
 ## 6. 完整 MethodId 规划表
 
+以下表格是领域规划草案，用于保留编号空间和讨论未来能力；当前实现状态以 `standard/registry/method_registry.yaml` 及生成产物为准。
+
 ### 6.1 device.*
 
 | methodId | methodName | 状态 | MVP | 说明 |
 |---:|---|---|---:|---|
 | `0x0101` | `device.getInfo` | mvp | 是 | 获取设备基础信息 |
-| `0x0102` | `device.getVersion` | mvp | 是 | 获取版本信息 |
-| `0x0103` | `device.getStatus` | mvp | 是 | 获取设备状态 |
+| `0x0102` | `device.getVersion` | draft | 否 | 获取版本信息 |
+| `0x0103` | `device.getStatus` | draft | 否 | 获取设备状态 |
 | `0x0104` | `device.getSerialNumber` | draft | 否 | 获取序列号 |
 | `0x0105` | `device.getModel` | draft | 否 | 获取设备型号 |
 | `0x0106` | `device.setName` | draft | 否 | 设置设备名称 |
@@ -201,9 +186,9 @@ MVP 方法表：
 | methodId | methodName | 状态 | MVP | 说明 |
 |---:|---|---|---:|---|
 | `0x0301` | `capability.getAll` | mvp | 是 | 获取完整能力集 |
-| `0x0302` | `capability.getDomain` | mvp | 是 | 获取指定 domain 能力 |
-| `0x0303` | `capability.hasMethod` | mvp | 是 | 查询是否支持某方法 |
-| `0x0304` | `capability.getLimits` | mvp | 是 | 获取传输与资源限制 |
+| `0x0302` | `capability.getDomain` | draft | 否 | 获取指定 domain 能力 |
+| `0x0303` | `capability.hasMethod` | draft | 否 | 查询是否支持某方法 |
+| `0x0304` | `capability.getLimits` | draft | 否 | 获取传输与资源限制 |
 | `0x0305` | `capability.getPayloadTypes` | draft | 否 | 获取支持的 PayloadType |
 | `0x0306` | `capability.getRpcEncodings` | draft | 否 | 获取 RPC 编码能力 |
 | `0x0307` | `capability.getStreamProfiles` | draft | 否 | 获取 Stream 类型能力 |
@@ -216,10 +201,10 @@ MVP 方法表：
 
 | methodId | methodName | 状态 | MVP | 说明 |
 |---:|---|---|---:|---|
-| `0x0401` | `system.reboot` | mvp | 是 | 重启设备 |
-| `0x0402` | `system.setTime` | mvp | 是 | 设置系统时间与时区 |
-| `0x0403` | `system.getTime` | mvp | 是 | 获取系统时间 |
-| `0x0404` | `system.factoryReset` | mvp | 是 | 恢复出厂设置 |
+| `0x0401` | `system.reboot` | draft | 否 | 重启设备 |
+| `0x0402` | `system.setTime` | draft | 否 | 设置系统时间与时区 |
+| `0x0403` | `system.getTime` | draft | 否 | 获取系统时间 |
+| `0x0404` | `system.factoryReset` | draft | 否 | 恢复出厂设置 |
 | `0x0405` | `system.getUptime` | draft | 否 | 获取系统运行时长 |
 | `0x0406` | `system.setRebootSchedule` | draft | 否 | 设置定时重启 |
 | `0x0407` | `system.getRebootSchedule` | draft | 否 | 获取定时重启配置 |
@@ -235,7 +220,7 @@ MVP 方法表：
 |---:|---|---|---:|---|
 | `0x0501` | `display.getBrightness` | mvp | 是 | 获取当前亮度 |
 | `0x0502` | `display.setBrightness` | mvp | 是 | 设置亮度 |
-| `0x0503` | `display.getBrightnessRange` | mvp | 是 | 获取亮度范围 |
+| `0x0503` | `display.getBrightnessRange` | draft | 否 | 获取亮度范围 |
 | `0x0504` | `display.setBrightnessAutoMode` | draft | 否 | 设置自动亮度 |
 | `0x0505` | `display.getBrightnessAutoMode` | draft | 否 | 获取自动亮度状态 |
 | `0x0506` | `display.getInfo` | draft | 否 | 获取显示设备信息 |
@@ -321,10 +306,10 @@ MVP 方法表：
 
 | methodId | methodName | 状态 | MVP | 说明 |
 |---:|---|---|---:|---|
-| `0x0901` | `stream.open` | mvp | 是 | 打开数据流 |
-| `0x0902` | `stream.close` | mvp | 是 | 关闭数据流 |
-| `0x0903` | `stream.getStatus` | mvp | 是 | 获取流状态 |
-| `0x0904` | `stream.getStats` | mvp | 是 | 获取流统计 |
+| `0x0901` | `stream.open` | draft | 否 | 打开数据流 |
+| `0x0902` | `stream.close` | draft | 否 | 关闭数据流 |
+| `0x0903` | `stream.getStatus` | draft | 否 | 获取流状态 |
+| `0x0904` | `stream.getStats` | draft | 否 | 获取流统计 |
 | `0x0905` | `stream.pause` | draft | 否 | 暂停流 |
 | `0x0906` | `stream.resume` | draft | 否 | 恢复流 |
 | `0x0907` | `stream.setParams` | draft | 否 | 设置流参数 |
@@ -336,7 +321,7 @@ MVP 方法表：
 
 ### 6.8 file.*
 
-文件数据块必须走 STREAM（`profile = file.upload / file.download`）。
+文件数据块必须走 STREAM（当前规划 profile = `file.transfer`）。
 
 | methodId | methodName | 状态 | MVP | 说明 |
 |---:|---|---|---:|---|
@@ -359,13 +344,13 @@ MVP 方法表：
 
 | methodId | methodName | 状态 | MVP | 说明 |
 |---:|---|---|---:|---|
-| `0x0B01` | `firmware.getInfo` | mvp | 是 | 获取固件信息 |
+| `0x0B01` | `firmware.getInfo` | draft | 否 | 获取固件信息 |
 | `0x0B02` | `firmware.begin` | mvp | 是 | 开始升级 |
 | `0x0B03` | `firmware.end` | mvp | 是 | 结束数据传输 |
 | `0x0B04` | `firmware.verify` | mvp | 是 | 校验固件 |
 | `0x0B05` | `firmware.apply` | mvp | 是 | 应用固件 |
-| `0x0B06` | `firmware.abort` | mvp | 是 | 中止升级 |
-| `0x0B07` | `firmware.resume` | mvp | 是 | 断点续传 |
+| `0x0B06` | `firmware.abort` | draft | 否 | 中止升级 |
+| `0x0B07` | `firmware.resume` | draft | 否 | 断点续传 |
 | `0x0B08` | `firmware.getProgress` | draft | 否 | 获取升级进度 |
 | `0x0B09` | `firmware.rollback` | draft | 否 | 固件回滚 |
 | `0x0B0A` | `firmware.getSlots` | draft | 否 | 获取 A/B 分区信息 |

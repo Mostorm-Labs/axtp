@@ -57,13 +57,25 @@ CONTROL / RPC / STREAM 的 Payload 内部结构、TLV Schema、Registry、老协
 ## 3. 术语定义
 
 | 术语 | 含义 |
-|---|---|
+| --- | --- |
 | Frame | AXTP 最小传输帧，由 Header、Payload、可选 Footer 组成 |
 | Message | 一次完整逻辑消息，可由一个或多个 Frame 组成 |
 | PayloadType | 选择一级 Payload Parser 的字段，只能是 CONTROL / RPC / STREAM |
 | Fragment | Message 超过单帧容量时产生的分片 |
 | MessageId | 标识一次完整 Message 的 ID，同一 Message 的所有 Fragment 共享 |
 | Session | 逻辑通信会话，由 CONTROL OPEN / ACCEPT 建立 |
+
+### 3.1 错误码术语区分
+
+协议中有三个含义不同的"状态码"字段，不得混用：
+
+| 字段名 | 所在层 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| `statusCode` | Control 固定头 | uint16 | Control 操作结果，来自 ErrorCode Registry，`0x0000 = SUCCESS` |
+| `reasonCode` | Control TLV `0x10` | uint16 | CLOSE / SESSION_RESET 的关闭原因，来自 CLOSE reasonCode 枚举 |
+| `status.code` | RPC JSON 响应 | uint32 | RPC 方法调用结果，来自 ErrorCode Registry，`0 = SUCCESS` |
+
+三者均来自同一个 ErrorCode Registry，但字段名、位置和宽度不同。文档叙述中统一使用上述字段名，不得写成 `errorCode`。
 
 ---
 
@@ -399,7 +411,7 @@ RPC device.getInfo
 
 ACK/NACK 统一由 `PayloadType=CONTROL, opcode=ACK/NACK` 承载，可确认 FRAME / MESSAGE / STREAM_CHUNK / CONTROL 等不同层级对象。
 
-MVP 支持两种模式：`NO_ACK` 和 `ON_DEMAND_ACK`。后续可扩展 `EVERY_FRAME_ACK`、`SELECTIVE_ACK`、`STREAM_CHUNK_ACK`。
+MVP 支持两种链路确认模式：`NONE` 和 `MESSAGE_ACK`。后续可扩展 `FRAME_ACK`、`STREAM_CHUNK_ACK`、`SELECTIVE_ACK`。
 
 MVP 推荐：
 - CONTROL 重要信令需要 ACK
@@ -465,11 +477,20 @@ MVP 阶段可以不实现加密，但必须在 OPEN 协商中保留 encryption c
 接收方必须在校验通过后再分配内存，并限制：
 
 | 参数 | MVP 推荐默认值 |
-|---|---|
+| --- | --- |
 | maxPendingRpc | 8 |
 | maxReassemblyMessages | 4 |
 | fragmentTimeoutMs | 3000 |
 | maxOpenStreams | 2 |
+| maxConcurrentMessages（Compact Profile） | 16 |
+
+**Compact Profile 并发限制**：Compact Frame 的 MessageId 为 1B（0-255），同时在途的未完成 Message 数量不得超过 16（推荐），避免 MessageId 空间耗尽导致冲突。
+
+**分片重组超时处理**：`fragmentTimeoutMs` 超时后，接收端必须：
+
+1. 丢弃已收到的所有分片
+2. 发送 `CONTROL NACK(FRAME_REASSEMBLY_TIMEOUT)`，携带 `messageId`
+3. 等待发送端重传完整 Message
 
 ---
 

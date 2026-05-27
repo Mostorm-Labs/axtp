@@ -8,7 +8,8 @@
 | `0x0101` | `device.info` | device | mvp | bool | - |
 | `0x0301` | `capability.get` | capability | mvp | bool | - |
 | `0x0309` | `reserved.requestIdWidth` | reserved | reserved | reserved | - |
-| `0x0601` | `brightness.get` | brightness | mvp | bool | - |
-| `0x0602` | `brightness.set` | brightness | mvp | bool | - |
-| `0x0603` | `brightness.event` | brightness | mvp | bool | - |
+| `0x0601` | `display.brightness` | display | mvp | bool | - |
+| `0x0602` | `display.brightnessMin` | display | mvp | uint16 | - |
+| `0x0603` | `display.brightnessMax` | display | mvp | uint16 | - |
+| `0x0604` | `display.brightnessStep` | display | mvp | uint16 | - |
 | `0x0B01` | `firmware.ota` | firmware | mvp | object | FirmwareOtaCapability |

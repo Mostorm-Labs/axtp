@@ -293,8 +293,8 @@ methods:
     events: []
     errors:
       - SUCCESS
-      - RPC_UNKNOWN_METHOD
-      - RPC_INVALID_PARAMS
+      - RPC_METHOD_NOT_FOUND
+      - RPC_PARAM_INVALID
     legacy:
       cmd_value: 0xB0002
       name: BetaDeviceInfo
@@ -316,8 +316,8 @@ methods:
       - display.brightnessChanged
     errors:
       - SUCCESS
-      - RPC_INVALID_PARAMS
-      - DEVICE_BUSY
+      - RPC_PARAM_INVALID
+      - BUSY
 ```
 
 ---
@@ -357,7 +357,7 @@ errors:
     retryable: false
 
   - id: 0x0301
-    name: RPC_UNKNOWN_METHOD
+    name: RPC_METHOD_NOT_FOUND
     domain: rpc
     status: mvp
     description: MethodId or method name is not supported.
@@ -421,8 +421,8 @@ legacy_mappings:
     response_adapter: BetaDeviceInfoResponseAdapter
     status_mapping:
       0x00: SUCCESS
-      0x01: RPC_INVALID_PARAMS
-      0x02: DEVICE_BUSY
+      0x01: RPC_PARAM_INVALID
+      0x02: BUSY
 
   - legacy_protocol: axdp_hid
     legacy_cmd_value: 0xA0001

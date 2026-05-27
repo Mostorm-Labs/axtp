@@ -9,7 +9,7 @@ methods:
     recommended_encoding: [json, binary_tlv]
     capabilities: [device.info]
     events: []
-    errors: [SUCCESS, RPC_UNKNOWN_METHOD, RPC_INVALID_PARAMS]
+    errors: [SUCCESS, RPC_METHOD_NOT_FOUND, RPC_PARAM_INVALID]
     legacy:
       cmd_value: 0x000B0002
       name: BetaDeviceInfo
@@ -25,7 +25,7 @@ methods:
     recommended_encoding: [json, binary_tlv]
     capabilities: [capability.get]
     events: []
-    errors: [SUCCESS, RPC_UNKNOWN_METHOD]
+    errors: [SUCCESS, RPC_METHOD_NOT_FOUND]
 
   - id: 0x0501
     name: display.getBrightness
@@ -37,7 +37,7 @@ methods:
     recommended_encoding: [json, binary_tlv]
     capabilities: [display.brightness]
     events: []
-    errors: [SUCCESS, RPC_UNKNOWN_METHOD]
+    errors: [SUCCESS, RPC_METHOD_NOT_FOUND]
 
   - id: 0x0502
     name: display.setBrightness
@@ -49,7 +49,7 @@ methods:
     recommended_encoding: [json, binary_tlv]
     capabilities: [display.brightness]
     events: [display.brightnessChanged]
-    errors: [SUCCESS, RPC_INVALID_PARAMS, DEVICE_BUSY]
+    errors: [SUCCESS, RPC_PARAM_INVALID, BUSY]
     legacy:
       cmd_value: 0x000B0042
       name: BetaBrightnessSet
@@ -65,7 +65,7 @@ methods:
     recommended_encoding: [json, binary_tlv]
     capabilities: [firmware.ota]
     events: [firmware.updateProgress]
-    errors: [SUCCESS, RPC_INVALID_PARAMS, DEVICE_BUSY]
+    errors: [SUCCESS, RPC_PARAM_INVALID, BUSY]
 
   - id: 0x0B03
     name: firmware.end
@@ -77,7 +77,7 @@ methods:
     recommended_encoding: [json, binary_tlv]
     capabilities: [firmware.ota]
     events: []
-    errors: [SUCCESS, STREAM_NOT_FOUND, DEVICE_BUSY]
+    errors: [SUCCESS, STREAM_NOT_FOUND, BUSY]
 
   - id: 0x0B04
     name: firmware.verify
@@ -89,7 +89,7 @@ methods:
     recommended_encoding: [json, binary_tlv]
     capabilities: [firmware.ota]
     events: [firmware.updateCompleted, firmware.updateFailed]
-    errors: [SUCCESS, STREAM_CRC_ERROR, DEVICE_BUSY]
+    errors: [SUCCESS, STREAM_CRC_ERROR, BUSY]
 
   - id: 0x0B05
     name: firmware.apply
@@ -101,4 +101,4 @@ methods:
     recommended_encoding: [json, binary_tlv]
     capabilities: [firmware.ota]
     events: [firmware.updateCompleted, firmware.updateFailed]
-    errors: [SUCCESS, DEVICE_BUSY]
+    errors: [SUCCESS, BUSY]

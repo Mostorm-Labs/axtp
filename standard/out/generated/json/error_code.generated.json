@@ -11,34 +11,174 @@
       "idHex": "0x0000"
     },
     {
-      "id": 513,
-      "name": "AUTH_REQUIRED",
-      "domain": "session",
+      "id": 1,
+      "name": "UNKNOWN_ERROR",
+      "domain": "common",
       "status": "mvp",
-      "description": "Application authentication is required.",
+      "description": "Unknown error.",
+      "deprecated": false,
+      "retryable": false,
+      "idHex": "0x0001"
+    },
+    {
+      "id": 5,
+      "name": "BUSY",
+      "domain": "common",
+      "status": "mvp",
+      "description": "Device or resource is busy.",
+      "deprecated": false,
+      "retryable": true,
+      "idHex": "0x0005"
+    },
+    {
+      "id": 258,
+      "name": "FRAME_VERSION_UNSUPPORTED",
+      "domain": "frame",
+      "status": "mvp",
+      "description": "Frame version is not supported.",
+      "deprecated": false,
+      "retryable": false,
+      "idHex": "0x0102"
+    },
+    {
+      "id": 262,
+      "name": "FRAME_CRC_ERROR",
+      "domain": "frame",
+      "status": "mvp",
+      "description": "Frame CRC check failed.",
+      "deprecated": false,
+      "retryable": true,
+      "idHex": "0x0106"
+    },
+    {
+      "id": 264,
+      "name": "FRAME_FRAGMENT_MISSING",
+      "domain": "frame",
+      "status": "mvp",
+      "description": "One or more frame fragments are missing.",
+      "deprecated": false,
+      "retryable": true,
+      "idHex": "0x0108"
+    },
+    {
+      "id": 513,
+      "name": "CONTROL_OPCODE_INVALID",
+      "domain": "control",
+      "status": "mvp",
+      "description": "Control opcode is invalid.",
       "deprecated": false,
       "retryable": false,
       "idHex": "0x0201"
     },
     {
+      "id": 514,
+      "name": "CONTROL_PAYLOAD_INVALID",
+      "domain": "control",
+      "status": "mvp",
+      "description": "Control payload is invalid.",
+      "deprecated": false,
+      "retryable": false,
+      "idHex": "0x0202"
+    },
+    {
+      "id": 516,
+      "name": "CONTROL_OPEN_REQUIRED",
+      "domain": "control",
+      "status": "mvp",
+      "description": "Session has not completed CONTROL OPEN.",
+      "deprecated": false,
+      "retryable": false,
+      "idHex": "0x0204"
+    },
+    {
+      "id": 517,
+      "name": "CONTROL_OPEN_REJECTED",
+      "domain": "control",
+      "status": "mvp",
+      "description": "Control OPEN was rejected.",
+      "deprecated": false,
+      "retryable": false,
+      "idHex": "0x0205"
+    },
+    {
+      "id": 518,
+      "name": "CONTROL_PROFILE_UNSUPPORTED",
+      "domain": "control",
+      "status": "mvp",
+      "description": "Requested header profile is not supported.",
+      "deprecated": false,
+      "retryable": false,
+      "idHex": "0x0206"
+    },
+    {
+      "id": 519,
+      "name": "CONTROL_NEGOTIATION_FAILED",
+      "domain": "control",
+      "status": "mvp",
+      "description": "Control negotiation failed.",
+      "deprecated": false,
+      "retryable": false,
+      "idHex": "0x0207"
+    },
+    {
+      "id": 520,
+      "name": "CONTROL_SESSION_INVALID",
+      "domain": "control",
+      "status": "mvp",
+      "description": "SessionId is invalid.",
+      "deprecated": false,
+      "retryable": false,
+      "idHex": "0x0208"
+    },
+    {
+      "id": 522,
+      "name": "CONTROL_RESUME_FAILED",
+      "domain": "control",
+      "status": "mvp",
+      "description": "Session resume failed.",
+      "deprecated": false,
+      "retryable": false,
+      "idHex": "0x020A"
+    },
+    {
+      "id": 524,
+      "name": "CONTROL_WINDOW_EXCEEDED",
+      "domain": "control",
+      "status": "mvp",
+      "description": "Flow-control window was exceeded.",
+      "deprecated": false,
+      "retryable": true,
+      "idHex": "0x020C"
+    },
+    {
       "id": 769,
-      "name": "RPC_UNKNOWN_METHOD",
+      "name": "RPC_ENCODING_UNSUPPORTED",
       "domain": "rpc",
       "status": "mvp",
-      "description": "MethodId or method name is not supported.",
+      "description": "RPC encoding is not supported.",
       "deprecated": false,
       "retryable": false,
       "idHex": "0x0301"
     },
     {
-      "id": 770,
-      "name": "RPC_INVALID_PARAMS",
+      "id": 774,
+      "name": "RPC_METHOD_NOT_FOUND",
+      "domain": "rpc",
+      "status": "mvp",
+      "description": "MethodId or method name is not supported.",
+      "deprecated": false,
+      "retryable": false,
+      "idHex": "0x0306"
+    },
+    {
+      "id": 779,
+      "name": "RPC_PARAM_INVALID",
       "domain": "rpc",
       "status": "mvp",
       "description": "RPC parameters are invalid.",
       "deprecated": false,
       "retryable": false,
-      "idHex": "0x0302"
+      "idHex": "0x030B"
     },
     {
       "id": 1025,
@@ -51,6 +191,16 @@
       "idHex": "0x0401"
     },
     {
+      "id": 1026,
+      "name": "STREAM_TIMEOUT",
+      "domain": "stream",
+      "status": "mvp",
+      "description": "Stream timed out.",
+      "deprecated": false,
+      "retryable": true,
+      "idHex": "0x0402"
+    },
+    {
       "id": 1027,
       "name": "STREAM_CRC_ERROR",
       "domain": "stream",
@@ -61,24 +211,14 @@
       "idHex": "0x0403"
     },
     {
-      "id": 1281,
-      "name": "DEVICE_BUSY",
-      "domain": "device",
+      "id": 1547,
+      "name": "FW_VERIFY_FAILED",
+      "domain": "firmware",
       "status": "mvp",
-      "description": "Device is busy.",
+      "description": "Firmware verification failed.",
       "deprecated": false,
-      "retryable": true,
-      "idHex": "0x0501"
-    },
-    {
-      "id": 1282,
-      "name": "CRC_ERROR",
-      "domain": "frame",
-      "status": "mvp",
-      "description": "Frame CRC check failed.",
-      "deprecated": false,
-      "retryable": true,
-      "idHex": "0x0502"
+      "retryable": false,
+      "idHex": "0x060B"
     }
   ]
 }

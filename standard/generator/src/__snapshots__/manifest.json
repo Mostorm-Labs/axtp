@@ -52,7 +52,7 @@
       "payloadType": "RPC",
       "encoding": "binary_tlv",
       "hexFile": "compact_crc8_error.hex",
-      "expectError": "CRC_ERROR"
+      "expectError": "FRAME_CRC_ERROR"
     },
     {
       "name": "compact_message_id_overflow",

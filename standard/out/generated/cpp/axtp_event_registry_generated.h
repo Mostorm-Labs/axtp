@@ -13,7 +13,7 @@ struct EventDescriptor {
 };
 
 inline constexpr EventDescriptor kEventRegistry[] = {
-    { 0x8601, "brightness.changed", "brightness", "BrightnessChangedEvent" },
+    { 0x8507, "display.brightnessChanged", "display", "DisplayBrightnessChangedEvent" },
     { 0x8B02, "firmware.updateProgress", "firmware", "FirmwareUpdateProgressEvent" },
     { 0x8B03, "firmware.updateCompleted", "firmware", "FirmwareUpdateCompletedEvent" },
     { 0x8B04, "firmware.updateFailed", "firmware", "FirmwareUpdateFailedEvent" },

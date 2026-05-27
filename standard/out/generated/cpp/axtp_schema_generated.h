@@ -94,20 +94,20 @@ inline constexpr FieldDescriptor kFirmwareOtaCapabilityFields[] = {
     { 0x02, "maxChunkSize", FieldType::Uint16, true, 0, 0 },
 };
 
-inline constexpr FieldDescriptor kBrightnessGetRequestFields[] = {
+inline constexpr FieldDescriptor kDisplayGetBrightnessRequestFields[] = {
 
 };
 
-inline constexpr FieldDescriptor kBrightnessGetResponseFields[] = {
+inline constexpr FieldDescriptor kDisplayGetBrightnessResponseFields[] = {
     { 0x01, "value", FieldType::Uint8, true, 0, 100 },
 };
 
-inline constexpr FieldDescriptor kBrightnessSetRequestFields[] = {
+inline constexpr FieldDescriptor kDisplaySetBrightnessRequestFields[] = {
     { 0x01, "value", FieldType::Uint8, true, 0, 100 },
     { 0x02, "transitionMs", FieldType::Uint16, false, 0, 60000 },
 };
 
-inline constexpr FieldDescriptor kBrightnessChangedEventFields[] = {
+inline constexpr FieldDescriptor kDisplayBrightnessChangedEventFields[] = {
     { 0x01, "value", FieldType::Uint8, true, 0, 100 },
     { 0x02, "previousValue", FieldType::Uint8, false, 0, 100 },
 };
@@ -164,10 +164,10 @@ inline constexpr SchemaDescriptor kDeviceGetInfoResponseSchema = { "DeviceGetInf
 inline constexpr SchemaDescriptor kCapabilityGetAllRequestSchema = { "CapabilityGetAllRequest", kCapabilityGetAllRequestFields, 0 };
 inline constexpr SchemaDescriptor kCapabilityGetAllResponseSchema = { "CapabilityGetAllResponse", kCapabilityGetAllResponseFields, 2 };
 inline constexpr SchemaDescriptor kFirmwareOtaCapabilitySchema = { "FirmwareOtaCapability", kFirmwareOtaCapabilityFields, 2 };
-inline constexpr SchemaDescriptor kBrightnessGetRequestSchema = { "BrightnessGetRequest", kBrightnessGetRequestFields, 0 };
-inline constexpr SchemaDescriptor kBrightnessGetResponseSchema = { "BrightnessGetResponse", kBrightnessGetResponseFields, 1 };
-inline constexpr SchemaDescriptor kBrightnessSetRequestSchema = { "BrightnessSetRequest", kBrightnessSetRequestFields, 2 };
-inline constexpr SchemaDescriptor kBrightnessChangedEventSchema = { "BrightnessChangedEvent", kBrightnessChangedEventFields, 2 };
+inline constexpr SchemaDescriptor kDisplayGetBrightnessRequestSchema = { "DisplayGetBrightnessRequest", kDisplayGetBrightnessRequestFields, 0 };
+inline constexpr SchemaDescriptor kDisplayGetBrightnessResponseSchema = { "DisplayGetBrightnessResponse", kDisplayGetBrightnessResponseFields, 1 };
+inline constexpr SchemaDescriptor kDisplaySetBrightnessRequestSchema = { "DisplaySetBrightnessRequest", kDisplaySetBrightnessRequestFields, 2 };
+inline constexpr SchemaDescriptor kDisplayBrightnessChangedEventSchema = { "DisplayBrightnessChangedEvent", kDisplayBrightnessChangedEventFields, 2 };
 inline constexpr SchemaDescriptor kFirmwareBeginRequestSchema = { "FirmwareBeginRequest", kFirmwareBeginRequestFields, 4 };
 inline constexpr SchemaDescriptor kFirmwareBeginResponseSchema = { "FirmwareBeginResponse", kFirmwareBeginResponseFields, 7 };
 inline constexpr SchemaDescriptor kFirmwareEndRequestSchema = { "FirmwareEndRequest", kFirmwareEndRequestFields, 1 };

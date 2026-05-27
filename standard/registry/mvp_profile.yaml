@@ -15,11 +15,11 @@ mvp:
     - firmware.updateFailed
   errors:
     - SUCCESS
-    - RPC_UNKNOWN_METHOD
-    - RPC_INVALID_PARAMS
+    - RPC_METHOD_NOT_FOUND
+    - RPC_PARAM_INVALID
     - STREAM_NOT_FOUND
     - STREAM_CRC_ERROR
-    - DEVICE_BUSY
+    - BUSY
   capabilities:
     - protocol.payload.control
     - protocol.payload.rpc

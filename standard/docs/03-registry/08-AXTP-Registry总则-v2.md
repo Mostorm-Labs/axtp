@@ -268,8 +268,7 @@ Stream Profile 是具体可建流协议档案，不是 STREAM 数据包字段。
 |---:|---|---|
 | `0x0000` | `reserved` | 保留 |
 | `0x0101` | `firmware.ota` | 固件升级数据块上传 |
-| `0x0201` | `file.upload` | 文件上传 |
-| `0x0202` | `file.download` | 文件下载 |
+| `0x0002` | `file.transfer` | 文件传输 |
 | `0x0401` | `log.realtime` | 实时日志 |
 | `0x1001` | `media.video` | 视频帧流 |
 | `0x1002` | `media.audio` | 音频帧流 |
@@ -278,7 +277,7 @@ Stream Profile 是具体可建流协议档案，不是 STREAM 数据包字段。
 | `0x8001` | `legacy.tunnel` | 旧协议连续字节流隧道 |
 | `0xF001-0xFFFF` | `vendor.*` | 厂商私有 |
 
-MVP 必须实现：`firmware.ota`。`file.upload / file.download / log.realtime` 可选。
+MVP 必须实现：`firmware.ota`。`file.transfer / log.realtime` 可选或后续扩展。
 
 ---
 
@@ -471,7 +470,7 @@ Schema 规则：
 STREAM 内部子类型注册表包括：`mediaType / codecId / fileType / firmwareImageType / logType / controlDataType / sensorType`
 
 Stream Profile 规则：
-- Stream Profile 表示具体可建流协议档案（`firmware.ota / file.upload / log.realtime`）
+- Stream Profile 表示具体可建流协议档案（`firmware.ota / file.transfer / log.realtime`）
 - 具体业务类型由 RPC 建流参数/响应和 Registry Profile 定义表达，并绑定到 `streamId`
 - STREAM packet 不携带 `streamProfile` 或 metadata 字段
 - 不得新增 PayloadType 来表达 video/audio/ota/file

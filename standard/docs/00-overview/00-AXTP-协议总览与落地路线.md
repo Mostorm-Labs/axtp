@@ -758,10 +758,8 @@ MVP 第一阶段只建议实现以下 domain：
 ```text
 device.*
 capability.*
-system.*
 display.*
 firmware.*
-stream.*
 ```
 
 暂缓完整实现：
@@ -783,65 +781,11 @@ vendor.*
 
 ---
 
-### 10.3 MVP 方法建议
+### 10.3 MVP 方法 / 事件 / Stream Profile
 
-MVP MethodId 建议先实现：
+MVP 范围以各 Registry 文档中 `status: mvp` 标记为准，见 09《MethodId 注册表》、10《EventId 注册表》、12《Capability 注册表》。
 
-| Domain | Method | 作用 |
-|---|---|---|
-| device | `device.getInfo` | 获取设备基础信息 |
-| device | `device.getVersion` | 获取版本信息 |
-| capability | `capability.getAll` | 获取完整能力集 |
-| capability | `capability.getDomain` | 获取指定域能力 |
-| system | `system.getTime` | 获取系统时间 |
-| system | `system.reboot` | 重启设备 |
-| display | `display.getBrightness` | 获取亮度 |
-| display | `display.setBrightness` | 设置亮度 |
-| display | `display.getBrightnessRange` | 获取亮度范围 |
-| firmware | `firmware.getInfo` | 获取固件信息 |
-| firmware | `firmware.begin` | 开始升级 |
-| firmware | `firmware.verify` | 校验固件 |
-| firmware | `firmware.apply` | 应用固件 |
-| firmware | `firmware.abort` | 中止升级 |
-| stream | `stream.open` | 打开流 |
-| stream | `stream.close` | 关闭流 |
-| stream | `stream.getStatus` | 获取流状态 |
-| rpc | `IDENTIFY.eventSubscriptions` | 初始事件订阅集合 |
-| rpc | `REIDENTIFY.eventSubscriptions` | 更新事件订阅集合 |
-
----
-
-### 10.4 MVP 事件建议
-
-MVP EventId 建议先实现：
-
-| Event | 作用 |
-|---|---|
-| `device.statusChanged` | 设备状态变化 |
-| `capability.changed` | 能力变化 |
-| `firmware.updateProgress` | 升级进度 |
-| `firmware.updateCompleted` | 升级完成 |
-| `firmware.updateFailed` | 升级失败 |
-| `stream.opened` | 流已打开 |
-| `stream.closed` | 流已关闭 |
-| `stream.error` | 流错误 |
-
----
-
-### 10.5 MVP Stream Profile 建议
-
-MVP Stream 只建议先实现：
-
-| profileId | profileName | 作用 | 是否 MVP |
-|---|---|---|---|
-| `0x0101` | `firmware.ota` | 固件升级块 | 是 |
-| `0x0201` | `file.upload` | 文件上传 | 可选 |
-| `0x0202` | `file.download` | 文件下载 | 可选 |
-| `0x0401` | `log.realtime` | 简单日志流 | 可选 |
-| `0x1001` | `media.video` | 视频流 | 暂缓 |
-| `0x1002` | `media.audio` | 音频流 | 暂缓 |
-| `0x3001` | `control.hid_raw` | KVM / HID Raw | 暂缓 |
-| `0x4001` | `sensor.sample` | 传感器流 | 暂缓 |
+此处不再维护副本，避免与 Registry 产生不一致。
 
 Stream Profile 不写入 STREAM Header。RPC 建流返回 `streamId` 后，STREAM packet 只携带：
 

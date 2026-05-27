@@ -66,16 +66,11 @@ EventId 使用 `uint16`，从 `0x8000` 开始分配，与 MethodId 区分。
 
 ## 4. MVP EventId 注册表
 
+MVP EventId 表以 `standard/registry/event_registry.yaml` 为事实源。当前 AXTP v1 MVP 只包含下列已注册事件；其他事件即使出现在后续规划表中，也不得视为当前实现合同。
+
 | eventId | eventName | Domain | 状态 | 说明 |
 |---:|---|---|---|---|
-| `0x8101` | `device.statusChanged` | device | mvp | 设备基础状态变化 |
-| `0x8102` | `device.errorOccurred` | device | mvp | 设备错误发生 |
-| `0x8301` | `capability.changed` | capability | mvp | 设备业务能力变化 |
 | `0x8507` | `display.brightnessChanged` | display | mvp | 亮度变化 |
-| `0x8901` | `stream.opened` | stream | mvp | 流已打开 |
-| `0x8902` | `stream.closed` | stream | mvp | 流已关闭 |
-| `0x8903` | `stream.error` | stream | mvp | 流发生错误 |
-| `0x8B01` | `firmware.updateStarted` | firmware | mvp | 固件升级开始 |
 | `0x8B02` | `firmware.updateProgress` | firmware | mvp | 固件升级进度 |
 | `0x8B03` | `firmware.updateCompleted` | firmware | mvp | 固件升级完成 |
 | `0x8B04` | `firmware.updateFailed` | firmware | mvp | 固件升级失败 |
@@ -84,11 +79,13 @@ EventId 使用 `uint16`，从 `0x8000` 开始分配，与 MethodId 区分。
 
 ## 5. 完整 EventId 规划
 
+以下表格是领域规划草案，用于保留编号空间和讨论未来能力；当前实现状态以 `standard/registry/event_registry.yaml` 及生成产物为准。
+
 ### 5.1 device 事件
 
 | eventId | eventName | 状态 | 说明 |
 |---:|---|---|---|
-| `0x8101` | `device.statusChanged` | mvp | 设备状态变化 |
+| `0x8101` | `device.statusChanged` | draft | 设备状态变化 |
 | `0x8102` | `device.errorOccurred` | mvp | 设备错误发生 |
 | `0x8103` | `device.online` | draft | 设备上线 |
 | `0x8104` | `device.offline` | draft | 设备离线 |
@@ -106,7 +103,7 @@ EventId 使用 `uint16`，从 `0x8000` 开始分配，与 MethodId 区分。
 
 | eventId | eventName | 状态 | 说明 |
 |---:|---|---|---|
-| `0x8301` | `capability.changed` | mvp | 设备能力集合变化 |
+| `0x8301` | `capability.changed` | draft | 设备能力集合变化 |
 | `0x8302` | `capability.methodChanged` | draft | 支持的方法集合变化 |
 | `0x8303` | `capability.streamChanged` | draft | 支持的流能力变化 |
 | `0x8304` | `capability.limitChanged` | draft | 设备限制参数变化 |
@@ -175,9 +172,9 @@ EventId 使用 `uint16`，从 `0x8000` 开始分配，与 MethodId 区分。
 
 | eventId | eventName | 状态 | 说明 |
 |---:|---|---|---|
-| `0x8901` | `stream.opened` | mvp | 流已打开 |
-| `0x8902` | `stream.closed` | mvp | 流已关闭 |
-| `0x8903` | `stream.error` | mvp | 流发生错误 |
+| `0x8901` | `stream.opened` | draft | 流已打开 |
+| `0x8902` | `stream.closed` | draft | 流已关闭 |
+| `0x8903` | `stream.error` | draft | 流发生错误 |
 | `0x8904` | `stream.paused` | draft | 流已暂停 |
 | `0x8905` | `stream.resumed` | draft | 流已恢复 |
 | `0x8906` | `stream.qosChanged` | draft | QoS 参数变化 |
@@ -198,7 +195,7 @@ EventId 使用 `uint16`，从 `0x8000` 开始分配，与 MethodId 区分。
 
 | eventId | eventName | 状态 | 说明 |
 |---:|---|---|---|
-| `0x8B01` | `firmware.updateStarted` | mvp | 固件升级开始 |
+| `0x8B01` | `firmware.updateStarted` | draft | 固件升级开始 |
 | `0x8B02` | `firmware.updateProgress` | mvp | 固件升级进度 |
 | `0x8B03` | `firmware.updateCompleted` | mvp | 固件升级完成 |
 | `0x8B04` | `firmware.updateFailed` | mvp | 固件升级失败 |

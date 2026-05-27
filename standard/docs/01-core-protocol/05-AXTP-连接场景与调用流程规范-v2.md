@@ -111,7 +111,7 @@ WebSocket Text / HTTP JSON Debug Adapter：WebSocket 升级或 HTTP 认证完成
 | Header Profile | Standard |
 | CRC | CRC16-CCITT-FALSE |
 | rpcEncoding | BINARY + TLV（推荐）；JSON 可选用于调试 |
-| ackMode | NO_ACK（TCP 保证可靠传输） |
+| ackMode | NONE（TCP 保证可靠传输） |
 
 ### 4.2 完整调用流程
 
@@ -124,12 +124,12 @@ Client → Server: CONTROL OPEN
   opcode=OPEN controlId=0x0001 statusCode=0x0000
   body TLV: protocolVersion=1, headerProfile=STANDARD, maxFrameSize=4096,
             mtu=1460, supportedPayloadTypes=0x07, supportedRpcEncodings=0x03,
-            heartbeatIntervalMs=30000, ackMode=NO_ACK
+            heartbeatIntervalMs=30000, ackMode=NONE
 Server → Client: CONTROL ACCEPT
   opcode=ACCEPT controlId=0x0001 statusCode=0x0000
   body TLV: sessionId=0x12345678, protocolVersion=1, headerProfile=STANDARD,
             maxFrameSize=4096, selectedRpcEncoding=BINARY,
-            heartbeatIntervalMs=30000, ackMode=NO_ACK, resumeToken=<token>
+            heartbeatIntervalMs=30000, ackMode=NONE, resumeToken=<token>
 [State: FRAMING_READY]
 ```
 
@@ -173,27 +173,22 @@ Server → Client: RPC EVENT display.brightnessChanged
 **阶段 5：OTA 固件升级（RPC + STREAM）**
 
 ```text
-Client → Server: RPC REQUEST firmware.begin (requestId=0x00000004)
+Client → Server: RPC REQUEST firmware.begin
   body: totalSize=1048576, verifyType=md5, verifyValue="abc123...", chunkSize=4096
 Server → Client: RPC REQUEST_RESPONSE firmware.begin
   body: streamId=0x00000009, ackMode=STOP_AND_WAIT
-[Stream Context OPEN: streamId=0x00000009]
 
-Client → Server: STREAM chunk seqId=0
-  PT=0x03, streamId=0x00000009, seqId=0, cursor=0, data=[4096B]
+Client → Server: STREAM chunk seqId=0, cursor=0, data=[4096B]
 Server → Client: CONTROL ACK, targetType=STREAM_CHUNK, streamId=0x00000009, seqId=0
-
-Client → Server: STREAM chunk seqId=1, cursor=4096, data=[4096B]
-Server → Client: CONTROL ACK, seqId=1
 ... (重复直到所有 chunk 发送完毕)
 
-Client → Server: RPC REQUEST firmware.verify (requestId=0x00000005)
-  body: streamId=0x00000009
-Server → Client: RPC REQUEST_RESPONSE firmware.verify, status.ok=true, status.code=SUCCESS
+Client → Server: RPC REQUEST firmware.verify
+  body: streamId=0x00000009, verifyType=md5, verifyValue="abc123..."
+Server → Client: RPC REQUEST_RESPONSE firmware.verify, status.ok=true
 Server → Client: RPC EVENT firmware.updateCompleted
-  body: version="2.2.0"
-[Stream Context CLOSED: streamId=0x00000009]
 ```
+
+> 完整 OTA 流程（分片、断点续传、错误处理）见 19《AXTP OTA Stream Demo》。
 
 **阶段 6：心跳与关闭**
 
@@ -271,7 +266,7 @@ Server → Client: HTTP 101 Switching Protocols
 | 可用 Payload（Compact，64B Report） | 58B（64B - 4B Header - 1B CRC8 - 1B ReportID） |
 | CRC | Standard: CRC16-CCITT-FALSE；Compact: CRC8-MAXIM |
 | rpcEncoding | BINARY + TLV |
-| ackMode | ON_DEMAND_ACK（HID 无内建可靠性） |
+| ackMode | MESSAGE_ACK（HID 无内建可靠性） |
 | 分片 | Standard: 最多 254 片；Compact: 最多 15 片（FrameIndex/FrameCount 各 4 bit） |
 
 ### 6.2 完整调用流程
@@ -284,12 +279,12 @@ Host → Device: HID Report [CONTROL OPEN]
   opcode=OPEN controlId=0x0001 statusCode=0x0000
   body TLV: protocolVersion=1, headerProfile=STANDARD, maxFrameSize=<report_size>,
             supportedProfiles=[STANDARD,COMPACT], mtu=<report_size>,
-            supportedPayloadTypes=0x07, heartbeatIntervalMs=5000, ackMode=ON_DEMAND_ACK
+            supportedPayloadTypes=0x07, heartbeatIntervalMs=5000, ackMode=MESSAGE_ACK
 Device → Host: HID Report [CONTROL ACCEPT]
   opcode=ACCEPT controlId=0x0001 statusCode=0x0000
   body TLV: sessionId=0x00000001, protocolVersion=1, headerProfile=STANDARD,
             maxFrameSize=<report_size>, selectedRpcEncoding=BINARY,
-            heartbeatIntervalMs=5000, ackMode=ON_DEMAND_ACK
+            heartbeatIntervalMs=5000, ackMode=MESSAGE_ACK
 [State: FRAMING_READY]
 ```
 
@@ -366,7 +361,7 @@ Host → Device: STREAM chunk seqId=1 [48B data]
 | Frame Header Profile | Compact（ATT 有固定帧边界） |
 | 可用 Payload | ~179B（185B ATT MTU - 4B Header - 1B CRC8 - 1B ATT opcode） |
 | CRC | CRC8-MAXIM |
-| ackMode | ON_DEMAND_ACK |
+| ackMode | MESSAGE_ACK |
 | RESUME | 支持（BLE 断线重连频繁） |
 | 心跳间隔 | 5s-30s（低功耗要求） |
 
@@ -389,11 +384,11 @@ Central → Peripheral: BLE ATT Write [CONTROL OPEN]
   opcode=OPEN controlId=0x0001 statusCode=0x0000
   body TLV: protocolVersion=1, headerProfile=COMPACT, maxFrameSize=179,
             mtu=179, supportedPayloadTypes=0x07,
-            heartbeatIntervalMs=10000, ackMode=ON_DEMAND_ACK
+            heartbeatIntervalMs=10000, ackMode=MESSAGE_ACK
 Peripheral → Central: BLE ATT Notify [CONTROL ACCEPT]
   opcode=ACCEPT controlId=0x0001 statusCode=0x0000
   body TLV: sessionId=0xABCD1234, resumeToken=<16B token>,
-            heartbeatIntervalMs=10000, ackMode=ON_DEMAND_ACK
+            heartbeatIntervalMs=10000, ackMode=MESSAGE_ACK
 [State: FRAMING_READY]
 (resumeToken 保存到本地，用于断线恢复)
 ```
@@ -471,7 +466,7 @@ UART 字节流结构：
 | 帧边界 | COBS + 0x00 分隔符 |
 | CRC | CRC8-MAXIM |
 | rpcEncoding | BINARY + TLV |
-| ackMode | ON_DEMAND_ACK |
+| ackMode | MESSAGE_ACK |
 | 心跳间隔 | 1s-5s（UART 无连接状态，需频繁心跳检测断线） |
 
 ### 8.3 完整调用流程
@@ -483,7 +478,7 @@ Host → Device: UART [0x00 + COBS(CONTROL OPEN) + 0x00]
   解 COBS 后: [Compact Frame] VT=0x11 Len=N MsgId=0x01 FrameInfo=0x11
   opcode=OPEN controlId=0x0001 statusCode=0x0000
   body TLV: protocolVersion=1, headerProfile=COMPACT, maxFrameSize=128,
-        mtu=128, heartbeatIntervalMs=2000, ackMode=ON_DEMAND_ACK
+        mtu=128, heartbeatIntervalMs=2000, ackMode=MESSAGE_ACK
 Device → Host: UART [0x00 + COBS(CONTROL ACCEPT) + 0x00]
   opcode=ACCEPT controlId=0x0001 statusCode=0x0000
   body TLV: sessionId=0x00000001, heartbeatIntervalMs=2000
@@ -904,3 +899,23 @@ Adapter → Legacy Client: 旧 OTA Chunk ACK
 ```
 
 差异只在步骤 1（传输层）和步骤 2（Profile 选择），步骤 3-9 的业务语义完全一致。这正是 AXTP 统一协议栈的核心价值：**换传输层不换业务逻辑**。
+
+---
+
+## 14. 错误恢复速查
+
+收到各类错误后的标准处理行为：
+
+| 错误码 | 触发层 | 接收端行为 |
+| --- | --- | --- |
+| `FRAME_CRC_ERROR` | Frame | 发 `CONTROL NACK(FRAME_CRC_ERROR)`，携带 messageId/frameIndex；等待重传 |
+| `FRAME_FRAGMENT_MISSING` | Frame | 发 `CONTROL NACK(FRAME_FRAGMENT_MISSING)`，携带 messageId；等待重传 |
+| `FRAME_REASSEMBLY_TIMEOUT` | Frame | 丢弃已收分片，发 NACK，等待重传 |
+| `CONTROL_OPEN_REJECTED` | Control | 调整参数重试，最多 3 次；3 次失败后断开连接 |
+| `CONTROL_NEGOTIATION_FAILED` | Control | 检查 body 中的支持列表，调整参数重试 |
+| `CONTROL_SESSION_INVALID` | Control | 重新 OPEN，不发 RESUME |
+| `RPC_METHOD_NOT_FOUND` | RPC | 不重试，向上层报错；检查 capability 是否支持 |
+| `RPC_PARAM_INVALID` | RPC | 不重试，修正参数后重新发起 |
+| `STREAM_TIMEOUT` | Stream | 发 `CONTROL NACK(STREAM_TIMEOUT)`，携带 streamId/seqId；等待重传或发起 RESUME |
+| `STREAM_CRC_ERROR` | Stream | 发 `CONTROL NACK(STREAM_CRC_ERROR)`，携带 streamId/seqId；等待重传 |
+| `CONTROL_HEARTBEAT_TIMEOUT` | Control | 连续 3 次无响应后断开连接，重新建立传输层连接 |

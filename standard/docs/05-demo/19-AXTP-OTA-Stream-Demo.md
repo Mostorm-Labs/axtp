@@ -370,15 +370,15 @@ sessionToken/resumeToken
 
 ### 9.3 响应结果
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| `transferId` | uint32 | 本次 OTA 传输 ID |
-| `streamId` | uint32 | OTA STREAM 数据通道 ID |
-| `acceptedOffset` | uint64 | 设备接受的起始 offset |
-| `chunkSize` | uint16 | 协商后的 chunk 大小 |
-| `windowSize` | uint16 | 协商后的发送窗口 |
-| `resumeToken` | bytes | 断点续传令牌 |
-| `otaState` | enum<uint8> | 当前 OTA 状态 |
+| 字段 | TLV fieldId | 类型 | 说明 |
+| --- | ---: | --- | --- |
+| `transferId` | `0x01` | uint32 | 本次 OTA 传输 ID |
+| `streamId` | `0x02` | uint32 | OTA STREAM 数据通道 ID |
+| `acceptedOffset` | `0x03` | uint64 | 设备接受的起始 offset（断点续传时非 0） |
+| `chunkSize` | `0x04` | uint16 | 协商后的 chunk 大小（字节） |
+| `windowSize` | `0x05` | uint16 | 协商后的发送窗口（stop_and_wait 时为 1） |
+| `resumeToken` | `0x06` | bytes | 断点续传令牌，不透明字节串，长度 8-32B |
+| `otaState` | `0x07` | uint8 | 当前 OTA 状态（0=idle, 1=receiving, 2=verifying） |
 
 ---
 

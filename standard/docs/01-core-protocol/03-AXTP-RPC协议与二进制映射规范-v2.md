@@ -213,6 +213,7 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
 
 - 保留值 `0`：Event 固定填此值，普通 Request 不得使用
 - 同一 Session 内未收到 RequestResponse 的 `id` 不得复用
+- `id` 在收到对应 RequestResponse 或超时（推荐 30s）后方可复用
 
 ### 9.2 示例
 
@@ -879,16 +880,14 @@ method ↔ methodId 映射 / event ↔ eventId 映射
 ```text
 device.getInfo / capability.getAll
 display.getBrightness / display.setBrightness
-firmware.begin / firmware.verify / firmware.apply
-stream.open / stream.close
+firmware.begin / firmware.end / firmware.verify / firmware.apply
 ```
 
 ### 26.3 MVP 事件范围
 
 ```text
-device.statusChanged / display.brightnessChanged
+display.brightnessChanged
 firmware.updateProgress / firmware.updateCompleted / firmware.updateFailed
-stream.opened / stream.closed / stream.error
 ```
 
 ### 26.4 可暂不实现
@@ -897,6 +896,8 @@ stream.opened / stream.closed / stream.error
 RequestBatch / RequestBatchResponse
 Reidentify
 Bye / ByeAck
+stream.open / stream.close
+device.statusChanged / stream.opened / stream.closed / stream.error
 MessagePack / CBOR
 压缩 body / 加密 body
 ```

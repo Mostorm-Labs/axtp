@@ -245,8 +245,7 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 | profileId | Profile |
 |---:|---|
 | `0x0101` | `firmware.ota` |
-| `0x0201` | `file.upload` |
-| `0x0202` | `file.download` |
+| `0x0002` | `file.transfer` |
 | `0x0401` | `log.realtime` |
 | `0x8001` | `legacy.tunnel` |
 
@@ -621,45 +620,20 @@ legacyMapping 字段：
 
 ## 31. MVP Capability 集合
 
-### 28.1 Protocol MVP
+MVP Capability 集合以 `standard/registry/capability_registry.yaml` 为事实源，采用单项能力或单项配置值表达。下列集合是当前 AXTP v1 MVP 合同。
 
-```text
-protocol.payloadTypes / protocol.headerProfiles / protocol.frameVersion
-protocol.frameCrcProfiles / protocol.sessionResume / protocol.windowUpdate
-```
-
-### 28.2 Transport MVP
-
-```text
-transport.type / transport.mtu / transport.maxFrameSize / transport.maxPayloadSize
-transport.ackMode / transport.windowSize / transport.timeoutMs / transport.maxRetry / transport.fragment
-```
-
-### 28.3 RPC MVP
-
-```text
-rpc.encodings / rpc.bodyEncodings / rpc.maxRequestBodySize / rpc.maxResponseBodySize
-rpc.event / rpc.methodBitmap / rpc.eventBitmap
-```
-
-### 28.4 Stream MVP
-
-```text
-stream.profiles / stream.maxChunkSize / stream.maxStreamCount / stream.reliableModes
-stream.resume / stream.windowSize / stream.chunkCrc32
-```
-
-### 28.5 Business MVP
-
-```text
-common.deviceClass / common.vendorId / common.productId / common.model
-common.serialNumber / common.hardwareVersion / common.firmwareVersion
-display.brightness / display.brightnessMin / display.brightnessMax / display.brightnessStep / display.brightnessAutoMode
-firmware.supported / firmware.imageTypes / firmware.maxImageSize / firmware.chunkSize
-firmware.resume / firmware.verify / firmware.applyRequiresReboot
-log.supported / log.stream
-diagnostic.supported / diagnostic.selfTest
-```
+| capabilityId | capabilityName | Type | 说明 |
+|---:|---|---|---|
+| `0x0001` | `protocol.payload.control` | bool | 支持 CONTROL payload |
+| `0x0002` | `protocol.payload.rpc` | bool | 支持 RPC payload |
+| `0x0003` | `protocol.payload.stream` | bool | 支持 STREAM payload |
+| `0x0101` | `device.info` | bool | 支持 device.getInfo |
+| `0x0301` | `capability.get` | bool | 支持 capability.getAll |
+| `0x0601` | `display.brightness` | bool | 支持亮度控制 |
+| `0x0602` | `display.brightnessMin` | uint16 | 最小亮度值 |
+| `0x0603` | `display.brightnessMax` | uint16 | 最大亮度值 |
+| `0x0604` | `display.brightnessStep` | uint16 | 亮度步进 |
+| `0x0B01` | `firmware.ota` | object | 支持基于 STREAM 的 OTA |
 
 ---
 

@@ -55,8 +55,8 @@ enum class RpcOp : std::uint8_t {
 enum class MethodId : std::uint16_t {
     DeviceGetInfo = 0x0101,
     CapabilityGetAll = 0x0301,
-    BrightnessGet = 0x0601,
-    BrightnessSet = 0x0602,
+    DisplayGetBrightness = 0x0501,
+    DisplaySetBrightness = 0x0502,
     FirmwareBegin = 0x0B02,
     FirmwareEnd = 0x0B03,
     FirmwareVerify = 0x0B04,
@@ -64,7 +64,7 @@ enum class MethodId : std::uint16_t {
 };
 
 enum class EventId : std::uint16_t {
-    BrightnessChanged = 0x8601,
+    DisplayBrightnessChanged = 0x8507,
     FirmwareUpdateProgress = 0x8B02,
     FirmwareUpdateCompleted = 0x8B03,
     FirmwareUpdateFailed = 0x8B04,
@@ -72,13 +72,27 @@ enum class EventId : std::uint16_t {
 
 enum class ErrorCode : std::uint16_t {
     Success = 0x0000,
-    AuthRequired = 0x0201,
-    RpcUnknownMethod = 0x0301,
-    RpcInvalidParams = 0x0302,
+    UnknownError = 0x0001,
+    Busy = 0x0005,
+    FrameVersionUnsupported = 0x0102,
+    FrameCrcError = 0x0106,
+    FrameFragmentMissing = 0x0108,
+    ControlOpcodeInvalid = 0x0201,
+    ControlPayloadInvalid = 0x0202,
+    ControlOpenRequired = 0x0204,
+    ControlOpenRejected = 0x0205,
+    ControlProfileUnsupported = 0x0206,
+    ControlNegotiationFailed = 0x0207,
+    ControlSessionInvalid = 0x0208,
+    ControlResumeFailed = 0x020A,
+    ControlWindowExceeded = 0x020C,
+    RpcEncodingUnsupported = 0x0301,
+    RpcMethodNotFound = 0x0306,
+    RpcParamInvalid = 0x030B,
     StreamNotFound = 0x0401,
+    StreamTimeout = 0x0402,
     StreamCrcError = 0x0403,
-    DeviceBusy = 0x0501,
-    CrcError = 0x0502,
+    FwVerifyFailed = 0x060B,
 };
 
 enum class CapabilityId : std::uint16_t {
@@ -88,9 +102,10 @@ enum class CapabilityId : std::uint16_t {
     DeviceInfo = 0x0101,
     CapabilityGet = 0x0301,
     ReservedRequestIdWidth = 0x0309,
-    BrightnessGet = 0x0601,
-    BrightnessSet = 0x0602,
-    BrightnessEvent = 0x0603,
+    DisplayBrightness = 0x0601,
+    DisplayBrightnessMin = 0x0602,
+    DisplayBrightnessMax = 0x0603,
+    DisplayBrightnessStep = 0x0604,
     FirmwareOta = 0x0B01,
 };
 

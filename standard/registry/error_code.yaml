@@ -6,22 +6,120 @@ errors:
     description: Operation completed successfully.
     retryable: false
 
-  - id: 0x0201
-    name: AUTH_REQUIRED
-    domain: session
+  - id: 0x0001
+    name: UNKNOWN_ERROR
+    domain: common
     status: mvp
-    description: Application authentication is required.
+    description: Unknown error.
     retryable: false
 
+  - id: 0x0005
+    name: BUSY
+    domain: common
+    status: mvp
+    description: Device or resource is busy.
+    retryable: true
+
+  - id: 0x0102
+    name: FRAME_VERSION_UNSUPPORTED
+    domain: frame
+    status: mvp
+    description: Frame version is not supported.
+    retryable: false
+
+  - id: 0x0106
+    name: FRAME_CRC_ERROR
+    domain: frame
+    status: mvp
+    description: Frame CRC check failed.
+    retryable: true
+
+  - id: 0x0108
+    name: FRAME_FRAGMENT_MISSING
+    domain: frame
+    status: mvp
+    description: One or more frame fragments are missing.
+    retryable: true
+
+  - id: 0x0201
+    name: CONTROL_OPCODE_INVALID
+    domain: control
+    status: mvp
+    description: Control opcode is invalid.
+    retryable: false
+
+  - id: 0x0202
+    name: CONTROL_PAYLOAD_INVALID
+    domain: control
+    status: mvp
+    description: Control payload is invalid.
+    retryable: false
+
+  - id: 0x0204
+    name: CONTROL_OPEN_REQUIRED
+    domain: control
+    status: mvp
+    description: Session has not completed CONTROL OPEN.
+    retryable: false
+
+  - id: 0x0205
+    name: CONTROL_OPEN_REJECTED
+    domain: control
+    status: mvp
+    description: Control OPEN was rejected.
+    retryable: false
+
+  - id: 0x0206
+    name: CONTROL_PROFILE_UNSUPPORTED
+    domain: control
+    status: mvp
+    description: Requested header profile is not supported.
+    retryable: false
+
+  - id: 0x0207
+    name: CONTROL_NEGOTIATION_FAILED
+    domain: control
+    status: mvp
+    description: Control negotiation failed.
+    retryable: false
+
+  - id: 0x0208
+    name: CONTROL_SESSION_INVALID
+    domain: control
+    status: mvp
+    description: SessionId is invalid.
+    retryable: false
+
+  - id: 0x020A
+    name: CONTROL_RESUME_FAILED
+    domain: control
+    status: mvp
+    description: Session resume failed.
+    retryable: false
+
+  - id: 0x020C
+    name: CONTROL_WINDOW_EXCEEDED
+    domain: control
+    status: mvp
+    description: Flow-control window was exceeded.
+    retryable: true
+
   - id: 0x0301
-    name: RPC_UNKNOWN_METHOD
+    name: RPC_ENCODING_UNSUPPORTED
+    domain: rpc
+    status: mvp
+    description: RPC encoding is not supported.
+    retryable: false
+
+  - id: 0x0306
+    name: RPC_METHOD_NOT_FOUND
     domain: rpc
     status: mvp
     description: MethodId or method name is not supported.
     retryable: false
 
-  - id: 0x0302
-    name: RPC_INVALID_PARAMS
+  - id: 0x030B
+    name: RPC_PARAM_INVALID
     domain: rpc
     status: mvp
     description: RPC parameters are invalid.
@@ -34,6 +132,13 @@ errors:
     description: Stream context does not exist.
     retryable: false
 
+  - id: 0x0402
+    name: STREAM_TIMEOUT
+    domain: stream
+    status: mvp
+    description: Stream timed out.
+    retryable: true
+
   - id: 0x0403
     name: STREAM_CRC_ERROR
     domain: stream
@@ -41,16 +146,9 @@ errors:
     description: Stream chunk CRC check failed.
     retryable: true
 
-  - id: 0x0501
-    name: DEVICE_BUSY
-    domain: device
+  - id: 0x060B
+    name: FW_VERIFY_FAILED
+    domain: firmware
     status: mvp
-    description: Device is busy.
-    retryable: true
-
-  - id: 0x0502
-    name: CRC_ERROR
-    domain: frame
-    status: mvp
-    description: Frame CRC check failed.
-    retryable: true
+    description: Firmware verification failed.
+    retryable: false

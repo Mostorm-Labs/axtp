@@ -9,21 +9,21 @@
       "direction": "request_response",
       "statusMapping": {
         "0": "SUCCESS",
-        "1": "RPC_INVALID_PARAMS",
-        "2": "DEVICE_BUSY"
+        "1": "RPC_PARAM_INVALID",
+        "2": "BUSY"
       }
     },
     {
       "legacyProtocol": "axdp_hid",
       "legacyCmdValue": 720962,
       "legacyName": "BetaBrightnessSet",
-      "axtpMethodId": 1538,
-      "axtpMethodName": "brightness.set",
+      "axtpMethodId": 1282,
+      "axtpMethodName": "display.setBrightness",
       "direction": "request_response",
       "statusMapping": {
         "0": "SUCCESS",
-        "1": "RPC_INVALID_PARAMS",
-        "2": "DEVICE_BUSY"
+        "1": "RPC_PARAM_INVALID",
+        "2": "BUSY"
       }
     }
   ]

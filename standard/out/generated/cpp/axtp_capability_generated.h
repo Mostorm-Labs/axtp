@@ -20,12 +20,13 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x0101, "device.info", "device", "bool", "" },
     { 0x0301, "capability.get", "capability", "bool", "" },
     { 0x0309, "reserved.requestIdWidth", "reserved", "reserved", "" },
-    { 0x0601, "brightness.get", "brightness", "bool", "" },
-    { 0x0602, "brightness.set", "brightness", "bool", "" },
-    { 0x0603, "brightness.event", "brightness", "bool", "" },
+    { 0x0601, "display.brightness", "display", "bool", "" },
+    { 0x0602, "display.brightnessMin", "display", "uint16", "" },
+    { 0x0603, "display.brightnessMax", "display", "uint16", "" },
+    { 0x0604, "display.brightnessStep", "display", "uint16", "" },
     { 0x0B01, "firmware.ota", "firmware", "object", "FirmwareOtaCapability" },
 };
 
-inline constexpr std::size_t kCapabilityRegistryCount = 10;
+inline constexpr std::size_t kCapabilityRegistryCount = 11;
 
 } // namespace axtp

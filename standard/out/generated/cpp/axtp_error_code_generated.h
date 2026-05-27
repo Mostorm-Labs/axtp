@@ -14,15 +14,29 @@ struct ErrorDescriptor {
 
 inline constexpr ErrorDescriptor kErrorRegistry[] = {
     { 0x0000, "SUCCESS", "common", false },
-    { 0x0201, "AUTH_REQUIRED", "session", false },
-    { 0x0301, "RPC_UNKNOWN_METHOD", "rpc", false },
-    { 0x0302, "RPC_INVALID_PARAMS", "rpc", false },
+    { 0x0001, "UNKNOWN_ERROR", "common", false },
+    { 0x0005, "BUSY", "common", true },
+    { 0x0102, "FRAME_VERSION_UNSUPPORTED", "frame", false },
+    { 0x0106, "FRAME_CRC_ERROR", "frame", true },
+    { 0x0108, "FRAME_FRAGMENT_MISSING", "frame", true },
+    { 0x0201, "CONTROL_OPCODE_INVALID", "control", false },
+    { 0x0202, "CONTROL_PAYLOAD_INVALID", "control", false },
+    { 0x0204, "CONTROL_OPEN_REQUIRED", "control", false },
+    { 0x0205, "CONTROL_OPEN_REJECTED", "control", false },
+    { 0x0206, "CONTROL_PROFILE_UNSUPPORTED", "control", false },
+    { 0x0207, "CONTROL_NEGOTIATION_FAILED", "control", false },
+    { 0x0208, "CONTROL_SESSION_INVALID", "control", false },
+    { 0x020A, "CONTROL_RESUME_FAILED", "control", false },
+    { 0x020C, "CONTROL_WINDOW_EXCEEDED", "control", true },
+    { 0x0301, "RPC_ENCODING_UNSUPPORTED", "rpc", false },
+    { 0x0306, "RPC_METHOD_NOT_FOUND", "rpc", false },
+    { 0x030B, "RPC_PARAM_INVALID", "rpc", false },
     { 0x0401, "STREAM_NOT_FOUND", "stream", false },
+    { 0x0402, "STREAM_TIMEOUT", "stream", true },
     { 0x0403, "STREAM_CRC_ERROR", "stream", true },
-    { 0x0501, "DEVICE_BUSY", "device", true },
-    { 0x0502, "CRC_ERROR", "frame", true },
+    { 0x060B, "FW_VERIFY_FAILED", "firmware", false },
 };
 
-inline constexpr std::size_t kErrorRegistryCount = 8;
+inline constexpr std::size_t kErrorRegistryCount = 22;
 
 } // namespace axtp

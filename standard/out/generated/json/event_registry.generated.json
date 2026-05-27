@@ -1,21 +1,21 @@
 {
   "events": [
     {
-      "id": 34305,
-      "name": "brightness.changed",
-      "domain": "brightness",
+      "id": 34055,
+      "name": "display.brightnessChanged",
+      "domain": "display",
       "status": "mvp",
       "deprecated": false,
-      "eventSchema": "BrightnessChangedEvent",
+      "eventSchema": "DisplayBrightnessChangedEvent",
       "severity": "info",
       "trigger": [
-        "brightness.set",
+        "display.setBrightness",
         "device_local_change"
       ],
       "capabilities": [
-        "brightness.event"
+        "display.brightness"
       ],
-      "idHex": "0x8601"
+      "idHex": "0x8507"
     },
     {
       "id": 35586,
