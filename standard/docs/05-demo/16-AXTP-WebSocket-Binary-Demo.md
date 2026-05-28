@@ -24,7 +24,7 @@ CRC16 Footer
 PayloadType = CONTROL / RPC / STREAM
 ```
 
-STREAM Payload 必须使用 `04-AXTP-Stream流式传输协议规范.md` 的 16B L2 Header。
+STREAM Payload 必须使用 `06-AXTP-Stream-Spec.md` 的 16B L2 Header。
 
 ## 2. 禁止作为实现依据的旧内容
 
@@ -43,7 +43,7 @@ STREAM Payload 必须使用 `04-AXTP-Stream流式传输协议规范.md` 的 16B 
 | 目标 | 使用文档 |
 |---|---|
 | WebSocket Binary MVP 流程 | `22-AXTP-MVP-Normative-Demo.md` |
-| Frame Header | `01-AXTP-整体协议规范.md` |
-| Control ACK/NACK | `02-AXTP-Control信令协议规范.md` |
-| RPC | `03-AXTP-RPC协议与二进制映射规范.md` |
-| STREAM | `04-AXTP-Stream流式传输协议规范.md` |
+| Frame Header | `02-AXTP-Frame-and-Payload-Spec.md` |
+| Control ACK/NACK | `04-AXTP-Control-Session-Spec.md` |
+| RPC | `05-AXTP-RPC-Session-Spec.md` |
+| STREAM | `06-AXTP-Stream-Spec.md` |

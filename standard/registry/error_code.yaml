@@ -70,10 +70,10 @@ errors:
     retryable: false
 
   - id: 0x0206
-    name: CONTROL_PROFILE_UNSUPPORTED
+    name: RESERVED_CONTROL_PROFILE_UNSUPPORTED
     domain: control
-    status: mvp
-    description: Requested header profile is not supported.
+    status: reserved
+    description: Historical header profile negotiation error. AXTP v1 implementations must not emit it.
     retryable: false
 
   - id: 0x0207

@@ -12,7 +12,7 @@
 | `0x0202` | `CONTROL_PAYLOAD_INVALID` | control | mvp | false |
 | `0x0204` | `CONTROL_OPEN_REQUIRED` | control | mvp | false |
 | `0x0205` | `CONTROL_OPEN_REJECTED` | control | mvp | false |
-| `0x0206` | `CONTROL_PROFILE_UNSUPPORTED` | control | mvp | false |
+| `0x0206` | `RESERVED_CONTROL_PROFILE_UNSUPPORTED` | control | reserved | false |
 | `0x0207` | `CONTROL_NEGOTIATION_FAILED` | control | mvp | false |
 | `0x0208` | `CONTROL_SESSION_INVALID` | control | mvp | false |
 | `0x020A` | `CONTROL_RESUME_FAILED` | control | mvp | false |

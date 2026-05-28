@@ -150,7 +150,7 @@ MVP 方法表以 `standard/registry/method_registry.yaml` 为事实源。当前 
 | methodId | methodName | Domain | 优先级 | 说明 |
 |---:|---|---|---|---|
 | `0x0101` | `device.getInfo` | device | P0 | 获取设备基础信息 |
-| `0x0301` | `capability.getAll` | capability | P0 | 获取完整能力集 |
+| `0x0301` | `capability.supportedMethods` | capability | P0 | 获取当前会话可调用 methodId 集合 |
 | `0x0501` | `display.getBrightness` | display | P0 | 获取当前亮度 |
 | `0x0502` | `display.setBrightness` | display | P0 | 设置亮度 |
 | `0x0B02` | `firmware.begin` | firmware | P0 | 开始升级，返回 transferId/streamId |
@@ -185,15 +185,16 @@ MVP 方法表以 `standard/registry/method_registry.yaml` 为事实源。当前 
 
 | methodId | methodName | 状态 | MVP | 说明 |
 |---:|---|---|---:|---|
-| `0x0301` | `capability.getAll` | mvp | 是 | 获取完整能力集 |
-| `0x0302` | `capability.getDomain` | draft | 否 | 获取指定 domain 能力 |
-| `0x0303` | `capability.hasMethod` | draft | 否 | 查询是否支持某方法 |
-| `0x0304` | `capability.getLimits` | draft | 否 | 获取传输与资源限制 |
-| `0x0305` | `capability.getPayloadTypes` | draft | 否 | 获取支持的 PayloadType |
-| `0x0306` | `capability.getRpcEncodings` | draft | 否 | 获取 RPC 编码能力 |
-| `0x0307` | `capability.getStreamProfiles` | draft | 否 | 获取 Stream 类型能力 |
-| `0x0308` | `capability.getCodecs` | draft | 否 | 获取音视频编解码能力 |
-| `0x0309` | `capability.negotiate` | draft | 否 | 业务能力协商 |
+| `0x0301` | `capability.supportedMethods` | mvp | 是 | 获取当前会话可调用 methodId 集合 |
+| `0x0302` | `capability.getAll` | draft | 否 | 获取完整能力集 |
+| `0x0303` | `capability.getDomain` | draft | 否 | 获取指定 domain 能力 |
+| `0x0304` | `capability.hasMethod` | draft | 否 | 查询是否支持某方法 |
+| `0x0305` | `capability.getLimits` | draft | 否 | 获取传输与资源限制 |
+| `0x0306` | `capability.getPayloadTypes` | draft | 否 | 获取支持的 PayloadType |
+| `0x0307` | `capability.getRpcEncodings` | draft | 否 | 获取 RPC 编码能力 |
+| `0x0308` | `capability.getStreamProfiles` | draft | 否 | 获取 Stream 类型能力 |
+| `0x0309` | `capability.getCodecs` | draft | 否 | 获取音视频编解码能力 |
+| `0x030A` | `capability.negotiate` | draft | 否 | 业务能力协商 |
 
 协议能力优先通过 CONTROL OPEN / ACCEPT 协商；业务能力通过 `capability.*` RPC 查询。
 
@@ -509,7 +510,7 @@ STREAM_NOT_FOUND / STREAM_WINDOW_FULL / STREAM_TIMEOUT
 Method 是否可调用，应结合 Capability Registry 判断。调用流程：
 
 ```text
-1. 通过 capability.getAll 获取能力集
+1. 通过 capability.supportedMethods 获取 method bitmap
 2. 检查目标 method 是否在 supportedMethods 中
 3. 检查相关 capability 是否满足
 4. 发送 RPC Request

@@ -31,19 +31,19 @@
     },
     {
       "id": 769,
-      "name": "capability.getAll",
+      "name": "capability.supportedMethods",
       "domain": "capability",
       "status": "mvp",
       "deprecated": false,
       "rpcOp": "request_response",
-      "requestSchema": "CapabilityGetAllRequest",
-      "responseSchema": "CapabilityGetAllResponse",
+      "requestSchema": "CapabilitySupportedMethodsRequest",
+      "responseSchema": "CapabilitySupportedMethodsResponse",
       "recommendedEncoding": [
         "json",
         "binary_tlv"
       ],
       "capabilities": [
-        "capability.get"
+        "capability.supportedMethods"
       ],
       "events": [],
       "errors": [

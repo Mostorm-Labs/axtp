@@ -22,7 +22,7 @@
 
 ```text
 CONTROL OPEN / ACCEPT
-RPC capability.getAll
+RPC capability.supportedMethods
 RPC device.getInfo
 RPC display.setBrightness
 RPC Event display.brightnessChanged
@@ -40,7 +40,7 @@ CONTROL CLOSE / CLOSE_ACK
 
 MVP Demo 必须支持以下两种运行方式：
 
-| 传输 | Frame Header Profile | Frame CRC | Control Payload | 说明 |
+| 传输 | Frame Profile | Frame CRC | Control Payload | 说明 |
 | --- | --- | --- | --- | --- |
 | WebSocket Binary / TCP | Standard | CRC16 | 统一 5B 固定头 | 使用 `AX` Magic 与 12B Frame Header |
 | HID / BLE | Compact（或 Standard 降级） | CRC8 | 统一 5B 固定头 | 使用 4B Frame Header，依赖底层 packet boundary |
@@ -60,7 +60,6 @@ OPEN body 至少携带：
 | 字段 | 来源 | 示例值 |
 | --- |---| --- |
 | `protocolVersion` | 02 Control | `0x01` |
-| `headerProfile` | 01 Frame / 13 Registry | `STANDARD` 或 `COMPACT` |
 | `maxFrameSize` | 02 Control | 传输允许的最大 Frame |
 | `mtu` | 02 Control | 底层 MTU |
 | `supportedPayloadTypes` | 13 Registry | CONTROL / RPC / STREAM |
@@ -104,14 +103,14 @@ Client 发送 RPC Request：
 | `rpcEncoding` | BINARY |
 | `rpcOp` | REQUEST |
 | `requestId` | `0x00000001` |
-| `methodId` | `capability.getAll` 对应 Registry 值 |
+| `methodId` | `capability.supportedMethods` 对应 Registry 值 |
 | `bodyEncoding` | TLV |
 
 Device 返回 RPC Response，body 中至少包含 `capabilityMasks`（域级掩码 Hex 字符串）：
 
 ```text
 protocol.payloadTypes
-protocol.headerProfiles
+protocol.frameProfile
 protocol.frameCrcProfiles
 protocol.messageIdWidths
 protocol.ackModes
@@ -214,7 +213,7 @@ STREAM L2 Header (16B)
 Stream Data
 ```
 
-STREAM L2 Header 字段引用 `04-AXTP-Stream流式传输协议规范`：
+STREAM L2 Header 字段引用 `06-AXTP-Stream-Spec`：
 
 | 字段 | 示例 |
 | --- |---|

@@ -26,8 +26,8 @@
 Framed AXTP RPC 不承载旧 JSON-RPC envelope。迁移规则见：
 
 ```text
-14-AXTP-老协议适配与迁移规范.md
-03-AXTP-RPC协议与二进制映射规范.md
+07-AXTP-Compatibility-and-Versioning.md
+05-AXTP-RPC-Session-Spec.md
 ```
 
 ## 2. 禁止作为实现依据的内容
@@ -47,6 +47,6 @@ WebSocket Text endpoint
 | 目标 | 使用文档 |
 |---|---|
 | 正式 MVP 流程 | `22-AXTP-MVP-Normative-Demo.md` |
-| Framed RPC | `03-AXTP-RPC协议与二进制映射规范.md` |
-| Legacy JSON-RPC 迁移 | `14-AXTP-老协议适配与迁移规范.md` |
+| Framed RPC | `05-AXTP-RPC-Session-Spec.md` |
+| Legacy JSON-RPC 迁移 | `07-AXTP-Compatibility-and-Versioning.md` |
 | Registry 编号 | `09/10/11/12/13` 注册表 |

@@ -16,14 +16,14 @@ methods:
       payload_format: fixed_struct
 
   - id: 0x0301
-    name: capability.getAll
+    name: capability.supportedMethods
     domain: capability
     status: mvp
     rpc_op: request_response
-    request_schema: CapabilityGetAllRequest
-    response_schema: CapabilityGetAllResponse
+    request_schema: CapabilitySupportedMethodsRequest
+    response_schema: CapabilitySupportedMethodsResponse
     recommended_encoding: [json, binary_tlv]
-    capabilities: [capability.get]
+    capabilities: [capability.supportedMethods]
     events: []
     errors: [SUCCESS, RPC_METHOD_NOT_FOUND]
 

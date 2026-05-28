@@ -17,7 +17,7 @@
 > - 14《AXTP-老协议适配与迁移规范》
 
 
-> **同步状态**：本文档的 STREAM 数据面已同步 `04-AXTP-Stream流式传输协议规范 v1.1` 的 16B L2 Header 模型（`streamId / seqId / cursor / data`）。OTA 业务属性通过 `firmware.begin` 建立并绑定到 `streamId`，不得放入 STREAM Header。
+> **同步状态**：本文档的 STREAM 数据面已同步 `06-AXTP-Stream-Spec v1.1` 的 16B L2 Header 模型（`streamId / seqId / cursor / data`）。OTA 业务属性通过 `firmware.begin` 建立并绑定到 `streamId`，不得放入 STREAM Header。
 
 ---
 
@@ -193,7 +193,7 @@ bodyEncoding = TLV8
 2. CONTROL OPEN
 3. CONTROL ACCEPT
 
-4. RPC capability.getAll
+4. RPC capability.supportedMethods
 5. RPC firmware.getInfo
 
 6. RPC firmware.begin
@@ -276,7 +276,7 @@ OTA Demo 使用以下 MVP 方法。
 | methodId | methodName | 作用 |
 |---:|---|---|
 | `0x0101` | `device.getInfo` | 获取设备基础信息 |
-| `0x0301` | `capability.getAll` | 获取协议与业务能力 |
+| `0x0301` | `capability.supportedMethods` | 获取当前会话可调用 methodId 集合 |
 | `0x0B01` | `firmware.getInfo` | 获取当前固件信息 |
 | `0x0B02` | `firmware.begin` | 开始 OTA |
 | `0x0B03` | `firmware.end` | 结束 OTA chunk 传输 |
@@ -767,7 +767,7 @@ rebootRequired = true/false
 WebSocket Binary Demo 推荐：
 
 ```text
-Header Profile = Standard
+Frame Profile = Standard
 PayloadType = CONTROL / RPC / STREAM
 CRC16 = enabled
 chunkSize = 1024 或 4096
@@ -864,7 +864,7 @@ CRC8 Footer: 1B
 | 参数 | 推荐值 |
 |---|---:|
 | HID Report Size | 64B |
-| Header Profile | Compact |
+| Frame Profile | Compact |
 | CRC16 | enabled |
 | Stream Payload | Compact |
 | OTA chunk size | 128B / 256B |
@@ -930,7 +930,7 @@ CRC16 = 2
 | 参数 | 推荐值 |
 |---|---:|
 | ATT MTU | 247 |
-| Header Profile | Compact |
+| Frame Profile | Compact |
 | OTA chunk size | 512B / 1024B |
 | ACK mode | per chunk 或 per N chunks |
 | windowSize | 1 for MVP, 4 for P1 |
@@ -1064,7 +1064,7 @@ AXTP 映射：
 
 ## 21. capability 要求
 
-设备必须通过 `capability.getAll` 或 `capability.getDomain("firmware")` 声明 OTA 能力。
+v1 Core 设备必须通过 `capability.supportedMethods` 声明 OTA 相关 methodId 是否可调用；完整 OTA 能力详情可通过 v2/P1 的 `capability.getAll` 或 `capability.getDomain("firmware")` 声明。
 
 建议返回：
 

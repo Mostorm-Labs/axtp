@@ -1,7 +1,7 @@
 mvp:
   methods:
     - device.getInfo
-    - capability.getAll
+    - capability.supportedMethods
     - display.getBrightness
     - display.setBrightness
     - firmware.begin
@@ -25,7 +25,7 @@ mvp:
     - protocol.payload.rpc
     - protocol.payload.stream
     - device.info
-    - capability.get
+    - capability.supportedMethods
     - display.brightness
     - display.brightnessMin
     - display.brightnessMax

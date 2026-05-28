@@ -21,15 +21,16 @@
 本文档不是字段级协议定义文档。字段级细节分别由以下文档承载：
 
 ```text
-01-core-protocol/01-AXTP-整体协议规范.md
-01-core-protocol/02-AXTP-Control信令协议规范.md
-01-core-protocol/03-AXTP-RPC协议与二进制映射规范.md
-01-core-protocol/04-AXTP-Stream流式传输协议规范.md
-01-core-protocol/05-AXTP-连接场景与调用流程规范.md
+01-core-protocol/01-AXTP-Protocol-Framework.md
+01-core-protocol/02-AXTP-Frame-and-Payload-Spec.md
+01-core-protocol/03-AXTP-Transport-Profiles.md
+01-core-protocol/04-AXTP-Control-Session-Spec.md
+01-core-protocol/05-AXTP-RPC-Session-Spec.md
+01-core-protocol/06-AXTP-Stream-Spec.md
+01-core-protocol/07-AXTP-Compatibility-and-Versioning.md
 02-type-system/01-AXTP-Type-System基础类型规范.md
 02-type-system/02-AXTP-TLV-Schema编码规范.md
 03-registry/*.md
-04-compatibility/*.md
 05-demo/*.md
 06-generator/*.md
 07-cpp-demo/*.md
@@ -111,7 +112,7 @@ AXTP 主要解决以下问题：
 同一个升级流程在不同传输上难以复用
 ```
 
-AXTP 要求所有传输共享同一套业务语义，传输差异只体现在 Header Profile、MTU、分片、ACK 和编码方式上。
+AXTP 要求所有传输共享同一套业务语义，传输差异只体现在 Frame Profile、MTU、分片、ACK 和编码方式上。
 
 ---
 
@@ -352,7 +353,7 @@ batch response
 
 ```text
 device.getInfo
-capability.getAll
+capability.supportedMethods
 display.setBrightness
 display.getBrightness
 firmware.begin
@@ -418,11 +419,13 @@ docs/
 │   └── 00-AXTP-协议总览与落地路线.md
 │
 ├── 01-core-protocol/
-│   ├── 01-AXTP-整体协议规范.md
-│   ├── 02-AXTP-Control信令协议规范.md
-│   ├── 03-AXTP-RPC协议与二进制映射规范.md
-│   ├── 04-AXTP-Stream流式传输协议规范.md
-│   └── 05-AXTP-连接场景与调用流程规范.md
+│   ├── 01-AXTP-Protocol-Framework.md
+│   ├── 02-AXTP-Frame-and-Payload-Spec.md
+│   ├── 03-AXTP-Transport-Profiles.md
+│   ├── 04-AXTP-Control-Session-Spec.md
+│   ├── 05-AXTP-RPC-Session-Spec.md
+│   ├── 06-AXTP-Stream-Spec.md
+│   └── 07-AXTP-Compatibility-and-Versioning.md
 │
 ├── 02-type-system/
 │   ├── 01-AXTP-Type-System基础类型规范.md
@@ -436,9 +439,6 @@ docs/
 │   ├── 03-AXTP-ErrorCode注册表.md
 │   ├── 04-AXTP-Capability注册表.md
 │   └── 05-AXTP-MVP最小实现注册表.md
-│
-├── 04-compatibility/
-│   └── 01-AXTP-老协议适配与迁移规范.md
 │
 ├── 05-demo/
 │   ├── 15-AXTP-WebSocket-JSON-RPC-Demo.md（Legacy / Non-normative）
@@ -473,7 +473,7 @@ MVP 路线
 
 ---
 
-### 8.2 01-AXTP-整体协议规范.md
+### 8.2 02-AXTP-Frame-and-Payload-Spec.md
 
 负责定义 AXTP Frame 层。
 
@@ -494,7 +494,7 @@ Session 生命周期
 
 ---
 
-### 8.3 02-AXTP-Control信令协议规范.md
+### 8.3 04-AXTP-Control-Session-Spec.md
 
 负责定义 `PayloadType = CONTROL` 时的 Payload 格式。
 
@@ -523,7 +523,7 @@ Control Payload 使用统一 5B 固定头（opcode/controlId/statusCode + TLV bo
 
 ---
 
-### 8.4 03-AXTP-RPC协议与二进制映射规范.md
+### 8.4 05-AXTP-RPC-Session-Spec.md
 
 负责定义 `PayloadType = RPC`。
 
@@ -545,7 +545,7 @@ Batch 映射
 
 ---
 
-### 8.5 04-AXTP-Stream流式传输协议规范.md
+### 8.5 06-AXTP-Stream-Spec.md
 
 负责定义 `PayloadType = STREAM`。
 
@@ -817,15 +817,15 @@ Client -> Server: CONTROL OPEN
 Server -> Client: CONTROL ACCEPT
 ```
 
-目标：验证 `PayloadType = CONTROL`、Control Payload 统一 5B 固定头、TLV body、sessionId、MTU、Frame Profile 协商、心跳参数。
+目标：验证 `PayloadType = CONTROL`、Control Payload 统一 5B 固定头、TLV body、sessionId、MTU、Frame Profile 固定映射、心跳参数。
 
 ---
 
 ### 11.2 能力查询
 
 ```text
-Client -> Server: RPC capability.getAll
-Server -> Client: RPC Response capability.getAll
+Client -> Server: RPC capability.supportedMethods
+Server -> Client: RPC Response capability.supportedMethods
 ```
 
 目标：验证 RPC request/response、methodId、result body、capability registry。
@@ -948,6 +948,7 @@ Old status = 0x02 -> BUSY
 ```text
 capability.getAll
 capability.getDomain
+capability.supportedMethods（v1 Core 必选）
 ```
 
 而不直接理解旧协议字段。
@@ -1031,7 +1032,7 @@ src/
 
 ```text
 1. CONTROL OPEN / ACCEPT
-2. RPC capability.getAll
+2. RPC capability.supportedMethods
 3. RPC device.getInfo
 4. RPC display.setBrightness
 5. RPC Event display.brightnessChanged
@@ -1163,10 +1164,10 @@ Web GUI 协议管理器
 
 ```text
 00-AXTP-协议总览与落地路线.md
-01-AXTP-整体协议规范.md
-02-AXTP-Control信令协议规范.md
-03-AXTP-RPC协议与二进制映射规范.md
-04-AXTP-Stream流式传输协议规范.md
+02-AXTP-Frame-and-Payload-Spec.md
+04-AXTP-Control-Session-Spec.md
+05-AXTP-RPC-Session-Spec.md
+06-AXTP-Stream-Spec.md
 Type System
 TLV Schema
 Registry 总则
@@ -1303,7 +1304,7 @@ C++ Demo 可以解析错误码
 
 ```text
 至少 3 个旧 CmdValue 可以映射为 methodId
-至少 1 个旧 capability 表可以转换为 capability.getAll
+至少 1 个旧 capability 表可以转换为 capability.supportedMethods；完整能力摘要可在 v2/P1 映射为 capability.getAll
 至少 1 条旧二进制 payload 可以转换为 TLV schema
 至少 1 条旧错误码可以转换为 AXTP ErrorCode
 ```

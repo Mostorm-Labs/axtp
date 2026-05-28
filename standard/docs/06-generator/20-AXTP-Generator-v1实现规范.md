@@ -91,7 +91,7 @@ P0 包括：
 ```text
 CONTROL OPEN / ACCEPT / ACK / NACK / HEARTBEAT / CLOSE
 RPC device.getInfo
-RPC capability.getAll
+RPC capability.supportedMethods
 RPC display.getBrightness
 RPC display.setBrightness
 RPC firmware.begin
@@ -601,7 +601,7 @@ MVP 缺失示例：
 
 ```text
 missing method: device.getInfo
-missing method: capability.getAll
+missing method: capability.supportedMethods
 missing method: display.setBrightness
 missing method: firmware.begin
 missing event: display.brightnessChanged

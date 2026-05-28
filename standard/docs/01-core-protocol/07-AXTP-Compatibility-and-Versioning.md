@@ -1,7 +1,12 @@
-# 14《AXTP 老协议适配与迁移规范》
+# 07《AXTP Compatibility and Versioning》
 
-版本：v1.0  
-状态：MVP / Draft  
+> Status: AXTP v1 Core Freeze Candidate
+> Spec Version: 1.0.0-rc1
+> Change Policy: Clarification-only before v1.0.0
+> Scope: Core compatibility / versioning / legacy migration rules
+
+版本：v1.0.0-rc1
+状态：AXTP v1 Core Freeze Candidate
 适用范围：USB HID、BLE、UART、TCP、WebSocket、旧 AXDP/Alpha/Beta/Common/CmdValue 类协议、旧 JSON-RPC/二进制 RPC/OTA/RawStream/LogStream 协议迁移
 
 ---
@@ -825,7 +830,7 @@ AXTP 拆成两类能力：
 
 | 旧能力 | AXTP capability |
 | --- |---|
-| 支持命令列表 | `supportedMethods` |
+| 支持命令列表 | `capability.supportedMethods` / `supportedMethods` |
 | 支持事件列表 | `supportedEvents` |
 | 支持升级 | `firmware.supported` |
 | 支持断点续传 | `firmware.resumeSupported` |
@@ -1038,6 +1043,7 @@ control.helloAck:
 capability.getAll
 capability.getDomain
 capability.hasMethod
+capability.supportedMethods
 ```
 
 返回：
@@ -1467,10 +1473,10 @@ AXTP 请求 -> 旧请求
 
 | 文档 | 关系 |
 | --- |---|
-| `01-AXTP-整体协议规范.md` | 定义 Frame / PayloadType / Profile |
-| `02-AXTP-Control信令协议规范.md` | 定义 OPEN / ACK / NACK / RESUME |
-| `03-AXTP-RPC协议与二进制映射规范.md` | 定义 RPC request/response/event 映射 |
-| `04-AXTP-Stream流式传输协议规范.md` | 定义 OTA / File / Log / Media 数据面 |
+| `02-AXTP-Frame-and-Payload-Spec.md` | 定义 Frame / PayloadType / Profile |
+| `04-AXTP-Control-Session-Spec.md` | 定义 OPEN / ACK / NACK / RESUME |
+| `05-AXTP-RPC-Session-Spec.md` | 定义 RPC request/response/event 映射 |
+| `06-AXTP-Stream-Spec.md` | 定义 OTA / File / Log / Media 数据面 |
 | `05-AXTP-Type-System基础类型规范.md` | 定义基础类型 |
 | `06-AXTP-TLV-Schema编码规范.md` | 定义 TLV body 映射 |
 | `08-AXTP-Registry总则.md` | 定义注册表治理规则 |

@@ -15,7 +15,7 @@ struct MethodDescriptor {
 
 inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x0101, "device.getInfo", "device", "DeviceGetInfoRequest", "DeviceGetInfoResponse" },
-    { 0x0301, "capability.getAll", "capability", "CapabilityGetAllRequest", "CapabilityGetAllResponse" },
+    { 0x0301, "capability.supportedMethods", "capability", "CapabilitySupportedMethodsRequest", "CapabilitySupportedMethodsResponse" },
     { 0x0501, "display.getBrightness", "display", "DisplayGetBrightnessRequest", "DisplayGetBrightnessResponse" },
     { 0x0502, "display.setBrightness", "display", "DisplaySetBrightnessRequest", "CommonEmptyResponse" },
     { 0x0B02, "firmware.begin", "firmware", "FirmwareBeginRequest", "FirmwareBeginResponse" },

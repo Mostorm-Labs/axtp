@@ -1,9 +1,14 @@
-# 04《AXTP Stream 流式传输协议规范》
+# 06《AXTP Stream Spec》
 
-版本：v1.2 Draft  
-状态：MVP STREAM 子协议规范（精简版）  
+> Status: AXTP v1 Core Freeze Candidate
+> Spec Version: 1.0.0-rc1
+> Change Policy: Clarification-only before v1.0.0
+> Scope: Core wire format / state machine / compatibility rules
+
+版本：v1.0.0-rc1
+状态：AXTP v1 Core Freeze Candidate
 适用范围：`PayloadType = STREAM` 的 Payload 结构、Stream Context、可靠性模型、断点续传、多路复用  
-前置文档：01《AXTP 整体协议规范》、02《AXTP Control 信令协议规范》、03《AXTP RPC 协议与二进制映射规范》
+前置文档：01《AXTP Protocol Framework》、02《AXTP Frame and Payload Spec》、04《AXTP Control Session Spec》、05《AXTP RPC Session Spec》
 
 ---
 

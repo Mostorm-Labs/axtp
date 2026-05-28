@@ -230,7 +230,7 @@ MVP 只实现：`CONTROL / RPC / STREAM`
 
 MVP Control Opcode：`OPEN(0x01) / ACCEPT(0x02) / HEARTBEAT(0x04) / HEARTBEAT_ACK(0x05) / ACK(0x06) / NACK(0x07) / CLOSE(0x0A) / CLOSE_ACK(0x0B)`
 
-预留 Opcode：`READY(0x03)` — 三步协商预留，当前版本不实现，收到时必须忽略
+预留 Opcode：`READY(0x03)` — 可选三步协商预留，当前版本非必要实现，收到时必须忽略
 
 ### 8.3 RPC Encoding
 
@@ -453,8 +453,8 @@ ErrorCode 规则：
 | `0x8000-0xFFFF` | reserved |
 
 Capability 规则：
-- 协议能力可在 `CONTROL OPEN / ACCEPT` 中协商
-- 业务能力必须通过 RPC 查询（`capability.getAll`）
+- 协议运行参数可在 `CONTROL OPEN / ACCEPT` 中协商
+- v1 Core 业务方法能力必须通过 RPC 查询（`capability.supportedMethods`）；完整 `capability.getAll` 属于 v2/P1
 - Capability 不等于 Method；Method 是否可调用由 Capability 与 Method Registry 共同判断
 - 每个 Capability 必须在其 Domain 内分配唯一 `bitOffset`（0-255），由 Registry 自增分配，用于 `capabilityMasks` 域级掩码响应
 - `domainId` 与 MethodId 高字节对齐（如 `display.*` MethodId 为 `0x05xx`，domainId = `0x05`）
@@ -574,7 +574,7 @@ Stream Profile: firmware.ota
 
 ```text
 device.getInfo / device.getVersion / device.getStatus
-capability.getAll / capability.getDomain
+capability.supportedMethods / capability.getAll / capability.getDomain
 system.reboot / system.setTime / system.factoryReset
 display.getBrightness / display.setBrightness / display.getBrightnessRange
 firmware.getInfo / firmware.begin / firmware.end / firmware.verify / firmware.apply / firmware.abort
@@ -648,7 +648,7 @@ stream.kind.ota / display.brightness / firmware.update / firmware.resume
 
 AXTP 使用统一的域级二进制掩码体系，同时应用于：
 
-- **能力查询**：`capability.getAll` 响应中的 `capabilityMasks`
+- **能力查询**：v1 Core 使用 `capability.supportedMethods` 响应中的 method bitmap；v2/P1 可使用 `capability.getAll` 响应中的 `capabilityMasks`
 - **事件订阅**：`IDENTIFY / REIDENTIFY` 请求中的 `eventMasks`
 
 ### 23.1 设计原则

@@ -6,10 +6,10 @@
 关联文档：
 
 - `00-AXTP-协议总览与落地路线.md`
-- `01-AXTP-整体协议规范.md`
-- `02-AXTP-Control信令协议规范.md`
-- `03-AXTP-RPC协议与二进制映射规范.md`
-- `04-AXTP-Stream流式传输协议规范.md`
+- `02-AXTP-Frame-and-Payload-Spec.md`
+- `04-AXTP-Control-Session-Spec.md`
+- `05-AXTP-RPC-Session-Spec.md`
+- `06-AXTP-Stream-Spec.md`
 - `05-AXTP-Type-System基础类型规范.md`
 - `06-AXTP-TLV-Schema编码规范.md`
 - `07-AXTP-Schema字段编号规范.md`
@@ -19,7 +19,7 @@
 - `11-AXTP-ErrorCode注册表.md`
 - `12-AXTP-Capability注册表.md`
 - `13-AXTP-MVP最小实现注册表.md`
-- `14-AXTP-老协议适配与迁移规范.md`
+- `07-AXTP-Compatibility-and-Versioning.md`
 - `15-AXTP-WebSocket-JSON-RPC-Demo.md`
 - `16-AXTP-WebSocket-Binary-Demo.md`
 - `17-AXTP-HID-Compact-Demo.md`
@@ -665,7 +665,8 @@ public:
 ```cpp
 TlvWriter body;
 body.putU8(0x02, 1);       // protocolVersion
-body.putU8(0x03, 2);       // headerProfile = COMPACT
+// Frame Profile is fixed by Transport Profile; v1 does not send headerProfile.
+body.putU16(0x04, 247);    // maxFrameSize
 body.putU16(0x06, 247);    // mtu
 body.putU8(0x07, 0x07);    // payload types bitmap
 body.putU8(0x08, 0x03);    // rpc encodings bitmap
@@ -974,7 +975,7 @@ private:
 C++ Demo v1 必须注册：
 
 ```text
-capability.getAll
+capability.supportedMethods
 device.getInfo
 display.getBrightness
 display.setBrightness
@@ -1069,8 +1070,8 @@ Client Session <-> Memory Transport <-> Device Session
 ```text
 1. Client 发送 CONTROL OPEN
 2. Device 返回 CONTROL ACCEPT
-3. Client 发送 RPC capability.getAll
-4. Device 返回 capability 列表
+3. Client 发送 RPC capability.supportedMethods
+4. Device 返回 method bitmap
 5. Client 发送 RPC device.getInfo
 6. Device 返回设备信息
 7. Client 发送 RPC display.setBrightness(value=80)
@@ -1591,8 +1592,8 @@ Demo 重点：
 [DEVICE] send CONTROL ACCEPT
 [CLIENT] session ready
 
-[CLIENT] send RPC capability.getAll
-[DEVICE] recv RPC capability.getAll
+[CLIENT] send RPC capability.supportedMethods
+[DEVICE] recv RPC capability.supportedMethods
 [DEVICE] send RPC response OK
 
 [CLIENT] send RPC device.getInfo

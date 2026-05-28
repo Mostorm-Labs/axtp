@@ -1,18 +1,18 @@
 schemas:
-  CapabilityGetAllRequest:
+  CapabilitySupportedMethodsRequest:
     type: object
     fields: []
 
-  CapabilityGetAllResponse:
+  CapabilitySupportedMethodsResponse:
     type: object
     fields:
       - id: 0x01
-        name: capabilityCount
+        name: methodCount
         type: uint16
         required: true
         deprecated: false
       - id: 0x02
-        name: capabilityIds
+        name: methodIds
         type: array
         required: false
         deprecated: false

@@ -61,7 +61,7 @@ MVP 阶段建议只使用 `0x01-0x5F` 和 `0x7F`，暂不使用 `0x80-0xFF`。
 |---:|---|---|---|
 | `0x01` | `sessionId` | `uint32` | 会话 ID |
 | `0x02` | `protocolVersion` | `uint8` | 协议版本 |
-| `0x03` | `profileId` | `uint8` | Header Profile |
+| `0x03` | `profileId` | `uint8` | 业务 Profile ID（不得用于 v1 Header Profile 协商） |
 | `0x04` | `messageId` | `uint32` | AXTP Frame MessageId |
 | `0x05` | `requestId` | `uint32` | RPC 请求 ID |
 | `0x06` | `streamId` | `uint32` | Stream ID |

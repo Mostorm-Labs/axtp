@@ -10,12 +10,12 @@ schemas:
         max: 15
         deprecated: false
       - id: 0x03
-        name: headerProfile
+        name: reservedHeaderProfile
         type: uint8
-        required: true
+        required: false
         min: 1
         max: 2
-        deprecated: false
+        deprecated: true
       - id: 0x04
         name: maxFrameSize
         type: uint16
@@ -71,12 +71,12 @@ schemas:
         max: 15
         deprecated: false
       - id: 0x03
-        name: headerProfile
+        name: reservedHeaderProfile
         type: uint8
-        required: true
+        required: false
         min: 1
         max: 2
-        deprecated: false
+        deprecated: true
       - id: 0x04
         name: maxFrameSize
         type: uint16

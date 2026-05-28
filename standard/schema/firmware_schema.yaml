@@ -55,10 +55,10 @@ schemas:
         required: true
         deprecated: false
       - id: 0x06
-        name: streamHeaderProfile
+        name: reservedStreamHeaderProfile
         type: enum
-        required: true
-        deprecated: false
+        required: false
+        deprecated: true
       - id: 0x07
         name: maxDataSize
         type: uint16

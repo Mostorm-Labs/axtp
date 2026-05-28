@@ -48,7 +48,7 @@ inline constexpr FieldDescriptor kCommonEmptyResponseFields[] = {
 
 inline constexpr FieldDescriptor kControlOpenBodyFields[] = {
     { 0x02, "protocolVersion", FieldType::Uint8, true, 1, 15 },
-    { 0x03, "headerProfile", FieldType::Uint8, true, 1, 2 },
+    { 0x03, "reservedHeaderProfile", FieldType::Uint8, false, 1, 2 },
     { 0x04, "maxFrameSize", FieldType::Uint16, true, 1, 65535 },
     { 0x06, "mtu", FieldType::Uint16, true, 1, 65535 },
     { 0x07, "supportedPayloadTypes", FieldType::Bitmap, true, 0, 0 },
@@ -60,7 +60,7 @@ inline constexpr FieldDescriptor kControlOpenBodyFields[] = {
 inline constexpr FieldDescriptor kControlAcceptBodyFields[] = {
     { 0x01, "sessionId", FieldType::Uint32, true, 0, 0 },
     { 0x02, "protocolVersion", FieldType::Uint8, true, 1, 15 },
-    { 0x03, "headerProfile", FieldType::Uint8, true, 1, 2 },
+    { 0x03, "reservedHeaderProfile", FieldType::Uint8, false, 1, 2 },
     { 0x04, "maxFrameSize", FieldType::Uint16, true, 1, 65535 },
     { 0x06, "mtu", FieldType::Uint16, true, 1, 65535 },
     { 0x07, "supportedPayloadTypes", FieldType::Bitmap, true, 0, 0 },
@@ -80,13 +80,13 @@ inline constexpr FieldDescriptor kDeviceGetInfoResponseFields[] = {
     { 0x04, "serialNumber", FieldType::String, false, 0, 0 },
 };
 
-inline constexpr FieldDescriptor kCapabilityGetAllRequestFields[] = {
+inline constexpr FieldDescriptor kCapabilitySupportedMethodsRequestFields[] = {
 
 };
 
-inline constexpr FieldDescriptor kCapabilityGetAllResponseFields[] = {
-    { 0x01, "capabilityCount", FieldType::Uint16, true, 0, 0 },
-    { 0x02, "capabilityIds", FieldType::Array, false, 0, 0 },
+inline constexpr FieldDescriptor kCapabilitySupportedMethodsResponseFields[] = {
+    { 0x01, "methodCount", FieldType::Uint16, true, 0, 0 },
+    { 0x02, "methodIds", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kFirmwareOtaCapabilityFields[] = {
@@ -125,7 +125,7 @@ inline constexpr FieldDescriptor kFirmwareBeginResponseFields[] = {
     { 0x03, "chunkSize", FieldType::Uint16, true, 0, 0 },
     { 0x04, "ackMode", FieldType::Enum, true, 0, 0 },
     { 0x05, "cursorUnit", FieldType::Enum, true, 0, 0 },
-    { 0x06, "streamHeaderProfile", FieldType::Enum, true, 0, 0 },
+    { 0x06, "reservedStreamHeaderProfile", FieldType::Enum, false, 0, 0 },
     { 0x07, "maxDataSize", FieldType::Uint16, false, 0, 0 },
 };
 
@@ -161,8 +161,8 @@ inline constexpr SchemaDescriptor kControlOpenBodySchema = { "ControlOpenBody", 
 inline constexpr SchemaDescriptor kControlAcceptBodySchema = { "ControlAcceptBody", kControlAcceptBodyFields, 9 };
 inline constexpr SchemaDescriptor kDeviceGetInfoRequestSchema = { "DeviceGetInfoRequest", kDeviceGetInfoRequestFields, 0 };
 inline constexpr SchemaDescriptor kDeviceGetInfoResponseSchema = { "DeviceGetInfoResponse", kDeviceGetInfoResponseFields, 4 };
-inline constexpr SchemaDescriptor kCapabilityGetAllRequestSchema = { "CapabilityGetAllRequest", kCapabilityGetAllRequestFields, 0 };
-inline constexpr SchemaDescriptor kCapabilityGetAllResponseSchema = { "CapabilityGetAllResponse", kCapabilityGetAllResponseFields, 2 };
+inline constexpr SchemaDescriptor kCapabilitySupportedMethodsRequestSchema = { "CapabilitySupportedMethodsRequest", kCapabilitySupportedMethodsRequestFields, 0 };
+inline constexpr SchemaDescriptor kCapabilitySupportedMethodsResponseSchema = { "CapabilitySupportedMethodsResponse", kCapabilitySupportedMethodsResponseFields, 2 };
 inline constexpr SchemaDescriptor kFirmwareOtaCapabilitySchema = { "FirmwareOtaCapability", kFirmwareOtaCapabilityFields, 2 };
 inline constexpr SchemaDescriptor kDisplayGetBrightnessRequestSchema = { "DisplayGetBrightnessRequest", kDisplayGetBrightnessRequestFields, 0 };
 inline constexpr SchemaDescriptor kDisplayGetBrightnessResponseSchema = { "DisplayGetBrightnessResponse", kDisplayGetBrightnessResponseFields, 1 };

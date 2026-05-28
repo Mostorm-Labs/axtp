@@ -18,7 +18,7 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x0002, "protocol.payload.rpc", "protocol", "bool", "" },
     { 0x0003, "protocol.payload.stream", "protocol", "bool", "" },
     { 0x0101, "device.info", "device", "bool", "" },
-    { 0x0301, "capability.get", "capability", "bool", "" },
+    { 0x0301, "capability.supportedMethods", "capability", "bool", "" },
     { 0x0309, "reserved.requestIdWidth", "reserved", "reserved", "" },
     { 0x0601, "display.brightness", "display", "bool", "" },
     { 0x0602, "display.brightnessMin", "display", "uint16", "" },

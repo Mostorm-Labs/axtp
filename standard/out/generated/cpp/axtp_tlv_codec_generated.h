@@ -18,7 +18,7 @@ namespace fields::common_empty_response {
 
 namespace fields::control_open_body {
 constexpr std::uint8_t PROTOCOL_VERSION = 0x02;
-constexpr std::uint8_t HEADER_PROFILE = 0x03;
+constexpr std::uint8_t RESERVED_HEADER_PROFILE = 0x03;
 constexpr std::uint8_t MAX_FRAME_SIZE = 0x04;
 constexpr std::uint8_t MTU = 0x06;
 constexpr std::uint8_t SUPPORTED_PAYLOAD_TYPES = 0x07;
@@ -30,7 +30,7 @@ constexpr std::uint8_t ACK_MODE = 0x0B;
 namespace fields::control_accept_body {
 constexpr std::uint8_t SESSION_ID = 0x01;
 constexpr std::uint8_t PROTOCOL_VERSION = 0x02;
-constexpr std::uint8_t HEADER_PROFILE = 0x03;
+constexpr std::uint8_t RESERVED_HEADER_PROFILE = 0x03;
 constexpr std::uint8_t MAX_FRAME_SIZE = 0x04;
 constexpr std::uint8_t MTU = 0x06;
 constexpr std::uint8_t SUPPORTED_PAYLOAD_TYPES = 0x07;
@@ -50,13 +50,13 @@ constexpr std::uint8_t FIRMWARE_VERSION = 0x03;
 constexpr std::uint8_t SERIAL_NUMBER = 0x04;
 }
 
-namespace fields::capability_get_all_request {
+namespace fields::capability_supported_methods_request {
 
 }
 
-namespace fields::capability_get_all_response {
-constexpr std::uint8_t CAPABILITY_COUNT = 0x01;
-constexpr std::uint8_t CAPABILITY_IDS = 0x02;
+namespace fields::capability_supported_methods_response {
+constexpr std::uint8_t METHOD_COUNT = 0x01;
+constexpr std::uint8_t METHOD_IDS = 0x02;
 }
 
 namespace fields::firmware_ota_capability {
@@ -95,7 +95,7 @@ constexpr std::uint8_t PROFILE = 0x02;
 constexpr std::uint8_t CHUNK_SIZE = 0x03;
 constexpr std::uint8_t ACK_MODE = 0x04;
 constexpr std::uint8_t CURSOR_UNIT = 0x05;
-constexpr std::uint8_t STREAM_HEADER_PROFILE = 0x06;
+constexpr std::uint8_t RESERVED_STREAM_HEADER_PROFILE = 0x06;
 constexpr std::uint8_t MAX_DATA_SIZE = 0x07;
 }
 
@@ -135,7 +135,8 @@ struct CommonEmptyResponse {
 
 struct ControlOpenBody {
     std::uint8_t protocolVersion = 0;
-    std::uint8_t headerProfile = 0;
+    std::uint8_t reservedHeaderProfile = 0;
+    bool has_reservedHeaderProfile = false;
     std::uint16_t maxFrameSize = 0;
     std::uint16_t mtu = 0;
     std::uint32_t supportedPayloadTypes = 0;
@@ -147,7 +148,8 @@ struct ControlOpenBody {
 struct ControlAcceptBody {
     std::uint32_t sessionId = 0;
     std::uint8_t protocolVersion = 0;
-    std::uint8_t headerProfile = 0;
+    std::uint8_t reservedHeaderProfile = 0;
+    bool has_reservedHeaderProfile = false;
     std::uint16_t maxFrameSize = 0;
     std::uint16_t mtu = 0;
     std::uint32_t supportedPayloadTypes = 0;
@@ -171,14 +173,14 @@ struct DeviceGetInfoResponse {
     bool has_serialNumber = false;
 };
 
-struct CapabilityGetAllRequest {
+struct CapabilitySupportedMethodsRequest {
 
 };
 
-struct CapabilityGetAllResponse {
-    std::uint16_t capabilityCount = 0;
-    std::uint32_t capabilityIds = 0;
-    bool has_capabilityIds = false;
+struct CapabilitySupportedMethodsResponse {
+    std::uint16_t methodCount = 0;
+    std::uint32_t methodIds = 0;
+    bool has_methodIds = false;
 };
 
 struct FirmwareOtaCapability {
@@ -219,7 +221,8 @@ struct FirmwareBeginResponse {
     std::uint16_t chunkSize = 0;
     std::uint32_t ackMode = 0;
     std::uint32_t cursorUnit = 0;
-    std::uint32_t streamHeaderProfile = 0;
+    std::uint32_t reservedStreamHeaderProfile = 0;
+    bool has_reservedStreamHeaderProfile = false;
     std::uint16_t maxDataSize = 0;
     bool has_maxDataSize = false;
 };
@@ -270,11 +273,11 @@ bool DecodeDeviceGetInfoRequest(TlvReader& reader, DeviceGetInfoRequest* output,
 bool EncodeDeviceGetInfoResponse(const DeviceGetInfoResponse& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeDeviceGetInfoResponse(TlvReader& reader, DeviceGetInfoResponse* output, ErrorCode* error);
 
-bool EncodeCapabilityGetAllRequest(const CapabilityGetAllRequest& input, TlvWriter& writer, ErrorCode* error);
-bool DecodeCapabilityGetAllRequest(TlvReader& reader, CapabilityGetAllRequest* output, ErrorCode* error);
+bool EncodeCapabilitySupportedMethodsRequest(const CapabilitySupportedMethodsRequest& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCapabilitySupportedMethodsRequest(TlvReader& reader, CapabilitySupportedMethodsRequest* output, ErrorCode* error);
 
-bool EncodeCapabilityGetAllResponse(const CapabilityGetAllResponse& input, TlvWriter& writer, ErrorCode* error);
-bool DecodeCapabilityGetAllResponse(TlvReader& reader, CapabilityGetAllResponse* output, ErrorCode* error);
+bool EncodeCapabilitySupportedMethodsResponse(const CapabilitySupportedMethodsResponse& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCapabilitySupportedMethodsResponse(TlvReader& reader, CapabilitySupportedMethodsResponse* output, ErrorCode* error);
 
 bool EncodeFirmwareOtaCapability(const FirmwareOtaCapability& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeFirmwareOtaCapability(TlvReader& reader, FirmwareOtaCapability* output, ErrorCode* error);

@@ -28,11 +28,11 @@ capabilities:
     description: Device supports device.getInfo.
 
   - id: 0x0301
-    name: capability.get
+    name: capability.supportedMethods
     domain: capability
     status: mvp
     type: bool
-    description: Device supports capability.getAll.
+    description: Device supports capability.supportedMethods.
 
   - id: 0x0601
     name: display.brightness

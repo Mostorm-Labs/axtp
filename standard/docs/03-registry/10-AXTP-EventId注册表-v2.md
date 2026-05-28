@@ -375,7 +375,7 @@ Method Registry 中通过 `emits` 字段声明关联事件。
 
 ## 9. Event 与 Capability 的关系
 
-设备是否支持某个事件，通过 Capability Registry 暴露。MVP 阶段至少支持 `capability.getAll` 返回 `supportedEvents`。
+设备是否支持某个事件，通过 Capability Registry 暴露。v1 Core 只强制 `capability.supportedMethods`；事件能力发现属于 v2/P1 Capability Model。
 
 ---
 

@@ -13,12 +13,20 @@ enum class PayloadType : std::uint8_t {
 enum class ControlOpcode : std::uint8_t {
     Open = 0x01,
     Accept = 0x02,
-    Heartbeat = 0x03,
-    HeartbeatAck = 0x04,
-    Ack = 0x05,
-    Nack = 0x06,
-    Close = 0x09,
-    CloseAck = 0x0A,
+    Ready = 0x03,
+    Heartbeat = 0x04,
+    HeartbeatAck = 0x05,
+    Ack = 0x06,
+    Nack = 0x07,
+    Resume = 0x08,
+    ResumeAck = 0x09,
+    Close = 0x0A,
+    CloseAck = 0x0B,
+    SessionReset = 0x0C,
+    WindowUpdate = 0x0D,
+    Ping = 0x0E,
+    Pong = 0x0F,
+    Goaway = 0x10,
 };
 
 enum class RpcEncoding : std::uint8_t {
@@ -54,7 +62,7 @@ enum class RpcOp : std::uint8_t {
 
 enum class MethodId : std::uint16_t {
     DeviceGetInfo = 0x0101,
-    CapabilityGetAll = 0x0301,
+    CapabilitySupportedMethods = 0x0301,
     DisplayGetBrightness = 0x0501,
     DisplaySetBrightness = 0x0502,
     FirmwareBegin = 0x0B02,
@@ -81,7 +89,7 @@ enum class ErrorCode : std::uint16_t {
     ControlPayloadInvalid = 0x0202,
     ControlOpenRequired = 0x0204,
     ControlOpenRejected = 0x0205,
-    ControlProfileUnsupported = 0x0206,
+    ReservedControlProfileUnsupported = 0x0206,
     ControlNegotiationFailed = 0x0207,
     ControlSessionInvalid = 0x0208,
     ControlResumeFailed = 0x020A,
@@ -100,7 +108,7 @@ enum class CapabilityId : std::uint16_t {
     ProtocolPayloadRpc = 0x0002,
     ProtocolPayloadStream = 0x0003,
     DeviceInfo = 0x0101,
-    CapabilityGet = 0x0301,
+    CapabilitySupportedMethods = 0x0301,
     ReservedRequestIdWidth = 0x0309,
     DisplayBrightness = 0x0601,
     DisplayBrightnessMin = 0x0602,

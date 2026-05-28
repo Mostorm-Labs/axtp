@@ -42,10 +42,10 @@
     },
     {
       "id": 769,
-      "name": "capability.get",
+      "name": "capability.supportedMethods",
       "domain": "capability",
       "status": "mvp",
-      "description": "Device supports capability.getAll.",
+      "description": "Device supports capability.supportedMethods.",
       "deprecated": false,
       "type": "bool",
       "idHex": "0x0301"

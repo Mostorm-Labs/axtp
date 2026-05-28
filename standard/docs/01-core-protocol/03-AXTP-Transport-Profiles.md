@@ -1,9 +1,14 @@
-# 05《AXTP 连接场景与调用流程规范》
+# 03《AXTP Transport Profiles》
 
-版本：v0.2 Draft
-状态：MVP 场景参考规范（精简版）
+> Status: AXTP v1 Core Freeze Candidate
+> Spec Version: 1.0.0-rc1
+> Change Policy: Clarification-only before v1.0.0
+> Scope: Core wire format / state machine / compatibility rules
+
+版本：v1.0.0-rc1
+状态：AXTP v1 Core Freeze Candidate
 适用范围：AXTP 在不同传输层和拓扑组合下的完整调用流程、Profile 选择、Session 生命周期、错误处理
-前置文档：01-04《AXTP 核心协议规范》
+前置文档：01《AXTP Protocol Framework》、02《AXTP Frame and Payload Spec》、04《AXTP Control Session Spec》、05《AXTP RPC Session Spec》、06《AXTP Stream Spec》
 
 ---
 
@@ -34,7 +39,7 @@ WebSocket Text / HTTP JSON 只作为 Debug 或 Legacy Adapter，不承载正式 
 | --- | --- | --- | --- | --- |
 | A | TCP | Standard | 直连 | PC App ↔ 设备 |
 | B | WebSocket Binary | Standard | 直连 | Web App / Native App ↔ 设备 |
-| C | USB HID | Standard（默认）/ Compact（协商降级） | 直连 | PC ↔ USB 设备 |
+| C | USB HID | HID-64: Compact；HID High Speed: 独立 Standard Profile | 直连 | PC ↔ USB 设备 |
 | D | BLE GATT | Compact | 直连 | 手机 ↔ 蓝牙设备（含断线重连） |
 | E | UART + COBS | Compact | 直连 | MCU ↔ 主控 |
 | F | WebSocket Binary → BLE/HID | Standard + Compact | 网关中继 | App ↔ 网关 ↔ 设备 |
@@ -67,7 +72,7 @@ APP_READY
 | 状态 | 允许的操作 | 拒绝的操作 |
 | --- | --- | --- |
 | LINK_CONNECTED | 仅 CONTROL 包（OPEN） | 所有 RPC / STREAM |
-| FRAMING_READY | RPC Hello / Identify / Identified / capability.getAll | 需要鉴权的业务 RPC |
+| FRAMING_READY | RPC Hello / Identify / Identified | 业务 RPC / STREAM |
 | APP_READY | 所有已注册 RPC 和 STREAM | — |
 
 WebSocket Text / HTTP JSON Debug Adapter：WebSocket 升级或 HTTP 认证完成后直接进入 FRAMING_READY，该捷径只适用于 Debug/Legacy Adapter。
@@ -76,12 +81,12 @@ WebSocket Text / HTTP JSON Debug Adapter：WebSocket 升级或 HTTP 认证完成
 
 | 字段 / 能力 | 归属 |
 | --- | --- |
-| AXTP 协议版本、Header Profile、maxFrameSize、supportedPayloadTypes、rpcEncoding、压缩/加密、心跳间隔、resumeToken | CONTROL OPEN / RESUME |
+| AXTP 协议版本、maxFrameSize、maxPayloadSize、supportedPayloadTypes、rpcEncoding、压缩/加密、心跳间隔、resumeToken | CONTROL OPEN / RESUME |
 | challengeString / authRequired / rpcVersion | Hello（op=0，Server→Client） |
 | clientName / authResponse | Identify（op=2，Client→Server） |
 | negotiatedRpcVersion / sid | Identified（op=3，Server→Client） |
 | 设备型号 / 固件版本 | device.getInfo |
-| 能力列表 | capability.getAll |
+| v1 方法能力位图 | capability.supportedMethods |
 
 ### 3.3 业务流程通用骨架
 
@@ -93,7 +98,7 @@ WebSocket Text / HTTP JSON Debug Adapter：WebSocket 升级或 HTTP 认证完成
 ④ RPC Identify (op=2)             ← Client 回应
 ⑤ RPC Identified (op=3)           ← Server 确认
    [State: APP_READY]
-⑥ RPC capability.getAll
+⑥ RPC capability.supportedMethods
 ⑦ RPC device.getInfo
 ⑧ 业务 RPC
 ⑨ STREAM 数据流（需先通过 RPC 建立 Stream Context）
@@ -108,7 +113,7 @@ WebSocket Text / HTTP JSON Debug Adapter：WebSocket 升级或 HTTP 认证完成
 
 | 项目 | 选择 |
 | --- | --- |
-| Header Profile | Standard |
+| Frame Profile | Standard |
 | CRC | CRC16-CCITT-FALSE |
 | rpcEncoding | BINARY + TLV（推荐）；JSON 可选用于调试 |
 | ackMode | NONE（TCP 保证可靠传输） |
@@ -122,12 +127,12 @@ Client → Server: TCP SYN / SYN-ACK / ACK
 Client → Server: CONTROL OPEN
   [Standard Frame] Magic=AX Ver=1 PT=0x01
   opcode=OPEN controlId=0x0001 statusCode=0x0000
-  body TLV: protocolVersion=1, headerProfile=STANDARD, maxFrameSize=4096,
+  body TLV: protocolVersion=1, maxFrameSize=4096,
             mtu=1460, supportedPayloadTypes=0x07, supportedRpcEncodings=0x03,
             heartbeatIntervalMs=30000, ackMode=NONE
 Server → Client: CONTROL ACCEPT
   opcode=ACCEPT controlId=0x0001 statusCode=0x0000
-  body TLV: sessionId=0x12345678, protocolVersion=1, headerProfile=STANDARD,
+  body TLV: sessionId=0x12345678, protocolVersion=1,
             maxFrameSize=4096, selectedRpcEncoding=BINARY,
             heartbeatIntervalMs=30000, ackMode=NONE, resumeToken=<token>
 [State: FRAMING_READY]
@@ -151,9 +156,9 @@ Server → Client: RPC Identified (op=3)
 **阶段 3：能力查询与设备信息**
 
 ```text
-Client → Server: RPC REQUEST capability.getAll (requestId=0x00000001)
-Server → Client: RPC REQUEST_RESPONSE capability.getAll
-  body: capabilities=[{domain:"device",...},{domain:"display",...},...]
+Client → Server: RPC REQUEST capability.supportedMethods (requestId=0x00000001)
+Server → Client: RPC REQUEST_RESPONSE capability.supportedMethods
+  body: methodBitmap=<当前设备/固件/会话/鉴权状态下支持的 methodId 集合>
 
 Client → Server: RPC REQUEST device.getInfo (requestId=0x00000002)
 Server → Client: RPC REQUEST_RESPONSE device.getInfo
@@ -242,7 +247,7 @@ Server → Client: HTTP 101 Switching Protocols
 [WebSocket Connected]
 ```
 
-之后的 OPEN/ACCEPT、Hello/Identify/Identified、capability.getAll、业务 RPC、OTA STREAM、心跳、关闭流程与场景 A 完全一致。每个 AXTP Frame 作为一个独立的 WebSocket Binary Message 发送。
+之后的 OPEN/ACCEPT、Hello/Identify/Identified、capability.supportedMethods、业务 RPC、OTA STREAM、心跳、关闭流程与场景 A 完全一致。每个 AXTP Frame 作为一个独立的 WebSocket Binary Message 发送。
 
 ### 关键约束
 
@@ -261,47 +266,36 @@ Server → Client: HTTP 101 Switching Protocols
 
 | 项目 | 选择 |
 | --- | --- |
-| Frame Header Profile | Standard（默认）；Report Size ≤ 64B 时通过 CONTROL OPEN 协商降级为 Compact |
-| 可用 Payload（Standard，64B Report） | 48B（64B - 12B Header - 2B CRC16 - 1B ReportID - 1B padding） |
+| Frame Profile | HID-64 固定 Compact；HID High Speed 如需 Standard，应定义独立 Transport Profile |
 | 可用 Payload（Compact，64B Report） | 58B（64B - 4B Header - 1B CRC8 - 1B ReportID） |
-| CRC | Standard: CRC16-CCITT-FALSE；Compact: CRC8-MAXIM |
+| CRC | CRC8-MAXIM |
 | rpcEncoding | BINARY + TLV |
 | ackMode | MESSAGE_ACK（HID 无内建可靠性） |
-| 分片 | Standard: 最多 254 片；Compact: 最多 15 片（FrameIndex/FrameCount 各 4 bit） |
+| 分片 | Compact: 最多 15 片（FrameIndex/FrameCount 各 4 bit）；HID High Speed Standard 另见独立 Profile |
 
 ### 6.2 完整调用流程
 
-**Session 建立（Standard，Report Size > 64B 或默认）：**
+**Session 建立（HID-64 Compact）：**
 
 ```text
 Host → Device: HID Report [CONTROL OPEN]
-  [Standard Frame] Magic=AX Ver=1 PT=0x01
+  [Compact Frame] VT=0x11 Len=N MsgId=0x01 FrameInfo=0x01
   opcode=OPEN controlId=0x0001 statusCode=0x0000
-  body TLV: protocolVersion=1, headerProfile=STANDARD, maxFrameSize=<report_size>,
-            supportedProfiles=[STANDARD,COMPACT], mtu=<report_size>,
+  body TLV: protocolVersion=1, maxFrameSize=<report_size>,
+            mtu=<report_size>,
             supportedPayloadTypes=0x07, heartbeatIntervalMs=5000, ackMode=MESSAGE_ACK
 Device → Host: HID Report [CONTROL ACCEPT]
   opcode=ACCEPT controlId=0x0001 statusCode=0x0000
-  body TLV: sessionId=0x00000001, protocolVersion=1, headerProfile=STANDARD,
+  body TLV: sessionId=0x00000001, protocolVersion=1,
             maxFrameSize=<report_size>, selectedRpcEncoding=BINARY,
             heartbeatIntervalMs=5000, ackMode=MESSAGE_ACK
 [State: FRAMING_READY]
 ```
 
-**Profile 降级协商（Report Size ≤ 64B）：**
+**分片示例（capability.supportedMethods 响应超过 58B）：**
 
 ```text
-Host → Device: CONTROL OPEN
-  body TLV: maxFrameSize=64, supportedProfiles=[STANDARD,COMPACT], ...
-Device → Host: CONTROL ACCEPT
-  body TLV: headerProfile=COMPACT, maxFrameSize=58, ...
-[后续帧使用 Compact Frame Profile]
-```
-
-**分片示例（capability.getAll 响应超过 58B）：**
-
-```text
-Host → Device: HID Report [RPC REQUEST capability.getAll]
+Host → Device: HID Report [RPC REQUEST capability.supportedMethods]
   VT=0x12 Len=12 MsgId=0x02 FrameInfo=0x11
 
 Device → Host: HID Report [RPC REQUEST_RESPONSE frag 0/3]
@@ -358,7 +352,7 @@ Host → Device: STREAM chunk seqId=1 [42B data]
 
 | 项目 | 选择 |
 | --- | --- |
-| Frame Header Profile | Compact（ATT 有固定帧边界） |
+| Frame Profile | Compact（ATT 有固定帧边界） |
 | 可用 Payload | ~179B（185B ATT MTU - 4B Header - 1B CRC8 - 1B ATT opcode） |
 | CRC | CRC8-MAXIM |
 | ackMode | MESSAGE_ACK |
@@ -382,7 +376,7 @@ Central → Peripheral: ATT MTU Exchange (185B)
 Central → Peripheral: BLE ATT Write [CONTROL OPEN]
   [Compact Frame] VT=0x11 Len=N MsgId=0x01 FrameInfo=0x11
   opcode=OPEN controlId=0x0001 statusCode=0x0000
-  body TLV: protocolVersion=1, headerProfile=COMPACT, maxFrameSize=179,
+  body TLV: protocolVersion=1, maxFrameSize=179,
             mtu=179, supportedPayloadTypes=0x07,
             heartbeatIntervalMs=10000, ackMode=MESSAGE_ACK
 Peripheral → Central: BLE ATT Notify [CONTROL ACCEPT]
@@ -393,7 +387,7 @@ Peripheral → Central: BLE ATT Notify [CONTROL ACCEPT]
 (resumeToken 保存到本地，用于断线恢复)
 ```
 
-业务流程（Hello/Identify/Identified、capability.getAll、RPC、STREAM）与场景 C（HID）相同，使用 Compact Frame。
+业务流程（Hello/Identify/Identified、capability.supportedMethods、RPC、STREAM）与场景 C（HID）相同，使用 Compact Frame。
 
 **BLE 断线与 RESUME：**
 
@@ -462,7 +456,7 @@ UART 字节流结构：
 
 | 项目 | 选择 |
 | --- | --- |
-| Frame Header Profile | Compact（MCU 内存极小） |
+| Frame Profile | Compact（MCU 内存极小） |
 | 帧边界 | COBS + 0x00 分隔符 |
 | CRC | CRC8-MAXIM |
 | rpcEncoding | BINARY + TLV |
@@ -477,7 +471,7 @@ UART 字节流结构：
 Host → Device: UART [0x00 + COBS(CONTROL OPEN) + 0x00]
   解 COBS 后: [Compact Frame] VT=0x11 Len=N MsgId=0x01 FrameInfo=0x11
   opcode=OPEN controlId=0x0001 statusCode=0x0000
-  body TLV: protocolVersion=1, headerProfile=COMPACT, maxFrameSize=128,
+  body TLV: protocolVersion=1, maxFrameSize=128,
         mtu=128, heartbeatIntervalMs=2000, ackMode=MESSAGE_ACK
 Device → Host: UART [0x00 + COBS(CONTROL ACCEPT) + 0x00]
   opcode=ACCEPT controlId=0x0001 statusCode=0x0000
@@ -847,7 +841,7 @@ Adapter → Legacy Client: 旧 OTA Chunk ACK
 | --- | --- | --- |
 | TCP | Standard | 字节流需要 Magic 同步；带宽充足 |
 | WebSocket Binary | Standard | 消息边界由 WS 提供，但 Standard 保持一致性 |
-| USB HID | Standard（默认）；Report Size ≤ 64B 时协商降级 Compact | Report 边界固定；Standard 优先，带宽紧张时降级 |
+| USB HID | HID-64 固定 Compact；HID High Speed 可使用独立 Standard Profile | Report 边界固定；v1 不在 OPEN/ACCEPT 中协商 Frame Profile |
 | BLE GATT | Compact | ATT 边界固定；MTU 小，节省开销 |
 | UART | Compact + COBS | 无边界，需传输层 framing；MCU 内存小 |
 | 网关（App 侧） | Standard | 需要 SourceId/DestinationId 路由 |
@@ -883,13 +877,13 @@ Adapter → Legacy Client: 旧 OTA Chunk ACK
 
 ```text
 1. 传输层连接建立（TCP/WS/BLE/HID/UART）
-2. CONTROL OPEN / ACCEPT（协商协议能力）← Framed Mode 必须；Unframed 跳过
+2. CONTROL OPEN / ACCEPT（协商运行参数）← Framed Mode 必须；Unframed 跳过
    [State: FRAMING_READY]
 3. RPC Hello（op=0，Server 推送）
 4. RPC Identify（op=2，Client 回应）
 5. RPC Identified（op=3，Server 确认）
    [State: APP_READY]
-6. RPC capability.getAll
+6. RPC capability.supportedMethods
 7. RPC device.getInfo
 8. 业务 RPC（命令、查询、事件订阅）
 9. STREAM（如需要：OTA、视频、文件）

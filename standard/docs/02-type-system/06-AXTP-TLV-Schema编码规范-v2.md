@@ -307,7 +307,7 @@ RPC Parser 先读取 rpcEncoding。若 rpcEncoding=BINARY，则解析 11B Binary
 
 Control Parser 先解析 5B 固定头 `opcode/controlId/statusCode`。Control body 固定为 TLV 编码，不在线上携带 `bodyEncoding` 或 `bodyLen`；body 长度由外层 Frame `payloadLength - 5` 得出，再根据 opcode 选择对应 Control TLV schema。
 
-示例 OPEN body：`02 01 01` (protocolVersion=1) `03 01 02` (headerProfile=Compact) `06 02 F7 00` (mtu=247)
+示例 OPEN body：`02 01 01` (protocolVersion=1) `04 02 F7 00` (maxFrameSize=247) `06 02 F7 00` (mtu=247)。v1 不在 OPEN/ACCEPT 中协商 headerProfile。
 
 ---
 
