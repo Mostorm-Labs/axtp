@@ -132,7 +132,7 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
   "d": {
     "rpcVersion": 1,
     "authentication": "...",
-    "eventSubscriptions": 33,
+    "eventMasks": "850101",
     "resumeSid": "28378462323"
   }
 }
@@ -142,8 +142,10 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
 | --- | --- | --- | --- |
 | `rpcVersion` | uint32 | 是 | 客户端期望的 RPC 版本 |
 | `authentication` | string | 条件 | Hello 要求认证时必填，HMAC 响应 |
-| `eventSubscriptions` | uint32 | 否 | 事件订阅位图，0 表示不订阅任何事件 |
+| `eventMasks` | string | 否 | 域级事件订阅掩码，Hex 字符串编码，格式见 §16；省略或空字符串表示不订阅任何事件 |
 | `resumeSid` | string | 否 | 断线重连时携带旧 `sid`，请求恢复 session |
+
+> **兼容说明**：旧字段 `eventSubscriptions: uint32` 已废弃，新实现必须使用 `eventMasks`。MVP 阶段设备可忽略 `eventMasks` 并默认推送核心事件（全量广播模式），P1 阶段再实现按掩码过滤。
 
 新连接时 `sid` 填 `""`；断线重连时 `sid` 填 `""` 但 `d.resumeSid` 携带旧 session ID。
 
@@ -180,12 +182,12 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
   "sid": "28378462323",
   "op": 4,
   "d": {
-    "eventSubscriptions": 65
+    "eventMasks": "850301"
   }
 }
 ```
 
-服务端处理后再次发送 Identified（op=3）确认。
+`eventMasks` 格式与 Identify 相同（见 §6）。服务端处理后再次发送 Identified（op=3）确认。
 
 ---
 
@@ -479,7 +481,60 @@ Unframed 模式（WebSocket Text / MessagePack）下，CONTROL 层不存在，He
   RPC 控制面（Request op=7）+ STREAM 数据面
 ```
 
-初始订阅在 Identify（op=2）的 `eventSubscriptions` 位图中声明。运行时修改订阅使用 Reidentify（op=4）。
+### 16.1 域级事件订阅掩码（eventMasks）
+
+事件订阅使用**域级二进制掩码（Domain-Scoped Event Mask）**，而非旧的 `eventSubscriptions: uint32` 全局位图。
+
+**格式**：`eventMasks` 是一个 Hex 字符串，由一个或多个 Domain Block 拼接而成：
+
+```text
+Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [Bitmask: N B (Little-Endian)]
+```
+
+| 字段 | 长度 | 说明 |
+| --- | --- | --- |
+| `DomainId` | 1B | 事件所属域 ID（与 EventId 高字节对齐，见 10《EventId 注册表》） |
+| `MaskLen` | 1B | Bitmask 字节数 N（1-32），高水位截断：只发到最高有效字节 |
+| `Bitmask` | N B | 该域的事件订阅掩码，Little-Endian，Bit 0 对应 bitOffset=0 |
+
+**Domain ID 与 EventId 的对应关系**：
+
+| DomainId | 对应 EventId 范围 | 域名 |
+| --- | --- | --- |
+| `0x81` | `0x8100-0x81FF` | `device.*` |
+| `0x83` | `0x8300-0x83FF` | `capability.*` |
+| `0x84` | `0x8400-0x84FF` | `system.*` |
+| `0x85` | `0x8500-0x85FF` | `display.*` |
+| `0x8B` | `0x8B00-0x8BFF` | `firmware.*` |
+
+**高水位截断规则**：如果某域只用到 Bit 3，`MaskLen` 必须为 1，不得发送多余字节。
+
+**示例**：订阅 `display.*` 域的 Bit 0（brightnessChanged）和 `firmware.*` 域的 Bit 0/1（updateProgress/updateCompleted）：
+
+```text
+eventMasks = "850101 8B0103"（去掉空格后为 "8501018B0103"）
+
+解析：
+  DomainId=0x85, MaskLen=1, Bitmask=0x01  → display.brightnessChanged (Bit 0)
+  DomainId=0x8B, MaskLen=1, Bitmask=0x03  → firmware.updateProgress (Bit 0) + firmware.updateCompleted (Bit 1)
+```
+
+**设备端过滤（O(1) 判定）**：
+
+```cpp
+bool isEventSubscribed(const uint8_t* bitmask, uint8_t maskLen, uint8_t bitOffset) {
+    uint8_t byteIndex = bitOffset / 8;
+    uint8_t bitIndex  = bitOffset % 8;
+    if (byteIndex >= maskLen) return false;
+    return (bitmask[byteIndex] & (1 << bitIndex)) != 0;
+}
+```
+
+### 16.2 MVP 阶段简化
+
+MVP 阶段设备可采用"全量广播模式"：忽略 `eventMasks`，只要 App 进入 APP_READY 状态，设备产生的所有核心事件无条件推送。P1 阶段再实现按掩码过滤。
+
+初始订阅在 Identify（op=2）的 `eventMasks` 字段声明。运行时修改订阅使用 Reidentify（op=4）。
 
 ---
 

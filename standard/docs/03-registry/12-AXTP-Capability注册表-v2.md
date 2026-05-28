@@ -13,7 +13,7 @@ Capability 是对设备能力、协议能力、传输能力和业务功能的声
 两类能力发现机制：
 
 | 机制 | 职责 |
-|---|---|
+| --- |---|
 | `CONTROL OPEN / ACCEPT` | 协议运行时能力协商（protocolVersion、headerProfile、maxFrameSize、mtu、supportedPayloadTypes、supportedRpcEncodings、heartbeatIntervalMs、ackMode、windowSize） |
 | `RPC capability.*` | 业务能力查询（display 亮度范围、OTA 支持、firmware imageType、video stream、methodId 支持、eventId 支持、codec、文件类型） |
 
@@ -28,7 +28,7 @@ Capability 是对设备能力、协议能力、传输能力和业务功能的声
 ## 2. Capability 分类
 
 | 类别 | 说明 | 发现方式 |
-|---|---|---|
+| --- |---| --- |
 | protocol capability | 协议版本、PayloadType、Header Profile | CONTROL OPEN + RPC |
 | transport capability | MTU、最大包长、窗口、ACK 模式 | CONTROL OPEN + RPC |
 | rpc capability | RPC 编码、bodyEncoding、methodId 支持 | CONTROL OPEN + RPC |
@@ -74,6 +74,8 @@ CapabilityId 使用 `uint16`：
 - id: 0x0101
   name: protocol.payloadTypes
   domain: protocol
+  domainId: 0x01        # capability.getAll 响应中的 DomainId（见 §4.1）
+  bitOffset: 0          # 该 capability 在 Domain 内的掩码位偏移
   status: mvp
   type: bitmap
   description: Supported AXTP payload types.
@@ -91,10 +93,12 @@ CapabilityId 使用 `uint16`：
 ```
 
 | 字段 | 说明 |
-|---|---|
+| --- | --- |
 | `id` | capabilityId |
 | `name` | capability 名称 |
 | `domain` | 所属域 |
+| `domainId` | `capability.getAll` 响应中的 DomainId（1B），与 MethodId 高字节对齐 |
+| `bitOffset` | 该 capability 在 Domain 内的掩码位偏移（0-255），由 Registry 自增分配 |
 | `status` | draft / mvp / stable / deprecated / reserved |
 | `type` | bool / uint / enum / bitmap / object / array |
 | `description` | 描述 |
@@ -110,17 +114,79 @@ CapabilityId 使用 `uint16`：
 
 ---
 
+## 4.1 capability.getAll 响应格式：域级掩码
+
+`capability.getAll` 的 Binary 响应使用**域级二进制掩码链（Domain Mask Packets Chain）**，而非 JSON 键值对列表。
+
+**格式**：
+
+```text
+Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [Bitmask: N B (Little-Endian)]
+```
+
+- `DomainId`：与 MethodId 高字节对齐（如 `display.*` 的 DomainId = `0x05`）
+- `MaskLen`：Bitmask 字节数，高水位截断（只发到最高有效字节）
+- `Bitmask`：该域的能力掩码，Bit N 对应 `bitOffset=N` 的 capability
+
+**高水位截断规则**：如果某域只用到 bitOffset=3，`MaskLen` 必须为 1，不得发送多余字节。
+
+**MVP 设备示例**（支持 protocol 域 Bits 0-2、display 域 Bit 0、firmware 域 Bits 0-1）：
+
+```text
+Binary: 01 01 07  05 01 01  0B 01 03
+        |________|  |________|  |________|
+         domain=0x01  domain=0x05  domain=0x0B
+```
+
+**JSON 编码（WebSocket/HTTP Debug）**：
+
+```json
+{
+  "result": {
+    "capabilityMasks": "010107050101 0B0103"
+  }
+}
+```
+
+**DomainId 与 MethodId 范围对应关系**：
+
+| DomainId | MethodId 范围 | 域名 |
+| --- | --- | --- |
+| `0x01` | `0x0100-0x01FF` | `device.*` |
+| `0x03` | `0x0300-0x03FF` | `capability.*` |
+| `0x04` | `0x0400-0x04FF` | `system.*` |
+| `0x05` | `0x0500-0x05FF` | `display.*` |
+| `0x06` | `0x0600-0x06FF` | `camera.*` |
+| `0x07` | `0x0700-0x07FF` | `video.*` |
+| `0x08` | `0x0800-0x08FF` | `audio.*` |
+| `0x09` | `0x0900-0x09FF` | `stream.*` |
+| `0x0A` | `0x0A00-0x0AFF` | `file.*` |
+| `0x0B` | `0x0B00-0x0BFF` | `firmware.*` |
+
+**C++ 解析（O(1) 安全寻址）**：
+
+```cpp
+bool isCapabilitySupported(const uint8_t* bitmask, uint8_t maskLen, uint8_t bitOffset) {
+    uint8_t byteIndex = bitOffset / 8;
+    uint8_t bitIndex  = bitOffset % 8;
+    if (byteIndex >= maskLen) return false;
+    return (bitmask[byteIndex] & (1 << bitIndex)) != 0;
+}
+```
+
+---
+
 ## 5. 通用能力注册表
 
-| capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
-| `0x0001` | `common.deviceClass` | enum | mvp | 设备类别 |
-| `0x0002` | `common.vendorId` | uint16 | mvp | 厂商 ID |
-| `0x0003` | `common.productId` | uint16 | mvp | 产品 ID |
-| `0x0004` | `common.model` | string | mvp | 型号 |
-| `0x0005` | `common.serialNumber` | string | mvp | SN |
-| `0x0006` | `common.hardwareVersion` | string | mvp | 硬件版本 |
-| `0x0007` | `common.firmwareVersion` | string | mvp | 固件版本 |
+| capabilityId | name | domainId | bitOffset | 类型 | 状态 | 说明 |
+| ---: | --- | ---: | ---: | --- | --- | --- |
+| `0x0001` | `common.deviceClass` | `0x01` | 0 | enum | mvp | 设备类别 |
+| `0x0002` | `common.vendorId` | `0x01` | 1 | uint16 | mvp | 厂商 ID |
+| `0x0003` | `common.productId` | `0x01` | 2 | uint16 | mvp | 产品 ID |
+| `0x0004` | `common.model` | `0x01` | 3 | string | mvp | 型号 |
+| `0x0005` | `common.serialNumber` | `0x01` | 4 | string | mvp | SN |
+| `0x0006` | `common.hardwareVersion` | `0x01` | 5 | string | mvp | 硬件版本 |
+| `0x0007` | `common.firmwareVersion` | `0x01` | 6 | string | mvp | 固件版本 |
 | `0x0008` | `common.protocolVersion` | string | mvp | AXTP 协议版本 |
 
 ---
@@ -128,7 +194,7 @@ CapabilityId 使用 `uint16`：
 ## 6. 协议能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0101` | `protocol.payloadTypes` | bitmap | mvp | 支持的 PayloadType |
 | `0x0102` | `protocol.headerProfiles` | bitmap | mvp | 支持的 Header Profile |
 | `0x0103` | `protocol.frameVersion` | uint8 | mvp | Frame Header 版本 |
@@ -143,7 +209,7 @@ CapabilityId 使用 `uint16`：
 ### 6.1 protocol.payloadTypes bitmap
 
 | Bit | 名称 | PayloadType |
-|---:|---|---:|
+|---:| --- |---:|
 | 0 | CONTROL | `0x01` |
 | 1 | RPC | `0x02` |
 | 2 | STREAM | `0x03` |
@@ -153,7 +219,7 @@ CapabilityId 使用 `uint16`：
 ## 7. 传输能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0201` | `transport.type` | enum | mvp | 当前传输类型 |
 | `0x0202` | `transport.mtu` | uint16 | mvp | 当前 MTU |
 | `0x0203` | `transport.maxFrameSize` | uint32 | mvp | 最大 Frame 大小 |
@@ -168,7 +234,7 @@ CapabilityId 使用 `uint16`：
 ### 7.1 transport.type enum
 
 | 值 | 名称 |
-|---:|---|
+|---:| --- |
 | `0x01` | `BLE` |
 | `0x02` | `HID` |
 | `0x03` | `UART` |
@@ -181,7 +247,7 @@ CapabilityId 使用 `uint16`：
 ### 7.2 transport.ackMode enum
 
 | 值 | 名称 | 说明 |
-|---:|---|---|
+|---:| --- |---|
 | `0x00` | `NONE` | 不使用 ACK |
 | `0x01` | `FRAME_ACK` | 按 Frame 确认 |
 | `0x02` | `MESSAGE_ACK` | 按 Message 确认 |
@@ -193,7 +259,7 @@ CapabilityId 使用 `uint16`：
 ## 8. RPC 能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0301` | `rpc.encodings` | bitmap | mvp | 支持的 RPC 编码 |
 | `0x0302` | `rpc.bodyEncodings` | bitmap | mvp | 支持的 Body 编码 |
 | `0x0303` | `rpc.maxRequestBodySize` | uint32 | mvp | 最大请求体 |
@@ -207,7 +273,7 @@ CapabilityId 使用 `uint16`：
 ### 8.1 rpc.encodings bitmap
 
 | Bit | 名称 |
-|---:|---|
+|---:| --- |
 | 0 | `JSON` |
 | 1 | `BINARY` |
 | 2 | `CBOR` |
@@ -216,7 +282,7 @@ CapabilityId 使用 `uint16`：
 ### 8.2 rpc.bodyEncodings bitmap
 
 | Bit | 名称 |
-|---:|---|
+|---:| --- |
 | 0 | `NONE` |
 | 1 | `TLV8` |
 | 2 | `TLV16` |
@@ -227,7 +293,7 @@ CapabilityId 使用 `uint16`：
 ## 9. STREAM 能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0401` | `stream.profiles` | list<uint16> / bitmap | mvp | 支持的 Stream Profile ID 列表 |
 | `0x0402` | `stream.maxChunkSize` | uint32 | mvp | 最大业务 chunk |
 | `0x0403` | `stream.maxStreamCount` | uint8 | mvp | 最大并发流数量 |
@@ -243,7 +309,7 @@ CapabilityId 使用 `uint16`：
 Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/Stream Context 中，不存在于 STREAM L2 Header。
 
 | profileId | Profile |
-|---:|---|
+|---:| --- |
 | `0x0101` | `firmware.ota` |
 | `0x0002` | `file.transfer` |
 | `0x0401` | `log.realtime` |
@@ -252,7 +318,7 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 ### 9.2 stream.reliableModes bitmap
 
 | Bit | 模式 | 说明 |
-|---:|---|---|
+|---:| --- |---|
 | 0 | `BEST_EFFORT` | 不保证可靠 |
 | 1 | `STOP_AND_WAIT` | 停等确认 |
 | 2 | `SLIDING_WINDOW` | 滑动窗口 |
@@ -262,7 +328,7 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 ## 10. 设备基础能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0501` | `device.reboot` | bool | mvp | 是否支持重启 |
 | `0x0502` | `device.factoryReset` | bool | mvp | 是否支持恢复出厂 |
 | `0x0503` | `device.rename` | bool | draft | 是否支持设备重命名 |
@@ -274,7 +340,7 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 ## 11. 显示能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0601` | `display.brightness` | bool | mvp | 是否支持亮度控制 |
 | `0x0602` | `display.brightnessMin` | uint16 | mvp | 最小亮度 |
 | `0x0603` | `display.brightnessMax` | uint16 | mvp | 最大亮度 |
@@ -292,7 +358,7 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 ## 12. 视频能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0701` | `video.supported` | bool | draft | 是否支持视频控制 |
 | `0x0702` | `video.sources` | array | draft | 视频源列表 |
 | `0x0703` | `video.codecs` | bitmap | draft | 支持的视频编码 |
@@ -307,7 +373,7 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 ## 13. 音频能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0801` | `audio.supported` | bool | draft | 是否支持音频控制 |
 | `0x0802` | `audio.inputDevices` | array | draft | 输入设备 |
 | `0x0803` | `audio.outputDevices` | array | draft | 输出设备 |
@@ -321,7 +387,7 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 ## 14. 文件能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0901` | `file.supported` | bool | mvp | 是否支持文件传输 |
 | `0x0902` | `file.types` | bitmap | mvp | 支持的 fileType |
 | `0x0903` | `file.maxFileSize` | uint64 | mvp | 最大文件大小 |
@@ -335,7 +401,7 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 ## 15. 固件 / OTA 能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0A01` | `firmware.supported` | bool | mvp | 是否支持固件升级 |
 | `0x0A02` | `firmware.imageTypes` | bitmap | mvp | 支持的 imageType |
 | `0x0A03` | `firmware.maxImageSize` | uint64 | mvp | 最大镜像大小 |
@@ -349,7 +415,7 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 ### 15.1 firmware.verify bitmap
 
 | Bit | 算法 |
-|---:|---|
+|---:| --- |
 | 0 | `CRC32` |
 | 1 | `MD5` |
 | 2 | `SHA1` |
@@ -363,7 +429,7 @@ MVP 推荐：`CRC32 + SHA256`
 ## 16. 日志能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0B01` | `log.supported` | bool | mvp | 是否支持日志能力 |
 | `0x0B02` | `log.levels` | bitmap | mvp | 支持日志等级 |
 | `0x0B03` | `log.stream` | bool | mvp | 是否支持实时日志流 |
@@ -376,7 +442,7 @@ MVP 推荐：`CRC32 + SHA256`
 ## 17. 诊断能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0C01` | `diagnostic.supported` | bool | mvp | 是否支持诊断 |
 | `0x0C02` | `diagnostic.selfTest` | bool | mvp | 是否支持自检 |
 | `0x0C03` | `diagnostic.metrics` | bitmap | mvp | 支持的指标 |
@@ -389,7 +455,7 @@ MVP 推荐：`CRC32 + SHA256`
 ## 18. 输入 / KVM 能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0D01` | `input.supported` | bool | draft | 是否支持输入控制 |
 | `0x0D02` | `input.keyboard` | bool | draft | 是否支持键盘 |
 | `0x0D03` | `input.mouse` | bool | draft | 是否支持鼠标 |
@@ -402,7 +468,7 @@ MVP 推荐：`CRC32 + SHA256`
 ## 19. 网络能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0E01` | `network.supported` | bool | draft | 是否支持网络配置 |
 | `0x0E02` | `network.wifi` | bool | draft | 是否支持 Wi-Fi |
 | `0x0E03` | `network.ethernet` | bool | draft | 是否支持以太网 |
@@ -414,7 +480,7 @@ MVP 推荐：`CRC32 + SHA256`
 ## 20. 存储能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x0F01` | `storage.supported` | bool | draft | 是否支持存储管理 |
 | `0x0F02` | `storage.capacity` | uint64 | draft | 存储容量 |
 | `0x0F03` | `storage.freeSpace` | uint64 | draft | 剩余空间 |
@@ -425,7 +491,7 @@ MVP 推荐：`CRC32 + SHA256`
 ## 21. 传感器能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x1001` | `sensor.supported` | bool | draft | 是否支持传感器能力 |
 | `0x1002` | `sensor.types` | bitmap | draft | 支持的传感器类型 |
 | `0x1003` | `sensor.stream` | bool | draft | 是否支持传感器采样流 |
@@ -435,7 +501,7 @@ MVP 推荐：`CRC32 + SHA256`
 ## 22. 认证能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x1101` | `auth.supported` | bool | draft | 是否支持认证 |
 | `0x1102` | `auth.token` | bool | draft | 是否支持 token |
 | `0x1103` | `auth.permission` | bool | draft | 是否支持权限查询 |
@@ -445,7 +511,7 @@ MVP 推荐：`CRC32 + SHA256`
 ## 23. 隐私能力注册表
 
 | capabilityId | name | 类型 | 状态 | 说明 |
-|---:|---|---|---|---|
+|---:| --- |---| --- |---|
 | `0x1201` | `privacy.supported` | bool | draft | 是否支持隐私控制 |
 | `0x1202` | `privacy.mode` | bool | draft | 是否支持隐私模式 |
 | `0x1203` | `privacy.mask` | bool | draft | 是否支持隐私遮挡区域 |
@@ -481,7 +547,7 @@ MVP 推荐：`CRC32 + SHA256`
 MVP 必须实现：
 
 | methodId | methodName | 说明 |
-|---:|---|---|
+|---:| --- |---|
 | `0x0301` | `capability.getAll` | 获取完整能力摘要 |
 | `0x0302` | `capability.getDomain` | 获取指定 domain 能力 |
 | `0x0303` | `capability.hasMethod` | 判断 methodId 是否支持 |
@@ -490,7 +556,7 @@ MVP 必须实现：
 建议后续实现：
 
 | methodId | methodName | 说明 |
-|---:|---|---|
+|---:| --- |---|
 | `0x0305` | `capability.hasEvent` | 判断 eventId 是否支持 |
 | `0x0306` | `capability.getStreams` | 获取 Stream 能力 |
 | `0x0307` | `capability.getFirmware` | 获取固件升级能力 |
@@ -557,7 +623,7 @@ capability.getAll.result
 参数：
 
 | 字段 | fieldId | 类型 | 说明 |
-|---|---:|---|---|
+| --- |---:| --- |---|
 | domain | `0x01` | enum/string | 能力域 |
 
 支持 domain：`protocol / transport / rpc / stream / device / display / camera / video / audio / file / firmware / log / diagnostic / input / network / storage / sensor / auth / privacy / vendor`
@@ -569,13 +635,13 @@ capability.getAll.result
 参数：
 
 | 字段 | fieldId | 类型 | 说明 |
-|---|---:|---|---|
+| --- |---:| --- |---|
 | methodId | `0x01` | uint16 | 方法 ID |
 
 结果：
 
 | 字段 | fieldId | 类型 | 说明 |
-|---|---:|---|---|
+| --- |---:| --- |---|
 | supported | `0x01` | bool | 是否支持 |
 | reasonCode | `0x02` | uint16 | 不支持原因 |
 | minFirmwareVersion | `0x03` | string | 最低固件版本 |
@@ -595,7 +661,7 @@ capability.getAll.result
 老协议能力（设备信息命令、能力矩阵命令、Feature bitmap、CmdValue 支持表）必须统一转换为 Capability Registry，不得继续让上层直接判断旧字段。
 
 | 老协议能力 | AXTP capability | 说明 |
-|---|---|---|
+| --- |---| --- |
 | `CmdValue 0xC0021 exists` | `video.supported = true` | 支持视频模式设置 |
 | `AlphaUpgradeInfo exists` | `firmware.supported = true` | 支持升级 |
 | `FeatureBitmap.bit0` | `display.brightness = true` | 支持亮度 |
@@ -623,7 +689,7 @@ legacyMapping 字段：
 MVP Capability 集合以 `standard/registry/capability_registry.yaml` 为事实源，采用单项能力或单项配置值表达。下列集合是当前 AXTP v1 MVP 合同。
 
 | capabilityId | capabilityName | Type | 说明 |
-|---:|---|---|---|
+|---:| --- |---| --- |
 | `0x0001` | `protocol.payload.control` | bool | 支持 CONTROL payload |
 | `0x0002` | `protocol.payload.rpc` | bool | 支持 RPC payload |
 | `0x0003` | `protocol.payload.stream` | bool | 支持 STREAM payload |

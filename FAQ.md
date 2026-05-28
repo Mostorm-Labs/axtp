@@ -370,3 +370,41 @@ uint16_t methodId = 0x0502;
 把这个文件放到 `.claude/skills/axtp-add-domain.md` 后，在任何对话中说"我需要增加一个调整音量的业务逻辑"，Claude 就会加载这个 Skill，逐步引导你确认所有协议要素，最后直接输出可以提交的 YAML 条目。
 
 不需要每次都记住 Q8 的七个步骤，也不会漏掉 Capability 或 ErrorCode 这类容易忘记的环节。
+
+
+
+2.1 协议嗅探与老协议分流 (关于 14-老协议适配与迁移规范)
+
+现状： 文档 14 中提出了在 L1 Frame 之前或内部做 Adapter 的思路。
+
+盲区： 当现有的 App（比如旧版手机 App）通过 BLE 连上已经升级为 AXTP 的新固件时，设备端底层缓冲区的第一个字节进来，设备怎么瞬间判断这是“老协议”还是“新 AXTP 协议”？
+
+PM 建议： 必须在 C++ Demo (文档 21) 中明确“协议嗅探（Protocol Sniffing）”的策略。例如：判断 Header 的前两个字节是否为 AXTP 的 Magic Number (0x41 0x58)。如果是，走 AXTP Parser；如果不是，无条件抛给 Legacy Adapter 解析。（建议在文档 14 或 21 中增加这一句极其明确的“判定伪代码”）
+
+2.2 StreamId 的生命周期闭环 (关于 04-Stream规范)
+
+现状： RPC firmware.begin 协商出 streamId 并开启流。
+
+盲区： 如果流传输中途，App 崩溃了，或者用户强制退出了，设备端的 streamId (及其绑定的内存/Flash句柄) 怎么回收？
+
+PM 建议： 在文档 04 或 05 中明确：
+
+任何 streamId 都必须具备超时机制（Timeout）。如果在 fragmentTimeoutMs 内没有收到该 streamId 的包，设备应主动丢弃流上下文。
+
+如果底层链路（CONTROL CLOSE 或 TCP 断开）触发，应自动销毁该 Session 下所有的 streamId 资源，防止内存泄漏。
+
+2.3 事件订阅的 MVP 裁剪 (关于 10-EventId注册表)
+
+现状： 规范中提到了通过 IDENTIFY / REIDENTIFY 进行 eventSubscriptions 细粒度订阅。
+
+盲区： 对于 MVP 阶段的嵌入式设备来说，维护一个动态的“事件订阅过滤白名单”可能会增加不必要的状态机复杂度。
+
+PM 建议： 强烈建议在 MVP 阶段（特别是在 C++ Demo 中），采取“全量广播（傻瓜模式）”。只要 App 连接成功 (Identified)，设备产生的如 statusChanged 等核心事件就无条件 push。细粒度的按需订阅放到 v2.0 (P1) 再去实现。
+
+2.4 TLV Schema 的平滑退化 (关于 06-TLV-Schema编码规范)
+
+现状： 支持 uint、bool、enum、string、bytes 等基础类型，暂缓 object 嵌套。
+
+审查： 这个裁剪极其精准！对于当前业务，绝大多数结构都是扁平的（Flat）。
+
+PM 建议： 遇到极其复杂的老协议深层嵌套 JSON 怎么办？直接利用 bodyEncoding = RAW_BYTES，把老协议的 JSON/私有二进制当作一个透明的 bytes 塞进 TLV 的某个字段里透传。这样既不用升级 TLV 解析器，又能兼容老业务。

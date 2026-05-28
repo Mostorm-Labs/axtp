@@ -55,7 +55,7 @@ AXTP 迁移的目标不是推翻旧协议，而是：
 AXTP v1 只保留三类顶层 PayloadType：
 
 | PayloadType | 名称 | 旧协议映射方向 |
-|---:|---|---|
+|---:| --- |---|
 | `0x01` | `CONTROL` | 旧连接控制、ACK、NACK、心跳、恢复 |
 | `0x02` | `RPC` | 旧 JSON-RPC、BinaryRPC、CmdValue 命令 |
 | `0x03` | `STREAM` | 旧 OTA、文件块、日志流、RawStream、HID Raw |
@@ -171,7 +171,7 @@ AXTP Core Runtime
 Legacy Adapter 负责：
 
 ```text
-1. 识别旧协议包
+1. 识别旧协议包（协议嗅探，见 §3.3）
 2. 解析旧 CmdValue / Payload / Status
 3. 查 legacy_mapping.yaml
 4. 转换为 AXTP methodId / params / result / errorCode
@@ -187,6 +187,47 @@ Adapter 不负责：
 3. 绕过 Registry 直接调用业务逻辑
 4. 在 C++ 代码中硬编码大量旧协议分支
 ```
+
+---
+
+### 3.3 协议嗅探（Protocol Sniffing）
+
+当设备固件升级为 AXTP 后，旧版 App 仍可能通过 BLE/HID 连接。设备端必须在收到第一个字节时即判断协议类型，不得等待超时。
+
+**Standard Frame 判定（TCP/WebSocket Binary/USB Bulk）：**
+
+```cpp
+bool isAxtpStandardFrame(const uint8_t* buf, size_t len) {
+    if (len < 2) return false;
+    return buf[0] == 0x41 && buf[1] == 0x58; // Magic: 'A' 'X'
+}
+
+void dispatchFrame(const uint8_t* buf, size_t len) {
+    if (isAxtpStandardFrame(buf, len)) {
+        axtpParser.feed(buf, len);
+    } else {
+        legacyAdapter.feed(buf, len);
+    }
+}
+```
+
+**Compact Frame 判定（BLE/HID/UART）：**
+
+Compact Frame 无 Magic，依赖传输层帧边界。判定策略：
+
+1. 读取第一个字节 `VT`，高 4 bit 为 Version，低 4 bit 为 PayloadType
+2. 若 Version == `0x01` 且 PayloadType ∈ `{0x01, 0x02, 0x03}`，视为 AXTP Compact Frame
+3. 否则抛给 Legacy Adapter
+
+```cpp
+bool isAxtpCompactFrame(uint8_t firstByte) {
+    uint8_t version     = (firstByte >> 4) & 0x0F;
+    uint8_t payloadType = firstByte & 0x0F;
+    return version == 0x01 && payloadType >= 0x01 && payloadType <= 0x03;
+}
+```
+
+**原则**：嗅探逻辑必须是无状态的 O(1) 判定，不得引入缓冲区等待。判定失败即走 Legacy 路径，不得丢弃数据。
 
 ---
 
@@ -308,7 +349,7 @@ legacy:
 ### 5.2 Domain 映射表
 
 | 旧协议域 / 类型 | AXTP Domain | 说明 |
-|---|---|---|
+| --- |---| --- |
 | Alpha Upgrade | `firmware.*` | 升级、镜像、校验、回滚 |
 | Beta Device | `device.*` | 设备信息、版本、状态 |
 | Common Video | `video.*` | 视频模式、分辨率、帧率、编码 |
@@ -394,7 +435,7 @@ RPC Payload
 迁移器必须丢弃或映射旧 envelope 字段：
 
 | 旧 JSON-RPC 字段 | AXTP v1 位置 |
-|---|---|
+| --- |---|
 | `jsonrpc` | 丢弃；仅用于识别 Legacy 输入 |
 | `id` | `requestId` |
 | `method` | `method_registry.yaml -> methodId` |
@@ -522,7 +563,7 @@ CRC32 / SHA256 负责 chunk 或镜像级完整性
 ### 8.2 旧 Firmware method 到 AXTP method
 
 | 旧语义 | AXTP method | PayloadType |
-|---|---|---|
+| --- |---| --- |
 | firmware.begin / upgrade.start | `firmware.begin` | RPC |
 | firmware.write / writeChunk | `STREAM OTA chunk` | STREAM |
 | firmware.end | `firmware.end` | RPC |
@@ -535,7 +576,7 @@ CRC32 / SHA256 负责 chunk 或镜像级完整性
 ### 8.3 OTA Chunk 字段映射
 
 | 旧字段 | AXTP 字段 | 位置 |
-|---|---|---|
+| --- |---| --- |
 | `transferId` | `transferId` | STREAM Header / metadata |
 | `seqId` | `seqId` | STREAM Header |
 | `offset` | `offset` | STREAM Header / metadata |
@@ -589,7 +630,7 @@ data
 映射表：
 
 | 旧 streamType | AXTP Stream Profile（RPC 建流协商） | 说明 |
-|---|---|---|
+| --- |---| --- |
 | `raw.audio` | `media.audio`（通过 RPC audio.startCapture 协商） | cursorUnit=timestampUs |
 | `raw.video` | `media.video`（通过 RPC video.startPreview 协商） | cursorUnit=timestampUs |
 | `raw.sensor` | `sensor.sample`（通过 RPC sensor.startStream 协商） | cursorUnit=sampleIndex |
@@ -669,7 +710,7 @@ STREAM packet -> streamId / seqId / cursor / data
 ### 11.1 控制面映射
 
 | 旧语义 | AXTP method | PayloadType |
-|---|---|---|
+| --- |---| --- |
 | open file | `file.open` | RPC |
 | read file | `file.read` 或 `file.beginTransfer` | RPC |
 | write file | `file.write` 或 `file.beginTransfer` | RPC |
@@ -770,7 +811,7 @@ AXTP 拆成两类能力：
 ### 13.2 协议能力映射
 
 | 旧能力 | AXTP capability / control TLV |
-|---|---|
+| --- |---|
 | max report size | `maxFrameSize` / `maxPayloadSize` |
 | BLE MTU | `mtu` |
 | 是否支持 ACK | `ackMode` |
@@ -783,7 +824,7 @@ AXTP 拆成两类能力：
 ### 13.3 业务能力映射
 
 | 旧能力 | AXTP capability |
-|---|---|
+| --- |---|
 | 支持命令列表 | `supportedMethods` |
 | 支持事件列表 | `supportedEvents` |
 | 支持升级 | `firmware.supported` |
@@ -821,7 +862,7 @@ STREAM NACK reasonCode
 ### 14.2 默认映射表
 
 | 旧状态 | AXTP ErrorCode | 说明 |
-|---:|---:|---|
+|---:|---:| --- |
 | `0` | `0x0000 SUCCESS` | 成功 |
 | `1` | `0x0001 UNKNOWN_ERROR` | 通用失败 |
 | `2` | `0x0005 BUSY` | 设备忙 |
@@ -970,7 +1011,7 @@ Tunnel 模式仅用于：
 建议在 CONTROL OPEN / ACCEPT 中加入以下 TLV：
 
 | 字段 | 类型 | 说明 |
-|---|---|---|
+| --- |---| --- |
 | `legacySupported` | bitmap | 支持哪些旧协议 |
 | `legacyMode` | enum | native / adapter / tunnel / dual_stack |
 | `legacyVersion` | string/uint16 | 旧协议版本 |
@@ -1067,7 +1108,7 @@ mappings:
 ### 18.3 必填字段
 
 | 字段 | 必填 | 说明 |
-|---|---|---|
+| --- |---| --- |
 | `legacy.protocol` | 是 | 旧协议名称 |
 | `legacy.cmdValue` | 是 | 旧命令号 |
 | `legacy.oldName` | 建议 | 旧命令名 |
@@ -1334,7 +1375,7 @@ MVP 阶段只迁移最小闭环，不要求覆盖所有旧命令。
 ### 23.1 必须迁移的 RPC 命令
 
 | AXTP method | 说明 |
-|---|---|
+| --- |---|
 | `device.getInfo` | 验证旧设备信息查询 |
 | `device.getStatus` | 验证状态查询 |
 | `capability.getAll` | 验证旧能力表转换 |
@@ -1348,7 +1389,7 @@ MVP 阶段只迁移最小闭环，不要求覆盖所有旧命令。
 ### 23.2 必须迁移的 Stream Profile
 
 | profileName | 说明 |
-|---|---|
+| --- |---|
 | `firmware.ota` | 固件 chunk |
 | `log.realtime` | 可选，调试阶段建议支持 |
 | `control.hid_raw` | 可选，仅当 MVP 包含 HID Raw / KVM |
@@ -1425,7 +1466,7 @@ AXTP 请求 -> 旧请求
 ## 26. 与其他文档的关系
 
 | 文档 | 关系 |
-|---|---|
+| --- |---|
 | `01-AXTP-整体协议规范.md` | 定义 Frame / PayloadType / Profile |
 | `02-AXTP-Control信令协议规范.md` | 定义 OPEN / ACK / NACK / RESUME |
 | `03-AXTP-RPC协议与二进制映射规范.md` | 定义 RPC request/response/event 映射 |
