@@ -105,11 +105,13 @@ export interface TypeField {
 export interface TypeDefinition {
   name: string;
   kind: string;
+  description?: string;
   fields: TypeField[];
 }
 
 export interface MethodDefinition {
   name: string;
+  description?: string;
   methodId: number;
   bitOffset: number;
   domain: string;
@@ -126,6 +128,7 @@ export interface MethodDefinition {
 
 export interface EventDefinition {
   name: string;
+  description?: string;
   eventId: number;
   bitOffset: number;
   domain: string;
@@ -157,7 +160,6 @@ export interface ProfileDefinition {
   requiredEvents: string[];
   requiredTypes: string[];
   requiredErrors: string[];
-  requiredCapabilities: string[];
   transportProfiles: string[];
   frameProfile?: string;
   frameProfiles: string[];

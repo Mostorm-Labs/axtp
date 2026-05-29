@@ -206,10 +206,7 @@
     "optionalOpcodes": [
       "READY"
     ],
-    "reservedOpcodes": [
-      "NACK",
-      "RESUME"
-    ],
+    "reservedOpcodes": [],
     "rules": [
       "v1 Core requires OPEN and ACCEPT before RPC or STREAM payloads.",
       "READY is not required by v1 Core and must not be assumed by peers.",
@@ -226,20 +223,12 @@
           "type": "uint32"
         },
         {
-          "name": "seq",
+          "name": "seqId",
           "type": "uint32"
         },
         {
-          "name": "position",
-          "type": "uint32"
-        },
-        {
-          "name": "chunkLength",
-          "type": "uint16"
-        },
-        {
-          "name": "flags",
-          "type": "uint16"
+          "name": "cursor",
+          "type": "uint64"
         }
       ]
     },
@@ -261,17 +250,7 @@
   },
   "types": [
     {
-      "name": "CommonEmptyRequest",
-      "kind": "object",
-      "fields": []
-    },
-    {
-      "name": "CommonEmptyResponse",
-      "kind": "object",
-      "fields": []
-    },
-    {
-      "name": "DeviceGetInfoRequest",
+      "name": "Empty",
       "kind": "object",
       "fields": []
     },
@@ -310,11 +289,6 @@
       ]
     },
     {
-      "name": "CapabilitySupportedMethodsRequest",
-      "kind": "object",
-      "fields": []
-    },
-    {
       "name": "CapabilitySupportedMethodsResponse",
       "kind": "object",
       "fields": [
@@ -329,14 +303,9 @@
           "name": "methodMasks",
           "type": "bytes",
           "required": true,
-          "derivedFrom": "methods.bitOffset"
+          "derivedFrom": "methods[].bitOffset"
         }
       ]
-    },
-    {
-      "name": "DisplayGetBrightnessRequest",
-      "kind": "object",
-      "fields": []
     },
     {
       "name": "DisplayGetBrightnessResponse",
@@ -402,29 +371,62 @@
       "fields": [
         {
           "fieldId": 1,
-          "name": "totalSize",
-          "type": "uint32",
-          "required": true
+          "name": "imageType",
+          "type": "enum",
+          "required": true,
+          "description": "Firmware image type."
         },
         {
           "fieldId": 2,
-          "name": "hashAlgo",
-          "type": "string",
+          "name": "imageSize",
+          "type": "uint64",
           "required": true,
-          "maxLength": 16
+          "description": "Full firmware image size in bytes."
         },
         {
           "fieldId": 3,
-          "name": "hash",
-          "type": "bytes",
+          "name": "imageVersion",
+          "type": "string",
           "required": true,
-          "maxLength": 64
+          "maxLength": 32,
+          "description": "Target firmware version."
         },
         {
           "fieldId": 4,
-          "name": "chunkSize",
+          "name": "verifyType",
+          "type": "string",
+          "required": true,
+          "maxLength": 16,
+          "description": "Object-level verification algorithm such as md5, crc32 or sha256."
+        },
+        {
+          "fieldId": 5,
+          "name": "verifyValue",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Hex verification value for the full firmware image."
+        },
+        {
+          "fieldId": 6,
+          "name": "chunkSizeHint",
           "type": "uint16",
-          "required": true
+          "required": false,
+          "description": "Preferred STREAM chunk size in bytes."
+        },
+        {
+          "fieldId": 7,
+          "name": "windowSizeHint",
+          "type": "uint16",
+          "required": false,
+          "description": "Preferred stream-layer send window."
+        },
+        {
+          "fieldId": 8,
+          "name": "flags",
+          "type": "uint16",
+          "required": false,
+          "description": "OTA behavior flags such as resume or force-update hints."
         }
       ]
     },
@@ -434,47 +436,82 @@
       "fields": [
         {
           "fieldId": 1,
-          "name": "streamId",
+          "name": "transferId",
           "type": "uint32",
-          "required": true
+          "required": true,
+          "description": "OTA transfer identifier."
         },
         {
           "fieldId": 2,
-          "name": "profile",
-          "type": "string",
+          "name": "streamId",
+          "type": "uint32",
           "required": true,
-          "maxLength": 32
+          "description": "STREAM data channel identifier."
         },
         {
           "fieldId": 3,
-          "name": "chunkSize",
-          "type": "uint16",
-          "required": true
+          "name": "acceptedOffset",
+          "type": "uint64",
+          "required": true,
+          "description": "First byte offset the sender should transmit."
         },
         {
           "fieldId": 4,
-          "name": "ackMode",
-          "type": "enum",
-          "required": true
+          "name": "chunkSize",
+          "type": "uint16",
+          "required": true,
+          "description": "Negotiated STREAM chunk size in bytes."
         },
         {
           "fieldId": 5,
-          "name": "cursorUnit",
-          "type": "enum",
-          "required": true
+          "name": "windowSize",
+          "type": "uint16",
+          "required": true,
+          "description": "Negotiated stream-layer send window."
         },
         {
           "fieldId": 6,
-          "name": "reservedStreamHeaderProfile",
-          "type": "enum",
+          "name": "resumeToken",
+          "type": "bytes",
           "required": false,
-          "deprecated": true
+          "maxLength": 32,
+          "description": "Opaque resume token."
         },
         {
           "fieldId": 7,
+          "name": "otaState",
+          "type": "enum",
+          "required": true,
+          "description": "Current OTA state."
+        },
+        {
+          "fieldId": 8,
+          "name": "profile",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Bound Stream Profile, usually firmware.ota."
+        },
+        {
+          "fieldId": 9,
+          "name": "ackMode",
+          "type": "enum",
+          "required": true,
+          "description": "Stream-layer reliability mode."
+        },
+        {
+          "fieldId": 10,
+          "name": "cursorUnit",
+          "type": "enum",
+          "required": true,
+          "description": "Cursor unit used by STREAM packets, usually byteOffset."
+        },
+        {
+          "fieldId": 11,
           "name": "maxDataSize",
           "type": "uint16",
-          "required": false
+          "required": false,
+          "description": "Maximum STREAM data bytes per packet."
         }
       ]
     },
@@ -484,9 +521,51 @@
       "fields": [
         {
           "fieldId": 1,
-          "name": "streamId",
+          "name": "transferId",
           "type": "uint32",
-          "required": true
+          "required": true,
+          "description": "OTA transfer identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "totalBytesSent",
+          "type": "uint64",
+          "required": false,
+          "description": "Total firmware bytes sent by the host."
+        },
+        {
+          "fieldId": 3,
+          "name": "totalChunks",
+          "type": "uint32",
+          "required": false,
+          "description": "Total STREAM chunks sent by the host."
+        }
+      ]
+    },
+    {
+      "name": "FirmwareEndResponse",
+      "kind": "object",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "receivedBytes",
+          "type": "uint64",
+          "required": true,
+          "description": "Total bytes accepted by the device."
+        },
+        {
+          "fieldId": 2,
+          "name": "receivedChunks",
+          "type": "uint32",
+          "required": false,
+          "description": "Total chunks accepted by the device."
+        },
+        {
+          "fieldId": 3,
+          "name": "otaState",
+          "type": "enum",
+          "required": true,
+          "description": "Current OTA state."
         }
       ]
     },
@@ -496,9 +575,30 @@
       "fields": [
         {
           "fieldId": 1,
-          "name": "streamId",
+          "name": "transferId",
           "type": "uint32",
-          "required": true
+          "required": true,
+          "description": "OTA transfer identifier."
+        }
+      ]
+    },
+    {
+      "name": "FirmwareVerifyResponse",
+      "kind": "object",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "verifyResult",
+          "type": "enum",
+          "required": true,
+          "description": "Verification result for the transferred image."
+        },
+        {
+          "fieldId": 2,
+          "name": "otaState",
+          "type": "enum",
+          "required": true,
+          "description": "Current OTA state."
         }
       ]
     },
@@ -508,9 +608,37 @@
       "fields": [
         {
           "fieldId": 1,
-          "name": "streamId",
+          "name": "transferId",
           "type": "uint32",
-          "required": true
+          "required": true,
+          "description": "OTA transfer identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "applyMode",
+          "type": "enum",
+          "required": true,
+          "description": "Apply mode such as APPLY_NOW, APPLY_ON_REBOOT or STAGE_ONLY."
+        }
+      ]
+    },
+    {
+      "name": "FirmwareApplyResponse",
+      "kind": "object",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "otaState",
+          "type": "enum",
+          "required": true,
+          "description": "Current OTA state."
+        },
+        {
+          "fieldId": 2,
+          "name": "rebootRequired",
+          "type": "bool",
+          "required": true,
+          "description": "Whether applying the image requires reboot."
         }
       ]
     },
@@ -520,7 +648,7 @@
       "fields": [
         {
           "fieldId": 1,
-          "name": "streamId",
+          "name": "transferId",
           "type": "uint32",
           "required": true
         },
@@ -588,13 +716,14 @@
   "methods": [
     {
       "name": "device.getInfo",
+      "description": "Return static device identity and firmware metadata.",
       "methodId": 257,
       "bitOffset": 0,
       "domain": "device",
       "since": "1.0.0",
       "status": "stable",
       "request": {
-        "type": "DeviceGetInfoRequest"
+        "type": "Empty"
       },
       "response": {
         "type": "DeviceGetInfoResponse"
@@ -620,13 +749,14 @@
     },
     {
       "name": "capability.supportedMethods",
+      "description": "Return the per-domain method bitmap supported by the current session.",
       "methodId": 769,
       "bitOffset": 0,
       "domain": "capability",
       "since": "1.0.0",
       "status": "stable",
       "request": {
-        "type": "CapabilitySupportedMethodsRequest"
+        "type": "Empty"
       },
       "response": {
         "type": "CapabilitySupportedMethodsResponse"
@@ -646,13 +776,14 @@
     },
     {
       "name": "display.getBrightness",
+      "description": "Read the current display brightness percentage.",
       "methodId": 1281,
       "bitOffset": 0,
       "domain": "display",
       "since": "1.0.0",
       "status": "stable",
       "request": {
-        "type": "DisplayGetBrightnessRequest"
+        "type": "Empty"
       },
       "response": {
         "type": "DisplayGetBrightnessResponse"
@@ -672,6 +803,7 @@
     },
     {
       "name": "display.setBrightness",
+      "description": "Set the display brightness and optionally request a transition duration.",
       "methodId": 1282,
       "bitOffset": 1,
       "domain": "display",
@@ -681,7 +813,7 @@
         "type": "DisplaySetBrightnessRequest"
       },
       "response": {
-        "type": "CommonEmptyResponse"
+        "type": "Empty"
       },
       "encodings": [
         "json",
@@ -706,6 +838,7 @@
     },
     {
       "name": "firmware.begin",
+      "description": "Begin a firmware OTA transfer and allocate the STREAM context.",
       "methodId": 2818,
       "bitOffset": 0,
       "domain": "firmware",
@@ -735,6 +868,7 @@
     },
     {
       "name": "firmware.end",
+      "description": "Finish sending firmware data for the active OTA stream.",
       "methodId": 2819,
       "bitOffset": 1,
       "domain": "firmware",
@@ -744,7 +878,7 @@
         "type": "FirmwareEndRequest"
       },
       "response": {
-        "type": "CommonEmptyResponse"
+        "type": "FirmwareEndResponse"
       },
       "encodings": [
         "json",
@@ -762,6 +896,7 @@
     },
     {
       "name": "firmware.verify",
+      "description": "Verify the transferred firmware object before applying it.",
       "methodId": 2820,
       "bitOffset": 2,
       "domain": "firmware",
@@ -771,7 +906,7 @@
         "type": "FirmwareVerifyRequest"
       },
       "response": {
-        "type": "CommonEmptyResponse"
+        "type": "FirmwareVerifyResponse"
       },
       "encodings": [
         "json",
@@ -792,6 +927,7 @@
     },
     {
       "name": "firmware.apply",
+      "description": "Apply a verified firmware image.",
       "methodId": 2821,
       "bitOffset": 3,
       "domain": "firmware",
@@ -801,7 +937,7 @@
         "type": "FirmwareApplyRequest"
       },
       "response": {
-        "type": "CommonEmptyResponse"
+        "type": "FirmwareApplyResponse"
       },
       "encodings": [
         "json",
@@ -823,6 +959,7 @@
   "events": [
     {
       "name": "display.brightnessChanged",
+      "description": "Emitted when display brightness changes.",
       "eventId": 34055,
       "bitOffset": 0,
       "domain": "display",
@@ -842,6 +979,7 @@
     },
     {
       "name": "firmware.updateProgress",
+      "description": "Emitted while firmware OTA transfer or processing advances.",
       "eventId": 35586,
       "bitOffset": 0,
       "domain": "firmware",
@@ -861,6 +999,7 @@
     },
     {
       "name": "firmware.updateCompleted",
+      "description": "Emitted when firmware update processing completes successfully.",
       "eventId": 35587,
       "bitOffset": 1,
       "domain": "firmware",
@@ -880,6 +1019,7 @@
     },
     {
       "name": "firmware.updateFailed",
+      "description": "Emitted when firmware update processing fails.",
       "eventId": 35588,
       "bitOffset": 2,
       "domain": "firmware",
@@ -1113,7 +1253,7 @@
     {
       "name": "FW_VERIFY_FAILED",
       "code": 1547,
-      "category": "firmware",
+      "category": "business",
       "since": "1.0.0",
       "status": "stable",
       "severity": "error",
@@ -1150,18 +1290,6 @@
         "STREAM_NOT_FOUND",
         "STREAM_CRC_ERROR",
         "BUSY"
-      ],
-      "requiredCapabilities": [
-        "protocol.payload.control",
-        "protocol.payload.rpc",
-        "protocol.payload.stream",
-        "device.info",
-        "capability.supportedMethods",
-        "display.brightness",
-        "display.brightnessMin",
-        "display.brightnessMax",
-        "display.brightnessStep",
-        "firmware.ota"
       ],
       "transportProfiles": [
         "AXTP-WS",
@@ -1206,7 +1334,6 @@
         "STREAM_CRC_ERROR",
         "BUSY"
       ],
-      "requiredCapabilities": [],
       "transportProfiles": [
         "AXTP-HID-64"
       ],

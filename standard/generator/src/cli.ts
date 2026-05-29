@@ -5,6 +5,7 @@ import path from "node:path";
 import { formatGeneratorError } from "./errors.js";
 import { emitAll, emitMarkdown, emitProtocolDocs, emitTestVectors } from "./emitters/index.js";
 import { loadSpec } from "./loader.js";
+import { loadProtocolDocs, validateProtocolDocsConsistency } from "./protocolDocsValidator.js";
 import { loadProtocolDefinition } from "./protocolLoader.js";
 import { validateProtocolDefinition } from "./protocolValidator.js";
 import { validateSpec } from "./validator.js";
@@ -27,8 +28,13 @@ async function loadAndValidate(specPath: string) {
 }
 
 async function loadAndValidateProtocol(specPath: string) {
-  const model = await loadProtocolDefinition(resolveInputPath(specPath));
-  const messages = validateProtocolDefinition(model);
+  const specRoot = resolveInputPath(specPath);
+  const model = await loadProtocolDefinition(specRoot);
+  const docs = await loadProtocolDocs(specRoot);
+  const messages = [
+    ...validateProtocolDefinition(model),
+    ...validateProtocolDocsConsistency(model, docs)
+  ];
   return { model, messages };
 }
 

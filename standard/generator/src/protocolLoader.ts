@@ -67,6 +67,7 @@ function mapTypes(types: unknown): TypeDefinition[] {
     return {
       name,
       kind: String(item.kind ?? "object"),
+      description: item.description === undefined ? undefined : String(item.description),
       fields: asArray(item.fields).map((field) => mapTypeField(field, name))
     };
   });
@@ -75,6 +76,7 @@ function mapTypes(types: unknown): TypeDefinition[] {
 function mapMethods(methods: unknown): MethodDefinition[] {
   return asArray(methods).map((item) => ({
     name: String(item.name),
+    description: item.description === undefined ? undefined : String(item.description),
     methodId: normalizeId(item.methodId, `methods.${item.name}.methodId`),
     bitOffset: normalizeId(item.bitOffset, `methods.${item.name}.bitOffset`),
     domain: String(item.domain),
@@ -93,6 +95,7 @@ function mapMethods(methods: unknown): MethodDefinition[] {
 function mapEvents(events: unknown): EventDefinition[] {
   return asArray(events).map((item) => ({
     name: String(item.name),
+    description: item.description === undefined ? undefined : String(item.description),
     eventId: normalizeId(item.eventId, `events.${item.name}.eventId`),
     bitOffset: normalizeId(item.bitOffset, `events.${item.name}.bitOffset`),
     domain: String(item.domain),
@@ -128,7 +131,6 @@ function mapProfiles(profiles: unknown): ProfileDefinition[] {
     requiredEvents: asStringArray(item.requiredEvents),
     requiredTypes: asStringArray(item.requiredTypes),
     requiredErrors: asStringArray(item.requiredErrors),
-    requiredCapabilities: asStringArray(item.requiredCapabilities),
     transportProfiles: asStringArray(item.transportProfiles),
     frameProfile: item.frameProfile === undefined ? undefined : String(item.frameProfile),
     frameProfiles: asStringArray(item.frameProfiles),

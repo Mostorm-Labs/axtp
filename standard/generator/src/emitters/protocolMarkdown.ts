@@ -16,6 +16,10 @@ function esc(value: unknown): string {
     .replace(/\n+/g, "<br>");
 }
 
+function optional(value: unknown): string {
+  return value === undefined || value === "" ? "-" : String(value);
+}
+
 function list(values: string[] | undefined): string {
   return values && values.length > 0 ? values.map(esc).join("<br>") : "-";
 }
@@ -25,7 +29,7 @@ function sentenceList(values: string[] | undefined): string[] {
 }
 
 function table(headers: string[], rows: string[][]): string[] {
-  if (rows.length === 0) return ["_No entries._"];
+  if (rows.length === 0) return ["_No fields._"];
   return [
     `| ${headers.map(esc).join(" | ")} |`,
     `| ${headers.map(() => "---").join(" | ")} |`,
@@ -33,12 +37,13 @@ function table(headers: string[], rows: string[][]): string[] {
   ];
 }
 
-function optional(value: unknown): string {
-  return value === undefined || value === "" ? "-" : String(value);
-}
-
-function formatMaybeHex(value: unknown, width = 2): string {
-  return typeof value === "number" ? hex(value, width) : optional(value);
+function anchor(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/`/g, "")
+    .replace(/[^a-z0-9\u4e00-\u9fa5 -]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
 }
 
 function sortedMethods(methods: MethodDefinition[]): MethodDefinition[] {
@@ -53,12 +58,24 @@ function sortedErrors(errors: ErrorDefinition[]): ErrorDefinition[] {
   return [...errors].sort((a, b) => a.code - b.code || a.name.localeCompare(b.name));
 }
 
-function sortedTypes(types: TypeDefinition[]): TypeDefinition[] {
-  return [...types].sort((a, b) => a.name.localeCompare(b.name));
-}
-
 function sortedProfiles(profiles: ProfileDefinition[]): ProfileDefinition[] {
   return [...profiles].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function domainsFor(items: Array<{ domain: string }>): string[] {
+  return [...new Set(items.map((item) => item.domain))].sort();
+}
+
+function methodsInDomain(model: ProtocolModel, domain: string): MethodDefinition[] {
+  return sortedMethods(model.methods).filter((method) => method.domain === domain);
+}
+
+function eventsInDomain(model: ProtocolModel, domain: string): EventDefinition[] {
+  return sortedEvents(model.events).filter((event) => event.domain === domain);
+}
+
+function typeMap(model: ProtocolModel): Map<string, TypeDefinition> {
+  return new Map(model.types.map((type) => [type.name, type]));
 }
 
 function renderFieldConstraint(field: TypeField): string {
@@ -69,32 +86,40 @@ function renderFieldConstraint(field: TypeField): string {
     field.derivedFrom === undefined ? undefined : `derivedFrom=${field.derivedFrom}`,
     field.deprecated ? "deprecated" : undefined
   ].filter(Boolean);
-  return constraints.length > 0 ? constraints.join(", ") : "-";
+  return constraints.length > 0 ? constraints.join(", ") : "None";
 }
 
-function renderType(type: TypeDefinition): string[] {
+function renderFields(type: TypeDefinition | undefined): string[] {
+  if (!type || type.fields.length === 0) return ["No fields."];
+  return table(
+    ["Name", "Type", "Required", "Field ID", "Constraints", "Description"],
+    type.fields.map((field) => [
+      field.name,
+      field.type,
+      field.required ? "Yes" : "No",
+      hex(field.fieldId, 2),
+      renderFieldConstraint(field),
+      optional(field.description)
+    ])
+  );
+}
+
+function renderInlineType(title: string, typeName: string, types: Map<string, TypeDefinition>): string[] {
+  const type = types.get(typeName);
   return [
-    `### ${type.name}`,
+    `**${title}:**`,
     "",
-    `Kind: \`${type.kind}\``,
+    `Type: \`${typeName}\``,
     "",
-    ...table(
-      ["Field ID", "Name", "Type", "Required", "Constraints", "Description"],
-      type.fields.map((field) => [
-        hex(field.fieldId, 2),
-        field.name,
-        field.type,
-        field.required ? "yes" : "no",
-        renderFieldConstraint(field),
-        optional(field.description)
-      ])
-    )
+    ...renderFields(type)
   ];
 }
 
-function renderMethod(method: MethodDefinition): string[] {
+function renderMethod(method: MethodDefinition, types: Map<string, TypeDefinition>): string[] {
   return [
-    `### ${method.name}`,
+    `#### ${method.name}`,
+    "",
+    method.description ?? "No description provided.",
     "",
     ...table(
       ["Property", "Value"],
@@ -104,20 +129,24 @@ function renderMethod(method: MethodDefinition): string[] {
         ["Bit Offset", String(method.bitOffset)],
         ["Since", method.since],
         ["Status", method.status],
-        ["Request Type", method.request.type],
-        ["Response Type", method.response.type],
         ["Encodings", list(method.encodings)],
         ["Capabilities", list(method.capabilities)],
-        ["Events", list(method.events)],
-        ["Errors", list(method.errors)]
+        ["Possible Events", list(method.events)],
+        ["Possible Errors", list(method.errors)]
       ]
-    )
+    ),
+    "",
+    ...renderInlineType("Request Fields", method.request.type, types),
+    "",
+    ...renderInlineType("Response Fields", method.response.type, types)
   ];
 }
 
-function renderEvent(event: EventDefinition): string[] {
+function renderEvent(event: EventDefinition, types: Map<string, TypeDefinition>): string[] {
   return [
-    `### ${event.name}`,
+    `#### ${event.name}`,
+    "",
+    event.description ?? "No description provided.",
     "",
     ...table(
       ["Property", "Value"],
@@ -127,12 +156,23 @@ function renderEvent(event: EventDefinition): string[] {
         ["Bit Offset", String(event.bitOffset)],
         ["Since", event.since],
         ["Status", event.status],
-        ["Payload Type", event.payload.type],
         ["Severity", optional(event.severity)],
         ["Trigger", list(event.trigger)],
         ["Capabilities", list(event.capabilities)]
       ]
-    )
+    ),
+    "",
+    ...renderInlineType("Payload Fields", event.payload.type, types)
+  ];
+}
+
+function renderAdditionalType(type: TypeDefinition): string[] {
+  return [
+    `### ${type.name}`,
+    "",
+    type.description ?? `Kind: \`${type.kind}\``,
+    "",
+    ...renderFields(type)
   ];
 }
 
@@ -148,22 +188,60 @@ function renderProfile(profile: ProfileDefinition): string[] {
         ["Extends", optional(profile.extends)],
         ["Required Methods", list(profile.requiredMethods)],
         ["Required Events", list(profile.requiredEvents)],
-        ["Required Types", list(profile.requiredTypes)],
         ["Required Errors", list(profile.requiredErrors)],
-        ["Required Capabilities", list(profile.requiredCapabilities)],
-        ["Transport Profiles", list(profile.transportProfiles)],
-        ["Frame Profiles", list(profile.frameProfiles.length > 0 ? profile.frameProfiles : profile.frameProfile ? [profile.frameProfile] : [])],
         ["Notes", optional(profile.notes)]
       ]
     )
   ];
 }
 
+function referencedTypeNames(model: ProtocolModel): Set<string> {
+  return new Set([
+    ...model.methods.flatMap((method) => [method.request.type, method.response.type]),
+    ...model.events.map((event) => event.payload.type)
+  ]);
+}
+
+function renderMainToc(model: ProtocolModel): string[] {
+  const methodDomains = domainsFor(model.methods);
+  const eventDomains = domainsFor(model.events);
+  const referencedTypes = referencedTypeNames(model);
+  const hasAdditionalTypes = model.types.some((type) => !referencedTypes.has(type.name));
+  return [
+    "## Main Table of Contents",
+    "",
+    "- [Overview](#overview)",
+    "- [Design Goals / Non-Goals](#design-goals--non-goals)",
+    "- [Connection Lifecycle](#connection-lifecycle)",
+    "- [Capability Discovery](#capability-discovery)",
+    "- [Methods](#methods)",
+    ...methodDomains.flatMap((domain) => [
+      `  - [${domain} Methods](#${anchor(`${domain} Methods`)})`,
+      ...methodsInDomain(model, domain).map((method) => `    - [${method.name}](#${anchor(method.name)})`)
+    ]),
+    "- [Events](#events)",
+    ...eventDomains.flatMap((domain) => [
+      `  - [${domain} Events](#${anchor(`${domain} Events`)})`,
+      ...eventsInDomain(model, domain).map((event) => `    - [${event.name}](#${anchor(event.name)})`)
+    ]),
+    ...(hasAdditionalTypes ? ["- [Additional Types](#additional-types)"] : []),
+    "- [Errors Reference](#errors-reference)",
+    "- [Profiles Reference](#profiles-reference)"
+  ];
+}
+
 export function renderProtocolMarkdown(model: ProtocolModel): string {
+  const types = typeMap(model);
+  const referencedTypes = referencedTypeNames(model);
+  const additionalTypes = model.types
+    .filter((type) => !referencedTypes.has(type.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
   const lines: string[] = [
+    "<!-- This file was automatically generated. Do not edit directly! -->",
+    "",
     `# ${model.overview.title}`,
     "",
-    "> Generated from protocol/axtp.protocol.yaml. Do not edit by hand.",
+    ...renderMainToc(model),
     "",
     "## Overview",
     "",
@@ -189,13 +267,6 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
     "### Non-Goals",
     "",
     ...sentenceList(model.overview.nonGoals),
-    "",
-    "## Architecture",
-    "",
-    ...table(
-      ["Layer", "Description"],
-      model.architecture.layers.map((layer) => [layer.name, layer.description])
-    ),
     "",
     "## Connection Lifecycle",
     "",
@@ -223,90 +294,37 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
       ])
     ),
     "",
-    "## Frame Profiles",
-    "",
-    ...table(
-      ["Name", "Magic", "L1", "L2", "Supports Mixing"],
-      model.frameProfiles.map((profile) => [
-        profile.name,
-        formatMaybeHex(profile.magic),
-        profile.l1,
-        profile.l2,
-        profile.supportsMixing ? "yes" : "no"
-      ])
-    ),
-    "",
-    "## Transport Profiles",
-    "",
-    ...table(
-      ["Name", "Family", "Frame Profile", "Production", "Max Frame Size", "Usage"],
-      model.transports.map((transport) => [
-        transport.name,
-        transport.family,
-        transport.frameProfile,
-        transport.production ? "yes" : "no",
-        optional(transport.maxFrameSize),
-        optional(transport.usage)
-      ])
-    ),
-    "",
-    "## Payload Types",
-    "",
-    ...table(
-      ["Name", "ID", "Header Bytes", "Description"],
-      model.payloadTypes.map((payload) => [
-        payload.name,
-        hex(payload.id, 2),
-        String(payload.headerBytes),
-        payload.description
-      ])
-    ),
-    "",
-    "## Control Rules",
-    "",
-    ...table(
-      ["Required Opcodes", "Optional Opcodes", "Reserved Opcodes"],
-      [[list(model.control.requiredOpcodes), list(model.control.optionalOpcodes), list(model.control.reservedOpcodes)]]
-    ),
-    "",
-    ...sentenceList(model.control.rules),
-    "",
     "## Capability Discovery",
     "",
     "Capability discovery is exposed through `capability.supportedMethods`. The `CapabilitySupportedMethodsResponse.methodMasks` field is derived from `methods[].bitOffset` within each method domain.",
     "",
     ...table(
       ["Domain", "Methods"],
-      [...new Set(model.methods.map((method) => method.domain))]
-        .sort()
-        .map((domain) => [
-          domain,
-          list(sortedMethods(model.methods).filter((method) => method.domain === domain).map((method) => `${method.bitOffset}: ${method.name}`))
-        ])
+      domainsFor(model.methods).map((domain) => [
+        domain,
+        list(methodsInDomain(model, domain).map((method) => `${method.bitOffset}: ${method.name}`))
+      ])
     ),
     "",
-    "## Stream Transfer Model",
+    "## Methods",
     "",
-    ...table(
-      ["Header", "Size", "Fields"],
-      [[
-        model.stream.header.name,
-        String(model.stream.header.size),
-        list(model.stream.header.fields.map((field) => `${field.name}: ${field.type}`))
-      ]]
-    ),
+    ...domainsFor(model.methods).flatMap((domain) => [
+      `### ${domain} Methods`,
+      "",
+      ...methodsInDomain(model, domain).flatMap((method) => [...renderMethod(method, types), "", "---", ""])
+    ]),
+    "## Events",
     "",
-    ...sentenceList(model.stream.rules),
-    "",
-    "## Methods Reference",
-    "",
-    ...sortedMethods(model.methods).flatMap((method) => [...renderMethod(method), ""]),
-    "## Events Reference",
-    "",
-    ...sortedEvents(model.events).flatMap((event) => [...renderEvent(event), ""]),
-    "## Types Reference",
-    "",
-    ...sortedTypes(model.types).flatMap((type) => [...renderType(type), ""]),
+    ...domainsFor(model.events).flatMap((domain) => [
+      `### ${domain} Events`,
+      "",
+      ...eventsInDomain(model, domain).flatMap((event) => [...renderEvent(event, types), "", "---", ""])
+    ]),
+    ...(additionalTypes.length > 0 ? [
+      "## Additional Types",
+      "",
+      ...additionalTypes.flatMap((type) => [...renderAdditionalType(type), "", "---", ""])
+    ] : []),
     "## Errors Reference",
     "",
     ...table(
@@ -316,7 +334,7 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
         error.name,
         error.category,
         error.severity,
-        error.retryable ? "yes" : "no",
+        error.retryable ? "Yes" : "No",
         error.status,
         error.message
       ])
@@ -324,7 +342,7 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
     "",
     "## Profiles Reference",
     "",
-    ...sortedProfiles(model.profiles).flatMap((profile) => [...renderProfile(profile), ""])
+    ...sortedProfiles(model.profiles).flatMap((profile) => [...renderProfile(profile), "", "---", ""])
   ];
 
   return `${lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()}\n`;

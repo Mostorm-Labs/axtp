@@ -146,9 +146,7 @@ control:
     - ACCEPT
   optionalOpcodes:
     - READY
-  reservedOpcodes:
-    - NACK
-    - RESUME
+  reservedOpcodes: []
   rules:
     - v1 Core requires OPEN and ACCEPT before RPC or STREAM payloads.
     - READY is not required by v1 Core and must not be assumed by peers.
@@ -160,10 +158,8 @@ stream:
     size: 16
     fields:
       - { name: streamId, type: uint32 }
-      - { name: seq, type: uint32 }
-      - { name: position, type: uint32 }
-      - { name: chunkLength, type: uint16 }
-      - { name: flags, type: uint16 }
+      - { name: seqId, type: uint32 }
+      - { name: cursor, type: uint64 }
   rules:
     - STREAM uses the unified 16-byte header in production transports.
     - The historical 8-byte stream header is not part of AXTP v1 Core.
@@ -178,13 +174,7 @@ compatibility:
     - WebSocket Text and HTTP JSON may exist only as debug or legacy adapter paths.
 
 types:
-  CommonEmptyRequest:
-    kind: object
-    fields: []
-  CommonEmptyResponse:
-    kind: object
-    fields: []
-  DeviceGetInfoRequest:
+  Empty:
     kind: object
     fields: []
   DeviceGetInfoResponse:
@@ -194,17 +184,11 @@ types:
       - { fieldId: 0x02, name: product, type: string, required: false, maxLength: 32 }
       - { fieldId: 0x03, name: firmwareVersion, type: string, required: false, maxLength: 32 }
       - { fieldId: 0x04, name: serialNumber, type: string, required: false, maxLength: 64 }
-  CapabilitySupportedMethodsRequest:
-    kind: object
-    fields: []
   CapabilitySupportedMethodsResponse:
     kind: object
     fields:
       - { fieldId: 0x01, name: methodMaskCount, type: uint16, required: true }
-      - { fieldId: 0x02, name: methodMasks, type: bytes, required: true, derivedFrom: methods.bitOffset }
-  DisplayGetBrightnessRequest:
-    kind: object
-    fields: []
+      - { fieldId: 0x02, name: methodMasks, type: bytes, required: true, derivedFrom: "methods[].bitOffset" }
   DisplayGetBrightnessResponse:
     kind: object
     fields:
@@ -222,36 +206,63 @@ types:
   FirmwareBeginRequest:
     kind: object
     fields:
-      - { fieldId: 0x01, name: totalSize, type: uint32, required: true }
-      - { fieldId: 0x02, name: hashAlgo, type: string, required: true, maxLength: 16 }
-      - { fieldId: 0x03, name: hash, type: bytes, required: true, maxLength: 64 }
-      - { fieldId: 0x04, name: chunkSize, type: uint16, required: true }
+      - { fieldId: 0x01, name: imageType, type: enum, required: true, description: Firmware image type. }
+      - { fieldId: 0x02, name: imageSize, type: uint64, required: true, description: Full firmware image size in bytes. }
+      - { fieldId: 0x03, name: imageVersion, type: string, required: true, maxLength: 32, description: Target firmware version. }
+      - { fieldId: 0x04, name: verifyType, type: string, required: true, maxLength: 16, description: "Object-level verification algorithm such as md5, crc32 or sha256." }
+      - { fieldId: 0x05, name: verifyValue, type: string, required: true, maxLength: 64, description: Hex verification value for the full firmware image. }
+      - { fieldId: 0x06, name: chunkSizeHint, type: uint16, required: false, description: Preferred STREAM chunk size in bytes. }
+      - { fieldId: 0x07, name: windowSizeHint, type: uint16, required: false, description: Preferred stream-layer send window. }
+      - { fieldId: 0x08, name: flags, type: uint16, required: false, description: OTA behavior flags such as resume or force-update hints. }
   FirmwareBeginResponse:
     kind: object
     fields:
-      - { fieldId: 0x01, name: streamId, type: uint32, required: true }
-      - { fieldId: 0x02, name: profile, type: string, required: true, maxLength: 32 }
-      - { fieldId: 0x03, name: chunkSize, type: uint16, required: true }
-      - { fieldId: 0x04, name: ackMode, type: enum, required: true }
-      - { fieldId: 0x05, name: cursorUnit, type: enum, required: true }
-      - { fieldId: 0x06, name: reservedStreamHeaderProfile, type: enum, required: false, deprecated: true }
-      - { fieldId: 0x07, name: maxDataSize, type: uint16, required: false }
+      - { fieldId: 0x01, name: transferId, type: uint32, required: true, description: OTA transfer identifier. }
+      - { fieldId: 0x02, name: streamId, type: uint32, required: true, description: STREAM data channel identifier. }
+      - { fieldId: 0x03, name: acceptedOffset, type: uint64, required: true, description: First byte offset the sender should transmit. }
+      - { fieldId: 0x04, name: chunkSize, type: uint16, required: true, description: Negotiated STREAM chunk size in bytes. }
+      - { fieldId: 0x05, name: windowSize, type: uint16, required: true, description: Negotiated stream-layer send window. }
+      - { fieldId: 0x06, name: resumeToken, type: bytes, required: false, maxLength: 32, description: Opaque resume token. }
+      - { fieldId: 0x07, name: otaState, type: enum, required: true, description: Current OTA state. }
+      - { fieldId: 0x08, name: profile, type: string, required: true, maxLength: 32, description: "Bound Stream Profile, usually firmware.ota." }
+      - { fieldId: 0x09, name: ackMode, type: enum, required: true, description: Stream-layer reliability mode. }
+      - { fieldId: 0x0A, name: cursorUnit, type: enum, required: true, description: "Cursor unit used by STREAM packets, usually byteOffset." }
+      - { fieldId: 0x0B, name: maxDataSize, type: uint16, required: false, description: Maximum STREAM data bytes per packet. }
   FirmwareEndRequest:
     kind: object
     fields:
-      - { fieldId: 0x01, name: streamId, type: uint32, required: true }
+      - { fieldId: 0x01, name: transferId, type: uint32, required: true, description: OTA transfer identifier. }
+      - { fieldId: 0x02, name: totalBytesSent, type: uint64, required: false, description: Total firmware bytes sent by the host. }
+      - { fieldId: 0x03, name: totalChunks, type: uint32, required: false, description: Total STREAM chunks sent by the host. }
+  FirmwareEndResponse:
+    kind: object
+    fields:
+      - { fieldId: 0x01, name: receivedBytes, type: uint64, required: true, description: Total bytes accepted by the device. }
+      - { fieldId: 0x02, name: receivedChunks, type: uint32, required: false, description: Total chunks accepted by the device. }
+      - { fieldId: 0x03, name: otaState, type: enum, required: true, description: Current OTA state. }
   FirmwareVerifyRequest:
     kind: object
     fields:
-      - { fieldId: 0x01, name: streamId, type: uint32, required: true }
+      - { fieldId: 0x01, name: transferId, type: uint32, required: true, description: OTA transfer identifier. }
+  FirmwareVerifyResponse:
+    kind: object
+    fields:
+      - { fieldId: 0x01, name: verifyResult, type: enum, required: true, description: Verification result for the transferred image. }
+      - { fieldId: 0x02, name: otaState, type: enum, required: true, description: Current OTA state. }
   FirmwareApplyRequest:
     kind: object
     fields:
-      - { fieldId: 0x01, name: streamId, type: uint32, required: true }
+      - { fieldId: 0x01, name: transferId, type: uint32, required: true, description: OTA transfer identifier. }
+      - { fieldId: 0x02, name: applyMode, type: enum, required: true, description: "Apply mode such as APPLY_NOW, APPLY_ON_REBOOT or STAGE_ONLY." }
+  FirmwareApplyResponse:
+    kind: object
+    fields:
+      - { fieldId: 0x01, name: otaState, type: enum, required: true, description: Current OTA state. }
+      - { fieldId: 0x02, name: rebootRequired, type: bool, required: true, description: Whether applying the image requires reboot. }
   FirmwareUpdateProgressEvent:
     kind: object
     fields:
-      - { fieldId: 0x01, name: streamId, type: uint32, required: true }
+      - { fieldId: 0x01, name: transferId, type: uint32, required: true }
       - { fieldId: 0x02, name: percent, type: uint8, required: true, min: 0, max: 100 }
   FirmwareUpdateCompletedEvent:
     kind: object
@@ -270,12 +281,13 @@ types:
 
 methods:
   - name: device.getInfo
+    description: Return static device identity and firmware metadata.
     methodId: 0x0101
     bitOffset: 0
     domain: device
     since: 1.0.0
     status: stable
-    request: { type: DeviceGetInfoRequest }
+    request: { type: Empty }
     response: { type: DeviceGetInfoResponse }
     encodings: [json, binary_tlv]
     capabilities: [device.info]
@@ -285,35 +297,38 @@ methods:
       name: BetaDeviceInfo
       payloadFormat: fixed_struct
   - name: capability.supportedMethods
+    description: Return the per-domain method bitmap supported by the current session.
     methodId: 0x0301
     bitOffset: 0
     domain: capability
     since: 1.0.0
     status: stable
-    request: { type: CapabilitySupportedMethodsRequest }
+    request: { type: Empty }
     response: { type: CapabilitySupportedMethodsResponse }
     encodings: [json, binary_tlv]
     capabilities: [capability.supportedMethods]
     errors: [SUCCESS, RPC_METHOD_NOT_FOUND]
   - name: display.getBrightness
+    description: Read the current display brightness percentage.
     methodId: 0x0501
     bitOffset: 0
     domain: display
     since: 1.0.0
     status: stable
-    request: { type: DisplayGetBrightnessRequest }
+    request: { type: Empty }
     response: { type: DisplayGetBrightnessResponse }
     encodings: [json, binary_tlv]
     capabilities: [display.brightness]
     errors: [SUCCESS, RPC_METHOD_NOT_FOUND]
   - name: display.setBrightness
+    description: Set the display brightness and optionally request a transition duration.
     methodId: 0x0502
     bitOffset: 1
     domain: display
     since: 1.0.0
     status: stable
     request: { type: DisplaySetBrightnessRequest }
-    response: { type: CommonEmptyResponse }
+    response: { type: Empty }
     encodings: [json, binary_tlv]
     capabilities: [display.brightness]
     events: [display.brightnessChanged]
@@ -323,6 +338,7 @@ methods:
       name: BetaBrightnessSet
       payloadFormat: fixed_struct
   - name: firmware.begin
+    description: Begin a firmware OTA transfer and allocate the STREAM context.
     methodId: 0x0B02
     bitOffset: 0
     domain: firmware
@@ -335,36 +351,39 @@ methods:
     events: [firmware.updateProgress]
     errors: [SUCCESS, RPC_PARAM_INVALID, BUSY]
   - name: firmware.end
+    description: Finish sending firmware data for the active OTA stream.
     methodId: 0x0B03
     bitOffset: 1
     domain: firmware
     since: 1.0.0
     status: stable
     request: { type: FirmwareEndRequest }
-    response: { type: CommonEmptyResponse }
+    response: { type: FirmwareEndResponse }
     encodings: [json, binary_tlv]
     capabilities: [firmware.ota]
     errors: [SUCCESS, STREAM_NOT_FOUND, BUSY]
   - name: firmware.verify
+    description: Verify the transferred firmware object before applying it.
     methodId: 0x0B04
     bitOffset: 2
     domain: firmware
     since: 1.0.0
     status: stable
     request: { type: FirmwareVerifyRequest }
-    response: { type: CommonEmptyResponse }
+    response: { type: FirmwareVerifyResponse }
     encodings: [json, binary_tlv]
     capabilities: [firmware.ota]
     events: [firmware.updateCompleted, firmware.updateFailed]
     errors: [SUCCESS, STREAM_CRC_ERROR, BUSY]
   - name: firmware.apply
+    description: Apply a verified firmware image.
     methodId: 0x0B05
     bitOffset: 3
     domain: firmware
     since: 1.0.0
     status: stable
     request: { type: FirmwareApplyRequest }
-    response: { type: CommonEmptyResponse }
+    response: { type: FirmwareApplyResponse }
     encodings: [json, binary_tlv]
     capabilities: [firmware.ota]
     events: [firmware.updateCompleted, firmware.updateFailed]
@@ -372,6 +391,7 @@ methods:
 
 events:
   - name: display.brightnessChanged
+    description: Emitted when display brightness changes.
     eventId: 0x8507
     bitOffset: 0
     domain: display
@@ -382,6 +402,7 @@ events:
     trigger: [display.setBrightness, device_local_change]
     capabilities: [display.brightness]
   - name: firmware.updateProgress
+    description: Emitted while firmware OTA transfer or processing advances.
     eventId: 0x8B02
     bitOffset: 0
     domain: firmware
@@ -392,6 +413,7 @@ events:
     trigger: [firmware.begin, stream.ota.chunk]
     capabilities: [firmware.ota]
   - name: firmware.updateCompleted
+    description: Emitted when firmware update processing completes successfully.
     eventId: 0x8B03
     bitOffset: 1
     domain: firmware
@@ -402,6 +424,7 @@ events:
     trigger: [firmware.verify, firmware.apply]
     capabilities: [firmware.ota]
   - name: firmware.updateFailed
+    description: Emitted when firmware update processing fails.
     eventId: 0x8B04
     bitOffset: 2
     domain: firmware
@@ -434,7 +457,7 @@ errors:
   - { name: STREAM_NOT_FOUND, code: 0x0401, category: stream, since: 1.0.0, status: stable, severity: error, retryable: false, message: Stream context does not exist. }
   - { name: STREAM_TIMEOUT, code: 0x0402, category: stream, since: 1.0.0, status: stable, severity: error, retryable: true, message: Stream timed out. }
   - { name: STREAM_CRC_ERROR, code: 0x0403, category: stream, since: 1.0.0, status: stable, severity: error, retryable: true, message: Stream chunk CRC check failed. }
-  - { name: FW_VERIFY_FAILED, code: 0x060B, category: firmware, since: 1.0.0, status: stable, severity: error, retryable: false, message: Firmware verification failed. }
+  - { name: FW_VERIFY_FAILED, code: 0x060B, category: business, since: 1.0.0, status: stable, severity: error, retryable: false, message: Firmware verification failed. }
 
 profiles:
   - name: AXTP-MVP
@@ -461,17 +484,6 @@ profiles:
       - STREAM_NOT_FOUND
       - STREAM_CRC_ERROR
       - BUSY
-    requiredCapabilities:
-      - protocol.payload.control
-      - protocol.payload.rpc
-      - protocol.payload.stream
-      - device.info
-      - capability.supportedMethods
-      - display.brightness
-      - display.brightnessMin
-      - display.brightnessMax
-      - display.brightnessStep
-      - firmware.ota
     transportProfiles:
       - AXTP-WS
       - AXTP-TCP
