@@ -155,7 +155,7 @@ export function buildProtocolDefinitionRaw(source: ProtocolSourceModel): Record<
     methods: source.methods.map((method) => methodToProtocol(method, emptyNames)),
     events: source.events.map((event) => eventToProtocol(event, emptyNames)),
     errors: source.errors.map(errorToProtocol),
-    profiles: source.profiles.length > 0 ? source.profiles : defaultProfiles(source)
+    profiles: [...defaultProfiles(source), ...source.profiles]
   };
 }
 

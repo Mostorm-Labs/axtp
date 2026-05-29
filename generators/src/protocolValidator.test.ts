@@ -25,17 +25,17 @@ describe("protocol definition loader", () => {
   it("loads and validates the current protocol definition", async () => {
     const model = await loadCurrentProtocol();
     expect(model.protocol.name).toBe("AXTP");
-    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 8 methods checked");
+    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 9 methods checked");
   });
 });
 
 describe("protocol source pipeline", () => {
   it("loads registry/domain sources and builds a valid protocol definition", async () => {
     const sources = await loadProtocolSources(repoRoot);
-    expect(validateSpec(sources)).toContain("[OK] method_registry.yaml: 8 methods checked");
+    expect(validateSpec(sources)).toContain("[OK] method_registry.yaml: 9 methods checked");
     const model = buildProtocolDefinition(sources);
     expect(model.methods.find((method) => method.name === "firmware.begin")?.request.type).toBe("FirmwareBeginRequest");
-    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 8 methods checked");
+    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 9 methods checked");
   });
 });
 
@@ -211,9 +211,9 @@ describe("protocol definition emitters", () => {
       const json = await readFile(path.join(dir, "protocol.json"), "utf8");
       const markdown = await readFile(path.join(dir, "protocol.md"), "utf8");
       expect(markdown).toContain("## Main Table of Contents");
-      expect(markdown).toContain("**Request Fields:**");
-      expect(markdown).toContain("**Response Fields:**");
-      expect(markdown).toContain("**Payload Fields:**");
+      expect(markdown).toContain("#### Request Fields");
+      expect(markdown).toContain("#### Response Fields");
+      expect(markdown).toContain("#### Payload Fields");
       expect(markdown).not.toContain("## Frame Profiles");
       expect(markdown).not.toContain("## Transport Profiles");
       expect(markdown).not.toContain("## Payload Types");

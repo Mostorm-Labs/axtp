@@ -580,6 +580,198 @@ types:
         type: string
         required: false
         maxLength: 96
+  StreamOpenRequest:
+    kind: object
+    description: Parameters for opening a HID-backed media STREAM channel.
+    fields:
+      - fieldId: 1
+        name: profile
+        type: string
+        required: true
+        maxLength: 32
+        description: Stream Profile name. For this method use media.video or media.audio.
+      - fieldId: 2
+        name: transportProfile
+        type: string
+        required: true
+        maxLength: 32
+        description: Transport Profile name. HID media streams use AXTP-HID-64.
+      - fieldId: 3
+        name: direction
+        type: enum
+        required: true
+        description: Stream direction; values are device_to_host, host_to_device, or bidirectional.
+      - fieldId: 4
+        name: mediaKind
+        type: enum
+        required: true
+        description: Media kind carried by this stream; values are video or audio.
+      - fieldId: 5
+        name: sourceId
+        type: uint16
+        required: false
+        description: Device-local media source identifier.
+      - fieldId: 6
+        name: codec
+        type: string
+        required: true
+        maxLength: 32
+        description: Codec or sample format, for example h264, mjpeg, pcm_s16le, or opus.
+      - fieldId: 7
+        name: width
+        type: uint16
+        required: false
+        description: Video width in pixels. Required for video streams when not implied by sourceId.
+      - fieldId: 8
+        name: height
+        type: uint16
+        required: false
+        description: Video height in pixels. Required for video streams when not implied by sourceId.
+      - fieldId: 9
+        name: frameRate
+        type: uint16
+        required: false
+        description: Video frame rate in frames per second.
+      - fieldId: 10
+        name: sampleRate
+        type: uint32
+        required: false
+        description: Audio sample rate in Hz.
+      - fieldId: 11
+        name: channelCount
+        type: uint8
+        required: false
+        description: Number of audio channels.
+      - fieldId: 12
+        name: chunkSizeHint
+        type: uint16
+        required: false
+        max: 42
+        description: Preferred STREAM data bytes per HID-64 report after the 16B STREAM header.
+      - fieldId: 13
+        name: windowSizeHint
+        type: uint16
+        required: false
+        description: Preferred stream flow-control window in chunks.
+  StreamOpenResponse:
+    kind: object
+    description: Result of a successful STREAM media channel open.
+    fields:
+      - fieldId: 1
+        name: streamId
+        type: uint32
+        required: true
+        description: STREAM channel identifier bound to the selected Stream Profile.
+      - fieldId: 2
+        name: profile
+        type: string
+        required: true
+        maxLength: 32
+        description: Accepted Stream Profile name.
+      - fieldId: 3
+        name: transportProfile
+        type: string
+        required: true
+        maxLength: 32
+        description: Accepted Transport Profile name.
+      - fieldId: 4
+        name: chunkSize
+        type: uint16
+        required: true
+        max: 42
+        description: STREAM data bytes to place in each HID-64 report after the 16B STREAM header.
+      - fieldId: 5
+        name: windowSize
+        type: uint16
+        required: true
+        description: Negotiated stream flow-control window in chunks.
+      - fieldId: 6
+        name: ackMode
+        type: enum
+        required: true
+        description: Stream acknowledgement mode, such as best_effort or stop_and_wait.
+      - fieldId: 7
+        name: cursorUnit
+        type: enum
+        required: true
+        description: Cursor unit used in the 64-bit STREAM cursor, usually timestampUs for media streams.
+  StreamOpenedEvent:
+    kind: object
+    description: Payload emitted when a STREAM media channel is opened.
+    fields:
+      - fieldId: 1
+        name: streamId
+        type: uint32
+        required: true
+        description: Opened STREAM channel identifier.
+      - fieldId: 2
+        name: profile
+        type: string
+        required: true
+        maxLength: 32
+        description: Bound Stream Profile name.
+      - fieldId: 3
+        name: transportProfile
+        type: string
+        required: true
+        maxLength: 32
+        description: Bound Transport Profile name.
+      - fieldId: 4
+        name: mediaKind
+        type: enum
+        required: true
+        description: Media kind carried by the stream; values are video or audio.
+  StreamErrorEvent:
+    kind: object
+    description: Payload emitted when a STREAM media channel fails.
+    fields:
+      - fieldId: 1
+        name: streamId
+        type: uint32
+        required: false
+        description: STREAM channel identifier, absent if the failure happened before allocation.
+      - fieldId: 2
+        name: errorCode
+        type: uint16
+        required: true
+        description: AXTP ErrorCode value describing the stream failure.
+      - fieldId: 3
+        name: message
+        type: string
+        required: false
+        maxLength: 128
+        description: Optional diagnostic text.
+  StreamHidMediaCapability:
+    kind: object
+    description: Describes HID-backed media STREAM support.
+    fields:
+      - fieldId: 1
+        name: transportProfile
+        type: string
+        required: true
+        maxLength: 32
+        description: Supported HID Transport Profile, usually AXTP-HID-64.
+      - fieldId: 2
+        name: maxStreamCount
+        type: uint8
+        required: true
+        description: Maximum simultaneously opened media streams.
+      - fieldId: 3
+        name: maxChunkSize
+        type: uint16
+        required: true
+        max: 42
+        description: Maximum STREAM data bytes per HID-64 report after the 16B STREAM header.
+      - fieldId: 4
+        name: supportsVideo
+        type: bool
+        required: true
+        description: Device can open media.video streams over HID.
+      - fieldId: 5
+        name: supportsAudio
+        type: bool
+        required: true
+        description: Device can open media.audio streams over HID.
 methods:
   - name: device.getInfo
     description: Return static device identity and firmware metadata.
@@ -760,6 +952,35 @@ methods:
     errors:
       - SUCCESS
       - BUSY
+  - name: stream.open
+    description: Open an AXTP STREAM media channel over HID using media.video or media.audio, without UVC or UAC.
+    methodId: 2305
+    bitOffset: 0
+    domain: stream
+    since: 1.0.0
+    status: draft
+    request:
+      type: StreamOpenRequest
+    response:
+      type: StreamOpenResponse
+    encodings:
+      - json
+      - binary_tlv
+    capabilities:
+      - stream.hidMedia
+    events:
+      - stream.opened
+      - stream.error
+    errors:
+      - SUCCESS
+      - BUSY
+      - RPC_PARAM_INVALID
+      - MEDIA_SOURCE_NOT_FOUND
+      - MEDIA_SOURCE_UNAVAILABLE
+      - MEDIA_CODEC_UNSUPPORTED
+      - MEDIA_RESOLUTION_UNSUPPORTED
+      - MEDIA_FRAMERATE_UNSUPPORTED
+      - MEDIA_STREAM_START_FAILED
 events:
   - name: display.brightnessChanged
     description: Emitted when display brightness changes.
@@ -822,6 +1043,35 @@ events:
       - stream.error
     capabilities:
       - firmware.ota
+  - name: stream.opened
+    description: Emitted after a STREAM media channel is opened and bound to a streamId.
+    eventId: 35073
+    bitOffset: 0
+    domain: stream
+    since: 1.0.0
+    status: draft
+    payload:
+      type: StreamOpenedEvent
+    severity: info
+    trigger:
+      - stream.open
+    capabilities:
+      - stream.hidMedia
+  - name: stream.error
+    description: Emitted when a STREAM media channel fails or cannot continue.
+    eventId: 35075
+    bitOffset: 1
+    domain: stream
+    since: 1.0.0
+    status: draft
+    payload:
+      type: StreamErrorEvent
+    severity: error
+    trigger:
+      - stream.open
+      - stream runtime
+    capabilities:
+      - stream.hidMedia
 errors:
   - name: SUCCESS
     code: 0
@@ -999,6 +1249,54 @@ errors:
     severity: error
     retryable: false
     message: Firmware verification failed.
+  - name: MEDIA_SOURCE_NOT_FOUND
+    code: 2049
+    category: business
+    since: 1.0.0
+    status: draft
+    severity: error
+    retryable: false
+    message: Requested media source does not exist.
+  - name: MEDIA_SOURCE_UNAVAILABLE
+    code: 2050
+    category: business
+    since: 1.0.0
+    status: draft
+    severity: warning
+    retryable: true
+    message: Requested media source is currently unavailable.
+  - name: MEDIA_CODEC_UNSUPPORTED
+    code: 2051
+    category: business
+    since: 1.0.0
+    status: draft
+    severity: error
+    retryable: false
+    message: Requested media codec or sample format is unsupported.
+  - name: MEDIA_RESOLUTION_UNSUPPORTED
+    code: 2052
+    category: business
+    since: 1.0.0
+    status: draft
+    severity: error
+    retryable: false
+    message: Requested video resolution is unsupported.
+  - name: MEDIA_FRAMERATE_UNSUPPORTED
+    code: 2053
+    category: business
+    since: 1.0.0
+    status: draft
+    severity: error
+    retryable: false
+    message: Requested video frame rate is unsupported.
+  - name: MEDIA_STREAM_START_FAILED
+    code: 2055
+    category: business
+    since: 1.0.0
+    status: draft
+    severity: warning
+    retryable: true
+    message: Device failed to start the requested media stream.
 profiles:
   - name: AXTP-MVP
     since: 1.0.0
@@ -1041,6 +1339,32 @@ profiles:
     requiredMethods: *a1
     requiredEvents: *a2
     requiredErrors: *a3
+    transportProfiles:
+      - AXTP-HID-64
+    frameProfile: COMPACT_FRAME
+  - name: AXTP-HID-MEDIA
+    since: 1.0.0
+    status: draft
+    extends: AXTP-MVP-HID
+    requiredMethods:
+      - stream.open
+    requiredEvents:
+      - stream.opened
+      - stream.error
+    requiredErrors:
+      - SUCCESS
+      - BUSY
+      - RPC_PARAM_INVALID
+      - MEDIA_SOURCE_NOT_FOUND
+      - MEDIA_SOURCE_UNAVAILABLE
+      - MEDIA_CODEC_UNSUPPORTED
+      - MEDIA_STREAM_START_FAILED
+    requiredTypes:
+      - StreamOpenRequest
+      - StreamOpenResponse
+      - StreamOpenedEvent
+      - StreamErrorEvent
+      - StreamHidMediaCapability
     transportProfiles:
       - AXTP-HID-64
     frameProfile: COMPACT_FRAME

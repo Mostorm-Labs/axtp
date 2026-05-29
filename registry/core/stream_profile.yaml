@@ -9,3 +9,13 @@ stream_profiles:
     domain: file
     status: draft
     description: File transfer stream profile.
+  - id: 0x1001
+    name: media.video
+    domain: media
+    status: draft
+    description: Video frame stream profile bound by RPC stream.open.
+  - id: 0x1002
+    name: media.audio
+    domain: media
+    status: draft
+    description: Audio frame stream profile bound by RPC stream.open.

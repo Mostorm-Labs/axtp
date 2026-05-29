@@ -24,15 +24,28 @@ function list(values: string[] | undefined): string {
   return values && values.length > 0 ? values.map(esc).join("<br>") : "-";
 }
 
+function inlineList(values: string[] | undefined): string {
+  return values && values.length > 0 ? values.map((value) => `\`${value}\``).join(", ") : "`None`";
+}
+
 function sentenceList(values: string[] | undefined): string[] {
   return values && values.length > 0 ? values.map((value) => `- ${value}`) : ["- None."];
 }
 
-function table(headers: string[], rows: string[][]): string[] {
+type TableAlign = "left" | "center" | "right";
+
+function alignMarker(align: TableAlign): string {
+  if (align === "center") return ":---:";
+  if (align === "right") return "---:";
+  return "----";
+}
+
+function table(headers: string[], rows: string[][], aligns?: TableAlign[]): string[] {
   if (rows.length === 0) return ["_No fields._"];
+  const alignment = aligns ?? headers.map(() => "left" as const);
   return [
     `| ${headers.map(esc).join(" | ")} |`,
-    `| ${headers.map(() => "---").join(" | ")} |`,
+    `| ${alignment.map(alignMarker).join(" | ")} |`,
     ...rows.map((row) => `| ${row.map(esc).join(" | ")} |`)
   ];
 }
@@ -89,25 +102,53 @@ function renderFieldConstraint(field: TypeField): string {
   return constraints.length > 0 ? constraints.join(", ") : "None";
 }
 
+function renderDefaultBehavior(field: TypeField): string {
+  return field.required ? "N/A" : "Omit if not used.";
+}
+
+function renderFieldName(field: TypeField): string {
+  return field.required ? field.name : `?${field.name}`;
+}
+
+function renderTypeName(type: string): string {
+  const names: Record<string, string> = {
+    bool: "Boolean",
+    bytes: "Bytes",
+    enum: "Enum",
+    bitmap: "Bitmap",
+    string: "String",
+    uint8: "UInt8",
+    uint16: "UInt16",
+    uint32: "UInt32",
+    uint64: "UInt64",
+    int8: "Int8",
+    int16: "Int16",
+    int32: "Int32",
+    int64: "Int64"
+  };
+  return names[type] ?? type;
+}
+
 function renderFields(type: TypeDefinition | undefined): string[] {
   if (!type || type.fields.length === 0) return ["No fields."];
   return table(
-    ["Name", "Type", "Required", "Field ID", "Constraints", "Description"],
+    ["Name", "Type", "Field ID", "Description", "Value Restrictions", "?Default Behavior"],
     type.fields.map((field) => [
-      field.name,
-      field.type,
-      field.required ? "Yes" : "No",
+      renderFieldName(field),
+      renderTypeName(field.type),
       hex(field.fieldId, 2),
+      optional(field.description),
       renderFieldConstraint(field),
-      optional(field.description)
-    ])
+      renderDefaultBehavior(field)
+    ]),
+    ["left", "center", "center", "left", "center", "left"]
   );
 }
 
 function renderInlineType(title: string, typeName: string, types: Map<string, TypeDefinition>): string[] {
   const type = types.get(typeName);
   return [
-    `**${title}:**`,
+    `#### ${title}`,
     "",
     `Type: \`${typeName}\``,
     "",
@@ -117,24 +158,19 @@ function renderInlineType(title: string, typeName: string, types: Map<string, Ty
 
 function renderMethod(method: MethodDefinition, types: Map<string, TypeDefinition>): string[] {
   return [
-    `#### ${method.name}`,
+    `### ${method.name}`,
     "",
     method.description ?? "No description provided.",
     "",
-    ...table(
-      ["Property", "Value"],
-      [
-        ["Method ID", hex(method.methodId)],
-        ["Domain", method.domain],
-        ["Bit Offset", String(method.bitOffset)],
-        ["Since", method.since],
-        ["Status", method.status],
-        ["Encodings", list(method.encodings)],
-        ["Capabilities", list(method.capabilities)],
-        ["Possible Events", list(method.events)],
-        ["Possible Errors", list(method.errors)]
-      ]
-    ),
+    `- Method ID: \`${hex(method.methodId)}\``,
+    `- Domain: \`${method.domain}\``,
+    `- Bit Offset: \`${method.bitOffset}\``,
+    `- Status: \`${method.status}\``,
+    `- Added in v${method.since}`,
+    `- Encodings: ${inlineList(method.encodings)}`,
+    `- Required Capabilities: ${inlineList(method.capabilities)}`,
+    `- Possible Events: ${inlineList(method.events)}`,
+    `- Possible Errors: ${inlineList(method.errors)}`,
     "",
     ...renderInlineType("Request Fields", method.request.type, types),
     "",
@@ -144,23 +180,18 @@ function renderMethod(method: MethodDefinition, types: Map<string, TypeDefinitio
 
 function renderEvent(event: EventDefinition, types: Map<string, TypeDefinition>): string[] {
   return [
-    `#### ${event.name}`,
+    `### ${event.name}`,
     "",
     event.description ?? "No description provided.",
     "",
-    ...table(
-      ["Property", "Value"],
-      [
-        ["Event ID", hex(event.eventId)],
-        ["Domain", event.domain],
-        ["Bit Offset", String(event.bitOffset)],
-        ["Since", event.since],
-        ["Status", event.status],
-        ["Severity", optional(event.severity)],
-        ["Trigger", list(event.trigger)],
-        ["Capabilities", list(event.capabilities)]
-      ]
-    ),
+    `- Event ID: \`${hex(event.eventId)}\``,
+    `- Domain: \`${event.domain}\``,
+    `- Bit Offset: \`${event.bitOffset}\``,
+    `- Status: \`${event.status}\``,
+    `- Severity: \`${optional(event.severity)}\``,
+    `- Added in v${event.since}`,
+    `- Trigger: ${inlineList(event.trigger)}`,
+    `- Required Capabilities: ${inlineList(event.capabilities)}`,
     "",
     ...renderInlineType("Payload Fields", event.payload.type, types)
   ];
@@ -168,7 +199,7 @@ function renderEvent(event: EventDefinition, types: Map<string, TypeDefinition>)
 
 function renderAdditionalType(type: TypeDefinition): string[] {
   return [
-    `### ${type.name}`,
+    `## ${type.name}`,
     "",
     type.description ?? `Kind: \`${type.kind}\``,
     "",
@@ -178,20 +209,15 @@ function renderAdditionalType(type: TypeDefinition): string[] {
 
 function renderProfile(profile: ProfileDefinition): string[] {
   return [
-    `### ${profile.name}`,
+    `## ${profile.name}`,
     "",
-    ...table(
-      ["Property", "Value"],
-      [
-        ["Since", profile.since],
-        ["Status", profile.status],
-        ["Extends", optional(profile.extends)],
-        ["Required Methods", list(profile.requiredMethods)],
-        ["Required Events", list(profile.requiredEvents)],
-        ["Required Errors", list(profile.requiredErrors)],
-        ["Notes", optional(profile.notes)]
-      ]
-    )
+    `- Status: \`${profile.status}\``,
+    `- Added in v${profile.since}`,
+    `- Extends: \`${optional(profile.extends)}\``,
+    `- Required Methods: ${inlineList(profile.requiredMethods)}`,
+    `- Required Events: ${inlineList(profile.requiredEvents)}`,
+    `- Required Errors: ${inlineList(profile.requiredErrors)}`,
+    `- Notes: ${optional(profile.notes)}`
   ];
 }
 
@@ -306,26 +332,26 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
       ])
     ),
     "",
-    "## Methods",
+    "# Methods",
     "",
     ...domainsFor(model.methods).flatMap((domain) => [
-      `### ${domain} Methods`,
+      `## ${domain} Methods`,
       "",
       ...methodsInDomain(model, domain).flatMap((method) => [...renderMethod(method, types), "", "---", ""])
     ]),
-    "## Events",
+    "# Events",
     "",
     ...domainsFor(model.events).flatMap((domain) => [
-      `### ${domain} Events`,
+      `## ${domain} Events`,
       "",
       ...eventsInDomain(model, domain).flatMap((event) => [...renderEvent(event, types), "", "---", ""])
     ]),
     ...(additionalTypes.length > 0 ? [
-      "## Additional Types",
+      "# Additional Types",
       "",
       ...additionalTypes.flatMap((type) => [...renderAdditionalType(type), "", "---", ""])
     ] : []),
-    "## Errors Reference",
+    "# Errors Reference",
     "",
     ...table(
       ["Code", "Name", "Category", "Severity", "Retryable", "Status", "Message"],
@@ -340,7 +366,7 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
       ])
     ),
     "",
-    "## Profiles Reference",
+    "# Profiles Reference",
     "",
     ...sortedProfiles(model.profiles).flatMap((profile) => [...renderProfile(profile), "", "---", ""])
   ];
