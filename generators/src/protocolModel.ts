@@ -89,7 +89,7 @@ export interface CompatibilityDefinition {
   rules: string[];
 }
 
-export interface TypeField {
+export interface SchemaField {
   fieldId: number;
   name: string;
   type: string;
@@ -102,12 +102,17 @@ export interface TypeField {
   description?: string;
 }
 
-export interface TypeDefinition {
+export interface SchemaDefinition {
   name: string;
   kind: string;
   description?: string;
-  fields: TypeField[];
+  fields: SchemaField[];
 }
+
+/** @deprecated Use SchemaField */
+export type TypeField = SchemaField;
+/** @deprecated Use SchemaDefinition */
+export type TypeDefinition = SchemaDefinition;
 
 export interface MethodDefinition {
   name: string;
@@ -179,7 +184,7 @@ export interface ProtocolModel {
   control: ControlDefinition;
   stream: StreamDefinition;
   compatibility: CompatibilityDefinition;
-  types: TypeDefinition[];
+  schemas: SchemaDefinition[];
   methods: MethodDefinition[];
   events: EventDefinition[];
   errors: ErrorDefinition[];

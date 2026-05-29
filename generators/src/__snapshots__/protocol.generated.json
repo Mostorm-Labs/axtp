@@ -249,7 +249,7 @@
       "WebSocket Text and HTTP JSON may exist only as debug or legacy adapter paths."
     ]
   },
-  "types": [
+  "schemas": [
     {
       "name": "Empty",
       "kind": "object",

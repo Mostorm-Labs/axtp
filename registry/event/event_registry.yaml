@@ -4,8 +4,8 @@ events:
     description: Emitted when display brightness changes.
     domain: display
     status: mvp
-    bit_offset: 0
-    event_schema: DisplayBrightnessChangedEvent
+    bitOffset: 0
+    eventSchema: DisplayBrightnessChangedEvent
     severity: info
     trigger: [display.setBrightness, device_local_change]
     capabilities: [display.brightness]
@@ -15,8 +15,8 @@ events:
     description: Emitted while firmware OTA transfer or processing advances.
     domain: firmware
     status: mvp
-    bit_offset: 0
-    event_schema: FirmwareUpdateProgressEvent
+    bitOffset: 0
+    eventSchema: FirmwareUpdateProgressEvent
     severity: info
     trigger: [firmware.begin, stream.ota.chunk]
     capabilities: [firmware.ota]
@@ -26,8 +26,8 @@ events:
     description: Emitted when firmware update processing completes successfully.
     domain: firmware
     status: mvp
-    bit_offset: 1
-    event_schema: FirmwareUpdateCompletedEvent
+    bitOffset: 1
+    eventSchema: FirmwareUpdateCompletedEvent
     severity: info
     trigger: [firmware.verify, firmware.apply]
     capabilities: [firmware.ota]
@@ -37,8 +37,8 @@ events:
     description: Emitted when firmware update processing fails.
     domain: firmware
     status: mvp
-    bit_offset: 2
-    event_schema: FirmwareUpdateFailedEvent
+    bitOffset: 2
+    eventSchema: FirmwareUpdateFailedEvent
     severity: error
     trigger: [firmware.verify, firmware.apply, stream.error]
     capabilities: [firmware.ota]

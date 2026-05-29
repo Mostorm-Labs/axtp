@@ -34,19 +34,19 @@ function fieldToTypeField(field: Field): TypeField {
   };
 }
 
-function buildTypes(schemas: Schema[]): Record<string, Omit<TypeDefinition, "name">> {
-  const types: Record<string, Omit<TypeDefinition, "name">> = {
+function buildSchemas(schemas: Schema[]): Record<string, Omit<TypeDefinition, "name">> {
+  const result: Record<string, Omit<TypeDefinition, "name">> = {
     Empty: { kind: "object", fields: [] }
   };
   for (const schema of schemas) {
     if (schema.fields.length === 0) continue;
-    types[schema.name] = {
+    result[schema.name] = {
       kind: schema.type,
       description: schema.description,
       fields: schema.fields.map(fieldToTypeField)
     };
   }
-  return types;
+  return result;
 }
 
 function methodToProtocol(method: Method, emptyNames: Set<string>): Record<string, unknown> {
@@ -151,7 +151,7 @@ export function buildProtocolDefinitionRaw(source: ProtocolSourceModel): Record<
   const emptyNames = emptySchemaNames(source.schemas);
   return {
     ...source.protocolMeta,
-    types: buildTypes(source.schemas),
+    schemas: buildSchemas(source.schemas),
     methods: source.methods.map((method) => methodToProtocol(method, emptyNames)),
     events: source.events.map((event) => eventToProtocol(event, emptyNames)),
     errors: source.errors.map(errorToProtocol),

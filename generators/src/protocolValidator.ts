@@ -1,5 +1,5 @@
 import { GeneratorError } from "./errors.js";
-import type { ErrorDefinition, EventDefinition, MethodDefinition, ProtocolModel, TypeDefinition } from "./protocolModel.js";
+import type { ErrorDefinition, EventDefinition, MethodDefinition, ProtocolModel, SchemaDefinition } from "./protocolModel.js";
 import { hex } from "./util.js";
 
 function fail(entry: string, field: string, message: string): never {
@@ -121,39 +121,39 @@ function assertDomainIdAlignment(methods: MethodDefinition[], events: EventDefin
   }
 }
 
-function assertTypeDefinitions(types: TypeDefinition[]): void {
+function assertSchemaDefinitions(schemas: SchemaDefinition[]): void {
   const allowedKinds = new Set(["object", "enum", "bitmap", "alias", "bytes"]);
   const builtins = new Set(["bool", "uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64", "string", "bytes", "enum", "bitmap"]);
-  const typeNames = new Set(types.map((type) => type.name));
-  for (const type of types) {
-    if (!allowedKinds.has(type.kind)) fail(type.name, "kind", `unsupported type kind: ${type.kind}`);
-    if (type.kind !== "object") continue;
+  const schemaNames = new Set(schemas.map((schema) => schema.name));
+  for (const schema of schemas) {
+    if (!allowedKinds.has(schema.kind)) fail(schema.name, "kind", `unsupported schema kind: ${schema.kind}`);
+    if (schema.kind !== "object") continue;
     const fieldIds = new Map<number, string>();
-    for (const field of type.fields) {
-      if (field.fieldId < 1 || field.fieldId > 0xff) fail(type.name, "fieldId", `fieldId must be a 1-byte value: ${field.name}`);
+    for (const field of schema.fields) {
+      if (field.fieldId < 1 || field.fieldId > 0xff) fail(schema.name, "fieldId", `fieldId must be a 1-byte value: ${field.name}`);
       const existing = fieldIds.get(field.fieldId);
-      if (existing) fail(type.name, "fieldId", `duplicate fieldId ${hex(field.fieldId, 2)} (${existing} / ${field.name})`);
+      if (existing) fail(schema.name, "fieldId", `duplicate fieldId ${hex(field.fieldId, 2)} (${existing} / ${field.name})`);
       fieldIds.set(field.fieldId, field.name);
-      if (!builtins.has(field.type) && !typeNames.has(field.type)) {
-        fail(type.name, "type", `field ${field.name} references missing type: ${field.type}`);
+      if (!builtins.has(field.type) && !schemaNames.has(field.type)) {
+        fail(schema.name, "type", `field ${field.name} references missing schema: ${field.type}`);
       }
     }
   }
 }
 
-function assertEmptyTypeUsage(model: ProtocolModel): void {
-  const types = new Map(model.types.map((type) => [type.name, type]));
-  const empty = types.get("Empty");
+function assertEmptySchemaUsage(model: ProtocolModel): void {
+  const schemas = new Map(model.schemas.map((schema) => [schema.name, schema]));
+  const empty = schemas.get("Empty");
   if (!empty || empty.kind !== "object" || empty.fields.length !== 0) {
-    fail("types.Empty", "type", "09-AXTP-Methods-Registry-Spec.md requires empty request/response to use Empty");
+    fail("schemas.Empty", "schema", "09-AXTP-Methods-Registry-Spec.md requires empty request/response to use Empty");
   }
   for (const method of model.methods) {
-    const requestType = types.get(method.request.type);
-    const responseType = types.get(method.response.type);
-    if (requestType && requestType.fields.length === 0 && method.request.type !== "Empty") {
+    const requestSchema = schemas.get(method.request.type);
+    const responseSchema = schemas.get(method.response.type);
+    if (requestSchema && requestSchema.fields.length === 0 && method.request.type !== "Empty") {
       fail(method.name, "request.type", "empty request must use Empty");
     }
-    if (responseType && responseType.fields.length === 0 && method.response.type !== "Empty") {
+    if (responseSchema && responseSchema.fields.length === 0 && method.response.type !== "Empty") {
       fail(method.name, "response.type", "empty response must use Empty");
     }
   }
@@ -230,18 +230,18 @@ export function validateProtocolDefinition(model: ProtocolModel): string[] {
   assertUnique(model.events, (item) => item.eventId, "eventId", "eventId");
   assertUnique(model.errors, (item) => item.name, "error name", "name");
   assertUnique(model.errors, (item) => item.code, "error code", "code");
-  assertUnique(model.types, (item) => item.name, "type name", "name");
+  assertUnique(model.schemas, (item) => item.name, "schema name", "name");
   assertUnique(model.transports, (item) => item.name, "transport name", "name");
   assertUnique(model.profiles, (item) => item.name, "profile name", "name");
 
   assertDomainBits(model.methods, "method");
   assertDomainBits(model.events, "event");
   assertDomainIdAlignment(model.methods, model.events);
-  assertTypeDefinitions(model.types);
-  assertEmptyTypeUsage(model);
+  assertSchemaDefinitions(model.schemas);
+  assertEmptySchemaUsage(model);
   assertErrorRanges(model.errors);
 
-  const typeNames = new Set(model.types.map((item) => item.name));
+  const typeNames = new Set(model.schemas.map((item) => item.name));
   const methodNames = new Set(model.methods.map((item) => item.name));
   const eventNames = new Set(model.events.map((item) => item.name));
   const errorNames = new Set(model.errors.map((item) => item.name));
@@ -251,7 +251,7 @@ export function validateProtocolDefinition(model: ProtocolModel): string[] {
   assertMethodReferences(model.methods, typeNames, eventNames, errorNames);
   assertEventReferences(model.events, typeNames);
 
-  const supportedMethodsResponse = model.types.find((item) => item.name === "CapabilitySupportedMethodsResponse");
+  const supportedMethodsResponse = model.schemas.find((item) => item.name === "CapabilitySupportedMethodsResponse");
   const methodMasks = supportedMethodsResponse?.fields.find((field) => field.name === "methodMasks");
   if (!methodMasks || methodMasks.derivedFrom !== "methods[].bitOffset") {
     fail("CapabilitySupportedMethodsResponse", "methodMasks", "capability.supportedMethods methodMasks must derive from methods[].bitOffset");
@@ -312,7 +312,7 @@ export function validateProtocolDefinition(model: ProtocolModel): string[] {
     `[OK] protocol/axtp.protocol.yaml: ${model.methods.length} methods checked`,
     `[OK] protocol/axtp.protocol.yaml: ${model.events.length} events checked`,
     `[OK] protocol/axtp.protocol.yaml: ${model.errors.length} errors checked`,
-    `[OK] protocol/axtp.protocol.yaml: ${model.types.length} types checked`,
+    `[OK] protocol/axtp.protocol.yaml: ${model.schemas.length} schemas checked`,
     `[OK] protocol/axtp.protocol.yaml: ${model.profiles.length} profiles checked`
   ];
 }

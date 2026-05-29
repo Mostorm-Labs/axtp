@@ -16,10 +16,10 @@ import type {
   ProtocolMetadata,
   ProtocolModel,
   ProtocolOverview,
+  SchemaDefinition,
+  SchemaField,
   StreamDefinition,
-  TransportProfile,
-  TypeDefinition,
-  TypeField
+  TransportProfile
 } from "./protocolModel.js";
 import { normalizeId } from "./util.js";
 
@@ -45,9 +45,9 @@ function optionalNumber(value: unknown): number | undefined {
   return typeof value === "number" ? value : undefined;
 }
 
-function mapTypeField(field: any, typeName: string): TypeField {
+function mapSchemaField(field: any, schemaName: string): SchemaField {
   return {
-    fieldId: normalizeId(field.fieldId, `${typeName}.${field.name}`),
+    fieldId: normalizeId(field.fieldId, `${schemaName}.${field.name}`),
     name: String(field.name),
     type: String(field.type),
     required: Boolean(field.required),
@@ -60,15 +60,16 @@ function mapTypeField(field: any, typeName: string): TypeField {
   };
 }
 
-function mapTypes(types: unknown): TypeDefinition[] {
-  const rawTypes = asObject(types, "types");
-  return Object.entries(rawTypes).map(([name, raw]) => {
-    const item = asObject(raw, `types.${name}`);
+function mapSchemas(raw: any): SchemaDefinition[] {
+  // Accept both `schemas:` (new) and `types:` (legacy) as the top-level key
+  const rawSchemas = asObject(raw.schemas ?? raw.types, "schemas");
+  return Object.entries(rawSchemas).map(([name, item]) => {
+    const entry = asObject(item, `schemas.${name}`);
     return {
       name,
-      kind: String(item.kind ?? "object"),
-      description: item.description === undefined ? undefined : String(item.description),
-      fields: asArray(item.fields).map((field) => mapTypeField(field, name))
+      kind: String(entry.kind ?? "object"),
+      description: entry.description === undefined ? undefined : String(entry.description),
+      fields: asArray(entry.fields).map((field) => mapSchemaField(field, name))
     };
   });
 }
@@ -287,7 +288,7 @@ export function loadProtocolDefinitionFromRaw(specRoot: string, sourcePath: stri
     control: mapControl(raw.control),
     stream: mapStream(raw.stream),
     compatibility: mapCompatibility(raw.compatibility),
-    types: mapTypes(raw.types),
+    schemas: mapSchemas(raw),
     methods: mapMethods(raw.methods),
     events: mapEvents(raw.events),
     errors: mapErrors(raw.errors),

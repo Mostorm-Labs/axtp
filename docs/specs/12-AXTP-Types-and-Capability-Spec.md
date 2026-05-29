@@ -2,7 +2,7 @@
 
 > Status: AXTP v1 Protocol Definition Meta Spec
 > Spec Version: 1.0.0-rc1
-> Scope: `types:` entries, fieldId rules, schema generation, v1 capability strategy
+> Scope: `schemas:` entries, fieldId rules, schema generation, v1 capability strategy
 
 版本：v1.0.0-rc1
 状态：Protocol Definition 元规范
@@ -12,14 +12,14 @@
 
 ## 1. 文档定位
 
-本文档只定义 type / capability 元模型，不手写完整业务 schema 或能力树。具体类型内容必须写入 `registry/schema/`、`registry/capability/` 或 `domains/*/domain.yaml`；`protocol/axtp.protocol.yaml` 中的 `types:` 由 Generator 聚合生成。
+本文档只定义 schema / capability 元模型，不手写完整业务 schema 或能力树。具体类型内容必须写入 `registry/schema/`、`registry/capability/` 或 `domains/*/domain.yaml`；`protocol/axtp.protocol.yaml` 中的 `schemas:` 由 Generator 聚合生成。
 
 ---
 
-## 2. types 条目结构
+## 2. schemas 条目结构
 
 ```yaml
-types:
+schemas:
   DeviceInfo:
     kind: object
     fields:
@@ -41,8 +41,8 @@ types:
 |---|---:|---|
 | `kind` | 是 | `object / enum / bitmap / alias / bytes` |
 | `fields[].name` | object 必填 | 字段名 |
-| `fields[].fieldId` | object 必填 | TLV fieldId，1B，类型内唯一 |
-| `fields[].type` | 是 | 基础类型或其他 type 引用 |
+| `fields[].fieldId` | object 必填 | TLV fieldId，1B，schema 内唯一 |
+| `fields[].type` | 是 | 基础类型或其他 schema 引用 |
 | `fields[].required` | 是 | 是否必填 |
 | `fields[].default` | 否 | 默认值 |
 | `fields[].deprecated` | 否 | 是否废弃 |
@@ -52,7 +52,7 @@ types:
 
 ## 4. fieldId 规则
 
-1. 同一 type 内 `fieldId` 必须唯一。
+1. 同一 schema 内 `fieldId` 必须唯一。
 2. stable 字段的 `fieldId` 不得复用。
 3. 字段废弃后必须保留编号占位。
 4. 新增字段应默认 optional，以保持向后兼容。
@@ -63,7 +63,7 @@ types:
 
 ## 5. 生成规则
 
-`axtpc` 必须从 `types:` 生成：
+`axtpc` 必须从 `schemas:` 生成：
 
 ```text
 generated/protocol.md Types Reference
@@ -121,4 +121,4 @@ capability schema
 按事件/流/profile 的复杂能力协商
 ```
 
-v2 Capability Model 可以引用 `types:`，但不得改变 v1 method/event/error/type 的 stable wire format。完整设计草案迁移到 `protocol-source/future/AXTP-Capability-Model-v2.md`，不得回流为 v1 Core 必选项。
+v2 Capability Model 可以引用 `schemas:`，但不得改变 v1 method/event/error/schema 的 stable wire format。完整设计草案迁移到 `protocol-source/future/AXTP-Capability-Model-v2.md`，不得回流为 v1 Core 必选项。

@@ -22,14 +22,12 @@
 methods:
   - name: device.getInfo
     id: 0x0101
-    bit_offset: 0
+    bitOffset: 0
     domain: device
     since: 1.0.0
     status: stable
-    request:
-      type: Empty
-    response:
-      type: DeviceInfo
+    requestSchema: Empty
+    responseSchema: DeviceInfo
     errors:
       - INVALID_PARAMS
       - DEVICE_BUSY
@@ -44,14 +42,14 @@ methods:
 | 字段 | 必填 | 说明 |
 |---|---:|---|
 | `name` | 是 | JSON-RPC method name，必须为 `domain.action` |
-| `id` / `methodId` | 是 | uint16，Binary-RPC methodId，wire 上使用；源 YAML 使用 `id`，Protocol IR 使用 `methodId` |
-| `bit_offset` / `bitOffset` | 是 | uint8，该 method 在所属 domain 的 `capability.supportedMethods` bitmap 中的 bit 位置，domain 内从 0 开始，domain 内唯一 |
+| `id` | 是 | uint16，Binary-RPC methodId，wire 上使用 |
+| `bitOffset` | 是 | uint8，该 method 在所属 domain 的 `capability.supportedMethods` bitmap 中的 bit 位置，domain 内从 0 开始，domain 内唯一 |
 | `domain` | 是 | 所属业务域，必须与 name 前缀一致 |
 | `description` | 是 | 方法说明 |
 | `since` | 是 | 首次引入版本 |
 | `status` | 是 | `draft / experimental / stable / deprecated / reserved` |
-| `request_schema` / `request.type` | 是 | 必须引用已注册 schema/type，空请求最终映射为 `Empty` |
-| `response_schema` / `response.type` | 是 | 必须引用已注册 schema/type，空响应最终映射为 `Empty` |
+| `requestSchema` | 是 | 必须引用已注册 schema 名称，空请求使用 `Empty` |
+| `responseSchema` | 是 | 必须引用已注册 schema 名称，空响应使用 `Empty` |
 | `errors` | 是 | 可能存在的错误码，必须引用 `errors` 中存在的 error name |
 | `events` | 否 | 调用后可能触发的事件，必须引用 `events` 中存在的 event name |
 | `capabilities` | 否 | 关联能力，v1 仅用于文档 |
@@ -66,7 +64,7 @@ methods:
 3. `name` 在所有 methods 中必须唯一。
 4. `name` 必须采用 `domain.action`，不得使用空格、驼峰 domain 或协议层保留词。
 5. `methodId` stable 后不得复用；废弃只能标记 `deprecated`。
-6. `request.type` / `response.type` 必须存在。
+6. `requestSchema` / `responseSchema` 必须存在。
 7. `errors[]` 必须存在于 `errors:`。
 8. methodId 和 bitOffset 范围由 Protocol Plan 分配；具体业务分配只写入 `registry/` 或 `domains/` YAML。
 9. `capability.supportedMethods` bitmap 按 domain 分段，每个 domain 内第 N bit 对应该 domain 下 `bitOffset=N` 的 method。

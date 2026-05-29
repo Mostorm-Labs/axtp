@@ -18,21 +18,21 @@ schemas:
         name: imageVersion
         type: string
         required: true
-        max_length: 32
+        maxLength: 32
         description: Target firmware version.
         deprecated: false
       - id: 0x04
         name: verifyType
         type: string
         required: true
-        max_length: 16
+        maxLength: 16
         description: Object-level verification algorithm such as md5, crc32 or sha256.
         deprecated: false
       - id: 0x05
         name: verifyValue
         type: string
         required: true
-        max_length: 64
+        maxLength: 64
         description: Hex verification value for the full firmware image.
         deprecated: false
       - id: 0x06
@@ -91,7 +91,7 @@ schemas:
         name: resumeToken
         type: bytes
         required: false
-        max_length: 32
+        maxLength: 32
         description: Opaque resume token.
         deprecated: false
       - id: 0x07
@@ -104,7 +104,7 @@ schemas:
         name: profile
         type: string
         required: true
-        max_length: 32
+        maxLength: 32
         description: Bound Stream Profile, usually firmware.ota.
         deprecated: false
       - id: 0x09
@@ -251,7 +251,7 @@ schemas:
         name: version
         type: string
         required: false
-        max_length: 32
+        maxLength: 32
         deprecated: false
 
   FirmwareUpdateFailedEvent:
@@ -266,5 +266,5 @@ schemas:
         name: message
         type: string
         required: false
-        max_length: 96
+        maxLength: 96
         deprecated: false

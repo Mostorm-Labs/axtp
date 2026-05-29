@@ -167,7 +167,7 @@ compatibility:
     - Stable methodId, eventId and error code values must not be reused.
     - Legacy command mappings may be preserved as metadata under methods[].legacy.
     - WebSocket Text and HTTP JSON may exist only as debug or legacy adapter paths.
-types:
+schemas:
   Empty:
     kind: object
     fields: []

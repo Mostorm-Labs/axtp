@@ -58,7 +58,7 @@ function assertYamlControl(model: ProtocolModel): void {
 }
 
 function assertYamlCapability(model: ProtocolModel): void {
-  const supportedMethodsResponse = model.types.find((type) => type.name === "CapabilitySupportedMethodsResponse");
+  const supportedMethodsResponse = model.schemas.find((schema) => schema.name === "CapabilitySupportedMethodsResponse");
   const methodMasks = supportedMethodsResponse?.fields.find((field) => field.name === "methodMasks");
   if (!methodMasks || methodMasks.derivedFrom !== "methods[].bitOffset") {
     fail("protocol/axtp.protocol.yaml", "CapabilitySupportedMethodsResponse.methodMasks", "methodMasks must derive from methods[].bitOffset");

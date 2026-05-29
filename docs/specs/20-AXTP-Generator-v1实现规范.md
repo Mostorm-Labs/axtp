@@ -1,135 +1,123 @@
 # 20《AXTP Generator v1 实现规范》
 
-版本：v1.0  
-状态：MVP 实现规范  
-适用范围：AXTP Registry / Schema / C++ Demo / Markdown 文档生成  
+版本：v1.1
+状态：当前实现规范 + 后续规划
+适用范围：AXTP Source YAML、Protocol IR、生成协议文档、机器可读 JSON、Registry 产物、后续 runtime/codegen 集成
+
 关联文档：
 
-- 00《AXTP 协议总览与落地路线》
-- 05《AXTP Type-System 基础类型规范》
-- 06《AXTP TLV-Schema 编码规范》
-- 07《AXTP Schema 字段编号规范》
-- 08《AXTP Registry 总则》
-- 09《AXTP MethodId 注册表》
-- 10《AXTP EventId 注册表》
-- 11《AXTP ErrorCode 注册表》
-- 12《AXTP Capability 注册表》
-- 13《AXTP MVP 最小实现注册表》
-- 14《AXTP 老协议适配与迁移规范》
-- 21《AXTP Cpp Demo 实现规范》
+- 00《AXTP Overview》
+- 04《AXTP Control Session Spec》
+- 05《AXTP RPC Session Spec》
+- 06《AXTP Stream Spec》
+- 07《AXTP Compatibility and Versioning》
+- 08《AXTP Protocol Definition Mapping Spec》
+- 09《AXTP Methods Registry Spec》
+- 10《AXTP Events Registry Spec》
+- 11《AXTP Errors Registry Spec》
+- 12《AXTP Types and Capability Spec》
+- 13《AXTP Profiles Registry Spec》
+- 14《AXTP Type System》
+- 15《AXTP TLV Schema Encoding》
+- 16《AXTP Schema Field Numbering》
 
 ---
 
 ## 1. 文档目的
 
-本文档定义 AXTP Generator v1 的实现范围、输入格式、校验规则、输出产物和工程集成方式。
+本文定义 AXTP Generator v1 的当前实现规则和后续演进方向。
 
-Generator v1 的目标不是实现完整 SDK，也不是替代协议栈运行时，而是把 AXTP 的注册表、domain 配置和 schema 从“人工维护的 Markdown 表格”升级为“可校验、可生成、可测试的单一事实源”。
+Generator v1 的核心定位已经从早期的“Registry 表格生成器”升级为“Protocol Definition 文档编译器”。它以 `registry/**/*.yaml` 和 `domains/**/*.yaml` 为机器事实源，生成 `protocol/axtp.protocol.yaml` 作为聚合后的 Protocol IR，再由 Protocol IR 生成面向用户阅读的协议文档和面向工具消费的 JSON。
 
-Generator v1 应服务于以下目标：
+当前主流程：
 
 ```text
 registry/**/*.yaml + domains/**/*.yaml
-        ↓
-AXTP Generator v1
-        ↓
-protocol/axtp.protocol.yaml
-        ↓
-Markdown 注册表文档
-C++ enum / descriptor / struct skeleton
-JSON schema / machine-readable registry
-测试向量
-C++ Demo 可编译输入
+        ↓ validate-sources
+Source Model
+        ↓ build-protocol
+protocol/axtp.protocol.yaml          # generated Protocol IR
+        ↓ emit-protocol
+docs/generated/protocol.md           # user-facing protocol reference
+docs/generated/protocol.json         # normalized machine model
+```
+
+旧的 Registry/C++ 生成器仍保留，但不再作为协议文档主入口：
+
+```text
+registry/**/*.yaml
+        ↓ generate-registry
+docs/generated/*_registry.generated.md
+runtimes/cpp-core/include/axtp/generated/*
+tooling/test-vectors/*
 ```
 
 ---
 
 ## 2. 核心原则
 
-### 2.1 Registry / Domain / Schema 是单一事实源
+### 2.1 Source YAML 是事实源
 
-所有 methodId、eventId、errorCode、capabilityId、Stream Profile、fieldId、legacyCmdValue 的定义，必须以 `registry/**/*.yaml` 与 `domains/**/*.yaml` 为准。
+以下目录是协议业务事实源：
 
-`protocol/axtp.protocol.yaml`、Markdown 文档、C++ 枚举、测试向量和 Demo 常量均为生成结果，不应作为人工维护的主数据源。
+```text
+registry/**/*.yaml
+domains/**/*.yaml
+```
+
+以下文件和目录是生成产物，不得手写：
+
+```text
+protocol/axtp.protocol.yaml
+docs/generated/*
+runtimes/*/generated/*
+tooling/* generated artifacts
+generators/src/__snapshots__/*
+```
+
+`protocol/axtp.protocol.yaml` 只是聚合 IR，不是人工编辑入口。新增业务必须写入 `domains/<domain>/domain.yaml` 或对应 `registry/` 源文件。
+
+### 2.2 三段式编译
+
+Generator v1 必须维持三段式边界：
+
+| 阶段 | 输入 | 输出 | 责任 |
+| ---- | ---- | ---- | ---- |
+| 业务录入段 | 规范、规划材料、用户业务需求 | `registry/**/*.yaml` / `domains/**/*.yaml` | 固化 ID、schema、error、event、capability、profile |
+| Protocol IR 段 | Source YAML | `protocol/axtp.protocol.yaml` | 聚合、标准化、关键事实校验 |
+| 成果物段 | Protocol IR | `docs/generated/protocol.md` / `protocol.json` 等 | 面向用户和工具输出稳定产物 |
+
+### 2.3 Generator 不实现运行时
+
+Generator 只生成描述性产物、文档和轻量 codegen 输入。它不实现：
+
+```text
+transport connection
+session runtime
+ACK/NACK scheduling
+business handler
+device driver calls
+OTA state machine
+media encoder/decoder
+```
+
+这些属于 SDK runtime、demo runtime 或设备业务实现。
+
+### 2.4 Wire 事实必须由 00-spec 兜底校验
+
+`protocol/axtp.protocol.yaml` 的结构化内容来自 Source YAML，但关键 wire 事实必须与 `docs/specs/00-16` 保持一致。当前必须校验：
+
+```text
+STREAM header = 16B
+STREAM fields = streamId:uint32, seqId:uint32, cursor:uint64
+CONTROL OPEN/ACCEPT required
+CONTROL READY optional, not required
+capability.supportedMethods.methodMasks derivedFrom = methods[].bitOffset
+```
 
 ---
 
-### 2.2 Generator 不参与运行时业务逻辑
-
-Generator v1 只生成以下内容：
-
-```text
-ID 常量
-枚举定义
-Schema 描述符
-TLV 编解码辅助代码
-Method / Event / Error / Capability 描述表
-Markdown 文档
-测试向量
-```
-
-Generator v1 不负责：
-
-```text
-传输连接
-异步调度
-重传策略
-会话管理
-OTA 状态机
-业务 handler 实现
-设备驱动调用
-```
-
-这些内容属于 C++ Demo 或正式 SDK Runtime。
-
----
-
-### 2.3 先支持 MVP，再扩展完整能力
-
-Generator v1 必须优先覆盖 13《AXTP MVP 最小实现注册表》中的 P0 集合。
-
-P0 包括：
-
-```text
-CONTROL OPEN / ACCEPT / ACK / NACK / HEARTBEAT / CLOSE
-RPC device.getInfo
-RPC capability.supportedMethods
-RPC display.getBrightness
-RPC display.setBrightness
-RPC firmware.begin
-RPC firmware.end
-RPC firmware.verify
-RPC firmware.apply
-STREAM OTA chunk
-EVENT display.brightnessChanged
-EVENT firmware.updateProgress
-EVENT firmware.updateCompleted
-EVENT firmware.updateFailed
-```
-
-P1/P2 能力可以预留 schema，但不要求 Generator v1 完整生成可运行代码。
-
----
-
-### 2.4 老协议映射必须可生成
-
-旧协议中的 CmdValue、旧 status、旧 payload 字段必须通过 `legacy` 映射字段表达。
-
-Generator v1 必须能够输出：
-
-```text
-legacy_cmd_mapping_generated.h
-legacy_cmd_mapping.json
-legacy_cmd_mapping.md
-```
-
-用于老协议适配层查表。
-
----
-
-## 3. Generator v1 输入目录结构
-
-推荐输入结构如下：
+## 3. 当前目录结构
 
 ```text
 axtp/
@@ -152,1100 +140,720 @@ axtp/
 │   └── legacy/legacy_mapping.yaml
 ├── domains/
 │   └── <domain>/domain.yaml
+├── protocol/
+│   └── axtp.protocol.yaml
+├── docs/
+│   ├── specs/
+│   ├── source/
+│   └── generated/
 ├── generators/
 │   ├── generator.yaml
+│   ├── package.json
 │   └── src/
-├── protocol/
-│   └── axtp.protocol.yaml      # generated Protocol IR
-├── docs/generated/
-├── runtimes/*/generated/
+├── runtimes/
 └── tooling/
 ```
 
 ---
 
-## 4. Generator 配置文件
+## 4. Source YAML 模型
 
-### 4.1 generator.yaml
+### 4.1 Core Registry
 
-`generator.yaml` 用于描述生成目标、输出目录、语言选项和校验级别。
+`registry/core/protocol_meta.yaml` 承载非业务协议元信息：
 
-示例：
-
-```yaml
-generator:
-  name: axtp-generator
-  version: 1.0.0
-
-input:
-  registry_dir: registry
-  schema_dir: registry/schema
-  domains_dir: domains
-
-output:
-  markdown_dir: docs/generated
-  cpp_dir: runtimes/cpp-core/include/axtp/generated
-  ts_dir: runtimes/web-sdk/generated
-  mcp_dir: tooling/mcp
-  test_vector_dir: tooling/test-vectors
-
-cpp:
-  namespace: axtp
-  standard: c++17
-  enum_class: true
-  generate_structs: true
-  generate_descriptors: true
-  generate_tlv_helpers: true
-
-validation:
-  level: strict
-  fail_on_duplicate_id: true
-  fail_on_unknown_schema: true
-  fail_on_missing_mvp_item: true
-  allow_experimental: false
+```text
+protocol
+overview
+architecture
+guide
+frameProfiles
+transports
+payloadTypes
+control
+stream
+compatibility
 ```
 
----
+`registry/core/*.yaml` 还承载核心枚举和常量：
 
-### 4.2 version.yaml
-
-`version.yaml` 用于记录 registry 和 schema 的版本。
-
-```yaml
-spec:
-  name: AXTP
-  version: 1.0.0
-  registry_version: 1.0.0
-  schema_version: 1.0.0
-  wire_version: 1
-  status: mvp
+```text
+payload_type.yaml
+control_opcode.yaml
+rpc_encoding.yaml
+rpc_body_encoding.yaml
+rpc_op.yaml
+stream_profile.yaml
 ```
 
-其中：
+### 4.2 Adopted Registry
 
-| 字段 | 说明 |
-|---|---|
-| `version` | 文档整体版本 |
-| `registry_version` | 注册表版本 |
-| `schema_version` | schema 版本 |
-| `wire_version` | 线上协议版本 |
-| `status` | draft / mvp / stable |
+已采纳的 MVP/Core 条目继续放在 `registry/`：
 
----
-
-## 5. Registry 输入规范
-
-### 5.1 通用 Registry 条目结构
-
-所有 registry 条目建议使用统一结构：
-
-```yaml
-- id: 0x0101
-  name: device.getInfo
-  domain: device
-  title: Get device information
-  description: Get basic device information.
-  status: mvp
-  since: 1.0.0
-  deprecated: false
-  request_schema: DeviceGetInfoRequest
-  response_schema: DeviceGetInfoResponse
-  errors:
-    - 0x0000
-    - 0x0301
-  capabilities:
-    - device.info
-  legacy:
-    cmd_value: null
-    protocol: null
+```text
+registry/method/method_registry.yaml
+registry/event/event_registry.yaml
+registry/error/error_code.yaml
+registry/capability/capability_registry.yaml
+registry/schema/*.yaml
+registry/legacy/legacy_mapping.yaml
 ```
 
-通用字段说明：
+这些文件适合放稳定基础能力，例如：
 
-| 字段 | 必须 | 说明 |
-|---|---|---|
-| `id` | 是 | 注册 ID，methodId/eventId/errorCode/capabilityId |
-| `name` | 是 | 稳定名称 |
-| `domain` | 是 | 所属域 |
-| `title` | 否 | 简短标题 |
-| `description` | 是 | 描述 |
-| `status` | 是 | draft / mvp / stable / deprecated / reserved |
-| `since` | 是 | 引入版本 |
-| `deprecated` | 是 | 是否废弃 |
-| `legacy` | 否 | 老协议映射 |
+```text
+device.getInfo
+capability.supportedMethods
+display.getBrightness
+display.setBrightness
+firmware.begin/end/verify/apply
+CONTROL / RPC / STREAM shared schemas
+```
 
-`status = reserved` 的条目只生成 Markdown/JSON 描述，不生成默认 C++ enum 值、handler stub、SDK 调用入口或测试用例。Generator 必须在校验阶段阻止新实现引用 reserved 条目。
+### 4.3 Domain YAML
 
----
+新增业务优先写入：
 
-### 5.2 Method Registry 输入
+```text
+domains/<domain>/domain.yaml
+```
 
-文件：`registry/method_registry.yaml`
+推荐结构：
 
 ```yaml
+domain: stream
+description: STREAM control-plane methods and events.
+
 methods:
-  - id: 0x0101
-    name: device.getInfo
-    domain: device
-    status: mvp
-    rpc_op: request_response
-    request_schema: DeviceGetInfoRequest
-    response_schema: DeviceGetInfoResponse
-    recommended_encoding:
-      - json
-      - binary_tlv
-    capabilities:
-      - device.info
-    events: []
-    errors:
-      - SUCCESS
-      - RPC_METHOD_NOT_FOUND
-      - RPC_PARAM_INVALID
-    legacy:
-      cmd_value: 0xB0002
-      name: BetaDeviceInfo
-      payload_format: fixed_struct
-
-  - id: 0x0502
-    name: display.setBrightness
-    domain: display
-    status: mvp
-    rpc_op: request_response
-    request_schema: DisplaySetBrightnessRequest
-    response_schema: CommonEmptyResponse
-    recommended_encoding:
-      - json
-      - binary_tlv
-    capabilities:
-      - display.brightness
-    events:
-      - display.brightnessChanged
-    errors:
-      - SUCCESS
-      - RPC_PARAM_INVALID
-      - BUSY
-```
-
----
-
-### 5.3 Event Registry 输入
-
-文件：`registry/event_registry.yaml`
-
-```yaml
-events:
-  - id: 0x8507
-    name: display.brightnessChanged
-    domain: display
-    status: mvp
-    event_schema: DisplayBrightnessChangedEvent
-    severity: info
-    trigger:
-      - display.setBrightness
-      - device_local_change
-    capabilities:
-      - display.brightness
-```
-
----
-
-### 5.4 ErrorCode Registry 输入
-
-文件：`registry/error_code.yaml`
-
-```yaml
-errors:
-  - id: 0x0000
-    name: SUCCESS
-    domain: common
-    status: mvp
-    description: Operation completed successfully.
-    retryable: false
-
-  - id: 0x0301
-    name: RPC_METHOD_NOT_FOUND
-    domain: rpc
-    status: mvp
-    description: MethodId or method name is not supported.
-    retryable: false
-
-  - id: 0x0403
-    name: STREAM_CRC_ERROR
+  - id: 0x0901
+    name: stream.open
     domain: stream
-    status: mvp
-    description: Stream chunk CRC check failed.
-    retryable: true
-```
+    status: draft
+    bit_offset: 0
+    since: 1.0.0
+    description: Open an AXTP STREAM media channel.
+    rpc_op: request_response
+    request_schema: StreamOpenRequest
+    response_schema: StreamOpenResponse
+    recommended_encoding: [json, binary_tlv]
+    capabilities: [stream.hidMedia]
+    events: [stream.opened, stream.error]
+    errors: [SUCCESS, RPC_PARAM_INVALID, BUSY]
 
----
+events:
+  - id: 0x8901
+    name: stream.opened
+    domain: stream
+    status: draft
+    bit_offset: 0
+    since: 1.0.0
+    description: Emitted after a stream is opened.
+    event_schema: StreamOpenedEvent
+    severity: info
+    trigger: [stream.open]
+    capabilities: [stream.hidMedia]
 
-### 5.5 Capability Registry 输入
-
-文件：`registry/capability_registry.yaml`
-
-```yaml
-capabilities:
-  - id: 0x0001
-    name: protocol.payload.control
-    domain: protocol
-    status: mvp
-    type: bool
-    description: Device supports CONTROL payload.
-
-  - id: 0x0601
-    name: display.brightness
-    domain: display
-    status: mvp
-    type: bool
-    description: Device supports display brightness control.
-
-  - id: 0x0B01
-    name: firmware.ota
-    domain: firmware
-    status: mvp
-    type: object
-    schema: FirmwareOtaCapability
-```
-
----
-
-### 5.6 Legacy Mapping 输入
-
-Legacy Mapping 是兼容 profile 的输入源，不属于默认 AXTP v1 runtime 的必选输入。除非 `generator.yaml` 显式启用 `compatibility.legacy = true`，Generator 不得生成 Legacy parser、Legacy Adapter runtime 或 Legacy SDK API。
-
-文件：`registry/legacy_mapping.yaml`
-
-```yaml
-legacy_mappings:
-  - legacy_protocol: axdp_hid
-    legacy_cmd_value: 0xB0002
-    legacy_name: BetaDeviceInfo
-    axtp_method_id: 0x0101
-    axtp_method_name: device.getInfo
-    direction: request_response
-    request_adapter: BetaDeviceInfoRequestAdapter
-    response_adapter: BetaDeviceInfoResponseAdapter
-    status_mapping:
-      0x00: SUCCESS
-      0x01: RPC_PARAM_INVALID
-      0x02: BUSY
-
-  - legacy_protocol: axdp_hid
-    legacy_cmd_value: 0xA0001
-    legacy_name: AlphaUpgradeInfo
-    axtp_method_id: 0x0B01
-    axtp_method_name: firmware.getInfo
-    direction: request_response
-```
-
-注意：
-
-旧 `legacy_cmd_value` 可以是 32-bit 或更大，不要求塞进 AXTP `methodId:uint16`。Generator 必须保留它的原始宽度和十六进制文本。
-
----
-
-## 6. Schema 输入规范
-
-### 6.1 Schema 文件结构
-
-Schema 文件用于描述 RPC body、Event data、Control TLV body、Stream Profile 建流上下文。
-
-```yaml
-schemas:
-  DeviceGetInfoRequest:
-    type: object
-    fields: []
-
-  DeviceGetInfoResponse:
-    type: object
+types:
+  StreamOpenRequest:
+    kind: object
     fields:
       - id: 0x01
-        name: vendor
+        name: profile
         type: string
-        required: false
+        required: true
         max_length: 32
-      - id: 0x02
-        name: product
-        type: string
-        required: false
-        max_length: 32
-      - id: 0x03
-        name: firmwareVersion
-        type: string
-        required: false
-        max_length: 32
-      - id: 0x04
-        name: serialNumber
-        type: string
-        required: false
-        max_length: 64
+        description: Stream Profile name.
+
+errors:
+  - id: 0x0801
+    name: MEDIA_SOURCE_NOT_FOUND
+    domain: media
+    status: draft
+    description: Requested media source does not exist.
+    retryable: false
+
+capabilities:
+  - id: 0x0908
+    name: stream.hidMedia
+    domain: stream
+    status: draft
+    type: object
+    schema: StreamHidMediaCapability
+    description: Device supports HID-backed media streams.
+
+profiles:
+  - name: AXTP-HID-MEDIA
+    since: 1.0.0
+    status: draft
+    extends: AXTP-MVP-HID
+    requiredMethods: [stream.open]
+    requiredEvents: [stream.opened]
+    requiredErrors: [SUCCESS, RPC_PARAM_INVALID]
+    requiredTypes: [StreamOpenRequest, StreamOpenResponse]
+    transportProfiles: [AXTP-HID-64]
+    frameProfile: COMPACT_FRAME
 ```
+
+### 4.4 Field 规则
+
+字段必须稳定：
+
+| 字段 | 规则 |
+| ---- | ---- |
+| `id` | 1 byte fieldId，范围 `0x01-0xFF` |
+| `name` | schema 内唯一 |
+| `type` | 必须是内建类型或已定义 type |
+| `required` | 必填字段为 `true`，可选字段为 `false` |
+| `min/max/max_length` | 进入生成文档的 Value Restrictions |
+| `description` | 进入生成文档的字段说明 |
 
 ---
 
-### 6.2 字段描述结构
+## 5. Protocol IR
 
-```yaml
-- id: 0x01
-  name: value
-  type: uint8
-  required: true
-  min: 0
-  max: 100
-  default: null
-  deprecated: false
-  description: Brightness value in percentage.
+`protocol/axtp.protocol.yaml` 是 build 阶段生成的聚合 IR。它的职责是把 registry/domain 多源 YAML 统一为单一 Protocol Definition：
+
+```text
+protocol
+overview
+architecture
+frameProfiles
+transports
+payloadTypes
+control
+stream
+compatibility
+types
+methods
+events
+errors
+profiles
 ```
 
-字段说明：
+IR 规则：
 
-| 字段 | 必须 | 说明 |
-|---|---|---|
-| `id` | 是 | TLV fieldId |
-| `name` | 是 | 字段名 |
-| `type` | 是 | AXTP Type System 类型 |
-| `required` | 是 | 是否必填 |
-| `min` / `max` | 否 | 数值范围 |
-| `max_length` | 否 | string / bytes 最大长度 |
-| `enum` | 否 | enum 类型引用 |
-| `default` | 否 | 默认值 |
-| `deprecated` | 是 | 是否废弃 |
+- `methods[].id` 转为 `methods[].methodId`。
+- `events[].id` 转为 `events[].eventId`。
+- `bit_offset` 转为 `bitOffset`。
+- 空 request/response schema 必须标准化为 `Empty`。
+- `status=mvp` 在 Protocol IR 中可映射为 `stable`。
+- 默认 `AXTP-MVP` 和 `AXTP-MVP-HID` profiles 必须保留；domain profiles 追加，不得覆盖默认 profiles。
+- 禁止 `bitmapId`、`requests`、`requiredRequests` 等旧 capability model 字段进入 IR。
 
 ---
 
-### 6.3 MVP 必须支持的类型
+## 6. 生成文档规则
 
-Generator v1 必须支持：
+`docs/generated/protocol.md` 面向 SDK 使用者和业务接入者，不承担低层 frame/transport/payload 规范全文复制职责。低层细节留在 `docs/specs/00-16`。
 
-```text
-uint8
-uint16
-uint32
-uint64
-int8
-int16
-int32
-int64
-bool
-enum
-bitmap
-string
-bytes
-object
-array
-```
+### 6.1 文档结构
 
-Generator v1 可以暂缓支持：
+当前 Markdown 输出结构固定为：
 
 ```text
-float32
-float64
-map
-oneof
-union
-recursive object
+# AXTP Protocol
+## Main Table of Contents
+## Overview
+## Design Goals / Non-Goals
+## Connection Lifecycle
+## Capability Discovery
+# Methods
+## <domain> Methods
+### <domain.method>
+#### Request Fields
+#### Response Fields
+# Events
+## <domain> Events
+### <domain.event>
+#### Payload Fields
+# Additional Types
+# Errors Reference
+# Profiles Reference
 ```
+
+不再输出独立低层章节：
+
+```text
+Frame Profiles
+Transport Profiles
+Payload Types
+Control Rules
+Stream Transfer Model
+Types Reference
+```
+
+这些数据仍保留在 `protocol.json` 中供机器消费。
+
+### 6.2 Methods 渲染
+
+每个 method 使用以下结构：
+
+```markdown
+### firmware.begin
+
+Begin a firmware OTA transfer and allocate the STREAM context.
+
+- Method ID: `0x0B02`
+- Domain: `firmware`
+- Bit Offset: `0`
+- Status: `stable`
+- Added in v1.0.0
+- Encodings: `json`, `binary_tlv`
+- Required Capabilities: `firmware.ota`
+- Possible Events: `firmware.updateProgress`
+- Possible Errors: `SUCCESS`, `RPC_PARAM_INVALID`, `BUSY`
+
+#### Request Fields
+
+Type: `FirmwareBeginRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+```
+
+具体方法名必须比字段块更醒目：
+
+```text
+# Methods
+## domain Methods
+### concrete.method
+#### Request/Response Fields
+```
+
+### 6.3 字段表样式
+
+字段表采用 obs-websocket 风格：
+
+| 列 | 说明 |
+| ---- | ---- |
+| `Name` | 字段名；可选字段以 `?` 前缀显示 |
+| `Type` | 规范化类型名，例如 `UInt16`、`String`、`Boolean` |
+| `Field ID` | TLV fieldId，十六进制 |
+| `Description` | 字段说明 |
+| `Value Restrictions` | `min/max/maxLength/derivedFrom/deprecated` |
+| `?Default Behavior` | 必填为 `N/A`，可选为 `Omit if not used.` |
+
+Markdown 表格 alignment 必须使用：
+
+```markdown
+| ---- | :---: | :---: | ---- | :---: | ---- |
+```
+
+GitHub 或文档站的表头底色由渲染主题提供，Generator 不通过 HTML/CSS 强行注入样式。
+
+### 6.4 Additional Types
+
+凡未被 method request/response 或 event payload 直接引用，但存在于 Protocol IR 中的 type，放入 `Additional Types`。这避免丢失 capability、control body 等辅助 schema。
+
+### 6.5 protocol.json
+
+`docs/generated/protocol.json` 必须保持完整 normalized model，包括：
+
+```text
+frameProfiles
+transports
+payloadTypes
+control
+stream
+compatibility
+types
+methods
+events
+errors
+profiles
+```
+
+Markdown 为阅读优化，JSON 为 codegen、测试工具和后续 MCP/SDK 使用。
 
 ---
 
 ## 7. 校验规则
 
-Generator v1 必须在生成前执行严格校验。
+### 7.1 Source Model 校验
 
-### 7.1 ID 唯一性校验
-
-必须校验：
+`validate-sources` 必须执行：
 
 ```text
-methodId 在 method_registry 中唯一
-eventId 在 event_registry 中唯一
-errorCode 在 error_code 中唯一
-capabilityId 在 capability_registry 中唯一
-同一 schema 内 fieldId 唯一
-同一 schema 内 fieldName 唯一
+methodId/name 全局唯一
+eventId/name 全局唯一
+errorCode/name 全局唯一
+capabilityId/name 全局唯一
+schema name 唯一
+schema 内 fieldId/name 唯一
+method bit_offset 在同 domain 内唯一且从 0 连续
+event bit_offset 在同 domain 内唯一且从 0 连续
+method request_schema/response_schema 必须存在
+event event_schema 必须存在
+capability schema 必须存在
+schema field.schema 引用必须存在
+reserved capability/event/error 不得被 method 引用
+MVP profile 引用的 method/event/error/capability 必须存在
+legacy mapping 目标 method/error 必须存在
 ```
 
-冲突时必须失败。
+### 7.2 Protocol IR 校验
 
----
-
-### 7.2 ID 范围校验
-
-必须校验：
+`validate-protocol` 必须执行：
 
 ```text
-methodId 是否落在对应 domain 范围内
-eventId 是否落在对应 domain 范围内
-errorCode 是否落在对应错误层级范围内
-capabilityId 是否落在对应 capability 分类范围内
-fieldId 是否落在允许范围内
-vendor id 是否落在 vendor range
+method name/methodId 唯一
+event name/eventId 唯一
+error name/code 唯一
+type name 唯一
+transport/profile name 唯一
+method/event domain 必须匹配 name 前缀
+eventId 必须 >= 0x8000
+eventId high byte 必须与 domain methodId high byte 对齐
+method/event bitOffset 在同 domain 内唯一且从 0 连续
+method description 必须存在
+method request/response type 必须存在
+event payload type 必须存在
+method 引用的 event/error 必须存在
+profile 引用的 method/event/error/type/transport 必须存在
+error category 必须符合 code range
+Empty request/response 必须使用 Empty
+STREAM header 必须为 streamId:uint32 / seqId:uint32 / cursor:uint64
+CONTROL OPEN/ACCEPT 必须 required，READY 必须 optional
+CapabilitySupportedMethodsResponse.methodMasks derivedFrom 必须为 methods[].bitOffset
 ```
 
----
+### 7.3 Docs Consistency 校验
 
-### 7.3 Schema 引用校验
-
-必须校验：
+Generator 必须读取关键 00-spec 文档并校验核心 wire 事实：
 
 ```text
-method.request_schema 存在
-method.response_schema 存在
-event.event_schema 存在
-capability.schema 存在
-schema field enum 引用存在
-schema field object 引用存在
+docs/specs/06-AXTP-Stream-Spec.md:
+  16B Stream Header
+  streamId:uint32
+  seqId:uint32
+  cursor:uint64
+
+docs/specs/04-AXTP-Control-Session-Spec.md:
+  OPEN/ACCEPT required
+  READY optional
+
+docs/specs/12-AXTP-Types-and-Capability-Spec.md:
+  method bitmap derived from methods[].bitOffset
 ```
 
 ---
 
-### 7.4 MVP 完整性校验
+## 8. CLI 规范
 
-当 `validation.fail_on_missing_mvp_item = true` 时，必须校验 13《AXTP MVP 最小实现注册表》中所有 P0 项均存在。
-
-MVP 缺失示例：
-
-```text
-missing method: device.getInfo
-missing method: capability.supportedMethods
-missing method: display.setBrightness
-missing method: firmware.begin
-missing event: display.brightnessChanged
-missing error: SUCCESS
-missing capability: protocol.payload.rpc
-```
-
----
-
-### 7.5 Legacy Mapping 校验
-
-必须校验：
-
-```text
-legacy_cmd_value 不重复，除非显式 allow_alias = true
-legacy_cmd_value 对应的 axtp_method_id 存在
-legacy status_mapping 目标 errorCode 存在
-legacy adapter 名称符合命名规则
-```
-
----
-
-### 7.6 兼容性校验
-
-当 registry 从旧版本升级到新版本时，Generator 应支持兼容性检查。
-
-禁止行为：
-
-```text
-修改 stable methodId 的语义
-修改 stable eventId 的语义
-复用 deprecated ID
-删除 stable 字段但不标记 deprecated
-改变字段类型但不升级 schema major version
-```
-
-允许行为：
-
-```text
-新增 optional 字段
-新增 draft/mvp 方法
-新增 errorCode
-新增 capability
-新增 event
-将 draft 提升为 mvp/stable
-```
-
----
-
-## 8. 输出目录结构
-
-Generator v1 推荐输出：
-
-```text
-generated/
-├── cpp/
-│   ├── axtp_ids_generated.h
-│   ├── axtp_schema_generated.h
-│   ├── axtp_method_registry_generated.h
-│   ├── axtp_event_registry_generated.h
-│   ├── axtp_error_code_generated.h
-│   ├── axtp_capability_generated.h
-│   ├── axtp_legacy_mapping_generated.h
-│   └── axtp_tlv_codec_generated.h
-│
-├── docs/
-│   ├── method_registry.generated.md
-│   ├── event_registry.generated.md
-│   ├── error_code.generated.md
-│   ├── capability_registry.generated.md
-│   └── legacy_mapping.generated.md
-│
-├── json/
-│   ├── method_registry.generated.json
-│   ├── event_registry.generated.json
-│   ├── error_code.generated.json
-│   ├── capability_registry.generated.json
-│   ├── schema.generated.json
-│   └── legacy_mapping.generated.json
-│
-└── test_vectors/
-    ├── control_open.hex
-    ├── rpc_device_get_info.hex
-    ├── rpc_display_brightness_set.hex
-    ├── event_display_brightness_changed.hex
-    ├── stream_ota_chunk.hex
-    └── manifest.json
-```
-
----
-
-## 9. C++ 输出规范
-
-### 9.1 axtp_ids_generated.h
-
-示例：
-
-```cpp
-#pragma once
-#include <cstdint>
-
-namespace axtp {
-
-// PayloadType
-constexpr uint8_t PAYLOAD_TYPE_CONTROL = 0x01;
-constexpr uint8_t PAYLOAD_TYPE_RPC     = 0x02;
-constexpr uint8_t PAYLOAD_TYPE_STREAM  = 0x03;
-
-// MethodId
-enum class MethodId : uint16_t {
-    DeviceGetInfo      = 0x0101,
-    CapabilityGetAll   = 0x0301,
-    DisplayGetBrightness      = 0x0501,
-    DisplaySetBrightness      = 0x0502,
-    FirmwareBegin      = 0x0B02,
-    FirmwareEnd        = 0x0B03,
-    FirmwareVerify     = 0x0B04,
-    FirmwareApply      = 0x0B05,
-};
-
-// EventId
-enum class EventId : uint16_t {
-    DisplayBrightnessChanged       = 0x8507,
-    FirmwareUpdateProgress  = 0x8B02,
-    FirmwareUpdateCompleted = 0x8B03,
-    FirmwareUpdateFailed    = 0x8B04,
-};
-
-// ErrorCode
-enum class ErrorCode : uint16_t {
-    Success          = 0x0000,
-    InvalidFrame     = 0x0101,
-    CrcError         = 0x0102,
-    UnknownMethod    = 0x0301,
-    InvalidParams    = 0x0302,
-    StreamCrcError   = 0x0403,
-    DeviceBusy       = 0x0501,
-};
-
-} // namespace axtp
-```
-
----
-
-### 9.2 axtp_schema_generated.h
-
-Generator v1 应生成轻量 descriptor，而不是复杂反射系统。
-
-```cpp
-#pragma once
-#include <cstdint>
-#include <cstddef>
-
-namespace axtp {
-
-enum class FieldType : uint8_t {
-    Uint8,
-    Uint16,
-    Uint32,
-    Uint64,
-    Bool,
-    String,
-    Bytes,
-    Object,
-};
-
-struct FieldDescriptor {
-    uint8_t field_id;
-    const char* name;
-    FieldType type;
-    bool required;
-    uint32_t min_value;
-    uint32_t max_value;
-};
-
-struct SchemaDescriptor {
-    const char* name;
-    const FieldDescriptor* fields;
-    size_t field_count;
-};
-
-extern const SchemaDescriptor kDisplaySetBrightnessRequestSchema;
-extern const SchemaDescriptor kDeviceGetInfoResponseSchema;
-
-} // namespace axtp
-```
-
----
-
-### 9.3 axtp_method_registry_generated.h
-
-```cpp
-#pragma once
-#include <cstdint>
-
-namespace axtp {
-
-struct MethodDescriptor {
-    uint16_t id;
-    const char* name;
-    const char* domain;
-    const char* request_schema;
-    const char* response_schema;
-};
-
-const MethodDescriptor* FindMethodById(uint16_t id);
-const MethodDescriptor* FindMethodByName(const char* name);
-
-} // namespace axtp
-```
-
----
-
-### 9.4 axtp_legacy_mapping_generated.h
-
-```cpp
-#pragma once
-#include <cstdint>
-
-namespace axtp {
-
-struct LegacyCmdMapping {
-    const char* legacy_protocol;
-    uint32_t legacy_cmd_value;
-    uint16_t axtp_method_id;
-    const char* axtp_method_name;
-};
-
-const LegacyCmdMapping* FindLegacyMappingByCmd(uint32_t cmd_value);
-
-} // namespace axtp
-```
-
----
-
-## 10. TLV 编解码辅助生成
-
-Generator v1 可生成两类 TLV 辅助代码。
-
-### 10.1 Field 常量
-
-```cpp
-namespace axtp::fields::display_set_brightness {
-constexpr uint8_t VALUE = 0x01;
-constexpr uint8_t TRANSITION_MS = 0x02;
-}
-```
-
-### 10.2 Struct Skeleton
-
-```cpp
-struct DisplaySetBrightnessRequest {
-    uint8_t value = 0;
-    uint16_t transition_ms = 0;
-    bool has_transition_ms = false;
-};
-```
-
-### 10.3 Encode / Decode 函数声明
-
-Generator v1 可以只生成声明和简单实现。
-
-```cpp
-bool EncodeDisplaySetBrightnessRequest(
-    const DisplaySetBrightnessRequest& input,
-    TlvWriter& writer,
-    ErrorCode* error);
-
-bool DecodeDisplaySetBrightnessRequest(
-    TlvReader& reader,
-    DisplaySetBrightnessRequest* output,
-    ErrorCode* error);
-```
-
----
-
-## 11. Markdown 输出规范
-
-Generator v1 生成的 Markdown 表格必须包含：
-
-```text
-ID
-Name
-Domain
-Status
-Schema
-Capability
-Error
-Legacy Mapping
-Description
-```
-
-Method 表示例：
-
-| methodId | name | domain | status | request | response | legacy |
-|---:|---|---|---|---|---|---|
-| `0x0101` | `device.getInfo` | device | mvp | DeviceGetInfoRequest | DeviceGetInfoResponse | `0xB0002` |
-| `0x0502` | `display.setBrightness` | display | mvp | DisplaySetBrightnessRequest | CommonEmptyResponse | - |
-
----
-
-## 12. JSON 输出规范
-
-Generator v1 应输出机器可读 JSON，供测试工具、Web Demo、脚本使用。
-
-示例：
-
-```json
-{
-  "methods": [
-    {
-      "id": 257,
-      "idHex": "0x0101",
-      "name": "device.getInfo",
-      "domain": "device",
-      "status": "mvp",
-      "requestSchema": "DeviceGetInfoRequest",
-      "responseSchema": "DeviceGetInfoResponse"
-    }
-  ]
-}
-```
-
----
-
-## 13. 测试向量生成规范
-
-Generator v1 应至少生成以下测试向量 manifest。
-
-```json
-{
-  "vectors": [
-    {
-      "name": "rpc_display_brightness_set_request",
-      "payloadType": "RPC",
-      "methodId": "0x0502",
-      "encoding": "binary_tlv",
-      "hexFile": "rpc_display_brightness_set.hex",
-      "expectDecode": {
-        "value": 80
-      }
-    }
-  ]
-}
-```
-
-测试向量分为三类：
-
-```text
-valid vectors      必须成功解析
-invalid vectors    必须失败并返回指定 errorCode
-compat vectors     老协议输入必须映射到 AXTP 语义
-```
-
-invalid vectors 至少必须覆盖：
-
-```text
-Standard CRC16 mismatch
-Compact CRC8 mismatch
-Compact MessageId overflow (> 0xFF)
-Compact PayloadLength overflow (> 0xFF)
-STREAM data exceeds Compact limit (> 239B)
-```
-
----
-
-## 14. CLI 设计
-
-Generator v1 推荐提供命令行工具：
+当前 CLI：
 
 ```bash
-node generators/dist/cli.js validate-sources --spec .
-node generators/dist/cli.js build-protocol --spec . --out protocol/axtp.protocol.yaml
-node generators/dist/cli.js emit-protocol --spec . --out docs/generated
-node generators/dist/cli.js generate --spec .
-node generators/dist/cli.js generate-registry --spec . --out runtimes/cpp-core/include/axtp/generated
+cd generators
+npm run build
+npm test
+node dist/cli.js validate --spec ..
+node dist/cli.js validate-sources --spec ..
+node dist/cli.js build-protocol --spec .. --out ../protocol/axtp.protocol.yaml
+node dist/cli.js validate-protocol --spec ..
+node dist/cli.js emit-protocol --spec .. --out ../docs/generated
+node dist/cli.js generate --spec ..
+node dist/cli.js generate-registry --spec .. --out ../runtimes/cpp-core/include/axtp/generated
 ```
 
-### 14.1 validate-sources
+命令职责：
 
-执行所有 registry/domain/schema 校验，并验证可聚合为合法 Protocol IR。
-
-输出示例：
-
-```text
-[OK] method_registry.yaml: 18 methods checked
-[OK] event_registry.yaml: 9 events checked
-[OK] schema: 24 schemas checked
-[ERROR] duplicate methodId 0x0502: display.setBrightness / display.setPower
-```
-
-### 14.2 generate
-
-生成 C++、JSON、Markdown 和测试向量。
-
-### 14.3 diff
-
-比较两个版本的 registry/schema，识别 breaking change。
-
-### 14.4 doc
-
-只生成 Markdown。
-
-### 14.5 test-vector
-
-只生成测试向量。
+| 命令 | 责任 |
+| ---- | ---- |
+| `validate` | 校验旧 registry/schema 输入，不读取 domains |
+| `generate-registry` | 运行旧 registry emitter，输出 registry Markdown/JSON/C++/test vectors |
+| `validate-sources` | 校验 registry + domains，并验证可构造合法 Protocol IR |
+| `build-protocol` | 从 Source YAML 写出 `protocol/axtp.protocol.yaml` |
+| `validate-protocol` | 校验现有 Protocol IR 和 00-spec 关键事实一致性 |
+| `emit-protocol` | 从 Protocol IR 输出 `docs/generated/protocol.md/json` |
+| `generate` | 三段式组合命令：validate sources -> build Protocol IR -> validate Protocol IR -> emit protocol artifacts |
+| `generate-protocol` | 旧兼容命令，直接从 Protocol IR 输出协议文档 |
+| `doc` | 旧兼容命令，只生成 registry Markdown |
+| `test-vector` | 旧兼容命令，只生成 test vectors |
+| `diff` | P1 placeholder，当前未实现 |
 
 ---
 
-## 15. Generator v1 内部模块建议
+## 9. 新增业务流程
+
+新增业务必须先执行证据链分析，再写 YAML。
+
+推荐流程：
 
 ```text
-generators/
-├── package.json
-├── tsconfig.json
-├── vitest.config.ts
-└── src/
-    ├── cli.ts
-    ├── loader.ts
-    ├── sourceLoader.ts
-    ├── protocolBuilder.ts
-    ├── models.ts
-    ├── validator.ts
-    ├── errors.ts
-    ├── util.ts
-    └── emitters/
-        ├── cpp.ts
-        ├── markdown.ts
-        ├── json.ts
-        ├── testVectors.ts
-        └── index.ts
+1. 读取 docs/specs/08-13 和 docs/source/09-13
+2. 确认 domain、ID range、method/event/error/capability 候选
+3. 检查 registry/**/*.yaml 和 domains/**/*.yaml 是否已有等价条目
+4. 决定写入 registry 还是 domains/<domain>/domain.yaml
+5. 填写 method/event/type/error/capability/profile 表单
+6. 运行 validate-sources
+7. 运行 build-protocol
+8. 运行 emit-protocol
+9. 检查 generated protocol 文档是否易读
+10. 更新或新增测试
 ```
 
-Generator v1 使用 TypeScript + Node.js 实现，原因：
+约束：
 
-```text
-团队调试和维护成本低
-YAML/JSON 处理成熟
-便于与 Web Demo、文档工具和 CI 集成
-类型系统足以约束 registry/schema 中间模型
-不进入设备端运行时
-```
+- 不得直接编辑 `protocol/axtp.protocol.yaml`。
+- 不得直接编辑 `docs/generated/protocol.md/json`。
+- 不得复用 stable/deprecated wire value 表示新语义。
+- 新增 method/event 必须显式填写 `bit_offset`。
+- Stream/OTA 校验字段优先使用 `verifyType` / `verifyValue`。
+- Stream Profile 不进入 STREAM header；由 RPC 建流绑定到 `streamId`。
 
 ---
 
-## 16. 错误报告格式
+## 10. Generator 内部模块
 
-Generator 错误必须可定位到文件、条目和字段。
+当前 TypeScript 模块：
 
 ```text
-ERROR AXTP-GEN-1002
-file: registry/method_registry.yaml
-entry: display.setBrightness
-field: id
-message: duplicate methodId 0x0502, already used by display.setBrightness
+generators/src/
+├── cli.ts
+├── loader.ts                    # old registry loader
+├── sourceLoader.ts              # registry + domains loader
+├── sourceModel.ts
+├── protocolBuilder.ts           # Source Model -> Protocol IR
+├── protocolLoader.ts            # Protocol IR loader
+├── protocolModel.ts
+├── protocolValidator.ts
+├── protocolDocsValidator.ts
+├── validator.ts                 # old registry/source validation
+├── errors.ts
+├── util.ts
+└── emitters/
+    ├── protocolMarkdown.ts
+    ├── protocolJson.ts
+    ├── markdown.ts
+    ├── json.ts
+    ├── cpp.ts
+    ├── testVectors.ts
+    └── index.ts
 ```
 
-错误码建议：
+边界：
 
-| Generator Error | 说明 |
-|---|---|
-| `AXTP-GEN-1001` | YAML parse failed |
-| `AXTP-GEN-1002` | duplicate ID |
-| `AXTP-GEN-1003` | ID out of range |
-| `AXTP-GEN-1004` | missing schema |
-| `AXTP-GEN-1005` | invalid type |
-| `AXTP-GEN-1006` | missing MVP item |
-| `AXTP-GEN-1007` | incompatible change |
-| `AXTP-GEN-1008` | invalid legacy mapping |
+| 模块 | 边界 |
+| ---- | ---- |
+| `loader.ts` | 读取旧 `registry/` 固定文件 |
+| `sourceLoader.ts` | 读取旧 registry，并合并 `domains/**/*.yaml` |
+| `protocolBuilder.ts` | 生成 Protocol IR raw object 和 YAML |
+| `protocolLoader.ts` | 加载现有 Protocol IR |
+| `protocolValidator.ts` | 校验 Protocol IR 自洽性 |
+| `protocolDocsValidator.ts` | 校验 IR 与 00-spec 关键事实一致 |
+| `protocolMarkdown.ts` | 生成用户参考文档 |
+| `protocolJson.ts` | 生成完整 normalized JSON |
 
 ---
 
-## 17. CI 集成要求
+## 11. 测试要求
 
-在 AXTP 仓库中，CI 至少执行：
+当前必须维持：
 
 ```bash
-node generators/dist/cli.js validate-sources --spec .
-node generators/dist/cli.js generate --spec .
-cmake -S cpp-demo -B build
-cmake --build build
-ctest --test-dir build
+cd generators
+npm run build
+npm test
+node dist/cli.js validate --spec ..
+node dist/cli.js validate-sources --spec ..
+node dist/cli.js build-protocol --spec .. --out ../protocol/axtp.protocol.yaml
+node dist/cli.js validate-protocol --spec ..
+node dist/cli.js emit-protocol --spec .. --out ../docs/generated
+git diff --check
 ```
 
-CI 必须阻止：
+测试覆盖：
 
 ```text
+current registry/schema validation
+Protocol IR validation
+Source Model -> Protocol IR build
+docs consistency validation
+protocol.generated.json snapshot
+protocol.generated.md snapshot
+duplicate method/event ID rejection
+non-contiguous bit_offset rejection
+missing type/error/event/profile references rejection
+forbidden legacy Protocol Definition fields rejection
+STREAM header fact rejection
+CONTROL OPEN/ACCEPT/READY fact rejection
+```
+
+---
+
+## 12. 当前 P0 完成状态
+
+已完成：
+
+```text
+registry/core/method/event/error/capability/schema/legacy loader
+domains/<domain>/domain.yaml loader
+Source Model validation
+Protocol IR builder
+Protocol IR validator
+00-spec key facts validator
+generated protocol.json
+obs-websocket-style generated protocol.md
+snapshot tests
+legacy registry generator compatibility path
+generate command as three-stage pipeline
+```
+
+仍属于兼容保留而非主入口：
+
+```text
+generate-registry
+doc
+test-vector
+generate-protocol
+```
+
+---
+
+## 13. P1 规划
+
+P1 目标是把当前文档编译器扩展为完整协议资产编译器。
+
+### 13.1 Source Model 完整化
+
+计划：
+
+```text
+为 registry/domain YAML 引入 JSON Schema 或 Zod schema
+错误信息精确到 source file + YAML path
+支持 split domain files，例如 methods.yaml / types.yaml
+支持 domain-level includes
+支持 generated source manifest
+```
+
+### 13.2 ID 分配和保留策略
+
+计划：
+
+```text
+自动检查 docs/source planning table 与 YAML 的 ID 偏移
+提供 suggest-id 命令
+提供 reserve-id 命令
+禁止隐式 bit_offset 重排
+生成 ID allocation report
+```
+
+### 13.3 兼容性 diff
+
+实现 `diff`：
+
+```text
+stable methodId/eventId/errorCode/capabilityId 不得换语义
+stable fieldId 不得换名称或类型
+required 字段不得无 major version 变更而删除
+deprecated ID 不得复用
+draft -> mvp -> stable 可升级
+新增 optional 字段为兼容变更
+```
+
+### 13.4 Runtime codegen
+
+优先输出：
+
+```text
+C++ enum and descriptors
+C++ schema field constants
+C++ TLV encode/decode helpers
+TypeScript protocol model
+TypeScript request/event type definitions
+test-vector manifest
+```
+
+Runtime 仍只生成 skeleton，不生成业务 handler。
+
+### 13.5 文档体验
+
+计划：
+
+```text
+为 generated/protocol.md 增加 per-domain summary table
+为 method/event 增加 Examples
+为 stream methods 增加 stream binding note
+为 errors 增加按 category 分组视图
+生成 docs/generated/index.md
+支持 docs site frontmatter
+```
+
+---
+
+## 14. P2 规划
+
+P2 目标是跨语言 SDK 和工具生态。
+
+计划：
+
+```text
+Rust / Python / Kotlin / Swift 类型生成
+MCP tool schema generation
+OpenAPI-like bridge for debug HTTP adapters
+binary TLV golden vectors
+wire compatibility corpus
+domain package publishing
+graphical registry viewer
+protocol migration report
+legacy adapter table generation
+```
+
+不纳入 v1 Core 的内容：
+
+```text
+完整 capability model UI
+业务 handler 自动实现
+transport runtime
+media payload codec
+OTA flash driver
+device-specific policy engine
+```
+
+---
+
+## 15. CI 要求
+
+CI 必须至少执行：
+
+```bash
+cd generators
+npm run build
+npm test
+node dist/cli.js validate --spec ..
+node dist/cli.js validate-sources --spec ..
+node dist/cli.js generate --spec ..
+git diff --check
+```
+
+CI 应阻止：
+
+```text
+Source YAML 校验失败
+Protocol IR 校验失败
+00-spec key facts drift
+generated protocol artifacts 未同步
+snapshot 未更新
 重复 ID
-缺失 MVP 项
-schema 引用不存在
-stable ID 破坏兼容
-生成文件未提交或未同步
-C++ Demo 无法编译
-测试向量无法解析
+bit_offset 不连续
+schema 引用缺失
+profile 引用缺失
+reserved 条目被新实现引用
 ```
 
 ---
 
-## 18. 与 C++ Demo 的边界
+## 16. 总结
 
-Generator 负责：
-
-```text
-ID 常量
-Schema descriptor
-Method/Event/Error/Capability 描述表
-Legacy mapping 表
-TLV encode/decode skeleton
-测试向量
-```
-
-C++ Demo 负责：
+AXTP Generator v1 的当前职责是把协议从 Markdown 人工维护推进到可校验、可聚合、可生成的工程体系：
 
 ```text
-Frame 编解码
-Control Parser
-RPC Parser
-Stream Parser
-Session Runtime
-ACK/NACK
-Transport Mock
-业务 Handler
-OTA 测试流程
+Source YAML 可审查
+Protocol IR 可复现
+generated protocol.md 可读
+generated protocol.json 可消费
+wire facts 由 00-spec 兜底
+新增业务通过 domain YAML 扩展
 ```
 
-Generator 不应生成复杂运行时，以避免早期架构过度膨胀。
-
----
-
-## 19. MVP 输出清单
-
-Generator v1 MVP 必须输出：
-
-```text
-axtp_ids_generated.h
-axtp_schema_generated.h
-axtp_method_registry_generated.h
-axtp_event_registry_generated.h
-axtp_error_code_generated.h
-axtp_capability_generated.h
-axtp_legacy_mapping_generated.h
-method_registry.generated.md
-event_registry.generated.md
-error_code.generated.md
-capability_registry.generated.md
-legacy_mapping.generated.md
-schema.generated.json
-manifest.json
-至少 5 个 test vector
-```
-
-至少 5 个测试向量：
-
-```text
-CONTROL OPEN
-RPC device.getInfo request
-RPC display.setBrightness request
-EVENT display.brightnessChanged
-STREAM OTA chunk
-Compact CRC8 error
-Compact MessageId overflow
-```
-
----
-
-## 20. P0 / P1 / P2 实现阶段
-
-### 20.1 P0：必须实现
-
-```text
-YAML 加载
-Registry 校验
-Schema 校验
-MVP 完整性校验
-C++ enum 生成
-C++ descriptor 生成
-Markdown 表格生成
-JSON registry 生成
-基础测试向量生成
-Legacy mapping 表生成
-```
-
-### 20.2 P1：建议实现
-
-```text
-TLV encode/decode 代码生成
-C++ struct skeleton 生成
-schema diff
-兼容性检查
-更多 invalid test vectors
-Web Demo JSON registry 输出
-```
-
-### 20.3 P2：后续实现
-
-```text
-完整 SDK Stub 生成
-TypeScript / Rust / Python 输出
-IDL 导入导出
-多版本 registry merge
-图形化 registry viewer
-```
-
----
-
-## 21. 验收标准
-
-Generator v1 视为完成，必须满足：
-
-```text
-1. 能读取 registry/*.yaml 和 schema/*.yaml
-2. 能发现重复 methodId / eventId / errorCode / capabilityId
-3. 能发现缺失 schema 引用
-4. 能校验 MVP 必须项
-5. 能生成 C++ enum 和 descriptor
-6. 能生成 Markdown 注册表
-7. 能生成 JSON registry
-8. 能生成 legacy mapping 表
-9. 能生成基础测试向量
-10. 生成产物能被 21《AXTP Cpp Demo 实现规范》引用并完成编译
-```
-
----
-
-## 22. 总结
-
-AXTP Generator v1 是协议工程化落地的关键环节。
-
-它的核心职责不是“自动生成所有代码”，而是确保：
-
-```text
-协议注册表可校验
-业务 ID 不冲突
-schema 可追踪
-老协议映射可维护
-Markdown 文档不漂移
-C++ Demo 可以稳定编译
-测试向量可以持续回归
-```
-
-最终目标是把 AXTP 从一组 Markdown 设计文档，推进为可验证、可生成、可迁移、可运行的协议工程体系。
+后续演进应围绕一个原则展开：先保证协议事实不漂移，再扩展 codegen 和 SDK 体验。

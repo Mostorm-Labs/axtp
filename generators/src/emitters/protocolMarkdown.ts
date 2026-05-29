@@ -5,8 +5,8 @@ import type {
   MethodDefinition,
   ProfileDefinition,
   ProtocolModel,
-  TypeDefinition,
-  TypeField
+  SchemaDefinition,
+  SchemaField
 } from "../protocolModel.js";
 import { hex, writeTextFile } from "../util.js";
 
@@ -87,11 +87,11 @@ function eventsInDomain(model: ProtocolModel, domain: string): EventDefinition[]
   return sortedEvents(model.events).filter((event) => event.domain === domain);
 }
 
-function typeMap(model: ProtocolModel): Map<string, TypeDefinition> {
-  return new Map(model.types.map((type) => [type.name, type]));
+function typeMap(model: ProtocolModel): Map<string, SchemaDefinition> {
+  return new Map(model.schemas.map((schema) => [schema.name, schema]));
 }
 
-function renderFieldConstraint(field: TypeField): string {
+function renderFieldConstraint(field: SchemaField): string {
   const constraints = [
     field.min === undefined ? undefined : `min=${field.min}`,
     field.max === undefined ? undefined : `max=${field.max}`,
@@ -102,11 +102,11 @@ function renderFieldConstraint(field: TypeField): string {
   return constraints.length > 0 ? constraints.join(", ") : "None";
 }
 
-function renderDefaultBehavior(field: TypeField): string {
+function renderDefaultBehavior(field: SchemaField): string {
   return field.required ? "N/A" : "Omit if not used.";
 }
 
-function renderFieldName(field: TypeField): string {
+function renderFieldName(field: SchemaField): string {
   return field.required ? field.name : `?${field.name}`;
 }
 
@@ -129,11 +129,11 @@ function renderTypeName(type: string): string {
   return names[type] ?? type;
 }
 
-function renderFields(type: TypeDefinition | undefined): string[] {
-  if (!type || type.fields.length === 0) return ["No fields."];
+function renderFields(schema: SchemaDefinition | undefined): string[] {
+  if (!schema || schema.fields.length === 0) return ["No fields."];
   return table(
     ["Name", "Type", "Field ID", "Description", "Value Restrictions", "?Default Behavior"],
-    type.fields.map((field) => [
+    schema.fields.map((field) => [
       renderFieldName(field),
       renderTypeName(field.type),
       hex(field.fieldId, 2),
@@ -145,18 +145,18 @@ function renderFields(type: TypeDefinition | undefined): string[] {
   );
 }
 
-function renderInlineType(title: string, typeName: string, types: Map<string, TypeDefinition>): string[] {
-  const type = types.get(typeName);
+function renderInlineType(title: string, typeName: string, schemas: Map<string, SchemaDefinition>): string[] {
+  const schema = schemas.get(typeName);
   return [
     `#### ${title}`,
     "",
     `Type: \`${typeName}\``,
     "",
-    ...renderFields(type)
+    ...renderFields(schema)
   ];
 }
 
-function renderMethod(method: MethodDefinition, types: Map<string, TypeDefinition>): string[] {
+function renderMethod(method: MethodDefinition, schemas: Map<string, SchemaDefinition>): string[] {
   return [
     `### ${method.name}`,
     "",
@@ -172,13 +172,13 @@ function renderMethod(method: MethodDefinition, types: Map<string, TypeDefinitio
     `- Possible Events: ${inlineList(method.events)}`,
     `- Possible Errors: ${inlineList(method.errors)}`,
     "",
-    ...renderInlineType("Request Fields", method.request.type, types),
+    ...renderInlineType("Request Fields", method.request.type, schemas),
     "",
-    ...renderInlineType("Response Fields", method.response.type, types)
+    ...renderInlineType("Response Fields", method.response.type, schemas)
   ];
 }
 
-function renderEvent(event: EventDefinition, types: Map<string, TypeDefinition>): string[] {
+function renderEvent(event: EventDefinition, schemas: Map<string, SchemaDefinition>): string[] {
   return [
     `### ${event.name}`,
     "",
@@ -193,17 +193,17 @@ function renderEvent(event: EventDefinition, types: Map<string, TypeDefinition>)
     `- Trigger: ${inlineList(event.trigger)}`,
     `- Required Capabilities: ${inlineList(event.capabilities)}`,
     "",
-    ...renderInlineType("Payload Fields", event.payload.type, types)
+    ...renderInlineType("Payload Fields", event.payload.type, schemas)
   ];
 }
 
-function renderAdditionalType(type: TypeDefinition): string[] {
+function renderAdditionalType(schema: SchemaDefinition): string[] {
   return [
-    `## ${type.name}`,
+    `## ${schema.name}`,
     "",
-    type.description ?? `Kind: \`${type.kind}\``,
+    schema.description ?? `Kind: \`${schema.kind}\``,
     "",
-    ...renderFields(type)
+    ...renderFields(schema)
   ];
 }
 
@@ -232,7 +232,7 @@ function renderMainToc(model: ProtocolModel): string[] {
   const methodDomains = domainsFor(model.methods);
   const eventDomains = domainsFor(model.events);
   const referencedTypes = referencedTypeNames(model);
-  const hasAdditionalTypes = model.types.some((type) => !referencedTypes.has(type.name));
+  const hasAdditionalTypes = model.schemas.some((schema) => !referencedTypes.has(schema.name));
   return [
     "## Main Table of Contents",
     "",
@@ -257,10 +257,10 @@ function renderMainToc(model: ProtocolModel): string[] {
 }
 
 export function renderProtocolMarkdown(model: ProtocolModel): string {
-  const types = typeMap(model);
+  const schemas = typeMap(model);
   const referencedTypes = referencedTypeNames(model);
-  const additionalTypes = model.types
-    .filter((type) => !referencedTypes.has(type.name))
+  const additionalTypes = model.schemas
+    .filter((schema) => !referencedTypes.has(schema.name))
     .sort((a, b) => a.name.localeCompare(b.name));
   const lines: string[] = [
     "<!-- This file was automatically generated. Do not edit directly! -->",
@@ -337,14 +337,14 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
     ...domainsFor(model.methods).flatMap((domain) => [
       `## ${domain} Methods`,
       "",
-      ...methodsInDomain(model, domain).flatMap((method) => [...renderMethod(method, types), "", "---", ""])
+      ...methodsInDomain(model, domain).flatMap((method) => [...renderMethod(method, schemas), "", "---", ""])
     ]),
     "# Events",
     "",
     ...domainsFor(model.events).flatMap((domain) => [
       `## ${domain} Events`,
       "",
-      ...eventsInDomain(model, domain).flatMap((event) => [...renderEvent(event, types), "", "---", ""])
+      ...eventsInDomain(model, domain).flatMap((event) => [...renderEvent(event, schemas), "", "---", ""])
     ]),
     ...(additionalTypes.length > 0 ? [
       "# Additional Types",

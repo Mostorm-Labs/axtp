@@ -84,21 +84,21 @@ describe("protocol definition validator", () => {
 
   it("rejects old capability method mask derivation names", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    const response = model.types.find((type) => type.name === "CapabilitySupportedMethodsResponse")!;
+    const response = model.schemas.find((schema) => schema.name === "CapabilitySupportedMethodsResponse")!;
     response.fields.find((field) => field.name === "methodMasks")!.derivedFrom = "methods.bitOffset";
     expect(() => validateProtocolDefinition(model)).toThrow(/methods\[\]\.bitOffset/);
   });
 
   it("rejects non-Empty empty request or response types", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    model.types.push({ name: "DeviceGetInfoRequest", kind: "object", fields: [] });
+    model.schemas.push({ name: "DeviceGetInfoRequest", kind: "object", fields: [] });
     model.methods.find((method) => method.name === "device.getInfo")!.request.type = "DeviceGetInfoRequest";
     expect(() => validateProtocolDefinition(model)).toThrow(/empty request must use Empty/);
   });
 
   it("rejects duplicate type field ids", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    const response = model.types.find((type) => type.name === "DeviceGetInfoResponse")!;
+    const response = model.schemas.find((schema) => schema.name === "DeviceGetInfoResponse")!;
     response.fields[1].fieldId = response.fields[0].fieldId;
     expect(() => validateProtocolDefinition(model)).toThrow(/duplicate fieldId/);
   });

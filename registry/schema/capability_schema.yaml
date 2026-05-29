@@ -15,7 +15,7 @@ schemas:
         name: methodMasks
         type: bytes
         required: true
-        derived_from: "methods[].bitOffset"
+        derivedFrom: "methods[].bitOffset"
         deprecated: false
 
   FirmwareOtaCapability:

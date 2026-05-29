@@ -132,8 +132,8 @@ priority: P0
 | `domain` | 是 | 所属业务域 |
 | `description` | 是 | 方法说明 |
 | `rpc.supportedEncodings` | 是 | 支持的 RPC body 编码 |
-| `schema.params` | 是 | 请求参数 Schema |
-| `schema.result` | 是 | 响应结果 Schema |
+| `schema.params` | 是 | 请求参数 Schema（registry YAML 中对应 `requestSchema`） |
+| `schema.result` | 是 | 响应结果 Schema（registry YAML 中对应 `responseSchema`） |
 | `errors` | 是 | 可能返回的错误码 |
 | `events` | 否 | 可能触发的事件 |
 | `capability.required` | 否 | 调用前需要满足的能力 |
