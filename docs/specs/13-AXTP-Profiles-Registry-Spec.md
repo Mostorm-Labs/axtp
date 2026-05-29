@@ -6,13 +6,13 @@
 
 版本：v1.0.0-rc1
 状态：Protocol Definition 元规范
-适用范围：`protocol/axtp.protocol.yaml` 中 `profiles:` 条目的字段、约束和生成规则
+适用范围：`registry/capability/` 与 `domains/*/domain.yaml` 中 profile 源条目的字段、约束和生成规则
 
 ---
 
 ## 1. 文档定位
 
-本文档只定义 implementation profile 的元模型，不手写完整 MVP 清单。具体 profile 内容必须写入 `protocol/axtp.protocol.yaml` 的 `profiles:`。
+本文档只定义 implementation profile 的元模型，不手写完整 MVP 清单。具体 profile 内容必须写入 `registry/capability/` 或 `domains/*/domain.yaml`；`protocol/axtp.protocol.yaml` 中的 `profiles:` 由 Generator 聚合生成。
 
 ---
 
@@ -65,7 +65,7 @@ profiles:
 4. Profile 使用 `frameProfiles` 时，必须覆盖每个 `transportProfiles[].frameProfile`，且不得引入未被 transportProfiles 使用的 Frame Profile。
 5. AXTP v1 不允许在同一 session 内切换 Frame Profile。
 6. HID/BLE/UART Compact profile 不得要求 WebSocket Text / HTTP JSON 生产 STREAM。
-7. Profile 的具体内容进入 `protocol.yaml`；新增 Profile 不应修改 08-13 元规范。
+7. Profile 的具体内容进入 `registry/` 或 `domains/` YAML；新增 Profile 不应修改 08-13 元规范。
 
 ---
 
@@ -85,7 +85,7 @@ generated/ts profile descriptors
 
 ## 6. v1 推荐 Profile
 
-v1 Protocol Definition 可以包含以下 profile，但具体必选内容由 `protocol.yaml` 定义：
+v1 Protocol Definition 可以包含以下 profile，但具体必选内容由源 YAML 定义：
 
 ```text
 AXTP-MVP

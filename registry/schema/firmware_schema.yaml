@@ -3,100 +3,236 @@ schemas:
     type: object
     fields:
       - id: 0x01
-        name: totalSize
-        type: uint32
+        name: imageType
+        type: enum
         required: true
+        description: Firmware image type.
         deprecated: false
       - id: 0x02
-        name: hashAlgo
+        name: imageSize
+        type: uint64
+        required: true
+        description: Full firmware image size in bytes.
+        deprecated: false
+      - id: 0x03
+        name: imageVersion
+        type: string
+        required: true
+        max_length: 32
+        description: Target firmware version.
+        deprecated: false
+      - id: 0x04
+        name: verifyType
         type: string
         required: true
         max_length: 16
+        description: Object-level verification algorithm such as md5, crc32 or sha256.
         deprecated: false
-      - id: 0x03
-        name: hash
-        type: bytes
+      - id: 0x05
+        name: verifyValue
+        type: string
         required: true
         max_length: 64
+        description: Hex verification value for the full firmware image.
         deprecated: false
-      - id: 0x04
-        name: chunkSize
+      - id: 0x06
+        name: chunkSizeHint
         type: uint16
-        required: true
+        required: false
+        description: Preferred STREAM chunk size in bytes.
+        deprecated: false
+      - id: 0x07
+        name: windowSizeHint
+        type: uint16
+        required: false
+        description: Preferred stream-layer send window.
+        deprecated: false
+      - id: 0x08
+        name: flags
+        type: uint16
+        required: false
+        description: OTA behavior flags such as resume or force-update hints.
         deprecated: false
 
   FirmwareBeginResponse:
     type: object
     fields:
       - id: 0x01
+        name: transferId
+        type: uint32
+        required: true
+        description: OTA transfer identifier.
+        deprecated: false
+      - id: 0x02
         name: streamId
         type: uint32
         required: true
+        description: STREAM data channel identifier.
         deprecated: false
-      - id: 0x02
+      - id: 0x03
+        name: acceptedOffset
+        type: uint64
+        required: true
+        description: First byte offset the sender should transmit.
+        deprecated: false
+      - id: 0x04
+        name: chunkSize
+        type: uint16
+        required: true
+        description: Negotiated STREAM chunk size in bytes.
+        deprecated: false
+      - id: 0x05
+        name: windowSize
+        type: uint16
+        required: true
+        description: Negotiated stream-layer send window.
+        deprecated: false
+      - id: 0x06
+        name: resumeToken
+        type: bytes
+        required: false
+        max_length: 32
+        description: Opaque resume token.
+        deprecated: false
+      - id: 0x07
+        name: otaState
+        type: enum
+        required: true
+        description: Current OTA state.
+        deprecated: false
+      - id: 0x08
         name: profile
         type: string
         required: true
         max_length: 32
+        description: Bound Stream Profile, usually firmware.ota.
         deprecated: false
-      - id: 0x03
-        name: chunkSize
-        type: uint16
-        required: true
-        deprecated: false
-      - id: 0x04
+      - id: 0x09
         name: ackMode
         type: enum
         required: true
+        description: Stream-layer reliability mode.
         deprecated: false
-      - id: 0x05
+      - id: 0x0A
         name: cursorUnit
         type: enum
         required: true
+        description: Cursor unit used by STREAM packets, usually byteOffset.
         deprecated: false
-      - id: 0x06
-        name: reservedStreamHeaderProfile
-        type: enum
-        required: false
-        deprecated: true
-      - id: 0x07
+      - id: 0x0B
         name: maxDataSize
         type: uint16
         required: false
+        description: Maximum STREAM data bytes per packet.
         deprecated: false
 
   FirmwareEndRequest:
     type: object
     fields:
       - id: 0x01
-        name: streamId
+        name: transferId
         type: uint32
         required: true
+        description: OTA transfer identifier.
+        deprecated: false
+      - id: 0x02
+        name: totalBytesSent
+        type: uint64
+        required: false
+        description: Total firmware bytes sent by the host.
+        deprecated: false
+      - id: 0x03
+        name: totalChunks
+        type: uint32
+        required: false
+        description: Total STREAM chunks sent by the host.
+        deprecated: false
+
+  FirmwareEndResponse:
+    type: object
+    fields:
+      - id: 0x01
+        name: receivedBytes
+        type: uint64
+        required: true
+        description: Total bytes accepted by the device.
+        deprecated: false
+      - id: 0x02
+        name: receivedChunks
+        type: uint32
+        required: false
+        description: Total chunks accepted by the device.
+        deprecated: false
+      - id: 0x03
+        name: otaState
+        type: enum
+        required: true
+        description: Current OTA state.
         deprecated: false
 
   FirmwareVerifyRequest:
     type: object
     fields:
       - id: 0x01
-        name: streamId
+        name: transferId
         type: uint32
         required: true
+        description: OTA transfer identifier.
+        deprecated: false
+
+  FirmwareVerifyResponse:
+    type: object
+    fields:
+      - id: 0x01
+        name: verifyResult
+        type: enum
+        required: true
+        description: Verification result for the transferred image.
+        deprecated: false
+      - id: 0x02
+        name: otaState
+        type: enum
+        required: true
+        description: Current OTA state.
         deprecated: false
 
   FirmwareApplyRequest:
     type: object
     fields:
       - id: 0x01
-        name: streamId
+        name: transferId
         type: uint32
         required: true
+        description: OTA transfer identifier.
+        deprecated: false
+      - id: 0x02
+        name: applyMode
+        type: enum
+        required: true
+        description: Apply mode such as APPLY_NOW, APPLY_ON_REBOOT or STAGE_ONLY.
+        deprecated: false
+
+  FirmwareApplyResponse:
+    type: object
+    fields:
+      - id: 0x01
+        name: otaState
+        type: enum
+        required: true
+        description: Current OTA state.
+        deprecated: false
+      - id: 0x02
+        name: rebootRequired
+        type: bool
+        required: true
+        description: Whether applying the image requires reboot.
         deprecated: false
 
   FirmwareUpdateProgressEvent:
     type: object
     fields:
       - id: 0x01
-        name: streamId
+        name: transferId
         type: uint32
         required: true
         deprecated: false

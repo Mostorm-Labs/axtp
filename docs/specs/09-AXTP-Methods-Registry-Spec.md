@@ -6,13 +6,13 @@
 
 版本：v1.0.0-rc1
 状态：Protocol Definition 元规范
-适用范围：`protocol/axtp.protocol.yaml` 中 `methods:` 条目的字段、约束和生成规则
+适用范围：`registry/method/` 与 `domains/*/domain.yaml` 中 method 源条目的字段、约束和生成规则
 
 ---
 
 ## 1. 文档定位
 
-本文档只定义 method registry 的元模型，不手写完整 MethodId 表。具体 method 内容必须写入 `protocol/axtp.protocol.yaml` 的 `methods:`。
+本文档只定义 method registry 的元模型，不手写完整 MethodId 表。具体 method 内容必须写入 `registry/method/` 或 `domains/*/domain.yaml`；`protocol/axtp.protocol.yaml` 中的 `methods:` 由 Generator 聚合生成。
 
 ---
 
@@ -21,8 +21,8 @@
 ```yaml
 methods:
   - name: device.getInfo
-    methodId: 0x0101
-    bitOffset: 0
+    id: 0x0101
+    bit_offset: 0
     domain: device
     since: 1.0.0
     status: stable
@@ -44,14 +44,14 @@ methods:
 | 字段 | 必填 | 说明 |
 |---|---:|---|
 | `name` | 是 | JSON-RPC method name，必须为 `domain.action` |
-| `methodId` | 是 | uint16，Binary-RPC methodId，wire 上使用 |
-| `bitOffset` | 是 | uint8，该 method 在所属 domain 的 `capability.supportedMethods` bitmap 中的 bit 位置，domain 内从 0 开始，domain 内唯一 |
+| `id` / `methodId` | 是 | uint16，Binary-RPC methodId，wire 上使用；源 YAML 使用 `id`，Protocol IR 使用 `methodId` |
+| `bit_offset` / `bitOffset` | 是 | uint8，该 method 在所属 domain 的 `capability.supportedMethods` bitmap 中的 bit 位置，domain 内从 0 开始，domain 内唯一 |
 | `domain` | 是 | 所属业务域，必须与 name 前缀一致 |
 | `description` | 是 | 方法说明 |
 | `since` | 是 | 首次引入版本 |
 | `status` | 是 | `draft / experimental / stable / deprecated / reserved` |
-| `request.type` | 是 | 必须引用 `types` 中存在的类型，空请求使用 `Empty`, 请求参数schema|
-| `response.type` | 是 | 必须引用 `types` 中存在的类型，空响应使用 `Empty`, 响应结果schema|
+| `request_schema` / `request.type` | 是 | 必须引用已注册 schema/type，空请求最终映射为 `Empty` |
+| `response_schema` / `response.type` | 是 | 必须引用已注册 schema/type，空响应最终映射为 `Empty` |
 | `errors` | 是 | 可能存在的错误码，必须引用 `errors` 中存在的 error name |
 | `events` | 否 | 调用后可能触发的事件，必须引用 `events` 中存在的 event name |
 | `capabilities` | 否 | 关联能力，v1 仅用于文档 |
@@ -68,7 +68,7 @@ methods:
 5. `methodId` stable 后不得复用；废弃只能标记 `deprecated`。
 6. `request.type` / `response.type` 必须存在。
 7. `errors[]` 必须存在于 `errors:`。
-8. methodId 和 bitOffset 范围由 Protocol Plan 分配；具体业务分配只写入 `protocol.yaml`。
+8. methodId 和 bitOffset 范围由 Protocol Plan 分配；具体业务分配只写入 `registry/` 或 `domains/` YAML。
 9. `capability.supportedMethods` bitmap 按 domain 分段，每个 domain 内第 N bit 对应该 domain 下 `bitOffset=N` 的 method。
 10. methodId 的高字节定义 method DomainId；`capability.supportedMethods` 的 Domain Block 必须使用该高字节。
 
@@ -76,7 +76,7 @@ methods:
 
 ## 5. 生成规则
 
-`axtpc` 必须从 `methods:` 生成：
+`axtpc` 必须从源 YAML 聚合出的 `methods:` 生成：
 
 ```text
 generated/protocol.md Methods Reference

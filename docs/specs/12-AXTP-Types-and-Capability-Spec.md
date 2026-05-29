@@ -6,13 +6,13 @@
 
 版本：v1.0.0-rc1
 状态：Protocol Definition 元规范
-适用范围：`protocol/axtp.protocol.yaml` 中 `types:` 和 v1 capability 策略的字段、约束和生成规则
+适用范围：`registry/schema/`、`registry/capability/` 与 `domains/*/domain.yaml` 中 type/capability 源条目的字段、约束和生成规则
 
 ---
 
 ## 1. 文档定位
 
-本文档只定义 type / capability 元模型，不手写完整业务 schema 或能力树。具体类型内容必须写入 `protocol/axtp.protocol.yaml` 的 `types:`。
+本文档只定义 type / capability 元模型，不手写完整业务 schema 或能力树。具体类型内容必须写入 `registry/schema/`、`registry/capability/` 或 `domains/*/domain.yaml`；`protocol/axtp.protocol.yaml` 中的 `types:` 由 Generator 聚合生成。
 
 ---
 

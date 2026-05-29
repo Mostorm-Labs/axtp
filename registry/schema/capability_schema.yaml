@@ -7,14 +7,15 @@ schemas:
     type: object
     fields:
       - id: 0x01
-        name: methodCount
+        name: methodMaskCount
         type: uint16
         required: true
         deprecated: false
       - id: 0x02
-        name: methodIds
-        type: array
-        required: false
+        name: methodMasks
+        type: bytes
+        required: true
+        derived_from: "methods[].bitOffset"
         deprecated: false
 
   FirmwareOtaCapability:

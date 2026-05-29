@@ -24,6 +24,7 @@ function baseSpec(): SpecModel {
       name: "display.setBrightness",
       domain: "display",
       status: "mvp",
+      bitOffset: 0,
       rpcOp: "request_response",
       requestSchema: "DisplaySetBrightnessRequest",
       responseSchema: "CommonEmptyResponse",
@@ -37,6 +38,7 @@ function baseSpec(): SpecModel {
       name: "display.brightnessChanged",
       domain: "display",
       status: "mvp",
+      bitOffset: 0,
       eventSchema: "DisplayBrightnessChangedEvent",
       trigger: ["display.setBrightness"],
       capabilities: ["display.brightness"]
@@ -92,6 +94,12 @@ describe("validateSpec", () => {
     const spec = baseSpec();
     spec.methods.push({ ...spec.methods[0], name: "display.duplicate" });
     expect(() => validateSpec(spec)).toThrow(/AXTP-GEN-1002|duplicate methodId/);
+  });
+
+  it("rejects non-contiguous source bit offsets", () => {
+    const spec = baseSpec();
+    spec.methods[0].bitOffset = 2;
+    expect(() => validateSpec(spec)).toThrow(/bit_offset must be contiguous from 0/);
   });
 
   it("rejects missing schema references", () => {

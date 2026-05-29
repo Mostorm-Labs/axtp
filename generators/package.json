@@ -12,7 +12,11 @@
     "test": "vitest run",
     "lint": "tsc -p tsconfig.json --noEmit",
     "validate": "node dist/cli.js validate --spec ..",
-    "generate": "node dist/cli.js generate --spec .. --out ../runtimes/cpp-core/include/axtp/generated --out-docs ../docs/generated --out-mcp ../tooling/mcp --out-vectors ../tooling/test-vectors",
+    "validate:sources": "node dist/cli.js validate-sources --spec ..",
+    "build:protocol": "node dist/cli.js build-protocol --spec .. --out ../protocol/axtp.protocol.yaml",
+    "emit:protocol": "node dist/cli.js emit-protocol --spec .. --out ../docs/generated",
+    "generate": "node dist/cli.js generate --spec ..",
+    "generate:registry": "node dist/cli.js generate-registry --spec .. --out ../runtimes/cpp-core/include/axtp/generated",
     "validate:protocol": "node dist/cli.js validate-protocol --spec ..",
     "generate:protocol": "node dist/cli.js generate-protocol --spec .. --out ../docs/generated"
   },

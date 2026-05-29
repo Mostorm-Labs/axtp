@@ -1,0 +1,172 @@
+protocol:
+  name: AXTP
+  version: 1.0.0
+  specVersion: 1
+  registryVersion: 1.0.0
+  status: rc1
+
+overview:
+  title: AXTP Protocol
+  summary: >
+    AXTP is a transport-independent device communication protocol for
+    CONTROL, RPC and STREAM payloads across TCP, WebSocket, USB HID, BLE and
+    UART transports.
+  goals:
+    - Provide one unified protocol model for control, request/response RPC and stream transfer.
+    - Keep production clients small by binding each transport to a fixed frame profile.
+    - Support both standard and compact binary frame paths.
+    - Keep full dynamic capability modeling optional outside AXTP v1 Core.
+  nonGoals:
+    - Full dynamic UI capability modeling is not required in v1.
+    - WebSocket Text and HTTP JSON are debug or legacy adapter paths.
+    - STREAM is not carried over WebSocket Text or HTTP JSON in production.
+    - Header profile negotiation is not performed dynamically in v1.
+
+architecture:
+  layers:
+    - name: Transport Profile
+      description: Defines how AXTP runs over TCP, WebSocket, HID, BLE or UART.
+    - name: Frame Profile
+      description: Binds L1 Frame Header and L2 Payload Header into one parser profile.
+    - name: Payload Layer
+      description: Carries CONTROL, RPC or STREAM payloads.
+    - name: RPC Session
+      description: Handles Hello, Identify, requests, responses, events and errors.
+    - name: Stream Session
+      description: Handles OTA, file, audio, video, log and sensor chunk transfer.
+  lifecycle:
+    - step: OPEN
+      from: Client
+      to: Server
+      description: Open an AXTP logical session and declare runtime limits.
+    - step: ACCEPT
+      from: Server
+      to: Client
+      description: Accept the session and return final runtime parameters.
+    - step: Hello
+      from: Server
+      to: Client
+      description: Announce RPC session rules, protocol version and authentication requirements.
+    - step: Identify
+      from: Client
+      to: Server
+      description: Submit client identity and optional authentication data.
+    - step: Identified
+      from: Server
+      to: Client
+      description: Confirm that the RPC session is ready.
+    - step: capability.supportedMethods
+      from: Client
+      to: Server
+      description: Query the method bitmap available to the current session.
+  optionalLifecycleExtensions:
+    - step: READY
+      status: optional
+      description: Reserved for transports that need an explicit client acknowledgement after ACCEPT; not required by AXTP v1 Core.
+
+guide:
+  quickStart:
+    - title: Minimal Client Startup
+      steps:
+        - Connect using a Transport Profile.
+        - Send CONTROL OPEN.
+        - Wait for CONTROL ACCEPT.
+        - Wait for Hello.
+        - Send Identify if required.
+        - Query capability.supportedMethods.
+        - Start RPC requests.
+
+frameProfiles:
+  - name: STANDARD_FRAME
+    magic: AXTP
+    l1: STANDARD_L1
+    l2: STANDARD_L2
+    supportsMixing: false
+  - name: COMPACT_FRAME
+    magic: 0xA7
+    l1: COMPACT_L1
+    l2: COMPACT_L2
+    supportsMixing: false
+  - name: COMPACT_FRAME_CRC
+    magic: 0xA7
+    l1: COMPACT_L1_CRC
+    l2: COMPACT_L2
+    supportsMixing: false
+
+transports:
+  - name: AXTP-WS
+    family: websocket
+    frameProfile: STANDARD_FRAME
+    production: true
+  - name: AXTP-TCP
+    family: tcp
+    frameProfile: STANDARD_FRAME
+    production: true
+  - name: AXTP-HID-64
+    family: usb-hid
+    frameProfile: COMPACT_FRAME
+    maxFrameSize: 64
+    production: true
+  - name: AXTP-BLE-RPC
+    family: ble
+    frameProfile: COMPACT_FRAME
+    production: true
+  - name: AXTP-UART
+    family: uart
+    frameProfile: COMPACT_FRAME_CRC
+    production: true
+  - name: AXTP-WS-TEXT
+    family: websocket
+    frameProfile: none
+    production: false
+    usage: debug-or-legacy-adapter
+  - name: AXTP-HTTP-JSON
+    family: http
+    frameProfile: none
+    production: false
+    usage: debug-or-legacy-adapter
+
+payloadTypes:
+  - name: CONTROL
+    id: 0x01
+    headerBytes: 5
+    description: Logical session control payload.
+  - name: RPC
+    id: 0x02
+    headerBytes: 11
+    description: Binary request, response, event and error payload.
+  - name: STREAM
+    id: 0x03
+    headerBytes: 16
+    description: Chunk-oriented data plane payload.
+
+control:
+  requiredOpcodes: [OPEN, ACCEPT]
+  optionalOpcodes: [READY]
+  reservedOpcodes: []
+  rules:
+    - v1 Core requires OPEN and ACCEPT before RPC or STREAM payloads.
+    - READY is not required by v1 Core and must not be assumed by peers.
+    - Dynamic header negotiation is not performed in v1.
+
+stream:
+  header:
+    name: AxtpStreamHeader
+    size: 16
+    fields:
+      - { name: streamId, type: uint32 }
+      - { name: seqId, type: uint32 }
+      - { name: cursor, type: uint64 }
+  rules:
+    - STREAM uses the unified 16-byte header in production transports.
+    - The historical 8-byte stream header is not part of AXTP v1 Core.
+    - WebSocket Text and HTTP JSON must not carry production STREAM data.
+
+compatibility:
+  legacySources:
+    - docs/source/AXTP-Legacy-Compatibility-Reference.md
+    - docs/source/AXTP-Legacy-Registry-Migration-Map.md
+  rules:
+    - Stable methodId, eventId and error code values must not be reused.
+    - Legacy command mappings may be preserved as metadata under methods[].legacy.
+    - WebSocket Text and HTTP JSON may exist only as debug or legacy adapter paths.

@@ -24,14 +24,16 @@
 
 本文档定义 AXTP Generator v1 的实现范围、输入格式、校验规则、输出产物和工程集成方式。
 
-Generator v1 的目标不是实现完整 SDK，也不是替代协议栈运行时，而是把 AXTP 的注册表和 schema 从“人工维护的 Markdown 表格”升级为“可校验、可生成、可测试的单一事实源”。
+Generator v1 的目标不是实现完整 SDK，也不是替代协议栈运行时，而是把 AXTP 的注册表、domain 配置和 schema 从“人工维护的 Markdown 表格”升级为“可校验、可生成、可测试的单一事实源”。
 
 Generator v1 应服务于以下目标：
 
 ```text
-registry/*.yaml + schema/*.yaml
+registry/**/*.yaml + domains/**/*.yaml
         ↓
 AXTP Generator v1
+        ↓
+protocol/axtp.protocol.yaml
         ↓
 Markdown 注册表文档
 C++ enum / descriptor / struct skeleton
@@ -44,11 +46,11 @@ C++ Demo 可编译输入
 
 ## 2. 核心原则
 
-### 2.1 Registry / Schema 是单一事实源
+### 2.1 Registry / Domain / Schema 是单一事实源
 
-所有 methodId、eventId、errorCode、capabilityId、Stream Profile、fieldId、legacyCmdValue 的定义，必须以 YAML/JSON registry 为准。
+所有 methodId、eventId、errorCode、capabilityId、Stream Profile、fieldId、legacyCmdValue 的定义，必须以 `registry/**/*.yaml` 与 `domains/**/*.yaml` 为准。
 
-Markdown 文档、C++ 枚举、测试向量和 Demo 常量均为生成结果，不应作为人工维护的主数据源。
+`protocol/axtp.protocol.yaml`、Markdown 文档、C++ 枚举、测试向量和 Demo 常量均为生成结果，不应作为人工维护的主数据源。
 
 ---
 
@@ -130,32 +132,34 @@ legacy_cmd_mapping.md
 推荐输入结构如下：
 
 ```text
-standard/
+axtp/
 ├── registry/
-│   ├── payload_type.yaml
-│   ├── control_opcode.yaml
-│   ├── rpc_encoding.yaml
-│   ├── rpc_op.yaml
-│   ├── stream_profile.yaml
-│   ├── method_registry.yaml
-│   ├── event_registry.yaml
-│   ├── error_code.yaml
-│   ├── capability_registry.yaml
-│   ├── legacy_mapping.yaml
-│   └── mvp_profile.yaml
-│
-├── schema/
-│   ├── common_fields.yaml
-│   ├── control_schema.yaml
-│   ├── device_schema.yaml
-│   ├── capability_schema.yaml
-│   ├── display_schema.yaml
-│   ├── firmware_schema.yaml
-│   ├── stream_schema.yaml
-│   └── event_schema.yaml
-│
-├── generator.yaml
-└── version.yaml
+│   ├── core/
+│   │   ├── protocol_meta.yaml
+│   │   ├── payload_type.yaml
+│   │   ├── control_opcode.yaml
+│   │   ├── rpc_encoding.yaml
+│   │   ├── rpc_body_encoding.yaml
+│   │   ├── rpc_op.yaml
+│   │   └── stream_profile.yaml
+│   ├── method/method_registry.yaml
+│   ├── event/event_registry.yaml
+│   ├── error/error_code.yaml
+│   ├── capability/
+│   │   ├── capability_registry.yaml
+│   │   └── mvp_profile.yaml
+│   ├── schema/*.yaml
+│   └── legacy/legacy_mapping.yaml
+├── domains/
+│   └── <domain>/domain.yaml
+├── generators/
+│   ├── generator.yaml
+│   └── src/
+├── protocol/
+│   └── axtp.protocol.yaml      # generated Protocol IR
+├── docs/generated/
+├── runtimes/*/generated/
+└── tooling/
 ```
 
 ---
@@ -175,13 +179,15 @@ generator:
 
 input:
   registry_dir: registry
-  schema_dir: schema
+  schema_dir: registry/schema
+  domains_dir: domains
 
 output:
-  markdown_dir: generated/docs
-  cpp_dir: generated/cpp
-  json_dir: generated/json
-  test_vector_dir: generated/test_vectors
+  markdown_dir: docs/generated
+  cpp_dir: runtimes/cpp-core/include/axtp/generated
+  ts_dir: runtimes/web-sdk/generated
+  mcp_dir: tooling/mcp
+  test_vector_dir: tooling/test-vectors
 
 cpp:
   namespace: axtp
@@ -973,16 +979,16 @@ STREAM data exceeds Compact limit (> 239B)
 Generator v1 推荐提供命令行工具：
 
 ```bash
-pnpm --dir standard/generator axtp-gen validate --spec ./standard
-pnpm --dir standard/generator axtp-gen generate --spec ./standard --out ./standard/out/generated
-pnpm --dir standard/generator axtp-gen diff --old ./spec-v1 --new ./spec-v2
-pnpm --dir standard/generator axtp-gen doc --spec ./standard --out ./standard/out/generated/docs
-pnpm --dir standard/generator axtp-gen test-vector --spec ./standard --out ./standard/out/generated/test_vectors
+node generators/dist/cli.js validate-sources --spec .
+node generators/dist/cli.js build-protocol --spec . --out protocol/axtp.protocol.yaml
+node generators/dist/cli.js emit-protocol --spec . --out docs/generated
+node generators/dist/cli.js generate --spec .
+node generators/dist/cli.js generate-registry --spec . --out runtimes/cpp-core/include/axtp/generated
 ```
 
-### 14.1 validate
+### 14.1 validate-sources
 
-执行所有 registry/schema 校验。
+执行所有 registry/domain/schema 校验，并验证可聚合为合法 Protocol IR。
 
 输出示例：
 
@@ -1014,13 +1020,15 @@ pnpm --dir standard/generator axtp-gen test-vector --spec ./standard --out ./sta
 ## 15. Generator v1 内部模块建议
 
 ```text
-standard/generator/
+generators/
 ├── package.json
 ├── tsconfig.json
 ├── vitest.config.ts
 └── src/
     ├── cli.ts
     ├── loader.ts
+    ├── sourceLoader.ts
+    ├── protocolBuilder.ts
     ├── models.ts
     ├── validator.ts
     ├── errors.ts
@@ -1077,8 +1085,8 @@ message: duplicate methodId 0x0502, already used by display.setBrightness
 在 AXTP 仓库中，CI 至少执行：
 
 ```bash
-pnpm --dir standard/generator axtp-gen validate --spec ./standard
-pnpm --dir standard/generator axtp-gen generate --spec ./standard --out ./standard/out/generated
+node generators/dist/cli.js validate-sources --spec .
+node generators/dist/cli.js generate --spec .
 cmake -S cpp-demo -B build
 cmake --build build
 ctest --test-dir build

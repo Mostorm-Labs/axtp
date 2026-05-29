@@ -98,10 +98,11 @@
 ### 0.8 Protocol Definition 与生成产物
 
 ```text
-- 08-13 文档是 Protocol Definition 元规范，定义 protocol/axtp.protocol.yaml 的结构约束
-- protocol/axtp.protocol.yaml 是具体业务内容的单一事实源
+- 08-13 文档是 Protocol Definition 元规范，定义 registry/domain YAML 到 protocol/axtp.protocol.yaml 的映射约束
+- registry/**/*.yaml 与 domains/**/*.yaml 是具体业务内容的机器事实源
+- protocol/axtp.protocol.yaml 是由 axtpc 聚合生成的 Protocol IR，不得手写修改
 - generated/ 目录下的产物由 axtpc 生成，不得手写修改
-- 如需修改生成产物，必须修改 protocol/axtp.protocol.yaml 后重新生成
+- 如需修改生成产物，必须修改 registry/domain YAML 后重新生成
 ```
 
 ---
@@ -1592,7 +1593,7 @@ AXTP 请求 -> 旧请求
 
 | 内容类型 | 处理方式 |
 |---|---|
-| 旧 CmdValue / 旧 methodName | 写入 `protocol-source/legacy/`，稳定后以 `methods[].legacy` 进入 `protocol.yaml` |
+| 旧 CmdValue / 旧 methodName | 写入 `docs/source/` legacy 材料，稳定后以 `legacy` 字段进入 `registry/` 或 `domains/` YAML |
 | 旧状态码 | 写入 legacy error mapping，稳定后映射到 `errors[].code` |
 | 旧事件名 / 旧推送格式 | 写入 legacy event mapping，稳定后映射到 `events[]` |
 | 旧能力表 / Feature bitmap | 写入 legacy capability mapping；完整 Capability Model 仍属于 v2/P1 |

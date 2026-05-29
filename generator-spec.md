@@ -1,391 +1,330 @@
-是的，现在你看到的问题本质上是：
+是的，你现在描述的这个方向才是更稳的：
+不要让 AI 直接手写 axtp.protocol.yaml，而是让 AI 按 registry-spec 的规则，读取“注册表 MD 母文件 / 业务源文档 / legacy mapping”，再生成结构化 YAML，最后由工具聚合成 axtp.protocol.yaml。
 
-registry 和 schema 目录下的文件，目前更像是“人工整理后的实现产物”，而不是由 08-13 标准文档强约束生成出来的规范产物。
+也就是说，应该形成三层来源关系：
 
-这在早期探索阶段可以接受，但如果要进入工程落地，必须反过来：
-08-13 文档不能只描述 registry/schema，而应该定义 registry/schema 的生成规则、校验规则和发布流程。
-
-⸻
-
-1. 当前问题在哪里
-
-现在的状态大概是：
-
-08-13 标准文档
-    ↓ 人工理解 / Codex 手写
-registry/*.yaml / *.json
-schema/*.json
-    ↓ 再被 SDK / Demo / 文档引用
-
-这个流程的问题是：
-
-标准文档和 registry 可能不一致
-registry 和 schema 可能不一致
-schema 和 SDK enum 可能不一致
-methodId 和 methodName 可能不一致
-eventId 和事件结构可能不一致
-错误码、bodyEncoding、TLV fieldId 可能被重复定义
-
-之前资料里其实已经明确提过一个方向：MethodId 注册表不应该只靠人工维护，而应该用 YAML/JSON 作为唯一数据源，再生成 Markdown、SDK 枚举和测试用例，这样才能避免 methodId、方法名、参数表长期不一致。 ￼
-
-所以你现在的感觉是对的：
-如果 registry/schema 是“手写实现”，那 08-13 文档就没有真正控制实现。
+registry-spec 文档：定义规则
+registry-md 母文件：承载规划、编号、业务候选项、迁移依据
+registry-yaml：机器可读事实源
+axtp.protocol.yaml：聚合后的协议 IR
+generated/protocol.md：最终发布文档
 
 ⸻
 
-2. 正确关系应该反过来
+1. registry 中的 YAML 应该从哪里来？
 
-推荐把系统改成这个方向：
+不应该完全手写，也不应该完全由 AI 凭空生成。
 
-08-13 标准文档
-    ↓ 定义规则、字段、ID 分段、约束、生成流程
+它应该来自三类输入：
+
+1. registry-spec 规则文档
+2. registry-md 母文件 / 规划文档
+3. legacy / 业务源文档
+
+你上传的两份文档正好就是这个体系的雏形。
+
+08-AXTP-Registry总则-v2.md 已经明确说，Registry 是 AXTP 协议落地的单一事实源，统一管理 PayloadType、Control Opcode、MethodId、EventId、ErrorCode、CapabilityId、SchemaId、FieldId、Vendor Extension、Legacy Mapping 等对象，并且目标是通过 registry/*.yaml + schema/*.yaml 生成 Markdown、C++ enum、struct、descriptor、TLV skeleton 和测试向量。 ￼
+
+09-AXTP-MethodId注册表-v2.md 则已经承担了“MethodId 母文件”的角色：它定义了 MethodId 的位置、基本规则、Domain 分段、Method 条目字段、MVP 最小方法集合、完整 MethodId 规划表、老协议适配 MethodId 表，以及 Method 与 Schema/ErrorCode/Capability/Event 的关系。 ￼
+
+所以更合理的生成链路是：
+
+08 Registry 总则
+09 MethodId 注册表 MD
+10 EventId 注册表 MD
+11 ErrorCode 注册表 MD
+12 Type/Capability 注册表 MD
+13 Profile 注册表 MD
+legacy docs / old protocol docs
+        ↓
+AI / axtpc extract + normalize
+        ↓
+registry/method/*.yaml
+registry/event/*.yaml
+registry/error/*.yaml
+registry/types/*.yaml
+registry/profiles/*.yaml
+        ↓
+axtpc collect / validate / build
+        ↓
+protocol/axtp.protocol.yaml
+        ↓
+generated/protocol.md
+
+⸻
+
+2. registry-spec 与 registry-md 母文件是什么关系？
+
+建议明确成这种关系：
+
+层级	示例	作用	是否频繁变化
+Registry Spec	08-AXTP-Registry总则-v2.md	定义通用规则、字段、ID 范围、生命周期、校验规则	很少变
+Registry Domain Spec	09-AXTP-MethodId注册表-v2.md	定义某类注册表的字段、编号范围、候选项、规划表	中低频变化
+Registry YAML	registry/method/device.yaml	机器可读的已采纳条目	随业务新增
+Protocol IR	protocol/axtp.protocol.yaml	聚合所有 YAML 后的统一协议定义	自动生成
+Generated Docs	generated/protocol.md	发布给开发者的最终文档	自动生成
+
+更直接地说：
+
+registry-spec 规定“怎么登记”
+registry-md 母文件规定“有哪些候选项、编号范围、规划依据”
+registry-yaml 记录“哪些条目已经正式进入机器事实源”
+axtp.protocol.yaml 聚合“当前协议版本的完整机器定义”
+
+⸻
+
+3. 新增业务时，是否每次都去 MD 母文件中核对？
+
+是的，但不是人工凭感觉核对，而应该成为流程的一部分。
+
+新增业务时，AI 或 axtpc 应该按下面顺序工作：
+
+1. 读取 08 Registry 总则，理解通用规则
+2. 读取对应 registry-spec / registry-md，例如 09 MethodId 注册表
+3. 查找是否已有等价 method/event/error/type
+4. 判断业务属于哪个 domain
+5. 判断 ID 是否在正确范围
+6. 判断是否已有规划编号
+7. 判断是否需要新增 schema
+8. 判断是否需要新增 errorCode
+9. 判断是否影响 legacy mapping
+10. 生成或修改 registry/*.yaml
+11. 运行校验
+12. 重新生成 axtp.protocol.yaml 和 protocol.md
+
+这其实和你上传的 08 中“Registry Review 规则”完全一致：新增或修改 Registry 条目时必须检查是否已有等价方法/事件/能力、是否属于正确 domain、ID 是否在正确范围、命名是否符合规范、是否需要 schema、是否需要 errorCode、是否影响老协议兼容、是否进入 MVP。 ￼
+
+所以 MD 母文件不是废弃的，它应该作为：
+
+AI / axtpc 新增业务时的业务规划索引和审核依据。
+
+⸻
+
+4. 推荐最终流程：Spec + Registry MD + YAML 三段式
+
+我建议不要把 09-AXTP-MethodId注册表-v2.md 直接替换成 YAML。
+它应该保留，但角色调整为：
+
+09 = Method Registry 规则 + 规划母表 + 人类审核入口
+registry/method/*.yaml = 已采纳机器事实
+
+例如 09 中可以继续保留：
+
+MethodId Domain 分段
+Method 条目字段定义
+MVP 最小方法集合
+完整 MethodId 规划表
+老协议适配 MethodId 表
+Method 与 Schema/ErrorCode/Capability/Event 的关系
+Generator 校验规则
+
+这些内容对 AI 生成 YAML 非常有价值。
+
+而 YAML 只保存已经正式采纳的条目，例如：
+
+domain: display
+registry: methods
+version: 1.0.0
+methods:
+  - id: 0x0501
+    name: display.getBrightness
+    kind: method
+    status: mvp
+    domain: display
+    description: Get current display brightness.
+    schema:
+      params: EmptyParams
+      result: DisplayGetBrightnessResult
+    errors:
+      - SUCCESS
+      - RPC_PARAM_INVALID
+      - BUSY
+    events: []
+    mvp: true
+    priority: P0
+
+⸻
+
+5. AI 应该如何根据 MD 生成 YAML？
+
+建议让 AI 按“证据链”生成，而不是直接补 YAML。
+
+每次新增业务，AI 输出应该包含四部分：
+
+1. 业务意图分析
+2. Registry MD 核对结果
+3. YAML 修改内容
+4. 校验结果
+
+例如用户说：“新增显示输入源切换”。
+
+AI 应该做：
+
+业务意图：
+  display input source control
+查 09 规划表：
+  display.* 中已有 display.setInputSource = 0x0510
+  display.getInputSource = 0x0511
+判断：
+  属于 display domain
+  ID 范围 0x0500-0x05FF 正确
+  不是新增编号，而是激活 draft 规划项
+  需要 schema:
+    DisplaySetInputSourceParams
+    DisplayGetInputSourceResult
+  可能触发 event:
+    display.inputSourceChanged
+  需要 error:
+    SUCCESS / INVALID_ARGUMENT / BUSY / RPC_METHOD_NOT_SUPPORTED
+生成 YAML：
+  registry/method/display.yaml 增加或更新对应条目
+  registry/types/display.yaml 增加 schema 类型
+  registry/events/display.yaml 可选增加事件
+
+这就实现了你说的：
+
+既做好了管理，又有来源依据。
+
+⸻
+
+6. axtp.protocol.yaml 的生成输入应该是什么？
+
+建议明确为：
+
+axtp.protocol.yaml = 由 axtpc 从 registry-yaml 聚合生成
+
+而 registry-yaml 又来自：
+
+registry-md 母文件 + legacy 源文档 + 人工/AI 审核
+
+不要让 axtp.protocol.yaml 直接读 MD 母文件生成。
+更稳的链路是两段：
+
+阶段 A：MD / legacy / 业务需求 -> registry YAML
+阶段 B：registry YAML -> axtp.protocol.yaml
+
+原因：
+
+1. MD 是人类可读，结构容易变化；
+2. YAML 是机器可读，适合严格校验；
+3. axtp.protocol.yaml 是聚合 IR，不适合直接承载编辑历史；
+4. 分两段后，审核可以在 YAML 层完成。
+
+⸻
+
+7. 08/09 应该如何改写以支持这个流程？
+
+建议把 08 和 09 里的角色再明确一点。
+
+08 增加一节：Registry Source Pipeline
+
+写明：
+
+Registry MD 文档是人类可读的注册表规则、规划表和审核入口。
+Registry YAML 是机器可读的事实源。
+axtp.protocol.yaml 是由 Registry YAML 聚合生成的协议 IR。
+generated/protocol.md 是由 axtp.protocol.yaml 生成的发布文档。
+
+09 增加一节：Method YAML 生成规则
+
+写明：
+
+AI 或工具从 MethodId 规划表中提取候选 method 时，必须：
+1. 保持 methodId 与规划表一致；
+2. 保持 domain 与 ID 范围一致；
+3. 将 draft/mvp/stable 状态写入 YAML；
+4. 为 params/result 引用已注册 type；
+5. 为 errors 引用 ErrorCode Registry；
+6. 为 events 引用 Event Registry；
+7. 为 legacy 填写来源映射；
+8. 不得新增未在规划表或审核记录中说明的 methodId。
+
+⸻
+
+8. 推荐新增一个文件：Registry Change Request
+
+为了让 AI 新增业务更有依据，可以新增：
+
+registry-change-requests/
+
+每次新增业务先写一个 CR：
+
+id: RCR-2026-0001
+title: Add display input source control
+source:
+  request: user
+  reference:
+    - 09-AXTP-MethodId注册表-v2.md#display
+businessIntent: Switch and query display input source.
+domain: display
+candidateMethods:
+  - display.setInputSource
+  - display.getInputSource
+schemas:
+  - DisplaySetInputSourceParams
+  - DisplayGetInputSourceResult
+events:
+  - display.inputSourceChanged
+decision: accepted
+
+然后 AI 根据 CR 修改 YAML。
+
+这样流程更工程化：
+
+业务需求
+  ↓
+Registry Change Request
+  ↓
+registry YAML
+  ↓
+axtp.protocol.yaml
+  ↓
+protocol.md
+
+⸻
+
+9. 最终建议的完整关系
+
+01-07
+  冻结核心协议机制
+08 Registry 总则
+  定义 Registry 治理规则、文件组织、通用字段、ID 稳定性、review 规则、generator 校验规则
+09/10/11/12/13 Registry MD
+  定义各注册表的字段规则、编号范围、规划表、MVP 范围、legacy 映射、人工审核依据
+registry-change-requests/
+  记录每次业务新增/变更的原因、来源、决策
 registry/*.yaml
-    ↓ 作为唯一机器可读数据源 SSOT
-schema/*.json
-    ↓ 由 registry 自动生成或由 registry 引用并校验
-generated/
-    ├── markdown docs
-    ├── C/C++ enum
-    ├── TypeScript enum
-    ├── JSON-RPC method map
-    ├── BinaryRPC method map
-    ├── bitmap table
-    ├── validator
-    └── conformance tests
-
-也就是说：
-
-08-13 文档控制“规则”；registry 控制“数据”；schema 控制“结构”；generated 控制“实现产物”。
-
-不要让 08-13 直接当机器数据源，因为 Markdown 不适合做主数据源。
-更好的方式是：
-
-Markdown 标准文档 = 人读规范
-YAML/JSON registry = 机器可读规范源
-Generator = 从 registry 生成所有实现产物
+  机器可读事实源，只保存已采纳条目
+axtpc
+  校验 registry yaml，聚合生成 protocol IR
+protocol/axtp.protocol.yaml
+  自动生成的完整协议 IR，不手写
+generated/protocol.md
+  自动生成的最终协议文档
 
 ⸻
 
-3. 08-13 每份文档应该控制什么
+10. 给 Codex 的一句核心指令
 
-我建议重新定义 08-13 的职责。
+可以这样告诉 Codex：
 
-08《JSON-RPC / Binary-RPC Demo 说明书》
-
-它不应该直接写死所有方法细节，而应该规定：
-
-JSON-RPC methodName 如何映射到 Binary methodId
-requestId 如何映射
-params/result 如何映射到 TLV/CBOR/FIXED_STRUCT
-错误如何映射到 statusCode/errorCode
-
-因为 BinaryRPC 里 methodId/eventId 已经明确由 Method Registry / Event Registry 管理，RPC Binary Header 又包含 rpcOp、requestId、methodOrEventId、statusCode、bodyEncoding 等字段，所以 08 应该负责“映射规则”，而不是手写业务表。 ￼
+不要直接手写 axtp.protocol.yaml。请将 axtp.protocol.yaml 视为生成产物。
+新增或修改业务协议时，先读取 08 Registry 总则和对应的 09/10/11/12/13 注册表 MD 母文件，按其中的 domain、ID 分段、命名、字段、schema、error、event、legacy mapping 规则进行分析。
+如果规划表中已有对应业务项，则在 registry/*.yaml 中激活或补全该条目；如果规划表中没有，则先生成 Registry Change Request，说明新增理由、domain 归属、ID 分配依据、schema/error/event 影响，再写入 registry yaml。
+最后由 axtpc 从 registry yaml 聚合生成 axtp.protocol.yaml，再生成 protocol.md、schema、SDK、bitmap 和测试产物。
 
 ⸻
 
-09《MethodId 注册表》
+最终结论
 
-它应该控制：
+你的理解是对的，而且建议正式定成：
 
-methodId 分段规则
-methodName 命名规范
-methodId 唯一性
-domain 命名
-bodyEncoding 选择
-paramsSchema 引用规则
-resultSchema 引用规则
-supportedMethods bitmap 生成规则
+Registry MD 是人类可读的规则和规划母表；Registry YAML 是机器可读的事实源；AI 必须参照 registry-spec 和 registry-md 进行业务分析后，才能修改 YAML；axtp.protocol.yaml 只由 YAML 聚合生成，不直接手写。
 
-但真正的 method 数据应该放在：
+这样整个体系就完整了：
 
-registry/methods/*.yaml
-
-例如：
-
-id: 0x0101
-name: device.getInfo
-domain: device
-since: 1.0.0
-status: stable
-transport:
-  json: true
-  binary: true
-bodyEncoding:
-  binary: TLV
-paramsSchema: schema/device/getInfo.params.schema.json
-resultSchema: schema/device/getInfo.result.schema.json
-errors:
-  - 0x0401
-  - 0x0501
-
-然后生成：
-
-docs/09-MethodId注册表.md
-generated/cpp/axtp_method_id.h
-generated/ts/method-id.ts
-generated/bitmap/method_bitmap.bin
-
-这和之前提到的“用 YAML/JSON 作为唯一数据源，再自动生成 Markdown、SDK 枚举、参数校验和测试用例”的方向一致。 ￼
-
-⸻
-
-10《EventType 事件注册表》
-
-它应该控制：
-
-eventId 分段规则
-eventName 命名规范
-事件 payload schema
-事件是否可订阅
-事件是否可靠投递
-事件是否进入 bitmap
-
-机器源：
-
-registry/events/*.yaml
-
-生成：
-
-docs/10-EventType事件注册表.md
-generated/cpp/axtp_event_id.h
-generated/ts/event-id.ts
-schema/events/*.json
-
-⸻
-
-11《ErrorCode 注册表》
-
-它应该控制：
-
-errorCode 分段
-通用错误码
-transport error
-parse error
-session error
-rpc error
-stream error
-business error
-错误码稳定性规则
-
-之前资料里已经出现了 statusCode/errorCode 的分段思路，例如 Success、Transport Error、Parse Error、Invalid Parameter、Device Busy、Resource Not Found、Session Error、Stream Error、Internal Error 等范围。 ￼
-这部分应该从文档表格升级成：
-
-registry/errors.yaml
-
-再生成：
-
-docs/11-ErrorCode注册表.md
-generated/cpp/axtp_error_code.h
-generated/ts/error-code.ts
-
-⸻
-
-12《Capability 注册表》
-
-你前面已经决定 v1 不实现完整 capability，只保留：
-
-capability.supportedMethods
-
-那 12 就不应该继续手写复杂能力树，而应该明确：
-
-v1 不要求完整 Capability Model
-v1 只要求 Method Bitmap
-capability.supportedMethods 从 Method Registry 自动生成
-完整 capability schema 保留到 v2
-
-也就是说，v1 的 capability 目录不应该是手写能力模型，而应该是从 method registry 派生出来：
-
-registry/methods/*.yaml
-    ↓
-generated/capability/supported_methods.bitmap
-    ↓
-capability.supportedMethods 返回
-
-⸻
-
-13《MVP 最小实现注册表》
-
-13 最适合做“实现 Profile 清单”。
-
-它应该定义：
-
-AXTP-MVP-Core 必须实现哪些 methodId
-AXTP-MVP-HID 必须实现哪些 methodId
-AXTP-MVP-BLE 必须实现哪些 methodId
-AXTP-MVP-WS 必须实现哪些 methodId
-哪些 event 必须实现
-哪些 errorCode 必须实现
-哪些 schema 必须存在
-哪些 conformance test 必须通过
-
-机器源可以是：
-
-profile: AXTP-MVP-HID
-requires:
-  methods:
-    - capability.supportedMethods
-    - session.hello
-    - device.getInfo
-  events:
-    - device.statusChanged
-  errors:
-    - SUCCESS
-    - INVALID_PARAMS
-    - METHOD_NOT_FOUND
-  transports:
-    - HID
-  frameProfile:
-    - COMPACT_FRAME
-
-然后生成：
-
-docs/13-MVP最小实现注册表.md
-generated/conformance/mvp_hid_tests.json
-
-⸻
-
-4. 推荐目录结构
-
-建议改成这种结构：
-
-spec/
-  08-json-binary-rpc-mapping.md
-  09-method-registry-rules.md
-  10-event-registry-rules.md
-  11-error-code-registry-rules.md
-  12-capability-registry-rules.md
-  13-mvp-profile-registry-rules.md
-registry/
-  methods/
-    capability.yaml
-    session.yaml
-    device.yaml
-    display.yaml
-    stream.yaml
-  events/
-    device.yaml
-    stream.yaml
-  errors.yaml
-  body-encodings.yaml
-  payload-types.yaml
-  profiles/
-    mvp-core.yaml
-    mvp-hid.yaml
-    mvp-ble.yaml
-    mvp-ws.yaml
-schema/
-  methods/
-    device.getInfo.params.schema.json
-    device.getInfo.result.schema.json
-  events/
-    device.statusChanged.schema.json
-  common/
-    error.schema.json
-    tlv.schema.json
-tools/
-  axtp-gen/
-    validate_registry.py
-    generate_docs.py
-    generate_cpp.py
-    generate_ts.py
-    generate_bitmap.py
-    generate_tests.py
-generated/
-  docs/
-  cpp/
-  ts/
-  bitmap/
-  tests/
-
-核心原则：
-
-registry/ 是唯一数据源
-schema/ 是结构约束
-spec/ 是规则说明
-generated/ 不能手写
-
-⸻
-
-5. 需要新增一个 Generator 文档
-
-你现在缺的其实不是 08-13 本身，而是一个新的文档：
-
-14《AXTP Generator v1 实现规范》
-
-或者如果你已有 20 Generator 文档，就应该把它提前成为强约束。
-
-它需要规定：
-
-输入是什么
-输出是什么
-校验规则是什么
-ID 冲突怎么处理
-schema 缺失怎么处理
-bitmap 怎么生成
-Markdown 怎么生成
-C/C++ enum 怎么生成
-TypeScript enum 怎么生成
-测试用例怎么生成
-CI 如何检查
-
-建议生成器流程：
-
-1. load registry/*.yaml
-2. validate id uniqueness
-3. validate name uniqueness
-4. validate id range by domain
-5. validate schema refs exist
-6. validate bodyEncoding legal
-7. validate errors exist in error registry
-8. generate method table
-9. generate event table
-10. generate error table
-11. generate supportedMethods bitmap
-12. generate SDK enums
-13. generate conformance tests
-
-⸻
-
-6. 最重要的治理规则
-
-建议你直接把这几条写进 08-13 总则：
-
-1. registry/ 下的 YAML/JSON 文件是 AXTP 业务注册表的唯一机器可读数据源。
-2. docs/08-13 中的表格不得作为实现源手写维护，必须由 registry/ 自动生成或与 registry/ 校验一致。
-3. schema/ 下的 JSON Schema 必须由 registry 引用；未被 registry 引用的 schema 不得进入正式发布包。
-4. generated/ 下的 SDK enum、bitmap、Markdown 表格、测试用例均为生成产物，不得手写修改。
-5. CI 必须执行 registry validate，任何 methodId/eventId/errorCode 冲突、schema 缺失、命名不一致、ID 越界都必须阻断合并。
-6. capability.supportedMethods 的 bitmap 必须由 Method Registry 自动生成，不得人工维护。
-
-⸻
-
-7. 最终建议
-
-你现在应该把 08-13 从“文档集合”升级成：
-
-08：RPC 映射规则
-09：Method Registry 规则
-10：Event Registry 规则
-11：ErrorCode Registry 规则
-12：Capability 派生规则
-13：MVP Profile 规则
-
-然后真正被实现读取的是：
-
-registry/*.yaml
-schema/*.json
-
-最终所有工程文件都由 generator 生成：
-
-Markdown 文档
-C/C++ enum
-TypeScript enum
-Method Bitmap
-Event 表
-ErrorCode 表
-JSON Schema 校验器
-Conformance Tests
-
-一句话定稿：
-
-08-13 不应该直接手写实现 registry/schema；08-13 应该定义 registry/schema 的规范和生成规则。registry/schema 是机器可读 SSOT，SDK、文档、bitmap、测试都必须由 generator 派生。
+registry-spec 管规则
+registry-md 管规划和审核依据
+registry-yaml 管机器事实
+axtp.protocol.yaml 管聚合 IR
+protocol.md 管最终发布

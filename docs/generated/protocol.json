@@ -240,7 +240,8 @@
   },
   "compatibility": {
     "legacySources": [
-      "protocol-source/legacy-docs/02-registry/"
+      "docs/source/AXTP-Legacy-Compatibility-Reference.md",
+      "docs/source/AXTP-Legacy-Registry-Migration-Map.md"
     ],
     "rules": [
       "Stable methodId, eventId and error code values must not be reused.",
@@ -253,6 +254,148 @@
       "name": "Empty",
       "kind": "object",
       "fields": []
+    },
+    {
+      "name": "ControlOpenBody",
+      "kind": "object",
+      "fields": [
+        {
+          "fieldId": 2,
+          "name": "protocolVersion",
+          "type": "uint8",
+          "required": true,
+          "min": 1,
+          "max": 15
+        },
+        {
+          "fieldId": 3,
+          "name": "reservedHeaderProfile",
+          "type": "uint8",
+          "required": false,
+          "min": 1,
+          "max": 2,
+          "deprecated": true
+        },
+        {
+          "fieldId": 4,
+          "name": "maxFrameSize",
+          "type": "uint16",
+          "required": true,
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "fieldId": 6,
+          "name": "mtu",
+          "type": "uint16",
+          "required": true,
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "fieldId": 7,
+          "name": "supportedPayloadTypes",
+          "type": "bitmap",
+          "required": true
+        },
+        {
+          "fieldId": 8,
+          "name": "supportedRpcEncodings",
+          "type": "bitmap",
+          "required": true
+        },
+        {
+          "fieldId": 10,
+          "name": "heartbeatIntervalMs",
+          "type": "uint32",
+          "required": true,
+          "min": 500,
+          "max": 60000
+        },
+        {
+          "fieldId": 11,
+          "name": "ackMode",
+          "type": "uint8",
+          "required": true,
+          "min": 0,
+          "max": 4
+        }
+      ]
+    },
+    {
+      "name": "ControlAcceptBody",
+      "kind": "object",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sessionId",
+          "type": "uint32",
+          "required": true
+        },
+        {
+          "fieldId": 2,
+          "name": "protocolVersion",
+          "type": "uint8",
+          "required": true,
+          "min": 1,
+          "max": 15
+        },
+        {
+          "fieldId": 3,
+          "name": "reservedHeaderProfile",
+          "type": "uint8",
+          "required": false,
+          "min": 1,
+          "max": 2,
+          "deprecated": true
+        },
+        {
+          "fieldId": 4,
+          "name": "maxFrameSize",
+          "type": "uint16",
+          "required": true,
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "fieldId": 6,
+          "name": "mtu",
+          "type": "uint16",
+          "required": true,
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "fieldId": 7,
+          "name": "supportedPayloadTypes",
+          "type": "bitmap",
+          "required": true
+        },
+        {
+          "fieldId": 10,
+          "name": "heartbeatIntervalMs",
+          "type": "uint32",
+          "required": true,
+          "min": 500,
+          "max": 60000
+        },
+        {
+          "fieldId": 11,
+          "name": "ackMode",
+          "type": "uint8",
+          "required": true,
+          "min": 0,
+          "max": 4
+        },
+        {
+          "fieldId": 30,
+          "name": "selectedRpcEncoding",
+          "type": "uint8",
+          "required": true,
+          "min": 1,
+          "max": 4
+        }
+      ]
     },
     {
       "name": "DeviceGetInfoResponse",
@@ -304,6 +447,24 @@
           "type": "bytes",
           "required": true,
           "derivedFrom": "methods[].bitOffset"
+        }
+      ]
+    },
+    {
+      "name": "FirmwareOtaCapability",
+      "kind": "object",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "maxImageSize",
+          "type": "uint32",
+          "required": true
+        },
+        {
+          "fieldId": 2,
+          "name": "maxChunkSize",
+          "type": "uint16",
+          "required": true
         }
       ]
     },
@@ -693,24 +854,6 @@
           "maxLength": 96
         }
       ]
-    },
-    {
-      "name": "FirmwareOtaCapability",
-      "kind": "object",
-      "fields": [
-        {
-          "fieldId": 1,
-          "name": "maxImageSize",
-          "type": "uint32",
-          "required": true
-        },
-        {
-          "fieldId": 2,
-          "name": "maxChunkSize",
-          "type": "uint16",
-          "required": true
-        }
-      ]
     }
   ],
   "methods": [
@@ -1086,7 +1229,7 @@
       "category": "frame",
       "since": "1.0.0",
       "status": "stable",
-      "severity": "error",
+      "severity": "warning",
       "retryable": true,
       "message": "Frame CRC check failed."
     },
@@ -1096,7 +1239,7 @@
       "category": "frame",
       "since": "1.0.0",
       "status": "stable",
-      "severity": "error",
+      "severity": "warning",
       "retryable": true,
       "message": "One or more frame fragments are missing."
     },
@@ -1148,7 +1291,7 @@
       "status": "reserved",
       "severity": "error",
       "retryable": false,
-      "message": "Historical header profile negotiation error."
+      "message": "Historical header profile negotiation error. AXTP v1 implementations must not emit it."
     },
     {
       "name": "CONTROL_NEGOTIATION_FAILED",
@@ -1236,7 +1379,7 @@
       "category": "stream",
       "since": "1.0.0",
       "status": "stable",
-      "severity": "error",
+      "severity": "warning",
       "retryable": true,
       "message": "Stream timed out."
     },
@@ -1246,7 +1389,7 @@
       "category": "stream",
       "since": "1.0.0",
       "status": "stable",
-      "severity": "error",
+      "severity": "warning",
       "retryable": true,
       "message": "Stream chunk CRC check failed."
     },

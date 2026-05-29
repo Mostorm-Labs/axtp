@@ -63,6 +63,52 @@ function assertSchemaFields(schema: Schema): void {
   }
 }
 
+function assertDomainBitOffsets<T extends { name: string; domain: string; bitOffset: number }>(items: T[], label: string, file: string): void {
+  const byDomain = new Map<string, T[]>();
+  for (const item of items) {
+    if (!Number.isInteger(item.bitOffset) || item.bitOffset < 0) {
+      throw new GeneratorError({
+        code: "AXTP-GEN-1004",
+        file,
+        entry: item.name,
+        field: "bit_offset",
+        message: `${label} bit_offset is required and must be a non-negative integer`
+      });
+    }
+    const list = byDomain.get(item.domain) ?? [];
+    list.push(item);
+    byDomain.set(item.domain, list);
+  }
+  for (const [domain, itemsInDomain] of byDomain) {
+    const seen = new Map<number, string>();
+    for (const item of itemsInDomain) {
+      const existing = seen.get(item.bitOffset);
+      if (existing) {
+        throw new GeneratorError({
+          code: "AXTP-GEN-1002",
+          file,
+          entry: item.name,
+          field: "bit_offset",
+          message: `duplicate ${label} bit_offset in domain ${domain}: ${item.bitOffset} (${existing} / ${item.name})`
+        });
+      }
+      seen.set(item.bitOffset, item.name);
+    }
+    const bits = [...seen.keys()].sort((a, b) => a - b);
+    bits.forEach((bit, index) => {
+      if (bit !== index) {
+        throw new GeneratorError({
+          code: "AXTP-GEN-1004",
+          file,
+          entry: domain,
+          field: "bit_offset",
+          message: `${label} bit_offset must be contiguous from 0 in domain ${domain}: ${bits.join(",")}`
+        });
+      }
+    });
+  }
+}
+
 function assertKnownSchema(schemaName: string | undefined, schemas: Set<string>, entry: string, field: string): void {
   if (!schemaName) return;
   if (!schemas.has(schemaName)) {
@@ -183,6 +229,8 @@ export function validateSpec(spec: SpecModel): string[] {
   assertUniqueNames(spec.methods, "method", "method_registry.yaml");
   assertUniqueIds(spec.events, "eventId", "event_registry.yaml");
   assertUniqueNames(spec.events, "event", "event_registry.yaml");
+  assertDomainBitOffsets(spec.methods, "method", "method_registry.yaml");
+  assertDomainBitOffsets(spec.events, "event", "event_registry.yaml");
   assertUniqueIds(spec.errors, "errorCode", "error_code.yaml");
   assertUniqueNames(spec.errors, "error", "error_code.yaml");
   assertUniqueIds(spec.capabilities, "capabilityId", "capability_registry.yaml");

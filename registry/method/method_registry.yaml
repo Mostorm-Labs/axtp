@@ -1,8 +1,10 @@
 methods:
   - id: 0x0101
     name: device.getInfo
+    description: Return static device identity and firmware metadata.
     domain: device
     status: mvp
+    bit_offset: 0
     rpc_op: request_response
     request_schema: DeviceGetInfoRequest
     response_schema: DeviceGetInfoResponse
@@ -17,8 +19,10 @@ methods:
 
   - id: 0x0301
     name: capability.supportedMethods
+    description: Return the per-domain method bitmap supported by the current session.
     domain: capability
     status: mvp
+    bit_offset: 0
     rpc_op: request_response
     request_schema: CapabilitySupportedMethodsRequest
     response_schema: CapabilitySupportedMethodsResponse
@@ -29,8 +33,10 @@ methods:
 
   - id: 0x0501
     name: display.getBrightness
+    description: Read the current display brightness percentage.
     domain: display
     status: mvp
+    bit_offset: 0
     rpc_op: request_response
     request_schema: DisplayGetBrightnessRequest
     response_schema: DisplayGetBrightnessResponse
@@ -41,8 +47,10 @@ methods:
 
   - id: 0x0502
     name: display.setBrightness
+    description: Set the display brightness and optionally request a transition duration.
     domain: display
     status: mvp
+    bit_offset: 1
     rpc_op: request_response
     request_schema: DisplaySetBrightnessRequest
     response_schema: CommonEmptyResponse
@@ -57,8 +65,10 @@ methods:
 
   - id: 0x0B02
     name: firmware.begin
+    description: Begin a firmware OTA transfer and allocate the STREAM context.
     domain: firmware
     status: mvp
+    bit_offset: 0
     rpc_op: request_response
     request_schema: FirmwareBeginRequest
     response_schema: FirmwareBeginResponse
@@ -69,11 +79,13 @@ methods:
 
   - id: 0x0B03
     name: firmware.end
+    description: Finish sending firmware data for the active OTA stream.
     domain: firmware
     status: mvp
+    bit_offset: 1
     rpc_op: request_response
     request_schema: FirmwareEndRequest
-    response_schema: CommonEmptyResponse
+    response_schema: FirmwareEndResponse
     recommended_encoding: [json, binary_tlv]
     capabilities: [firmware.ota]
     events: []
@@ -81,11 +93,13 @@ methods:
 
   - id: 0x0B04
     name: firmware.verify
+    description: Verify the transferred firmware object before applying it.
     domain: firmware
     status: mvp
+    bit_offset: 2
     rpc_op: request_response
     request_schema: FirmwareVerifyRequest
-    response_schema: CommonEmptyResponse
+    response_schema: FirmwareVerifyResponse
     recommended_encoding: [json, binary_tlv]
     capabilities: [firmware.ota]
     events: [firmware.updateCompleted, firmware.updateFailed]
@@ -93,11 +107,13 @@ methods:
 
   - id: 0x0B05
     name: firmware.apply
+    description: Apply a verified firmware image.
     domain: firmware
     status: mvp
+    bit_offset: 3
     rpc_op: request_response
     request_schema: FirmwareApplyRequest
-    response_schema: CommonEmptyResponse
+    response_schema: FirmwareApplyResponse
     recommended_encoding: [json, binary_tlv]
     capabilities: [firmware.ota]
     events: [firmware.updateCompleted, firmware.updateFailed]

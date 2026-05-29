@@ -270,6 +270,10 @@ export async function loadProtocolDefinition(specRoot: string): Promise<Protocol
     });
   }
 
+  return loadProtocolDefinitionFromRaw(specRoot, sourcePath, raw);
+}
+
+export function loadProtocolDefinitionFromRaw(specRoot: string, sourcePath: string, raw: any): ProtocolModel {
   return {
     specRoot,
     sourcePath,

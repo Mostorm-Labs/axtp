@@ -123,26 +123,31 @@ STREAM Payload：16B 固定头，所有传输场景共用
 
 ---
 
-## 7. Protocol Definition 驱动原则
+## 7. 三段式 Protocol Definition 驱动原则
 
-AXTP 使用单一 Protocol Definition 文件（`protocol/axtp.protocol.yaml`）描述全部 methods、events、types、errors、profiles、frameProfiles 和 transports。
+AXTP 使用三段式协议编译流程。`registry/**/*.yaml` 与 `domains/**/*.yaml` 是机器可读事实源；`protocol/axtp.protocol.yaml` 是由 Generator 聚合生成的 Protocol IR；`docs/generated/` 与各 runtime/tooling 的 `generated/` 目录是最终成果物。
 
-`axtpc`（AXTP Protocol Compiler）从该定义生成：
+`axtpc`（AXTP Protocol Compiler）按以下单向数据流生成：
 
 ```text
-Markdown 协议文档
-JSON Schema
+registry/ + domains/
+        ↓
+protocol/axtp.protocol.yaml
+        ↓
+docs/generated/protocol.md
+protocol.json
 C/C++/TypeScript 枚举
-Method Bitmap
-一致性测试
+Method/Event Bitmap
+一致性测试与工具描述
 ```
 
 治理规则：
 
-- 新增 method / event / error / profile 只修改 `protocol.yaml`，不修改 08-13 规范文档
+- 新增 method / event / error / profile 只修改 `registry/**/*.yaml` 或 `domains/**/*.yaml`，不修改 08-13 规范文档
+- `protocol/axtp.protocol.yaml` 为生成产物，不得手写修改
 - stable 的 methodId / eventId / errorCode 不得复用
 - stable 条目不得删除，只能标记 deprecated
-- `generated/` 目录下的文件不得手写修改
+- 所有 `generated/` 目录下的文件不得手写修改
 
 ---
 
@@ -174,7 +179,7 @@ CONTROL OPEN / ACCEPT
   → CONTROL CLOSE
 ```
 
-具体 method / event / error / type 定义见 `protocol/axtp.protocol.yaml` 及 08-13 规范文档。
+具体 method / event / error / type 定义以 `registry/` 与 `domains/` YAML 为准；`protocol/axtp.protocol.yaml` 与生成文档由 Generator 输出。
 
 ---
 

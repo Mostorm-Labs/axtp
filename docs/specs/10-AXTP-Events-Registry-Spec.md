@@ -6,13 +6,13 @@
 
 版本：v1.0.0-rc1
 状态：Protocol Definition 元规范
-适用范围：`protocol/axtp.protocol.yaml` 中 `events:` 条目的字段、约束和生成规则
+适用范围：`registry/event/` 与 `domains/*/domain.yaml` 中 event 源条目的字段、约束和生成规则
 
 ---
 
 ## 1. 文档定位
 
-本文档只定义 event registry 的元模型，不手写完整 EventId 表。具体 event 内容必须写入 `protocol/axtp.protocol.yaml` 的 `events:`。
+本文档只定义 event registry 的元模型，不手写完整 EventId 表。具体 event 内容必须写入 `registry/event/` 或 `domains/*/domain.yaml`；`protocol/axtp.protocol.yaml` 中的 `events:` 由 Generator 聚合生成。
 
 ---
 
@@ -30,8 +30,8 @@
 ```yaml
 events:
   - name: device.statusChanged
-    eventId: 0x8101
-    bitOffset: 0
+    id: 0x8101
+    bit_offset: 0
     domain: device
     since: 1.0.0
     status: stable
@@ -47,12 +47,12 @@ events:
 | 字段 | 必填 | 说明 |
 |---|---:|---|
 | `name` | 是 | event name，必须为 `domain.eventName` |
-| `eventId` | 是 | uint16，Binary-RPC eventId，wire 上使用 |
-| `bitOffset` | 是 | uint8，该 event 在所属 domain 的 `eventMasks` bitmask 中的 bit 位置（bitOffset），domain 内从 0 开始，domain 内唯一 |
+| `id` / `eventId` | 是 | uint16，Binary-RPC eventId，wire 上使用；源 YAML 使用 `id`，Protocol IR 使用 `eventId` |
+| `bit_offset` / `bitOffset` | 是 | uint8，该 event 在所属 domain 的 `eventMasks` bitmask 中的 bit 位置，domain 内从 0 开始，domain 内唯一 |
 | `domain` | 是 | 与 name 前缀一致 |
 | `since` | 是 | 首次引入版本 |
 | `status` | 是 | `draft / experimental / stable / deprecated / reserved` |
-| `payload.type` | 是 | 必须引用 `types` 中存在的类型 |
+| `event_schema` / `payload.type` | 是 | 必须引用已注册 schema/type |
 | `severity` | 否 | `info / warning / error / critical` |
 | `trigger` | 否 | 触发来源，仅用于文档和测试 |
 | `capabilities` | 否 | 关联能力，仅用于文档和 profile 约束 |
@@ -76,7 +76,7 @@ events:
 
 ## 6. 生成规则
 
-`axtpc` 必须从 `events:` 生成：
+`axtpc` 必须从源 YAML 聚合出的 `events:` 生成：
 
 ```text
 generated/protocol.md Events Reference

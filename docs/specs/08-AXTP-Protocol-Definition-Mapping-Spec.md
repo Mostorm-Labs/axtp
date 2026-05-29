@@ -6,30 +6,33 @@
 
 版本：v1.0.0-rc1
 状态：Protocol Definition 元规范
-适用范围：`protocol/axtp.protocol.yaml` 的顶层结构、JSON-RPC 到 Binary-RPC 的映射、生成 `generated/protocol.md` 的规则
+适用范围：Registry/Domain YAML 到 `protocol/axtp.protocol.yaml` 的映射、JSON-RPC 到 Binary-RPC 的映射、生成 `docs/generated/protocol.md` 的规则
 
 ---
 
 ## 1. 文档定位
 
-本文档定义 AXTP Protocol Definition 的元模型。08-13 文档只规定规则和约束，不再手写具体业务 request、event、error、type 或 profile 清单。
+本文档定义 AXTP Protocol Definition 的元模型和三段式生成链路。08-13 文档只规定规则和约束，不再手写具体业务 request、event、error、type 或 profile 清单。
 
-具体协议内容必须进入：
+具体协议内容必须进入机器事实源：
+
+```text
+registry/**/*.yaml
+domains/**/*.yaml
+```
+
+聚合后的 Protocol IR 由 Generator 输出到：
 
 ```text
 protocol/axtp.protocol.yaml
 ```
 
-旧协议和全量业务参考材料放入：
-
-```text
-protocol-source/
-```
-
 生成产物放入：
 
 ```text
-generated/
+docs/generated/
+runtimes/*/generated/
+tooling/*/
 ```
 
 旧 08-13 文档中的内容按以下规则分流：
@@ -41,16 +44,16 @@ generated/
 | OPEN / ACCEPT / READY | 04 |
 | Hello / Identify / RPC / EVENT | 05 |
 | STREAM Header / resume | 06 |
-| 旧协议兼容映射 | 07 与 `protocol-source/legacy/` |
-| 完整 Capability Model | `protocol-source/future/` |
+| 旧协议兼容映射 | 07 与 `docs/source/` legacy 材料 |
+| 完整 Capability Model | `docs/source/AXTP-Capability-Model-v2.md` |
 | method/event/error/type/profile entry 元模型 | 09-13 |
-| 具体业务 method/event/type/error/profile | `protocol/axtp.protocol.yaml` |
+| 具体业务 method/event/type/error/profile | `registry/` 与 `domains/` YAML |
 
 ---
 
 ## 2. Protocol Definition 顶层结构
 
-`axtp.protocol.yaml` 必须包含以下顶层块：
+`protocol/axtp.protocol.yaml` 是生成产物，必须包含以下顶层块：
 
 ```yaml
 protocol: {}
@@ -73,6 +76,25 @@ profiles: []
 `protocol.specVersion` 与 `protocol.registryVersion` 必须分离。Core wire format 修改使用 `specVersion`；method/event/type/error/profile 增量使用 `registryVersion`。
 
 08-13 元规范不得重新定义 wire header 字段，也不得手写完整业务表。
+
+---
+
+## 2.1 三段式输入输出关系
+
+```text
+docs/specs/08-13 + docs/source/09-13 + 业务需求
+        ↓
+registry/**/*.yaml + domains/**/*.yaml
+        ↓
+protocol/axtp.protocol.yaml
+        ↓
+docs/generated/protocol.md + protocol.json + SDK/bitmap/test-vector
+```
+
+- `registry/` 保存核心常量、公共 schema、MVP 已采纳条目和 legacy 映射。
+- `domains/` 保存新增业务域的扩展 YAML，是新增业务的推荐入口。
+- `registry/core/protocol_meta.yaml` 保存 overview、frameProfiles、transports、payloadTypes、control、stream、compatibility 等非业务 IR 输入。
+- `protocol/axtp.protocol.yaml` 不得手写修改；任何变更必须回到 `registry/` 或 `domains/`。
 
 ---
 
@@ -110,7 +132,7 @@ Binary-RPC Header 固定 11B。JSON / CBOR / MessagePack 模式不使用 Binary 
 
 ## 5. protocol.md 生成规则
 
-`generated/protocol.md` 不得只是注册表清单，必须包含 Overview 与 Reference 两部分。
+`docs/generated/protocol.md` 不得只是注册表清单，必须包含 Overview 与 Reference 两部分。
 
 Overview 部分来自：
 
@@ -158,9 +180,10 @@ AXTP Protocol Compiler
 推荐命令：
 
 ```bash
-axtpc validate protocol/axtp.protocol.yaml
-axtpc build protocol/axtp.protocol.yaml
-axtpc emit docs
+axtpc validate-sources --spec .
+axtpc build-protocol --spec . --out protocol/axtp.protocol.yaml
+axtpc emit-protocol --spec . --out docs/generated
+axtpc generate --spec .
 axtpc emit schema
 axtpc emit cpp
 axtpc emit ts
@@ -173,6 +196,6 @@ axtpc emit conformance
 ## 7. 稳定性规则
 
 1. 08-13 是 Normative Core 元规范，长期稳定。
-2. 新增业务 method/event/error/profile 不应修改 08-13，只修改 `protocol/axtp.protocol.yaml`。
-3. generated 目录下文件不得手写修改。
+2. 新增业务 method/event/error/profile 不应修改 08-13，只修改 `registry/` 或 `domains/` YAML。
+3. `protocol/axtp.protocol.yaml` 与 generated 目录下文件不得手写修改。
 4. CI 必须验证 ID 唯一性、引用完整性、schema 完整性、bitmap 一致性和 stable ID 不复用。

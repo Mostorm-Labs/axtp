@@ -1,8 +1,10 @@
 events:
   - id: 0x8507
     name: display.brightnessChanged
+    description: Emitted when display brightness changes.
     domain: display
     status: mvp
+    bit_offset: 0
     event_schema: DisplayBrightnessChangedEvent
     severity: info
     trigger: [display.setBrightness, device_local_change]
@@ -10,8 +12,10 @@ events:
 
   - id: 0x8B02
     name: firmware.updateProgress
+    description: Emitted while firmware OTA transfer or processing advances.
     domain: firmware
     status: mvp
+    bit_offset: 0
     event_schema: FirmwareUpdateProgressEvent
     severity: info
     trigger: [firmware.begin, stream.ota.chunk]
@@ -19,8 +23,10 @@ events:
 
   - id: 0x8B03
     name: firmware.updateCompleted
+    description: Emitted when firmware update processing completes successfully.
     domain: firmware
     status: mvp
+    bit_offset: 1
     event_schema: FirmwareUpdateCompletedEvent
     severity: info
     trigger: [firmware.verify, firmware.apply]
@@ -28,8 +34,10 @@ events:
 
   - id: 0x8B04
     name: firmware.updateFailed
+    description: Emitted when firmware update processing fails.
     domain: firmware
     status: mvp
+    bit_offset: 2
     event_schema: FirmwareUpdateFailedEvent
     severity: error
     trigger: [firmware.verify, firmware.apply, stream.error]

@@ -502,6 +502,41 @@ Type: `FirmwareUpdateFailedEvent`
 
 ## Additional Types
 
+### ControlAcceptBody
+
+Kind: `object`
+
+| Name | Type | Required | Field ID | Constraints | Description |
+| --- | --- | --- | --- | --- | --- |
+| sessionId | uint32 | Yes | 0x01 | None | - |
+| protocolVersion | uint8 | Yes | 0x02 | min=1, max=15 | - |
+| reservedHeaderProfile | uint8 | No | 0x03 | min=1, max=2, deprecated | - |
+| maxFrameSize | uint16 | Yes | 0x04 | min=1, max=65535 | - |
+| mtu | uint16 | Yes | 0x06 | min=1, max=65535 | - |
+| supportedPayloadTypes | bitmap | Yes | 0x07 | None | - |
+| heartbeatIntervalMs | uint32 | Yes | 0x0A | min=500, max=60000 | - |
+| ackMode | uint8 | Yes | 0x0B | min=0, max=4 | - |
+| selectedRpcEncoding | uint8 | Yes | 0x1E | min=1, max=4 | - |
+
+---
+
+### ControlOpenBody
+
+Kind: `object`
+
+| Name | Type | Required | Field ID | Constraints | Description |
+| --- | --- | --- | --- | --- | --- |
+| protocolVersion | uint8 | Yes | 0x02 | min=1, max=15 | - |
+| reservedHeaderProfile | uint8 | No | 0x03 | min=1, max=2, deprecated | - |
+| maxFrameSize | uint16 | Yes | 0x04 | min=1, max=65535 | - |
+| mtu | uint16 | Yes | 0x06 | min=1, max=65535 | - |
+| supportedPayloadTypes | bitmap | Yes | 0x07 | None | - |
+| supportedRpcEncodings | bitmap | Yes | 0x08 | None | - |
+| heartbeatIntervalMs | uint32 | Yes | 0x0A | min=500, max=60000 | - |
+| ackMode | uint8 | Yes | 0x0B | min=0, max=4 | - |
+
+---
+
 ### FirmwareOtaCapability
 
 Kind: `object`
@@ -521,13 +556,13 @@ Kind: `object`
 | 0x0001 | UNKNOWN_ERROR | common | error | No | stable | Unknown error. |
 | 0x0005 | BUSY | common | warning | Yes | stable | Device or resource is busy. |
 | 0x0102 | FRAME_VERSION_UNSUPPORTED | frame | error | No | stable | Frame version is not supported. |
-| 0x0106 | FRAME_CRC_ERROR | frame | error | Yes | stable | Frame CRC check failed. |
-| 0x0108 | FRAME_FRAGMENT_MISSING | frame | error | Yes | stable | One or more frame fragments are missing. |
+| 0x0106 | FRAME_CRC_ERROR | frame | warning | Yes | stable | Frame CRC check failed. |
+| 0x0108 | FRAME_FRAGMENT_MISSING | frame | warning | Yes | stable | One or more frame fragments are missing. |
 | 0x0201 | CONTROL_OPCODE_INVALID | control | error | No | stable | Control opcode is invalid. |
 | 0x0202 | CONTROL_PAYLOAD_INVALID | control | error | No | stable | Control payload is invalid. |
 | 0x0204 | CONTROL_OPEN_REQUIRED | control | error | No | stable | Session has not completed CONTROL OPEN. |
 | 0x0205 | CONTROL_OPEN_REJECTED | control | error | No | stable | Control OPEN was rejected. |
-| 0x0206 | RESERVED_CONTROL_PROFILE_UNSUPPORTED | control | error | No | reserved | Historical header profile negotiation error. |
+| 0x0206 | RESERVED_CONTROL_PROFILE_UNSUPPORTED | control | error | No | reserved | Historical header profile negotiation error. AXTP v1 implementations must not emit it. |
 | 0x0207 | CONTROL_NEGOTIATION_FAILED | control | error | No | stable | Control negotiation failed. |
 | 0x0208 | CONTROL_SESSION_INVALID | control | error | No | stable | SessionId is invalid. |
 | 0x020A | CONTROL_RESUME_FAILED | control | error | No | stable | Session resume failed. |
@@ -536,8 +571,8 @@ Kind: `object`
 | 0x0306 | RPC_METHOD_NOT_FOUND | rpc | error | No | stable | MethodId or method name is not supported. |
 | 0x030B | RPC_PARAM_INVALID | rpc | error | No | stable | RPC parameters are invalid. |
 | 0x0401 | STREAM_NOT_FOUND | stream | error | No | stable | Stream context does not exist. |
-| 0x0402 | STREAM_TIMEOUT | stream | error | Yes | stable | Stream timed out. |
-| 0x0403 | STREAM_CRC_ERROR | stream | error | Yes | stable | Stream chunk CRC check failed. |
+| 0x0402 | STREAM_TIMEOUT | stream | warning | Yes | stable | Stream timed out. |
+| 0x0403 | STREAM_CRC_ERROR | stream | warning | Yes | stable | Stream chunk CRC check failed. |
 | 0x060B | FW_VERIFY_FAILED | business | error | No | stable | Firmware verification failed. |
 
 ## Profiles Reference

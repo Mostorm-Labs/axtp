@@ -331,7 +331,7 @@ CRC 不覆盖自身及底层传输头（HID Report ID、BLE ATT Header、TCP Len
 
 接收方发现 CRC 错误时：丢弃该 Frame；如能识别 MessageId，可发送 CONTROL NACK；不得将错误 Payload 交给上层 Parser。
 
-对于需要端到端完整性保证的业务对象（OTA 固件、文件传输），应在 RPC 建流参数中声明 `hashAlgo = sha256 / crc32`，由业务层校验整体数据完整性。Frame 层 CRC 只负责单帧传输错误检测。
+对于需要端到端完整性保证的业务对象（OTA 固件、文件传输），应在 RPC 建流参数中声明 `verifyType` 与 `verifyValue`，由业务层校验整体数据完整性。Frame 层 CRC 只负责单帧传输错误检测。
 
 ---
 

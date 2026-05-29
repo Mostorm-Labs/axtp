@@ -11,6 +11,7 @@ export interface RegistryItem {
 }
 
 export interface Method extends RegistryItem {
+  bitOffset: number;
   rpcOp: string;
   requestSchema: string;
   responseSchema: string;
@@ -22,6 +23,7 @@ export interface Method extends RegistryItem {
 }
 
 export interface Event extends RegistryItem {
+  bitOffset: number;
   eventSchema: string;
   severity?: string;
   trigger: string[];
@@ -30,6 +32,9 @@ export interface Event extends RegistryItem {
 
 export interface ErrorCode extends RegistryItem {
   retryable: boolean;
+  category?: string;
+  severity?: string;
+  message?: string;
 }
 
 export interface Capability extends RegistryItem {
@@ -60,11 +65,14 @@ export interface Field {
   schema?: string;
   enum?: string;
   repeated?: boolean;
+  derivedFrom?: string;
+  description?: string;
 }
 
 export interface Schema {
   name: string;
   type: string;
+  description?: string;
   fields: Field[];
 }
 

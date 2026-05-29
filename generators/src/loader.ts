@@ -48,6 +48,7 @@ function mapCommon(items: any[], file: string): CommonRegistryItem[] {
 function mapMethod(item: any, file: string): Method {
   return {
     id: normalizeId(item.id, `${file}:${item.name}`),
+    bitOffset: normalizeId(item.bit_offset ?? item.bitOffset, `${file}:${item.name}.bit_offset`),
     name: String(item.name),
     domain: String(item.domain),
     status: item.status ?? "mvp",
@@ -68,6 +69,7 @@ function mapMethod(item: any, file: string): Method {
 function mapEvent(item: any, file: string): Event {
   return {
     id: normalizeId(item.id, `${file}:${item.name}`),
+    bitOffset: normalizeId(item.bit_offset ?? item.bitOffset, `${file}:${item.name}.bit_offset`),
     name: String(item.name),
     domain: String(item.domain),
     status: item.status ?? "mvp",
@@ -90,6 +92,9 @@ function mapErrorCode(item: any, file: string): ErrorCode {
     description: item.description,
     since: item.since,
     deprecated: Boolean(item.deprecated),
+    category: item.category,
+    severity: item.severity,
+    message: item.message,
     retryable: Boolean(item.retryable)
   };
 }
@@ -138,7 +143,9 @@ function mapField(item: any, file: string, schemaName: string): Field {
     default: item.default,
     schema: item.schema,
     enum: item.enum,
-    repeated: item.repeated
+    repeated: item.repeated,
+    derivedFrom: item.derived_from ?? item.derivedFrom,
+    description: item.description
   };
 }
 
@@ -147,15 +154,25 @@ function mapSchemas(doc: any, file: string): Schema[] {
   return Object.entries(schemas).map(([name, raw]: [string, any]) => ({
     name,
     type: raw.type ?? "object",
+    description: raw.description,
     fields: asArray(raw.fields).map((field) => mapField(field, file, name))
   }));
 }
 
 export async function loadSpec(specRoot: string): Promise<SpecModel> {
   const registryDir = path.join(specRoot, "registry");
-  const schemaDir = path.join(specRoot, "schema");
-  const config = await loadYamlFile(path.join(specRoot, "generator.yaml"));
-  const version = await loadYamlFile(path.join(specRoot, "version.yaml"));
+  const schemaDir = path.join(registryDir, "schema");
+  const configPath = await (async () => {
+    const current = path.join(specRoot, "generators", "generator.yaml");
+    try {
+      await readFile(current, "utf8");
+      return current;
+    } catch {
+      return path.join(specRoot, "generator.yaml");
+    }
+  })();
+  const config = await loadYamlFile(configPath);
+  const version = await loadYamlFile(path.join(registryDir, "version.yaml"));
 
   const [
     payloadTypeDoc,
@@ -180,18 +197,18 @@ export async function loadSpec(specRoot: string): Promise<SpecModel> {
     eventSchemaDoc,
     sessionSchemaDoc
   ] = await Promise.all([
-    loadYamlFile(path.join(registryDir, "payload_type.yaml")),
-    loadYamlFile(path.join(registryDir, "control_opcode.yaml")),
-    loadYamlFile(path.join(registryDir, "rpc_encoding.yaml")),
-    loadYamlFile(path.join(registryDir, "rpc_body_encoding.yaml")),
-    loadYamlFile(path.join(registryDir, "rpc_op.yaml")),
-    loadYamlFile(path.join(registryDir, "stream_profile.yaml")),
-    loadYamlFile(path.join(registryDir, "method_registry.yaml")),
-    loadYamlFile(path.join(registryDir, "event_registry.yaml")),
-    loadYamlFile(path.join(registryDir, "error_code.yaml")),
-    loadYamlFile(path.join(registryDir, "capability_registry.yaml")),
-    loadYamlFile(path.join(registryDir, "legacy_mapping.yaml")),
-    loadYamlFile(path.join(registryDir, "mvp_profile.yaml")),
+    loadYamlFile(path.join(registryDir, "core", "payload_type.yaml")),
+    loadYamlFile(path.join(registryDir, "core", "control_opcode.yaml")),
+    loadYamlFile(path.join(registryDir, "core", "rpc_encoding.yaml")),
+    loadYamlFile(path.join(registryDir, "core", "rpc_body_encoding.yaml")),
+    loadYamlFile(path.join(registryDir, "core", "rpc_op.yaml")),
+    loadYamlFile(path.join(registryDir, "core", "stream_profile.yaml")),
+    loadYamlFile(path.join(registryDir, "method", "method_registry.yaml")),
+    loadYamlFile(path.join(registryDir, "event", "event_registry.yaml")),
+    loadYamlFile(path.join(registryDir, "error", "error_code.yaml")),
+    loadYamlFile(path.join(registryDir, "capability", "capability_registry.yaml")),
+    loadYamlFile(path.join(registryDir, "legacy", "legacy_mapping.yaml")),
+    loadYamlFile(path.join(registryDir, "capability", "mvp_profile.yaml")),
     loadYamlFile(path.join(schemaDir, "common_fields.yaml")),
     loadYamlFile(path.join(schemaDir, "control_schema.yaml")),
     loadYamlFile(path.join(schemaDir, "device_schema.yaml")),

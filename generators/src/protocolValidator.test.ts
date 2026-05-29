@@ -3,12 +3,15 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { emitProtocolDocs } from "./emitters/index.js";
+import { buildProtocolDefinition } from "./protocolBuilder.js";
 import { loadProtocolDocs, validateProtocolDocsConsistency } from "./protocolDocsValidator.js";
 import { loadProtocolDefinition } from "./protocolLoader.js";
 import type { ProtocolModel } from "./protocolModel.js";
 import { validateProtocolDefinition } from "./protocolValidator.js";
+import { loadProtocolSources } from "./sourceLoader.js";
+import { validateSpec } from "./validator.js";
 
-const repoRoot = path.resolve("..", "..");
+const repoRoot = path.resolve("..");
 
 function cloneModel(model: ProtocolModel): ProtocolModel {
   return structuredClone(model);
@@ -22,6 +25,16 @@ describe("protocol definition loader", () => {
   it("loads and validates the current protocol definition", async () => {
     const model = await loadCurrentProtocol();
     expect(model.protocol.name).toBe("AXTP");
+    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 8 methods checked");
+  });
+});
+
+describe("protocol source pipeline", () => {
+  it("loads registry/domain sources and builds a valid protocol definition", async () => {
+    const sources = await loadProtocolSources(repoRoot);
+    expect(validateSpec(sources)).toContain("[OK] method_registry.yaml: 8 methods checked");
+    const model = buildProtocolDefinition(sources);
+    expect(model.methods.find((method) => method.name === "firmware.begin")?.request.type).toBe("FirmwareBeginRequest");
     expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 8 methods checked");
   });
 });
@@ -171,7 +184,7 @@ describe("protocol docs consistency validator", () => {
   it("accepts the current protocol docs facts", async () => {
     const model = await loadCurrentProtocol();
     const docs = await loadProtocolDocs(repoRoot);
-    expect(validateProtocolDocsConsistency(model, docs)).toContain("[OK] standard/docs/00-spec: STREAM header facts checked");
+    expect(validateProtocolDocsConsistency(model, docs)).toContain("[OK] docs/specs: STREAM header facts checked");
   });
 
   it("rejects missing stream header facts in docs", async () => {

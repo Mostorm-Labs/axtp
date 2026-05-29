@@ -123,7 +123,7 @@ function assertDomainIdAlignment(methods: MethodDefinition[], events: EventDefin
 
 function assertTypeDefinitions(types: TypeDefinition[]): void {
   const allowedKinds = new Set(["object", "enum", "bitmap", "alias", "bytes"]);
-  const builtins = new Set(["bool", "uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64", "string", "bytes", "enum"]);
+  const builtins = new Set(["bool", "uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64", "string", "bytes", "enum", "bitmap"]);
   const typeNames = new Set(types.map((type) => type.name));
   for (const type of types) {
     if (!allowedKinds.has(type.kind)) fail(type.name, "kind", `unsupported type kind: ${type.kind}`);

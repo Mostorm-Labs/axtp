@@ -6,13 +6,13 @@
 
 版本：v1.0.0-rc1
 状态：Protocol Definition 元规范
-适用范围：`protocol/axtp.protocol.yaml` 中 `errors:` 条目的字段、分段、映射和生成规则
+适用范围：`registry/error/` 与 `domains/*/domain.yaml` 中 error 源条目的字段、分段、映射和生成规则
 
 ---
 
 ## 1. 文档定位
 
-本文档只定义 error registry 的元模型，不手写完整错误码清单。具体 error 内容必须写入 `protocol/axtp.protocol.yaml` 的 `errors:`。
+本文档只定义 error registry 的元模型，不手写完整错误码清单。具体 error 内容必须写入 `registry/error/` 或 `domains/*/domain.yaml`；`protocol/axtp.protocol.yaml` 中的 `errors:` 由 Generator 聚合生成。
 
 ---
 
@@ -84,4 +84,4 @@ Legacy Adapter 必须把旧状态码映射到 `errors[].code`，映射表作为 
 3. stable errorCode 不得复用。
 4. reserved code 不得用于新错误。
 5. deprecated error 仍应生成 enum，便于旧客户端兼容。
-6. 新增错误不应修改 08-13，只修改 `protocol.yaml`。
+6. 新增错误不应修改 08-13，只修改 `registry/` 或 `domains/` YAML。
