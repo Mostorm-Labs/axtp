@@ -164,6 +164,32 @@ constexpr std::uint8_t SUPPORTS_VIDEO = 0x04;
 constexpr std::uint8_t SUPPORTS_AUDIO = 0x05;
 }
 
+namespace fields::network_get_ap_info_request {
+
+}
+
+namespace fields::network_get_ap_info_response {
+constexpr std::uint8_t ENABLED = 0x01;
+constexpr std::uint8_t SSID = 0x02;
+constexpr std::uint8_t BSSID = 0x03;
+constexpr std::uint8_t BAND = 0x04;
+constexpr std::uint8_t CHANNEL = 0x05;
+constexpr std::uint8_t SECURITY = 0x06;
+constexpr std::uint8_t IP_ADDRESS = 0x07;
+constexpr std::uint8_t CLIENT_COUNT = 0x08;
+}
+
+namespace fields::network_ap_info_changed_event {
+constexpr std::uint8_t ENABLED = 0x01;
+constexpr std::uint8_t SSID = 0x02;
+constexpr std::uint8_t BSSID = 0x03;
+constexpr std::uint8_t BAND = 0x04;
+constexpr std::uint8_t CHANNEL = 0x05;
+constexpr std::uint8_t SECURITY = 0x06;
+constexpr std::uint8_t IP_ADDRESS = 0x07;
+constexpr std::uint8_t CLIENT_COUNT = 0x08;
+}
+
 namespace fields::stream_open_request {
 constexpr std::uint8_t PROFILE = 0x01;
 constexpr std::uint8_t TRANSPORT_PROFILE = 0x02;
@@ -377,6 +403,46 @@ struct StreamHidMediaCapability {
     bool supportsAudio = false;
 };
 
+struct NetworkGetApInfoRequest {
+
+};
+
+struct NetworkGetApInfoResponse {
+    bool enabled = false;
+    const char* ssid = nullptr;
+    bool has_ssid = false;
+    const char* bssid = nullptr;
+    bool has_bssid = false;
+    std::uint32_t band = 0;
+    bool has_band = false;
+    std::uint16_t channel = 0;
+    bool has_channel = false;
+    std::uint32_t security = 0;
+    bool has_security = false;
+    const char* ipAddress = nullptr;
+    bool has_ipAddress = false;
+    std::uint16_t clientCount = 0;
+    bool has_clientCount = false;
+};
+
+struct NetworkApInfoChangedEvent {
+    bool enabled = false;
+    const char* ssid = nullptr;
+    bool has_ssid = false;
+    const char* bssid = nullptr;
+    bool has_bssid = false;
+    std::uint32_t band = 0;
+    bool has_band = false;
+    std::uint16_t channel = 0;
+    bool has_channel = false;
+    std::uint32_t security = 0;
+    bool has_security = false;
+    const char* ipAddress = nullptr;
+    bool has_ipAddress = false;
+    std::uint16_t clientCount = 0;
+    bool has_clientCount = false;
+};
+
 struct StreamOpenRequest {
     const char* profile = nullptr;
     const char* transportProfile = nullptr;
@@ -503,6 +569,15 @@ bool DecodeFirmwareUpdateFailedEvent(TlvReader& reader, FirmwareUpdateFailedEven
 
 bool EncodeStreamHidMediaCapability(const StreamHidMediaCapability& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeStreamHidMediaCapability(TlvReader& reader, StreamHidMediaCapability* output, ErrorCode* error);
+
+bool EncodeNetworkGetApInfoRequest(const NetworkGetApInfoRequest& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeNetworkGetApInfoRequest(TlvReader& reader, NetworkGetApInfoRequest* output, ErrorCode* error);
+
+bool EncodeNetworkGetApInfoResponse(const NetworkGetApInfoResponse& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeNetworkGetApInfoResponse(TlvReader& reader, NetworkGetApInfoResponse* output, ErrorCode* error);
+
+bool EncodeNetworkApInfoChangedEvent(const NetworkApInfoChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeNetworkApInfoChangedEvent(TlvReader& reader, NetworkApInfoChangedEvent* output, ErrorCode* error);
 
 bool EncodeStreamOpenRequest(const StreamOpenRequest& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeStreamOpenRequest(TlvReader& reader, StreamOpenRequest* output, ErrorCode* error);

@@ -22,7 +22,8 @@ Use this skill to add one AXTP business capability through an interactive, form-
 
 Before proposing YAML, read enough local evidence to avoid guessing:
 
-- `docs/specs/08-13` for registry/type/profile meta rules.
+- `docs/source/08-AXTP-Registry总则-v2.md` is the authoritative source for domain names, domain placement, ID ranges, DomainId, and bit offset rules.
+- `docs/specs/08-13` for Protocol Definition mapping, registry/type/profile meta rules.
 - `docs/source/09-13` for planning tables, candidate IDs, MVP notes, and legacy hints.
 - Existing YAML under `registry/`, especially `registry/domains/`.
 - For stream, OTA, low-bandwidth, or transport-sensitive features, also check `docs/specs/02`, `04`, `05`, `06`, `07`, and `17`.
@@ -47,27 +48,21 @@ Example question:
 
 ### Step 2 - Domain Placement
 
-Choose the domain from existing registry/source evidence, or propose a new domain only if none fits.
+Domain placement must follow `docs/source/08-AXTP-Registry总则-v2.md`. Do not maintain an independent domain list in this skill.
 
-Common domains:
+Required checks:
 
-| Domain | Use |
-|---|---|
-| `device` | device identity and lifecycle |
-| `capability` | capability discovery |
-| `system` | reboot, time, reset, power |
-| `firmware` | firmware update control plane |
-| `stream` | stream/session control plane |
-| `display` | brightness, resolution, layout, input |
-| `video` | video source/codec/output control |
-| `audio` | audio control |
-| `input` | input source, KVM, HID |
-| `network` | network configuration |
-| `storage` / `file` | storage and file transfer |
-| `log` / `diagnostic` | logging, diagnostics, production test |
-| `sensor` | sensor data/control |
-| `auth` | authentication and access control |
-| `vendor` | private extension |
+- Read Section 6.1 `Domain 命名` for the allowed native AXTP domains and explicit non-domain names.
+- Read Section 9 `Domain Registry 规则` for domain meaning, MVP scope, and old-domain normalization rules.
+- Read Section 10 `MethodId 分配规则` and Section 11 `EventId 分配规则` before assigning method/event IDs.
+- Read Section 13 `CapabilityId 分配规则` and Section 23 `Domain-Scoped Mask` before assigning capability IDs, DomainId, or bit offsets.
+
+Selection rules:
+
+- Choose an existing domain from Section 9 whenever possible.
+- If the user's term is a legacy/product term, map it according to Section 9 notes instead of creating a new domain.
+- If no Section 9 domain fits, stop and propose a registry governance change to `docs/source/08-AXTP-Registry总则-v2.md` before adding source YAML.
+- Method name, event name, ID range, DomainId, and bit offset rationale must cite the matching 08 sections in the evidence chain.
 
 Default target for new business:
 

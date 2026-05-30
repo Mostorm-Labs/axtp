@@ -14,3 +14,4 @@
 | `0x0603` | `display.brightnessMax` | display | mvp | uint16 | - |
 | `0x0604` | `display.brightnessStep` | display | mvp | uint16 | - |
 | `0x0B01` | `firmware.ota` | firmware | mvp | object | FirmwareOtaCapability |
+| `0x0E06` | `network.softAp` | network | draft | bool | - |

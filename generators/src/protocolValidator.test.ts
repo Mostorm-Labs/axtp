@@ -25,19 +25,21 @@ describe("protocol definition loader", () => {
   it("loads and validates the current protocol definition", async () => {
     const model = await loadCurrentProtocol();
     expect(model.protocol.name).toBe("AXTP");
-    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 9 methods checked");
+    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 10 methods checked");
   });
 });
 
 describe("protocol source pipeline", () => {
   it("loads registry/domain sources and builds a valid protocol definition", async () => {
     const sources = await loadProtocolSources(repoRoot);
-    expect(validateSpec(sources)).toContain("[OK] method_registry.yaml: 9 methods checked");
+    expect(validateSpec(sources)).toContain("[OK] method_registry.yaml: 10 methods checked");
     expect(sources.methods.find((method) => method.name === "stream.open")?.requestSchema).toBe("StreamOpenRequest");
+    expect(sources.methods.find((method) => method.name === "network.getApInfo")?.responseSchema).toBe("NetworkGetApInfoResponse");
     const model = buildProtocolDefinition(sources);
     expect(model.methods.find((method) => method.name === "firmware.begin")?.request.type).toBe("FirmwareBeginRequest");
     expect(model.methods.find((method) => method.name === "stream.open")?.response.type).toBe("StreamOpenResponse");
-    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 9 methods checked");
+    expect(model.methods.find((method) => method.name === "network.getApInfo")?.response.type).toBe("NetworkGetApInfoResponse");
+    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 10 methods checked");
   });
 
   it("rejects deprecated top-level domain YAML sources", async () => {

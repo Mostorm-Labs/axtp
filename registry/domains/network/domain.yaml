@@ -1,0 +1,158 @@
+domain: network
+description: Network configuration and status methods.
+
+methods:
+  - id: 0x0E07
+    name: network.getApInfo
+    domain: network
+    status: draft
+    bit_offset: 0
+    since: 1.0.0
+    description: Return information about the device-hosted SoftAP.
+    rpc_op: request_response
+    request_schema: NetworkGetApInfoRequest
+    response_schema: NetworkGetApInfoResponse
+    recommended_encoding:
+      - json
+      - binary_tlv
+    capabilities:
+      - network.softAp
+    events:
+      - network.apInfoChanged
+    errors:
+      - SUCCESS
+      - RPC_METHOD_NOT_FOUND
+      - CAPABILITY_METHOD_UNSUPPORTED
+      - NOT_SUPPORTED
+      - INVALID_STATE
+
+events:
+  - id: 0x8E01
+    name: network.apInfoChanged
+    domain: network
+    status: draft
+    bit_offset: 0
+    since: 1.0.0
+    description: Emitted when the device-hosted SoftAP state or visible AP information changes.
+    event_schema: NetworkApInfoChangedEvent
+    severity: info
+    trigger:
+      - network.getApInfo
+      - SoftAP state changed
+    capabilities:
+      - network.softAp
+
+types:
+  NetworkGetApInfoRequest:
+    kind: object
+    description: Empty request for querying the device-hosted SoftAP information.
+    fields: []
+
+  NetworkGetApInfoResponse:
+    kind: object
+    description: Current device-hosted SoftAP information.
+    fields:
+      - id: 0x01
+        name: enabled
+        type: bool
+        required: true
+        description: Whether the device-hosted SoftAP is currently enabled.
+      - id: 0x02
+        name: ssid
+        type: string
+        required: false
+        max_length: 32
+        description: SoftAP SSID advertised by the device.
+      - id: 0x03
+        name: bssid
+        type: string
+        required: false
+        max_length: 17
+        description: SoftAP BSSID or MAC address in colon-separated form.
+      - id: 0x04
+        name: band
+        type: enum
+        required: false
+        description: SoftAP radio band, such as 2.4GHz, 5GHz or 6GHz.
+      - id: 0x05
+        name: channel
+        type: uint16
+        required: false
+        min: 1
+        max: 233
+        description: Wi-Fi channel used by the SoftAP.
+      - id: 0x06
+        name: security
+        type: enum
+        required: false
+        description: SoftAP security mode, such as open, wpa2_psk or wpa3_sae.
+      - id: 0x07
+        name: ipAddress
+        type: string
+        required: false
+        max_length: 45
+        description: IPv4 or IPv6 address assigned to the device on the SoftAP interface.
+      - id: 0x08
+        name: clientCount
+        type: uint16
+        required: false
+        description: Number of clients currently associated with the SoftAP.
+
+  NetworkApInfoChangedEvent:
+    kind: object
+    description: Payload emitted when SoftAP information changes.
+    fields:
+      - id: 0x01
+        name: enabled
+        type: bool
+        required: true
+        description: Whether the device-hosted SoftAP is currently enabled.
+      - id: 0x02
+        name: ssid
+        type: string
+        required: false
+        max_length: 32
+        description: SoftAP SSID advertised by the device.
+      - id: 0x03
+        name: bssid
+        type: string
+        required: false
+        max_length: 17
+        description: SoftAP BSSID or MAC address in colon-separated form.
+      - id: 0x04
+        name: band
+        type: enum
+        required: false
+        description: SoftAP radio band, such as 2.4GHz, 5GHz or 6GHz.
+      - id: 0x05
+        name: channel
+        type: uint16
+        required: false
+        min: 1
+        max: 233
+        description: Wi-Fi channel used by the SoftAP.
+      - id: 0x06
+        name: security
+        type: enum
+        required: false
+        description: SoftAP security mode, such as open, wpa2_psk or wpa3_sae.
+      - id: 0x07
+        name: ipAddress
+        type: string
+        required: false
+        max_length: 45
+        description: IPv4 or IPv6 address assigned to the device on the SoftAP interface.
+      - id: 0x08
+        name: clientCount
+        type: uint16
+        required: false
+        description: Number of clients currently associated with the SoftAP.
+
+capabilities:
+  - id: 0x0E06
+    name: network.softAp
+    domain: network
+    status: draft
+    since: 1.0.0
+    description: Device supports hosting and reporting SoftAP information.
+    type: bool

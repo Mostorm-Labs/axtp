@@ -194,6 +194,32 @@ inline constexpr FieldDescriptor kStreamHidMediaCapabilityFields[] = {
     { 0x05, "supportsAudio", FieldType::Bool, true, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kNetworkGetApInfoRequestFields[] = {
+
+};
+
+inline constexpr FieldDescriptor kNetworkGetApInfoResponseFields[] = {
+    { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "ssid", FieldType::String, false, 0, 0 },
+    { 0x03, "bssid", FieldType::String, false, 0, 0 },
+    { 0x04, "band", FieldType::Enum, false, 0, 0 },
+    { 0x05, "channel", FieldType::Uint16, false, 1, 233 },
+    { 0x06, "security", FieldType::Enum, false, 0, 0 },
+    { 0x07, "ipAddress", FieldType::String, false, 0, 0 },
+    { 0x08, "clientCount", FieldType::Uint16, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkApInfoChangedEventFields[] = {
+    { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "ssid", FieldType::String, false, 0, 0 },
+    { 0x03, "bssid", FieldType::String, false, 0, 0 },
+    { 0x04, "band", FieldType::Enum, false, 0, 0 },
+    { 0x05, "channel", FieldType::Uint16, false, 1, 233 },
+    { 0x06, "security", FieldType::Enum, false, 0, 0 },
+    { 0x07, "ipAddress", FieldType::String, false, 0, 0 },
+    { 0x08, "clientCount", FieldType::Uint16, false, 0, 0 },
+};
+
 inline constexpr FieldDescriptor kStreamOpenRequestFields[] = {
     { 0x01, "profile", FieldType::String, true, 0, 0 },
     { 0x02, "transportProfile", FieldType::String, true, 0, 0 },
@@ -259,6 +285,9 @@ inline constexpr SchemaDescriptor kFirmwareUpdateProgressEventSchema = { "Firmwa
 inline constexpr SchemaDescriptor kFirmwareUpdateCompletedEventSchema = { "FirmwareUpdateCompletedEvent", kFirmwareUpdateCompletedEventFields, 1 };
 inline constexpr SchemaDescriptor kFirmwareUpdateFailedEventSchema = { "FirmwareUpdateFailedEvent", kFirmwareUpdateFailedEventFields, 2 };
 inline constexpr SchemaDescriptor kStreamHidMediaCapabilitySchema = { "StreamHidMediaCapability", kStreamHidMediaCapabilityFields, 5 };
+inline constexpr SchemaDescriptor kNetworkGetApInfoRequestSchema = { "NetworkGetApInfoRequest", kNetworkGetApInfoRequestFields, 0 };
+inline constexpr SchemaDescriptor kNetworkGetApInfoResponseSchema = { "NetworkGetApInfoResponse", kNetworkGetApInfoResponseFields, 8 };
+inline constexpr SchemaDescriptor kNetworkApInfoChangedEventSchema = { "NetworkApInfoChangedEvent", kNetworkApInfoChangedEventFields, 8 };
 inline constexpr SchemaDescriptor kStreamOpenRequestSchema = { "StreamOpenRequest", kStreamOpenRequestFields, 13 };
 inline constexpr SchemaDescriptor kStreamOpenResponseSchema = { "StreamOpenResponse", kStreamOpenResponseFields, 7 };
 inline constexpr SchemaDescriptor kStreamOpenedEventSchema = { "StreamOpenedEvent", kStreamOpenedEventFields, 4 };

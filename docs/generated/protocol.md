@@ -15,10 +15,12 @@
   - [device Methods](#device-methods)
   - [display Methods](#display-methods)
   - [firmware Methods](#firmware-methods)
+  - [network Methods](#network-methods)
   - [stream Methods](#stream-methods)
 - [Events](#events)
   - [display Events](#display-events)
   - [firmware Events](#firmware-events)
+  - [network Events](#network-events)
   - [stream Events](#stream-events)
 - [Additional Types](#additional-types)
 - [Errors Reference](#errors-reference)
@@ -32,6 +34,7 @@
 | device | 1 | 0 |
 | display | 2 | 1 |
 | firmware | 4 | 3 |
+| network | 1 | 1 |
 | stream | 1 | 2 |
 
 ## Overview
@@ -174,6 +177,7 @@ Capability discovery is exposed through `capability.supportedMethods`. The `Capa
 | device | 0: device.getInfo |
 | display | 0: display.getBrightness<br>1: display.setBrightness |
 | firmware | 0: firmware.begin<br>1: firmware.end<br>2: firmware.verify<br>3: firmware.apply |
+| network | 0: network.getApInfo |
 | stream | 0: stream.open |
 
 # Methods
@@ -491,6 +495,51 @@ Type: `FirmwareApplyResponse`
 
 ---
 
+## network Methods
+
+### Methods in this domain
+
+- [network.getApInfo](#networkgetapinfo)
+
+---
+
+### network.getApInfo
+
+Return information about the device-hosted SoftAP.
+
+- Method ID: `0x0E07`
+- Domain: `network`
+- Bit Offset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `binary_tlv`
+- Required Capabilities: `network.softAp`
+- Possible Events: `network.apInfoChanged`
+- Possible Errors: `SUCCESS`, `RPC_METHOD_NOT_FOUND`, `CAPABILITY_METHOD_UNSUPPORTED`, `NOT_SUPPORTED`, `INVALID_STATE`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `NetworkGetApInfoResponse`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether the device-hosted SoftAP is currently enabled. | None | N/A |
+| ?ssid | String | 0x02 | SoftAP SSID advertised by the device. | maxLength=32 | Omit if not used. |
+| ?bssid | String | 0x03 | SoftAP BSSID or MAC address in colon-separated form. | maxLength=17 | Omit if not used. |
+| ?band | Enum | 0x04 | SoftAP radio band, such as 2.4GHz, 5GHz or 6GHz. | None | Omit if not used. |
+| ?channel | UInt16 | 0x05 | Wi-Fi channel used by the SoftAP. | min=1, max=233 | Omit if not used. |
+| ?security | Enum | 0x06 | SoftAP security mode, such as open, wpa2_psk or wpa3_sae. | None | Omit if not used. |
+| ?ipAddress | String | 0x07 | IPv4 or IPv6 address assigned to the device on the SoftAP interface. | maxLength=45 | Omit if not used. |
+| ?clientCount | UInt16 | 0x08 | Number of clients currently associated with the SoftAP. | None | Omit if not used. |
+
+---
+
 ## stream Methods
 
 ### Methods in this domain
@@ -661,6 +710,44 @@ Type: `FirmwareUpdateFailedEvent`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | errorCode | UInt16 | 0x01 | - | None | N/A |
 | ?message | String | 0x02 | - | maxLength=96 | Omit if not used. |
+
+---
+
+## network Events
+
+### Events in this domain
+
+- [network.apInfoChanged](#networkapinfochanged)
+
+---
+
+### network.apInfoChanged
+
+Emitted when the device-hosted SoftAP state or visible AP information changes.
+
+- Event ID: `0x8E01`
+- Domain: `network`
+- Bit Offset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `network.getApInfo`, `SoftAP state changed`
+- Required Capabilities: `network.softAp`
+
+#### Payload Fields
+
+Type: `NetworkApInfoChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether the device-hosted SoftAP is currently enabled. | None | N/A |
+| ?ssid | String | 0x02 | SoftAP SSID advertised by the device. | maxLength=32 | Omit if not used. |
+| ?bssid | String | 0x03 | SoftAP BSSID or MAC address in colon-separated form. | maxLength=17 | Omit if not used. |
+| ?band | Enum | 0x04 | SoftAP radio band, such as 2.4GHz, 5GHz or 6GHz. | None | Omit if not used. |
+| ?channel | UInt16 | 0x05 | Wi-Fi channel used by the SoftAP. | min=1, max=233 | Omit if not used. |
+| ?security | Enum | 0x06 | SoftAP security mode, such as open, wpa2_psk or wpa3_sae. | None | Omit if not used. |
+| ?ipAddress | String | 0x07 | IPv4 or IPv6 address assigned to the device on the SoftAP interface. | maxLength=45 | Omit if not used. |
+| ?clientCount | UInt16 | 0x08 | Number of clients currently associated with the SoftAP. | None | Omit if not used. |
 
 ---
 

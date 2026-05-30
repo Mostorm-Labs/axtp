@@ -8,3 +8,4 @@
 | `0x8B02` | `firmware.updateProgress` | firmware | mvp | FirmwareUpdateProgressEvent |
 | `0x8B03` | `firmware.updateCompleted` | firmware | mvp | FirmwareUpdateCompletedEvent |
 | `0x8B04` | `firmware.updateFailed` | firmware | mvp | FirmwareUpdateFailedEvent |
+| `0x8E01` | `network.apInfoChanged` | network | draft | NetworkApInfoChangedEvent |

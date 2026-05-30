@@ -115,6 +115,26 @@
         "firmware.ota"
       ],
       "idHex": "0x8B04"
+    },
+    {
+      "id": 36353,
+      "bitOffset": 0,
+      "name": "network.apInfoChanged",
+      "domain": "network",
+      "status": "draft",
+      "description": "Emitted when the device-hosted SoftAP state or visible AP information changes.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "eventSchema": "NetworkApInfoChangedEvent",
+      "severity": "info",
+      "trigger": [
+        "network.getApInfo",
+        "SoftAP state changed"
+      ],
+      "capabilities": [
+        "network.softAp"
+      ],
+      "idHex": "0x8E01"
     }
   ]
 }

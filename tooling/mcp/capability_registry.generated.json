@@ -121,6 +121,17 @@
       "type": "object",
       "schema": "FirmwareOtaCapability",
       "idHex": "0x0B01"
+    },
+    {
+      "id": 3590,
+      "name": "network.softAp",
+      "domain": "network",
+      "status": "draft",
+      "description": "Device supports hosting and reporting SoftAP information.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "bool",
+      "idHex": "0x0E06"
     }
   ]
 }

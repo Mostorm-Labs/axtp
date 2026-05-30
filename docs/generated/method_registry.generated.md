@@ -11,3 +11,4 @@
 | `0x0B03` | `firmware.end` | firmware | mvp | FirmwareEndRequest | FirmwareEndResponse | - |
 | `0x0B04` | `firmware.verify` | firmware | mvp | FirmwareVerifyRequest | FirmwareVerifyResponse | - |
 | `0x0B05` | `firmware.apply` | firmware | mvp | FirmwareApplyRequest | FirmwareApplyResponse | - |
+| `0x0E07` | `network.getApInfo` | network | draft | NetworkGetApInfoRequest | NetworkGetApInfoResponse | - |

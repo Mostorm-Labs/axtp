@@ -23,8 +23,9 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x0B03, "firmware.end", "firmware", "FirmwareEndRequest", "FirmwareEndResponse" },
     { 0x0B04, "firmware.verify", "firmware", "FirmwareVerifyRequest", "FirmwareVerifyResponse" },
     { 0x0B05, "firmware.apply", "firmware", "FirmwareApplyRequest", "FirmwareApplyResponse" },
+    { 0x0E07, "network.getApInfo", "network", "NetworkGetApInfoRequest", "NetworkGetApInfoResponse" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 9;
+inline constexpr std::size_t kMethodRegistryCount = 10;
 
 } // namespace axtp

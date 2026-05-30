@@ -646,6 +646,104 @@ schemas:
         type: bool
         required: true
         description: Device can open media.audio streams over HID.
+  NetworkGetApInfoResponse:
+    kind: object
+    description: Current device-hosted SoftAP information.
+    fields:
+      - fieldId: 1
+        name: enabled
+        type: bool
+        required: true
+        description: Whether the device-hosted SoftAP is currently enabled.
+      - fieldId: 2
+        name: ssid
+        type: string
+        required: false
+        maxLength: 32
+        description: SoftAP SSID advertised by the device.
+      - fieldId: 3
+        name: bssid
+        type: string
+        required: false
+        maxLength: 17
+        description: SoftAP BSSID or MAC address in colon-separated form.
+      - fieldId: 4
+        name: band
+        type: enum
+        required: false
+        description: SoftAP radio band, such as 2.4GHz, 5GHz or 6GHz.
+      - fieldId: 5
+        name: channel
+        type: uint16
+        required: false
+        min: 1
+        max: 233
+        description: Wi-Fi channel used by the SoftAP.
+      - fieldId: 6
+        name: security
+        type: enum
+        required: false
+        description: SoftAP security mode, such as open, wpa2_psk or wpa3_sae.
+      - fieldId: 7
+        name: ipAddress
+        type: string
+        required: false
+        maxLength: 45
+        description: IPv4 or IPv6 address assigned to the device on the SoftAP interface.
+      - fieldId: 8
+        name: clientCount
+        type: uint16
+        required: false
+        description: Number of clients currently associated with the SoftAP.
+  NetworkApInfoChangedEvent:
+    kind: object
+    description: Payload emitted when SoftAP information changes.
+    fields:
+      - fieldId: 1
+        name: enabled
+        type: bool
+        required: true
+        description: Whether the device-hosted SoftAP is currently enabled.
+      - fieldId: 2
+        name: ssid
+        type: string
+        required: false
+        maxLength: 32
+        description: SoftAP SSID advertised by the device.
+      - fieldId: 3
+        name: bssid
+        type: string
+        required: false
+        maxLength: 17
+        description: SoftAP BSSID or MAC address in colon-separated form.
+      - fieldId: 4
+        name: band
+        type: enum
+        required: false
+        description: SoftAP radio band, such as 2.4GHz, 5GHz or 6GHz.
+      - fieldId: 5
+        name: channel
+        type: uint16
+        required: false
+        min: 1
+        max: 233
+        description: Wi-Fi channel used by the SoftAP.
+      - fieldId: 6
+        name: security
+        type: enum
+        required: false
+        description: SoftAP security mode, such as open, wpa2_psk or wpa3_sae.
+      - fieldId: 7
+        name: ipAddress
+        type: string
+        required: false
+        maxLength: 45
+        description: IPv4 or IPv6 address assigned to the device on the SoftAP interface.
+      - fieldId: 8
+        name: clientCount
+        type: uint16
+        required: false
+        description: Number of clients currently associated with the SoftAP.
   StreamOpenRequest:
     kind: object
     description: Parameters for opening a HID-backed media STREAM channel.
@@ -985,6 +1083,30 @@ methods:
     errors:
       - SUCCESS
       - BUSY
+  - name: network.getApInfo
+    description: Return information about the device-hosted SoftAP.
+    methodId: 3591
+    bitOffset: 0
+    domain: network
+    since: 1.0.0
+    status: draft
+    request:
+      type: Empty
+    response:
+      type: NetworkGetApInfoResponse
+    encodings:
+      - json
+      - binary_tlv
+    capabilities:
+      - network.softAp
+    events:
+      - network.apInfoChanged
+    errors:
+      - SUCCESS
+      - RPC_METHOD_NOT_FOUND
+      - CAPABILITY_METHOD_UNSUPPORTED
+      - NOT_SUPPORTED
+      - INVALID_STATE
   - name: stream.open
     description: Open an AXTP STREAM media channel over USB HID High Speed using media.video or media.audio, without UVC or UAC.
     methodId: 2305
@@ -1076,6 +1198,21 @@ events:
       - stream.error
     capabilities:
       - firmware.ota
+  - name: network.apInfoChanged
+    description: Emitted when the device-hosted SoftAP state or visible AP information changes.
+    eventId: 36353
+    bitOffset: 0
+    domain: network
+    since: 1.0.0
+    status: draft
+    payload:
+      type: NetworkApInfoChangedEvent
+    severity: info
+    trigger:
+      - network.getApInfo
+      - SoftAP state changed
+    capabilities:
+      - network.softAp
   - name: stream.opened
     description: Emitted after a STREAM media channel is opened and bound to a streamId.
     eventId: 35073

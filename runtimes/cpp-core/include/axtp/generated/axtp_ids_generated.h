@@ -70,6 +70,7 @@ enum class MethodId : std::uint16_t {
     FirmwareEnd = 0x0B03,
     FirmwareVerify = 0x0B04,
     FirmwareApply = 0x0B05,
+    NetworkGetApInfo = 0x0E07,
 };
 
 enum class EventId : std::uint16_t {
@@ -79,6 +80,7 @@ enum class EventId : std::uint16_t {
     FirmwareUpdateProgress = 0x8B02,
     FirmwareUpdateCompleted = 0x8B03,
     FirmwareUpdateFailed = 0x8B04,
+    NetworkApInfoChanged = 0x8E01,
 };
 
 enum class ErrorCode : std::uint16_t {
@@ -251,6 +253,7 @@ enum class CapabilityId : std::uint16_t {
     DisplayBrightnessMax = 0x0603,
     DisplayBrightnessStep = 0x0604,
     FirmwareOta = 0x0B01,
+    NetworkSoftAp = 0x0E06,
 };
 
 } // namespace axtp

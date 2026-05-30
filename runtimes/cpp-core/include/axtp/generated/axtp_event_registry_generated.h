@@ -19,8 +19,9 @@ inline constexpr EventDescriptor kEventRegistry[] = {
     { 0x8B02, "firmware.updateProgress", "firmware", "FirmwareUpdateProgressEvent" },
     { 0x8B03, "firmware.updateCompleted", "firmware", "FirmwareUpdateCompletedEvent" },
     { 0x8B04, "firmware.updateFailed", "firmware", "FirmwareUpdateFailedEvent" },
+    { 0x8E01, "network.apInfoChanged", "network", "NetworkApInfoChangedEvent" },
 };
 
-inline constexpr std::size_t kEventRegistryCount = 6;
+inline constexpr std::size_t kEventRegistryCount = 7;
 
 } // namespace axtp
