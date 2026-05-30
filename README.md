@@ -190,6 +190,82 @@ pnpm validate:protocol
 
 适用于提交前确认 `protocol/axtp.protocol.yaml` 与规范文档、生成文档之间没有明显漂移。
 
+## 从用户输入到最终产物的转化流程
+
+AXTP 的输入可以来自协议设计者、业务开发者或兼容性迁移需求。无论入口是什么，最终都要先落到机器可读的 Source YAML，再由 Generator 生成稳定产物。
+
+```text
+用户输入
+  ├─ 新业务需求
+  │    例如新增 sensor.getValue、network.getApInfo、stream.open
+  ├─ 协议治理需求
+  │    例如新增 error code、capability、profile、公共 schema
+  ├─ 兼容迁移需求
+  │    例如旧协议 command 映射到 AXTP method
+  └─ Core 规则调整
+       例如 transport、payload type、control opcode、stream profile
+
+        ↓ 人工整理为协议事实
+
+Source YAML
+  ├─ registry/domains/<domain>/domain.yaml
+  │    新增业务域 method / event / type / error / capability / profile
+  ├─ registry/method|event|error|capability|schema|legacy/
+  │    已采纳核心条目、公共 schema、legacy 映射
+  └─ registry/core/
+       协议元信息、核心枚举、传输和 payload 事实
+
+        ↓ loadProtocolSources + validateSpec
+
+Source Model
+  ├─ 合并 core registry 与 domain YAML
+  ├─ 检查 ID、name、bit_offset 唯一性
+  ├─ 检查 request_schema / response_schema / event_schema 引用
+  └─ 检查 stable、deprecated、MVP 和兼容性约束
+
+        ↓ buildProtocolDefinitionRaw / buildProtocolDefinition
+
+Protocol IR
+  └─ protocol/axtp.protocol.yaml
+       聚合后的协议中间表示，不手写修改
+
+        ↓ protocolValidator + protocolDocsValidator
+
+一致性校验
+  ├─ Protocol IR 结构合法
+  ├─ STREAM header、CONTROL OPEN/ACCEPT/READY 等 wire 事实与规范一致
+  └─ capability bitmap 等派生规则一致
+
+        ↓ emitRepositoryArtifacts
+
+最终产物
+  ├─ docs/generated/protocol.md
+  │    面向人阅读的完整协议参考
+  ├─ docs/generated/protocol.json
+  │    面向工具消费的规范化协议模型
+  ├─ docs/generated/*_registry.generated.md
+  │    method / event / error / capability / legacy 注册表文档
+  ├─ tooling/mcp/*.generated.json
+  │    面向 MCP 或外部工具链的 JSON
+  ├─ runtimes/cpp-core/include/axtp/generated/*.h
+  │    C++ runtime 使用的 ID、schema、注册表和 TLV codec 头文件
+  └─ tooling/test-vectors/*
+       协议一致性测试向量
+```
+
+这条链路的关键约束是单向生成：用户需求只允许进入 `registry/` 或 `registry/domains/` 事实源；`protocol/axtp.protocol.yaml` 与所有 generated 目录只是结果。若最终产物不符合预期，应回到 Source YAML 修改，再重新执行 `pnpm --dir generators generate`。
+
+常见转化路径：
+
+| 用户输入 | 应修改的位置 | 生成后的主要产物 |
+|---|---|---|
+| 新增业务 method/event/type | `registry/domains/<domain>/domain.yaml` | `protocol/axtp.protocol.yaml`、`docs/generated/protocol.md`、C++ generated headers、工具 JSON |
+| 新增公共 schema | `registry/schema/*.yaml` | protocol type、registry 文档、C++ schema/TLV codec |
+| 新增 error code | `registry/error/error_code.yaml` 或 domain YAML | error registry 文档、tooling JSON、C++ error enum |
+| 新增 capability | `registry/capability/capability_registry.yaml` 或 domain YAML | capability registry、capability bitmap 相关产物 |
+| 迁移旧协议命令 | `registry/legacy/legacy_mapping.yaml` | legacy mapping 文档和 JSON |
+| 调整传输/profile/core 常量 | `registry/core/*.yaml` | Protocol IR、协议总文档、相关枚举/工具产物 |
+
 ## 文档生成逻辑方案原理
 
 Generator 的核心逻辑在 `generators/src/`：
