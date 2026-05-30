@@ -4,107 +4,158 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-This is the **AXTP (Auditoryworks Transport Protocol)** specification repository — a Registry-Driven Protocol Platform. It contains the protocol specification, YAML registries, a TypeScript generator toolchain, and generated artifacts.
+**AXTP (Auditoryworks Transport Protocol)** — a Registry-Driven Protocol Platform. The single source of truth is `registry/**/*.yaml`; everything under any `generated/` directory is machine-produced and must never be hand-edited.
 
-## Repository Structure
+## Generator Commands
+
+All commands run from `generators/`:
+
+```bash
+pnpm install          # first-time setup
+pnpm build            # compile TypeScript → dist/
+pnpm test             # run vitest tests
+pnpm lint             # tsc --noEmit type check
+
+# Validation
+pnpm validate:sources # validate registry/ + domains/ + Protocol IR consistency (run this before committing)
+pnpm validate:protocol # validate protocol/axtp.protocol.yaml against spec docs
+
+# Generation
+pnpm generate         # full pipeline: build Protocol IR + all artifacts
+pnpm build:protocol   # only write protocol/axtp.protocol.yaml
+pnpm emit:protocol    # only write docs/generated/protocol.md + protocol.json (requires IR to exist)
+pnpm generate:registry # only write registry docs, C++ headers, tooling JSON, test vectors
+```
+
+Shorthand from repo root (no `cd` needed):
+
+```bash
+pnpm --dir generators generate
+pnpm --dir generators validate:sources
+```
+
+## Three-Stage Compilation Pipeline
 
 ```text
-axtp/
-├── docs/
-│   ├── specs/               # 00-22 手动编写的协议规范 Markdown
-│   └── generated/           # ⚠️ Generator 生成的 Registry API 参考手册（禁止手改）
-│
-├── registry/                # 单一事实源 — 纯 YAML（扁平结构）
-│   ├── method_registry.yaml
-│   ├── event_registry.yaml
-│   ├── error_code.yaml
-│   ├── capability_registry.yaml
-│   ├── *_schema.yaml        # TLV 类型定义
-│   └── ...
-│
-├── protocol/                # 统一协议定义文件
-│   └── axtp.protocol.yaml   # 顶层 Protocol Definition（单一事实源）
-│
-├── domains/                 # 业务域配置（预留，纯 YAML）
-│   ├── device/
-│   ├── firmware/
-│   ├── media/
-│   ├── session/
-│   └── discovery/
-│
-├── generators/              # 编译器工具链（TypeScript/Node.js）
-│   ├── src/                 # 核心逻辑（cli, loader, validator, emitters）
-│   ├── templates/           # 代码生成模板（预留）
-│   ├── package.json
-│   └── tsconfig.json
-│
-├── runtimes/                # 各端运行时实现（代码隔离区）
-│   ├── cpp-core/
-│   │   ├── src/             # 手写 C++ 核心协议栈（预留）
-│   │   └── include/axtp/generated/  # ⚠️ 生成的 C++ 头文件（禁止手改）
-│   └── web-sdk/
-│       ├── src/             # 手写 TS/JS SDK（预留）
-│       └── generated/       # ⚠️ 生成的 TypeScript 类型（禁止手改）
-│
-├── tooling/                 # 平台化工具链
-│   ├── mcp/                 # ⚠️ 生成的 AI Agent JSON Schema 工具描述
-│   ├── wireshark/           # ⚠️ 生成的 Wireshark Lua 解析插件（预留）
-│   └── test-vectors/        # ⚠️ 生成的 JSON/hex 测试向量
-│
-└── adapters/                # 兼容层：旧协议文档与映射
-    └── legacy-protocols/    # 旧协议参考文档（xlsx, pdf, md）
+registry/**/*.yaml + registry/domains/**/*.yaml
+        ↓  loadProtocolSources + validateSpec
+Source Model
+        ↓  buildProtocolDefinitionRaw
+protocol/axtp.protocol.yaml          ← Protocol IR (generated, do not edit)
+        ↓  emitRepositoryArtifacts
+docs/generated/          tooling/mcp/          runtimes/*/generated/
 ```
+
+Key generator source files in `generators/src/`:
+
+| File | Role |
+| --- | --- |
+| `cli.ts` | Command entry point |
+| `loader.ts` | Loads core registry YAML (payload types, control opcodes, etc.) |
+| `sourceLoader.ts` | Merges `registry/domains/**/*.yaml` into the Source Model |
+| `validator.ts` | Validates Source Model (ID uniqueness, schema refs, MVP constraints) |
+| `protocolBuilder.ts` | Aggregates Source Model → Protocol IR |
+| `protocolValidator.ts` | Validates Protocol IR structure and wire facts |
+| `protocolDocsValidator.ts` | Cross-checks IR against spec docs |
+| `emitters/` | One file per output target (protocolMarkdown, protocolJson, markdown, json, cpp, testVectors) |
 
 ## Protocol Architecture
 
-AXTP defines a 5-layer stack:
+Five-layer stack:
 
 ```text
-Business Layer      → device / display / firmware / media domains
-Registry Layer      → Method / Event / Error / Capability IDs
-Payload Layer       → CONTROL (0x01) / RPC (0x02) / STREAM (0x03)
-AXTP Frame Layer    → Header / Length / MessageId / Fragment / CRC
-Transport Layer     → BLE / HID / UART / TCP / WebSocket / USB Bulk
+Business Layer   → device / display / firmware / media domains
+Registry Layer   → Method / Event / Error / Capability IDs
+Payload Layer    → CONTROL (0x01) / RPC (0x02) / STREAM (0x03)
+Frame Layer      → Header / Length / MessageId / Fragment / CRC
+Transport Layer  → BLE / HID / UART / TCP / WebSocket / USB Bulk
 ```
 
-**Critical design constraint**: `PayloadType` only selects a parser — it never encodes business types like VIDEO, OTA, FILE. Business semantics belong in the Registry layer.
+**Critical constraint**: `PayloadType` selects a parser only — it never encodes business semantics like VIDEO, OTA, FILE. Those belong in the Registry layer.
 
-## Two Header Profiles
+Two header profiles:
 
-- **Standard Profile** (12B Header + 2B CRC16 Footer = 14B total): TCP, WebSocket Binary, USB Bulk, gateways.
-- **Compact Profile** (4B Header + 1B CRC8 Footer = 5B total): BLE, USB HID, UART, MCU.
+- **Standard** (12B header + 2B CRC16 = 14B): TCP, WebSocket, USB Bulk
+- **Compact** (4B header + 1B CRC8 = 5B): BLE, USB HID, UART, MCU
 
-## Three Payload Types
+Three ID namespaces that must not be confused: `MessageId` (Frame) ≠ `requestId` (RPC) ≠ `streamId` (Stream).
 
-| PayloadType | Value | Role |
-| --- | --- | --- |
-| CONTROL | 0x01 | Protocol runtime signals: OPEN, ACK, NACK, HEARTBEAT, RESUME, CLOSE |
-| RPC | 0x02 | Business control plane: request, response, event, batch |
-| STREAM | 0x03 | Business data plane: video/audio frames, OTA chunks, file chunks, logs |
+Byte order: Little-Endian for all multi-byte integers.
 
-## Key Conventions
+## Registry Structure
 
-- **Byte order**: Little-Endian for all multi-byte integers in AXTP v1 wire format
-- **CRC**: Standard uses CRC16-CCITT-FALSE; Compact uses CRC8-MAXIM. Both cover Header + Payload.
-- **Registry is the single source of truth** — `registry/*.yaml` and `protocol/axtp.protocol.yaml` are the machine-readable source; Generator produces code and docs from YAML.
-- **No-Touch Rule**: All `generated/` directories are produced by `generators/`. Never hand-edit them.
-- **MessageId** (Frame layer) ≠ **requestId** (RPC layer) ≠ **streamId** (Stream layer)
+```text
+registry/
+├── core/          # protocol_meta, payload_type, control_opcode, rpc_encoding, stream_profile
+├── method/        # adopted method entries
+├── event/         # adopted event entries
+├── error/         # error codes
+├── capability/    # capability registry + MVP profile
+├── schema/        # shared TLV type definitions
+├── legacy/        # old-protocol → AXTP method mappings
+└── domains/       # per-domain YAML (network/, stream/, …)
+    └── <domain>/domain.yaml
+```
 
-## Generator Usage
+## Adding New Content
+
+**New business method/event/type** → `registry/domains/<domain>/domain.yaml`
+
+Minimal domain YAML shape:
+
+```yaml
+domain: sensor
+
+methods:
+  - id: 0x1201          # unique hex ID
+    name: sensor.getValue
+    domain: sensor
+    status: draft
+    bit_offset: 0
+    rpc_op: request_response
+    request_schema: SensorGetValueRequest
+    response_schema: SensorGetValueResponse
+    recommended_encoding: [json, binary_tlv]
+    capabilities: [sensor.basic]
+    events: [sensor.valueChanged]
+    errors: [SUCCESS, RPC_METHOD_NOT_FOUND]
+
+types:
+  SensorGetValueRequest:
+    kind: object
+    fields:
+      - id: 0x01
+        name: sensorId
+        type: uint16
+        required: true
+```
+
+See `registry/domains/network/domain.yaml` and `registry/domains/stream/domain.yaml` for real examples.
+
+**New public schema** → `registry/schema/*.yaml`  
+**New error code** → `registry/error/error_code.yaml` or domain YAML  
+**New capability** → `registry/capability/capability_registry.yaml` or domain YAML  
+**New spec doc** → `docs/specs/NN-AXTP-<Title>.md` (follow existing numbering)  
+**Core constants** (transport, payload type, control opcode) → `registry/core/*.yaml`
+
+## Pre-Commit Workflow
 
 ```bash
-cd generators
-pnpm install
-pnpm build
-pnpm validate:protocol   # validate protocol/axtp.protocol.yaml
-pnpm generate:protocol   # generate docs/generated/
-pnpm validate            # validate registry/*.yaml
-pnpm generate            # generate runtimes/, tooling/
+pnpm --dir generators build
+pnpm --dir generators test
+pnpm --dir generators generate
+pnpm --dir generators validate:sources
 ```
 
-## When Adding to This Repo
+Commit source YAML and generated artifacts together so they stay in sync.
 
-- New spec documents → `docs/specs/` (follow `NN-AXTP-<Title>.md` numbering)
-- New registry entries → edit `registry/*.yaml` then run `pnpm generate`
-- New protocol definition content → edit `protocol/axtp.protocol.yaml` then run `pnpm generate:protocol`
-- Never edit files under any `generated/` directory directly
+## Key Spec Documents
+
+| Doc | Content |
+|---|---|
+| `docs/specs/02-AXTP-Frame-and-Payload-Spec.md` | Wire format rules |
+| `docs/specs/05-AXTP-RPC-Session-Spec.md` | RPC session lifecycle |
+| `docs/specs/06-AXTP-Stream-Spec.md` | STREAM data plane and 16B stream header |
+| `docs/specs/08-AXTP-Protocol-Definition-Mapping-Spec.md` | Source YAML → IR → artifact mapping rules |
+| `docs/specs/20-AXTP-Generator-v1实现规范.md` | Generator implementation spec and governance |
+| `docs/generated/protocol.md` | Human-readable full protocol reference (generated) |
