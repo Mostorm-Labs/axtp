@@ -38,3 +38,11 @@ add_executable(phase3_outbound_test
 target_link_libraries(phase3_outbound_test PRIVATE axtp_cpp_core)
 
 add_test(NAME phase3_outbound_test COMMAND phase3_outbound_test)
+
+add_executable(phase4_core_test
+    tests/phase4_core_test.cpp
+)
+
+target_link_libraries(phase4_core_test PRIVATE axtp_cpp_core)
+
+add_test(NAME phase4_core_test COMMAND phase4_core_test)
