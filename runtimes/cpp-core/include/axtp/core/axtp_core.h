@@ -10,6 +10,7 @@
 #include "axtp/broker/broker_sink.h"
 #include "axtp/core/control_session.h"
 #include "axtp/core/pending_call_table.h"
+#include "axtp/core/session_context.h"
 #include "axtp/core/stream_session.h"
 #include "axtp/inbound/axtp_inbound_processor.h"
 #include "axtp/io/byte_sink.h"
@@ -104,6 +105,10 @@ public:
         broker_ = &broker;
     }
 
+    void attachLegacyOutbound(IProtocolOutbound& outbound) {
+        legacyOutbound_ = &outbound;
+    }
+
     void flushOutbound() {
         while (auto bytes = tryPopOutboundBytes()) {
             if (transport_ != nullptr) {
@@ -117,10 +122,18 @@ public:
     }
 
     void onBrokerRpcResponse(RpcPayload payload) override {
+        if (payload.meta.sourceProtocol == SourceProtocol::Legacy && legacyOutbound_ != nullptr) {
+            legacyOutbound_->sendRpc(std::move(payload));
+            return;
+        }
         outbound_.sendRpcResponse(std::move(payload));
     }
 
     void onBrokerRpcError(RpcPayload payload) override {
+        if (payload.meta.sourceProtocol == SourceProtocol::Legacy && legacyOutbound_ != nullptr) {
+            legacyOutbound_->sendRpc(std::move(payload));
+            return;
+        }
         outbound_.sendRpcError(std::move(payload));
     }
 
@@ -141,6 +154,7 @@ private:
     std::queue<Bytes> outboundQueue_;
     ITransport* transport_ = nullptr;
     AxtpBroker* broker_ = nullptr;
+    IProtocolOutbound* legacyOutbound_ = nullptr;
 };
 
 } // namespace axtp

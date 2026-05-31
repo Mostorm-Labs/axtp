@@ -12,6 +12,7 @@ struct PayloadMeta {
     std::uint32_t sessionId = 0;
     std::uint32_t requestId = 0;
     std::uint32_t legacySequence = 0;
+    std::uint32_t legacyCommandValue = 0;
 };
 
 struct ControlPayload {
