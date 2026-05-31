@@ -60,6 +60,15 @@ public:
         legacyOutbound_ = &outbound;
     }
 
+    void attachLegacyInbound(IByteSink& inbound) {
+        legacyInbound_ = &inbound;
+    }
+
+    void attachLegacy(IByteSink& inbound, IProtocolOutbound& outbound) {
+        attachLegacyInbound(inbound);
+        attachLegacyOutbound(outbound);
+    }
+
     void flushOutbound() {
         while (auto bytes = tryPopOutboundBytes()) {
             if (transport_ != nullptr) {
@@ -162,7 +171,21 @@ private:
     };
 
     void handleBytes(const Byte* data, std::size_t size) {
+        if (legacyInbound_ != nullptr && !looksLikeAxtpV1(data, size)) {
+            legacyInbound_->onBytes(data, size);
+            return;
+        }
         inbound_.onBytes(data, size);
+    }
+
+    bool looksLikeAxtpV1(const Byte* data, std::size_t size) const {
+        if (data == nullptr || size == 0) {
+            return true;
+        }
+        if (data[0] != kAxtpStandardMagic0) {
+            return false;
+        }
+        return size == 1 || data[1] == kAxtpStandardMagic1;
     }
 
     void enqueueOutboundBytes(const Byte* data, std::size_t size) {
@@ -251,6 +274,7 @@ private:
     std::queue<Bytes> outboundQueue_;
     ITransport* transport_ = nullptr;
     AxtpBroker* broker_ = nullptr;
+    IByteSink* legacyInbound_ = nullptr;
     IProtocolOutbound* legacyOutbound_ = nullptr;
 };
 

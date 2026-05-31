@@ -20,7 +20,7 @@ This document mirrors the current implementation in this directory.
 ```mermaid
 flowchart TB
     Transport["Transport<br/>TcpTransport / WebSocketTransport / MockTransport"]
-    Mux["ProtocolMux<br/>AXTP magic or legacy bytes"]
+    Mux["AxtpCore ByteSink / ProtocolMux<br/>AXTP magic or AXDP HID bytes"]
 
     subgraph Inbound["Inbound pipeline"]
         FD["FrameDecoder<br/>bytes -> Frame"]
@@ -108,6 +108,7 @@ flowchart LR
 - Outbound code starts from payload envelopes; it does not know business handlers.
 - `AxtpCore` does not inherit `IByteSink`, `IPayloadSink`, `IByteWriter`, or `IBrokerSink`.
 - `AxtpCore` owns thin port objects that implement those interfaces and delegate to private Core methods.
+- `attachTransport()` binds the transport to `AxtpCore`'s byte sink; once `attachLegacyInbound()` or `attachLegacy()` is configured, that byte sink auto-routes AXTP magic to the standard inbound pipeline and AXDP HID bytes to the legacy adapter.
 - Core owns protocol state and queues, but business dispatch is in Broker.
 - AXDP HID compatibility stays in `legacy/` and `mux/`; Core and Broker operate on normalized `RpcPayload` values.
 - AXDP wire details are adapter-owned: optional HID report id, `FF A5` magic, big-endian header fields, CRC-16/XMODEM, device-family masks, and `cmd + 0x80` responses.

@@ -15,6 +15,7 @@
 #include "axtp/legacy/legacy_protocol_adapter.h"
 #include "axtp/mux/protocol_mux.h"
 #include "axtp/outbound/axtp_outbound_processor.h"
+#include "axtp/transport/mock_transport.h"
 
 namespace {
 
@@ -228,6 +229,31 @@ int main() {
     mux.onBytes(standardWriter.bytes.data(), standardWriter.bytes.size());
     assert(axtpSink.rpcs.size() == 1);
     assert(axtpSink.rpcs[0].requestId == 9);
+
+    {
+        axtp::AxtpCore routedCore;
+        axtp::AxtpBroker routedBroker(routedCore.brokerSinkPort());
+        routedCore.attachBroker(routedBroker);
+        axtp::MockTransport transport;
+        CapturingByteWriter routedLegacyWriter;
+        axtp::LegacyProtocolAdapter routedLegacy(routedCore, routedLegacyWriter);
+        routedCore.attachLegacy(routedLegacy, routedLegacy);
+        routedCore.attachTransport(transport);
+
+        bool routedHandlerCalled = false;
+        routedBroker.registerMethod(0x0101, [&](const axtp::RpcPayload& request) {
+            routedHandlerCalled = true;
+            assert(request.meta.sourceProtocol == axtp::SourceProtocol::Legacy);
+            assert(request.meta.legacyCommandValue == 0x000B0002);
+            return axtp::Bytes{0x66};
+        });
+
+        const auto routedRequest = makeHidReport(makeAxdpFrame(1, 0xFFFF, 1, 0x0002, {}));
+        transport.injectIncoming(routedRequest);
+        routedBroker.poll();
+        assert(routedHandlerCalled);
+        assert(!routedLegacyWriter.bytes.empty());
+    }
 
     const auto coreText = readFile("runtimes/cpp-core/include/axtp/core/axtp_core.h");
     const auto brokerText = readFile("runtimes/cpp-core/include/axtp/broker/axtp_broker.h");

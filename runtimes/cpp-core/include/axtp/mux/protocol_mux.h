@@ -15,7 +15,7 @@ public:
         : axtp_(axtp), legacy_(legacy) {}
 
     void onBytes(const Byte* data, std::size_t size) override {
-        if (size >= 2 && data[0] == kAxtpStandardMagic0 && data[1] == kAxtpStandardMagic1) {
+        if (looksLikeAxtpV1(data, size)) {
             axtp_.onBytes(data, size);
             return;
         }
@@ -23,6 +23,16 @@ public:
     }
 
 private:
+    bool looksLikeAxtpV1(const Byte* data, std::size_t size) const {
+        if (data == nullptr || size == 0) {
+            return true;
+        }
+        if (data[0] != kAxtpStandardMagic0) {
+            return false;
+        }
+        return size == 1 || data[1] == kAxtpStandardMagic1;
+    }
+
     AxtpInboundProcessor& axtp_;
     LegacyProtocolAdapter& legacy_;
 };
