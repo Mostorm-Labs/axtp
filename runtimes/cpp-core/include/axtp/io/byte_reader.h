@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 
 #include "axtp/model/bytes.h"
 #include "axtp/model/result.h"
@@ -54,6 +55,15 @@ public:
             value |= static_cast<std::uint64_t>(data_[offset_++]) << shift;
         }
         return Result<std::uint64_t>::success(value);
+    }
+
+    Result<Bytes> readBytes(std::size_t size) {
+        if (!hasRemaining(size)) {
+            return Result<Bytes>::failure(kByteIoOutOfRange, "not enough bytes");
+        }
+        Bytes out(data_ + offset_, data_ + offset_ + size);
+        offset_ += size;
+        return Result<Bytes>::success(std::move(out));
     }
 
     bool hasRemaining(std::size_t count) const {

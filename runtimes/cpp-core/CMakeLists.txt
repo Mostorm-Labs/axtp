@@ -22,3 +22,11 @@ add_executable(phase1_model_io_test
 target_link_libraries(phase1_model_io_test PRIVATE axtp_cpp_core)
 
 add_test(NAME phase1_model_io_test COMMAND phase1_model_io_test)
+
+add_executable(phase2_inbound_test
+    tests/phase2_inbound_test.cpp
+)
+
+target_link_libraries(phase2_inbound_test PRIVATE axtp_cpp_core)
+
+add_test(NAME phase2_inbound_test COMMAND phase2_inbound_test)
