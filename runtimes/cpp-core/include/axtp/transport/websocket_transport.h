@@ -61,14 +61,11 @@ public:
     TransportProfile profile() const override {
         TransportProfile profile;
         profile.kind = TransportKind::WebSocket;
-        profile.protocolMode = ProtocolMode::AxtpV1;
         profile.wireMode = AxtpWireMode::WebSocketJsonRpc;
         profile.defaultRpcEncoding = RpcEncoding::Json;
         profile.messageOriented = true;
         profile.supportsTextMessage = true;
         profile.supportsBinaryMessage = false;
-        profile.supportsControl = false;
-        profile.supportsStream = false;
         return profile;
     }
 

@@ -55,13 +55,10 @@ private:
     bool open_ = false;
     TransportProfile profile_{
         TransportKind::Mock,
-        ProtocolMode::AxtpV1,
         AxtpWireMode::FramedBinary,
         RpcEncoding::Binary,
         false,
         false,
-        true,
-        true,
         true,
         4096,
     };

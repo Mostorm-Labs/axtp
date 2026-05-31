@@ -7,36 +7,59 @@
 #include "axtp/outbound/frame_encoder.h"
 #include "axtp/outbound/message_fragmenter.h"
 #include "axtp/outbound/payload_encoder.h"
+#include "axtp/transport/json_rpc_encoder.h"
+#include "axtp/transport/transport_profile.h"
 
 namespace axtp {
 
 class AxtpOutboundProcessor {
 public:
-    explicit AxtpOutboundProcessor(IByteWriter& writer, std::size_t maxFrameSize = 4096)
-        : writer_(writer), messageFragmenter_(maxFrameSize) {}
+    explicit AxtpOutboundProcessor(IByteWriter& writer,
+                                   std::size_t maxFrameSize = 4096,
+                                   AxtpWireMode wireMode = AxtpWireMode::FramedBinary)
+        : writer_(writer), messageFragmenter_(maxFrameSize), wireMode_(wireMode) {}
 
     void sendControl(ControlPayload payload) {
+        if (wireMode_ == AxtpWireMode::WebSocketJsonRpc) {
+            return;
+        }
         sendMessage(payloadEncoder_.encodeControl(payload));
     }
 
     void sendRpcRequest(RpcPayload payload) {
-        sendMessage(payloadEncoder_.encodeRpc(payload));
+        sendRpc(std::move(payload));
     }
 
     void sendRpcResponse(RpcPayload payload) {
-        sendMessage(payloadEncoder_.encodeRpc(payload));
+        sendRpc(std::move(payload));
     }
 
     void sendRpcError(RpcPayload payload) {
-        sendMessage(payloadEncoder_.encodeRpc(payload));
+        sendRpc(std::move(payload));
     }
 
     void sendEvent(RpcPayload payload) {
-        sendMessage(payloadEncoder_.encodeRpc(payload));
+        sendRpc(std::move(payload));
     }
 
     void sendStream(StreamPayload payload) {
+        if (wireMode_ == AxtpWireMode::WebSocketJsonRpc) {
+            return;
+        }
         sendMessage(payloadEncoder_.encodeStream(payload));
+    }
+
+    void sendRpc(RpcPayload payload) {
+        if (wireMode_ == AxtpWireMode::WebSocketJsonRpc) {
+            auto bytes = jsonRpcEncoder_.encode(std::move(payload));
+            writer_.writeBytes(bytes.data(), bytes.size());
+            return;
+        }
+        sendMessage(payloadEncoder_.encodeRpc(payload));
+    }
+
+    void setWireMode(AxtpWireMode wireMode) {
+        wireMode_ = wireMode;
     }
 
 private:
@@ -52,6 +75,8 @@ private:
     PayloadEncoder payloadEncoder_;
     MessageFragmenter messageFragmenter_;
     FrameEncoder frameEncoder_;
+    JsonRpcEncoder jsonRpcEncoder_;
+    AxtpWireMode wireMode_ = AxtpWireMode::FramedBinary;
 };
 
 } // namespace axtp

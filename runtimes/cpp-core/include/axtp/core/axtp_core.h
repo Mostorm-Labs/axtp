@@ -49,6 +49,8 @@ public:
 
     void attachTransport(ITransport& transport) {
         transport_ = &transport;
+        inbound_.setWireMode(transport.profile().wireMode);
+        outbound_.setWireMode(transport.profile().wireMode);
         transport_->bind(byteSinkPort_);
     }
 
@@ -56,21 +58,8 @@ public:
         broker_ = &broker;
     }
 
-    void attachLegacyOutbound(IProtocolOutbound& outbound) {
-        legacyOutbound_ = &outbound;
-    }
-
     void attachJsonRpcOutbound(IProtocolOutbound& outbound) {
         jsonRpcOutbound_ = &outbound;
-    }
-
-    void attachLegacyInbound(IByteSink& inbound) {
-        legacyInbound_ = &inbound;
-    }
-
-    void attachLegacy(IByteSink& inbound, IProtocolOutbound& outbound) {
-        attachLegacyInbound(inbound);
-        attachLegacyOutbound(outbound);
     }
 
     void flushOutbound() {
@@ -175,21 +164,7 @@ private:
     };
 
     void handleBytes(const Byte* data, std::size_t size) {
-        if (legacyInbound_ != nullptr && !looksLikeAxtpV1(data, size)) {
-            legacyInbound_->onBytes(data, size);
-            return;
-        }
         inbound_.onBytes(data, size);
-    }
-
-    bool looksLikeAxtpV1(const Byte* data, std::size_t size) const {
-        if (data == nullptr || size == 0) {
-            return true;
-        }
-        if (data[0] != kAxtpStandardMagic0) {
-            return false;
-        }
-        return size == 1 || data[1] == kAxtpStandardMagic1;
     }
 
     void enqueueOutboundBytes(const Byte* data, std::size_t size) {
@@ -247,20 +222,12 @@ private:
             jsonRpcOutbound_->sendRpc(std::move(payload));
             return;
         }
-        if (payload.meta.sourceProtocol == SourceProtocol::Legacy && legacyOutbound_ != nullptr) {
-            legacyOutbound_->sendRpc(std::move(payload));
-            return;
-        }
         outbound_.sendRpcResponse(std::move(payload));
     }
 
     void handleBrokerRpcError(RpcPayload payload) {
         if (payload.meta.sourceProtocol == SourceProtocol::JsonRpc && jsonRpcOutbound_ != nullptr) {
             jsonRpcOutbound_->sendRpc(std::move(payload));
-            return;
-        }
-        if (payload.meta.sourceProtocol == SourceProtocol::Legacy && legacyOutbound_ != nullptr) {
-            legacyOutbound_->sendRpc(std::move(payload));
             return;
         }
         outbound_.sendRpcError(std::move(payload));
@@ -290,8 +257,6 @@ private:
     std::queue<Bytes> outboundQueue_;
     ITransport* transport_ = nullptr;
     AxtpBroker* broker_ = nullptr;
-    IByteSink* legacyInbound_ = nullptr;
-    IProtocolOutbound* legacyOutbound_ = nullptr;
     IProtocolOutbound* jsonRpcOutbound_ = nullptr;
 };
 

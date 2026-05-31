@@ -3,7 +3,6 @@
 #include <cstddef>
 
 #include "axtp/model/payload.h"
-#include "axtp/model/protocol_types.h"
 
 namespace axtp {
 
@@ -24,14 +23,11 @@ enum class AxtpWireMode {
 
 struct TransportProfile {
     TransportKind kind = TransportKind::Custom;
-    ProtocolMode protocolMode = ProtocolMode::AxtpV1;
     AxtpWireMode wireMode = AxtpWireMode::FramedBinary;
     RpcEncoding defaultRpcEncoding = RpcEncoding::Binary;
     bool messageOriented = false;
     bool supportsTextMessage = false;
     bool supportsBinaryMessage = true;
-    bool supportsControl = true;
-    bool supportsStream = true;
     std::size_t preferredFrameSize = 4096;
 };
 

@@ -230,14 +230,6 @@ enum class ErrorCode : std::uint16_t {
     DiagTestFailed = 0x0B04,
     DiagMetricUnavailable = 0x0B05,
     DiagLoopbackFailed = 0x0B06,
-    LegacyCmdUnmapped = 0x7F01,
-    LegacyStatusUnmapped = 0x7F02,
-    LegacyPayloadInvalid = 0x7F03,
-    LegacyPayloadTooShort = 0x7F04,
-    LegacyPayloadTooLong = 0x7F05,
-    LegacyFieldUnsupported = 0x7F06,
-    LegacyCapabilityConflict = 0x7F07,
-    LegacyResponseTimeout = 0x7F08,
 };
 
 enum class CapabilityId : std::uint16_t {

@@ -78,11 +78,3 @@ add_executable(phase7_broker_test
 target_link_libraries(phase7_broker_test PRIVATE axtp_cpp_core)
 
 add_test(NAME phase7_broker_test COMMAND phase7_broker_test)
-
-add_executable(phase8_legacy_test
-    tests/phase8_legacy_test.cpp
-)
-
-target_link_libraries(phase8_legacy_test PRIVATE axtp_cpp_core)
-
-add_test(NAME phase8_legacy_test COMMAND phase8_legacy_test)

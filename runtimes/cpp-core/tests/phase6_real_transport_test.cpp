@@ -154,7 +154,7 @@ int main() {
         assert(beforeIdentify.at("d").as_object().at("status").as_object().at("code").as_int64() ==
                static_cast<int>(axtp::ErrorCode::ControlOpenRequired));
 
-        injectJson(transport, R"({"sid":0,"op":2,"d":{"rpcVersion":1,"eventMasks":"850101"}})");
+        injectJson(transport, R"({"sid":"","op":2,"d":{"rpcVersion":1,"eventMasks":"850101"}})");
         auto identified = popJson(transport);
         assert(identified.at("op").as_int64() == static_cast<int>(axtp::RpcOp::Identified));
         const auto sid = jsonString(identified, "sid");
@@ -170,27 +170,30 @@ int main() {
         assert(d.at("status").as_object().at("ok").as_bool());
         assert(d.at("result").as_object().at("model").as_string() == "AXTP");
 
-        injectJson(transport, R"({"sid":1,"op":7,"d":{"id":"702","method":"display.setBrightness","params":{"value":80}}})");
+        injectJson(transport, R"({"sid":")" + sid +
+                                  R"(","op":7,"d":{"id":702,"method":"display.setBrightness","params":{"value":80}}})");
         response = popJson(transport);
         d = response.at("d").as_object();
-        assert(d.at("id").as_string() == "702");
+        assert(d.at("id").as_int64() == 702);
         assert(d.at("status").as_object().at("ok").as_bool());
         assert(!d.contains("result"));
 
-        injectJson(transport, R"({"sid":1,"op":7,"d":{"id":703,"method":"display.unknown","params":{}}})");
+        injectJson(transport, R"({"sid":")" + sid +
+                                  R"(","op":7,"d":{"id":703,"method":"display.unknown","params":{}}})");
         response = popJson(transport);
         d = response.at("d").as_object();
         assert(d.at("status").as_object().at("code").as_int64() ==
                static_cast<int>(axtp::ErrorCode::RpcMethodNotFound));
 
-        injectJson(transport, R"({"sid":1,"op":7,"d":{"id":704,"method":"display.getBrightness","params":{}}})");
+        injectJson(transport, R"({"sid":")" + sid +
+                                  R"(","op":7,"d":{"id":704,"method":"display.getBrightness","params":{}}})");
         response = popJson(transport);
         d = response.at("d").as_object();
         assert(d.at("status").as_object().at("code").as_int64() ==
                static_cast<int>(axtp::ErrorCode::RpcBodyDecodeFailed));
         assert(!d.contains("result"));
 
-        injectJson(transport, R"({"sid":1,"op":9,"d":{"id":705,"requests":[]}})");
+        injectJson(transport, R"({"sid":")" + sid + R"(","op":9,"d":{"id":705,"requests":[]}})");
         response = popJson(transport);
         d = response.at("d").as_object();
         assert(response.at("op").as_int64() == static_cast<int>(axtp::RpcOp::RequestBatchResponse));
@@ -213,6 +216,19 @@ int main() {
     }
 
     {
+        CapturingPayloadSink sink;
+        axtp::AxtpInboundProcessor inbound(sink, axtp::AxtpWireMode::WebSocketJsonRpc);
+        const std::string text =
+            R"({"sid":"json-session","op":7,"d":{"id":901,"method":"device.getInfo","params":{}}})";
+        inbound.onBytes(reinterpret_cast<const axtp::Byte*>(text.data()), text.size());
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Request);
+        assert(sink.rpcs[0].requestId == 901);
+        assert(sink.rpcs[0].methodOrEventId == 0x0101);
+        assert(sink.rpcs[0].meta.sourceProtocol == axtp::SourceProtocol::JsonRpc);
+    }
+
+    {
         axtp::AxtpCore core;
         axtp::AxtpBroker broker(core.brokerSinkPort());
         core.attachBroker(broker);
@@ -227,8 +243,6 @@ int main() {
         server.open();
         assert(server.profile().kind == axtp::TransportKind::WebSocket);
         assert(server.profile().wireMode == axtp::AxtpWireMode::WebSocketJsonRpc);
-        assert(server.profile().supportsControl == false);
-        assert(server.profile().supportsStream == false);
         const auto port = server.localPort();
         assert(port != 0);
 

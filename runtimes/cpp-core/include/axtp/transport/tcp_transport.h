@@ -59,14 +59,11 @@ public:
     TransportProfile profile() const override {
         TransportProfile profile;
         profile.kind = TransportKind::Tcp;
-        profile.protocolMode = ProtocolMode::AxtpV1;
         profile.wireMode = AxtpWireMode::FramedBinary;
         profile.defaultRpcEncoding = RpcEncoding::Binary;
         profile.messageOriented = false;
         profile.supportsTextMessage = false;
         profile.supportsBinaryMessage = true;
-        profile.supportsControl = true;
-        profile.supportsStream = true;
         return profile;
     }
 

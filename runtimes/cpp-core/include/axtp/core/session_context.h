@@ -10,7 +10,6 @@ namespace axtp {
 
 struct SessionContext {
     std::uint32_t sessionId = 0;
-    ProtocolMode protocolMode = ProtocolMode::AxtpV1;
     TransportProfile transportProfile;
     RpcEncoding selectedEncoding = RpcEncoding::Binary;
 };

@@ -1,6 +1,11 @@
 # AXTP C++ Core Architecture
 
-This document mirrors the current implementation in this directory.
+This runtime implements the AXTP v1 core protocol only. It supports two first-class AXTP wire modes:
+
+1. `FramedBinary`
+2. `WebSocketJsonRpc`
+
+Legacy protocol compatibility is not part of `runtimes/cpp-core`. Optional legacy adapters may live outside this runtime and depend on cpp-core's normalized payload interfaces.
 
 ## Phase Rollback Points
 
@@ -11,69 +16,51 @@ This document mirrors the current implementation in this directory.
 | 3 | `axtp-cpp-runtime-phase-03` | Outbound payload-to-bytes pipeline |
 | 4 | `axtp-cpp-runtime-phase-04` | Core state and outbound queue |
 | 5 | `axtp-cpp-runtime-phase-05` | Transport abstraction and mock transport |
-| 6 | `axtp-cpp-runtime-phase-06` | TCP and WebSocket JSON transports |
+| 6 | `axtp-cpp-runtime-phase-06` | TCP and WebSocket transports |
 | 7 | `axtp-cpp-runtime-phase-07` | Broker and business routing |
-| 8 | `axtp-cpp-runtime-phase-08` | Legacy adapter and protocol mux |
-| 9 | `axtp-cpp-runtime-phase-09` | WebSocket Text JSON RPC session adapter |
+| 8 | `axtp-cpp-runtime-phase-08` | WebSocketJsonRpc codec and wire-mode split |
 
 ## Runtime Flow
 
 ```mermaid
 flowchart TB
-    Tcp["TCP / Mock bytes<br/>AXTP standard frames"]
-    Ws["WebSocket text<br/>sid / op / d JSON"]
-    Hid["HID / raw legacy bytes<br/>AXDP FF A5 frames"]
-    Mux["AxtpCore ByteSink / ProtocolMux<br/>AX magic or AXDP HID bytes"]
+    Tcp["TCP / Mock bytes<br/>AXTP Standard Frame"]
+    Ws["WebSocket text message<br/>AXTP sid/op/d JSON"]
 
-    subgraph Inbound["Inbound pipeline"]
+    subgraph FramedInbound["FramedBinary inbound"]
         FD["FrameDecoder<br/>bytes -> Frame"]
         MR["MessageReassembler<br/>Frame fragments -> Message"]
-        PD["PayloadDecoder<br/>Message -> Payload envelope"]
+        PD["PayloadDecoder<br/>Message -> Payload"]
+    end
+
+    subgraph JsonInbound["WebSocketJsonRpc inbound"]
+        JD["JsonRpcDecoder<br/>complete text message -> RpcPayload"]
     end
 
     CorePorts["AxtpCore ports<br/>ByteSink / PayloadSink / ByteWriter / BrokerSink"]
-    Core["AxtpCore<br/>session, pending calls, outbound queue"]
+    Core["AxtpCore<br/>protocol state, pending calls, outbound queue"]
     Broker["AxtpBroker<br/>queue, middleware shell, flow control shell"]
     Router["BusinessRouter<br/>methodId -> handler"]
 
-    subgraph Outbound["Outbound pipeline"]
+    subgraph FramedOutbound["FramedBinary outbound"]
         PE["PayloadEncoder<br/>Payload -> Message"]
         MF["MessageFragmenter<br/>Message -> Frame fragments"]
         FE["FrameEncoder<br/>Frame -> bytes + CRC16"]
     end
 
-    subgraph Legacy["Legacy AXDP HID compatibility"]
-        AxdpDec["LegacyFrameDecoder<br/>HID report / FF A5 / XMODEM CRC"]
-        CmdMap["LegacyMethodMapper<br/>wire cmd + Beta/Common mask -> methodId"]
-        LegacyIn["LegacyProtocolAdapter<br/>AXDP payload -> RpcPayload RAW_BYTES"]
-        LegacyOut["LegacyProtocolAdapter<br/>RpcPayload -> AXDP response"]
-        AxdpEnc["LegacyFrameEncoder<br/>dst/src swap, cmd + 0x80, XMODEM CRC"]
+    subgraph JsonOutbound["WebSocketJsonRpc outbound"]
+        JE["JsonRpcEncoder<br/>RpcPayload -> complete text message"]
     end
 
-    subgraph JsonRpc["WebSocket Text JSON compatibility"]
-        JsonAdapter["WebSocketJsonRpcAdapter<br/>Hello / Identify / Request / Event"]
-        NameMap["RegistryLookup<br/>method/event/error names"]
-        JsonOut["JSON response/event encoder<br/>status/result"]
-    end
+    Registry["generated method/event/error registries"]
 
-    Generated["generated/axtp_legacy_mapping_generated.h<br/>cmd mapping + status mapping"]
-    GeneratedRegistry["generated method/event/error registries"]
-
-    Tcp --> Mux
-    Hid --> Mux
-    Ws --> JsonAdapter --> NameMap --> CorePorts
-    Mux -->|"AX magic"| FD
-    Mux -->|"FF A5 or HID report"| AxdpDec --> CmdMap --> LegacyIn
-    Generated --> CmdMap
-    Generated --> LegacyOut
-    GeneratedRegistry --> NameMap
-    FD --> MR --> PD --> CorePorts --> Core
-    LegacyIn --> CorePorts
+    Tcp --> FD --> MR --> PD --> CorePorts --> Core
+    Ws --> JD --> CorePorts
+    Registry --> JD
+    Registry --> JE
     Core --> CorePorts --> Broker --> Router --> Broker --> CorePorts --> Core
-    Core -->|"AXTP sourceProtocol"| CorePorts --> PE --> MF --> FE --> Tcp
-    Core -->|"legacy sourceProtocol"| LegacyOut --> AxdpEnc --> Hid
-    Core -->|"JsonRpc sourceProtocol"| JsonOut --> Ws
-    JsonAdapter --> JsonOut
+    Core -->|"FramedBinary"| CorePorts --> PE --> MF --> FE --> Tcp
+    Core -->|"WebSocketJsonRpc"| CorePorts --> JE --> Ws
 ```
 
 ## Ownership Boundaries
@@ -86,22 +73,21 @@ flowchart LR
     OutboundDir["outbound/<br/>encode only"]
     CoreDir["core/<br/>protocol state, pending calls"]
     Ports["AxtpCore owned ports<br/>thin interface adapters"]
-    TransportDir["transport/<br/>bytes in/out"]
+    TransportDir["transport/<br/>TCP/WebSocket/Mock + JSON RPC codec"]
     BrokerDir["broker/<br/>business queue and routing"]
-    LegacyDir["legacy/ + mux/<br/>AXDP HID compatibility"]
-    GeneratedDir["generated/<br/>method/event/error registries and legacy mapping tables"]
+    GeneratedDir["generated/<br/>method/event/error registries"]
 
     Model --> InboundDir
     Model --> OutboundDir
     IO --> InboundDir
     IO --> OutboundDir
+    TransportDir --> InboundDir
+    TransportDir --> OutboundDir
+    GeneratedDir --> TransportDir
     InboundDir --> Ports --> CoreDir
     CoreDir --> Ports --> OutboundDir
     TransportDir --> Ports
     CoreDir --> BrokerDir
-    LegacyDir --> Ports
-    GeneratedDir --> TransportDir
-    GeneratedDir --> LegacyDir
 ```
 
 ## Current Test Map
@@ -113,21 +99,22 @@ flowchart LR
 | `phase3_outbound_test` | Payload encode, fragmentation, frame encode, inbound round trip |
 | `phase4_core_test` | Core handlers, control responses, pending response matching |
 | `phase5_transport_test` | `ITransport`, `MockTransport`, `attachTransport`, `flushOutbound` |
-| `phase6_real_transport_test` | TCP framed path and WebSocket unframed JSON path |
+| `phase6_real_transport_test` | TCP framed path and WebSocketJsonRpc text path |
 | `phase7_broker_test` | Core-to-Broker task submission and Broker response callback |
-| `phase8_legacy_test` | AXDP HID frame parsing, split reports, CRC rejection, legacy request mapping, mux routing, AXDP response encoding |
 
 ## Key Invariants
 
-- Transport only moves bytes or WebSocket text messages. It does not parse AXTP frames or payloads.
-- Inbound code stops at payload envelopes; it does not call business handlers.
-- Outbound code starts from payload envelopes; it does not know business handlers.
-- `AxtpCore` does not inherit `IByteSink`, `IPayloadSink`, `IByteWriter`, or `IBrokerSink`.
-- `AxtpCore` owns thin port objects that implement those interfaces and delegate to private Core methods.
-- `attachTransport()` binds the transport to `AxtpCore`'s byte sink; once `attachLegacyInbound()` or `attachLegacy()` is configured, that byte sink auto-routes AXTP magic to the standard inbound pipeline and AXDP HID bytes to the legacy adapter.
-- WebSocket Text JSON is not routed through the AXTP standard frame decoder. `WebSocketJsonRpcAdapter` receives complete text messages, maps `method` names to methodIds, and submits normalized `RpcPayload` values to Core.
-- Core owns protocol state and queues, but business dispatch is in Broker.
-- AXDP HID compatibility stays in `legacy/` and `mux/`; Core and Broker operate on normalized `RpcPayload` values.
-- AXDP wire details are adapter-owned: optional HID report id, `FF A5` magic, big-endian header fields, CRC-16/XMODEM, device-family masks, and `cmd + 0x80` responses.
-- Legacy command and status mappings come from generated tables, not hard-coded Core or Broker logic.
-- WebSocket JSON is an RPC-only wire mode and does not carry CONTROL or STREAM. It implements Text JSON `Hello`, `Identify`, `Identified`, `Request`, `RequestResponse`, `Event`, and an unsupported-batch response.
+- `runtimes/cpp-core` implements AXTP v1 only: `FramedBinary` and `WebSocketJsonRpc`.
+- `FramedBinary` uses Standard Frame, Payload, CONTROL, RPC, and STREAM.
+- `WebSocketJsonRpc` is a first-class AXTP RPC-only profile for WebSocket text access.
+- `WebSocketJsonRpc` uses the spec-defined `sid/op/d` envelope from `docs/specs/05-AXTP-RPC-Session-Spec.md`.
+- In `WebSocketJsonRpc` mode, `IByteSink::onBytes()` must receive one complete WebSocket text message, not arbitrary stream chunks.
+- `WebSocketJsonRpc` does not use `FrameDecoder`, `MessageReassembler`, `PayloadDecoder`, `FrameEncoder`, CONTROL, or STREAM.
+- `AxtpCore` only handles normalized `ControlPayload`, `RpcPayload`, and `StreamPayload`; it does not parse JSON, WebSocket frames, or legacy commands.
+- `AxtpBroker` does not know the transport or text envelope; it routes by method/event ids and normalized body bytes.
+- Legacy adapters must depend on cpp-core. cpp-core must not depend on legacy adapters.
+
+## Spec Notes
+
+- The highest-priority WebSocketJsonRpc specs are `docs/specs/03-AXTP-Transport-Profiles.md` and `docs/specs/05-AXTP-RPC-Session-Spec.md`.
+- There is no separate dedicated WebSocket JSON-RPC profile spec file yet. If that is added later, this runtime should treat it as the most specific source of truth.

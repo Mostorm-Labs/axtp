@@ -17,14 +17,7 @@ inline constexpr std::uint8_t kStreamPayloadHeaderSize = 16;
 
 enum class SourceProtocol : std::uint8_t {
     AxtpV1 = 0x01,
-    Legacy = 0x02,
-    JsonRpc = 0x03,
-};
-
-enum class ProtocolMode : std::uint8_t {
-    AxtpV1,
-    Legacy,
-    AutoDetect,
+    JsonRpc = 0x02,
 };
 
 } // namespace axtp
