@@ -11,6 +11,7 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/json.hpp>
 
+#include "axtp/broker/axtp_broker.h"
 #include "axtp/core/axtp_core.h"
 #include "axtp/inbound/axtp_inbound_processor.h"
 #include "axtp/io/byte_writer_sink.h"
@@ -57,7 +58,9 @@ axtp::Bytes encodeRpcRequest(std::uint32_t requestId) {
 int main() {
     {
         axtp::AxtpCore core;
-        core.registerRpcHandler(0x0101, [](const axtp::RpcPayload&) {
+        axtp::AxtpBroker broker(core);
+        core.attachBroker(broker);
+        broker.registerMethod(0x0101, [](const axtp::RpcPayload&) {
             return axtp::Bytes{0xA1};
         });
 
@@ -80,6 +83,7 @@ int main() {
         axtp::Bytes responseBytes;
         for (int i = 0; i < 100 && responseBytes.empty(); ++i) {
             server.poll();
+            broker.poll();
             core.flushOutbound();
             std::array<axtp::Byte, 4096> buffer{};
             boost::system::error_code ec;
@@ -106,12 +110,14 @@ int main() {
 
     {
         axtp::AxtpCore core;
-        core.registerRpcHandler(0x0101, [](const axtp::RpcPayload&) {
+        axtp::AxtpBroker broker(core);
+        core.attachBroker(broker);
+        broker.registerMethod(0x0101, [](const axtp::RpcPayload&) {
             return axtp::Bytes{0xB1, 0xB2};
         });
 
         axtp::WebSocketTransport server(0);
-        axtp::WebSocketJsonRpcAdapter adapter(core, server);
+        axtp::WebSocketJsonRpcAdapter adapter(core, server, &broker);
         server.bind(adapter);
         server.open();
         assert(server.profile().kind == axtp::TransportKind::WebSocket);

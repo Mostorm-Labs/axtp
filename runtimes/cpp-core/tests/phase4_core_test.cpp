@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 
+#include "axtp/broker/axtp_broker.h"
 #include "axtp/core/axtp_core.h"
 #include "axtp/inbound/axtp_inbound_processor.h"
 #include "axtp/io/byte_writer_sink.h"
@@ -55,7 +56,9 @@ axtp::Bytes encodeControl(axtp::ControlPayload payload) {
 int main() {
     {
         axtp::AxtpCore core;
-        core.registerRpcHandler(0x0101, [](const axtp::RpcPayload& request) {
+        axtp::AxtpBroker broker(core);
+        core.attachBroker(broker);
+        broker.registerMethod(0x0101, [](const axtp::RpcPayload& request) {
             assert(request.requestId == 100);
             return axtp::Bytes{0x99, 0x88};
         });
@@ -68,6 +71,7 @@ int main() {
         request.bodyEncoding = axtp::RpcBodyEncoding::Tlv8;
         auto requestBytes = encodeRpc(request);
         core.onBytes(requestBytes.data(), requestBytes.size());
+        broker.poll();
 
         auto responseBytes = core.tryPopOutboundBytes();
         assert(responseBytes.has_value());

@@ -7,6 +7,7 @@
 
 #include <boost/json.hpp>
 
+#include "axtp/broker/axtp_broker.h"
 #include "axtp/core/axtp_core.h"
 #include "axtp/inbound/axtp_inbound_processor.h"
 #include "axtp/io/byte_sink.h"
@@ -16,8 +17,8 @@ namespace axtp {
 
 class WebSocketJsonRpcAdapter : public IByteSink {
 public:
-    WebSocketJsonRpcAdapter(AxtpCore& core, ITransport& writer)
-        : core_(core), writer_(writer) {}
+    WebSocketJsonRpcAdapter(AxtpCore& core, ITransport& writer, AxtpBroker* broker = nullptr)
+        : core_(core), writer_(writer), broker_(broker) {}
 
     void onBytes(const Byte* data, std::size_t size) override {
         const std::string text(reinterpret_cast<const char*>(data), size);
@@ -36,6 +37,9 @@ public:
         }
 
         core_.onRpc(std::move(request));
+        if (broker_ != nullptr) {
+            broker_->poll();
+        }
         CapturingPayloadSink sink;
         AxtpInboundProcessor inbound(sink);
         while (auto bytes = core_.tryPopOutboundBytes()) {
@@ -91,6 +95,7 @@ private:
 
     AxtpCore& core_;
     ITransport& writer_;
+    AxtpBroker* broker_ = nullptr;
 };
 
 } // namespace axtp

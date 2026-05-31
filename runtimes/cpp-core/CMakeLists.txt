@@ -70,3 +70,11 @@ add_executable(phase6_real_transport_test
 target_link_libraries(phase6_real_transport_test PRIVATE axtp_cpp_core)
 
 add_test(NAME phase6_real_transport_test COMMAND phase6_real_transport_test)
+
+add_executable(phase7_broker_test
+    tests/phase7_broker_test.cpp
+)
+
+target_link_libraries(phase7_broker_test PRIVATE axtp_cpp_core)
+
+add_test(NAME phase7_broker_test COMMAND phase7_broker_test)
