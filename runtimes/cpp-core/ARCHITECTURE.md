@@ -39,17 +39,26 @@ flowchart TB
         FE["FrameEncoder<br/>Frame -> bytes + CRC16"]
     end
 
-    LegacyIn["LegacyProtocolAdapter<br/>legacy bytes -> RpcPayload"]
-    LegacyOut["LegacyProtocolAdapter<br/>RpcPayload -> legacy response bytes"]
+    subgraph Legacy["Legacy AXDP HID compatibility"]
+        AxdpDec["LegacyFrameDecoder<br/>HID report / FF A5 / XMODEM CRC"]
+        CmdMap["LegacyMethodMapper<br/>wire cmd + Beta/Common mask -> methodId"]
+        LegacyIn["LegacyProtocolAdapter<br/>AXDP payload -> RpcPayload RAW_BYTES"]
+        LegacyOut["LegacyProtocolAdapter<br/>RpcPayload -> AXDP response"]
+        AxdpEnc["LegacyFrameEncoder<br/>dst/src swap, cmd + 0x80, XMODEM CRC"]
+    end
+
+    Generated["generated/axtp_legacy_mapping_generated.h<br/>cmd mapping + status mapping"]
 
     Transport --> Mux
     Mux -->|"AX magic"| FD
-    Mux -->|"legacy"| LegacyIn
+    Mux -->|"FF A5 or HID report"| AxdpDec --> CmdMap --> LegacyIn
+    Generated --> CmdMap
+    Generated --> LegacyOut
     FD --> MR --> PD --> CorePorts --> Core
     LegacyIn --> CorePorts
     Core --> CorePorts --> Broker --> Router --> Broker --> CorePorts --> Core
     Core --> CorePorts --> PE --> MF --> FE --> Transport
-    Core -->|"legacy sourceProtocol"| LegacyOut --> Transport
+    Core -->|"legacy sourceProtocol"| LegacyOut --> AxdpEnc --> Transport
 ```
 
 ## Ownership Boundaries
@@ -64,7 +73,8 @@ flowchart LR
     Ports["AxtpCore owned ports<br/>thin interface adapters"]
     TransportDir["transport/<br/>bytes in/out"]
     BrokerDir["broker/<br/>business queue and routing"]
-    LegacyDir["legacy/ + mux/<br/>old protocol compatibility"]
+    LegacyDir["legacy/ + mux/<br/>AXDP HID compatibility"]
+    GeneratedDir["generated/<br/>legacy mapping tables"]
 
     Model --> InboundDir
     Model --> OutboundDir
@@ -75,6 +85,7 @@ flowchart LR
     TransportDir --> Ports
     CoreDir --> BrokerDir
     LegacyDir --> Ports
+    GeneratedDir --> LegacyDir
 ```
 
 ## Current Test Map
@@ -88,7 +99,7 @@ flowchart LR
 | `phase5_transport_test` | `ITransport`, `MockTransport`, `attachTransport`, `flushOutbound` |
 | `phase6_real_transport_test` | TCP framed path and WebSocket unframed JSON path |
 | `phase7_broker_test` | Core-to-Broker task submission and Broker response callback |
-| `phase8_legacy_test` | Legacy request mapping, shared Broker handler, legacy response encoding |
+| `phase8_legacy_test` | AXDP HID frame parsing, split reports, CRC rejection, legacy request mapping, mux routing, AXDP response encoding |
 
 ## Key Invariants
 
@@ -98,5 +109,7 @@ flowchart LR
 - `AxtpCore` does not inherit `IByteSink`, `IPayloadSink`, `IByteWriter`, or `IBrokerSink`.
 - `AxtpCore` owns thin port objects that implement those interfaces and delegate to private Core methods.
 - Core owns protocol state and queues, but business dispatch is in Broker.
-- Legacy command values stay in `legacy/` and `mux/`; Core and Broker operate on normalized payloads.
+- AXDP HID compatibility stays in `legacy/` and `mux/`; Core and Broker operate on normalized `RpcPayload` values.
+- AXDP wire details are adapter-owned: optional HID report id, `FF A5` magic, big-endian header fields, CRC-16/XMODEM, device-family masks, and `cmd + 0x80` responses.
+- Legacy command and status mappings come from generated tables, not hard-coded Core or Broker logic.
 - WebSocket JSON is an RPC-only wire mode and does not carry CONTROL or STREAM.

@@ -263,21 +263,44 @@ inline constexpr std::size_t kCapabilityRegistryCount = ${spec.capabilities.leng
 }
 
 function emitLegacyMapping(spec: SpecModel): string {
-  const rows = [...spec.legacyMappings].sort((a, b) => a.legacyCmdValue - b.legacyCmdValue).map((item) =>
-    `    { "${item.legacyProtocol}", ${hex(item.legacyCmdValue, 8)}, ${hex(item.axtpMethodId)}, "${item.axtpMethodName}" },`
-  ).join("\n");
+  const mappings = [...spec.legacyMappings].sort((a, b) => a.legacyCmdValue - b.legacyCmdValue);
+  const statusArrays = mappings.map((item, index) => {
+    const entries = Object.entries(item.statusMapping).sort((a, b) => Number(a[0]) - Number(b[0]));
+    if (entries.length === 0) return "";
+    const rows = entries.map(([legacyStatus, errorName]) =>
+      `    { ${hex(Number(legacyStatus), 2)}, ErrorCode::${cppName(errorName)}, "${errorName}" },`
+    ).join("\n");
+    return `inline constexpr LegacyStatusMapping kLegacyStatusMappings${index}[] = {\n${rows}\n};`;
+  }).filter(Boolean).join("\n\n");
+  const rows = mappings.map((item, index) => {
+    const statusCount = Object.keys(item.statusMapping).length;
+    const statusPtr = statusCount === 0 ? "nullptr" : `kLegacyStatusMappings${index}`;
+    return `    { "${item.legacyProtocol}", ${hex(item.legacyCmdValue, 8)}, ${hex(item.axtpMethodId)}, "${item.axtpMethodName}", ${statusPtr}, ${statusCount} },`;
+  }).join("\n");
   return `${banner}#pragma once
 #include <cstddef>
 #include <cstdint>
 
+#include "axtp_ids_generated.h"
+
 namespace axtp {
+
+struct LegacyStatusMapping {
+    std::uint16_t legacy_status;
+    ErrorCode axtp_error;
+    const char* axtp_error_name;
+};
 
 struct LegacyCmdMapping {
     const char* legacy_protocol;
     std::uint32_t legacy_cmd_value;
     std::uint16_t axtp_method_id;
     const char* axtp_method_name;
+    const LegacyStatusMapping* status_mappings;
+    std::size_t status_mapping_count;
 };
+
+${statusArrays}
 
 inline constexpr LegacyCmdMapping kLegacyMappings[] = {
 ${rows}

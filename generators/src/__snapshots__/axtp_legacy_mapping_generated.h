@@ -24,21 +24,12 @@ struct LegacyCmdMapping {
 
 inline constexpr LegacyStatusMapping kLegacyStatusMappings0[] = {
     { 0x00, ErrorCode::Success, "SUCCESS" },
-    { 0x01, ErrorCode::RpcParamInvalid, "RPC_PARAM_INVALID" },
-    { 0x02, ErrorCode::Busy, "BUSY" },
-};
-
-inline constexpr LegacyStatusMapping kLegacyStatusMappings1[] = {
-    { 0x00, ErrorCode::Success, "SUCCESS" },
-    { 0x01, ErrorCode::RpcParamInvalid, "RPC_PARAM_INVALID" },
-    { 0x02, ErrorCode::Busy, "BUSY" },
 };
 
 inline constexpr LegacyCmdMapping kLegacyMappings[] = {
-    { "axdp_hid", 0x000B0002, 0x0101, "device.getInfo", kLegacyStatusMappings0, 3 },
-    { "axdp_hid", 0x000B0042, 0x0502, "display.setBrightness", kLegacyStatusMappings1, 3 },
+    { "axdp_hid", 0x00000042, 0x0502, "display.setBrightness", kLegacyStatusMappings0, 1 },
 };
 
-inline constexpr std::size_t kLegacyMappingCount = 2;
+inline constexpr std::size_t kLegacyMappingCount = 1;
 
 } // namespace axtp

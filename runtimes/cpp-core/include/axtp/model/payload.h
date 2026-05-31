@@ -13,6 +13,12 @@ struct PayloadMeta {
     std::uint32_t requestId = 0;
     std::uint32_t legacySequence = 0;
     std::uint32_t legacyCommandValue = 0;
+    std::uint16_t legacyAxdpVersion = 0;
+    std::uint16_t legacyAxdpDst = 0;
+    std::uint16_t legacyAxdpSrc = 0;
+    std::uint16_t legacyAxdpWireCommand = 0;
+    std::uint8_t legacyAxdpReportId = 0;
+    bool legacyAxdpReportFramed = false;
 };
 
 struct ControlPayload {
