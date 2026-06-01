@@ -16,14 +16,17 @@ pnpm build            # compile TypeScript → dist/
 pnpm test             # run vitest tests
 pnpm lint             # tsc --noEmit type check
 
+# Run a single test file
+pnpm vitest run src/validator.test.ts
+
 # Validation
-pnpm validate:sources # validate registry/ + domains/ + Protocol IR consistency (run this before committing)
+pnpm validate:sources  # validate registry/ + domains/ + Protocol IR consistency (run this before committing)
 pnpm validate:protocol # validate protocol/axtp.protocol.yaml against spec docs
 
 # Generation
-pnpm generate         # full pipeline: build Protocol IR + all artifacts
-pnpm build:protocol   # only write protocol/axtp.protocol.yaml
-pnpm emit:protocol    # only write docs/generated/protocol.md + protocol.json (requires IR to exist)
+pnpm generate          # full pipeline: build Protocol IR + all artifacts
+pnpm build:protocol    # only write protocol/axtp.protocol.yaml
+pnpm emit:protocol     # only write docs/generated/protocol.md + protocol.json (requires IR to exist)
 pnpm generate:registry # only write registry docs, C++ headers, tooling JSON, test vectors
 ```
 
