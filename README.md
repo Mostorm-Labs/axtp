@@ -94,6 +94,28 @@ docs/generated/ + tooling/ + runtimes/*/generated/
 | `docs/generated/capability_registry.generated.md` | capability id、名称、类型和 schema |
 | `docs/generated/legacy_mapping.generated.md` | 旧协议命令到 AXTP method 的迁移映射 |
 
+## C++ Runtime 开发文档
+
+C++ runtime 代码已经按 `ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker<>` 分层。阅读和修改 runtime、SDK、CLI 时建议从以下文档进入：
+
+| 文档 | 说明 |
+|---|---|
+| `runtimes/cpp-core/ARCHITECTURE.md` | C++ runtime 代码架构、CMake target、wire path、transport 边界和测试地图 |
+| `docs/dev/AXTP_CPP_RUNTIME_PATTERNS.md` | 设计模式、扩展方法、反模式，说明功能应该放在哪一层 |
+| `docs/dev/AXTP_CPP_EXECUTION_FLOW.md` | FramedBinary、WebSocketJsonRpc、HID、SDK、CLI 和 direct core 的执行流程 |
+| `docs/dev/AXTP_CPP_STYLE.md` | C++ 命名、文件名、include、成员变量、格式化和 ownership 规范 |
+| `docs/dev/AXTP_CORE_API_DESIGN.md` | `AxtpCore`、`CoreEvent`、`BrokerResult`、processor 和 public header 设计 |
+| `docs/dev/AXTP_SDK_API_DESIGN.md` | `AxtpClient`、`AxtpServer`、dynamic RPC、typed wrapper 和 connector 边界 |
+| `docs/dev/AXTPCTL_COMMAND_DESIGN.md` | `axtpctl` 命令语法、命令分发、transport 策略和输出格式 |
+
+核心约束：
+
+- `AxtpCore` 不持有 transport 或 broker。
+- `BasicBroker<>` 不回调 core。
+- `AxtpEndpoint` 是唯一 glue layer。
+- `runtimes/cpp-core/include/axtp` 不暴露 hidapi、Boost.Asio、Boost.Beast、socket/thread 或 concrete transport 头。
+- 业务调用默认走 Raw / Dynamic JSON / Dynamic TLV；typed generated API 是可选增强。
+
 ## 生成产物位置与使用方法
 
 ### 1. 安装依赖并构建生成器

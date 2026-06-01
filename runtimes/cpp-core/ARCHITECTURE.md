@@ -1,120 +1,133 @@
-# AXTP C++ Core Architecture
+# AXTP C++ Runtime Architecture
 
-This runtime implements the AXTP v1 core protocol only. It supports two first-class AXTP wire modes:
+The C++ runtime is organized around one narrow glue layer:
 
-1. `FramedBinary`
-2. `WebSocketJsonRpc`
+```text
+ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker
+```
 
-Legacy protocol compatibility is not part of `runtimes/cpp-core`. Optional legacy adapters may live outside this runtime and depend on cpp-core's normalized payload interfaces.
+`AxtpEndpoint` is the only layer that knows both sides of the runtime. `AxtpCore` is protocol-only, and `BasicBroker` is business-dispatch-only.
 
-## Phase Rollback Points
+## Targets
 
-| Phase | Tag | Main addition |
-|---:|---|---|
-| 1 | `axtp-cpp-runtime-phase-01` | Model objects and byte IO |
-| 2 | `axtp-cpp-runtime-phase-02` | Inbound bytes-to-payload pipeline |
-| 3 | `axtp-cpp-runtime-phase-03` | Outbound payload-to-bytes pipeline |
-| 4 | `axtp-cpp-runtime-phase-04` | Core state and outbound queue |
-| 5 | `axtp-cpp-runtime-phase-05` | Transport abstraction and mock transport |
-| 6 | `axtp-cpp-runtime-phase-06` | TCP and WebSocket transports |
-| 7 | `axtp-cpp-runtime-phase-07` | Broker and business routing |
-| 8 | `axtp-cpp-runtime-phase-08` | WebSocketJsonRpc codec and wire-mode split |
+| Target | Shape | Responsibility |
+|---|---|---|
+| `axtp_core` | `INTERFACE` | model, IO interfaces, transport profile, FramedBinary pipeline, WebSocketJsonRpc decoder/encoder, `AxtpCore`, generated lookup helpers |
+| `axtp_broker` | `INTERFACE` | `BasicBroker<>`, `BrokerTask`, `BrokerResult`, dynamic method dispatch helpers |
+| `axtp_runtime` | `INTERFACE` | core + broker + endpoint glue for normal application use |
+| `axtp_json_rpc` | `INTERFACE` | WebSocket session helper adapter and JSON registry-file loader |
+| `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport in `runtimes/cpp-transports`, backed by `runtimes/thirdparty/hidapi` |
+| `axtp_transport_tcp_boost` | `INTERFACE` optional | Boost.Asio TCP transport in `runtimes/cpp-transports` |
+| `axtp_transport_websocket_boost` | `INTERFACE` optional | Boost.Beast WebSocket transport in `runtimes/cpp-transports` |
+
+The recommended runtime include is:
+
+```cpp
+#include <axtp/axtp.hpp>
+```
+
+Concrete transports are not included by the aggregate header.
+
+## Development Documents
+
+| Document | Purpose |
+|---|---|
+| `docs/dev/AXTP_CORE_API_DESIGN.md` | Core API contract and public header groups |
+| `docs/dev/AXTP_CPP_RUNTIME_PATTERNS.md` | Runtime design patterns and extension recipes |
+| `docs/dev/AXTP_CPP_EXECUTION_FLOW.md` | End-to-end data flow for runtime, SDK, CLI, and transports |
+| `docs/dev/AXTP_CPP_STYLE.md` | Naming, file layout, include, formatting, and ownership rules |
+| `docs/dev/AXTP_SDK_API_DESIGN.md` | SDK API shape and dynamic RPC policy |
+| `docs/dev/AXTPCTL_COMMAND_DESIGN.md` | CLI command shape and dispatch policy |
 
 ## Runtime Flow
 
 ```mermaid
-flowchart TB
-    Tcp["TCP / Mock bytes<br/>AXTP Standard Frame"]
-    Ws["WebSocket text message<br/>AXTP sid/op/d JSON"]
+flowchart LR
+    T["ITransport<br/>bytes or complete text messages"]
+    E["AxtpEndpoint<br/>the only glue layer"]
+    C["AxtpCore<br/>protocol decode/state/encode"]
+    B["BasicBroker&lt;&gt;<br/>task queue + handler dispatch"]
 
-    subgraph FramedInbound["FramedBinary inbound"]
-        FD["FrameDecoder<br/>bytes -> Frame"]
-        MR["MessageReassembler<br/>Frame fragments -> Message"]
-        PD["PayloadDecoder<br/>Message -> Payload"]
-    end
-
-    subgraph JsonInbound["WebSocketJsonRpc inbound"]
-        JD["JsonRpcDecoder<br/>complete text message -> RpcPayload"]
-    end
-
-    CorePorts["AxtpCore ports<br/>ByteSink / PayloadSink / ByteWriter / BrokerSink"]
-    Core["AxtpCore<br/>protocol state, pending calls, outbound queue"]
-    Broker["AxtpBroker<br/>queue, middleware shell, flow control shell"]
-    Router["BusinessRouter<br/>methodId -> handler"]
-
-    subgraph FramedOutbound["FramedBinary outbound"]
-        PE["PayloadEncoder<br/>Payload -> Message"]
-        MF["MessageFragmenter<br/>Message -> Frame fragments"]
-        FE["FrameEncoder<br/>Frame -> bytes + CRC16"]
-    end
-
-    subgraph JsonOutbound["WebSocketJsonRpc outbound"]
-        JE["JsonRpcEncoder<br/>RpcPayload -> complete text message"]
-    end
-
-    Registry["generated method/event/error registries"]
-
-    Tcp --> FD --> MR --> PD --> CorePorts --> Core
-    Ws --> JD --> CorePorts
-    Registry --> JD
-    Registry --> JE
-    Core --> CorePorts --> Broker --> Router --> Broker --> CorePorts --> Core
-    Core -->|"FramedBinary"| CorePorts --> PE --> MF --> FE --> Tcp
-    Core -->|"WebSocketJsonRpc"| CorePorts --> JE --> Ws
+    T -->|"onBytes()"| E
+    E -->|"AxtpCore::byteSink()"| C
+    C -->|"CoreEvent"| E
+    E -->|"BrokerTask"| B
+    B -->|"BrokerResult"| E
+    E -->|"AxtpCore::handleBrokerResult()"| C
+    C -->|"outbound bytes"| E
+    E -->|"sendBytes()"| T
 ```
 
-## Ownership Boundaries
+`AxtpCore` never owns or includes concrete transports and does not own a broker. `BasicBroker<>` never calls back into core. `AxtpEndpoint` drains `CoreEvent`, polls the broker, feeds `BrokerResult` back into core, and flushes outbound bytes to the attached transport.
+
+## Wire Paths
 
 ```mermaid
-flowchart LR
-    Model["model/<br/>Frame, Message, Payload, enums"]
-    IO["io/<br/>ByteReader, ByteWriter, ByteBuffer, sinks, CRC16"]
-    InboundDir["inbound/<br/>decode only"]
-    OutboundDir["outbound/<br/>encode only"]
-    CoreDir["core/<br/>protocol state, pending calls"]
-    Ports["AxtpCore owned ports<br/>thin interface adapters"]
-    TransportDir["transport/<br/>TCP/WebSocket/Mock + JSON RPC codec"]
-    BrokerDir["broker/<br/>business queue and routing"]
-    GeneratedDir["generated/<br/>method/event/error registries"]
+flowchart TB
+    subgraph Core["axtp_core"]
+        FBIn["FramedBinary inbound<br/>FrameDecoder -> MessageReassembler -> PayloadDecoder"]
+        FBOut["FramedBinary outbound<br/>PayloadEncoder -> MessageFragmenter -> FrameEncoder"]
+        JIn["WebSocketJsonRpc inbound<br/>JsonRpcDecoder"]
+        JOut["WebSocketJsonRpc outbound<br/>JsonRpcEncoder"]
+        Core["AxtpCore<br/>ControlPayload / RpcPayload / StreamPayload"]
+    end
 
-    Model --> InboundDir
-    Model --> OutboundDir
-    IO --> InboundDir
-    IO --> OutboundDir
-    TransportDir --> InboundDir
-    TransportDir --> OutboundDir
-    GeneratedDir --> TransportDir
-    InboundDir --> Ports --> CoreDir
-    CoreDir --> Ports --> OutboundDir
-    TransportDir --> Ports
-    CoreDir --> BrokerDir
+    FBIn --> Core --> FBOut
+    JIn --> Core --> JOut
 ```
+
+- `FramedBinary` carries AXTP Standard Frames.
+- `WebSocketJsonRpc` is a formal AXTP wire mode using complete UTF-8 text messages with the `sid/op/d` envelope.
+- JSON-RPC decoder/encoder are in core because the runtime supports this wire mode directly; Boost.JSON is therefore an allowed `axtp_core` dependency.
+- `WebSocketJsonRpcAdapter` remains a thin optional session/transport helper. It does not own `AxtpCore` or `BasicBroker`.
+
+## Transport Boundary
+
+- `ITransport` implementations only move bytes/messages and expose `TransportProfile`.
+- `HidTransport` handles report id, report size, padding, read/write, and manual `poll()`. It does not parse frames, payloads, method ids, or legacy commands.
+- TCP/WebSocket/HID concrete transports live in `runtimes/cpp-transports`.
+- hidapi is vendored under `runtimes/thirdparty/hidapi` and is only linked by `axtp_transport_hidapi`.
+- `axtp_core` public headers must not include hidapi, Boost.Asio, Boost.Beast, socket APIs, thread APIs, or concrete transport headers.
+
+## Public Header Rules
+
+- New protocol pipeline headers live under `axtp/core/inbound/*.hpp` and `axtp/core/outbound/*.hpp`.
+- Old `axtp/inbound/*`, `axtp/outbound/*`, `AxtpBroker`, `AxtpInboundProcessor`, and `AxtpOutboundProcessor` compatibility names are intentionally not preserved.
+- `BasicBroker<> + AxtpEndpoint + ITransport` is the recommended application runtime shape.
+- Advanced users may use `AxtpCore` directly through `configure()`, `byteSink()`, `pollEvent()`, `handleBrokerResult()`, and `tryPopOutboundBytes()`.
+- Legacy/AXDP adapters are outside cpp-core/runtime. They may depend on this runtime later; this runtime must not depend on them.
+
+## C++ Code Style
+
+AXTP C++ uses a Skia-like library discipline configured by the repository `.clang-format`: 4 spaces, 100 columns, attached braces, and no tabs. The core and generated traits are header-only, `BasicBroker<>` is header-only, and transport implementations are optional platform adapters.
+
+All C++ symbols live in `namespace axtp` or a child namespace. The main protocol-stack entry is `axtp::AxtpCore`, and the lightweight broker is `axtp::BasicBroker<>`.
+
+Internal pipeline components and protocol model types do not use redundant `Axtp` prefixes:
+
+```cpp
+axtp::InboundProcessor;
+axtp::OutboundProcessor;
+axtp::FrameDecoder;
+axtp::Frame;
+axtp::Message;
+axtp::RpcPayload;
+```
+
+Private/protected data members use `_member` style, for example `_inbound`, `_transport`, and `_pendingCalls`. This is allowed only for class/struct data members where the character after `_` is lowercase. Do not use `__name`, `_Name`, `_AXTP_` macros, or namespace/global `_name` identifiers.
+
+C++ file names use lower_snake_case and new public headers use `.hpp`, for example `axtp_core.hpp`, `frame_decoder.hpp`, and `basic_broker.hpp`. Run `scripts/format-cpp.sh` or `scripts/check-format-cpp.sh` before committing C++ changes when a usable `clang-format` is available.
 
 ## Current Test Map
 
 | Test | Covers |
 |---|---|
-| `phase1_model_io_test` | Little-endian IO, buffer operations, model includes |
-| `phase2_inbound_test` | Half frames, sticky frames, fragment reassembly, magic resync, RPC decode |
-| `phase3_outbound_test` | Payload encode, fragmentation, frame encode, inbound round trip |
-| `phase4_core_test` | Core handlers, control responses, pending response matching |
-| `phase5_transport_test` | `ITransport`, `MockTransport`, `attachTransport`, `flushOutbound` |
-| `phase6_real_transport_test` | TCP framed path and WebSocketJsonRpc text path |
-| `phase7_broker_test` | Core-to-Broker task submission and Broker response callback |
-
-## Key Invariants
-
-- `runtimes/cpp-core` implements AXTP v1 only: `FramedBinary` and `WebSocketJsonRpc`.
-- `FramedBinary` uses Standard Frame, Payload, CONTROL, RPC, and STREAM.
-- `WebSocketJsonRpc` is a first-class AXTP RPC-only profile for WebSocket text access.
-- `WebSocketJsonRpc` uses the spec-defined `sid/op/d` envelope from `docs/specs/05-AXTP-RPC-Session-Spec.md`.
-- In `WebSocketJsonRpc` mode, `IByteSink::onBytes()` must receive one complete WebSocket text message, not arbitrary stream chunks.
-- `WebSocketJsonRpc` does not use `FrameDecoder`, `MessageReassembler`, `PayloadDecoder`, `FrameEncoder`, CONTROL, or STREAM.
-- `AxtpCore` only handles normalized `ControlPayload`, `RpcPayload`, and `StreamPayload`; it does not parse JSON, WebSocket frames, or legacy commands.
-- `AxtpBroker` does not know the transport or text envelope; it routes by method/event ids and normalized body bytes.
-- Legacy adapters must depend on cpp-core. cpp-core must not depend on legacy adapters.
-
-## Spec Notes
-
-- The highest-priority WebSocketJsonRpc specs are `docs/specs/03-AXTP-Transport-Profiles.md` and `docs/specs/05-AXTP-RPC-Session-Spec.md`.
-- There is no separate dedicated WebSocket JSON-RPC profile spec file yet. If that is added later, this runtime should treat it as the most specific source of truth.
+| `phase1_model_io_test` | model and IO primitives |
+| `phase2_inbound_test` | FramedBinary and WebSocketJsonRpc inbound decode |
+| `phase3_outbound_test` | FramedBinary and WebSocketJsonRpc outbound encode |
+| `phase4_core_test` | standalone core events, control handling, broker-result handling |
+| `phase5_transport_test` | `AxtpEndpoint` with `MockTransport` |
+| `phase6_real_transport_test` | optional TCP and WebSocketJsonRpc transport flows |
+| `phase7_broker_test` | `BasicBroker<>` dynamic Raw/JSON/TLV dispatch |
+| `phase8_api_surface_test` | `<axtp/axtp.hpp>`, packet/text IO, dynamic registry |
+| `phase9_hid_transport_test` | optional HID report slicing, report-id filtering, ManualPoll callbacks |
