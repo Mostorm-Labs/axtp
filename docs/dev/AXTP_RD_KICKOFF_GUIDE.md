@@ -2,7 +2,7 @@
 
 > 状态：Draft
 > 面向对象：固件/MCU、客户端/前端、云端/Agent、测试、协议仓库维护者
-> 基于材料：`kickoff.md`、`docs/specs/`、`docs/source/`、`registry/`、`docs/generated/`、`migration/output/`、`adapters/legacy-protocols/`
+> 基于材料：`docs/kickoff/AXTP_R&D_Kickoff.md`、`docs/specs/`、`docs/source/`、`registry/`、`docs/generated/`、`docs/migration/generated/`、`docs/legacy-protocols/`
 
 ## 0. 一句话结论
 
@@ -345,7 +345,7 @@ Adapter 不允许：
 |---|---|
 | `tooling/test-vectors/*.hex` | CONTROL、RPC、Event、STREAM、Compact 错误等线格式向量 |
 | `tooling/test-vectors/manifest.json` | 测试向量清单和元数据 |
-| `migration/output/test-vectors.generated.json` | legacy adapter 迁移测试向量 |
+| `docs/migration/generated/test-vectors.generated.json` | legacy adapter 迁移测试向量 |
 | `docs/generated/protocol.json` | 机器可读协议模型，可用于测试平台生成用例 |
 | `tooling/mcp/*.generated.json` | 面向工具、Agent、自动化测试的 JSON 描述 |
 | `runtimes/cpp-core/tests/phase*.cpp` | C++ runtime 的分层测试 |
@@ -530,7 +530,7 @@ generators/src/__snapshots__/
 
 ## 10. 参考资料
 
-- `kickoff.md`
+- `docs/kickoff/AXTP_R&D_Kickoff.md`
 - `README.md`
 - `docs/specs/00-AXTP-Overview.md`
 - `docs/specs/01-AXTP-Protocol-Framework.md`
@@ -544,10 +544,10 @@ generators/src/__snapshots__/
 - `docs/specs/20-AXTP-Generator-v1实现规范.md`
 - `docs/source/AXTP-Legacy-Compatibility-Reference.md`
 - `docs/source/AXTP-Protocol-Plan.md`
-- `migration/output/migration-plan.generated.md`
-- `migration/output/compatibility-layer.generated.md`
-- `migration/output/cpp-legacy-adapter-plan.generated.md`
-- `migration/output/legacy-to-axtp-map.generated.yaml`
-- `migration/output/registry-patches.generated.yaml`
-- `adapters/legacy-protocols/*.xlsx`
-- `adapters/legacy-protocols/*.md`
+- `docs/migration/generated/migration-plan.generated.md`
+- `docs/migration/generated/compatibility-layer.generated.md`
+- `docs/migration/generated/cpp-legacy-adapter-plan.generated.md`
+- `docs/migration/generated/legacy-to-axtp-map.generated.yaml`
+- `docs/migration/generated/registry-patches.generated.yaml`
+- `docs/legacy-protocols/*.xlsx`
+- `docs/legacy-protocols/*.md`

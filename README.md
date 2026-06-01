@@ -40,7 +40,10 @@ docs/generated/ + tooling/ + runtimes/*/generated/
 |---|---|---|
 | `docs/specs/` | 规范文档，描述协议框架、传输、Frame/Payload、RPC、STREAM、Registry 元模型、生成器规则等 | 是 |
 | `docs/source/` | 历史资料、兼容性参考、旧注册表迁移材料、能力模型等源材料 | 是 |
+| `docs/kickoff/` | 项目 kickoff、研发说明和跨团队启动材料 | 是 |
 | `docs/demo/` | 典型场景和 demo 级实现说明，例如 WebSocket、HID、BLE、OTA、MVP 流程 | 是 |
+| `docs/legacy-protocols/` | AXDP、VM33、Rooms、NearHub 等 legacy 协议原始资料和扫描清单 | 是 |
+| `docs/migration/generated/` | legacy 迁移规划、候选 patch、测试向量等生成型迁移资料 | 否 |
 | `registry/core/` | 协议元信息、payload type、control opcode、RPC 编码、stream profile 等核心事实源 | 是 |
 | `registry/method/` | 已采纳 method 注册表 | 是 |
 | `registry/event/` | 已采纳 event 注册表 | 是 |
@@ -51,7 +54,9 @@ docs/generated/ + tooling/ + runtimes/*/generated/
 | `registry/domains/<domain>/` | 新增业务域的默认入口，可定义 method、event、error、capability、schema、profile | 是 |
 | `protocol/axtp.protocol.yaml` | 由 Source YAML 聚合生成的 Protocol IR | 否 |
 | `docs/generated/` | 生成的 Markdown/JSON 协议文档和注册表文档 | 否 |
+| `adapters/` | 预留给未来真实 legacy adapter/runtime adapter 代码；旧协议资料不放在这里 | 是 |
 | `tooling/mcp/` | 生成的机器可读 JSON，用于 MCP、工具链或外部消费 | 否 |
+| `tooling/migration/` | legacy 迁移资料生成脚本和迁移辅助工具 | 是 |
 | `tooling/test-vectors/` | 生成的协议一致性测试向量 | 否 |
 | `runtimes/cpp-core/include/axtp/generated/` | 生成的 C++ ID、注册表、schema 和 TLV codec 头文件 | 否 |
 | `generators/` | TypeScript 实现的 AXTP Generator | 是 |
