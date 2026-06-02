@@ -1,0 +1,37 @@
+# signage_sdk Legacy Classification
+
+本文件从 `legacy-protocol-classification.csv` 按 legacy source 切分生成，逐条展示原协议字段、AXTP domain.feature、建议 method/event 和已匹配的 `docs/protocol` 文档。
+
+| Source | File | Line | Type | Legacy Wire | Command ID | Class | Method | Event | Config Name | Capability | AXTP Method | AXTP Event | Protocol Doc | Confidence | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 37 | method | KeepAlive |  |  | KeepAlive |  |  | system.lifecycle | system.setLifecycleConfig |  |  | medium | 系统生命周期状态归 system.lifecycle。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 48 | event | KeepAlive |  |  |  | KeepAlive |  | system.lifecycle |  | system.lifecycleStateChanged |  | medium | 系统生命周期状态归 system.lifecycle。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 62 | method | GetDeviceInfo |  |  | GetDeviceInfo |  |  | device.info | device.getInfo |  |  | high | 设备基础信息归 device.info。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 81 | method | SetDeviceName |  |  | SetDeviceName |  |  | device.info | device.setInfoConfig |  |  | high | 设备基础信息归 device.info。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 97 | method | SetSysTime |  |  | SetSysTime |  |  | system.time | system.setTimeConfig |  |  | high | 校时、系统时间和时区归 system.time。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 119 | method | ResetConfig |  |  | ResetConfig |  |  | system.initialization | system.reset |  |  | medium | 恢复配置/初始化/复位归 system.initialization。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 130 | method | GetNetworkInfo |  |  | GetNetworkInfo |  |  | network.ip | network.getIpConfig |  | docs/protocol/network/network.config.md | high | IP/DHCP/netmask/gateway/default route 归 network.ip。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 162 | method | GetSDInfo |  |  | GetSDInfo |  |  | storage.sdCard | storage.getSdCardState |  |  | high | SD 卡状态、信息和格式化归 storage.sdCard。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 177 | method | FormatSd |  |  | FormatSd |  |  | storage.sdCard | storage.formatSdCard |  |  | high | SD 卡状态、信息和格式化归 storage.sdCard。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 193 | method | SetLineOutVolume |  |  | SetLineOutVolume |  |  | audio.volume | audio.setVolumeConfig |  |  | high | 音量、增益、静音归 audio.volume。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 209 | method | GetLineOutVolume |  |  | GetLineOutVolume |  |  | audio.volume | audio.getVolumeState |  |  | high | 音量、增益、静音归 audio.volume。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 222 | method | SetLineInPreGain |  |  | SetLineInPreGain |  |  | audio.input | audio.setInputConfig |  |  | high | 音频输入、Line-in、Mic、音源选择归 audio.input。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 238 | method | GetLineInPreGain |  |  | GetLineInPreGain |  |  | audio.input | audio.getInputConfig |  |  | high | 音频输入、Line-in、Mic、音源选择归 audio.input。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 255 | method | RemoteUpgrade |  |  | RemoteUpgrade |  |  | firmware.ota | firmware.beginOta |  | docs/protocol/firmware/firmware.ota.md | high | 升级/远程升级/升级进度归 firmware.ota，数据块通过业务域建流。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 271 | method | UpgradeProgress |  |  | UpgradeProgress |  |  | firmware.ota | firmware.getOtaState |  | docs/protocol/firmware/firmware.ota.md | high | 升级/远程升级/升级进度归 firmware.ota，数据块通过业务域建流。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 310 | method | GetBindConfig |  |  | GetBindConfig |  |  | auth.session | auth.getSessionState |  |  | medium | 设备绑定/绑定码/绑定状态归 auth.session 候选。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 323 | method | SetBindConfig |  |  | SetBindConfig |  |  | auth.session | auth.createSession |  |  | medium | 设备绑定/绑定码/绑定状态归 auth.session 候选。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 353 | event | OnTelemetryReport |  |  |  | OnTelemetryReport |  | sensor.telemetry |  | sensor.telemetryReported |  | low | 遥测上报可候选为 sensor.telemetry，需确认是否拆为 device.power/sensor.。 Open: 确认遥测字段集合后再定 feature。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 372 | method | SetPlaylistConfig |  |  | SetPlaylistConfig |  |  | signage.playlist | signage.setPlaylistConfig |  |  | high | 播放列表配置归 signage.playlist。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 468 | method | GetPlaylistConfig |  |  | GetPlaylistConfig |  |  | signage.playlist | signage.getPlaylistConfig |  |  | high | 播放列表配置归 signage.playlist。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 504 | method | GetPlaylistItemUrl |  |  | GetPlaylistItemUrl |  |  | signage.media | signage.listMedia |  |  | high | 播放项资源 URL 与媒体资源归 signage.media。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 557 | method | GetAppearanceConfig |  |  | GetAppearanceConfig |  |  | signage.osd | signage.getOsdConfig |  |  | medium | 数字标牌外观/面板配置归 signage.osd。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 580 | method | SetAppearanceConfig |  |  | SetAppearanceConfig |  |  | signage.osd | signage.setOsdConfig |  |  | medium | 数字标牌外观/面板配置归 signage.osd。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 612 | method | GetUpdateConfig |  |  | GetUpdateConfig |  |  | firmware.updatePolicy | firmware.getUpdatePolicyConfig |  |  | high | 升级策略配置归 firmware.updatePolicy。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 640 | method | SetUpdateConfig |  |  | SetUpdateConfig |  |  | firmware.updatePolicy | firmware.setUpdatePolicyConfig |  |  | high | 升级策略配置归 firmware.updatePolicy。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 677 | method | GetScheduleConfig |  |  | GetScheduleConfig |  |  | signage.schedule | signage.getScheduleConfig |  |  | high | 数字标牌播放计划归 signage.schedule。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 712 | method | SetScheduleConfig |  |  | SetScheduleConfig |  |  | signage.schedule | signage.setScheduleConfig |  |  | high | 数字标牌播放计划归 signage.schedule。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 756 | method | RequestLogUpload |  |  | RequestLogUpload |  |  | log.export | log.createExport |  | docs/protocol/log/log.transfer.md | high | 日志打包、上传、导出结果归 log.export。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher数字标牌设备管理通用管理命令.md | 767 | method | NotifyLogUploadResult |  |  | NotifyLogUploadResult |  |  | log.export |  | log.exportStateChanged | docs/protocol/log/log.transfer.md | high | 日志打包、上传、导出结果归 log.export。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher设备管理命令.md | 237 | method | GetBindCode |  |  | GetBindCode |  |  | auth.session | auth.getSessionState |  |  | medium | 设备绑定/绑定码/绑定状态归 auth.session 候选。 |
+| signage_sdk | docs/legacy-protocols/NearHub-Launcher设备管理命令.md | 248 | event | OnBindState |  |  |  | OnBindState |  | auth.session |  | auth.sessionStateChanged |  | medium | 设备绑定/绑定码/绑定状态归 auth.session 候选。 |
