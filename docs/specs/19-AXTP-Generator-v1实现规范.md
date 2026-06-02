@@ -1,4 +1,4 @@
-# 20《AXTP Generator v1 实现规范》
+# 19《AXTP Generator v1 实现规范》
 
 版本：v1.1
 状态：当前实现规范 + 后续规划
@@ -11,15 +11,16 @@
 - 05《AXTP RPC Session Spec》
 - 06《AXTP Stream Spec》
 - 07《AXTP Compatibility and Versioning》
-- 08《AXTP Protocol Definition Mapping Spec》
-- 09《AXTP Methods Registry Spec》
-- 10《AXTP Events Registry Spec》
-- 11《AXTP Errors Registry Spec》
-- 12《AXTP Types and Capability Spec》
-- 13《AXTP Profiles Registry Spec》
-- 14《AXTP Type System》
-- 15《AXTP TLV Schema Encoding》
-- 16《AXTP Schema Field Numbering》
+- 08《AXTP Capability Naming and Feature Taxonomy》
+- 09《AXTP Protocol Definition Mapping Spec》
+- 10《AXTP Methods Registry Spec》
+- 11《AXTP Events Registry Spec》
+- 12《AXTP Errors Registry Spec》
+- 13《AXTP Types and Capability Spec》
+- 14《AXTP Profiles Registry Spec》
+- 15《AXTP Type System》
+- 16《AXTP TLV Schema Encoding》
+- 17《AXTP Schema Field Numbering》
 
 ---
 
@@ -108,7 +109,7 @@ media encoder/decoder
 
 ### 2.4 Wire 事实必须由 00-spec 兜底校验
 
-`protocol/axtp.protocol.yaml` 的结构化内容来自 Source YAML，但关键 wire 事实必须与 `docs/specs/00-16` 保持一致。当前必须校验：
+`protocol/axtp.protocol.yaml` 的结构化内容来自 Source YAML，但关键 wire 事实必须与 `docs/specs/00-18` 保持一致。当前必须校验：
 
 ```text
 STREAM header = 16B
@@ -148,8 +149,9 @@ axtp/
 │   └── axtp.protocol.yaml
 ├── docs/
 │   ├── specs/
-│   ├── source/
-│   └── generated/
+│   ├── business/
+│   ├── generated/
+│   └── archive/
 ├── generators/
 │   ├── generator.yaml
 │   ├── package.json
@@ -372,7 +374,7 @@ IR 规则：
 
 ## 6. 生成文档规则
 
-`docs/generated/protocol.md` 面向 SDK 使用者和业务接入者，不承担低层 frame/transport/payload 规范全文复制职责。低层细节留在 `docs/specs/00-16`。
+`docs/generated/protocol.md` 面向 SDK 使用者和业务接入者，不承担低层 frame/transport/payload 规范全文复制职责。低层细节留在 `docs/specs/00-18`。
 
 ### 6.1 文档结构
 
@@ -576,7 +578,7 @@ docs/specs/04-AXTP-Control-Session-Spec.md:
   OPEN/ACCEPT required
   READY optional
 
-docs/specs/12-AXTP-Types-and-Capability-Spec.md:
+docs/specs/13-AXTP-Types-and-Capability-Spec.md:
   method bitmap derived from methods[].bitOffset
 ```
 
@@ -624,7 +626,7 @@ node dist/cli.js generate-registry --spec ..
 推荐流程：
 
 ```text
-1. 读取 docs/specs/08-13 和 docs/source/09-13
+1. 读取 docs/specs/08 命名治理、docs/specs/09-14 registry/MVP 表格和 docs/specs/19 generator 规则
 2. 确认 domain、ID range、method/event/error/capability 候选
    - 迁移类业务先参考 `docs/migration/AXTP_Legacy_Migration_Matrix.xlsx` 的 `93_Feature分类参考` 和对应聚合视图，确认 `domain.feature` 边界
 3. 检查 registry/**/*.yaml 和 registry/domains/**/*.yaml 是否已有等价条目
@@ -777,7 +779,7 @@ P1 目标是把当前文档编译器扩展为完整协议资产编译器。
 计划：
 
 ```text
-自动检查 docs/source planning table 与 YAML 的 ID 偏移
+自动检查 docs/specs planning table 与 YAML 的 ID 偏移
 提供 suggest-id 命令
 提供 reserve-id 命令
 禁止隐式 bit_offset 重排

@@ -98,7 +98,7 @@ Opcode 分配范围：
 
 ## 4. Control StatusCode
 
-Control `statusCode` 直接使用 11《ErrorCode 注册表》，不维护独立 Control 局部状态码。`0x0000 = SUCCESS` 表示成功；非 0 表示失败或异常状态，具体含义必须来自 ErrorCode Registry。
+Control `statusCode` 直接使用 12《AXTP Errors Registry Spec》，不维护独立 Control 局部状态码。`0x0000 = SUCCESS` 表示成功；非 0 表示失败或异常状态，具体含义必须来自 ErrorCode Registry。
 
 MVP Control 至少需要识别以下错误码：
 

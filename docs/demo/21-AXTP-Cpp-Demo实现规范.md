@@ -7,27 +7,28 @@
 适用范围：AXTP v1 / C++17 / Embedded-friendly Demo  
 关联文档：
 
-- `00-AXTP-协议总览与落地路线.md`
+- `00-AXTP-Overview.md`
 - `02-AXTP-Frame-and-Payload-Spec.md`
 - `04-AXTP-Control-Session-Spec.md`
 - `05-AXTP-RPC-Session-Spec.md`
 - `06-AXTP-Stream-Spec.md`
-- `05-AXTP-Type-System基础类型规范.md`
-- `06-AXTP-TLV-Schema编码规范.md`
-- `07-AXTP-Schema字段编号规范.md`
-- `08-AXTP-Protocol-Definition-Mapping-Spec.md`
-- `09-AXTP-Methods-Registry-Spec.md`
-- `10-AXTP-Events-Registry-Spec.md`
-- `11-AXTP-Errors-Registry-Spec.md`
-- `12-AXTP-Types-and-Capability-Spec.md`
-- `13-AXTP-Profiles-Registry-Spec.md`
+- `08-AXTP-Capability-Naming-and-Feature-Taxonomy.md`
+- `09-AXTP-Protocol-Definition-Mapping-Spec.md`
+- `10-AXTP-Methods-Registry-Spec.md`
+- `11-AXTP-Events-Registry-Spec.md`
+- `12-AXTP-Errors-Registry-Spec.md`
+- `13-AXTP-Types-and-Capability-Spec.md`
+- `14-AXTP-Profiles-Registry-Spec.md`
+- `15-AXTP-Type-System.md`
+- `16-AXTP-TLV-Schema-Encoding.md`
+- `17-AXTP-Schema-Field-Numbering.md`
 - `07-AXTP-Compatibility-and-Versioning.md`
 - `15-AXTP-WebSocket-JSON-RPC-Demo.md`
 - `16-AXTP-WebSocket-Binary-Demo.md`
 - `17-AXTP-HID-Compact-Demo.md`
 - `18-AXTP-BLE-Compact-Demo.md`
 - `19-AXTP-OTA-Stream-Demo.md`
-- `20-AXTP-Generator-v1实现规范.md`
+- `19-AXTP-Generator-v1实现规范.md`
 
 ---
 

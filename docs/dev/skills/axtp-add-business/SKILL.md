@@ -5,7 +5,7 @@ description: Interactively guide AXTP business protocol additions. Use when a us
 
 # AXTP Add Business
 
-Use this skill to add one AXTP business capability through an interactive, form-driven flow. The goal is to help the user fill the protocol facts step by step, then update YAML sources and run the three-stage generator.
+Use this skill to add one AXTP business capability or adapt one legacy protocol feature through an interactive, form-driven flow. The goal is to classify the feature with the current `domain.feature` rules, fill protocol facts step by step, then update YAML sources and run the three-stage generator.
 
 ## Non-Negotiables
 
@@ -17,22 +17,42 @@ Use this skill to add one AXTP business capability through an interactive, form-
 - Never duplicate the same method/event/type/error/capability/profile in both core registry files and domain YAML.
 - Promotion from domain to Core/MVP is a governance step: preserve IDs/fieldIds/bit_offset and remove the old domain entry.
 - Preserve stable wire values. Never reuse deprecated or stable IDs for different semantics.
+- Treat `docs/business/` as intake and review material, not as the final protocol fact source.
+- Do not write TBD legacy mappings into specs or YAML. Missing legacy CmdValue, payload, or status details must stay in Open Questions until the user provides evidence.
 
 ## Required Evidence
 
 Before proposing YAML, read enough local evidence to avoid guessing:
 
-- `docs/source/08-AXTP-Registry总则-v2.md` is the authoritative source for domain names, domain placement, ID ranges, DomainId, and bit offset rules.
-- `docs/specs/08-13` for Protocol Definition mapping, registry/type/profile meta rules.
-- `docs/source/09-13` for planning tables, candidate IDs, MVP notes, and legacy hints.
+- `docs/specs/08-AXTP-Capability-Naming-and-Feature-Taxonomy.md` for `domain.feature` naming, feature taxonomy, and method/event naming templates.
+- `docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md` for domain names, domain placement, ID ranges, DomainId, and bit offset rules.
+- `docs/specs/09-14` for Protocol Definition mapping, registry/type/profile meta rules, planning tables, candidate IDs, MVP notes, and legacy hints.
 - Existing YAML under `registry/`, especially `registry/domains/`.
-- For stream, OTA, low-bandwidth, or transport-sensitive features, also check `docs/specs/02`, `04`, `05`, `06`, `07`, and `17`.
+- `docs/business/README.md` for the intake-to-registry generation path.
+- For stream, OTA, low-bandwidth, or transport-sensitive features, also check `docs/specs/02`, `04`, `05`, `06`, `07`, and `18`.
+- For legacy protocol intake, read the user-provided old protocol material first. If `docs/migration/` already has approved mappings for the same command, use them as evidence; otherwise treat the legacy material as unapproved intake.
 
 Summarize the evidence chain before editing.
 
 ## Interactive Flow
 
 At each step, ask only what is still unknown. If the repo already answers something, state the inferred value and ask for confirmation only when it materially affects the protocol.
+
+### Step 0 - Intake Mode
+
+Classify the request before collecting fields:
+
+| Mode | Use when | Default output |
+|---|---|---|
+| `new_business_intake` | The user is defining a new AXTP feature without an old command. | `registry/domains/<domain>/domain.yaml` draft entries. |
+| `legacy_protocol_intake` | The user provides old command names, payload bytes, status codes, event reports, spreadsheets, or protocol snippets. | Domain-feature classification, AXTP method/event/capability draft entries, and confirmed legacy mappings only when concrete old values are provided. |
+
+For unapproved legacy intake:
+
+- Classify old commands into `domain.feature` using 08 before naming AXTP methods/events.
+- Do not write legacy mappings with unknown CmdValue or status codes.
+- Do not add historical explanation or TBD tables to specs.
+- Produce Open Questions for missing old command values, payload layout, status mapping, direction, and event trigger evidence.
 
 ### Step 1 - Business Intent
 
@@ -48,7 +68,7 @@ Example question:
 
 ### Step 2 - Domain Placement
 
-Domain placement must follow `docs/source/08-AXTP-Registry总则-v2.md`. Do not maintain an independent domain list in this skill.
+Domain placement must follow `docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md`. Do not maintain an independent domain list in this skill.
 
 Required checks:
 
@@ -61,8 +81,8 @@ Selection rules:
 
 - Choose an existing domain from Section 9 whenever possible.
 - If the user's term is a legacy/product term, map it according to Section 9 notes instead of creating a new domain.
-- If no Section 9 domain fits, stop and propose a registry governance change to `docs/source/08-AXTP-Registry总则-v2.md` before adding source YAML.
-- Method name, event name, ID range, DomainId, and bit offset rationale must cite the matching 08 sections in the evidence chain.
+- If no Section 9 domain fits, stop and propose a registry governance change to `docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md` before adding source YAML.
+- Method name and event name rationale must cite 08; ID range, DomainId, and bit offset rationale must cite the matching 09 sections in the evidence chain.
 
 Default target for new business:
 
@@ -136,7 +156,9 @@ New business capabilities normally stay in `registry/domains/<domain>/domain.yam
 
 ### Step 9 - Legacy Mapping
 
-Ask only if there is an existing old command:
+Use this step for `legacy_protocol_intake`, or when a new business request also has an existing old command.
+
+Collect only evidence-backed values:
 
 - `legacy_protocol`
 - `legacy_cmd_value`
@@ -144,8 +166,10 @@ Ask only if there is an existing old command:
 - target method
 - direction
 - status/error mapping
+- old payload shape and field mapping
+- old event/report trigger, if any
 
-Write legacy mappings to `registry/legacy/legacy_mapping.yaml` only after the AXTP target method is clear.
+Write `registry/legacy/legacy_mapping.yaml` only after the AXTP target method is clear and the old command value/status mapping is concrete. If the user has not supplied approved legacy values, update only the AXTP domain draft and leave legacy mapping as Open Questions.
 
 ### Step 10 - Review Before Editing
 
@@ -153,9 +177,11 @@ Before editing YAML, present:
 
 ```text
 Business intent:
+Intake mode:
 Evidence chain:
 Chosen YAML target:
 Method/event/type/error/capability/profile summary:
+Domain-feature classification:
 ID and bit_offset rationale:
 Legacy impact:
 Generated outputs expected:
@@ -179,12 +205,11 @@ Proceed with edits only when the form is complete enough to avoid inventing wire
 After source edits:
 
 ```bash
-cd generators
-npm run build
-npm test
-node dist/cli.js validate-sources --spec ..
-node dist/cli.js generate --spec ..
-node dist/cli.js validate-protocol --spec ..
+pnpm --dir generators build
+pnpm --dir generators test
+pnpm --dir generators validate:sources
+pnpm --dir generators generate
+pnpm --dir generators validate:protocol
 git diff --check
 ```
 

@@ -1,11 +1,11 @@
-# 21《AXTP Capability Naming and Feature Taxonomy》
+# 08《AXTP Capability Naming and Feature Taxonomy》
 
-> Status: AXTP v1/v2 Capability Governance Draft
+> Status: AXTP v1/v2 Capability Governance
 > Spec Version: 0.1.0
 > Scope: `domain.feature` capability naming, feature taxonomy, method/event naming templates, registry migration guidance
 
 版本：v0.1.0
-状态：Capability 命名与 Feature 分类规范草案
+状态：Capability 命名与 Feature 分类规范
 适用范围：`registry/capability/`、`registry/method/`、`registry/event/`、`registry/domains/<domain>/domain.yaml`、legacy 迁移映射和业务协议文档
 
 ---

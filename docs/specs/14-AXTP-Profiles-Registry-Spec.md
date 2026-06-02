@@ -1,0 +1,550 @@
+# 14《AXTP Profiles Registry Spec》
+
+> Status: AXTP v1 Protocol Definition Meta Spec
+> Spec Version: 1.0.0-rc1
+> Scope: `profiles:` entries, MVP profile composition, transport/frame constraints
+
+版本：v1.0.0-rc1
+状态：Protocol Definition 元规范
+适用范围：`registry/capability/` 与 `registry/domains/<domain>/domain.yaml` 中 profile 源条目的字段、约束和生成规则
+
+---
+
+## 1. 文档定位
+
+本文档定义 implementation profile 的元模型和 MVP 最小实现注册表。稳定 profile 内容必须写入 `registry/capability/` 或 `registry/domains/<domain>/domain.yaml`；`protocol/axtp.protocol.yaml` 中的 `profiles:` 由 Generator 聚合生成。
+
+新增业务 profile 默认写入 `registry/domains/<domain>/domain.yaml`。只有 Core/MVP profile 或已采纳的共享 profile 才写入核心 registry；晋升时必须迁移并删除 domain 中的原 profile，不得两边重复定义。
+
+---
+
+## 2. profiles 条目结构
+
+```yaml
+profiles:
+  - name: AXTP-MVP-HID
+    since: 1.0.0
+    status: stable
+    requiredMethods:
+      - capability.supportedMethods
+      - device.getInfo
+    requiredEvents: []
+    requiredTypes:
+      - DeviceInfo
+    requiredErrors:
+      - SUCCESS
+      - RPC_METHOD_NOT_FOUND
+    transportProfiles:
+      - AXTP-USB-HID
+    frameProfile: STANDARD_FRAME
+```
+
+---
+
+## 3. 字段定义
+
+| 字段 | 必填 | 说明 |
+|---|---:|---|
+| `name` | 是 | Profile 名称 |
+| `since` | 是 | 首次引入版本 |
+| `status` | 是 | `draft / stable / deprecated` |
+| `requiredMethods` | 是 | 必须引用 `methods[].name` |
+| `requiredEvents` | 是 | 必须引用 `events[].name`，可为空 |
+| `requiredTypes` | 否 | 必须引用 `types` |
+| `requiredErrors` | 是 | 必须引用 `errors[].name` |
+| `transportProfiles` | 是 | 必须引用 `transports[].name` |
+| `frameProfile` | 条件必填 | 单一 Frame Profile 的 profile 必填，必须与 transportProfiles 的固定映射一致 |
+| `frameProfiles` | 条件必填 | 聚合 profile 可使用，列出允许的 Frame Profile 集合 |
+| `notes` | 否 | 实现说明 |
+
+---
+
+## 4. 约束
+
+1. `profiles[].name` 必须唯一。
+2. Profile 不得要求未定义 method/event/type/error。
+3. Profile 使用 `frameProfile` 时，必须与每个 `transportProfiles[].frameProfile` 一致。
+4. Profile 使用 `frameProfiles` 时，必须覆盖每个 `transportProfiles[].frameProfile`，且不得引入未被 transportProfiles 使用的 Frame Profile。
+5. AXTP v1 不允许在同一 session 内切换 Frame Profile。
+6. 当前 v1 Core profile 不得引用 `COMPACT_FRAME` 或 `AXTP-HID-64`；低带宽降级 profile 必须进入 18《AXTP Low-Bandwidth Degradation》。
+7. WebSocket Unframed JSON profile 不得要求 STREAM 或 CONTROL。
+8. Profile 的具体内容进入 `registry/` 或 `registry/domains/` YAML；新增 Profile 不应修改 09-14 registry 元规范。
+
+---
+
+## 5. 生成规则
+
+`axtpc` 必须从 `profiles:` 生成：
+
+```text
+generated/protocol.md Profiles Reference
+generated/bitmap per-profile method bitmap
+generated/conformance profile coverage tests
+generated/cpp profile descriptors
+generated/ts profile descriptors
+```
+
+---
+
+## 6. v1 推荐 Profile
+
+v1 Protocol Definition 可以包含以下 profile，但具体必选内容由源 YAML 定义：
+
+```text
+AXTP-MVP
+AXTP-MVP-HID
+AXTP-HID-MEDIA
+AXTP-WS-JSON
+AXTP-WS-CLOUD-REVERSE
+```
+
+这些 profile 必须遵守 01-07 Core Freeze 文档中定义的 Transport Profile 到 Frame Profile 固定映射。
+
+
+
+## Registry 表格与 YAML 的关系
+
+09-14 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
+
+如果 Markdown 表格与 YAML/generated 发生冲突，以 YAML/generated 作为实现事实源，并应回修本规范表格；不得维护第二套 active 事实源。
+
+
+## MVP 最小实现注册表
+
+版本：v1.1
+状态：MVP / Implementation Contract（精简版）
+适用范围：AXTP v1 第一阶段落地最小注册表集合
+
+---
+
+### 1. MVP 设计原则
+
+#### 1.1 只实现闭环，不追求全集
+
+MVP 必须覆盖：建连、能力查询、基础 RPC 请求/响应、基础事件上报、基础参数设置、基础 Stream 数据传输、ACK/NACK、错误处理、老协议 CmdValue 兼容。
+
+MVP 暂不覆盖：完整音视频能力、完整文件系统、完整日志系统、完整诊断系统、完整输入/KVM、完整网络配置、完整权限系统、完整安全加密、完整压缩、完整多路复用调度、复杂 Batch RPC、复杂对象 Schema 反射。
+
+#### 1.2 PayloadType 只保留三种
+
+AXTP MVP 固定只实现三种 PayloadType：`CONTROL / RPC / STREAM`。
+
+STREAM 数据包不携带 `streamProfile`。MVP 中具体 Profile（例如 `firmware.ota`）由 `firmware.beginOta` 等领域建流方法协商并绑定到 `streamId`；通用 stream 建流方法不作为 AXTP v1 主接口，业务流必须由业务域创建。
+
+#### 1.3 Registry / Schema 是单一事实源
+
+MVP 文档中的表格用于阅读和审查，最终实现以 `registry/**/*.yaml` 与 `registry/domains/**/*.yaml` 为单一事实源。`protocol/axtp.protocol.yaml` 与 `docs/generated/*` 均为 Generator 输出。
+
+#### 1.4 老协议优先兼容，不推翻重写
+
+```text
+旧 CmdValue -> AXTP methodId
+旧 Payload -> AXTP TLV body 或 legacy bytes（bodyEncoding = RAW_BYTES）
+旧 status -> AXTP errorCode
+旧设备能力表 -> AXTP capability
+旧 OTA chunk -> AXTP STREAM OTA
+```
+
+对于复杂旧结构，可先使用 `bodyEncoding = RAW_BYTES`，但必须在 Registry 中声明 legacyMapping。
+
+---
+
+### 2. MVP 实现总览
+
+| 类别 | MVP 必须实现 | 延后实现 |
+| --- |---| --- |
+| PayloadType | CONTROL / RPC / STREAM | 新增 PayloadType |
+| Frame Profile | 当前 v1 Core 使用 STANDARD_FRAME 或 WebSocket Unframed JSON；HID-64/BLE/UART Compact 进入降级文档 | 新增低带宽 Frame Profile |
+| Control | OPEN / ACCEPT / HEARTBEAT / HEARTBEAT_ACK / ACK / NACK / CLOSE / CLOSE_ACK | RESUME / SESSION_RESET / WINDOW_UPDATE 高级策略 |
+| RPC Encoding | JSON / BINARY 必须覆盖当前正式路径 | CBOR / MessagePack |
+| RPC Op | HELLO / IDENTIFY / IDENTIFIED / EVENT / REQUEST / REQUEST_RESPONSE | BATCH |
+| Stream Profile | firmware.ota 必须，file/log 建议 | video/audio/kvm/sensor |
+| Type System | uint / bool / enum / bitmap / string / bytes | nested object 高级约束 |
+| TLV | short TLV 必须，extended length 建议 | packed array 高级优化 |
+| Registry | Method/Event/Error/Capability | 完整业务全集 |
+
+---
+
+### 3. MVP PayloadType Registry
+
+| ID | Name | Parser | MVP |
+|---:| --- |---| --- |
+| `0x01` | `CONTROL` | `ControlParser` | 必须 |
+| `0x02` | `RPC` | `RpcParser` | 必须 |
+| `0x03` | `STREAM` | `StreamParser` | 必须 |
+
+---
+
+### 4. MVP Frame Profile
+
+#### 4.1 Standard Profile（必须）
+
+```text
++--------+--------+---------+-------------+
+| Magic  | Ver/PT | Length  | Src/Dst/Msg |
++--------+--------+---------+-------------+
+| Payload...                       |
++----------------------------------+
+| CRC16                            |
++----------------------------------+
+```
+
+| 字段 | 长度 | 说明 |
+| --- |---:| --- |
+| `Magic` | 2B | 固定 `AX` |
+| `Version/PayloadType` | 2B | Header 版本与 PayloadType |
+| `PayloadLength` | 2B | Payload 字节数 |
+| `SourceId/DestinationId/MessageId/FrameInfo` | 6B | 路由与分片字段 |
+| `CRC16` | 2B | Footer，覆盖 Header(12B) + Payload |
+
+Standard Profile 是 AXTP v1 Core 的正式二进制帧路径，适用于 AXTP-USB-HID 与 AXTP-TCP。
+
+#### 4.2 低带宽降级
+
+Compact / HID-64 / BLE / UART 不作为当前 MVP 必选实现，进入 18《AXTP Low-Bandwidth Degradation》。
+
+---
+
+### 5. MVP Control Opcode Registry
+
+#### 5.1 MVP 必须实现
+
+| Opcode | Name | Direction | Body | 说明 |
+| ---: | --- | --- | --- | --- |
+| `0x01` | `OPEN` | Client → Device | TLV | 建立协议会话，声明协议能力 |
+| `0x02` | `ACCEPT` | Device → Client | TLV | 返回协商结果 |
+| `0x04` | `HEARTBEAT` | Both | Optional TLV | 保活 |
+| `0x05` | `HEARTBEAT_ACK` | Both | Optional TLV | 保活响应 |
+| `0x06` | `ACK` | Both | TLV | 确认 Frame / Message / Stream Chunk |
+| `0x07` | `NACK` | Both | TLV | 否认 Frame / Message / Stream Chunk |
+| `0x0A` | `CLOSE` | Both | Optional TLV | 主动关闭会话 |
+| `0x0B` | `CLOSE_ACK` | Both | Optional TLV | 关闭确认 |
+
+#### 5.2 MVP 可延后
+
+| Opcode | Name | 延后原因 |
+| ---: | --- | --- |
+| `0x03` | `READY` | 三步协商预留，当前版本不实现；收到时必须忽略 |
+| `0x08` | `RESUME` | 断点恢复可先由业务层 OTA resume 覆盖 |
+| `0x09` | `RESUME_ACK` | 同上 |
+| `0x0C` | `SESSION_RESET` | 可先使用 CLOSE + OPEN 重建 |
+| `0x0D` | `WINDOW_UPDATE` | 第一版可使用固定窗口 |
+| `0x0E` | `PING` | HEARTBEAT 已能覆盖基本保活 |
+| `0x0F` | `PONG` | 同上 |
+| `0x10` | `GOAWAY` | P2 |
+
+#### 5.3 Control TLV MVP 字段
+
+| fieldId | Name | Type | 用途 |
+|---:| --- |---| --- |
+| `0x01` | `sessionId` | `uint32` | 会话 ID |
+| `0x02` | `protocolVersion` | `uint8` | 协议版本 |
+| `0x03` | `reserved` | - | 历史 `headerProfile`，v1 不得使用 |
+| `0x04` | `maxFrameSize` | `uint16` | 最大 Frame |
+| `0x05` | `maxPayloadSize` | `uint16` | 最大 Payload |
+| `0x06` | `mtu` | `uint16` | 传输 MTU |
+| `0x07` | `supportedPayloadTypes` | `bitmap32` | 支持的 PayloadType |
+| `0x08` | `supportedRpcEncodings` | `bitmap32` | 支持的 RPC Encoding |
+| `0x09` | `reserved` | - | 历史 `supportedStreamProfiles`，新实现不得使用 |
+| `0x0A` | `heartbeatIntervalMs` | `uint16` | 心跳间隔 |
+| `0x0B` | `ackMode` | `uint8` | ACK 模式 |
+| `0x0C` | `windowSize` | `uint16` | 固定窗口 |
+| `0x10` | `reasonCode` | `uint16` | 关闭或错误原因 |
+| `0x11` | `messageId` | `uint16` | 被确认的 Message |
+| `0x12` | `frameIndex` | `uint8` | 被确认的 Frame |
+| `0x13` | `frameCount` | `uint8` | 总分片数 |
+| `0x15` | `streamId` | `uint32` | 被确认的 Stream |
+| `0x16` | `seqId` | `uint32` | 被确认的 Stream Chunk |
+| `0x20` | `targetType` | `uint8` | ACK/NACK 目标类型 |
+
+#### 5.4 ACK targetType
+
+| Value | Name | 说明 |
+|---:| --- |---|
+| `0x01` | `FRAME` | 确认某个 Frame 分片 |
+| `0x02` | `MESSAGE` | 确认完整 Message |
+| `0x03` | `STREAM_CHUNK` | 确认某个 Stream Chunk |
+| `0x04` | `CONTROL` | 确认某个 Control 消息 |
+
+---
+### 6. MVP RPC Registry
+
+#### 6.1 RPC Encoding
+
+| ID | Name | MVP | 说明 |
+|---:| --- |---| --- |
+| `0x01` | `JSON` | 必须 | WebSocket Unframed JSON 与 framed JSON |
+| `0x02` | `BINARY` | 必须 | AXTP-USB-HID / AXTP-TCP；bodyEncoding 推荐 TLV |
+| `0x03` | `CBOR` | 延后 | 复杂对象 |
+| `0x04` | `MSGPACK` | 延后 | 高级动态编码 |
+
+`BINARY+TLV8` 不是独立 wire enum，只是 `rpcEncoding=BINARY + bodyEncoding=TLV8` 的推荐组合名称。
+
+#### 6.2 RPC Body Encoding
+
+| ID | Name | MVP | 说明 |
+|---:| --- |---| --- |
+| `0x00` | `NONE` | 必须 | 无 body |
+| `0x01` | `TLV8` | 必须 | 1B fieldId + 1B length 的结构化参数、结果和事件数据 |
+| `0x02` | `TLV16` | 延后 | 扩展长度 TLV |
+| `0x03` | `RAW_BYTES` | 延后 | 单次旧命令/响应 body 透传，必须声明 legacyMapping |
+| `0x04` | `CBOR_BODY` | 延后 | Binary RPC 内嵌 CBOR body |
+
+#### 6.3 RPC Op
+
+| rpcOp | Name | MVP |
+|---:| --- |---|
+| `0x00` | `HELLO` | 必须 |
+| `0x02` | `IDENTIFY` | 必须 |
+| `0x03` | `IDENTIFIED` | 必须 |
+| `0x06` | `EVENT` | 必须 |
+| `0x07` | `REQUEST` | 必须 |
+| `0x08` | `REQUEST_RESPONSE` | 必须 |
+| `0x09` | `REQUEST_BATCH` | 延后 |
+| `0x0A` | `REQUEST_BATCH_RESPONSE` | 延后 |
+
+---
+
+### 7. MVP MethodId Registry
+
+#### 7.1 MVP 方法列表
+
+本节应与 `registry/method/method_registry.yaml` 保持一致；如存在差异，以 YAML/generated 为当前实现事实源，并应回修本表。未出现在 YAML 中的方法均视为 P1/P2 规划，不属于 AXTP v1 MVP 合同。
+
+| methodId | methodName | Domain | MVP | 说明 |
+|---:| --- |---| --- |---|
+| `0x0101` | `device.getInfo` | `device` | 必须 | 获取设备基础信息 |
+| `0x0201` | `capability.supportedMethods` | `capability` | 必须 | 获取当前会话可调用 methodId 集合 |
+| `0x0402` | `firmware.beginOta` | `firmware` | 必须 | 开始 OTA |
+| `0x0403` | `firmware.commitOtaBatch` | `firmware` | 必须 | 提交 OTA 数据批次 |
+| `0x0404` | `firmware.verifyOtaFiles` | `firmware` | 必须 | 校验 OTA 文件 |
+| `0x0405` | `firmware.installOta` | `firmware` | 必须 | 安装 OTA |
+| `0x0601` | `display.getBrightness` | `display` | 必须 | 获取亮度 |
+| `0x0602` | `display.setBrightness` | `display` | 必须 | 设置亮度 |
+
+#### 7.2 MVP 方法分级
+
+P0 必须实现：`device.getInfo / capability.supportedMethods / firmware.beginOta / firmware.commitOtaBatch / firmware.verifyOtaFiles / firmware.installOta / display.getBrightness / display.setBrightness`
+
+P1 建议实现：`capability.getRegistry / capability.getDomainRegistry / display.getBrightnessCapabilities / stream.getFlowControlState / stream.updateWindow / firmware.getOtaCapabilities / firmware.cancelOta / firmware.rollbackOta / firmware.getOtaState`
+
+P2 延后：`network.* / audio.* / camera.* / video.* / input.* / storage.* / file.* / log.* / diagnostic.* / auth.* / privacy.* / sensor.* / vendor.*`
+
+---
+
+### 8. MVP EventId Registry
+
+本节应与 `registry/event/event_registry.yaml` 保持一致；如存在差异，以 YAML/generated 为当前实现事实源，并应回修本表。`stream.*` 和 `device.statusChanged` 等事件可作为 `registry/domains/<domain>/domain.yaml` 中的 draft 规划存在，但不属于当前 AXTP v1 MVP 合同。
+
+`bitOffset` 为该事件在其 Domain 内的掩码位偏移，用于 `eventMasks` 域级订阅（见 09《AXTP Protocol Definition Mapping Spec》§23）。
+
+| eventId | eventName | Domain | domainId | bitOffset | MVP | 说明 |
+| ---: | --- | --- | ---: | ---: | --- | --- |
+| `0x0402` | `firmware.otaProgressReported` | `firmware` | `0x04` | 0 | 必须 | OTA 进度上报 |
+| `0x0403` | `firmware.otaStateChanged` | `firmware` | `0x04` | 1 | 必须 | OTA 状态变化，包括完成、失败和需要重启 |
+| `0x0404` | `firmware.otaResultReported` | `firmware` | `0x04` | 2 | 可选 | OTA 结果上报；MVP 可只使用 `firmware.otaStateChanged` |
+| `0x0607` | `display.brightnessChanged` | `display` | `0x06` | 0 | 必须 | 亮度变化 |
+
+---
+
+### 9. MVP ErrorCode Registry
+
+本节应与 `registry/error/error_code.yaml` 及 `registry/domains/<domain>/domain.yaml` 保持一致；如存在差异，以 YAML/generated 为当前实现事实源，并应回修本表。更完整的错误码规划见 12《AXTP Errors Registry Spec》，未进入 YAML 的错误名不得作为当前实现的 wire 合同。
+
+| errorCode | Name | Layer | Retryable | 说明 |
+|---:| --- |---| --- |---|
+| `0x0000` | `SUCCESS` | common | false | 成功 |
+| `0x0001` | `UNKNOWN_ERROR` | common | false | 未知错误 |
+| `0x0005` | `BUSY` | common | true | 设备或资源忙 |
+| `0x0012` | `FRAME_VERSION_UNSUPPORTED` | frame | false | Frame Version 不支持 |
+| `0x0016` | `FRAME_CRC_ERROR` | frame | true | Frame CRC 错误 |
+| `0x0018` | `FRAME_FRAGMENT_MISSING` | frame | true | 缺失 Frame 分片 |
+| `0x0021` | `CONTROL_OPCODE_INVALID` | control | false | Control Opcode 非法 |
+| `0x0022` | `CONTROL_PAYLOAD_INVALID` | control | false | Control Payload 非法 |
+| `0x0024` | `CONTROL_OPEN_REQUIRED` | control | false | 会话尚未完成 OPEN |
+| `0x0025` | `CONTROL_OPEN_REJECTED` | control | false | OPEN 被拒绝 |
+| `0x0026` | `RESERVED_CONTROL_PROFILE_UNSUPPORTED` | control | false | 历史 Header Profile 协商错误，v1 新实现不得产生 |
+| `0x0027` | `CONTROL_NEGOTIATION_FAILED` | control | false | 协商失败 |
+| `0x0028` | `CONTROL_SESSION_INVALID` | control | false | SessionId 无效 |
+| `0x002A` | `CONTROL_RESUME_FAILED` | control | false | 会话恢复失败 |
+| `0x002C` | `CONTROL_WINDOW_EXCEEDED` | control | true | 超出流控窗口 |
+| `0x0031` | `RPC_ENCODING_UNSUPPORTED` | rpc | false | RPC 编码不支持 |
+| `0x0036` | `RPC_METHOD_NOT_FOUND` | rpc | false | methodId 或 method name 不支持 |
+| `0x003B` | `RPC_PARAM_INVALID` | rpc | false | RPC 参数非法 |
+| `0x0501` | `STREAM_NOT_FOUND` | stream | false | Stream Context 不存在 |
+| `0x0502` | `STREAM_TIMEOUT` | stream | true | Stream 超时 |
+| `0x0503` | `STREAM_CRC_ERROR` | stream | true | Chunk CRC 错误 |
+| `0x040B` | `FW_VERIFY_FAILED` | firmware | false | 固件校验失败 |
+
+---
+
+### 10. MVP Capability Registry
+
+本节应与 `registry/capability/capability_registry.yaml` 保持一致；如存在差异，以 YAML/generated 为当前实现事实源，并应回修本表。旧字段级 capability 只作为兼容 alias 保留在迁移说明中。
+
+`bitOffset` 为该 capability 在其 Domain 内的掩码位偏移，用于 `capabilityMasks` 域级响应（见 09《AXTP Protocol Definition Mapping Spec》§23）。
+
+| capabilityId | capabilityName | domainId | bitOffset | Type | MVP |
+| ---: | --- | ---: | ---: | --- | --- |
+| `0x0001` | `protocol.payload.control` | `0x00` | 0 | `bool` | 必须 |
+| `0x0002` | `protocol.payload.rpc` | `0x00` | 1 | `bool` | 必须 |
+| `0x0003` | `protocol.payload.stream` | `0x00` | 2 | `bool` | 必须 |
+| `0x0101` | `device.info` | `0x01` | 0 | `bool` | 必须 |
+| `0x0201` | `capability.supportedMethods` | `0x02` | 0 | `bool` | 必须 |
+| `0x0401` | `firmware.ota` | `0x04` | 0 | `object` | 必须 |
+| `0x0601` | `display.brightness` | `0x06` | 0 | `bool` | 必须 |
+
+`display.brightnessMin / display.brightnessMax / display.brightnessStep` 迁移为 `display.brightness` capability schema 字段。
+
+---
+
+### 11. MVP Stream Registry
+
+#### 11.1 Stream Profile
+
+Stream Profile 是可建流协议档案，不是 STREAM 数据包字段。Profile 由 RPC 建流方法协商并绑定到 `streamId`。
+
+| profileId | Name | Domain | MVP | 默认 cursorUnit | 默认可靠性 |
+|---:| --- |---| --- |---| --- |
+| `0x0401` | `firmware.ota` | firmware | 必须 | `byteOffset` | reliable |
+| `0x1002` | `file.transfer` | file | 延后 | `byteOffset` | reliable |
+| `0x1101` | `log.stream` | log | 延后 | `timestampUs` | best_effort |
+| `0x0801` | `video.stream` | video | 延后 | `timestampUs` | best_effort |
+| `0x0902` | `audio.recording` | audio | 延后 | `timestampUs` | best_effort |
+
+#### 11.2 OTA Stream MVP Metadata
+
+| fieldId | Name | Type | 说明 |
+|---:| --- |---| --- |
+| `0x01` | `transferId` | `uint32` | 传输 ID |
+| `0x02` | `imageType` | `uint8` | 镜像类型 |
+| `0x03` | `offset` | `uint32` | 当前偏移 |
+| `0x04` | `chunkIndex` | `uint32` | 当前块序号 |
+| `0x05` | `chunkSize` | `uint16` | 当前块大小 |
+| `0x06` | `chunkCrc32` | `uint32` | 当前块 CRC32 |
+| `0x07` | `totalSize` | `uint32` | 总大小 |
+| `0x08` | `totalHash` | `bytes` | 完整镜像 Hash，可选 |
+
+#### 11.3 imageType MVP
+
+| imageType | Name | MVP |
+|---:| --- |---|
+| `0x01` | `MCU_FIRMWARE` | 必须 |
+| `0x02` | `LINUX_FIRMWARE` | 建议 |
+| `0x03` | `RESOURCE_PACKAGE` | 建议 |
+| `0x7F` | `VENDOR_IMAGE` | 延后 |
+
+---
+
+### 12. MVP Type System 子集
+
+| Type | MVP | 用途 |
+| --- |---| --- |
+| `uint8` | 必须 | enum、flags、小数值 |
+| `uint16` | 必须 | length、status、size |
+| `uint32` | 必须 | id、offset、crc32 |
+| `uint64` | 建议 | timestamp、大文件 offset |
+| `bool` | 必须 | capability、状态 |
+| `enum` | 必须 | PayloadType、imageType |
+| `bitmap32` | 必须 | 能力集合 |
+| `string` | 必须 | 设备名、版本号 |
+| `bytes` | 必须 | Hash、legacy payload |
+| `array` | 建议 | method/event/capability 列表 |
+| `object` | 延后 | 复杂嵌套结构 |
+
+---
+
+### 13. MVP TLV 子集
+
+MVP TLV 必须支持：
+
+```text
+fieldId:uint8 / length:uint8 / value:N
+```
+
+建议同时支持扩展长度：
+
+```text
+length = 0xFF / extendedLength:uint16 / value:N
+```
+
+解码器必须满足：支持未知字段跳过、字段顺序无关、required 字段校验、重复字段报错、deprecated 字段忽略、bytes passthrough。
+
+编码器必须满足：按 fieldId 升序输出、不输出 default 值（除非 schema 要求）、不输出 unknown 字段、不输出 deprecated 字段。
+
+---
+
+### 14. MVP Schema 列表
+
+#### 14.1 Device
+
+```text
+DeviceGetInfoRequest / DeviceGetInfoResponse
+DeviceGetVersionRequest / DeviceGetVersionResponse
+DeviceGetStatusRequest / DeviceGetStatusResponse
+DeviceStatusChangedEvent
+```
+
+#### 14.2 Capability
+
+```text
+CapabilityGetAllRequest / CapabilityGetAllResponse
+CapabilityGetDomainRequest / CapabilityGetDomainResponse
+CapabilityChangedEvent
+```
+
+#### 14.3 Display Brightness
+
+```text
+DisplayGetBrightnessRequest / DisplayGetBrightnessResponse
+DisplaySetBrightnessRequest / DisplaySetBrightnessResponse
+DisplayGetBrightnessRangeRequest / DisplayGetBrightnessRangeResponse
+DisplayBrightnessChangedEvent
+```
+
+#### 14.4 Stream
+
+```text
+StreamOpenRequest / StreamOpenResponse
+StreamCloseRequest / StreamCloseResponse
+StreamGetStatusRequest / StreamGetStatusResponse
+StreamOpenedEvent / StreamClosedEvent / StreamErrorEvent
+OtaStreamMetadata
+```
+
+#### 14.5 Firmware
+
+```text
+FirmwareGetInfoRequest / FirmwareGetInfoResponse
+FirmwareBeginRequest / FirmwareBeginResponse
+FirmwareEndRequest / FirmwareEndResponse
+FirmwareVerifyRequest / FirmwareVerifyResponse
+FirmwareAbortRequest / FirmwareAbortResponse
+FirmwareUpdateProgressEvent / FirmwareUpdateCompletedEvent / FirmwareUpdateFailedEvent
+```
+
+---
+
+### 15. 老协议兼容 MVP
+
+最小兼容目标：旧 CmdValue 可以映射到 AXTP methodId；旧 Payload 可以作为 RAW_BYTES body 传输；旧返回码可以映射到 AXTP errorCode；旧设备能力可以映射到 AXTP capability；旧 OTA 流程可以映射到 firmware.* + STREAM OTA。
+
+每个从旧协议迁移的方法都应声明：
+
+```yaml
+legacyMapping:
+  protocol: AXDP_HID
+  cmdValue: 0xC0021
+  oldName: CommonSetVideoMode
+  bodyEncoding: RAW_BYTES
+  migration: keep_cmd_value_as_method_id
+```
+
+MVP 旧协议方法适配：
+
+| oldName | oldCmdValue | AXTP methodName | AXTP methodId | MVP |
+| --- |---:| --- |---:| --- |
+| `BetaDeviceInfo` | `0xB0002` | `device.getInfo` | `0x0101` 或保留旧值 | 必须 |
+| `AlphaUpgradeInfo` | `0xA0001` | `firmware.getOtaCapabilities` | `0x0401` 或保留旧值 | 可选/P1 |
+
+AXTP `methodId` 固定为 uint16，旧 CmdValue 可能超过 uint16，不得直接作为 methodId。旧 CmdValue 必须保存在 legacyMapping 中，并唯一映射到 AXTP MethodId。

@@ -10,7 +10,7 @@
 - 02《AXTP-Control信令协议规范》
 - 03《AXTP-RPC协议与二进制映射规范》
 - 04《AXTP-Stream流式传输协议规范》
-- 13《AXTP-MVP最小实现注册表》
+- 14《AXTP Profiles Registry Spec》中的 MVP 最小实现注册表
 
 ---
 
@@ -87,7 +87,7 @@ ACCEPT 完成后，Device 主动发送 RPC Hello(op=0)，Client 回应 Identify(
 
 三步完成后进入 `APP_READY` 状态。
 
-`eventMasks` 格式为 Hex 字符串，由 Domain Block 链拼接而成（见 08《Registry 总则》§23）。MVP 阶段设备可忽略 `eventMasks`，默认推送所有核心事件（全量广播模式）。
+`eventMasks` 格式为 Hex 字符串，由 Domain Block 链拼接而成（见 09《AXTP Protocol Definition Mapping Spec》§23）。MVP 阶段设备可忽略 `eventMasks`，默认推送所有核心事件（全量广播模式）。
 
 如果设备为免鉴权模式，Hello 中 `authRequired=false`，Client 发送 Identify 时省略 `authResponse`，Device 直接回 Identified。
 
@@ -117,7 +117,7 @@ firmware.ota
 display.brightness
 ```
 
-`capabilityMasks` 格式见 08《Registry 总则》§23 和 12《Capability 注册表》§4.1。
+`capabilityMasks` 格式见 09《AXTP Protocol Definition Mapping Spec》§23 和 13《AXTP Types and Capability Spec》§4.1。
 
 ---
 

@@ -278,8 +278,8 @@
   },
   "compatibility": {
     "legacySources": [
-      "docs/source/AXTP-Legacy-Compatibility-Reference.md",
-      "docs/source/AXTP-Legacy-Registry-Migration-Map.md"
+      "docs/archive/source-planning/AXTP-Legacy-Compatibility-Reference.md",
+      "docs/archive/source-planning/AXTP-Legacy-Registry-Migration-Map.md"
     ],
     "rules": [
       "Stable methodId, eventId and error code values must not be reused.",

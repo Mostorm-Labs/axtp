@@ -1,20 +1,21 @@
 # 19《AXTP OTA Stream Demo》v1.0
 
-> 文档状态：MVP Demo 规范  
-> 所属目录：05-demo  
-> 依赖文档：  
-> - 01《AXTP-整体协议规范》  
-> - 02《AXTP-Control信令协议规范》  
-> - 03《AXTP-RPC协议与二进制映射规范》  
-> - 04《AXTP-Stream流式传输协议规范》  
-> - 05《AXTP-Type-System基础类型规范》  
-> - 06《AXTP-TLV-Schema编码规范》  
-> - 09《AXTP-MethodId注册表》  
-> - 10《AXTP-EventId注册表》  
-> - 11《AXTP-ErrorCode注册表》  
-> - 12《AXTP-Capability注册表》  
-> - 13《AXTP-MVP最小实现注册表》  
-> - 14《AXTP-老协议适配与迁移规范》
+> 文档状态：MVP Demo 规范
+> 所属目录：05-demo
+> 依赖文档：
+> - 00《AXTP Overview》
+> - 02《AXTP Frame and Payload Spec》
+> - 04《AXTP Control Session Spec》
+> - 05《AXTP RPC Session Spec》
+> - 06《AXTP Stream Spec》
+> - 08《AXTP Capability Naming and Feature Taxonomy》
+> - 09《AXTP Protocol Definition Mapping Spec》
+> - 10《AXTP-MethodId注册表》
+> - 11《AXTP-EventId注册表》
+> - 12《AXTP-ErrorCode注册表》
+> - 13《AXTP-Capability注册表》
+> - 14《AXTP Profiles Registry Spec》中的 MVP 最小实现注册表
+> - 07《AXTP Compatibility and Versioning》
 
 
 > **同步状态**：本文档的 STREAM 数据面已同步 `06-AXTP-Stream-Spec v1.1` 的 16B L2 Header 模型（`streamId / seqId / cursor / data`）。OTA 业务属性通过 `firmware.begin` 建立并绑定到 `streamId`，不得放入 STREAM Header。

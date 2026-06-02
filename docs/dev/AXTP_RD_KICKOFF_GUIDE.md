@@ -2,7 +2,7 @@
 
 > 状态：Draft
 > 面向对象：固件/MCU、客户端/前端、云端/Agent、测试、协议仓库维护者
-> 基于材料：`docs/kickoff/AXTP_R&D_Kickoff.md`、`docs/specs/`、`docs/source/`、`registry/`、`docs/generated/`、`docs/migration/generated/`、`docs/legacy-protocols/`
+> 基于材料：`docs/kickoff/AXTP_R&D_Kickoff.md`、`docs/specs/`、`docs/archive/source-planning/`、`registry/`、`docs/generated/`、`docs/migration/generated/`、`docs/legacy-protocols/`
 
 ## 0. 一句话结论
 
@@ -540,10 +540,10 @@ generators/src/__snapshots__/
 - `docs/specs/05-AXTP-RPC-Session-Spec.md`
 - `docs/specs/06-AXTP-Stream-Spec.md`
 - `docs/specs/07-AXTP-Compatibility-and-Versioning.md`
-- `docs/specs/17-AXTP-Low-Bandwidth-Degradation.md`
-- `docs/specs/20-AXTP-Generator-v1实现规范.md`
-- `docs/source/AXTP-Legacy-Compatibility-Reference.md`
-- `docs/source/AXTP-Protocol-Plan.md`
+- `docs/specs/18-AXTP-Low-Bandwidth-Degradation.md`
+- `docs/specs/19-AXTP-Generator-v1实现规范.md`
+- `docs/archive/source-planning/AXTP-Legacy-Compatibility-Reference.md`
+- `docs/archive/source-planning/AXTP-Protocol-Plan.md`
 - `docs/migration/generated/migration-plan.generated.md`
 - `docs/migration/generated/compatibility-layer.generated.md`
 - `docs/migration/generated/cpp-legacy-adapter-plan.generated.md`

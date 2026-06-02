@@ -8,7 +8,7 @@
 版本：v1.0.0-rc1
 状态：AXTP v1 Core Freeze Candidate
 适用范围：AXTP v1 Core 分层、职责边界、生产路径与文档索引
-后续文档：02《AXTP Frame and Payload Spec》、03《AXTP Transport Profiles》、04《AXTP Control Session Spec》、05《AXTP RPC Session Spec》、06《AXTP Stream Spec》、07《AXTP Compatibility and Versioning》、17《AXTP Low-Bandwidth Degradation》
+后续文档：02《AXTP Frame and Payload Spec》、03《AXTP Transport Profiles》、04《AXTP Control Session Spec》、05《AXTP RPC Session Spec》、06《AXTP Stream Spec》、07《AXTP Compatibility and Versioning》、18《AXTP Low-Bandwidth Degradation》
 
 ---
 
@@ -83,7 +83,7 @@ Transport Profile 决定是否使用 Frame Header。同一个 AXTP Session 内 F
 | AXTP-WS-JSON | none |
 | AXTP-WS-CLOUD-REVERSE | none |
 
-Compact / HID-64 / BLE / UART 迁移到 17《AXTP Low-Bandwidth Degradation》，不作为当前 v1 Core 主线。
+Compact / HID-64 / BLE / UART 迁移到 18《AXTP Low-Bandwidth Degradation》，不作为当前 v1 Core 主线。
 
 ---
 
@@ -134,4 +134,4 @@ v1 Core 保留 `capability` 域，但不实现完整 Capability Model。v1 Core 
 | 05《AXTP RPC Session Spec》 | Hello / Identify / Identified / Binary RPC / methodId / eventId |
 | 06《AXTP Stream Spec》 | 16B STREAM Header、streamId / seq / cursor、resume / retransmit / flow control |
 | 07《AXTP Compatibility and Versioning》 | v1 freeze rules、reserved 规则、ID 不复用、Legacy migration |
-| 17《AXTP Low-Bandwidth Degradation》 | Compact / HID-64 / BLE / UART 降级路径 |
+| 18《AXTP Low-Bandwidth Degradation》 | Compact / HID-64 / BLE / UART 降级路径 |

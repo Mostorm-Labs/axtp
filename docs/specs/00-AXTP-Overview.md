@@ -1,6 +1,6 @@
 # 00《AXTP Overview》
 
-版本：v2.0 Draft
+版本：v2.0
 状态：Normative
 适用范围：AXTP 协议体系架构入口
 
@@ -43,7 +43,7 @@ AXTP 主要解决以下工程问题：
 | AXTP-WS-JSON | WebSocket Unframed JSON | none | 正式 RPC-only WebSocket 集成 |
 | AXTP-WS-CLOUD-REVERSE | WebSocket Unframed JSON | none | 设备主动连接云端，设备仍为 Logical Server |
 
-Compact / HID-64 / BLE / UART 是低带宽降级路径，见 17《AXTP Low-Bandwidth Degradation》。
+Compact / HID-64 / BLE / UART 是低带宽降级路径，见 18《AXTP Low-Bandwidth Degradation》。
 
 ---
 
@@ -135,7 +135,7 @@ Method/Event Bitmap
 
 治理规则：
 
-- 新增业务 method / event / error / profile 默认只修改 `registry/domains/<domain>/domain.yaml`，不修改 08-13 规范文档
+- 新增业务 method / event / error / profile 默认只修改 `registry/domains/<domain>/domain.yaml`；命名归属遵循 08，通常不修改 09-14 registry 规范表
 - 只有 Core/MVP 晋升、公共 schema、核心常量或 legacy 映射才修改对应 `registry/` 核心文件；不得两边重复定义同一协议事实
 - `protocol/axtp.protocol.yaml` 为生成产物，不得手写修改
 - stable 的 methodId / eventId / errorCode 不得复用

@@ -70,7 +70,7 @@ export async function loadProtocolDocs(specRoot: string): Promise<ProtocolDocsTe
   const [streamSpec, controlSpec, typesSpec] = await Promise.all([
     readFile(path.join(docsRoot, "06-AXTP-Stream-Spec.md"), "utf8"),
     readFile(path.join(docsRoot, "04-AXTP-Control-Session-Spec.md"), "utf8"),
-    readFile(path.join(docsRoot, "12-AXTP-Types-and-Capability-Spec.md"), "utf8")
+    readFile(path.join(docsRoot, "13-AXTP-Types-and-Capability-Spec.md"), "utf8")
   ]);
   return { streamSpec, controlSpec, typesSpec };
 }
@@ -85,7 +85,7 @@ export function validateProtocolDocsConsistency(model: ProtocolModel, docs: Prot
   requirePattern(docs.controlSpec, /READY[\s\S]{0,80}可选/, "docs/specs/04-AXTP-Control-Session-Spec.md", "READY", "control spec must define READY as optional");
   requirePattern(docs.controlSpec, /默认握手只要求 OPEN \/ ACCEPT/, "docs/specs/04-AXTP-Control-Session-Spec.md", "READY", "control spec must state that default handshake only requires OPEN / ACCEPT");
 
-  requirePattern(docs.typesSpec, /methods\[\]\.bitOffset/, "docs/specs/12-AXTP-Types-and-Capability-Spec.md", "capability.supportedMethods", "types spec must derive method bitmap from methods[].bitOffset");
+  requirePattern(docs.typesSpec, /methods\[\]\.bitOffset/, "docs/specs/13-AXTP-Types-and-Capability-Spec.md", "capability.supportedMethods", "types spec must derive method bitmap from methods[].bitOffset");
 
   assertYamlStreamHeader(model);
   assertYamlControl(model);

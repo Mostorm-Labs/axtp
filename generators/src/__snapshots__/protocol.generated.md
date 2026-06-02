@@ -61,7 +61,7 @@ AXTP v1 has two formal integration paths:
 | Standard Framed | AXTP-USB-HID<br>AXTP-TCP | STANDARD_FRAME | `TLV`, `JSON`, `RAW` | Yes | Yes |
 | WebSocket Unframed JSON | AXTP-WS-JSON<br>AXTP-WS-CLOUD-REVERSE | None | `JSON` | No | No |
 
-Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP v1 Core requirement. See `docs/specs/17-AXTP-Low-Bandwidth-Degradation.md` for that path.
+Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP v1 Core requirement. See `docs/specs/18-AXTP-Low-Bandwidth-Degradation.md` for that path.
 
 ## Design Goals / Non-Goals
 

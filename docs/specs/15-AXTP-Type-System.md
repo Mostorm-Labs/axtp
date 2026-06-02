@@ -1,4 +1,4 @@
-# 14《AXTP Type System 基础类型规范》
+# 15《AXTP Type System 基础类型规范》
 
 版本：v1.0  
 状态：MVP 实现规范  

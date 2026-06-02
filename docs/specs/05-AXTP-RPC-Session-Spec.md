@@ -502,7 +502,7 @@ Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [Bitmask: N B (Little-Endian)]
 
 | 字段 | 长度 | 说明 |
 | --- | --- | --- |
-| `DomainId` | 1B | 事件所属域 ID（与 EventId 高字节对齐，见 10《EventId 注册表》） |
+| `DomainId` | 1B | 事件所属域 ID（与 EventId 高字节对齐，见 11《AXTP Events Registry Spec》） |
 | `MaskLen` | 1B | Bitmask 字节数 N（1-32），高水位截断：只发到最高有效字节 |
 | `Bitmask` | N B | 该域的事件订阅掩码，Little-Endian，Bit 0 对应 bitOffset=0 |
 
@@ -588,7 +588,7 @@ MessagePack 和 CBOR 保留为后续扩展，不属于 AXTP v1 Core 必选实现
 
 ## 19. Binary RPC 编码
 
-Binary 模式面向 Standard Framed 设备，使用统一 11B 固定二进制头承载 op+d 语义。AXTP v1 Core 不再区分 RPC Standard/Compact Payload；Compact 低带宽降级见 17《AXTP Low-Bandwidth Degradation》。
+Binary 模式面向 Standard Framed 设备，使用统一 11B 固定二进制头承载 op+d 语义。AXTP v1 Core 不再区分 RPC Standard/Compact Payload；Compact 低带宽降级见 18《AXTP Low-Bandwidth Degradation》。
 
 ### 19.1 Binary Payload（11B 固定头）
 
@@ -656,9 +656,9 @@ Binary RESPONSE 中 `statusCode` 与 JSON `status.code` 对应，不再维护独
 
 ## 20. TLV Body 编码
 
-TLV 基本结构：`type(1B) + length(1B) + value(N)`，扩展长度格式见 15《AXTP TLV Schema Encoding》。
+TLV 基本结构：`type(1B) + length(1B) + value(N)`，扩展长度格式见 16《AXTP TLV Schema Encoding》。
 
-TLV 字段 ID 由 Method Registry 的 schema 定义，不在 RPC 协议中硬编码。fieldId 范围分配见 16《AXTP Schema Field Numbering》。
+TLV 字段 ID 由 Method Registry 的 schema 定义，不在 RPC 协议中硬编码。fieldId 范围分配见 17《AXTP Schema Field Numbering》。
 
 示例（SetBrightness）：
 
@@ -921,7 +921,7 @@ RPC Parser 必须满足：
 - 不支持的 rpcEncoding 返回 `RPC_ENCODING_UNSUPPORTED`
 - requestId 必须原样返回，RequestResponse 必须匹配已有 pending request
 - Event 不得被当作 RequestResponse 处理
-- Identified 之前收到 Request 必须返回 `status.ok=false, status.code=SESSION_NOT_READY`，不得处理业务请求
+- Identified 前收到 Request 必须返回 `status.ok=false, status.code=SESSION_NOT_READY`，不得处理业务请求
 - 所有整数解析必须显式处理字节序，不允许直接 reinterpret_cast 网络字节流为 C++ struct
 
 ---
@@ -990,9 +990,9 @@ MessagePack / CBOR
 | 02《AXTP Frame and Payload Spec》 | Frame Header、PayloadType、Fragment、CRC |
 | 04《AXTP Control Session Spec》 | CONTROL 建立 Session，不承载业务方法 |
 | 06《AXTP Stream Spec》 | STREAM 数据面，RPC 只负责控制面 |
-| 14《AXTP Type System》 | wire 类型定义（uint8/string/bitmap/array/object） |
-| 15《AXTP TLV Schema Encoding》 | body 字段 TLV 编码格式、扩展长度、canonical encoding |
-| 16《AXTP Schema Field Numbering》 | schema-local fieldId 分配、废弃规则 |
+| 15《AXTP Type System》 | wire 类型定义（uint8/string/bitmap/array/object） |
+| 16《AXTP TLV Schema Encoding》 | body 字段 TLV 编码格式、扩展长度、canonical encoding |
+| 17《AXTP Schema Field Numbering》 | schema-local fieldId 分配、废弃规则 |
 | MethodId/EventId/ErrorCode/Capability 注册表 | 业务语义单一事实源 |
 | 老协议适配规范 | CmdValue/legacy payload 到 RPC 的映射 |
 | Generator v1 实现规范 | 从 registry 生成 C++ 和 Markdown |

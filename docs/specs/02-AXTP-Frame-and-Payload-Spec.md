@@ -8,7 +8,7 @@
 状态：AXTP v1 Core Freeze Candidate
 适用范围：AXTP v1 Core 的 Standard Framed 模式
 前置文档：01《AXTP Protocol Framework》
-后续文档：03《AXTP Transport Profiles》、04《AXTP Control Session Spec》、05《AXTP RPC Session Spec》、06《AXTP Stream Spec》、17《AXTP Low-Bandwidth Degradation》
+后续文档：03《AXTP Transport Profiles》、04《AXTP Control Session Spec》、05《AXTP RPC Session Spec》、06《AXTP Stream Spec》、18《AXTP Low-Bandwidth Degradation》
 
 ---
 
@@ -22,7 +22,7 @@
 - MessageId 与 Fragment 语义
 - 与 WebSocket Unframed JSON 的边界
 
-Compact / HID-64 / BLE / UART 等低带宽降级路径不属于 AXTP v1 Core 必选实现，统一移入 17《AXTP Low-Bandwidth Degradation》。
+Compact / HID-64 / BLE / UART 等低带宽降级路径不属于 AXTP v1 Core 必选实现，统一移入 18《AXTP Low-Bandwidth Degradation》。
 
 ---
 
@@ -155,4 +155,4 @@ AXTP v1 Core 不协商 Header Profile。Standard Framed transport 固定使用 `
 - 不得改变 STREAM 16B Header
 - 只能改变外层帧头、分片、MTU 与确认策略
 
-完整降级说明见 17《AXTP Low-Bandwidth Degradation》。
+完整降级说明见 18《AXTP Low-Bandwidth Degradation》。

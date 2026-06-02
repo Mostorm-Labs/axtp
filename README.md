@@ -39,7 +39,7 @@ docs/generated/ + tooling/ + runtimes/*/generated/
 | 路径 | 功能含义 | 是否手写 |
 |---|---|---|
 | `docs/specs/` | 规范文档，描述协议框架、传输、Frame/Payload、RPC、STREAM、Registry 元模型、生成器规则等 | 是 |
-| `docs/source/` | 历史资料、兼容性参考、旧注册表迁移材料、能力模型等源材料 | 是 |
+| `docs/archive/` | 历史 source 草稿、旧 registry 迁移材料和未来草案；非 active 事实源 | 是 |
 | `docs/kickoff/` | 项目 kickoff、研发说明和跨团队启动材料 | 是 |
 | `docs/demo/` | 典型场景和 demo 级实现说明，例如 WebSocket、HID、BLE、OTA、MVP 流程 | 是 |
 | `docs/legacy-protocols/` | AXDP、VM33、Rooms、NearHub 等 legacy 协议原始资料和扫描清单 | 是 |
@@ -75,17 +75,18 @@ docs/generated/ + tooling/ + runtimes/*/generated/
 | `docs/specs/05-AXTP-RPC-Session-Spec.md` | RPC 会话、Hello、Identify、request/response/event 规则 |
 | `docs/specs/06-AXTP-Stream-Spec.md` | STREAM 数据面和 16B stream header 规则 |
 | `docs/specs/07-AXTP-Compatibility-and-Versioning.md` | 兼容性和版本治理规则 |
-| `docs/specs/08-AXTP-Protocol-Definition-Mapping-Spec.md` | Source YAML、Protocol IR、生成产物之间的映射规则 |
-| `docs/specs/09-AXTP-Methods-Registry-Spec.md` | method 注册表元模型 |
-| `docs/specs/10-AXTP-Events-Registry-Spec.md` | event 注册表元模型 |
-| `docs/specs/11-AXTP-Errors-Registry-Spec.md` | error code 注册表元模型 |
-| `docs/specs/12-AXTP-Types-and-Capability-Spec.md` | 类型系统和 capability 规则 |
-| `docs/specs/13-AXTP-Profiles-Registry-Spec.md` | profile 注册表规则 |
-| `docs/specs/14-AXTP-Type-System.md` | 类型系统细节 |
-| `docs/specs/15-AXTP-TLV-Schema-Encoding.md` | TLV schema 编码规则 |
-| `docs/specs/16-AXTP-Schema-Field-Numbering.md` | schema field id 编号规则 |
-| `docs/specs/17-AXTP-Low-Bandwidth-Degradation.md` | HID-64、BLE、UART 等低带宽降级路径 |
-| `docs/specs/20-AXTP-Generator-v1实现规范.md` | Generator v1 的实现规范、输入输出和治理原则 |
+| `docs/specs/08-AXTP-Capability-Naming-and-Feature-Taxonomy.md` | `domain.feature`、method、event 命名与 feature taxonomy 治理 |
+| `docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md` | Source YAML、Protocol IR、生成产物之间的映射规则 |
+| `docs/specs/10-AXTP-Methods-Registry-Spec.md` | method 注册表元模型与 MethodId 表 |
+| `docs/specs/11-AXTP-Events-Registry-Spec.md` | event 注册表元模型与 EventId 表 |
+| `docs/specs/12-AXTP-Errors-Registry-Spec.md` | error code 注册表元模型与 ErrorCode 表 |
+| `docs/specs/13-AXTP-Types-and-Capability-Spec.md` | 类型系统、capability 规则与 CapabilityId 表 |
+| `docs/specs/14-AXTP-Profiles-Registry-Spec.md` | profile 注册表规则与 MVP 最小实现表 |
+| `docs/specs/15-AXTP-Type-System.md` | 类型系统细节 |
+| `docs/specs/16-AXTP-TLV-Schema-Encoding.md` | TLV schema 编码规则 |
+| `docs/specs/17-AXTP-Schema-Field-Numbering.md` | schema field id 编号规则 |
+| `docs/specs/18-AXTP-Low-Bandwidth-Degradation.md` | HID-64、BLE、UART 等低带宽降级路径 |
+| `docs/specs/19-AXTP-Generator-v1实现规范.md` | Generator v1 的实现规范、输入输出和治理原则 |
 
 生成后的阅读入口：
 
@@ -398,7 +399,7 @@ types:
         required: true
 ```
 
-实际字段格式以 `registry/domains/network/domain.yaml`、`registry/domains/stream/domain.yaml` 和 `docs/specs/20-AXTP-Generator-v1实现规范.md` 为准。
+实际字段格式以 `registry/domains/network/domain.yaml`、`registry/domains/stream/domain.yaml` 和 `docs/specs/19-AXTP-Generator-v1实现规范.md` 为准。
 
 ## 提交前检查
 

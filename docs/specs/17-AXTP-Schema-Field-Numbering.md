@@ -1,9 +1,9 @@
-# 16《AXTP Schema 字段编号规范》
+# 17《AXTP Schema 字段编号规范》
 
-版本：v1.0  
-状态：MVP Draft  
-适用范围：AXTP TLV Schema、Control TLV、RPC Body Schema、Stream Profile Context Schema、Registry YAML  
-前置文档：14《AXTP Type System 基础类型规范》、15《AXTP TLV Schema 编码规范》
+版本：v1.0
+状态：MVP 字段编号规范
+适用范围：AXTP TLV Schema、Control TLV、RPC Body Schema、Stream Profile Context Schema、Registry YAML
+前置文档：15《AXTP Type System 基础类型规范》、16《AXTP TLV Schema 编码规范》
 
 ---
 
