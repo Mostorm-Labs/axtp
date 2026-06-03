@@ -123,6 +123,18 @@
       "idHex": "0x0604"
     },
     {
+      "id": 2305,
+      "name": "audio.algorithm",
+      "domain": "audio",
+      "status": "draft",
+      "description": "Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "AudioAlgorithmCapability",
+      "idHex": "0x0901"
+    },
+    {
       "id": 3590,
       "name": "network.softAp",
       "domain": "network",

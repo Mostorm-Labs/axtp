@@ -14,4 +14,5 @@
 | `0x0602` | `display.brightnessMin` | display | mvp | uint16 | - |
 | `0x0603` | `display.brightnessMax` | display | mvp | uint16 | - |
 | `0x0604` | `display.brightnessStep` | display | mvp | uint16 | - |
+| `0x0901` | `audio.algorithm` | audio | draft | object | AudioAlgorithmCapability |
 | `0x0E06` | `network.softAp` | network | draft | bool | - |

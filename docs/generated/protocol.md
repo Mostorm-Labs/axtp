@@ -11,6 +11,7 @@
 - [Connection Lifecycle](#connection-lifecycle)
 - [Capability Discovery](#capability-discovery)
 - [Methods](#methods)
+  - [audio Methods](#audio-methods)
   - [capability Methods](#capability-methods)
   - [device Methods](#device-methods)
   - [display Methods](#display-methods)
@@ -18,6 +19,7 @@
   - [network Methods](#network-methods)
   - [stream Methods](#stream-methods)
 - [Events](#events)
+  - [audio Events](#audio-events)
   - [display Events](#display-events)
   - [firmware Events](#firmware-events)
   - [network Events](#network-events)
@@ -30,6 +32,7 @@
 
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
+| audio | 4 | 1 |
 | capability | 1 | 0 |
 | device | 1 | 0 |
 | display | 2 | 1 |
@@ -173,6 +176,7 @@ Capability discovery is exposed through `capability.supportedMethods`. The `Capa
 
 | Domain | Methods |
 | ---- | ---- |
+| audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig |
 | capability | 0: capability.supportedMethods |
 | device | 0: device.getInfo |
 | display | 0: display.getBrightness<br>1: display.setBrightness |
@@ -181,6 +185,158 @@ Capability discovery is exposed through `capability.supportedMethods`. The `Capa
 | stream | 0: stream.open |
 
 # Methods
+
+## audio Methods
+
+### Methods in this domain
+
+- [audio.getAlgorithmConfig](#audiogetalgorithmconfig)
+- [audio.setAlgorithmConfig](#audiosetalgorithmconfig)
+- [audio.getAlgorithmCapabilities](#audiogetalgorithmcapabilities)
+- [audio.resetAlgorithmConfig](#audioresetalgorithmconfig)
+
+---
+
+### audio.getAlgorithmConfig
+
+Return the current effective configuration for supported audio algorithm objects.
+
+- Method ID: `0x0901`
+- Domain: `audio`
+- Bit Offset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `audio.algorithm`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `AudioGetAlgorithmConfigRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?items | Bytes | 0x01 | Optional JSON array of algorithm object names; omit to query all supported algorithms. | maxLength=128 | Omit if not used. |
+
+#### Response Fields
+
+Type: `AudioAlgorithmConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?noiseSuppression | AudioNoiseSuppressionConfig | 0x01 | Noise suppression configuration. | None | Omit if not used. |
+| ?echoCancellation | AudioEchoCancellationConfig | 0x02 | Echo cancellation configuration. | None | Omit if not used. |
+| ?autoGainControl | AudioAutoGainControlConfig | 0x03 | Automatic gain control configuration. | None | Omit if not used. |
+| ?beamforming | AudioBeamformingConfig | 0x04 | Beamforming configuration. | None | Omit if not used. |
+| ?dereverberation | AudioDereverberationConfig | 0x05 | Dereverberation configuration. | None | Omit if not used. |
+| ?voiceActivityDetection | AudioVoiceActivityDetectionConfig | 0x06 | Voice activity detection configuration. | None | Omit if not used. |
+| ?directionOfArrival | AudioDirectionOfArrivalConfig | 0x07 | Direction of arrival configuration. | None | Omit if not used. |
+| ?howlingSuppression | AudioHowlingSuppressionConfig | 0x08 | Howling suppression configuration. | None | Omit if not used. |
+
+---
+
+### audio.setAlgorithmConfig
+
+Partially update one or more audio algorithm configuration objects atomically.
+
+- Method ID: `0x0902`
+- Domain: `audio`
+- Bit Offset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `audio.algorithm`
+- Possible Events: `audio.algorithmConfigChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `AudioSetAlgorithmConfigRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| config | AudioAlgorithmConfig | 0x01 | Partial configuration keyed by algorithm object name. | None | N/A |
+
+#### Response Fields
+
+Type: `AudioSetAlgorithmConfigResponse`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| applyState | Enum | 0x01 | Apply state; values are applied or pending_restart. | None | N/A |
+| requiresAudioRestart | Boolean | 0x02 | Whether the change requires restarting the audio link or rebuilding the audio pipeline. | None | N/A |
+| config | AudioAlgorithmConfig | 0x03 | Final effective configuration for the algorithms affected by this operation. | None | N/A |
+
+---
+
+### audio.getAlgorithmCapabilities
+
+Return supported audio algorithm objects, fields, defaults, ranges, enum values, and update policy.
+
+- Method ID: `0x090D`
+- Domain: `audio`
+- Bit Offset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `audio.algorithm`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `AudioGetAlgorithmCapabilitiesRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?items | Bytes | 0x01 | Optional JSON array of algorithm object names; omit to query all supported algorithms. | maxLength=128 | Omit if not used. |
+
+#### Response Fields
+
+Type: `AudioGetAlgorithmCapabilitiesResponse`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | String | 0x01 | Fixed capability name audio.algorithm. | maxLength=32 | N/A |
+| updatePolicy | AudioAlgorithmUpdatePolicy | 0x02 | Update and atomicity policy for set and reset operations. | None | N/A |
+| algorithms | AudioAlgorithmCapabilities | 0x03 | Capability descriptors keyed by algorithm object name. | None | N/A |
+
+---
+
+### audio.resetAlgorithmConfig
+
+Reset all, selected, or selected-field audio algorithm configuration to declared default values.
+
+- Method ID: `0x090E`
+- Domain: `audio`
+- Bit Offset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `audio.algorithm`
+- Possible Events: `audio.algorithmConfigChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `AudioResetAlgorithmConfigRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| items | Bytes | 0x01 | JSON reset selector: the string all, an array of algorithm object names, or a map from algorithm names to field-name arrays. | maxLength=256 | N/A |
+
+#### Response Fields
+
+Type: `AudioSetAlgorithmConfigResponse`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| applyState | Enum | 0x01 | Apply state; values are applied or pending_restart. | None | N/A |
+| requiresAudioRestart | Boolean | 0x02 | Whether the change requires restarting the audio link or rebuilding the audio pipeline. | None | N/A |
+| config | AudioAlgorithmConfig | 0x03 | Final effective configuration for the algorithms affected by this operation. | None | N/A |
+
+---
 
 ## capability Methods
 
@@ -600,6 +756,41 @@ Type: `StreamOpenResponse`
 
 # Events
 
+## audio Events
+
+### Events in this domain
+
+- [audio.algorithmConfigChanged](#audioalgorithmconfigchanged)
+
+---
+
+### audio.algorithmConfigChanged
+
+Emitted when audio algorithm configuration changes after set, reset, profile, restore, factory reset, or device policy changes.
+
+- Event ID: `0x0901`
+- Domain: `audio`
+- Bit Offset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `audio.setAlgorithmConfig`, `audio.resetAlgorithmConfig`, `profile changed`, `factory reset`, `restore config`, `device policy`
+- Required Capabilities: `audio.algorithm`
+
+#### Payload Fields
+
+Type: `AudioAlgorithmConfigChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| reason | Enum | 0x01 | Change reason; values include user_request, reset_to_default, factory_reset, profile_changed, device_policy, restore_config, and unknown. | None | N/A |
+| applyState | Enum | 0x02 | Apply state; values are applied or pending_restart. | None | N/A |
+| requiresAudioRestart | Boolean | 0x03 | Whether the change requires restarting the audio link or rebuilding the audio pipeline. | None | N/A |
+| config | AudioAlgorithmConfig | 0x04 | Changed or affected algorithm configuration values. | None | N/A |
+| ?changedFields | Bytes | 0x05 | Optional JSON array of changed field paths such as noiseSuppression.level. | maxLength=256 | Omit if not used. |
+
+---
+
 ## display Events
 
 ### Events in this domain
@@ -812,6 +1003,284 @@ Type: `StreamErrorEvent`
 ---
 
 # Additional Types
+
+## AudioAlgorithmCapabilities
+
+Capability descriptors for audio algorithm objects.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?noiseSuppression | AudioNoiseSuppressionCapabilities | 0x01 | Noise suppression capability descriptor. | None | Omit if not used. |
+| ?echoCancellation | AudioEchoCancellationCapabilities | 0x02 | Echo cancellation capability descriptor. | None | Omit if not used. |
+| ?autoGainControl | AudioAutoGainControlCapabilities | 0x03 | Automatic gain control capability descriptor. | None | Omit if not used. |
+| ?beamforming | AudioBeamformingCapabilities | 0x04 | Beamforming capability descriptor. | None | Omit if not used. |
+| ?dereverberation | AudioDereverberationCapabilities | 0x05 | Dereverberation capability descriptor. | None | Omit if not used. |
+| ?voiceActivityDetection | AudioVoiceActivityDetectionCapabilities | 0x06 | Voice activity detection capability descriptor. | None | Omit if not used. |
+| ?directionOfArrival | AudioDirectionOfArrivalCapabilities | 0x07 | Direction of arrival capability descriptor. | None | Omit if not used. |
+| ?howlingSuppression | AudioHowlingSuppressionCapabilities | 0x08 | Howling suppression capability descriptor. | None | Omit if not used. |
+
+---
+
+## AudioAlgorithmCapability
+
+Device-level audio.algorithm capability summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?configSchemaVersion | String | 0x01 | Version of the audio algorithm configuration schema exposed by the device. | maxLength=16 | Omit if not used. |
+| updatePolicy | AudioAlgorithmUpdatePolicy | 0x02 | Update and atomicity policy for set and reset operations. | None | N/A |
+| ?supportedAlgorithms | Bytes | 0x03 | Optional compact list of supported algorithm object names; JSON implementations expose names as an array of strings. | maxLength=64 | Omit if not used. |
+
+---
+
+## AudioAlgorithmPropertyCapability
+
+Descriptor for one algorithm configuration property.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| type | Enum | 0x01 | Property type; values include boolean, enum, uint8, uint16, uint32, int32, float, string, object, and array. | None | N/A |
+| ?defaultBool | Boolean | 0x02 | Boolean default value when type is boolean. | None | Omit if not used. |
+| ?defaultEnum | String | 0x03 | Enum default value when type is enum. | maxLength=32 | Omit if not used. |
+| ?defaultInt32 | Int32 | 0x04 | Numeric default value for integer-backed properties. | None | Omit if not used. |
+| ?min | Int32 | 0x05 | Inclusive numeric minimum. | None | Omit if not used. |
+| ?max | Int32 | 0x06 | Inclusive numeric maximum. | None | Omit if not used. |
+| ?step | Int32 | 0x07 | Numeric step size. | None | Omit if not used. |
+| ?values | Bytes | 0x08 | Optional JSON array of enum values. | maxLength=128 | Omit if not used. |
+| ?unit | String | 0x09 | Unit such as ms, dB, or degree. | maxLength=16 | Omit if not used. |
+| ?requiresAudioRestart | Boolean | 0x0A | Whether modifying this field requires restarting the audio link or rebuilding the audio pipeline. | None | Omit if not used. |
+
+---
+
+## AudioAlgorithmUpdatePolicy
+
+Audio algorithm update and atomicity policy.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| partialUpdateSupported | Boolean | 0x01 | Whether clients may send only the fields they want to modify. | None | N/A |
+| multiAlgorithmUpdateSupported | Boolean | 0x02 | Whether one request may update multiple algorithm objects. | None | N/A |
+| atomicUpdateSupported | Boolean | 0x03 | Whether set and reset operations are applied atomically. | None | N/A |
+
+---
+
+## AudioAutoGainControlCapabilities
+
+Automatic gain control supported fields.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supported | Boolean | 0x01 | Whether the device supports autoGainControl. | None | N/A |
+| ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
+| ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
+| ?targetLevelDb | AudioAlgorithmPropertyCapability | 0x04 | targetLevelDb property descriptor. | None | Omit if not used. |
+| ?maxGainDb | AudioAlgorithmPropertyCapability | 0x05 | maxGainDb property descriptor. | None | Omit if not used. |
+| ?attackTimeMs | AudioAlgorithmPropertyCapability | 0x06 | attackTimeMs property descriptor. | None | Omit if not used. |
+| ?releaseTimeMs | AudioAlgorithmPropertyCapability | 0x07 | releaseTimeMs property descriptor. | None | Omit if not used. |
+
+---
+
+## AudioAutoGainControlConfig
+
+Automatic gain control configuration object.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?enabled | Boolean | 0x01 | Whether automatic gain control is enabled. | None | Omit if not used. |
+| ?targetLevelDb | Int32 | 0x02 | Target output level in dB. | min=-36, max=-6 | Omit if not used. |
+| ?maxGainDb | UInt8 | 0x03 | Maximum gain in dB. | min=0, max=36 | Omit if not used. |
+| ?attackTimeMs | UInt32 | 0x04 | Gain attack time in milliseconds. | min=1, max=1000 | Omit if not used. |
+| ?releaseTimeMs | UInt32 | 0x05 | Gain release time in milliseconds. | min=10, max=5000 | Omit if not used. |
+
+---
+
+## AudioBeamformingCapabilities
+
+Beamforming supported fields.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supported | Boolean | 0x01 | Whether the device supports beamforming. | None | N/A |
+| ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
+| ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
+| ?mode | AudioAlgorithmPropertyCapability | 0x04 | mode property descriptor. | None | Omit if not used. |
+| ?lookDirectionDeg | AudioAlgorithmPropertyCapability | 0x05 | lookDirectionDeg property descriptor. | None | Omit if not used. |
+| ?beamWidthDeg | AudioAlgorithmPropertyCapability | 0x06 | beamWidthDeg property descriptor. | None | Omit if not used. |
+
+---
+
+## AudioBeamformingConfig
+
+Beamforming configuration object.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?enabled | Boolean | 0x01 | Whether beamforming is enabled. | None | Omit if not used. |
+| ?mode | Enum | 0x02 | Beamforming mode; values are fixed, adaptive, and auto. | None | Omit if not used. |
+| ?lookDirectionDeg | Int32 | 0x03 | Fixed beam look direction in degrees. | min=-180, max=180 | Omit if not used. |
+| ?beamWidthDeg | UInt32 | 0x04 | Beam width in degrees. | min=10, max=180 | Omit if not used. |
+
+---
+
+## AudioDereverberationCapabilities
+
+Dereverberation supported fields.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supported | Boolean | 0x01 | Whether the device supports dereverberation. | None | N/A |
+| ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
+| ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
+| ?mode | AudioAlgorithmPropertyCapability | 0x04 | mode property descriptor. | None | Omit if not used. |
+| ?level | AudioAlgorithmPropertyCapability | 0x05 | level property descriptor. | None | Omit if not used. |
+
+---
+
+## AudioDereverberationConfig
+
+Dereverberation configuration object.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?enabled | Boolean | 0x01 | Whether dereverberation is enabled. | None | Omit if not used. |
+| ?mode | Enum | 0x02 | Dereverberation mode; values are off, low, medium, high, and auto. | None | Omit if not used. |
+| ?level | UInt8 | 0x03 | Dereverberation strength. | min=0, max=3 | Omit if not used. |
+
+---
+
+## AudioDirectionOfArrivalCapabilities
+
+Direction of arrival supported fields.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supported | Boolean | 0x01 | Whether the device supports directionOfArrival. | None | N/A |
+| ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
+| ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
+| ?reportingEnabled | AudioAlgorithmPropertyCapability | 0x04 | reportingEnabled property descriptor. | None | Omit if not used. |
+| ?reportIntervalMs | AudioAlgorithmPropertyCapability | 0x05 | reportIntervalMs property descriptor. | None | Omit if not used. |
+| ?smoothingMs | AudioAlgorithmPropertyCapability | 0x06 | smoothingMs property descriptor. | None | Omit if not used. |
+
+---
+
+## AudioDirectionOfArrivalConfig
+
+Direction of arrival configuration object.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?enabled | Boolean | 0x01 | Whether direction of arrival estimation is enabled. | None | Omit if not used. |
+| ?reportingEnabled | Boolean | 0x02 | Whether DOA or beam result reporting is enabled by this configuration. | None | Omit if not used. |
+| ?reportIntervalMs | UInt32 | 0x03 | Result report interval in milliseconds. | min=20, max=5000 | Omit if not used. |
+| ?smoothingMs | UInt32 | 0x04 | Smoothing window in milliseconds. | min=0, max=5000 | Omit if not used. |
+
+---
+
+## AudioEchoCancellationCapabilities
+
+Echo cancellation supported fields.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supported | Boolean | 0x01 | Whether the device supports echoCancellation. | None | N/A |
+| ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
+| ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
+| ?mode | AudioAlgorithmPropertyCapability | 0x04 | mode property descriptor. | None | Omit if not used. |
+| ?tailLengthMs | AudioAlgorithmPropertyCapability | 0x05 | tailLengthMs property descriptor. | None | Omit if not used. |
+| ?nlpLevel | AudioAlgorithmPropertyCapability | 0x06 | nlpLevel property descriptor. | None | Omit if not used. |
+
+---
+
+## AudioEchoCancellationConfig
+
+Echo cancellation configuration object.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?enabled | Boolean | 0x01 | Whether echo cancellation is enabled. | None | Omit if not used. |
+| ?mode | Enum | 0x02 | Echo cancellation mode; values are off, low, medium, high, and auto. | None | Omit if not used. |
+| ?tailLengthMs | UInt32 | 0x03 | Echo tail length in milliseconds; modifying it may require restarting the audio link. | min=64, max=512 | Omit if not used. |
+| ?nlpLevel | UInt8 | 0x04 | Non-linear processing strength. | min=0, max=3 | Omit if not used. |
+
+---
+
+## AudioHowlingSuppressionCapabilities
+
+Howling suppression supported fields.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supported | Boolean | 0x01 | Whether the device supports howlingSuppression. | None | N/A |
+| ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
+| ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
+| ?mode | AudioAlgorithmPropertyCapability | 0x04 | mode property descriptor. | None | Omit if not used. |
+| ?level | AudioAlgorithmPropertyCapability | 0x05 | level property descriptor. | None | Omit if not used. |
+
+---
+
+## AudioHowlingSuppressionConfig
+
+Howling suppression configuration object.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?enabled | Boolean | 0x01 | Whether howling suppression is enabled. | None | Omit if not used. |
+| ?mode | Enum | 0x02 | Howling suppression mode; values are off, low, medium, high, and auto. | None | Omit if not used. |
+| ?level | UInt8 | 0x03 | Howling suppression strength. | min=0, max=3 | Omit if not used. |
+
+---
+
+## AudioNoiseSuppressionCapabilities
+
+Noise suppression supported fields.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supported | Boolean | 0x01 | Whether the device supports noiseSuppression. | None | N/A |
+| ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
+| ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
+| ?mode | AudioAlgorithmPropertyCapability | 0x04 | mode property descriptor. | None | Omit if not used. |
+| ?level | AudioAlgorithmPropertyCapability | 0x05 | level property descriptor. | None | Omit if not used. |
+
+---
+
+## AudioNoiseSuppressionConfig
+
+Noise suppression configuration object.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?enabled | Boolean | 0x01 | Whether noise suppression is enabled. | None | Omit if not used. |
+| ?mode | Enum | 0x02 | Suppression mode; values are off, low, medium, high, and auto. | None | Omit if not used. |
+| ?level | UInt8 | 0x03 | Suppression strength. | min=0, max=3 | Omit if not used. |
+
+---
+
+## AudioVoiceActivityDetectionCapabilities
+
+Voice activity detection supported fields.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supported | Boolean | 0x01 | Whether the device supports voiceActivityDetection. | None | N/A |
+| ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
+| ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
+| ?sensitivity | AudioAlgorithmPropertyCapability | 0x04 | sensitivity property descriptor. | None | Omit if not used. |
+| ?hangoverMs | AudioAlgorithmPropertyCapability | 0x05 | hangoverMs property descriptor. | None | Omit if not used. |
+
+---
+
+## AudioVoiceActivityDetectionConfig
+
+Voice activity detection configuration object.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?enabled | Boolean | 0x01 | Whether voice activity detection is enabled. | None | Omit if not used. |
+| ?sensitivity | UInt8 | 0x02 | Detection sensitivity. | min=0, max=3 | Omit if not used. |
+| ?hangoverMs | UInt32 | 0x03 | Speech-end hangover time in milliseconds. | min=0, max=2000 | Omit if not used. |
+
+---
 
 ## ControlAcceptBody
 

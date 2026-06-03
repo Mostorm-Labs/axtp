@@ -8,4 +8,5 @@
 | `0x0501` | `stream.opened` | stream | draft | StreamOpenedEvent |
 | `0x0503` | `stream.error` | stream | draft | StreamErrorEvent |
 | `0x0607` | `display.brightnessChanged` | display | mvp | DisplayBrightnessChangedEvent |
+| `0x0901` | `audio.algorithmConfigChanged` | audio | draft | AudioAlgorithmConfigChangedEvent |
 | `0x0E01` | `network.apInfoChanged` | network | draft | NetworkApInfoChangedEvent |

@@ -11,4 +11,8 @@
 | `0x0501` | `stream.open` | stream | draft | StreamOpenRequest | StreamOpenResponse | - |
 | `0x0601` | `display.getBrightness` | display | mvp | DisplayGetBrightnessRequest | DisplayGetBrightnessResponse | - |
 | `0x0602` | `display.setBrightness` | display | mvp | DisplaySetBrightnessRequest | CommonEmptyResponse | - |
+| `0x0901` | `audio.getAlgorithmConfig` | audio | draft | AudioGetAlgorithmConfigRequest | AudioAlgorithmConfig | - |
+| `0x0902` | `audio.setAlgorithmConfig` | audio | draft | AudioSetAlgorithmConfigRequest | AudioSetAlgorithmConfigResponse | - |
+| `0x090D` | `audio.getAlgorithmCapabilities` | audio | draft | AudioGetAlgorithmCapabilitiesRequest | AudioGetAlgorithmCapabilitiesResponse | - |
+| `0x090E` | `audio.resetAlgorithmConfig` | audio | draft | AudioResetAlgorithmConfigRequest | AudioSetAlgorithmConfigResponse | - |
 | `0x0E07` | `network.getApInfo` | network | draft | NetworkGetApInfoRequest | NetworkGetApInfoResponse | - |

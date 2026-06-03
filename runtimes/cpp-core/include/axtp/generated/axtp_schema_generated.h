@@ -194,6 +194,211 @@ inline constexpr FieldDescriptor kStreamHidMediaCapabilityFields[] = {
     { 0x05, "supportsAudio", FieldType::Bool, true, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kAudioAlgorithmCapabilityFields[] = {
+    { 0x01, "configSchemaVersion", FieldType::String, false, 0, 0 },
+    { 0x02, "updatePolicy", FieldType::Object, true, 0, 0 },
+    { 0x03, "supportedAlgorithms", FieldType::Bytes, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioGetAlgorithmCapabilitiesRequestFields[] = {
+    { 0x01, "items", FieldType::Bytes, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioGetAlgorithmConfigRequestFields[] = {
+    { 0x01, "items", FieldType::Bytes, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioSetAlgorithmConfigRequestFields[] = {
+    { 0x01, "config", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioResetAlgorithmConfigRequestFields[] = {
+    { 0x01, "items", FieldType::Bytes, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioSetAlgorithmConfigResponseFields[] = {
+    { 0x01, "applyState", FieldType::Enum, true, 0, 0 },
+    { 0x02, "requiresAudioRestart", FieldType::Bool, true, 0, 0 },
+    { 0x03, "config", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioAlgorithmConfigChangedEventFields[] = {
+    { 0x01, "reason", FieldType::Enum, true, 0, 0 },
+    { 0x02, "applyState", FieldType::Enum, true, 0, 0 },
+    { 0x03, "requiresAudioRestart", FieldType::Bool, true, 0, 0 },
+    { 0x04, "config", FieldType::Object, true, 0, 0 },
+    { 0x05, "changedFields", FieldType::Bytes, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioGetAlgorithmCapabilitiesResponseFields[] = {
+    { 0x01, "capability", FieldType::String, true, 0, 0 },
+    { 0x02, "updatePolicy", FieldType::Object, true, 0, 0 },
+    { 0x03, "algorithms", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioAlgorithmUpdatePolicyFields[] = {
+    { 0x01, "partialUpdateSupported", FieldType::Bool, true, 0, 0 },
+    { 0x02, "multiAlgorithmUpdateSupported", FieldType::Bool, true, 0, 0 },
+    { 0x03, "atomicUpdateSupported", FieldType::Bool, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioAlgorithmCapabilitiesFields[] = {
+    { 0x01, "noiseSuppression", FieldType::Object, false, 0, 0 },
+    { 0x02, "echoCancellation", FieldType::Object, false, 0, 0 },
+    { 0x03, "autoGainControl", FieldType::Object, false, 0, 0 },
+    { 0x04, "beamforming", FieldType::Object, false, 0, 0 },
+    { 0x05, "dereverberation", FieldType::Object, false, 0, 0 },
+    { 0x06, "voiceActivityDetection", FieldType::Object, false, 0, 0 },
+    { 0x07, "directionOfArrival", FieldType::Object, false, 0, 0 },
+    { 0x08, "howlingSuppression", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioAlgorithmPropertyCapabilityFields[] = {
+    { 0x01, "type", FieldType::Enum, true, 0, 0 },
+    { 0x02, "defaultBool", FieldType::Bool, false, 0, 0 },
+    { 0x03, "defaultEnum", FieldType::String, false, 0, 0 },
+    { 0x04, "defaultInt32", FieldType::Int32, false, 0, 0 },
+    { 0x05, "min", FieldType::Int32, false, 0, 0 },
+    { 0x06, "max", FieldType::Int32, false, 0, 0 },
+    { 0x07, "step", FieldType::Int32, false, 0, 0 },
+    { 0x08, "values", FieldType::Bytes, false, 0, 0 },
+    { 0x09, "unit", FieldType::String, false, 0, 0 },
+    { 0x0A, "requiresAudioRestart", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioNoiseSuppressionCapabilitiesFields[] = {
+    { 0x01, "supported", FieldType::Bool, true, 0, 0 },
+    { 0x02, "displayName", FieldType::String, false, 0, 0 },
+    { 0x03, "enabled", FieldType::Object, false, 0, 0 },
+    { 0x04, "mode", FieldType::Object, false, 0, 0 },
+    { 0x05, "level", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioEchoCancellationCapabilitiesFields[] = {
+    { 0x01, "supported", FieldType::Bool, true, 0, 0 },
+    { 0x02, "displayName", FieldType::String, false, 0, 0 },
+    { 0x03, "enabled", FieldType::Object, false, 0, 0 },
+    { 0x04, "mode", FieldType::Object, false, 0, 0 },
+    { 0x05, "tailLengthMs", FieldType::Object, false, 0, 0 },
+    { 0x06, "nlpLevel", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioAutoGainControlCapabilitiesFields[] = {
+    { 0x01, "supported", FieldType::Bool, true, 0, 0 },
+    { 0x02, "displayName", FieldType::String, false, 0, 0 },
+    { 0x03, "enabled", FieldType::Object, false, 0, 0 },
+    { 0x04, "targetLevelDb", FieldType::Object, false, 0, 0 },
+    { 0x05, "maxGainDb", FieldType::Object, false, 0, 0 },
+    { 0x06, "attackTimeMs", FieldType::Object, false, 0, 0 },
+    { 0x07, "releaseTimeMs", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioBeamformingCapabilitiesFields[] = {
+    { 0x01, "supported", FieldType::Bool, true, 0, 0 },
+    { 0x02, "displayName", FieldType::String, false, 0, 0 },
+    { 0x03, "enabled", FieldType::Object, false, 0, 0 },
+    { 0x04, "mode", FieldType::Object, false, 0, 0 },
+    { 0x05, "lookDirectionDeg", FieldType::Object, false, 0, 0 },
+    { 0x06, "beamWidthDeg", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioDereverberationCapabilitiesFields[] = {
+    { 0x01, "supported", FieldType::Bool, true, 0, 0 },
+    { 0x02, "displayName", FieldType::String, false, 0, 0 },
+    { 0x03, "enabled", FieldType::Object, false, 0, 0 },
+    { 0x04, "mode", FieldType::Object, false, 0, 0 },
+    { 0x05, "level", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioVoiceActivityDetectionCapabilitiesFields[] = {
+    { 0x01, "supported", FieldType::Bool, true, 0, 0 },
+    { 0x02, "displayName", FieldType::String, false, 0, 0 },
+    { 0x03, "enabled", FieldType::Object, false, 0, 0 },
+    { 0x04, "sensitivity", FieldType::Object, false, 0, 0 },
+    { 0x05, "hangoverMs", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioDirectionOfArrivalCapabilitiesFields[] = {
+    { 0x01, "supported", FieldType::Bool, true, 0, 0 },
+    { 0x02, "displayName", FieldType::String, false, 0, 0 },
+    { 0x03, "enabled", FieldType::Object, false, 0, 0 },
+    { 0x04, "reportingEnabled", FieldType::Object, false, 0, 0 },
+    { 0x05, "reportIntervalMs", FieldType::Object, false, 0, 0 },
+    { 0x06, "smoothingMs", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioHowlingSuppressionCapabilitiesFields[] = {
+    { 0x01, "supported", FieldType::Bool, true, 0, 0 },
+    { 0x02, "displayName", FieldType::String, false, 0, 0 },
+    { 0x03, "enabled", FieldType::Object, false, 0, 0 },
+    { 0x04, "mode", FieldType::Object, false, 0, 0 },
+    { 0x05, "level", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioAlgorithmConfigFields[] = {
+    { 0x01, "noiseSuppression", FieldType::Object, false, 0, 0 },
+    { 0x02, "echoCancellation", FieldType::Object, false, 0, 0 },
+    { 0x03, "autoGainControl", FieldType::Object, false, 0, 0 },
+    { 0x04, "beamforming", FieldType::Object, false, 0, 0 },
+    { 0x05, "dereverberation", FieldType::Object, false, 0, 0 },
+    { 0x06, "voiceActivityDetection", FieldType::Object, false, 0, 0 },
+    { 0x07, "directionOfArrival", FieldType::Object, false, 0, 0 },
+    { 0x08, "howlingSuppression", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioNoiseSuppressionConfigFields[] = {
+    { 0x01, "enabled", FieldType::Bool, false, 0, 0 },
+    { 0x02, "mode", FieldType::Enum, false, 0, 0 },
+    { 0x03, "level", FieldType::Uint8, false, 0, 3 },
+};
+
+inline constexpr FieldDescriptor kAudioEchoCancellationConfigFields[] = {
+    { 0x01, "enabled", FieldType::Bool, false, 0, 0 },
+    { 0x02, "mode", FieldType::Enum, false, 0, 0 },
+    { 0x03, "tailLengthMs", FieldType::Uint32, false, 64, 512 },
+    { 0x04, "nlpLevel", FieldType::Uint8, false, 0, 3 },
+};
+
+inline constexpr FieldDescriptor kAudioAutoGainControlConfigFields[] = {
+    { 0x01, "enabled", FieldType::Bool, false, 0, 0 },
+    { 0x02, "targetLevelDb", FieldType::Int32, false, -36, -6 },
+    { 0x03, "maxGainDb", FieldType::Uint8, false, 0, 36 },
+    { 0x04, "attackTimeMs", FieldType::Uint32, false, 1, 1000 },
+    { 0x05, "releaseTimeMs", FieldType::Uint32, false, 10, 5000 },
+};
+
+inline constexpr FieldDescriptor kAudioBeamformingConfigFields[] = {
+    { 0x01, "enabled", FieldType::Bool, false, 0, 0 },
+    { 0x02, "mode", FieldType::Enum, false, 0, 0 },
+    { 0x03, "lookDirectionDeg", FieldType::Int32, false, -180, 180 },
+    { 0x04, "beamWidthDeg", FieldType::Uint32, false, 10, 180 },
+};
+
+inline constexpr FieldDescriptor kAudioDereverberationConfigFields[] = {
+    { 0x01, "enabled", FieldType::Bool, false, 0, 0 },
+    { 0x02, "mode", FieldType::Enum, false, 0, 0 },
+    { 0x03, "level", FieldType::Uint8, false, 0, 3 },
+};
+
+inline constexpr FieldDescriptor kAudioVoiceActivityDetectionConfigFields[] = {
+    { 0x01, "enabled", FieldType::Bool, false, 0, 0 },
+    { 0x02, "sensitivity", FieldType::Uint8, false, 0, 3 },
+    { 0x03, "hangoverMs", FieldType::Uint32, false, 0, 2000 },
+};
+
+inline constexpr FieldDescriptor kAudioDirectionOfArrivalConfigFields[] = {
+    { 0x01, "enabled", FieldType::Bool, false, 0, 0 },
+    { 0x02, "reportingEnabled", FieldType::Bool, false, 0, 0 },
+    { 0x03, "reportIntervalMs", FieldType::Uint32, false, 20, 5000 },
+    { 0x04, "smoothingMs", FieldType::Uint32, false, 0, 5000 },
+};
+
+inline constexpr FieldDescriptor kAudioHowlingSuppressionConfigFields[] = {
+    { 0x01, "enabled", FieldType::Bool, false, 0, 0 },
+    { 0x02, "mode", FieldType::Enum, false, 0, 0 },
+    { 0x03, "level", FieldType::Uint8, false, 0, 3 },
+};
+
 inline constexpr FieldDescriptor kNetworkGetApInfoRequestFields[] = {
 
 };
@@ -285,6 +490,34 @@ inline constexpr SchemaDescriptor kFirmwareUpdateProgressEventSchema = { "Firmwa
 inline constexpr SchemaDescriptor kFirmwareUpdateCompletedEventSchema = { "FirmwareUpdateCompletedEvent", kFirmwareUpdateCompletedEventFields, 1 };
 inline constexpr SchemaDescriptor kFirmwareUpdateFailedEventSchema = { "FirmwareUpdateFailedEvent", kFirmwareUpdateFailedEventFields, 2 };
 inline constexpr SchemaDescriptor kStreamHidMediaCapabilitySchema = { "StreamHidMediaCapability", kStreamHidMediaCapabilityFields, 5 };
+inline constexpr SchemaDescriptor kAudioAlgorithmCapabilitySchema = { "AudioAlgorithmCapability", kAudioAlgorithmCapabilityFields, 3 };
+inline constexpr SchemaDescriptor kAudioGetAlgorithmCapabilitiesRequestSchema = { "AudioGetAlgorithmCapabilitiesRequest", kAudioGetAlgorithmCapabilitiesRequestFields, 1 };
+inline constexpr SchemaDescriptor kAudioGetAlgorithmConfigRequestSchema = { "AudioGetAlgorithmConfigRequest", kAudioGetAlgorithmConfigRequestFields, 1 };
+inline constexpr SchemaDescriptor kAudioSetAlgorithmConfigRequestSchema = { "AudioSetAlgorithmConfigRequest", kAudioSetAlgorithmConfigRequestFields, 1 };
+inline constexpr SchemaDescriptor kAudioResetAlgorithmConfigRequestSchema = { "AudioResetAlgorithmConfigRequest", kAudioResetAlgorithmConfigRequestFields, 1 };
+inline constexpr SchemaDescriptor kAudioSetAlgorithmConfigResponseSchema = { "AudioSetAlgorithmConfigResponse", kAudioSetAlgorithmConfigResponseFields, 3 };
+inline constexpr SchemaDescriptor kAudioAlgorithmConfigChangedEventSchema = { "AudioAlgorithmConfigChangedEvent", kAudioAlgorithmConfigChangedEventFields, 5 };
+inline constexpr SchemaDescriptor kAudioGetAlgorithmCapabilitiesResponseSchema = { "AudioGetAlgorithmCapabilitiesResponse", kAudioGetAlgorithmCapabilitiesResponseFields, 3 };
+inline constexpr SchemaDescriptor kAudioAlgorithmUpdatePolicySchema = { "AudioAlgorithmUpdatePolicy", kAudioAlgorithmUpdatePolicyFields, 3 };
+inline constexpr SchemaDescriptor kAudioAlgorithmCapabilitiesSchema = { "AudioAlgorithmCapabilities", kAudioAlgorithmCapabilitiesFields, 8 };
+inline constexpr SchemaDescriptor kAudioAlgorithmPropertyCapabilitySchema = { "AudioAlgorithmPropertyCapability", kAudioAlgorithmPropertyCapabilityFields, 10 };
+inline constexpr SchemaDescriptor kAudioNoiseSuppressionCapabilitiesSchema = { "AudioNoiseSuppressionCapabilities", kAudioNoiseSuppressionCapabilitiesFields, 5 };
+inline constexpr SchemaDescriptor kAudioEchoCancellationCapabilitiesSchema = { "AudioEchoCancellationCapabilities", kAudioEchoCancellationCapabilitiesFields, 6 };
+inline constexpr SchemaDescriptor kAudioAutoGainControlCapabilitiesSchema = { "AudioAutoGainControlCapabilities", kAudioAutoGainControlCapabilitiesFields, 7 };
+inline constexpr SchemaDescriptor kAudioBeamformingCapabilitiesSchema = { "AudioBeamformingCapabilities", kAudioBeamformingCapabilitiesFields, 6 };
+inline constexpr SchemaDescriptor kAudioDereverberationCapabilitiesSchema = { "AudioDereverberationCapabilities", kAudioDereverberationCapabilitiesFields, 5 };
+inline constexpr SchemaDescriptor kAudioVoiceActivityDetectionCapabilitiesSchema = { "AudioVoiceActivityDetectionCapabilities", kAudioVoiceActivityDetectionCapabilitiesFields, 5 };
+inline constexpr SchemaDescriptor kAudioDirectionOfArrivalCapabilitiesSchema = { "AudioDirectionOfArrivalCapabilities", kAudioDirectionOfArrivalCapabilitiesFields, 6 };
+inline constexpr SchemaDescriptor kAudioHowlingSuppressionCapabilitiesSchema = { "AudioHowlingSuppressionCapabilities", kAudioHowlingSuppressionCapabilitiesFields, 5 };
+inline constexpr SchemaDescriptor kAudioAlgorithmConfigSchema = { "AudioAlgorithmConfig", kAudioAlgorithmConfigFields, 8 };
+inline constexpr SchemaDescriptor kAudioNoiseSuppressionConfigSchema = { "AudioNoiseSuppressionConfig", kAudioNoiseSuppressionConfigFields, 3 };
+inline constexpr SchemaDescriptor kAudioEchoCancellationConfigSchema = { "AudioEchoCancellationConfig", kAudioEchoCancellationConfigFields, 4 };
+inline constexpr SchemaDescriptor kAudioAutoGainControlConfigSchema = { "AudioAutoGainControlConfig", kAudioAutoGainControlConfigFields, 5 };
+inline constexpr SchemaDescriptor kAudioBeamformingConfigSchema = { "AudioBeamformingConfig", kAudioBeamformingConfigFields, 4 };
+inline constexpr SchemaDescriptor kAudioDereverberationConfigSchema = { "AudioDereverberationConfig", kAudioDereverberationConfigFields, 3 };
+inline constexpr SchemaDescriptor kAudioVoiceActivityDetectionConfigSchema = { "AudioVoiceActivityDetectionConfig", kAudioVoiceActivityDetectionConfigFields, 3 };
+inline constexpr SchemaDescriptor kAudioDirectionOfArrivalConfigSchema = { "AudioDirectionOfArrivalConfig", kAudioDirectionOfArrivalConfigFields, 4 };
+inline constexpr SchemaDescriptor kAudioHowlingSuppressionConfigSchema = { "AudioHowlingSuppressionConfig", kAudioHowlingSuppressionConfigFields, 3 };
 inline constexpr SchemaDescriptor kNetworkGetApInfoRequestSchema = { "NetworkGetApInfoRequest", kNetworkGetApInfoRequestFields, 0 };
 inline constexpr SchemaDescriptor kNetworkGetApInfoResponseSchema = { "NetworkGetApInfoResponse", kNetworkGetApInfoResponseFields, 8 };
 inline constexpr SchemaDescriptor kNetworkApInfoChangedEventSchema = { "NetworkApInfoChangedEvent", kNetworkApInfoChangedEventFields, 8 };

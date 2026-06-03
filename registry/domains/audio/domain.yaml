@@ -1,0 +1,923 @@
+domain: audio
+description: Audio control methods, events, and capabilities.
+
+methods:
+  - id: 0x090D
+    name: audio.getAlgorithmCapabilities
+    domain: audio
+    status: draft
+    bit_offset: 0
+    since: 1.0.0
+    description: Return supported audio algorithm objects, fields, defaults, ranges, enum values, and update policy.
+    rpc_op: request_response
+    request_schema: AudioGetAlgorithmCapabilitiesRequest
+    response_schema: AudioGetAlgorithmCapabilitiesResponse
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - audio.algorithm
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - INTERNAL_ERROR
+
+  - id: 0x0901
+    name: audio.getAlgorithmConfig
+    domain: audio
+    status: draft
+    bit_offset: 1
+    since: 1.0.0
+    description: Return the current effective configuration for supported audio algorithm objects.
+    rpc_op: request_response
+    request_schema: AudioGetAlgorithmConfigRequest
+    response_schema: AudioAlgorithmConfig
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - audio.algorithm
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - INTERNAL_ERROR
+
+  - id: 0x0902
+    name: audio.setAlgorithmConfig
+    domain: audio
+    status: draft
+    bit_offset: 2
+    since: 1.0.0
+    description: Partially update one or more audio algorithm configuration objects atomically.
+    rpc_op: request_response
+    request_schema: AudioSetAlgorithmConfigRequest
+    response_schema: AudioSetAlgorithmConfigResponse
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - audio.algorithm
+    events:
+      - audio.algorithmConfigChanged
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - OUT_OF_RANGE
+      - INVALID_STATE
+      - BUSY
+      - PERMISSION_DENIED
+      - INTERNAL_ERROR
+
+  - id: 0x090E
+    name: audio.resetAlgorithmConfig
+    domain: audio
+    status: draft
+    bit_offset: 3
+    since: 1.0.0
+    description: Reset all, selected, or selected-field audio algorithm configuration to declared default values.
+    rpc_op: request_response
+    request_schema: AudioResetAlgorithmConfigRequest
+    response_schema: AudioSetAlgorithmConfigResponse
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - audio.algorithm
+    events:
+      - audio.algorithmConfigChanged
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - OUT_OF_RANGE
+      - INVALID_STATE
+      - BUSY
+      - PERMISSION_DENIED
+      - INTERNAL_ERROR
+
+events:
+  - id: 0x0901
+    name: audio.algorithmConfigChanged
+    domain: audio
+    status: draft
+    bit_offset: 0
+    since: 1.0.0
+    description: Emitted when audio algorithm configuration changes after set, reset, profile, restore, factory reset, or device policy changes.
+    event_schema: AudioAlgorithmConfigChangedEvent
+    severity: info
+    trigger:
+      - audio.setAlgorithmConfig
+      - audio.resetAlgorithmConfig
+      - profile changed
+      - factory reset
+      - restore config
+      - device policy
+    capabilities:
+      - audio.algorithm
+
+types:
+  AudioAlgorithmCapability:
+    kind: object
+    description: Device-level audio.algorithm capability summary.
+    fields:
+      - id: 0x01
+        name: configSchemaVersion
+        type: string
+        required: false
+        max_length: 16
+        description: Version of the audio algorithm configuration schema exposed by the device.
+      - id: 0x02
+        name: updatePolicy
+        type: AudioAlgorithmUpdatePolicy
+        required: true
+        description: Update and atomicity policy for set and reset operations.
+      - id: 0x03
+        name: supportedAlgorithms
+        type: bytes
+        required: false
+        max_length: 64
+        description: Optional compact list of supported algorithm object names; JSON implementations expose names as an array of strings.
+
+  AudioGetAlgorithmCapabilitiesRequest:
+    kind: object
+    description: Optional selector for querying audio algorithm capabilities.
+    fields:
+      - id: 0x01
+        name: items
+        type: bytes
+        required: false
+        max_length: 128
+        description: Optional JSON array of algorithm object names; omit to query all supported algorithms.
+
+  AudioGetAlgorithmConfigRequest:
+    kind: object
+    description: Optional selector for querying current audio algorithm configuration.
+    fields:
+      - id: 0x01
+        name: items
+        type: bytes
+        required: false
+        max_length: 128
+        description: Optional JSON array of algorithm object names; omit to query all supported algorithms.
+
+  AudioSetAlgorithmConfigRequest:
+    kind: object
+    description: Partial audio algorithm configuration update.
+    fields:
+      - id: 0x01
+        name: config
+        type: AudioAlgorithmConfig
+        required: true
+        description: Partial configuration keyed by algorithm object name.
+
+  AudioResetAlgorithmConfigRequest:
+    kind: object
+    description: Selector for resetting audio algorithm configuration to defaults.
+    fields:
+      - id: 0x01
+        name: items
+        type: bytes
+        required: true
+        max_length: 256
+        description: "JSON reset selector: the string all, an array of algorithm object names, or a map from algorithm names to field-name arrays."
+
+  AudioSetAlgorithmConfigResponse:
+    kind: object
+    description: Result of a successful set or reset operation.
+    fields:
+      - id: 0x01
+        name: applyState
+        type: enum
+        required: true
+        description: Apply state; values are applied or pending_restart.
+      - id: 0x02
+        name: requiresAudioRestart
+        type: bool
+        required: true
+        description: Whether the change requires restarting the audio link or rebuilding the audio pipeline.
+      - id: 0x03
+        name: config
+        type: AudioAlgorithmConfig
+        required: true
+        description: Final effective configuration for the algorithms affected by this operation.
+
+  AudioAlgorithmConfigChangedEvent:
+    kind: object
+    description: Payload emitted when audio algorithm configuration changes.
+    fields:
+      - id: 0x01
+        name: reason
+        type: enum
+        required: true
+        description: Change reason; values include user_request, reset_to_default, factory_reset, profile_changed, device_policy, restore_config, and unknown.
+      - id: 0x02
+        name: applyState
+        type: enum
+        required: true
+        description: Apply state; values are applied or pending_restart.
+      - id: 0x03
+        name: requiresAudioRestart
+        type: bool
+        required: true
+        description: Whether the change requires restarting the audio link or rebuilding the audio pipeline.
+      - id: 0x04
+        name: config
+        type: AudioAlgorithmConfig
+        required: true
+        description: Changed or affected algorithm configuration values.
+      - id: 0x05
+        name: changedFields
+        type: bytes
+        required: false
+        max_length: 256
+        description: Optional JSON array of changed field paths such as noiseSuppression.level.
+
+  AudioGetAlgorithmCapabilitiesResponse:
+    kind: object
+    description: Supported algorithm objects, fields, defaults, ranges, enum values, and update policy.
+    fields:
+      - id: 0x01
+        name: capability
+        type: string
+        required: true
+        max_length: 32
+        description: Fixed capability name audio.algorithm.
+      - id: 0x02
+        name: updatePolicy
+        type: AudioAlgorithmUpdatePolicy
+        required: true
+        description: Update and atomicity policy for set and reset operations.
+      - id: 0x03
+        name: algorithms
+        type: AudioAlgorithmCapabilities
+        required: true
+        description: Capability descriptors keyed by algorithm object name.
+
+  AudioAlgorithmUpdatePolicy:
+    kind: object
+    description: Audio algorithm update and atomicity policy.
+    fields:
+      - id: 0x01
+        name: partialUpdateSupported
+        type: bool
+        required: true
+        description: Whether clients may send only the fields they want to modify.
+      - id: 0x02
+        name: multiAlgorithmUpdateSupported
+        type: bool
+        required: true
+        description: Whether one request may update multiple algorithm objects.
+      - id: 0x03
+        name: atomicUpdateSupported
+        type: bool
+        required: true
+        description: Whether set and reset operations are applied atomically.
+
+  AudioAlgorithmCapabilities:
+    kind: object
+    description: Capability descriptors for audio algorithm objects.
+    fields:
+      - id: 0x01
+        name: noiseSuppression
+        type: AudioNoiseSuppressionCapabilities
+        required: false
+        description: Noise suppression capability descriptor.
+      - id: 0x02
+        name: echoCancellation
+        type: AudioEchoCancellationCapabilities
+        required: false
+        description: Echo cancellation capability descriptor.
+      - id: 0x03
+        name: autoGainControl
+        type: AudioAutoGainControlCapabilities
+        required: false
+        description: Automatic gain control capability descriptor.
+      - id: 0x04
+        name: beamforming
+        type: AudioBeamformingCapabilities
+        required: false
+        description: Beamforming capability descriptor.
+      - id: 0x05
+        name: dereverberation
+        type: AudioDereverberationCapabilities
+        required: false
+        description: Dereverberation capability descriptor.
+      - id: 0x06
+        name: voiceActivityDetection
+        type: AudioVoiceActivityDetectionCapabilities
+        required: false
+        description: Voice activity detection capability descriptor.
+      - id: 0x07
+        name: directionOfArrival
+        type: AudioDirectionOfArrivalCapabilities
+        required: false
+        description: Direction of arrival capability descriptor.
+      - id: 0x08
+        name: howlingSuppression
+        type: AudioHowlingSuppressionCapabilities
+        required: false
+        description: Howling suppression capability descriptor.
+
+  AudioAlgorithmPropertyCapability:
+    kind: object
+    description: Descriptor for one algorithm configuration property.
+    fields:
+      - id: 0x01
+        name: type
+        type: enum
+        required: true
+        description: Property type; values include boolean, enum, uint8, uint16, uint32, int32, float, string, object, and array.
+      - id: 0x02
+        name: defaultBool
+        type: bool
+        required: false
+        description: Boolean default value when type is boolean.
+      - id: 0x03
+        name: defaultEnum
+        type: string
+        required: false
+        max_length: 32
+        description: Enum default value when type is enum.
+      - id: 0x04
+        name: defaultInt32
+        type: int32
+        required: false
+        description: Numeric default value for integer-backed properties.
+      - id: 0x05
+        name: min
+        type: int32
+        required: false
+        description: Inclusive numeric minimum.
+      - id: 0x06
+        name: max
+        type: int32
+        required: false
+        description: Inclusive numeric maximum.
+      - id: 0x07
+        name: step
+        type: int32
+        required: false
+        description: Numeric step size.
+      - id: 0x08
+        name: values
+        type: bytes
+        required: false
+        max_length: 128
+        description: Optional JSON array of enum values.
+      - id: 0x09
+        name: unit
+        type: string
+        required: false
+        max_length: 16
+        description: Unit such as ms, dB, or degree.
+      - id: 0x0A
+        name: requiresAudioRestart
+        type: bool
+        required: false
+        description: Whether modifying this field requires restarting the audio link or rebuilding the audio pipeline.
+
+  AudioNoiseSuppressionCapabilities:
+    kind: object
+    description: Noise suppression supported fields.
+    fields:
+      - id: 0x01
+        name: supported
+        type: bool
+        required: true
+        description: Whether the device supports noiseSuppression.
+      - id: 0x02
+        name: displayName
+        type: string
+        required: false
+        max_length: 64
+        description: UI-readable display name.
+      - id: 0x03
+        name: enabled
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: enabled property descriptor.
+      - id: 0x04
+        name: mode
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: mode property descriptor.
+      - id: 0x05
+        name: level
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: level property descriptor.
+
+  AudioEchoCancellationCapabilities:
+    kind: object
+    description: Echo cancellation supported fields.
+    fields:
+      - id: 0x01
+        name: supported
+        type: bool
+        required: true
+        description: Whether the device supports echoCancellation.
+      - id: 0x02
+        name: displayName
+        type: string
+        required: false
+        max_length: 64
+        description: UI-readable display name.
+      - id: 0x03
+        name: enabled
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: enabled property descriptor.
+      - id: 0x04
+        name: mode
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: mode property descriptor.
+      - id: 0x05
+        name: tailLengthMs
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: tailLengthMs property descriptor.
+      - id: 0x06
+        name: nlpLevel
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: nlpLevel property descriptor.
+
+  AudioAutoGainControlCapabilities:
+    kind: object
+    description: Automatic gain control supported fields.
+    fields:
+      - id: 0x01
+        name: supported
+        type: bool
+        required: true
+        description: Whether the device supports autoGainControl.
+      - id: 0x02
+        name: displayName
+        type: string
+        required: false
+        max_length: 64
+        description: UI-readable display name.
+      - id: 0x03
+        name: enabled
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: enabled property descriptor.
+      - id: 0x04
+        name: targetLevelDb
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: targetLevelDb property descriptor.
+      - id: 0x05
+        name: maxGainDb
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: maxGainDb property descriptor.
+      - id: 0x06
+        name: attackTimeMs
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: attackTimeMs property descriptor.
+      - id: 0x07
+        name: releaseTimeMs
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: releaseTimeMs property descriptor.
+
+  AudioBeamformingCapabilities:
+    kind: object
+    description: Beamforming supported fields.
+    fields:
+      - id: 0x01
+        name: supported
+        type: bool
+        required: true
+        description: Whether the device supports beamforming.
+      - id: 0x02
+        name: displayName
+        type: string
+        required: false
+        max_length: 64
+        description: UI-readable display name.
+      - id: 0x03
+        name: enabled
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: enabled property descriptor.
+      - id: 0x04
+        name: mode
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: mode property descriptor.
+      - id: 0x05
+        name: lookDirectionDeg
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: lookDirectionDeg property descriptor.
+      - id: 0x06
+        name: beamWidthDeg
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: beamWidthDeg property descriptor.
+
+  AudioDereverberationCapabilities:
+    kind: object
+    description: Dereverberation supported fields.
+    fields:
+      - id: 0x01
+        name: supported
+        type: bool
+        required: true
+        description: Whether the device supports dereverberation.
+      - id: 0x02
+        name: displayName
+        type: string
+        required: false
+        max_length: 64
+        description: UI-readable display name.
+      - id: 0x03
+        name: enabled
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: enabled property descriptor.
+      - id: 0x04
+        name: mode
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: mode property descriptor.
+      - id: 0x05
+        name: level
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: level property descriptor.
+
+  AudioVoiceActivityDetectionCapabilities:
+    kind: object
+    description: Voice activity detection supported fields.
+    fields:
+      - id: 0x01
+        name: supported
+        type: bool
+        required: true
+        description: Whether the device supports voiceActivityDetection.
+      - id: 0x02
+        name: displayName
+        type: string
+        required: false
+        max_length: 64
+        description: UI-readable display name.
+      - id: 0x03
+        name: enabled
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: enabled property descriptor.
+      - id: 0x04
+        name: sensitivity
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: sensitivity property descriptor.
+      - id: 0x05
+        name: hangoverMs
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: hangoverMs property descriptor.
+
+  AudioDirectionOfArrivalCapabilities:
+    kind: object
+    description: Direction of arrival supported fields.
+    fields:
+      - id: 0x01
+        name: supported
+        type: bool
+        required: true
+        description: Whether the device supports directionOfArrival.
+      - id: 0x02
+        name: displayName
+        type: string
+        required: false
+        max_length: 64
+        description: UI-readable display name.
+      - id: 0x03
+        name: enabled
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: enabled property descriptor.
+      - id: 0x04
+        name: reportingEnabled
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: reportingEnabled property descriptor.
+      - id: 0x05
+        name: reportIntervalMs
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: reportIntervalMs property descriptor.
+      - id: 0x06
+        name: smoothingMs
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: smoothingMs property descriptor.
+
+  AudioHowlingSuppressionCapabilities:
+    kind: object
+    description: Howling suppression supported fields.
+    fields:
+      - id: 0x01
+        name: supported
+        type: bool
+        required: true
+        description: Whether the device supports howlingSuppression.
+      - id: 0x02
+        name: displayName
+        type: string
+        required: false
+        max_length: 64
+        description: UI-readable display name.
+      - id: 0x03
+        name: enabled
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: enabled property descriptor.
+      - id: 0x04
+        name: mode
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: mode property descriptor.
+      - id: 0x05
+        name: level
+        type: AudioAlgorithmPropertyCapability
+        required: false
+        description: level property descriptor.
+
+  AudioAlgorithmConfig:
+    kind: object
+    description: Audio algorithm configuration keyed by algorithm object name.
+    fields:
+      - id: 0x01
+        name: noiseSuppression
+        type: AudioNoiseSuppressionConfig
+        required: false
+        description: Noise suppression configuration.
+      - id: 0x02
+        name: echoCancellation
+        type: AudioEchoCancellationConfig
+        required: false
+        description: Echo cancellation configuration.
+      - id: 0x03
+        name: autoGainControl
+        type: AudioAutoGainControlConfig
+        required: false
+        description: Automatic gain control configuration.
+      - id: 0x04
+        name: beamforming
+        type: AudioBeamformingConfig
+        required: false
+        description: Beamforming configuration.
+      - id: 0x05
+        name: dereverberation
+        type: AudioDereverberationConfig
+        required: false
+        description: Dereverberation configuration.
+      - id: 0x06
+        name: voiceActivityDetection
+        type: AudioVoiceActivityDetectionConfig
+        required: false
+        description: Voice activity detection configuration.
+      - id: 0x07
+        name: directionOfArrival
+        type: AudioDirectionOfArrivalConfig
+        required: false
+        description: Direction of arrival configuration.
+      - id: 0x08
+        name: howlingSuppression
+        type: AudioHowlingSuppressionConfig
+        required: false
+        description: Howling suppression configuration.
+
+  AudioNoiseSuppressionConfig:
+    kind: object
+    description: Noise suppression configuration object.
+    fields:
+      - id: 0x01
+        name: enabled
+        type: bool
+        required: false
+        description: Whether noise suppression is enabled.
+      - id: 0x02
+        name: mode
+        type: enum
+        required: false
+        description: Suppression mode; values are off, low, medium, high, and auto.
+      - id: 0x03
+        name: level
+        type: uint8
+        required: false
+        min: 0
+        max: 3
+        description: Suppression strength.
+
+  AudioEchoCancellationConfig:
+    kind: object
+    description: Echo cancellation configuration object.
+    fields:
+      - id: 0x01
+        name: enabled
+        type: bool
+        required: false
+        description: Whether echo cancellation is enabled.
+      - id: 0x02
+        name: mode
+        type: enum
+        required: false
+        description: Echo cancellation mode; values are off, low, medium, high, and auto.
+      - id: 0x03
+        name: tailLengthMs
+        type: uint32
+        required: false
+        min: 64
+        max: 512
+        description: Echo tail length in milliseconds; modifying it may require restarting the audio link.
+      - id: 0x04
+        name: nlpLevel
+        type: uint8
+        required: false
+        min: 0
+        max: 3
+        description: Non-linear processing strength.
+
+  AudioAutoGainControlConfig:
+    kind: object
+    description: Automatic gain control configuration object.
+    fields:
+      - id: 0x01
+        name: enabled
+        type: bool
+        required: false
+        description: Whether automatic gain control is enabled.
+      - id: 0x02
+        name: targetLevelDb
+        type: int32
+        required: false
+        min: -36
+        max: -6
+        description: Target output level in dB.
+      - id: 0x03
+        name: maxGainDb
+        type: uint8
+        required: false
+        min: 0
+        max: 36
+        description: Maximum gain in dB.
+      - id: 0x04
+        name: attackTimeMs
+        type: uint32
+        required: false
+        min: 1
+        max: 1000
+        description: Gain attack time in milliseconds.
+      - id: 0x05
+        name: releaseTimeMs
+        type: uint32
+        required: false
+        min: 10
+        max: 5000
+        description: Gain release time in milliseconds.
+
+  AudioBeamformingConfig:
+    kind: object
+    description: Beamforming configuration object.
+    fields:
+      - id: 0x01
+        name: enabled
+        type: bool
+        required: false
+        description: Whether beamforming is enabled.
+      - id: 0x02
+        name: mode
+        type: enum
+        required: false
+        description: Beamforming mode; values are fixed, adaptive, and auto.
+      - id: 0x03
+        name: lookDirectionDeg
+        type: int32
+        required: false
+        min: -180
+        max: 180
+        description: Fixed beam look direction in degrees.
+      - id: 0x04
+        name: beamWidthDeg
+        type: uint32
+        required: false
+        min: 10
+        max: 180
+        description: Beam width in degrees.
+
+  AudioDereverberationConfig:
+    kind: object
+    description: Dereverberation configuration object.
+    fields:
+      - id: 0x01
+        name: enabled
+        type: bool
+        required: false
+        description: Whether dereverberation is enabled.
+      - id: 0x02
+        name: mode
+        type: enum
+        required: false
+        description: Dereverberation mode; values are off, low, medium, high, and auto.
+      - id: 0x03
+        name: level
+        type: uint8
+        required: false
+        min: 0
+        max: 3
+        description: Dereverberation strength.
+
+  AudioVoiceActivityDetectionConfig:
+    kind: object
+    description: Voice activity detection configuration object.
+    fields:
+      - id: 0x01
+        name: enabled
+        type: bool
+        required: false
+        description: Whether voice activity detection is enabled.
+      - id: 0x02
+        name: sensitivity
+        type: uint8
+        required: false
+        min: 0
+        max: 3
+        description: Detection sensitivity.
+      - id: 0x03
+        name: hangoverMs
+        type: uint32
+        required: false
+        min: 0
+        max: 2000
+        description: Speech-end hangover time in milliseconds.
+
+  AudioDirectionOfArrivalConfig:
+    kind: object
+    description: Direction of arrival configuration object.
+    fields:
+      - id: 0x01
+        name: enabled
+        type: bool
+        required: false
+        description: Whether direction of arrival estimation is enabled.
+      - id: 0x02
+        name: reportingEnabled
+        type: bool
+        required: false
+        description: Whether DOA or beam result reporting is enabled by this configuration.
+      - id: 0x03
+        name: reportIntervalMs
+        type: uint32
+        required: false
+        min: 20
+        max: 5000
+        description: Result report interval in milliseconds.
+      - id: 0x04
+        name: smoothingMs
+        type: uint32
+        required: false
+        min: 0
+        max: 5000
+        description: Smoothing window in milliseconds.
+
+  AudioHowlingSuppressionConfig:
+    kind: object
+    description: Howling suppression configuration object.
+    fields:
+      - id: 0x01
+        name: enabled
+        type: bool
+        required: false
+        description: Whether howling suppression is enabled.
+      - id: 0x02
+        name: mode
+        type: enum
+        required: false
+        description: Howling suppression mode; values are off, low, medium, high, and auto.
+      - id: 0x03
+        name: level
+        type: uint8
+        required: false
+        min: 0
+        max: 3
+        description: Howling suppression strength.
+
+capabilities:
+  - id: 0x0901
+    name: audio.algorithm
+    domain: audio
+    status: draft
+    since: 1.0.0
+    description: Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification.
+    type: object
+    schema: AudioAlgorithmCapability

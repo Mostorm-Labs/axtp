@@ -72,6 +72,10 @@ enum class MethodId : std::uint16_t {
     StreamOpen = 0x0501,
     DisplayGetBrightness = 0x0601,
     DisplaySetBrightness = 0x0602,
+    AudioGetAlgorithmConfig = 0x0901,
+    AudioSetAlgorithmConfig = 0x0902,
+    AudioGetAlgorithmCapabilities = 0x090D,
+    AudioResetAlgorithmConfig = 0x090E,
     NetworkGetApInfo = 0x0E07,
 };
 
@@ -82,6 +86,7 @@ enum class EventId : std::uint16_t {
     StreamOpened = 0x0501,
     StreamError = 0x0503,
     DisplayBrightnessChanged = 0x0607,
+    AudioAlgorithmConfigChanged = 0x0901,
     NetworkApInfoChanged = 0x0E01,
 };
 
@@ -255,6 +260,7 @@ enum class CapabilityId : std::uint16_t {
     DisplayBrightnessMin = 0x0602,
     DisplayBrightnessMax = 0x0603,
     DisplayBrightnessStep = 0x0604,
+    AudioAlgorithm = 0x0901,
     NetworkSoftAp = 0x0E06,
 };
 

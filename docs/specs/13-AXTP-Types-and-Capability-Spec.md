@@ -169,6 +169,7 @@ Domain Block = [DomainId:1B] + [MaskLen:1B] + [MethodBitmask:N B Little-Endian]
 | display | `display.brightness` | `display.getBrightness`、`display.setBrightness` | `display.brightnessChanged` | MVP |
 | stream | `stream.hidMedia` | `stream.open` | `stream.opened`、`stream.error` | draft |
 | network | `network.softAp` | `network.getApInfo` | `network.apInfoChanged` | draft |
+| audio | `audio.algorithm` | `audio.getAlgorithmCapabilities`、`audio.getAlgorithmConfig`、`audio.setAlgorithmConfig`、`audio.resetAlgorithmConfig` | `audio.algorithmConfigChanged` | draft |
 
 未进入本表的 `domain.feature` 仍可在本文件后续 CapabilityId 表中预留编号；只有写入 YAML 事实源并通过 Generator 校验后，才成为当前可生成协议事实。
 

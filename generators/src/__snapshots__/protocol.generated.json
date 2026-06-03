@@ -937,6 +937,1097 @@
       ]
     },
     {
+      "name": "AudioAlgorithmCapability",
+      "kind": "object",
+      "description": "Device-level audio.algorithm capability summary.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "configSchemaVersion",
+          "type": "string",
+          "required": false,
+          "maxLength": 16,
+          "description": "Version of the audio algorithm configuration schema exposed by the device."
+        },
+        {
+          "fieldId": 2,
+          "name": "updatePolicy",
+          "type": "AudioAlgorithmUpdatePolicy",
+          "required": true,
+          "description": "Update and atomicity policy for set and reset operations."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportedAlgorithms",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 64,
+          "description": "Optional compact list of supported algorithm object names; JSON implementations expose names as an array of strings."
+        }
+      ]
+    },
+    {
+      "name": "AudioGetAlgorithmCapabilitiesRequest",
+      "kind": "object",
+      "description": "Optional selector for querying audio algorithm capabilities.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "items",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional JSON array of algorithm object names; omit to query all supported algorithms."
+        }
+      ]
+    },
+    {
+      "name": "AudioGetAlgorithmConfigRequest",
+      "kind": "object",
+      "description": "Optional selector for querying current audio algorithm configuration.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "items",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional JSON array of algorithm object names; omit to query all supported algorithms."
+        }
+      ]
+    },
+    {
+      "name": "AudioSetAlgorithmConfigRequest",
+      "kind": "object",
+      "description": "Partial audio algorithm configuration update.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "config",
+          "type": "AudioAlgorithmConfig",
+          "required": true,
+          "description": "Partial configuration keyed by algorithm object name."
+        }
+      ]
+    },
+    {
+      "name": "AudioResetAlgorithmConfigRequest",
+      "kind": "object",
+      "description": "Selector for resetting audio algorithm configuration to defaults.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "items",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 256,
+          "description": "JSON reset selector: the string all, an array of algorithm object names, or a map from algorithm names to field-name arrays."
+        }
+      ]
+    },
+    {
+      "name": "AudioSetAlgorithmConfigResponse",
+      "kind": "object",
+      "description": "Result of a successful set or reset operation.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "applyState",
+          "type": "enum",
+          "required": true,
+          "description": "Apply state; values are applied or pending_restart."
+        },
+        {
+          "fieldId": 2,
+          "name": "requiresAudioRestart",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the change requires restarting the audio link or rebuilding the audio pipeline."
+        },
+        {
+          "fieldId": 3,
+          "name": "config",
+          "type": "AudioAlgorithmConfig",
+          "required": true,
+          "description": "Final effective configuration for the algorithms affected by this operation."
+        }
+      ]
+    },
+    {
+      "name": "AudioAlgorithmConfigChangedEvent",
+      "kind": "object",
+      "description": "Payload emitted when audio algorithm configuration changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "reason",
+          "type": "enum",
+          "required": true,
+          "description": "Change reason; values include user_request, reset_to_default, factory_reset, profile_changed, device_policy, restore_config, and unknown."
+        },
+        {
+          "fieldId": 2,
+          "name": "applyState",
+          "type": "enum",
+          "required": true,
+          "description": "Apply state; values are applied or pending_restart."
+        },
+        {
+          "fieldId": 3,
+          "name": "requiresAudioRestart",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the change requires restarting the audio link or rebuilding the audio pipeline."
+        },
+        {
+          "fieldId": 4,
+          "name": "config",
+          "type": "AudioAlgorithmConfig",
+          "required": true,
+          "description": "Changed or affected algorithm configuration values."
+        },
+        {
+          "fieldId": 5,
+          "name": "changedFields",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 256,
+          "description": "Optional JSON array of changed field paths such as noiseSuppression.level."
+        }
+      ]
+    },
+    {
+      "name": "AudioGetAlgorithmCapabilitiesResponse",
+      "kind": "object",
+      "description": "Supported algorithm objects, fields, defaults, ranges, enum values, and update policy.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Fixed capability name audio.algorithm."
+        },
+        {
+          "fieldId": 2,
+          "name": "updatePolicy",
+          "type": "AudioAlgorithmUpdatePolicy",
+          "required": true,
+          "description": "Update and atomicity policy for set and reset operations."
+        },
+        {
+          "fieldId": 3,
+          "name": "algorithms",
+          "type": "AudioAlgorithmCapabilities",
+          "required": true,
+          "description": "Capability descriptors keyed by algorithm object name."
+        }
+      ]
+    },
+    {
+      "name": "AudioAlgorithmUpdatePolicy",
+      "kind": "object",
+      "description": "Audio algorithm update and atomicity policy.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "partialUpdateSupported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether clients may send only the fields they want to modify."
+        },
+        {
+          "fieldId": 2,
+          "name": "multiAlgorithmUpdateSupported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether one request may update multiple algorithm objects."
+        },
+        {
+          "fieldId": 3,
+          "name": "atomicUpdateSupported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether set and reset operations are applied atomically."
+        }
+      ]
+    },
+    {
+      "name": "AudioAlgorithmCapabilities",
+      "kind": "object",
+      "description": "Capability descriptors for audio algorithm objects.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "noiseSuppression",
+          "type": "AudioNoiseSuppressionCapabilities",
+          "required": false,
+          "description": "Noise suppression capability descriptor."
+        },
+        {
+          "fieldId": 2,
+          "name": "echoCancellation",
+          "type": "AudioEchoCancellationCapabilities",
+          "required": false,
+          "description": "Echo cancellation capability descriptor."
+        },
+        {
+          "fieldId": 3,
+          "name": "autoGainControl",
+          "type": "AudioAutoGainControlCapabilities",
+          "required": false,
+          "description": "Automatic gain control capability descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "beamforming",
+          "type": "AudioBeamformingCapabilities",
+          "required": false,
+          "description": "Beamforming capability descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "dereverberation",
+          "type": "AudioDereverberationCapabilities",
+          "required": false,
+          "description": "Dereverberation capability descriptor."
+        },
+        {
+          "fieldId": 6,
+          "name": "voiceActivityDetection",
+          "type": "AudioVoiceActivityDetectionCapabilities",
+          "required": false,
+          "description": "Voice activity detection capability descriptor."
+        },
+        {
+          "fieldId": 7,
+          "name": "directionOfArrival",
+          "type": "AudioDirectionOfArrivalCapabilities",
+          "required": false,
+          "description": "Direction of arrival capability descriptor."
+        },
+        {
+          "fieldId": 8,
+          "name": "howlingSuppression",
+          "type": "AudioHowlingSuppressionCapabilities",
+          "required": false,
+          "description": "Howling suppression capability descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioAlgorithmPropertyCapability",
+      "kind": "object",
+      "description": "Descriptor for one algorithm configuration property.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "description": "Property type; values include boolean, enum, uint8, uint16, uint32, int32, float, string, object, and array."
+        },
+        {
+          "fieldId": 2,
+          "name": "defaultBool",
+          "type": "bool",
+          "required": false,
+          "description": "Boolean default value when type is boolean."
+        },
+        {
+          "fieldId": 3,
+          "name": "defaultEnum",
+          "type": "string",
+          "required": false,
+          "maxLength": 32,
+          "description": "Enum default value when type is enum."
+        },
+        {
+          "fieldId": 4,
+          "name": "defaultInt32",
+          "type": "int32",
+          "required": false,
+          "description": "Numeric default value for integer-backed properties."
+        },
+        {
+          "fieldId": 5,
+          "name": "min",
+          "type": "int32",
+          "required": false,
+          "description": "Inclusive numeric minimum."
+        },
+        {
+          "fieldId": 6,
+          "name": "max",
+          "type": "int32",
+          "required": false,
+          "description": "Inclusive numeric maximum."
+        },
+        {
+          "fieldId": 7,
+          "name": "step",
+          "type": "int32",
+          "required": false,
+          "description": "Numeric step size."
+        },
+        {
+          "fieldId": 8,
+          "name": "values",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional JSON array of enum values."
+        },
+        {
+          "fieldId": 9,
+          "name": "unit",
+          "type": "string",
+          "required": false,
+          "maxLength": 16,
+          "description": "Unit such as ms, dB, or degree."
+        },
+        {
+          "fieldId": 10,
+          "name": "requiresAudioRestart",
+          "type": "bool",
+          "required": false,
+          "description": "Whether modifying this field requires restarting the audio link or rebuilding the audio pipeline."
+        }
+      ]
+    },
+    {
+      "name": "AudioNoiseSuppressionCapabilities",
+      "kind": "object",
+      "description": "Noise suppression supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports noiseSuppression."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "mode",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "mode property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "level",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "level property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioEchoCancellationCapabilities",
+      "kind": "object",
+      "description": "Echo cancellation supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports echoCancellation."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "mode",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "mode property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "tailLengthMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "tailLengthMs property descriptor."
+        },
+        {
+          "fieldId": 6,
+          "name": "nlpLevel",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "nlpLevel property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioAutoGainControlCapabilities",
+      "kind": "object",
+      "description": "Automatic gain control supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports autoGainControl."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "targetLevelDb",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "targetLevelDb property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "maxGainDb",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "maxGainDb property descriptor."
+        },
+        {
+          "fieldId": 6,
+          "name": "attackTimeMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "attackTimeMs property descriptor."
+        },
+        {
+          "fieldId": 7,
+          "name": "releaseTimeMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "releaseTimeMs property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioBeamformingCapabilities",
+      "kind": "object",
+      "description": "Beamforming supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports beamforming."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "mode",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "mode property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "lookDirectionDeg",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "lookDirectionDeg property descriptor."
+        },
+        {
+          "fieldId": 6,
+          "name": "beamWidthDeg",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "beamWidthDeg property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioDereverberationCapabilities",
+      "kind": "object",
+      "description": "Dereverberation supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports dereverberation."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "mode",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "mode property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "level",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "level property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioVoiceActivityDetectionCapabilities",
+      "kind": "object",
+      "description": "Voice activity detection supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports voiceActivityDetection."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "sensitivity",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "sensitivity property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "hangoverMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "hangoverMs property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioDirectionOfArrivalCapabilities",
+      "kind": "object",
+      "description": "Direction of arrival supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports directionOfArrival."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "reportingEnabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "reportingEnabled property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "reportIntervalMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "reportIntervalMs property descriptor."
+        },
+        {
+          "fieldId": 6,
+          "name": "smoothingMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "smoothingMs property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioHowlingSuppressionCapabilities",
+      "kind": "object",
+      "description": "Howling suppression supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports howlingSuppression."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "mode",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "mode property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "level",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "level property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioAlgorithmConfig",
+      "kind": "object",
+      "description": "Audio algorithm configuration keyed by algorithm object name.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "noiseSuppression",
+          "type": "AudioNoiseSuppressionConfig",
+          "required": false,
+          "description": "Noise suppression configuration."
+        },
+        {
+          "fieldId": 2,
+          "name": "echoCancellation",
+          "type": "AudioEchoCancellationConfig",
+          "required": false,
+          "description": "Echo cancellation configuration."
+        },
+        {
+          "fieldId": 3,
+          "name": "autoGainControl",
+          "type": "AudioAutoGainControlConfig",
+          "required": false,
+          "description": "Automatic gain control configuration."
+        },
+        {
+          "fieldId": 4,
+          "name": "beamforming",
+          "type": "AudioBeamformingConfig",
+          "required": false,
+          "description": "Beamforming configuration."
+        },
+        {
+          "fieldId": 5,
+          "name": "dereverberation",
+          "type": "AudioDereverberationConfig",
+          "required": false,
+          "description": "Dereverberation configuration."
+        },
+        {
+          "fieldId": 6,
+          "name": "voiceActivityDetection",
+          "type": "AudioVoiceActivityDetectionConfig",
+          "required": false,
+          "description": "Voice activity detection configuration."
+        },
+        {
+          "fieldId": 7,
+          "name": "directionOfArrival",
+          "type": "AudioDirectionOfArrivalConfig",
+          "required": false,
+          "description": "Direction of arrival configuration."
+        },
+        {
+          "fieldId": 8,
+          "name": "howlingSuppression",
+          "type": "AudioHowlingSuppressionConfig",
+          "required": false,
+          "description": "Howling suppression configuration."
+        }
+      ]
+    },
+    {
+      "name": "AudioNoiseSuppressionConfig",
+      "kind": "object",
+      "description": "Noise suppression configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether noise suppression is enabled."
+        },
+        {
+          "fieldId": 2,
+          "name": "mode",
+          "type": "enum",
+          "required": false,
+          "description": "Suppression mode; values are off, low, medium, high, and auto."
+        },
+        {
+          "fieldId": 3,
+          "name": "level",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 3,
+          "description": "Suppression strength."
+        }
+      ]
+    },
+    {
+      "name": "AudioEchoCancellationConfig",
+      "kind": "object",
+      "description": "Echo cancellation configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether echo cancellation is enabled."
+        },
+        {
+          "fieldId": 2,
+          "name": "mode",
+          "type": "enum",
+          "required": false,
+          "description": "Echo cancellation mode; values are off, low, medium, high, and auto."
+        },
+        {
+          "fieldId": 3,
+          "name": "tailLengthMs",
+          "type": "uint32",
+          "required": false,
+          "min": 64,
+          "max": 512,
+          "description": "Echo tail length in milliseconds; modifying it may require restarting the audio link."
+        },
+        {
+          "fieldId": 4,
+          "name": "nlpLevel",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 3,
+          "description": "Non-linear processing strength."
+        }
+      ]
+    },
+    {
+      "name": "AudioAutoGainControlConfig",
+      "kind": "object",
+      "description": "Automatic gain control configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether automatic gain control is enabled."
+        },
+        {
+          "fieldId": 2,
+          "name": "targetLevelDb",
+          "type": "int32",
+          "required": false,
+          "min": -36,
+          "max": -6,
+          "description": "Target output level in dB."
+        },
+        {
+          "fieldId": 3,
+          "name": "maxGainDb",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 36,
+          "description": "Maximum gain in dB."
+        },
+        {
+          "fieldId": 4,
+          "name": "attackTimeMs",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 1000,
+          "description": "Gain attack time in milliseconds."
+        },
+        {
+          "fieldId": 5,
+          "name": "releaseTimeMs",
+          "type": "uint32",
+          "required": false,
+          "min": 10,
+          "max": 5000,
+          "description": "Gain release time in milliseconds."
+        }
+      ]
+    },
+    {
+      "name": "AudioBeamformingConfig",
+      "kind": "object",
+      "description": "Beamforming configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether beamforming is enabled."
+        },
+        {
+          "fieldId": 2,
+          "name": "mode",
+          "type": "enum",
+          "required": false,
+          "description": "Beamforming mode; values are fixed, adaptive, and auto."
+        },
+        {
+          "fieldId": 3,
+          "name": "lookDirectionDeg",
+          "type": "int32",
+          "required": false,
+          "min": -180,
+          "max": 180,
+          "description": "Fixed beam look direction in degrees."
+        },
+        {
+          "fieldId": 4,
+          "name": "beamWidthDeg",
+          "type": "uint32",
+          "required": false,
+          "min": 10,
+          "max": 180,
+          "description": "Beam width in degrees."
+        }
+      ]
+    },
+    {
+      "name": "AudioDereverberationConfig",
+      "kind": "object",
+      "description": "Dereverberation configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether dereverberation is enabled."
+        },
+        {
+          "fieldId": 2,
+          "name": "mode",
+          "type": "enum",
+          "required": false,
+          "description": "Dereverberation mode; values are off, low, medium, high, and auto."
+        },
+        {
+          "fieldId": 3,
+          "name": "level",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 3,
+          "description": "Dereverberation strength."
+        }
+      ]
+    },
+    {
+      "name": "AudioVoiceActivityDetectionConfig",
+      "kind": "object",
+      "description": "Voice activity detection configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether voice activity detection is enabled."
+        },
+        {
+          "fieldId": 2,
+          "name": "sensitivity",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 3,
+          "description": "Detection sensitivity."
+        },
+        {
+          "fieldId": 3,
+          "name": "hangoverMs",
+          "type": "uint32",
+          "required": false,
+          "min": 0,
+          "max": 2000,
+          "description": "Speech-end hangover time in milliseconds."
+        }
+      ]
+    },
+    {
+      "name": "AudioDirectionOfArrivalConfig",
+      "kind": "object",
+      "description": "Direction of arrival configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether direction of arrival estimation is enabled."
+        },
+        {
+          "fieldId": 2,
+          "name": "reportingEnabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether DOA or beam result reporting is enabled by this configuration."
+        },
+        {
+          "fieldId": 3,
+          "name": "reportIntervalMs",
+          "type": "uint32",
+          "required": false,
+          "min": 20,
+          "max": 5000,
+          "description": "Result report interval in milliseconds."
+        },
+        {
+          "fieldId": 4,
+          "name": "smoothingMs",
+          "type": "uint32",
+          "required": false,
+          "min": 0,
+          "max": 5000,
+          "description": "Smoothing window in milliseconds."
+        }
+      ]
+    },
+    {
+      "name": "AudioHowlingSuppressionConfig",
+      "kind": "object",
+      "description": "Howling suppression configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether howling suppression is enabled."
+        },
+        {
+          "fieldId": 2,
+          "name": "mode",
+          "type": "enum",
+          "required": false,
+          "description": "Howling suppression mode; values are off, low, medium, high, and auto."
+        },
+        {
+          "fieldId": 3,
+          "name": "level",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 3,
+          "description": "Howling suppression strength."
+        }
+      ]
+    },
+    {
       "name": "NetworkGetApInfoResponse",
       "kind": "object",
       "description": "Current device-hosted SoftAP information.",
@@ -1542,6 +2633,134 @@
       }
     },
     {
+      "name": "audio.getAlgorithmCapabilities",
+      "description": "Return supported audio algorithm objects, fields, defaults, ranges, enum values, and update policy.",
+      "methodId": 2317,
+      "bitOffset": 0,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "AudioGetAlgorithmCapabilitiesRequest"
+      },
+      "response": {
+        "type": "AudioGetAlgorithmCapabilitiesResponse"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.algorithm"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "audio.getAlgorithmConfig",
+      "description": "Return the current effective configuration for supported audio algorithm objects.",
+      "methodId": 2305,
+      "bitOffset": 1,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "AudioGetAlgorithmConfigRequest"
+      },
+      "response": {
+        "type": "AudioAlgorithmConfig"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.algorithm"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "audio.setAlgorithmConfig",
+      "description": "Partially update one or more audio algorithm configuration objects atomically.",
+      "methodId": 2306,
+      "bitOffset": 2,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "AudioSetAlgorithmConfigRequest"
+      },
+      "response": {
+        "type": "AudioSetAlgorithmConfigResponse"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.algorithm"
+      ],
+      "events": [
+        "audio.algorithmConfigChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "OUT_OF_RANGE",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "audio.resetAlgorithmConfig",
+      "description": "Reset all, selected, or selected-field audio algorithm configuration to declared default values.",
+      "methodId": 2318,
+      "bitOffset": 3,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "AudioResetAlgorithmConfigRequest"
+      },
+      "response": {
+        "type": "AudioSetAlgorithmConfigResponse"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.algorithm"
+      ],
+      "events": [
+        "audio.algorithmConfigChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "OUT_OF_RANGE",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
       "name": "network.getApInfo",
       "description": "Return information about the device-hosted SoftAP.",
       "methodId": 3591,
@@ -1691,6 +2910,30 @@
       ],
       "capabilities": [
         "display.brightness"
+      ]
+    },
+    {
+      "name": "audio.algorithmConfigChanged",
+      "description": "Emitted when audio algorithm configuration changes after set, reset, profile, restore, factory reset, or device policy changes.",
+      "eventId": 2305,
+      "bitOffset": 0,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "AudioAlgorithmConfigChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "audio.setAlgorithmConfig",
+        "audio.resetAlgorithmConfig",
+        "profile changed",
+        "factory reset",
+        "restore config",
+        "device policy"
+      ],
+      "capabilities": [
+        "audio.algorithm"
       ]
     },
     {

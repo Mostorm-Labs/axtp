@@ -26,9 +26,10 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x0602, "display.brightnessMin", "display", "uint16", "" },
     { 0x0603, "display.brightnessMax", "display", "uint16", "" },
     { 0x0604, "display.brightnessStep", "display", "uint16", "" },
+    { 0x0901, "audio.algorithm", "audio", "object", "AudioAlgorithmCapability" },
     { 0x0E06, "network.softAp", "network", "bool", "" },
 };
 
-inline constexpr std::size_t kCapabilityRegistryCount = 13;
+inline constexpr std::size_t kCapabilityRegistryCount = 14;
 
 } // namespace axtp

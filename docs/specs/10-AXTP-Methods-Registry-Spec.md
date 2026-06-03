@@ -451,6 +451,8 @@ MVP 方法表以 `registry/method/method_registry.yaml` 与 `registry/domains/<d
 | `0x090A` | `audio.closeRecordingStream` | draft | 否 | 关闭音频录制流 |
 | `0x090B` | `audio.getPlaybackState` | draft | 否 | 获取播放状态 |
 | `0x090C` | `audio.setPlaybackConfig` | draft | 否 | 设置播放配置 |
+| `0x090D` | `audio.getAlgorithmCapabilities` | draft | 否 | 获取音频算法参数能力 |
+| `0x090E` | `audio.resetAlgorithmConfig` | draft | 否 | 重置音频算法配置 |
 
 #### 6.10 input.*
 

@@ -19,9 +19,10 @@ inline constexpr EventDescriptor kEventRegistry[] = {
     { 0x0501, "stream.opened", "stream", "StreamOpenedEvent" },
     { 0x0503, "stream.error", "stream", "StreamErrorEvent" },
     { 0x0607, "display.brightnessChanged", "display", "DisplayBrightnessChangedEvent" },
+    { 0x0901, "audio.algorithmConfigChanged", "audio", "AudioAlgorithmConfigChangedEvent" },
     { 0x0E01, "network.apInfoChanged", "network", "NetworkApInfoChangedEvent" },
 };
 
-inline constexpr std::size_t kEventRegistryCount = 7;
+inline constexpr std::size_t kEventRegistryCount = 8;
 
 } // namespace axtp
