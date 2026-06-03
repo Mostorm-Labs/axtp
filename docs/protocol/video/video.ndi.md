@@ -2,6 +2,16 @@
 
 # Video NDI / RTSP 配置协议方案 v0\.1
 
+## 协议审核标记（人工复核）
+
+| 标记 | 对象 | 审核结论 | 后续动作 |
+|---|---|---|---|
+| `[REVIEW-OK]` | `video.ndi` / `video.rtsp` capability | NDI/RTSP 是视频输出或访问服务，不是基础 network 配置；feature ID 符合 `domain.feature` 规则。 | 可作为 video domain YAML 草案输入。 |
+| `[REVIEW-OK]` | `video.setNdiConfig` / `video.getNdiConfig` / `video.ndiConfigChanged` / `video.setRtspConfig` / `video.getRtspConfig` / `video.rtspConfigChanged` | Config 方法和事件名称可保留；`ndiConfig` / `rtspConfig` 不作为 capability ID。 | 人工确认 schema 后进入 registry。 |
+| `[REVIEW-ASK]` | AXDP `CommonSetNDIState` / `CommonGetNDIState` | 当前可映射到 `video.setNdiConfig` / `video.getNdiConfig`，但旧 state 可能只表示 enable/disable。 | 确认是否写入 `enabled` 字段，或需要独立 state query。 |
+| `[REVIEW-ASK]` | AXDP `CommonSetRTSPStreamURL` / `CommonGetRTSPStreamURL` | 当前可映射到 `video.setRtspConfig` / `video.getRtspConfig`，但需确认旧语义是设置完整 URL、查询设备生成 URL，还是配置路径/端口。 | 确认 URL 字段方向；若旧实现存在指针或字符串处理问题，只记录语义映射，不继承 bug。 |
+| `[REVIEW-FIX]` | RTSP/NDI 与 `video.stream` 边界 | 文档需要明确 RTSP/NDI 配置服务不等同于 AXTP `video.openStream` 数据流。 | 规范化阶段补充边界说明和 capability/method 归属表。 |
+
 
 
 ## 1\. 归属域
@@ -1324,4 +1334,3 @@ RTSP:
 基础网络：
   IP、网关、DNS、Wi-Fi 仍归 network。
 ```
-

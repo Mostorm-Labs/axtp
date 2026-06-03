@@ -1,5 +1,14 @@
 # AXTP 文件流获取方案
 
+## 协议审核标记（人工复核）
+
+| 标记 | 对象 | 审核结论 | 后续动作 |
+|---|---|---|---|
+| `[REVIEW-BLOCKER]` | 文档定位 | 当前文件名为 `file.transfer.md`，但正文实际是 `log` 日志流与日志文件获取方案，且与 `docs/protocol/log/log.transfer.md` 基本重复。 | 进入 registry 前必须重写为真正的 `file.transfer` 协议，或删除/移动此日志副本。 |
+| `[REVIEW-FIX]` | `file.transfer` 方法集合 | 本文没有正式描述 `file.beginTransfer` / `file.endTransfer` / `file.cancelTransfer` / `file.resumeTransfer` / `file.getTransferState` 等通用文件传输接口。 | 需要补齐 file 域上传、下载、分片、校验、断点续传、权限与清理策略。 |
+| `[REVIEW-ASK]` | AXDP `CommonSetFbfParamsStart` / `CommonSetFbfParamsData` / `CommonSetFbfParamsStop` / `CommonGetFbfParams` | 当前 legacy 分类暂归 `file.transfer`，但 FBF 参数也可能属于设备配置导入导出或 vendor 参数快照。 | 人工确认 FBF 文件语义，再决定映射到 `file.transfer`、`device.configExport` 或 `vendor.*`。 |
+| `[REVIEW-FIX]` | 与 log/file 边界 | 日志文件下载应由 `log` 创建或列出日志文件，由 `file` 执行通用下载；本文目前把 log 方案放在 file 文件中。 | 重写后同步 `log.transfer.md` 中引用的 file 方法名。 |
+
 # Log 日志流与日志文件获取协议方案
 
 
@@ -2217,6 +2226,5 @@ file 域负责日志文件下载：
 正常关闭日志流必须使用 log.closeStream；
 底层异常释放才使用 stream.abort。
 ```
-
 
 

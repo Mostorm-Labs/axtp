@@ -2,6 +2,15 @@
 
 # Stream 流控层协议设计文档
 
+## 协议审核标记（人工复核）
+
+| 标记 | 对象 | 审核结论 | 后续动作 |
+|---|---|---|---|
+| `[REVIEW-OK]` | `stream` 公共数据面 | 文档明确 `stream` 只管 `streamId`、`seqId`、`cursor`、`ack/window/pause/resume/abort` 等公共数据与流控，不承载业务语义。 | 可作为 stream 基础协议和业务域引用依据。 |
+| `[REVIEW-OK]` | 业务域创建业务流 | `video.openStream`、`audio.startRecording`、`file.beginUpload`、`firmware.beginOta` 由业务域创建流，符合命名规范。 | 后续 domain YAML 不应注册常规 `stream.open`。 |
+| `[REVIEW-FIX]` | `stream.open` 示例 | 正文仍出现 `stream.open` 示例和“不推荐”说明；作为最终协议时容易被误读为候选接口。 | 规范化阶段改成反例附录或删除，正式方法表不得包含 `stream.open`。 |
+| `[REVIEW-ASK]` | SDK/runtime 流控暴露层级 | 文档倾向 ack/window/pause/resume 由 SDK/runtime 自动处理，但是否允许业务调用方直接控制仍需确认。 | 确认后决定这些方法进入 public registry、internal registry，或仅作为 transport profile 行为。 |
+
 
 
 版本：v0\.1  
@@ -2120,6 +2129,5 @@ stream 域负责统一数据面和可选流控：
 普通业务 App 可以不直接调用 stream.* 方法。
 SDK/runtime 可以根据 streamProfile 自动完成流控。
 ```
-
 
 

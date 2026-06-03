@@ -35,3 +35,12 @@ docs/generated/*、tooling/*、runtimes/*/generated/*
 - 新增 ID、`bitOffset` 和 schema fieldId 不与现有 YAML 冲突。
 - 旧协议适配只登记确定的 legacy CmdValue、状态码和 payload 映射；未知项保留为待确认问题。
 - 运行 Generator 后，`protocol/axtp.protocol.yaml` 与 `docs/generated/*` 能完整反映采纳结果。
+
+## 协议审核标记
+
+`docs/protocol/<domain>/*.md` 直接使用以下标记进行人工审核：
+
+- `[REVIEW-OK]`：命名、归属和接口方向符合 08/09，可进入人工确认或 registry 草案。
+- `[REVIEW-FIX]`：进入 registry 前必须修正文档、方法清单、错误策略、schema 或生成路径描述。
+- `[REVIEW-ASK]`：需要产品、设备实现或 legacy 行为确认后才能写入 `legacyRefs` 或 YAML。
+- `[REVIEW-BLOCKER]`：当前文档定位会误导新协议生成，必须先重写或拆分。

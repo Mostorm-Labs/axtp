@@ -2,6 +2,15 @@
 
 # Log 日志流与日志文件获取协议方案
 
+## 协议审核标记（人工复核）
+
+| 标记 | 对象 | 审核结论 | 后续动作 |
+|---|---|---|---|
+| `[REVIEW-OK]` | `log.stream` / `log.export` / `log.files` | 实时日志、日志导出、日志文件管理的 feature 拆分方向合理；业务流由 log 域创建，数据面复用 `stream` / `file`。 | 可作为 log domain YAML 草案输入。 |
+| `[REVIEW-OK]` | `log.openStream` / `log.closeStream` / `log.createExport` / `log.getExportState` / `log.listFiles` | 方法命名能表达业务控制面，不引入通用 `stream.open`。 | 人工确认 schema 后进入 registry。 |
+| `[REVIEW-ASK]` | AXDP `CommonGetLogData` | 当前分类暂映射到 `log.getExportState`，但旧协议可能是直接读取日志数据、触发导出或查询导出结果。 | 确认旧返回字段和是否有异步任务，再决定映射到 `log.openStream`、`log.createExport` 或 `log.getExportState`。 |
+| `[REVIEW-FIX]` | file 域方法依赖 | 日志文件下载依赖 `file.download`，但 `file.transfer` 文档当前是日志副本，未定义正式 file 方法集合。 | 等 file 域重写后同步 `download/list/delete` 的归属和方法名。 |
+
 
 
 版本：v0\.1  
@@ -2217,6 +2226,5 @@ file 域负责日志文件下载：
 正常关闭日志流必须使用 log.closeStream；
 底层异常释放才使用 stream.abort。
 ```
-
 
 

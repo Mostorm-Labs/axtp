@@ -1,475 +1,268 @@
-# AXTP ota方案
+# AXTP Firmware OTA 协议方案
 
-# Firmware 固件升级协议方案
+版本：v0.2
 
+归属域：`firmware`
 
+Capability ID：`firmware.ota`
 
-版本：v0\.1  
+数据面：`stream`，默认 Stream Profile 为 `firmware.ota`。`file.transfer` 可作为文件暂存模式的后续扩展。
 
-归属域：`firmware`  
-
-数据面：`file` / `stream`  
-
-适用范围：设备固件升级、资源包升级、模型升级、Bootloader 升级、多文件 OTA、分批次 OTA、断点续传 OTA。
-
-
+适用范围：设备固件升级、Bootloader 升级、资源包升级、模型升级、多文件 OTA、分批次 OTA、断点续传 OTA、A/B 分区确认与回滚、远程 URL 升级到 AXTP 的语义映射。
 
 ---
 
+## 协议审核标记（人工复核）
 
+| 标记 | 条目 | 审核结论 | 本文处理 |
+|---|---|---|---|
+| `[REVIEW-OK]` | `firmware.ota` capability | OTA 控制面归 `firmware.ota`，大文件数据面复用 `stream`，符合 domain-feature 规则。 | 保留为本文唯一 capability，明确 `firmware` 只负责升级业务流程。 |
+| `[REVIEW-OK]` | `firmware.beginOta` / `firmware.commitOtaBatch` / `firmware.verifyOtaFiles` / `firmware.installOta` | 会话创建、批次提交、校验、安装拆分合理。 | 补齐方法语义、请求/响应字段、状态机和错误策略，可作为 domain YAML 草案输入。 |
+| `[REVIEW-FIX]` | file 域依赖 | 旧文档把 `file.beginUpload` / `file.completeUpload` 当成已定稿方法，但当前 `file.transfer` 仍未正式重写。 | P0 改为 `firmware.beginOta` 直接创建 `firmware.ota` STREAM；`file.*` 只作为 P1 暂存文件模式，占位方法名不得直接进入稳定 registry。 |
+| `[REVIEW-ASK]` | AXDP Alpha/Beta/Ex OTA | `AlphaUpgradeInfo/Data`、`BetaStart/Stop/UpgradeInfo/Data/Ex` 可映射到 OTA 流程，但旧包格式、分片 ACK、校验字段仍需设备侧确认。 | 补充 legacy 字段候选映射；标为 adapter-only 或待确认，不直接写入稳定 `legacyRefs`。 |
+| `[REVIEW-FIX]` | AXDP `CommonSetNoTargetStrategyState` / `CommonGetNoTargetStrategyState` | 名称和源码行为不像 OTA。 | 从 OTA 稳定映射中排除；后续优先迁到 `misc.*`、`video.framing`、`audio.algorithm` 或 vendor/diagnostic。 |
+| `[REVIEW-ASK]` | Rooms / VM33 / Signage 远程升级 | 旧协议有 URL 触发升级和进度查询。 | 通过 `firmware.beginOta.source.type=url` 覆盖，不新增 `firmware.upgradeByUrl` 作为首选方法。 |
 
-## 1\. 设计目标
+---
 
+## 1. 文档定位
 
+`firmware.ota` 定义 OTA 的业务控制面。它回答：
 
-`firmware` 域负责设备固件升级的控制面，包括：
+1. 设备是否支持 OTA，以及支持哪些升级模式。
+2. 本次升级的 manifest、目标版本、目标文件和安全校验是什么。
+3. 如何创建 OTA 会话并绑定 STREAM 数据面。
+4. 如何提交已传输的数据批次。
+5. 如何校验、安装、重启后确认和回滚。
+6. 如何查询状态、进度和断点续传信息。
+7. 如何把旧 Alpha/Beta/Rooms/VM33/Signage 升级语义迁移到 AXTP。
 
+本方案是业务协议方案和人工评审输入。采纳后，稳定事实必须写入 `registry/domains/firmware/domain.yaml` 或对应 registry YAML，并由 Generator 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。本文不直接分配新的 numeric methodId、eventId 或 fieldId；数值以 registry/generated 为准。
 
+当前仓库的 `registry/method/method_registry.yaml` 仍保留早期 MVP 名称 `firmware.begin` / `firmware.end` / `firmware.verify` / `firmware.apply`。本文采用 08/10/14 规范中评审后的明确命名：
 
-```Plain Text
-固件版本查询
-OTA 能力查询
+| 本文推荐方法 | 当前生成物兼容名 | 兼容说明 |
+|---|---|---|
+| `firmware.beginOta` | `firmware.begin` | 创建 OTA 会话并返回 `streamId` / `transferId`。 |
+| `firmware.commitOtaBatch` | `firmware.end` | 旧单镜像流程中可表示数据发送完成；新协议扩展为多文件/分批提交。 |
+| `firmware.verifyOtaFiles` | `firmware.verify` | 校验完整镜像或多文件包。 |
+| `firmware.installOta` | `firmware.apply` | 应用已校验 OTA。 |
+| `firmware.otaProgressReported` | `firmware.updateProgress` | 新事件命名更明确。 |
+| `firmware.otaStateChanged` / `firmware.otaResultReported` | `firmware.updateCompleted` / `firmware.updateFailed` | 当前完成/失败事件可由新状态/结果事件兼容表达。 |
+
+落 registry 时可以选择保留旧名作为 stable 兼容方法，也可以新增本文推荐名；不得在不迁移 schema 的情况下直接改变旧方法语义。
+
+---
+
+## 2. 域边界
+
+`firmware.ota` 负责：
+
+```text
+固件和 OTA 能力查询
+OTA manifest 接收和校验
 OTA 会话创建
-OTA manifest 描述
+STREAM 上下文绑定
 多文件升级包管理
 分批次提交
-传输状态查询
-文件校验
-签名校验
-安装升级
-重启确认
+传输状态和断点续传查询
+文件 hash、整包 hash、签名校验
+安装、slot 切换、重启需求表达
+A/B 启动后确认
 回滚
-取消升级
-状态事件
-进度事件
+取消和清理
+状态、进度、结果事件
 ```
 
+不属于 `firmware.ota` 的内容：
 
-
-OTA 数据本身不应直接塞进普通 RPC response/request 中。大文件传输应复用：
-
-
-
-```Plain Text
-file
-stream
-```
-
-
-
-其中：
-
-
-
-```Plain Text
-firmware
-  负责 OTA 业务流程。
-
-file
-  负责 OTA 文件上传、下载、文件信息管理。
-
-stream
-  负责统一流式数据面与流控：
-  streamId / seqId / cursor / ack / window / resume / abort。
-```
-
-
+| 内容 | 归属建议 | 说明 |
+|---|---|---|
+| STREAM 帧、`streamId`、`seqId`、`cursor`、ACK、窗口、resume | `stream` / transport runtime | OTA 只创建和绑定业务流。 |
+| 通用文件上传下载能力 | `file.transfer` | file 域未定稿前，本文仅引用暂存文件模式的占位方法名。 |
+| 通用设备重启 | `system.reboot` | OTA 可返回 `requiresReboot=true`，真正重启由 system 域执行或设备策略自动执行。 |
+| 网络连接、代理、DNS、证书安装 | `network` / `auth` | URL 升级只声明来源，不管理网络基础设施。 |
+| 产测擦写、工厂校准、license 写入 | `diagnostic.*` / `vendor.*` / `auth.license` | 不混入通用 OTA。 |
+| 升级策略配置，例如自动检查、静默窗口 | `firmware.updatePolicy` | 与一次 OTA 会话不同。 |
+| 无目标策略、跟踪策略、算法行为配置 | 待确认 | `CommonSet/GetNoTargetStrategyState` 不进入 `firmware.ota`。 |
 
 核心原则：
 
-
-
-```Plain Text
-firmware 负责“升级什么、怎么校验、什么时候安装”；
-file/stream 负责“数据怎么传”。
+```text
+firmware 负责“升级什么、是否可信、什么时候安装”。
+stream 负责“字节如何可靠传输”。
+file 只在暂存文件模式中负责“文件如何上传或下载”。
+system 负责“设备如何重启”。
 ```
 
-
-
 ---
 
+## 3. 术语
 
-
-## 2\. 术语定义
-
-
-
-|名称|说明|
-|---|---|
-|`otaSessionId`|一次 OTA 升级会话 ID|
-|`packageId`|OTA 包 ID|
-|`manifest`|OTA 包描述信息，声明文件列表、版本、hash、签名、目标分区等|
-|`fileId`|OTA 包内部文件 ID，例如 `app`、`bootloader`、`resources`|
-|`uploadedFileId`|通过 `file` 域上传完成后生成的文件 ID|
-|`batchId`|一批已上传文件或文件分片的提交批次 ID|
-|`cursor`|某个文件当前连续接收的字节偏移|
-|`missingRanges`|某个文件缺失的数据范围，用于断点续传|
-|`target`|OTA 文件写入目标，例如 application / bootloader / resource|
-|`state`|OTA 会话状态|
-|`phase`|OTA 当前阶段，例如 receiving\_files / verifying\_signature / writing\_application|
-
-
-
----
-
-
-
-## 3\. 域职责划分
-
-
-
-|能力|归属域|说明|
+| 名称 | 类型 | 说明 |
 |---|---|---|
-|查询固件版本|`firmware.getInfo`|当前版本、分区、构建信息|
-|查询 OTA 能力|`firmware.getOtaCapabilities`|是否支持多文件、断点续传、回滚|
-|创建 OTA 会话|`firmware.beginOta`|提交 manifest，创建升级上下文|
-|上传 OTA 文件|`file.beginUpload` / `stream`|文件数据传输|
-|提交 OTA 批次|`firmware.commitOtaBatch`|将 uploadedFileId 或分片范围绑定到 OTA 会话|
-|校验 OTA 文件|`firmware.verifyOtaFiles`|hash / signature 校验|
-|安装 OTA|`firmware.installOta`|写分区、切换 slot、准备重启|
-|确认 OTA|`firmware.confirmOta`|A/B 系统确认新版本可用|
-|回滚 OTA|`firmware.rollbackOta`|回滚到旧版本|
-|取消 OTA|`firmware.cancelOta`|取消未安装的 OTA|
-|重启设备|`system.reboot`|OTA 需要重启时由 system 域执行|
-
-
-
----
-
-
-
-## 4\. 非目标
-
-
-
-`firmware` 域不负责以下事项：
-
-
-
-```Plain Text
-1. 不负责大文件二进制数据的普通 RPC 传输；
-2. 不直接承载完整固件文件 payload；
-3. 不替代 file/stream 的上传、分片、cursor、ack、resume 能力；
-4. 不负责设备普通重启，重启归 system 域；
-5. 不负责网络下载 URL 的实际网络连接管理，网络基础能力归 network 域；
-6. 不负责产测私有写入流程，产测私有能力归 diagnostic 或 vendor。
-```
-
-
+| `otaSessionId` | string | 一次 OTA 业务会话 ID，业务层查询、取消、确认、回滚都使用它。 |
+| `transferId` | uint32 | 兼容旧单镜像流程和 Binary/TLV 的传输 ID，可与 `streamId` 绑定。 |
+| `streamId` | uint32 | STREAM 数据通道 ID，由 `firmware.beginOta` 返回。 |
+| `packageId` | string | OTA 包 ID，可由服务端或客户端生成。 |
+| `manifest` | object | OTA 包描述，包含版本、文件、hash、签名、目标和安装策略。 |
+| `fileId` | string | manifest 内的文件 ID，例如 `app`、`bootloader`、`resources`。 |
+| `uploadedFileId` | string | 通过 file 域暂存上传后生成的文件 ID。仅用于 file 暂存模式。 |
+| `batchId` | string | 一次批次提交 ID，在同一 `otaSessionId` 内唯一。 |
+| `cursor` | uint64 | 某个文件或 stream 当前连续接收的字节偏移。 |
+| `missingRanges` | array | 缺失范围，用于断点续传或乱序补传。 |
+| `target` | enum | 写入目标，例如 `application`、`bootloader`、`resource`。 |
+| `state` | enum | OTA 会话状态。 |
+| `phase` | enum | OTA 当前阶段，比 `state` 更细。 |
+| `resumeToken` | bytes/string | 可选断点续传 token，由设备生成并校验。 |
 
 ---
 
+## 4. 核心接口
 
+| 类型 | 名称 | 分级 | 说明 |
+|---|---|---|---|
+| capability | `firmware.ota` | P0 | OTA 能力块。 |
+| method | `firmware.beginOta` | P0 | 创建 OTA 会话，校验 manifest，绑定 `firmware.ota` STREAM 或 URL 下载任务。 |
+| method | `firmware.commitOtaBatch` | P0 | 提交已传输的文件、范围或暂存文件。 |
+| method | `firmware.verifyOtaFiles` | P0 | 校验文件 hash、整包 hash 和签名。 |
+| method | `firmware.installOta` | P0 | 安装已校验 OTA。 |
+| method | `firmware.getOtaCapabilities` | P1 | 查询 OTA 详细能力。 |
+| method | `firmware.getOtaState` | P1 | 查询 OTA 业务状态。 |
+| method | `firmware.getOtaTransferState` | P1 | 查询每个文件的接收进度和缺失范围。 |
+| method | `firmware.cancelOta` | P1 | 取消未进入不可中断阶段的 OTA。 |
+| method | `firmware.confirmOta` | P1 | A/B 或可回滚系统在新版本启动后确认成功。 |
+| method | `firmware.rollbackOta` | P1 | 回滚到上一个可用版本。 |
+| method | `firmware.getInfo` | P1 | 查询固件详细版本信息；当前 MVP 可继续由 `device.getInfo` 承载基础信息。 |
+| event | `firmware.otaProgressReported` | P0 | 周期性进度上报。 |
+| event | `firmware.otaStateChanged` | P0 | 状态变化通知。 |
+| event | `firmware.otaResultReported` | P1 | 成功、失败、回滚等最终结果通知。 |
 
-## 5\. 方法清单
+P2 兼容方法 `firmware.uploadOtaChunk` 仅用于极低端设备或 legacy adapter，默认不得作为新实现首选。
 
+---
 
+## 5. 数据面模式
 
-### 5\.1 固件信息与能力
+### 5.1 P0：firmware.ota STREAM
 
+P0 推荐流程：
 
-
-```Plain Text
-firmware.getInfo
-firmware.getOtaCapabilities
-```
-
-
-
-### 5\.2 OTA 会话控制
-
-
-
-```Plain Text
+```text
 firmware.beginOta
-firmware.getOtaState
-firmware.cancelOta
-```
-
-
-
-### 5\.3 OTA 传输与批次
-
-
-
-```Plain Text
-firmware.getOtaTransferState
+STREAM packets, profile=firmware.ota
 firmware.commitOtaBatch
 firmware.verifyOtaFiles
-```
-
-
-
-### 5\.4 OTA 安装与结果确认
-
-
-
-```Plain Text
 firmware.installOta
-firmware.confirmOta
-firmware.rollbackOta
+system.reboot, if required
+firmware.confirmOta, if supported
 ```
 
+`firmware.beginOta` 返回 `streamId` 后，固件数据通过 STREAM payload 传输。STREAM 包只携带通用数据面字段：
 
-
-### 5\.5 可选：Firmware 自带分片上传
-
-
-
-```Plain Text
-firmware.uploadOtaChunk
-```
-
-
-
-> MVP 推荐优先复用 `file` \+ `stream` 传输 OTA 文件，不建议首选 `firmware.uploadOtaChunk`。
-> 
-> 
-
-
-
----
-
-
-
-## 6\. 事件清单
-
-
-
-```Plain Text
-firmware.otaStateChanged
-firmware.otaProgressReported
-```
-
-
-
-其中：
-
-
-
-```Plain Text
-otaStateChanged
-  OTA 状态变化事件。
-
-otaProgressReported
-  OTA 进度周期上报事件。
-```
-
-
-
-周期性进度使用 `Reported`，不要使用 `Changed`。
-
-
-
----
-
-
-
-# 7\. firmware\.getInfo
-
-
-
-## 7\.1 用途
-
-
-
-查询当前固件信息。
-
-
-
-## 7\.2 请求
-
-
-
-```JSON
+```json
 {
-  "method": "firmware.getInfo",
-  "params": {}
+  "streamId": 33,
+  "seqId": 0,
+  "cursor": 0,
+  "payload": "base64:AAAA..."
 }
 ```
 
+业务字段不得塞进 STREAM header，例如 `imageType`、`totalSize`、`sha256`、`fileId`、`chunkCrc32`。这些信息必须来自 `manifest`、Stream Context 或可选 profile trailer。
 
+STREAM 与 OTA 文件的绑定方式由 `beginOta` 响应声明：
 
-## 7\.3 返回
+| `streamLayout` | 说明 | 适用场景 |
+|---|---|---|
+| `file` | 每个 `fileId` 绑定一个独立 `streamId`，STREAM payload 只属于该文件。 | 多文件 OTA 推荐模式。 |
+| `package` | 单个 `streamId` 传输一个完整 package blob，manifest 中每个文件必须声明 `packageOffset` 和 `size`，设备按范围切分。 | 已有打包格式或 URL 下载模式。 |
+| `single_image` | 单个 `streamId` 只对应一个固件镜像。 | 旧 `firmware.begin/end/verify/apply` 兼容。 |
 
+多文件 OTA 不得依赖 STREAM 包里的 `fileId`。如果使用 `streamLayout=file`，`fileId` 与 `streamId` 的绑定来自 `beginOta.result.streams[]`；如果使用 `streamLayout=package`，文件归属来自 manifest 中的 `packageOffset`。
 
+### 5.2 P1：file 暂存模式
 
-```JSON
+当设备需要先把升级文件暂存在文件系统中，再由 firmware 域绑定安装时，可以使用 file 暂存模式：
+
+```text
+firmware.beginOta(transferMode=file)
+file.beginUpload, draft placeholder
+STREAM packets, profile=file.transfer
+file.completeUpload, draft placeholder
+firmware.commitOtaBatch(uploadedFileId)
+firmware.verifyOtaFiles
+firmware.installOta
+```
+
+由于 `file.transfer` 文档当前仍是 review blocker，本文中的 `file.beginUpload` / `file.completeUpload` 只表示未来 file 域应提供的能力，不是当前稳定 wire 合同。正式落地前必须先完成 `docs/protocol/file/file.transfer.md` 重写并同步 registry。
+
+### 5.3 P1：URL 远程升级
+
+Rooms、VM33、Signage 的旧 `RemoteUpgrade` / `CloudUpgrade` 可映射为：
+
+```json
 {
-  "result": {
-    "currentVersion": "2.2.1",
-    "buildId": "20260602.001",
-    "buildTime": "2026-06-02T10:00:00Z",
-    "hardwareRevision": "revA",
-    "bootloaderVersion": "1.1.0",
-    "partitionScheme": "ab",
-    "activeSlot": "a",
-    "inactiveSlot": "b",
-    "lastUpdateState": "confirmed"
+  "method": "firmware.beginOta",
+  "params": {
+    "packageId": "pkg_remote_001",
+    "targetVersion": "2.3.0",
+    "transferMode": "url",
+    "source": {
+      "type": "url",
+      "url": "https://example.com/firmware.bin",
+      "hash": {
+        "algorithm": "sha256",
+        "value": "..."
+      }
+    },
+    "manifest": {
+      "schemaVersion": 1,
+      "files": [
+        {
+          "fileId": "app",
+          "target": "application",
+          "name": "firmware.bin",
+          "size": 8388608,
+          "hash": {
+            "algorithm": "sha256",
+            "value": "..."
+          },
+          "required": true
+        }
+      ]
+    }
   }
 }
 ```
 
-
-
-## 7\.4 字段说明
-
-
-
-|字段|说明|
-|---|---|
-|`currentVersion`|当前运行固件版本|
-|`buildId`|构建 ID|
-|`buildTime`|构建时间|
-|`hardwareRevision`|硬件版本|
-|`bootloaderVersion`|Bootloader 版本|
-|`partitionScheme`|分区方案，例如 `single` / `ab`|
-|`activeSlot`|当前运行 slot|
-|`inactiveSlot`|可写入升级的 slot|
-|`lastUpdateState`|上一次升级状态|
-
-
+URL 模式下设备负责下载，但 firmware 域不负责配置网络。设备必须仍按 manifest 做 hash 和签名校验；不得只因为 URL 可信就跳过校验。
 
 ---
 
+## 6. Manifest
 
+`manifest` 是 OTA 包的核心描述。第一版 schema 基线：
 
-# 8\. firmware\.getOtaCapabilities
-
-
-
-## 8\.1 用途
-
-
-
-查询 OTA 能力范围。
-
-
-
-## 8\.2 请求
-
-
-
-```JSON
+```json
 {
-  "method": "firmware.getOtaCapabilities",
-  "params": {}
-}
-```
-
-
-
-## 8\.3 返回
-
-
-
-```JSON
-{
-  "result": {
-    "supported": true,
-    "modes": ["file", "stream"],
-    "supportsManifest": true,
-    "requiresManifest": true,
-    "supportsMultiFile": true,
-    "supportsChunkedTransfer": true,
-    "supportsBatchCommit": true,
-    "supportsResume": true,
-    "supportsMissingRanges": true,
-    "supportsRollback": true,
-    "supportsConfirm": true,
-    "requiresReboot": true,
-    "maxFileCount": 16,
-    "maxPackageSize": 268435456,
-    "maxFileSize": 134217728,
-    "preferredChunkSize": 65536,
-    "maxChunkSize": 262144,
-    "hashAlgorithms": ["sha256", "crc32"],
-    "signatureAlgorithms": ["rsa2048", "ecdsa_p256"],
-    "targets": [
-      "bootloader",
-      "application",
-      "resource",
-      "model",
-      "filesystem",
-      "config",
-      "recovery",
-      "vendor"
-    ],
-    "streamProfiles": ["reliable_file"],
-    "defaultStreamProfile": "reliable_file"
-  }
-}
-```
-
-
-
-## 8\.4 字段说明
-
-
-
-|字段|说明|
-|---|---|
-|`modes`|OTA 数据传输方式，推荐 `file` / `stream`|
-|`supportsMultiFile`|是否支持一个 OTA 包包含多个文件|
-|`supportsChunkedTransfer`|是否支持分片传输|
-|`supportsBatchCommit`|是否支持分批提交|
-|`supportsResume`|是否支持断点续传|
-|`supportsMissingRanges`|是否支持按缺失范围补传|
-|`supportsRollback`|是否支持回滚|
-|`supportsConfirm`|是否支持安装后确认|
-|`maxFileCount`|OTA 包最大文件数量|
-|`preferredChunkSize`|推荐 chunk 大小|
-|`targets`|支持的升级目标|
-|`streamProfiles`|支持的 stream profile，OTA 推荐 `reliable_file`|
-
-
-
----
-
-
-
-# 9\. Manifest 设计
-
-
-
-## 9\.1 Manifest 用途
-
-
-
-`manifest` 是 OTA 包的核心描述，用于声明：
-
-
-
-```Plain Text
-升级目标版本
-升级包包含哪些文件
-每个文件大小
-每个文件 hash
-每个文件写入目标
-整包 hash
-签名
-兼容性约束
-安装策略
-```
-
-
-
-## 9\.2 Manifest 示例
-
-
-
-```JSON
-{
-  "version": "2.3.0",
-  "minCompatibleVersion": "2.0.0",
+  "schemaVersion": 1,
+  "packageId": "pkg_2026_0602_001",
+  "targetVersion": "2.3.0",
+  "minCurrentVersion": "2.0.0",
+  "maxCurrentVersion": "2.2.x",
+  "allowDowngrade": false,
+  "productIds": ["nearhub-room"],
   "hardwareRevisions": ["revA", "revB"],
   "files": [
     {
       "fileId": "bootloader",
-      "name": "bootloader.bin",
       "target": "bootloader",
-      "required": true,
+      "imageType": "bootloader",
+      "name": "bootloader.bin",
       "size": 262144,
+      "required": true,
+      "installOrder": 10,
       "hash": {
         "algorithm": "sha256",
         "value": "..."
@@ -477,10 +270,12 @@ otaProgressReported
     },
     {
       "fileId": "app",
-      "name": "app.bin",
       "target": "application",
-      "required": true,
+      "imageType": "main",
+      "name": "app.bin",
       "size": 8388608,
+      "required": true,
+      "installOrder": 20,
       "hash": {
         "algorithm": "sha256",
         "value": "..."
@@ -488,10 +283,11 @@ otaProgressReported
     },
     {
       "fileId": "resources",
-      "name": "resources.bin",
       "target": "resource",
-      "required": false,
+      "name": "resources.bin",
       "size": 5242880,
+      "required": false,
+      "installOrder": 30,
       "hash": {
         "algorithm": "sha256",
         "value": "..."
@@ -503,357 +299,263 @@ otaProgressReported
     "value": "..."
   },
   "signature": {
-    "algorithm": "rsa2048",
+    "algorithm": "ecdsa_p256",
+    "keyId": "prod-fw-2026",
     "value": "base64:..."
+  },
+  "installPlan": {
+    "partitionScheme": "ab",
+    "targetSlot": "inactive",
+    "rebootPolicy": "manual",
+    "confirmRequired": true,
+    "rollbackAllowed": true
   }
 }
 ```
 
+字段规则：
 
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| `schemaVersion` | 是 | Manifest schema 版本。 |
+| `packageId` | 推荐 | 与 `beginOta.params.packageId` 必须一致；缺省时由外层提供。 |
+| `targetVersion` | 是 | 升级目标版本。 |
+| `minCurrentVersion` / `maxCurrentVersion` | 可选 | 当前版本约束。 |
+| `allowDowngrade` | 可选 | 默认 `false`。设备有 anti-rollback fuse 时必须拒绝非法降级。 |
+| `productIds` / `hardwareRevisions` | 推荐 | 兼容性约束。 |
+| `files[]` | 是 | 至少一个文件。 |
+| `packageHash` | 推荐 | 整包 hash，适用于打包格式或组合文件。 |
+| `signature` | 生产必填 | manifest 或整包签名。开发设备可以通过 capability 声明不要求签名。 |
+| `installPlan` | 推荐 | slot、重启、确认和回滚策略。 |
 
-## 9\.3 文件 target 枚举
+`files[]` 规则：
 
-
-
-```Plain Text
-bootloader
-application
-resource
-model
-filesystem
-config
-recovery
-vendor
-```
-
-
-
-## 9\.4 Manifest 规则
-
-
-
-```Plain Text
-1. 多文件 OTA 必须通过 manifest 声明 files[]；
-2. 每个 fileId 在同一个 otaSessionId 内必须唯一；
-3. 每个文件必须声明 size 和 hash；
-4. required=true 的文件必须全部接收并校验通过后才能 install；
-5. packageHash 用于整包校验；
-6. signature 用于防篡改校验；
-7. manifest 校验失败时必须拒绝 beginOta 或进入 failed 状态。
-```
-
-
+1. `fileId` 在同一 `otaSessionId` 内必须唯一。
+2. 每个 required 文件必须声明 `size` 和 `hash`。
+3. `target` 枚举为 `bootloader`、`application`、`resource`、`model`、`filesystem`、`config`、`recovery`、`vendor`。
+4. `hash.algorithm` 生产环境必须支持 `sha256`；`md5` 只用于 legacy 适配或非安全完整性检查。
+5. `installOrder` 由设备按从小到大执行；缺省时由设备按 target 安全策略决定。
+6. `streamLayout=package` 时，每个文件必须声明 `packageOffset`，且 `packageOffset + size` 不得越过 package 大小。
+7. `signature` 必须覆盖 manifest 中影响安装和校验的字段。
+8. manifest 校验失败时，`beginOta` 必须返回错误，不得创建可安装会话。
 
 ---
 
+## 7. 能力查询
 
+### 7.1 firmware.getInfo
 
-# 10\. firmware\.beginOta
+用途：查询固件详细版本和分区信息。
 
+```json
+{
+  "method": "firmware.getInfo",
+  "params": {}
+}
+```
 
+```json
+{
+  "result": {
+    "currentVersion": "2.2.1",
+    "buildId": "20260602.001",
+    "buildTime": "2026-06-02T10:00:00Z",
+    "hardwareRevision": "revA",
+    "productId": "nearhub-room",
+    "bootloaderVersion": "1.1.0",
+    "partitionScheme": "ab",
+    "activeSlot": "a",
+    "inactiveSlot": "b",
+    "lastUpdateState": "confirmed",
+    "lastUpdateVersion": "2.2.1"
+  }
+}
+```
 
-## 10\.1 用途
+当前 MVP 若未注册 `firmware.getInfo`，客户端应先使用 `device.getInfo` 获取基础固件版本。
 
+### 7.2 firmware.getOtaCapabilities
 
+用途：查询 OTA 细粒度能力。
 
-创建一次 OTA 升级会话。
+```json
+{
+  "method": "firmware.getOtaCapabilities",
+  "params": {}
+}
+```
 
+```json
+{
+  "result": {
+    "supported": true,
+    "transferModes": ["stream", "url"],
+    "streamProfiles": ["firmware.ota"],
+    "defaultStreamProfile": "firmware.ota",
+    "streamLayouts": ["single_image", "file", "package"],
+    "defaultStreamLayout": "file",
+    "ackModes": ["stop_and_wait", "sliding_window"],
+    "supportsManifest": true,
+    "requiresManifest": true,
+    "supportsMultiFile": true,
+    "supportsBatchCommit": true,
+    "supportsResume": true,
+    "supportsMissingRanges": true,
+    "supportsUrlSource": true,
+    "supportsRollback": true,
+    "supportsConfirm": true,
+    "requiresSignature": true,
+    "requiresReboot": true,
+    "partitionSchemes": ["single", "ab"],
+    "targets": ["bootloader", "application", "resource", "model"],
+    "maxFileCount": 16,
+    "maxPackageSize": 268435456,
+    "maxFileSize": 134217728,
+    "preferredChunkSize": 65536,
+    "maxChunkSize": 262144,
+    "maxWindowSize": 8,
+    "hashAlgorithms": ["sha256", "crc32", "md5"],
+    "signatureAlgorithms": ["ecdsa_p256", "rsa2048"]
+  }
+}
+```
 
+规则：
 
-## 10\.2 请求
+1. `streamProfiles` 中 P0 必须包含 `firmware.ota`。
+2. `file.transfer` 只有在 file 域定稿并被设备实现时才出现在能力中。
+3. `md5` 只表示 legacy 兼容能力；生产 OTA 不应只依赖 `md5`。
+4. `streamLayouts` 声明 `streamId` 与 `fileId` 或 package offset 的绑定方式。
+5. `requiresSignature=true` 时，manifest 缺少签名必须返回 `FW_VERIFY_FAILED` 或 `RPC_PARAM_MISSING`。
 
+---
 
+## 8. OTA 会话创建
 
-```JSON
+### 8.1 firmware.beginOta
+
+用途：创建 OTA 会话、校验 manifest、协商数据面。
+
+```json
 {
   "method": "firmware.beginOta",
   "params": {
     "packageId": "pkg_2026_0602_001",
-    "currentVersion": "2.2.1",
     "targetVersion": "2.3.0",
-    "transferMode": "file",
-    "streamProfile": "reliable_file",
+    "transferMode": "stream",
+    "streamProfile": "firmware.ota",
+    "streamLayout": "file",
+    "idempotencyKey": "host-req-001",
+    "resumeToken": null,
     "manifest": {
-      "version": "2.3.0",
-      "minCompatibleVersion": "2.0.0",
-      "hardwareRevisions": ["revA", "revB"],
+      "schemaVersion": 1,
+      "targetVersion": "2.3.0",
       "files": [
         {
           "fileId": "app",
-          "name": "app.bin",
           "target": "application",
-          "required": true,
+          "name": "app.bin",
           "size": 8388608,
-          "hash": {
-            "algorithm": "sha256",
-            "value": "..."
-          }
-        },
-        {
-          "fileId": "resources",
-          "name": "resources.bin",
-          "target": "resource",
-          "required": false,
-          "size": 5242880,
+          "required": true,
           "hash": {
             "algorithm": "sha256",
             "value": "..."
           }
         }
       ],
-      "packageHash": {
-        "algorithm": "sha256",
-        "value": "..."
-      },
       "signature": {
-        "algorithm": "rsa2048",
+        "algorithm": "ecdsa_p256",
+        "keyId": "prod-fw-2026",
         "value": "base64:..."
       }
+    },
+    "policy": {
+      "installMode": "normal",
+      "rebootPolicy": "manual",
+      "allowDowngrade": false
     }
   }
 }
 ```
 
+成功响应：
 
-
-## 10\.3 返回
-
-
-
-```JSON
+```json
 {
   "result": {
     "otaSessionId": "ota_001",
+    "transferId": 33,
     "packageId": "pkg_2026_0602_001",
     "state": "receiving",
-    "transferMode": "file",
-    "streamProfile": "reliable_file",
-    "preferredChunkSize": 65536,
+    "phase": "receiving_files",
+    "transferMode": "stream",
+    "streamLayout": "file",
+    "streamId": 33,
+    "streamProfile": "firmware.ota",
+    "ackMode": "sliding_window",
+    "cursorUnit": "byteOffset",
+    "acceptedOffset": 0,
+    "chunkSize": 65536,
+    "windowSize": 4,
+    "resumeToken": "base64:...",
+    "streams": [
+      {
+        "fileId": "app",
+        "streamId": 33,
+        "acceptedOffset": 0,
+        "cursor": 0
+      }
+    ],
     "acceptedFiles": [
       {
         "fileId": "app",
+        "streamId": 33,
         "target": "application",
         "size": 8388608,
         "cursor": 0,
         "complete": false
-      },
-      {
-        "fileId": "resources",
-        "target": "resource",
-        "size": 5242880,
-        "cursor": 0,
-        "complete": false
       }
     ]
   }
 }
 ```
 
+URL 模式响应可以不返回 `streamId`：
 
-
-## 10\.4 规则
-
-
-
-```Plain Text
-1. beginOta 只创建 OTA 会话，不传输文件数据；
-2. beginOta 必须校验 manifest 基本合法性；
-3. 如果已有 OTA 会话正在进行，返回 Conflict；
-4. 如果目标版本不允许升级，返回 VersionRejected；
-5. 如果硬件版本不兼容，返回 IncompatibleHardware；
-6. 如果 manifest 签名非法，可以直接返回 SignatureInvalid；
-7. beginOta 成功后进入 receiving 状态。
-```
-
-
-
----
-
-
-
-# 11\. OTA 数据传输模式
-
-
-
-## 11\.1 推荐模式：file \+ stream
-
-
-
-MVP 推荐使用：
-
-
-
-```Plain Text
-file.beginUpload
-file.uploadChunk / stream data
-file.completeUpload
-firmware.commitOtaBatch
-```
-
-
-
-也就是说：
-
-
-
-```Plain Text
-file/stream 负责 OTA 文件数据传输；
-firmware 负责 OTA 会话、批次、校验、安装。
-```
-
-
-
-## 11\.2 可选模式：firmware\.uploadOtaChunk
-
-
-
-如果设备不希望引入 file 域，可以提供：
-
-
-
-```Plain Text
-firmware.uploadOtaChunk
-```
-
-
-
-但不推荐作为 MVP 首选。
-
-
-
----
-
-
-
-# 12\. 使用 file 域上传 OTA 文件
-
-
-
-## 12\.1 file\.beginUpload
-
-
-
-```JSON
-{
-  "method": "file.beginUpload",
-  "params": {
-    "name": "app.bin",
-    "size": 8388608,
-    "hash": {
-      "algorithm": "sha256",
-      "value": "..."
-    },
-    "streamProfile": "reliable_file"
-  }
-}
-```
-
-
-
-返回：
-
-
-
-```JSON
+```json
 {
   "result": {
-    "uploadId": "upload_app_001",
-    "streamId": 301,
-    "streamProfile": "reliable_file",
-    "preferredChunkSize": 65536,
-    "cursor": 0,
-    "nextSeqId": 0
+    "otaSessionId": "ota_remote_001",
+    "packageId": "pkg_remote_001",
+    "state": "downloading",
+    "phase": "downloading_package",
+    "transferMode": "url",
+    "requiresClientUpload": false
   }
 }
 ```
 
+规则：
 
-
-## 12\.2 stream 数据面上传
-
-
-
-```JSON
-{
-  "streamId": 301,
-  "seqId": 0,
-  "cursor": 0,
-  "timestampMs": 1710000000000,
-  "payloadType": "file_chunk",
-  "fileId": "app",
-  "chunkOffset": 0,
-  "chunkSize": 65536,
-  "crc32": "0x12345678",
-  "payload": "base64:AAAA..."
-}
-```
-
-
-
-## 12\.3 file\.completeUpload
-
-
-
-```JSON
-{
-  "method": "file.completeUpload",
-  "params": {
-    "uploadId": "upload_app_001"
-  }
-}
-```
-
-
-
-返回：
-
-
-
-```JSON
-{
-  "result": {
-    "uploadedFileId": "file_upload_app_001",
-    "name": "app.bin",
-    "size": 8388608,
-    "hashVerified": true
-  }
-}
-```
-
-
+1. `beginOta` 只创建 OTA 会话，不在 RPC request/response 中传输固件大块数据。
+2. 设备必须校验 manifest 的结构、版本、硬件兼容性、大小上限、目标分区和签名策略。
+3. 同一设备同一时间默认只允许一个 active OTA；已有会话时返回 `FW_TRANSFER_ALREADY_STARTED` 或 `BUSY`。
+4. `idempotencyKey` 相同且参数一致时，设备应返回同一个会话；参数不同必须返回 `ALREADY_EXISTS` 或 `INVALID_ARGUMENT`。
+5. 断点续传时，`resumeToken` 只由创建它的设备解释，客户端不得伪造 token 内部结构。
+6. `streamLayout=file` 时，设备必须在 `streams[]` 中返回每个 `fileId` 对应的 `streamId`。
+7. `beginOta` 成功后，stream 模式进入 `receiving`，URL 模式进入 `downloading`。
 
 ---
 
+## 9. 批次提交
 
+### 9.1 firmware.commitOtaBatch
 
-# 13\. firmware\.commitOtaBatch
+用途：将已传输的数据范围或暂存文件绑定到 OTA 会话。它表示“数据已提交给 OTA 会话”，不表示校验通过，也不表示安装。
 
+提交 STREAM 范围：
 
-
-## 13\.1 用途
-
-
-
-提交一批 OTA 数据。
-
-
-
-支持两类批次：
-
-
-
-```Plain Text
-1. 提交已上传完成的文件；
-2. 提交某些文件的分片范围。
-```
-
-
-
-## 13\.2 提交已上传文件
-
-
-
-```JSON
+```json
 {
   "method": "firmware.commitOtaBatch",
   "params": {
@@ -862,24 +564,41 @@ firmware.uploadOtaChunk
     "files": [
       {
         "fileId": "app",
-        "uploadedFileId": "file_upload_app_001"
-      },
-      {
-        "fileId": "resources",
-        "uploadedFileId": "file_upload_resources_001"
+        "ranges": [
+          {
+            "offset": 0,
+            "size": 1048576
+          }
+        ],
+        "complete": false
       }
     ]
   }
 }
 ```
 
+提交暂存文件：
 
+```json
+{
+  "method": "firmware.commitOtaBatch",
+  "params": {
+    "otaSessionId": "ota_001",
+    "batchId": "batch_app_complete",
+    "files": [
+      {
+        "fileId": "app",
+        "uploadedFileId": "file_upload_app_001",
+        "complete": true
+      }
+    ]
+  }
+}
+```
 
-返回：
+响应：
 
-
-
-```JSON
+```json
 {
   "result": {
     "otaSessionId": "ota_001",
@@ -888,124 +607,44 @@ firmware.uploadOtaChunk
     "files": [
       {
         "fileId": "app",
-        "received": true,
-        "receivedBytes": 8388608,
-        "cursor": 8388608,
-        "complete": true,
-        "hashVerified": true
-      },
-      {
-        "fileId": "resources",
-        "received": true,
-        "receivedBytes": 5242880,
-        "cursor": 5242880,
-        "complete": true,
-        "hashVerified": true
-      }
-    ]
-  }
-}
-```
-
-
-
-## 13\.3 提交分片范围
-
-
-
-```JSON
-{
-  "method": "firmware.commitOtaBatch",
-  "params": {
-    "otaSessionId": "ota_001",
-    "batchId": "batch_002",
-    "files": [
-      {
-        "fileId": "app",
-        "range": {
-          "offset": 0,
-          "size": 1048576
-        }
-      },
-      {
-        "fileId": "resources",
-        "range": {
-          "offset": 0,
-          "size": 1048576
-        }
-      }
-    ]
-  }
-}
-```
-
-
-
-返回：
-
-
-
-```JSON
-{
-  "result": {
-    "otaSessionId": "ota_001",
-    "batchId": "batch_002",
-    "state": "batch_committed",
-    "files": [
-      {
-        "fileId": "app",
         "receivedBytes": 1048576,
         "cursor": 1048576,
-        "complete": false
-      },
-      {
-        "fileId": "resources",
-        "receivedBytes": 1048576,
-        "cursor": 1048576,
-        "complete": false
+        "complete": false,
+        "missingRanges": [
+          {
+            "offset": 1048576,
+            "size": 7340032
+          }
+        ]
       }
-    ]
+    ],
+    "totalBytes": 8388608,
+    "receivedBytes": 1048576,
+    "progress": 12
   }
 }
 ```
 
+规则：
 
-
-## 13\.4 规则
-
-
-
-```Plain Text
-1. batchId 在 otaSessionId 内应唯一；
-2. commitOtaBatch 只表示该批数据已提交，不表示安装；
-3. commitOtaBatch 后设备可以进行文件级 hash 校验；
-4. required 文件全部 complete=true 后才允许 verifyOtaFiles；
-5. 多文件 OTA 必须每个 fileId 独立维护 cursor / missingRanges。
-```
-
-
+1. `batchId` 在同一 `otaSessionId` 内必须唯一。
+2. 同一 `batchId` 重试且 payload 完全一致时必须幂等返回。
+3. 同一 `batchId` 重试但 payload 不一致时必须返回 `ALREADY_EXISTS` 或 `INVALID_ARGUMENT`。
+4. `files[].fileId` 必须存在于 manifest。
+5. `ranges[]` 不得越过 manifest 声明的 `size`。
+6. 设备只支持顺序写入时，可以只接受从当前 `cursor` 开始的范围；乱序范围返回 `STREAM_OFFSET_INVALID` 或 `OUT_OF_RANGE`。
+7. required 文件全部 `complete=true` 后才允许进入 `verifyOtaFiles`。
+8. 多文件 OTA 必须按 `fileId` 独立维护 `cursor`、`receivedBytes` 和 `missingRanges`。
 
 ---
 
+## 10. 传输状态和断点续传
 
+### 10.1 firmware.getOtaTransferState
 
-# 14\. firmware\.getOtaTransferState
+用途：查询接收状态，用于 UI 进度、重连恢复和缺失范围补传。
 
-
-
-## 14\.1 用途
-
-
-
-查询 OTA 文件接收状态，用于进度展示和断点续传。
-
-
-
-## 14\.2 请求
-
-
-
-```JSON
+```json
 {
   "method": "firmware.getOtaTransferState",
   "params": {
@@ -1014,20 +653,19 @@ firmware.uploadOtaChunk
 }
 ```
 
-
-
-## 14\.3 返回
-
-
-
-```JSON
+```json
 {
   "result": {
     "otaSessionId": "ota_001",
     "state": "receiving",
+    "streamLayout": "file",
+    "streamId": 33,
+    "streamProfile": "firmware.ota",
+    "resumeToken": "base64:...",
     "files": [
       {
         "fileId": "app",
+        "streamId": 33,
         "target": "application",
         "size": 8388608,
         "receivedBytes": 3145728,
@@ -1039,93 +677,52 @@ firmware.uploadOtaChunk
             "size": 5242880
           }
         ]
-      },
-      {
-        "fileId": "resources",
-        "target": "resource",
-        "size": 5242880,
-        "receivedBytes": 1048576,
-        "cursor": 1048576,
-        "complete": false,
-        "missingRanges": [
-          {
-            "offset": 1048576,
-            "size": 4194304
-          }
-        ]
       }
     ],
-    "totalBytes": 13631488,
-    "receivedBytes": 4194304,
-    "progress": 30
+    "totalBytes": 8388608,
+    "receivedBytes": 3145728,
+    "progress": 37
   }
 }
 ```
 
+断点续传规则：
 
-
-## 14\.4 断点续传规则
-
-
-
-```Plain Text
-1. 每个 fileId 独立维护 cursor；
-2. 每个 fileId 独立维护 missingRanges；
-3. 如果设备只支持顺序写入，可以只返回 cursor；
-4. 如果设备支持乱序写入，应返回 missingRanges；
-5. Client 重连后调用 getOtaTransferState，然后只补传缺失范围；
+1. 客户端重连后先调用 `getOtaTransferState`。
+2. 顺序写设备从每个 `fileId.cursor` 继续发送。
+3. 支持乱序补传的设备返回 `missingRanges`，客户端按 range 补传。
+4. `resumeToken` 必须和 `otaSessionId`、manifest hash、设备身份绑定。
+5. 若设备重启后丢失 OTA 临时状态，必须返回 `NOT_FOUND` 或 `FW_TRANSFER_NOT_STARTED`，客户端重新开始。
 6. 不允许只用一个全局 cursor 表示多文件 OTA 进度。
-```
-
-
 
 ---
 
+## 11. 校验和安装
 
+### 11.1 firmware.verifyOtaFiles
 
-# 15\. firmware\.verifyOtaFiles
+用途：校验文件完整性、整包 hash 和签名。
 
-
-
-## 15\.1 用途
-
-
-
-校验 OTA 文件完整性、整包 hash 和签名。
-
-
-
-## 15\.2 请求
-
-
-
-```JSON
+```json
 {
   "method": "firmware.verifyOtaFiles",
   "params": {
-    "otaSessionId": "ota_001"
+    "otaSessionId": "ota_001",
+    "scope": "all"
   }
 }
 ```
 
-
-
-## 15\.3 返回
-
-
-
-```JSON
+```json
 {
   "result": {
     "otaSessionId": "ota_001",
     "state": "verified",
+    "phase": "verifying_signature",
     "files": [
       {
         "fileId": "app",
-        "hashVerified": true
-      },
-      {
-        "fileId": "resources",
+        "sizeVerified": true,
         "hashVerified": true
       }
     ],
@@ -1135,139 +732,72 @@ firmware.uploadOtaChunk
 }
 ```
 
+规则：
 
+1. 每个 required 文件必须完成 size 和 hash 校验。
+2. `packageHash` 存在时必须校验。
+3. `signature` 存在或 capability 要求签名时必须校验。
+4. 校验成功后进入 `verified`。
+5. 校验失败不得安装，返回 `FW_SIZE_MISMATCH`、`FW_HASH_MISMATCH`、`FW_VERIFY_FAILED` 或 `FW_IMAGE_INVALID`。
+6. 校验失败事件必须携带 `fileId`、`phase` 和错误码，方便 UI 和日志定位。
 
-## 15\.4 规则
+### 11.2 firmware.installOta
 
+用途：安装已校验 OTA。
 
-
-```Plain Text
-1. 每个文件必须单独 hash 校验；
-2. required 文件必须全部校验通过；
-3. packageHash 推荐校验；
-4. signature 必须在 installOta 前校验；
-5. 校验成功后进入 verified 状态；
-6. 校验失败进入 failed 状态或返回错误。
-```
-
-
-
----
-
-
-
-# 16\. firmware\.installOta
-
-
-
-## 16\.1 用途
-
-
-
-安装已经接收并校验通过的 OTA 包。
-
-
-
-## 16\.2 请求
-
-
-
-```JSON
+```json
 {
   "method": "firmware.installOta",
   "params": {
     "otaSessionId": "ota_001",
-    "installMode": "normal"
+    "installMode": "normal",
+    "rebootPolicy": "manual"
   }
 }
 ```
 
-
-
-## 16\.3 返回
-
-
-
-```JSON
+```json
 {
   "result": {
     "otaSessionId": "ota_001",
     "state": "installing",
     "accepted": true,
     "installMode": "normal",
-    "requiresReboot": true
-  }
-}
-```
-
-
-
-A/B 分区示例：
-
-
-
-```JSON
-{
-  "result": {
-    "otaSessionId": "ota_001",
-    "state": "installing",
     "targetSlot": "b",
-    "requiresReboot": true
+    "requiresReboot": true,
+    "confirmRequired": true
   }
 }
 ```
 
+`installMode` 枚举：
 
+| 值 | 说明 |
+|---|---|
+| `normal` | 常规安装。 |
+| `staged` | 只写入并准备，稍后再切换或重启。 |
+| `recovery` | 进入 recovery 路径安装。 |
+| `bootloader` | Bootloader 特殊安装路径；设备可限制权限。 |
+| `apply_on_reboot` | 下次重启时应用。 |
 
-## 16\.4 installMode 枚举
+规则：
 
-
-
-```Plain Text
-normal
-recovery
-bootloader
-staged
-```
-
-
-
-## 16\.5 规则
-
-
-
-```Plain Text
-1. installOta 只能在 verified 状态后调用；
-2. 安装过程中通常不允许 cancel；
-3. 如果需要重启，返回 requiresReboot=true；
-4. 真正重启动作应通过 system.reboot 发起，或由设备策略自动重启；
-5. A/B 系统应返回 targetSlot；
-6. 安装失败必须提供 errorCode 和失败 phase。
-```
-
-
+1. `installOta` 只能在 `verified` 后调用。
+2. 安装过程中通常不允许 `cancelOta`；设备支持安全中止时必须在 capability 中声明。
+3. 需要重启时返回 `requiresReboot=true`，客户端调用 `system.reboot` 或等待设备自动重启。
+4. A/B 系统应返回 `targetSlot` 和 `confirmRequired`。
+5. 写分区失败返回 `FW_APPLY_FAILED`，并在事件中给出失败 `phase`。
+6. 安装完成但尚未重启时可进入 `reboot_required`。
 
 ---
 
+## 12. 确认、回滚和取消
 
+### 12.1 firmware.confirmOta
 
-# 17\. firmware\.confirmOta
+用途：A/B 或支持自动回滚的设备在新版本启动后确认升级成功。
 
-
-
-## 17\.1 用途
-
-
-
-用于 A/B 或支持回滚的系统，在新版本启动后确认升级成功。
-
-
-
-## 17\.2 请求
-
-
-
-```JSON
+```json
 {
   "method": "firmware.confirmOta",
   "params": {
@@ -1276,119 +806,61 @@ staged
 }
 ```
 
-
-
-## 17\.3 返回
-
-
-
-```JSON
+```json
 {
   "result": {
     "otaSessionId": "ota_001",
     "state": "confirmed",
     "currentVersion": "2.3.0",
-    "activeSlot": "b"
+    "activeSlot": "b",
+    "rollbackAvailable": true
   }
 }
 ```
 
+规则：
 
+1. `supportsConfirm=false` 时不提供该方法或返回 `NOT_SUPPORTED`。
+2. confirm 成功后设备不得再因 watchdog 自动回滚该版本。
+3. 如果 `otaSessionId` 在重启后不可用，设备可接受 `packageId` 或返回最近 pending confirmation 的状态，但 schema 必须在 registry 中明确。
 
-## 17\.4 规则
+### 12.2 firmware.rollbackOta
 
+用途：回滚到上一个可用版本。
 
-
-```Plain Text
-1. 如果设备不支持 confirm，capability 中 supportsConfirm=false；
-2. 对 A/B 系统，confirmOta 用于禁止自动回滚；
-3. confirm 成功后状态进入 confirmed；
-4. confirm 失败应返回 InvalidState 或 ConfirmFailed。
-```
-
-
-
----
-
-
-
-# 18\. firmware\.rollbackOta
-
-
-
-## 18\.1 用途
-
-
-
-回滚到上一个可用版本。
-
-
-
-## 18\.2 请求
-
-
-
-```JSON
+```json
 {
   "method": "firmware.rollbackOta",
   "params": {
-    "reason": "user_request"
+    "otaSessionId": "ota_001",
+    "reason": "user_request",
+    "rebootPolicy": "manual"
   }
 }
 ```
 
-
-
-## 18\.3 返回
-
-
-
-```JSON
+```json
 {
   "result": {
+    "otaSessionId": "ota_001",
     "state": "rollback_scheduled",
-    "requiresReboot": true,
-    "targetVersion": "2.2.1"
+    "targetVersion": "2.2.1",
+    "requiresReboot": true
   }
 }
 ```
 
+规则：
 
+1. 仅 `supportsRollback=true` 时支持。
+2. 没有可回滚版本时返回 `FW_ROLLBACK_FAILED` 或 `NOT_FOUND`。
+3. 回滚可能需要重启，重启动作仍归 `system.reboot`。
 
-## 18\.4 规则
+### 12.3 firmware.cancelOta
 
+用途：取消尚未进入不可中断阶段的 OTA 会话。
 
-
-```Plain Text
-1. 仅 supportsRollback=true 时支持；
-2. 回滚可能需要重启；
-3. 如果没有可回滚版本，返回 RollbackUnavailable；
-4. 回滚执行状态通过 otaStateChanged 上报。
-```
-
-
-
----
-
-
-
-# 19\. firmware\.cancelOta
-
-
-
-## 19\.1 用途
-
-
-
-取消 OTA 会话。
-
-
-
-## 19\.2 请求
-
-
-
-```JSON
+```json
 {
   "method": "firmware.cancelOta",
   "params": {
@@ -1398,58 +870,33 @@ staged
 }
 ```
 
-
-
-## 19\.3 返回
-
-
-
-```JSON
+```json
 {
   "result": {
     "otaSessionId": "ota_001",
-    "state": "cancelled"
+    "state": "cancelled",
+    "cleanupStarted": true
   }
 }
 ```
 
+规则：
 
-
-## 19\.4 规则
-
-
-
-```Plain Text
-1. receiving / verifying / verified 阶段可以取消；
-2. installing 阶段通常不允许取消；
-3. cancel 后设备应清理临时文件；
-4. 如果数据流仍在传输，应终止相关 file/stream 任务；
-5. cancel 不等于 rollback。
-```
-
-
+1. `receiving`、`downloading`、`batch_committed`、`verifying`、`verified` 通常可以取消。
+2. `installing`、`switching_slot`、`writing_bootloader` 通常不得取消，返回 `INVALID_STATE`。
+3. cancel 后设备必须清理临时文件、关闭相关 stream 或下载任务。
+4. `cancelOta` 不等于 `rollbackOta`；已安装的新版本需要回滚时必须走 rollback。
+5. 底层异常释放可以使用 `stream.abort`，但 `stream.abort` 不替代 `cancelOta`。
 
 ---
 
+## 13. 状态查询和状态机
 
+### 13.1 firmware.getOtaState
 
-# 20\. firmware\.getOtaState
+用途：查询 OTA 会话整体状态。
 
-
-
-## 20\.1 用途
-
-
-
-查询 OTA 会话整体状态。
-
-
-
-## 20\.2 请求
-
-
-
-```JSON
+```json
 {
   "method": "firmware.getOtaState",
   "params": {
@@ -1458,13 +905,7 @@ staged
 }
 ```
 
-
-
-## 20\.3 返回
-
-
-
-```JSON
+```json
 {
   "result": {
     "otaSessionId": "ota_001",
@@ -1476,76 +917,41 @@ staged
     "progress": 72,
     "requiresReboot": true,
     "startedAtMs": 1710000000000,
-    "updatedAtMs": 1710000100000
+    "updatedAtMs": 1710000100000,
+    "lastError": null
   }
 }
 ```
 
+### 13.2 状态枚举
 
-
----
-
-
-
-# 21\. OTA 状态枚举
-
-
-
-```Plain Text
-idle
-preparing
-receiving
-batch_committed
-verifying
-verified
-installing
-installed
-reboot_required
-confirmed
-rollback_scheduled
-rolling_back
-cancelled
-failed
-unsupported
-```
-
-
-
-## 21\.1 状态说明
-
-
-
-|状态|说明|
+| 状态 | 说明 |
 |---|---|
-|`idle`|无 OTA 任务|
-|`preparing`|正在准备升级|
-|`receiving`|正在接收 OTA 文件|
-|`batch_committed`|某批次已提交|
-|`verifying`|正在校验文件或签名|
-|`verified`|校验完成|
-|`installing`|正在安装|
-|`installed`|安装完成|
-|`reboot_required`|需要重启|
-|`confirmed`|新版本已确认|
-|`rollback_scheduled`|已计划回滚|
-|`rolling_back`|正在回滚|
-|`cancelled`|已取消|
-|`failed`|失败|
-|`unsupported`|不支持|
+| `idle` | 无 OTA 任务。 |
+| `preparing` | 正在准备升级或校验 manifest。 |
+| `receiving` | 正在通过 STREAM 或 file 暂存模式接收 OTA 数据。 |
+| `downloading` | URL 模式下设备正在下载 OTA 数据。 |
+| `batch_committed` | 至少一个批次已提交。 |
+| `verifying` | 正在校验文件、整包 hash 或签名。 |
+| `verified` | 校验完成，可以安装。 |
+| `installing` | 正在安装。 |
+| `installed` | 安装完成，可能仍需重启。 |
+| `reboot_required` | 需要重启后继续或生效。 |
+| `confirming` | 正在确认新版本。 |
+| `confirmed` | 新版本已确认。 |
+| `rollback_scheduled` | 已计划回滚。 |
+| `rolling_back` | 正在回滚。 |
+| `cancelled` | 已取消。 |
+| `failed` | 失败。 |
 
+`unsupported` 不作为运行态状态；不支持能力时应返回 `NOT_SUPPORTED` 或 capability 中 `supported=false`。
 
+### 13.3 phase 枚举
 
----
-
-
-
-# 22\. OTA phase 枚举
-
-
-
-```Plain Text
+```text
 receiving_manifest
 receiving_files
+downloading_package
 committing_batch
 verifying_files
 verifying_package_hash
@@ -1561,128 +967,41 @@ rolling_back
 cleanup
 ```
 
+### 13.4 状态迁移
 
-
----
-
-
-
-# 23\. firmware\.otaStateChanged
-
-
-
-## 23\.1 用途
-
-
-
-OTA 状态变化时上报。
-
-
-
-## 23\.2 接收文件阶段
-
-
-
-```JSON
-{
-  "event": "firmware.otaStateChanged",
-  "params": {
-    "otaSessionId": "ota_001",
-    "state": "receiving",
-    "phase": "receiving_files",
-    "progress": 12,
-    "timestampMs": 1710000000000
-  }
-}
-```
-
-
-
-## 23\.3 安装阶段
-
-
-
-```JSON
-{
-  "event": "firmware.otaStateChanged",
-  "params": {
-    "otaSessionId": "ota_001",
-    "state": "installing",
-    "phase": "writing_application",
-    "progress": 72,
-    "timestampMs": 1710000000000
-  }
-}
-```
-
-
-
-## 23\.4 需要重启
-
-
-
-```JSON
-{
-  "event": "firmware.otaStateChanged",
-  "params": {
-    "otaSessionId": "ota_001",
-    "state": "reboot_required",
-    "phase": "waiting_reboot",
-    "progress": 100,
-    "requiresReboot": true,
-    "timestampMs": 1710000000000
-  }
-}
-```
-
-
-
-## 23\.5 失败事件
-
-
-
-```JSON
-{
-  "event": "firmware.otaStateChanged",
-  "params": {
-    "otaSessionId": "ota_001",
-    "state": "failed",
-    "phase": "verifying_files",
-    "errorCode": "hash_mismatch",
-    "message": "app.bin hash mismatch",
-    "fileId": "app",
-    "timestampMs": 1710000000000
-  }
-}
-```
-
-
+| From | To | 触发 |
+|---|---|---|
+| `idle` | `preparing` | `beginOta` 开始处理。 |
+| `preparing` | `receiving` | stream/file 模式 manifest 通过。 |
+| `preparing` | `downloading` | URL 模式 manifest 通过。 |
+| `receiving` | `batch_committed` | `commitOtaBatch` 成功。 |
+| `downloading` | `batch_committed` | 设备下载完成并绑定文件。 |
+| `batch_committed` | `verifying` | `verifyOtaFiles` 开始。 |
+| `verifying` | `verified` | 校验成功。 |
+| `verified` | `installing` | `installOta` 开始。 |
+| `installing` | `installed` | 写入完成。 |
+| `installed` | `reboot_required` | 需要重启生效。 |
+| `reboot_required` | `confirming` | 重启后调用 `confirmOta`。 |
+| `confirming` | `confirmed` | 确认成功。 |
+| `verified` / `installed` / `confirmed` | `rollback_scheduled` | `rollbackOta` 被接受。 |
+| `rollback_scheduled` | `rolling_back` | 回滚执行开始。 |
+| 任意可取消状态 | `cancelled` | `cancelOta` 成功。 |
+| 任意状态 | `failed` | 发生不可恢复错误。 |
 
 ---
 
+## 14. 事件
 
+### 14.1 firmware.otaProgressReported
 
-# 24\. firmware\.otaProgressReported
+周期性上报 OTA 进度。周期性进度使用 `Reported`，不要使用 `Changed`。
 
-
-
-## 24\.1 用途
-
-
-
-周期性上报 OTA 进度。
-
-
-
-## 24\.2 示例
-
-
-
-```JSON
+```json
 {
   "event": "firmware.otaProgressReported",
   "params": {
     "otaSessionId": "ota_001",
+    "transferId": 33,
     "state": "receiving",
     "phase": "receiving_files",
     "progress": 31,
@@ -1694,12 +1013,6 @@ OTA 状态变化时上报。
         "receivedBytes": 3145728,
         "size": 8388608,
         "progress": 37
-      },
-      {
-        "fileId": "resources",
-        "receivedBytes": 1048576,
-        "size": 5242880,
-        "progress": 20
       }
     ],
     "timestampMs": 1710000010000
@@ -1707,359 +1020,125 @@ OTA 状态变化时上报。
 }
 ```
 
+规则：
 
+1. `progress` 范围为 `0..100`。
+2. 多文件 OTA 应包含 `files[]` 进度。
+3. receiving/downloading 阶段可按字节计算。
+4. installing 阶段由设备按内部阶段计算。
+5. 事件频率应受设备能力和 transport 限制，避免挤占 OTA 数据面。
 
-## 24\.3 规则
+### 14.2 firmware.otaStateChanged
 
+状态变化时上报。
 
-
-```Plain Text
-1. 周期性进度事件使用 Reported；
-2. progress 范围为 0-100；
-3. 多文件 OTA 应包含 files[] 进度；
-4. receiving 阶段 progress 可以按 receivedBytes / totalBytes 计算；
-5. installing 阶段 progress 由设备内部安装阶段决定。
-```
-
-
-
----
-
-
-
-# 25\. 多文件 OTA 规则
-
-
-
-多文件 OTA 是本协议的核心能力。
-
-
-
-```Plain Text
-1. 一个 otaSessionId 可以包含多个 fileId；
-2. 每个 fileId 独立维护 size、hash、cursor、missingRanges；
-3. 每个 fileId 可以对应一个 uploadedFileId；
-4. OTA 数据可以分多个 batchId 提交；
-5. commitOtaBatch 不等于 verify；
-6. verifyOtaFiles 不等于 install；
-7. installOta 必须在 required 文件完整且校验通过后执行；
-8. 不允许只用一个全局 cursor 表示多文件进度。
-```
-
-
-
----
-
-
-
-# 26\. 分批次 OTA 规则
-
-
-
-```Plain Text
-1. batchId 用于标识一次批次提交；
-2. 一个 batch 可以包含一个或多个文件；
-3. 一个 batch 可以包含完整文件，也可以包含文件 range；
-4. batch 提交成功后，设备可以更新 transfer state；
-5. batch 提交失败时应指出具体 fileId 和 range；
-6. batchId 在 otaSessionId 内应唯一；
-7. 分批提交有利于低带宽、低内存设备逐步处理 OTA 数据。
-```
-
-
-
----
-
-
-
-# 27\. 断点续传规则
-
-
-
-```Plain Text
-1. Client 断线重连后调用 firmware.getOtaTransferState；
-2. 设备返回每个 fileId 的 cursor 和 missingRanges；
-3. 如果设备只支持顺序写入，Client 从 cursor 继续上传；
-4. 如果设备支持乱序补传，Client 按 missingRanges 补传；
-5. reliable_file profile 可配合 stream.ack / stream.resume；
-6. 断点续传必须以 fileId 为单位管理。
-```
-
-
-
----
-
-
-
-# 28\. 可选：firmware\.uploadOtaChunk
-
-
-
-如果项目决定不依赖 file 域，可以提供该接口。
-
-
-
-## 28\.1 请求
-
-
-
-```JSON
+```json
 {
-  "method": "firmware.uploadOtaChunk",
+  "event": "firmware.otaStateChanged",
   "params": {
     "otaSessionId": "ota_001",
-    "fileId": "app",
-    "batchId": "batch_001",
-    "chunkIndex": 0,
-    "chunkOffset": 0,
-    "chunkSize": 65536,
-    "crc32": "0x12345678",
-    "data": "base64:AAAA..."
+    "transferId": 33,
+    "oldState": "verified",
+    "state": "installing",
+    "phase": "writing_application",
+    "progress": 72,
+    "requiresReboot": false,
+    "timestampMs": 1710000100000
   }
 }
 ```
 
+失败示例：
 
-
-## 28\.2 返回
-
-
-
-```JSON
+```json
 {
-  "result": {
+  "event": "firmware.otaStateChanged",
+  "params": {
     "otaSessionId": "ota_001",
+    "transferId": 33,
+    "oldState": "verifying",
+    "state": "failed",
+    "phase": "verifying_files",
+    "errorCode": "FW_HASH_MISMATCH",
+    "message": "app.bin hash mismatch",
     "fileId": "app",
-    "batchId": "batch_001",
-    "chunkIndex": 0,
-    "chunkOffset": 0,
-    "received": true,
-    "nextOffset": 65536
+    "timestampMs": 1710000100000
   }
 }
 ```
 
+### 14.3 firmware.otaResultReported
 
+可选最终结果事件。MVP 可以只使用 `otaStateChanged` 表达完成和失败。
 
-## 28\.3 说明
-
-
-
-```Plain Text
-firmware.uploadOtaChunk 会让 firmware 域承担数据传输责任。
-MVP 不推荐首选。
-推荐优先使用 file/stream 传输 OTA 文件。
+```json
+{
+  "event": "firmware.otaResultReported",
+  "params": {
+    "otaSessionId": "ota_001",
+    "transferId": 33,
+    "result": "success",
+    "newVersion": "2.3.0",
+    "rebootRequired": true,
+    "confirmed": false,
+    "timestampMs": 1710000200000
+  }
+}
 ```
 
-
+`result` 枚举：`success`、`failed`、`cancelled`、`rolled_back`。
 
 ---
 
-
-
-# 29\. 与 stream 域关系
-
-
-
-OTA 推荐使用：
-
-
-
-```Plain Text
-streamProfile = reliable_file
-```
-
-
-
-`reliable_file` 特点：
-
-
-
-```Plain Text
-reliability = reliable
-ordered = true
-ackMode = window
-lossRecovery = resume_from_cursor
-backpressurePolicy = pause_producer
-supportsResume = true
-supportsMissingRanges = true
-```
-
-
-
-OTA 数据面可以复用 stream 字段：
-
-
-
-```Plain Text
-streamId
-seqId
-cursor
-payloadType = file_chunk 或 firmware_chunk
-payload
-```
-
-
-
-正常 OTA 取消应使用：
-
-
-
-```Plain Text
-firmware.cancelOta
-```
-
-
-
-异常释放底层 stream 时可以使用：
-
-
-
-```Plain Text
-stream.abort
-```
-
-
-
-但 `stream.abort` 不应替代 `firmware.cancelOta`。
-
-
-
----
-
-
-
-# 30\. 与 system 域关系
-
-
-
-OTA 安装后可能需要重启。
-
-
-
-推荐方式：
-
-
-
-```Plain Text
-firmware.installOta 返回 requiresReboot=true；
-Client 调用 system.reboot；
-设备重启；
-Client 重连后调用 firmware.getInfo / firmware.confirmOta。
-```
-
-
-
-不建议把通用重启放在 firmware 域内。
-
-
-
----
-
-
-
-# 31\. 与 diagnostic / vendor 域关系
-
-
-
-以下能力不属于通用 firmware OTA 协议：
-
-
-
-```Plain Text
-产测写 boot 参数
-擦写 boot 区
-写入工厂校准参数
-写入算法 license
-厂商私有 recovery 命令
-```
-
-
-
-建议放入：
-
-
-
-```Plain Text
-diagnostic
-vendor
-```
-
-
-
-不要混入标准 OTA 协议。
-
-
-
----
-
-
-
-# 32\. 错误处理
-
-
-
-推荐错误码：
-
-
-
-```Plain Text
-InvalidParams
-  参数非法，manifest 格式错误，fileId 不存在，range 越界。
-
-UnsupportedCapability
-  不支持 OTA、多文件 OTA、断点续传、回滚等。
-
-VersionRejected
-  目标版本非法、版本过旧、不允许降级。
-
-IncompatibleHardware
-  OTA 包不适配当前硬件版本。
-
-HashMismatch
-  文件 hash 校验失败。
-
-SignatureInvalid
-  签名校验失败。
-
-StorageFull
-  存储空间不足。
-
-TransferIncomplete
-  文件未完整接收。
-
-Conflict
-  已有 OTA 会话进行中，或当前状态不允许操作。
-
-ServerBusy
-  设备繁忙。
-
-PermissionDenied
-  当前用户无升级权限。
-
-InstallFailed
-  安装失败。
-
-RollbackUnavailable
-  无可回滚版本。
-
-RollbackFailed
-  回滚失败。
-
-ConfirmFailed
-  确认升级失败。
-```
-
-
-
-## 32\.1 错误示例：文件未传完
-
-
-
-```JSON
+## 15. 错误处理
+
+错误码以 `registry/error/error_code.yaml` 为准。OTA 方法应优先使用已有 common、rpc、stream、firmware 错误码。
+
+| 场景 | 推荐错误码 |
+|---|---|
+| 设备不支持 OTA、URL、rollback、confirm | `NOT_SUPPORTED` |
+| 参数缺失或 manifest 格式错误 | `RPC_PARAM_MISSING` / `RPC_PARAM_INVALID` / `INVALID_ARGUMENT` |
+| range 越界、cursor 非法 | `OUT_OF_RANGE` / `STREAM_OFFSET_INVALID` |
+| 当前状态不允许操作 | `INVALID_STATE` |
+| 已有 OTA 会话 | `FW_TRANSFER_ALREADY_STARTED` / `BUSY` |
+| 未找到 OTA 会话 | `NOT_FOUND` / `FW_TRANSFER_NOT_STARTED` |
+| required 文件未完整接收 | `STREAM_CHUNK_MISSING` / `FW_SIZE_MISMATCH` |
+| 目标 imageType 不支持 | `FW_IMAGE_TYPE_UNSUPPORTED` |
+| 版本不兼容、过旧或被 anti-rollback 拒绝 | `FW_VERSION_UNSUPPORTED` / `FW_VERSION_TOO_OLD` |
+| 存储空间不足 | `FW_STORAGE_NOT_ENOUGH` / `RESOURCE_EXHAUSTED` |
+| 分片 CRC 错误 | `FW_CHUNK_CRC_ERROR` / `STREAM_CRC_ERROR` |
+| 文件大小不匹配 | `FW_SIZE_MISMATCH` |
+| hash 不匹配 | `FW_HASH_MISMATCH` |
+| 签名或综合校验失败 | `FW_VERIFY_FAILED` |
+| 安装失败 | `FW_APPLY_FAILED` |
+| 回滚失败 | `FW_ROLLBACK_FAILED` |
+| 设备温度、电量、供电等条件不满足 | `FW_DEVICE_NOT_READY` |
+| 需要重启后继续 | `FW_REBOOT_REQUIRED` |
+
+错误响应示例：
+
+```json
 {
   "error": {
-    "code": "TransferIncomplete",
+    "code": "FW_HASH_MISMATCH",
+    "message": "app.bin hash mismatch",
+    "data": {
+      "otaSessionId": "ota_001",
+      "fileId": "app",
+      "phase": "verifying_files",
+      "expected": "...",
+      "actual": "..."
+    }
+  }
+}
+```
+
+文件未传完示例：
+
+```json
+{
+  "error": {
+    "code": "STREAM_CHUNK_MISSING",
     "message": "OTA files are incomplete",
     "data": {
       "otaSessionId": "ota_001",
@@ -2079,345 +1158,302 @@ ConfirmFailed
 }
 ```
 
+---
 
+## 16. 安全和可靠性规则
 
-## 32\.2 错误示例：hash 不匹配
+1. 生产 OTA 必须至少使用 `sha256` 做对象完整性校验。
+2. 生产 OTA 应要求 manifest 或整包签名，签名验证必须早于安装。
+3. URL 模式必须要求 hash 或签名；仅凭 HTTPS URL 不足以证明固件可信。
+4. 设备必须检查目标版本、硬件版本、产品 ID、anti-rollback 计数器和分区兼容性。
+5. Bootloader、recovery、vendor 分区升级应要求更高权限，可返回 `PERMISSION_DENIED`。
+6. OTA 临时文件应写入专用 staging 区，校验通过前不得覆盖当前可启动镜像。
+7. A/B 设备安装后应支持启动健康检查；未确认前可自动回滚。
+8. 断电恢复后设备必须能回到 `idle`、`receiving`、`reboot_required`、`confirmed` 或 `failed` 中的可解释状态。
+9. 事件中的 `message` 不应泄露签名私钥、完整下载 URL token 或敏感路径。
+10. 传输层加密、用户认证和升级授权由 AXTP session/auth 或外部安全层提供，OTA 方法必须仍检查调用权限。
 
+---
 
+## 17. 多文件和多目标规则
 
-```JSON
+多文件 OTA：
+
+1. `manifest.files[]` 是唯一文件集合。
+2. 每个 `fileId` 独立维护 size、hash、cursor、missingRanges、complete。
+3. `commitOtaBatch` 可以提交一个或多个文件，也可以提交同一文件的多个范围。
+4. `verifyOtaFiles` 必须在所有 required 文件 complete 后才能成功。
+5. `installOrder` 决定安装顺序；设备可以因安全策略拒绝不安全顺序。
+
+多目标 OTA 是 P1 扩展，适用于一个主设备代理升级子设备或集群设备。推荐字段：
+
+```json
 {
-  "error": {
-    "code": "HashMismatch",
-    "message": "app.bin hash mismatch",
-    "data": {
-      "otaSessionId": "ota_001",
-      "fileId": "app",
-      "expected": "...",
-      "actual": "..."
+  "targetDevices": [
+    {
+      "targetDeviceId": "local",
+      "role": "main"
+    },
+    {
+      "targetDeviceId": "sub-1",
+      "role": "subdevice"
     }
+  ]
+}
+```
+
+规则：
+
+1. `targetDevices` 缺省表示本地设备。
+2. 多目标状态应在 `getOtaState` 和事件中按 targetDeviceId 展开。
+3. 旧 VM33 `SerialNumber` 和 `Destination` bitmask 可由 adapter 映射到 `targetDevices`，不得把旧 bitmask 直接暴露为新协议核心字段。
+
+---
+
+## 18. P2 兼容：firmware.uploadOtaChunk
+
+该方法仅用于不具备 STREAM 能力的 legacy 设备或非常受限的 bridge，不建议新设备实现。
+
+```json
+{
+  "method": "firmware.uploadOtaChunk",
+  "params": {
+    "otaSessionId": "ota_001",
+    "fileId": "app",
+    "batchId": "batch_001",
+    "chunkIndex": 0,
+    "offset": 0,
+    "data": "base64:AAAA...",
+    "crc32": "0x12345678"
   }
 }
 ```
 
+```json
+{
+  "result": {
+    "otaSessionId": "ota_001",
+    "fileId": "app",
+    "batchId": "batch_001",
+    "received": true,
+    "nextOffset": 65536
+  }
+}
+```
 
+限制：
+
+1. `data` 大小不得超过 RPC body 和 transport MTU 能承受的上限。
+2. 该方法不得替代 `firmware.ota` STREAM 作为 P0 数据面。
+3. 如果 registry 采纳该方法，必须单独声明 max chunk size、编码和错误码。
 
 ---
 
+## 19. 完整流程
 
+### 19.1 STREAM OTA
 
-# 33\. Capability 注册建议
-
-
-
-建议新增 capability：
-
-
-
-```Plain Text
-firmware.ota
-```
-
-
-
-对应方法：
-
-
-
-```Plain Text
-firmware.getInfo
-firmware.getOtaCapabilities
-firmware.beginOta
-firmware.getOtaState
-firmware.getOtaTransferState
-firmware.commitOtaBatch
-firmware.verifyOtaFiles
-firmware.installOta
-firmware.confirmOta
-firmware.rollbackOta
-firmware.cancelOta
-```
-
-
-
-可选方法：
-
-
-
-```Plain Text
-firmware.uploadOtaChunk
-```
-
-
-
-对应事件：
-
-
-
-```Plain Text
-firmware.otaStateChanged
-firmware.otaProgressReported
-```
-
-
-
----
-
-
-
-# 34\. Binary / TLV 映射建议
-
-
-
-JSON\-RPC 中使用可读字段：
-
-
-
-```Plain Text
-otaSessionId
-packageId
-fileId
-batchId
-cursor
-missingRanges
-target
-state
-phase
-```
-
-
-
-Binary / TLV 中可以映射为数字 ID：
-
-
-
-```Plain Text
-otaSessionId: string
-fileId: string or uint16 mapping
-batchId: string or uint16 mapping
-chunkOffset: uint64
-chunkSize: uint32
-cursor: uint64
-hashAlgorithm: uint8
-target: uint8
-state: uint8
-phase: uint8
-```
-
-
-
-推荐 target ID：
-
-
-
-```Plain Text
-0x01 bootloader
-0x02 application
-0x03 resource
-0x04 model
-0x05 filesystem
-0x06 config
-0x07 recovery
-0xFF vendor
-```
-
-
-
-推荐 state ID：
-
-
-
-```Plain Text
-0x00 idle
-0x01 preparing
-0x02 receiving
-0x03 batch_committed
-0x04 verifying
-0x05 verified
-0x06 installing
-0x07 installed
-0x08 reboot_required
-0x09 confirmed
-0x0A rollback_scheduled
-0x0B rolling_back
-0x0C cancelled
-0x0D failed
-```
-
-
-
-数字 ID 仅用于二进制映射，JSON 协议中继续使用字符串。
-
-
-
----
-
-
-
-# 35\. 推荐 MVP
-
-
-
-MVP 推荐实现：
-
-
-
-```Plain Text
-firmware.getInfo
-firmware.getOtaCapabilities
-firmware.beginOta
-firmware.getOtaState
-firmware.getOtaTransferState
-firmware.commitOtaBatch
-firmware.verifyOtaFiles
-firmware.installOta
-firmware.cancelOta
-
-firmware.otaStateChanged
-firmware.otaProgressReported
-```
-
-
-
-MVP 推荐传输方式：
-
-
-
-```Plain Text
-file + stream
-```
-
-
-
-MVP 推荐 stream profile：
-
-
-
-```Plain Text
-reliable_file
-```
-
-
-
-MVP 可暂不实现：
-
-
-
-```Plain Text
-firmware.uploadOtaChunk
-firmware.confirmOta
-firmware.rollbackOta
-```
-
-
-
-但如果设备使用 A/B 分区，建议支持：
-
-
-
-```Plain Text
-firmware.confirmOta
-firmware.rollbackOta
-```
-
-
-
----
-
-
-
-# 36\. 完整推荐流程
-
-
-
-```Plain Text
-1. Client -> firmware.getInfo
+```text
+1. Client -> device.getInfo 或 firmware.getInfo
 2. Client -> firmware.getOtaCapabilities
-3. Client -> firmware.beginOta(manifest)
-4. Client -> file.beginUpload(app.bin, streamProfile=reliable_file)
-5. Client -> stream data(file_chunk)
-6. Client -> file.completeUpload
-7. Client -> firmware.commitOtaBatch(app uploadedFileId)
-8. Client -> file.beginUpload(resources.bin)
-9. Client -> stream data(file_chunk)
-10. Client -> file.completeUpload
-11. Client -> firmware.commitOtaBatch(resources uploadedFileId)
-12. Client -> firmware.getOtaTransferState
-13. Client -> firmware.verifyOtaFiles
-14. Client -> firmware.installOta
-15. firmware.otaStateChanged(reboot_required)
-16. Client -> system.reboot
-17. Client reconnect
-18. Client -> firmware.getInfo
-19. Client -> firmware.confirmOta
+3. Client -> firmware.beginOta(manifest, transferMode=stream)
+4. Device -> otaSessionId, streamId, transferId, chunkSize, resumeToken
+5. Client -> STREAM firmware.ota chunks
+6. Client -> firmware.commitOtaBatch(ranges or complete files)
+7. Client -> firmware.getOtaTransferState, optional
+8. Client -> firmware.verifyOtaFiles
+9. Client -> firmware.installOta
+10. Device -> firmware.otaStateChanged(reboot_required), if needed
+11. Client -> system.reboot 或等待自动重启
+12. Client reconnect
+13. Client -> device.getInfo 或 firmware.getInfo
+14. Client -> firmware.confirmOta, if supported
 ```
 
+### 19.2 URL OTA
 
+```text
+1. Client -> firmware.getOtaCapabilities
+2. Client -> firmware.beginOta(source.type=url, manifest)
+3. Device -> otaSessionId, state=downloading
+4. Device -> firmware.otaProgressReported(downloading_package)
+5. Client -> firmware.getOtaState, optional polling
+6. Client -> firmware.verifyOtaFiles, unless device policy auto-verifies after download
+7. Client -> firmware.installOta
+8. Reboot and confirm as needed
+```
+
+### 19.3 file 暂存 OTA
+
+```text
+1. Client -> firmware.beginOta(transferMode=file)
+2. Client -> file.beginUpload, draft placeholder
+3. Client -> STREAM file.transfer chunks
+4. Client -> file.completeUpload, draft placeholder
+5. Client -> firmware.commitOtaBatch(uploadedFileId)
+6. Client -> firmware.verifyOtaFiles
+7. Client -> firmware.installOta
+```
+
+该模式必须等待 file 域定稿后再进入稳定 registry。
 
 ---
 
+## 20. Legacy 映射审查
 
+以下表格用于人工审查旧协议与 `firmware.ota` 的关联。标记为待确认的条目不得直接写入稳定 `legacyRefs`。
 
-# 37\. 最终接口清单
-
-
-
-```Plain Text
-firmware.getInfo
-firmware.getOtaCapabilities
-firmware.beginOta
-firmware.getOtaState
-firmware.getOtaTransferState
-firmware.commitOtaBatch
-firmware.verifyOtaFiles
-firmware.installOta
-firmware.confirmOta
-firmware.rollbackOta
-firmware.cancelOta
-
-firmware.otaStateChanged
-firmware.otaProgressReported
-```
-
-
-
-可选：
-
-
-
-```Plain Text
-firmware.uploadOtaChunk
-```
-
-
+| Source | 旧命令/方法 | 旧 ID | 新协议候选 | 审查结论 |
+|---|---|---|---|---|
+| AXDP HID | `AlphaUpgradeInfo` | `0xA0001 / 0x0001 -> 0x0081` | `firmware.beginOta` | 可作为 adapter-only 映射。旧 `BlockInfo` 中 `flash_block` -> `target/imageType`，`slice_size` -> `chunkSizeHint`，`slices_total * slice_size` 或 `block_size` -> `size`，`md5` -> `hash(md5)`；字段细节需设备确认。 |
+| AXDP HID | `AlphaUpgradeData` | `0xA0002 / 0x0002 -> 0x0082` | STREAM `firmware.ota` + `commitOtaBatch` | 可映射。旧 `slice_index` -> `seqId` 或 range offset，payload -> STREAM payload；成功/失败状态映射到 ACK 或 OTA 事件，需确认。 |
+| AXDP HID | `BetaStartUpgrade` | `0xB0003 / 0x0003 -> 0x0083` | `firmware.beginOta` preflight | 可映射为创建前 ready 检查或 beginOta 的准备阶段。 |
+| AXDP HID | `BetaStopUpgrade` | `0xB0004 / 0x0004 -> 0x0084` | 待确认 | 旧名可能表示结束发送，也可能表示停止/取消。若表示正常结束，映射 `commitOtaBatch` 或旧 `firmware.end`；若表示中止，映射 `cancelOta`。 |
+| AXDP HID | `BetaUpgradeInfo` | `0xB0005 / 0x0005 -> 0x0085` | `firmware.beginOta` | 可作为 adapter-only 映射，字段同 `AlphaUpgradeInfo`。 |
+| AXDP HID | `BetaUpgradeData` | `0xB0006 / 0x0006 -> 0x0086` | STREAM `firmware.ota` + `commitOtaBatch` | 可映射。旧 requested slice index 可映射到缺失 range 或 ACK/NACK。 |
+| AXDP HID | `BetaUpgradeInfoEx` | `0xB0011 / 0x0011 -> 0x0091` | `firmware.beginOta` | 可映射。Ex 批量发送策略应映射为 window/sliding 或 batch commit，需确认。 |
+| AXDP HID | `BetaUpgradeDataEx` | `0xB0012 / 0x0012 -> 0x0092` | STREAM `firmware.ota` + `commitOtaBatch` | 可映射。旧 `0xFFFFFFFF` 成功和 `0xFFFFEEEE` 失败应转换为标准错误和结果事件。 |
+| AXDP HID | `CommonSetNoTargetStrategyState` | `0xC0119 / 0x0119 -> 0x0199` | 不进入 OTA | 源码 case 空、payload 不明确，名称不像升级。候选 `misc.set.noTargetStrategyState` 或其他业务域。 |
+| AXDP HID | `CommonGetNoTargetStrategyState` | `0xC011A / 0x011A -> 0x019A` | 不进入 OTA | 同上。 |
+| Rooms WS JSON | `RemoteUpgrade` | - | `firmware.beginOta(source.type=url)` | 可映射 URL 远程升级。 |
+| Rooms WS JSON | `UpgradeProgress` | - | `firmware.getOtaState` | 可映射进度查询。 |
+| Signage SDK | `RemoteUpgrade` | `数字标牌设备管理通用管理命令:RemoteUpgrade` | `firmware.beginOta(source.type=url)` | 可映射 URL 远程升级。 |
+| Signage SDK | `UpgradeProgress` | - | `firmware.getOtaState` | 可映射进度查询。 |
+| VM33 HTTP JSON | `Upgrade.Setup` | - | `firmware.beginOta` | 可映射 multipart 升级准备，`Total` -> file size，`Md5` -> legacy hash。 |
+| VM33 HTTP JSON | `Upgrade.Upgrade` | - | STREAM `firmware.ota` 或 file 暂存模式 | 可映射分片上传，`Pos` / `Size` -> range。 |
+| VM33 HTTP JSON | `Upgrade.Progress` | - | `firmware.getOtaState` / `getOtaTransferState` | 可映射本地升级进度。 |
+| VM33 HTTP JSON | `Upgrade.Version` | - | `firmware.getInfo` 或 `device.getInfo` | 可映射版本查询。 |
+| VM33 HTTP JSON | `Upgrade.CloudUpgrade` | - | `firmware.beginOta(source.type=url)` | 可映射 URL 远程升级，`SerialNumber` / `Destination` 映射到 P1 `targetDevices`。 |
+| VM33 HTTP JSON | `Upgrade.CloudProgress` | - | `firmware.getOtaState` | 可映射 URL 升级进度。 |
 
 ---
 
+## 21. Registry 草案输入
 
+采纳本文后，domain YAML 至少应包含以下事实：
 
-# 38\. 核心结论
+```yaml
+capabilities:
+  - id: firmware.ota
+    name: Firmware OTA
+    status: mvp
+    methods:
+      - firmware.beginOta
+      - firmware.commitOtaBatch
+      - firmware.verifyOtaFiles
+      - firmware.installOta
+      - firmware.getOtaCapabilities
+      - firmware.getOtaState
+      - firmware.getOtaTransferState
+      - firmware.cancelOta
+      - firmware.confirmOta
+      - firmware.rollbackOta
+    events:
+      - firmware.otaProgressReported
+      - firmware.otaStateChanged
+      - firmware.otaResultReported
+    streamProfiles:
+      - firmware.ota
+```
 
+方法分级建议：
 
+| 方法 | 分级 | 当前处理建议 |
+|---|---|---|
+| `firmware.beginOta` | P0 | 若保留旧 `firmware.begin`，需要声明 alias 或新增方法。 |
+| `firmware.commitOtaBatch` | P0 | 旧 `firmware.end` 只能覆盖单镜像完成语义。 |
+| `firmware.verifyOtaFiles` | P0 | 可兼容旧 `firmware.verify`。 |
+| `firmware.installOta` | P0 | 可兼容旧 `firmware.apply`。 |
+| `firmware.getOtaCapabilities` | P1 | 能力字段进入 `FirmwareOtaCapability` schema。 |
+| `firmware.getOtaState` | P1 | 状态查询。 |
+| `firmware.getOtaTransferState` | P1 | 断点续传。 |
+| `firmware.cancelOta` | P1 | 正常取消。 |
+| `firmware.confirmOta` | P1 | A/B 确认。 |
+| `firmware.rollbackOta` | P1 | 回滚。 |
+| `firmware.uploadOtaChunk` | P2 | 仅兼容。 |
 
-```Plain Text
-firmware 域负责 OTA 控制面：
+采纳检查：
+
+1. 先决定旧 `firmware.begin/end/verify/apply` 是保留 stable、添加 alias，还是新增推荐名。
+2. 更新 `registry/method/method_registry.yaml`、`registry/event/event_registry.yaml`、`registry/schema/firmware_schema.yaml` 和 `registry/core/stream_profile.yaml`。
+3. 确认 `file.transfer` 是否已定稿；未定稿时不要把 file 暂存方法写成 P0。
+4. 只把已确认的 legacy 字段写入 `legacyRefs`；`CommonSet/GetNoTargetStrategyState` 不得继续作为 OTA legacyRef。
+5. 运行 Generator，确保 `protocol/axtp.protocol.yaml`、`docs/generated/*` 和 runtime generated 文件一致。
+
+---
+
+## 22. Binary-RPC / TLV 映射建议
+
+JSON-RPC 使用 lowerCamelCase 字段名。Binary/TLV 可以分配数字 ID，但数字 ID 不暴露到 JSON 协议。
+
+建议 target 枚举：
+
+| 值 | target |
+|---:|---|
+| `0x01` | `bootloader` |
+| `0x02` | `application` |
+| `0x03` | `resource` |
+| `0x04` | `model` |
+| `0x05` | `filesystem` |
+| `0x06` | `config` |
+| `0x07` | `recovery` |
+| `0xFF` | `vendor` |
+
+建议状态枚举：
+
+| 值 | state |
+|---:|---|
+| `0x00` | `idle` |
+| `0x01` | `preparing` |
+| `0x02` | `receiving` |
+| `0x03` | `downloading` |
+| `0x04` | `batch_committed` |
+| `0x05` | `verifying` |
+| `0x06` | `verified` |
+| `0x07` | `installing` |
+| `0x08` | `installed` |
+| `0x09` | `reboot_required` |
+| `0x0A` | `confirming` |
+| `0x0B` | `confirmed` |
+| `0x0C` | `rollback_scheduled` |
+| `0x0D` | `rolling_back` |
+| `0x0E` | `cancelled` |
+| `0x0F` | `failed` |
+
+TLV 规则：
+
+1. fieldId 必须由 schema 固化，不由业务代码临时定义。
+2. `otaSessionId` 可以是 string；资源受限设备可额外返回 uint32 `transferId`。
+3. `hash.value` 在 TLV 中可用 bytes 表达，JSON 中使用 lowercase hex string。
+4. STREAM 数据包不携带 manifest 字段。
+5. legacy adapter 可以把旧 CmdValue、slice index、md5、status 映射到新方法和字段，但不得把旧 CmdValue 作为新协议 fieldId。
+
+---
+
+## 23. 核心结论
+
+```text
+firmware.ota 是 OTA 控制面：
   manifest、otaSessionId、batchId、校验、安装、回滚、状态。
 
-file/stream 负责 OTA 数据面：
-  file upload、streamId、seqId、cursor、payload、ack、resume。
+firmware.ota STREAM 是 P0 数据面：
+  streamId、seqId、cursor、payload、ack、resume。
 
-多文件 OTA 必须以 fileId 为单位管理进度：
-  size、hash、cursor、missingRanges。
+file.transfer 只是 P1 暂存文件模式：
+  file 域定稿前，不把 file.* 方法当成稳定合同。
+
+多文件 OTA 必须以 fileId 为单位管理：
+  size、hash、cursor、missingRanges、complete。
 
 分批次 OTA 必须有 batchId：
-  commitOtaBatch 只表示批次提交，不表示安装。
+  commitOtaBatch 只表示数据提交，不表示校验或安装。
 
 安装前必须校验：
   verifyOtaFiles 成功后才能 installOta。
 
-正常取消走 firmware.cancelOta；
-底层异常释放才使用 stream.abort。
+正常取消走 firmware.cancelOta：
+  stream.abort 只做底层异常释放。
+
+URL 远程升级不需要新方法：
+  使用 beginOta.source.type=url，并保留 hash/signature 校验。
 ```
-
-
-
