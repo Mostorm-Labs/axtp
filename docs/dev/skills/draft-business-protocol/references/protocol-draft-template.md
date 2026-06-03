@@ -9,12 +9,12 @@ Use this structure when creating `docs/protocol/<domain>/<domain.feature>.md`. R
 
 | 标记 | 对象 | 结论 | 后续动作 |
 |---|---|---|---|
-| [REVIEW-DRAFT] | <domain.feature> capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入采纳 workflow。 |
+| [REVIEW-DRAFT] | <domain.feature> capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
 | [REVIEW-ASK] | legacy 映射 | 旧协议命令、字段或状态码仍需确认。 | 采纳前补齐 legacyRefs 或明确 adapter-only。 |
 
 ## 文档定位
 
-本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/08-13`，再写入 `registry/` 或 `registry/domains/<domain>/domain.yaml`，并由 Generator 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/08-13`，再写入 `registry/` 或 `registry/domains/<domain>/domain.yaml`，并由 `generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
 
 ## 业务需求
 
