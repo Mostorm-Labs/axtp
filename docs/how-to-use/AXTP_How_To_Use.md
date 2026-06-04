@@ -56,13 +56,14 @@ registry/**/*.yaml + registry/domains/**/*.yaml
 - 修改 Standard Frame、CONTROL/RPC/STREAM payload header、transport profile 等 Core 规则时，必须先确认 `docs/specs/00-06/18/19` 的规范变化，再改 `registry/core/**` 或 Generator 校验逻辑。
 - Generator 只读取 YAML、校验 YAML、聚合 Protocol IR、输出 generated 产物；它不负责把 `docs/protocol` 草案自动变成 YAML。
 
-这一步不应该靠人肉照着 Markdown 填 YAML。仓库用一个总控 skill 和三个阶段 skill 固化流程：
+这一步不应该靠人肉照着 Markdown 填 YAML。仓库用一个总控 skill 和四个阶段 skill 固化流程：
 
 | 层级 | Skill | 输入 | 输出 | 边界 |
 |---|---|---|---|---|
-| 总控路由 | `docs/dev/skills/axtp-protocol-workflow/SKILL.md` | 用户提出的“新增/修改/迁移/采纳/实现业务协议”任务 | 判断应该进入草案、采纳、直改维护还是 runtime 实现 | 默认不直接写 YAML，先路由 |
+| 总控路由 | `docs/dev/skills/axtp-protocol-workflow/SKILL.md` | 用户提出的“新增/修改/迁移/采纳/实现业务协议”任务 | 判断应该进入草案、采纳、修订、生成还是 runtime 实现 | 默认不直接写 YAML，先路由 |
 | 草案阶段 | `docs/dev/skills/draft-business-protocol/SKILL.md` | 大白话需求、旧协议线索、产品/架构想法 | `docs/protocol/<domain>/<domain.feature>.md` 草案 | 不写 registry，不生成正式协议 |
 | 采纳阶段 | `docs/dev/skills/adopt-protocol-draft/SKILL.md` | 已评审草案 MD | specs 08-13 对齐、草案 formalized、`registry/**/*.yaml` / `registry/domains/**/*.yaml` | 不采纳未确认 `[REVIEW-*]`，不手写 generated |
+| 修订阶段 | `docs/dev/skills/amend-adopted-protocol/SKILL.md` | 已采纳或已生成协议的语义修正、字段删除、废弃、重命名或扩展 | amendment 记录、proposal/specs/YAML 修正、generated 重新生成 | 先判断 draft/experimental vs stable/MVP，不直接手写 generated |
 | 生成阶段 | `docs/dev/skills/generate-axtp-protocol/SKILL.md` | 已采纳 YAML 事实源 | Protocol IR、generated docs、tooling JSON、test vectors、runtime generated headers | 只从 YAML 生成，不从 Markdown 推断新事实 |
 
 每个阶段的责任分工：
@@ -74,6 +75,7 @@ registry/**/*.yaml + registry/domains/**/*.yaml
 | 草案阶段 | 协议维护者 / 架构 | 业务、固件、上位机、后台、测试 | 使用 `draft-business-protocol` 搜索复用项，起草或更新 `docs/protocol/**`，写候选 method/schema/event/error/capability | 业务确认语义，固件确认可实现性，上位机/后台确认调用方式，测试确认可测性 | 草案带 `[REVIEW-*]`，open questions 明确 |
 | 草案评审 | 架构 / 业务负责人 | 固件、上位机、后台、SDK/工具、测试 | 组织评审，逐项处理 `[REVIEW-*]` | 各端确认字段、错误码、事件、stream、legacy 映射和兼容边界 | 可采纳内容均为 `[REVIEW-OK]` 或等价确认 |
 | 采纳阶段 | 协议维护者 / 架构 | 业务、固件、上位机、测试 | 使用 `adopt-protocol-draft` 对齐 specs 08-13，固定草案状态，写入 YAML，分配 ID / `bit_offset` / fieldId | 确认没有未解决 review blocker 被写入 YAML | `validate:sources` 通过，YAML 只含已确认事实 |
+| 修订阶段 | 协议维护者 / 架构 | 业务、固件、上位机、后台、测试 | 使用 `amend-adopted-protocol` 修正已采纳事实，记录 amendment，判断删除/废弃/版本化策略 | 确认 draft/experimental 可直接修正，stable/MVP 不静默破坏 wire 合同 | amendment 记录、YAML/source validation、generated diff |
 | 生成阶段 | 协议维护者 / SDK/工具 | 测试、研发 | 使用 `generate-axtp-protocol` 从 YAML 生成 Protocol IR、generated docs、tooling、test vectors、runtime generated headers | 确认 generated diff 符合本次协议变化 | `validate:protocol`、Generator tests、`git diff --check` 通过 |
 | PR 发布 | 协议维护者 / 研发负责人 | 业务、固件、上位机、后台、测试 | 提交草案、specs、YAML、generated diff，说明兼容影响和测试结果 | 评审 generated 文档是否能支撑实现和验收 | PR 合并 main，generated 协议成为研发/测试依据 |
 | 研发实现 | 固件 / 上位机 / 后台 / SDK | 测试、协议维护者 | 按 `docs/generated/protocol.md/json`、generated headers 和 test vectors 实现功能 | 测试确认正向、错误、event、stream、legacy 兼容用例 | 端到端联调和测试通过 |
@@ -84,6 +86,7 @@ registry/**/*.yaml + registry/domains/**/*.yaml
 
 - 产品/架构/研发讨论新能力，先写 `docs/protocol/**` 草案。
 - 草案评审通过后，使用 `adopt-protocol-draft` 把已确认事实写入 `registry/**` 或 `registry/domains/**`。
+- 已采纳协议需要删除字段、收窄范围、重命名、废弃或扩展时，使用 `amend-adopted-protocol`，不要回到普通草案流程或手改 generated。
 - 使用 `generate-axtp-protocol` 运行 Generator，刷新 generated 文档、JSON、C++ 头文件和测试向量。
 - 研发和测试按 generated 产物实现，不按未采纳草案实现。
 

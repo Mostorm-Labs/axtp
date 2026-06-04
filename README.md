@@ -18,7 +18,7 @@ AXTP 的核心约定是：协议事实先被评审采纳到 YAML，再由 Genera
 | 目标 | 文档 |
 |---|---|
 | 仓库使用教程和具体例子 | [docs/how-to-use/AXTP_How_To_Use.md](docs/how-to-use/AXTP_How_To_Use.md) |
-| 研发 kickoff 讲解材料 | [docs/kickoff/AXTP_R&D_Kickoff.md](docs/kickoff/AXTP_R&D_Kickoff.md) |
+| 研发 kickoff 讲解材料 | [docs/dev/AXTP_RD_KICKOFF_GUIDE.md](docs/dev/AXTP_RD_KICKOFF_GUIDE.md) |
 | 协议总览 | [docs/specs/00-AXTP-Overview.md](docs/specs/00-AXTP-Overview.md) |
 | Frame / Payload 规范 | [docs/specs/02-AXTP-Frame-and-Payload-Spec.md](docs/specs/02-AXTP-Frame-and-Payload-Spec.md) |
 | Transport Profiles | [docs/specs/03-AXTP-Transport-Profiles.md](docs/specs/03-AXTP-Transport-Profiles.md) |
@@ -67,16 +67,17 @@ Transport  USB HID / TCP / WebSocket / future low-bandwidth paths
 
 ## Protocol Workflow
 
-当前仓库按四个阶段维护协议：
+当前仓库按五个阶段维护协议：
 
 | 阶段 | Skill / 入口 | 输入 | 输出 |
 |---|---|---|---|
-| 路由 | [axtp-protocol-workflow](docs/dev/skills/axtp-protocol-workflow/SKILL.md) | 不确定处于哪个阶段的需求 | 明确应该起草、采纳、生成还是实现 |
+| 路由 | [axtp-protocol-workflow](docs/dev/skills/axtp-protocol-workflow/SKILL.md) | 不确定处于哪个阶段的需求 | 明确应该起草、采纳、修订、生成还是实现 |
 | 起草 | [draft-business-protocol](docs/dev/skills/draft-business-protocol/SKILL.md) | 产品需求、架构草图、旧协议线索 | `docs/protocol/<domain>/<domain.feature>.md` |
 | 采纳 | [adopt-protocol-draft](docs/dev/skills/adopt-protocol-draft/SKILL.md) | 已评审确认的草案 | `docs/specs/08-13` 对齐记录 + `registry/**/*.yaml` / `registry/domains/**/*.yaml` |
+| 修订 | [amend-adopted-protocol](docs/dev/skills/amend-adopted-protocol/SKILL.md) | 已采纳或已生成协议的语义变更 | amendment 记录 + 更新后的草案/specs/YAML + generated 产物 |
 | 生成 | [generate-axtp-protocol](docs/dev/skills/generate-axtp-protocol/SKILL.md) | 已更新的 YAML 事实源 | Protocol IR、generated docs、tooling JSON、test vectors、runtime generated headers |
 
-`docs/specs/08-13` 是协议治理和规范说明，`docs/protocol/**` 是草案与评审记录，`registry/**/*.yaml` 与 `registry/domains/**/*.yaml` 才是 Generator 的机器输入。仓库不要求研发照着 Markdown 手工填写生成产物；草案到 YAML 的采纳动作由 `adopt-protocol-draft` 固化流程，YAML 到产物的动作由 `generate-axtp-protocol` 完成。
+`docs/specs/08-13` 是协议治理和规范说明，`docs/protocol/**` 是草案、评审和修订记录，`registry/**/*.yaml` 与 `registry/domains/**/*.yaml` 才是 Generator 的机器输入。仓库不要求研发照着 Markdown 手工填写生成产物；草案到 YAML 的采纳动作由 `adopt-protocol-draft` 固化流程，已采纳协议的语义修正由 `amend-adopted-protocol` 管理，YAML 到产物的动作由 `generate-axtp-protocol` 完成。
 
 ## Quick Start
 
@@ -125,7 +126,7 @@ git diff --check
 - `docs/specs/**`
 - `docs/protocol/**`
 - `docs/how-to-use/**`
-- `docs/kickoff/**`
+- `docs/dev/**`
 - `registry/**/*.yaml`
 - `registry/domains/**/*.yaml`
 - `generators/src/**`

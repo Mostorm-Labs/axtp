@@ -34,7 +34,7 @@ Capability ID：`audio.algorithm`
 
 事实源：`registry/domains/audio/domain.yaml`
 
-本次未采纳：所有 `[REVIEW-ASK]` legacy/授权/默认值读写/算法线程/beam report 条目仍为人工待确认问题，不进入 `legacyRefs` 或 YAML。未来协议事实变更必须先更新本文草案并完成评审，再重新执行 adopt-protocol-draft。
+本次未采纳：所有 `[REVIEW-ASK]` legacy/授权/默认值读写/算法线程/beam report 条目仍为人工待确认问题，不进入 `legacyRefs` 或 YAML。未来新增未采纳事实应先更新本文草案并完成评审，再执行 `adopt-protocol-draft`；已采纳事实的语义修正、字段删除或废弃应执行 `amend-adopted-protocol`。
 
 ---
 

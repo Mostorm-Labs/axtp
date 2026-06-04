@@ -8,8 +8,7 @@
 | `docs/business/` | 业务 intake | 业务域协议评审材料；采纳后必须同步到 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`。 |
 | `docs/generated/` | 生成物 | 由 Generator 输出，不作为手写入口。 |
 | `docs/demo/` | Demo 说明 | 示例实现和场景说明。 |
-| `docs/dev/` | 工程说明 | SDK、runtime、研发流程、技能说明。 |
-| `docs/kickoff/` | 启动材料 | 项目启动和跨团队背景材料。 |
+| `docs/dev/` | 工程说明 | SDK、runtime、研发流程、技能说明和唯一 kickoff 材料。 |
 | `docs/migration/` | 迁移工作区 | legacy migration 尚在进行中，本轮不清理、不移动。 |
 | `docs/legacy-protocols/` | legacy 原始资料 | AXDP、VM33、Rooms、NearHub 等原始输入资料。 |
 | `docs/archive/` | 归档 | 非 active 事实源，仅用于追溯旧草稿、source 迁移材料和未来草案。 |

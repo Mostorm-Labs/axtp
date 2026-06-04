@@ -1,553 +1,653 @@
-# AXTP 研发说明与项目 Kickoff 文档
+# AXTP 研发 Kickoff 文档
 
-> 状态：Draft
-> 面向对象：固件/MCU、客户端/前端、云端/Agent、测试、协议仓库维护者
-> 基于材料：`docs/kickoff/AXTP_R&D_Kickoff.md`、`docs/specs/`、`docs/archive/source-planning/`、`registry/`、`docs/generated/`、`docs/migration/generated/`、`docs/legacy-protocols/`
+状态：Draft
 
-## 0. 一句话结论
+面向对象：固件/MCU、设备端 Linux/Android、上位机/客户端、云端/后台、SDK/CLI、测试、架构评审和项目管理
 
-AXTP 不是再造一份格式表，而是把设备通信从“每条链路一套协议、每个业务一套解析、每次联调靠人肉对齐”升级为“统一协议骨架 + 注册表事实源 + 自动生成 + 多传输复用 + legacy adapter 兼容”的研发体系。
+定位：用于研发启动会讲清为什么要重做协议、新协议是什么、怎么使用、后续如何落地。
 
-这套方案要解决的核心矛盾是：我们的设备业务已经覆盖 HID、BLE、UART、TCP、WebSocket、HTTP 等多种链路，旧二进制协议擅长省字节但缺少统一 event/session/stream 表达，早期 HTTP/JSON 协议更易读但天然偏单向 request/response，无法稳定承载设备主动事件、长生命周期流、断点恢复和跨端一致的能力发现。AXTP 把这些能力拆到 CONTROL、RPC、STREAM、Registry 和 Transport Profile 中，让不同传输共享一套业务语义。
+## 1. 一句话结论
 
-## 1. 为什么必须引入新的协议方案
+AXTP 不是再写一份格式表，而是把公司分散在 HID、HTTP、WebSocket、二进制命令表和旧设备协议里的通信能力，收敛成一套统一架构、统一协议语言、统一事实源、统一生成和统一测试的研发体系。
 
-### 1.1 当前业务已经不是单一链路问题
+它解决三件事：
 
-现有材料显示，legacy 协议并不是一份协议，而是一组历史上逐步长出来的协议族：
+1. 弥补旧协议缺少 event、stream、能力发现和统一治理的问题。
+2. 支撑后续设备在 HID、TCP、WebSocket 等链路上无限丝滑地扩展控制面和数据面。
+3. 让固件、上位机、云端、测试和工具团队使用同一套 method/event/error/schema/capability 语言。
 
-| 来源 | 现状特征 | 当前迁移统计 |
-|---|---|---:|
-| AXDP HID / 二进制命令 | `CmdValue`、固定结构、HID 低带宽控制、升级与日志等大块数据混杂 | 233 条 legacy 映射 |
-| VM33 HTTP JSON | `Seq/Class/Method/Param`，主要通过 HTTP body 表达请求/响应 | 152 条 legacy 映射 |
-| 数字标牌 / Rooms 类协议 | 已出现 `sid/op/d`、WebSocket、event 概念，但与 HID/BinaryRPC 不统一 | 33 条 signage 映射 |
+## 2. 为什么要重做协议
 
-迁移工具当前共抽取 418 条 legacy 映射，其中 361 条映射为 RPC method，11 条映射为 Event，11 条映射为 STREAM，35 条映射为 Capability。也就是说，我们面对的是一个已经跨设备族、跨传输、跨业务域的协议资产池，而不是单点格式优化。
+### 2.1 老协议的问题已经从格式问题变成体系问题
 
-### 1.2 旧二进制协议的问题
+旧协议不是一份协议，而是一组历史协议族：
 
-旧二进制协议的优点是紧凑、适合 HID/BLE/MCU，但它把很多本应分层的概念揉在一起：
-
-| 问题 | 具体影响 | AXTP 判断 |
+| 来源 | 典型形态 | 主要问题 |
 |---|---|---|
-| `CmdValue` 与业务强绑定 | 命令号可能超过 `uint16`，不同域可能冲突，也可能混入设备族、版本、方向位 | 不直接把所有旧 `CmdValue` 当 methodId，而是保留 `legacy.cmdValue` |
-| 缺少统一 Event 模型 | 设备主动状态变化、升级进度、录制状态、配置变化只能靠轮询、notify 变体或业务自定义字段 | 统一为 RPC Event `op=6`，并由 Event Registry 管理 |
-| 大块数据与控制命令混杂 | OTA、日志、音视频、KVM、文件块容易塞进 BinaryRPC body，造成阻塞、重传困难和状态机混乱 | 统一拆成 RPC 建流 + STREAM 数据面 |
-| Header 被业务污染 | Firmware、RawStream、LogStream、Diagnostic 等旧 PayloadType 容易继续膨胀 | AXTP 顶层 PayloadType 固定为 CONTROL/RPC/STREAM |
-| 缺少跨传输能力发现 | 同一功能在 HID、BLE、WebSocket 上暴露方式不同 | `capability.supportedMethods` 从 method bitmap 生成 |
-| 可观测性弱 | 二进制字段靠文档解释，文档和代码容易漂移 | Registry 生成文档、JSON、C++ header、测试向量 |
+| AXDP/HID 二进制命令 | `CmdValue`、固定结构、HID report | 紧凑但事件、能力、流和错误治理不足 |
+| VM33 HTTP JSON | `Seq/Class/Method/Param/Result/ErrorNo` | 可读但偏 request/response，设备主动 event 和长任务不自然 |
+| Rooms / Signage / Launcher | WebSocket、HTTP、业务 JSON | 有 event 雏形，但和 HID/BinaryRPC 不统一 |
+| 临时业务扩展 | 私有字段、私有 notify、分支文档 | 命名、字段、错误码、测试和代码容易漂移 |
 
-从 `AXDP_MethodId_Registry_v2.xlsx` 看，单 AXDP MethodId Registry 就有 231 行，主要集中在 camera、audio、misc、diagnostic、network、config、usb、firmware 等域；Review Issues 中还包含 Experimental/Diagnostic、Compat/Deprecated、Duplicate MethodId、CheckDuplicate、Reserved 等状态。这说明 legacy 二进制协议已经承载大量历史包袱，需要迁移治理，而不是继续加分支。
-
-### 1.3 早期 HTTP/JSON 协议的问题
-
-VM33 HTTP 文档中的 V1 模型主要围绕 HTTP body：
+继续沿用旧模式，每新增一个业务能力都容易变成：
 
 ```text
-Seq / Class / Method / Param / Result / ErrorNo
+HID 写一套命令
+HTTP/WebSocket 写一套方法
+固件写一套常量
+上位机写一套 schema
+测试写一套脚本
+文档再人工对齐一次
 ```
 
-这种表达对人友好，但工程上有几个明显短板：
+这不是单个团队的问题，而是协议生产方式的问题。
 
-| 问题 | 典型表现 |
-|---|---|
-| HTTP request/response 偏单向 | 设备主动事件、订阅变更、升级进度只能通过轮询或额外 notify 约定 |
-| 缺少统一帧层 | 没有 version、payloadType、fragment、CRC、ACK/NACK、STREAM cursor 等跨传输事实 |
-| `Seq` 语义过窄 | 只做请求端自增和响应匹配，无法覆盖 Frame messageId、RPC requestId、Stream seqId 三类不同 ID |
-| `Class/Method` 字符串过重 | 低带宽链路不能长期依赖字符串路由 |
-| Config 过于万能 | 大量能力塞进 `Config.Get/Set` 的 `Name/Config`，类型、权限、版本边界不清楚 |
-| 错误码过粗 | 迁移材料记录了 `OptFailed`、`NotFound` 这类粗粒度错误，难以做自动恢复和测试断言 |
-| 文件/升级接口阻塞 | 进度、结果、断点、校验没有统一模型 |
-| 文档质量难以保证 | 迁移材料记录了 JSON 语法、大小写、字段拼写和命名不一致问题 |
+### 2.2 旧协议很难原生表达 Event
 
-Rooms 和数字标牌材料已经出现 `sid/op/d`、Hello、Subscribe、Event、Request、RequestResponse 等更现代的形态，这说明方向是对的。但这些语义还没有和 HID/BinaryRPC/STREAM/Capability 统一起来。AXTP 的目标是把这套较好的会话/RPC/event 思路推广到所有传输，同时补齐二进制、低带宽和数据面的能力。
+过去很多二进制协议以“主机发命令，设备回响应”为中心。设备主动上报通常被做成：
 
-### 1.4 继续沿用旧协议的真实成本
+- 特殊 command。
+- 特殊状态包。
+- 定时轮询。
+- 私有 notify。
+- 塞进某个固定 report 的状态位。
 
-如果不引入 AXTP，后续新增一个业务能力通常会重复经历：
+这些方式都没有统一的 `eventId`、event schema、订阅关系和触发条件。现在设备需要主动上报的场景越来越多：
 
-1. HID 写一份二进制命令。
-2. WebSocket 或 HTTP 写一份 JSON 方法。
-3. 固件、客户端、云端各自手写常量、schema、错误码。
-4. 测试重新维护多套用例。
-5. 出问题后靠抓包和人工文档对齐定位。
+- 篮球进球事件。
+- OTA 进度和结果。
+- AP/Wi-Fi 状态变化。
+- 显示窗口状态变化。
+- 流打开、关闭、异常。
+- 设备状态、告警、按键、输入源变化。
 
-这会让每个新功能都带着协议债务上线。短期看是“省了一次架构迁移”，长期看是每条业务线都在重复支付解析、调试、兼容和文档漂移成本。
+AXTP 把 event 作为 RPC 语义的一等公民，由 Event Registry 统一管理。
 
-## 2. AXTP 如何解决这些问题
+### 2.3 管理混乱会让研发持续重复付费
 
-### 2.1 分层：让每层只做自己的事
+旧模式中，协议事实散落在 Word、PDF、Excel、固件宏、客户端代码、测试脚本和不同项目分支中。典型后果是：
 
-AXTP 把职责分成五层：
+- 同一个业务动作在不同传输上名字不同。
+- 同一个错误码在不同设备上含义不同。
+- 文档说字段是可选，代码却要求必填。
+- 测试工具需要人工维护 method 和 schema。
+- 旧协议适配逻辑混进新 runtime，后续越来越难维护。
 
-| 层级 | 职责 | 明确不做 |
+AXTP 的改造重点不是“文档写得更漂亮”，而是让协议事实可生成、可校验、可复用。
+
+### 2.4 技术上必须支撑后续设备无限丝滑
+
+后续设备会同时面对：
+
+- HID 大 report 音视频/音频通道。
+- TCP/局域网直连。
+- WebSocket 上位机和云端控制。
+- OTA、文件、日志、媒体流等连续数据。
+- 多设备、多型号、多能力裁剪。
+
+如果没有统一的协议骨架，每条新链路都会重新设计 request、event、stream、error、capability。AXTP 把这些能力拆成通用层，业务只扩展 Registry，不扩展 Header。
+
+## 3. 新协议是什么
+
+### 3.1 AXTP 的设计方案
+
+AXTP 按五层组织：
+
+```text
+Business Layer    device / display / firmware / network / stream / ...
+Registry Layer    method / event / error / schema / capability / profile
+Payload Layer     CONTROL / RPC / STREAM
+Frame Layer       Standard Frame Header / length / fragment / CRC
+Transport Layer   USB HID / TCP / WebSocket / future low-bandwidth paths
+```
+
+| 层级 | 职责 | 使用者 |
 |---|---|---|
-| Transport | HID、TCP、WebSocket、BLE、UART 等字节或消息传输 | 不理解 method/event/业务字段 |
-| Frame | Magic、version、length、messageId、fragment、CRC | 不理解 firmware/video/display 等业务语义 |
-| Payload | 只分发 CONTROL、RPC、STREAM | 不承载业务类型枚举 |
-| Registry | method、event、error、schema、capability、profile 的事实源 | 不改变 frame wire format |
-| Business | 设备实际业务处理 | 不直接污染 frame header |
+| Transport | 接入 HID、TCP、WebSocket 等实际链路 | 平台/设备 I/O 开发 |
+| Frame | 处理 Magic、Version、Length、MessageId、Fragment、CRC | runtime/core 开发 |
+| Payload | 分发 CONTROL、RPC、STREAM | runtime/core 开发 |
+| Registry | 定义 method、event、error、schema、capability、profile | 架构、业务研发、测试、工具 |
+| Business | 执行真实设备功能 | 固件、设备端、后台、上位机 |
 
-这层边界解决两个根本问题：
+核心原则：
 
-- 换传输时，业务 method/event 不需要重写。
-- 新业务增长时，不需要继续扩展 Frame Header 或顶层 PayloadType。
+```text
+Transport 不理解业务方法
+Frame 不承载业务类型
+PayloadType 只区分 CONTROL / RPC / STREAM
+method/event/error/schema 都进入 Registry
+Business 不直接修改 Header
+```
 
-### 2.2 三类 Payload：CONTROL / RPC / STREAM
+### 3.2 Header 如何设计
 
-AXTP v1 顶层只保留三类 PayloadType：
+Standard Framed 使用固定 12B Header：
 
-| PayloadType | 用途 | 解决的问题 |
+```text
++-----------------------------+------------+-----------+
+| Standard Frame Header (12B) | Payload(N) | CRC16(2B) |
++-----------------------------+------------+-----------+
+```
+
+Wire 图：
+
+```text
+Offset  0: Magic[0](1)  Magic[1](1)  Version(1)  PayloadType(1)
+Offset  4: PayloadLength(2)  SourceId(1)  DestinationId(1)
+Offset  8: MessageId(2)  FrameIndex(1)  FrameCount(1)
+Offset 12: Payload starts
+Footer:    CRC16(2), covers Header(12B) + Payload(N)
+```
+
+字段说明：
+
+| 字段 | 长度 | 说明 |
+|---|---:|---|
+| `Magic` | 2B | 固定 `0x41 0x58`，ASCII `AX` |
+| `Version` | 1B | 当前 Standard Header 版本为 `0x01` |
+| `PayloadType` | 1B | `CONTROL=0x01`、`RPC=0x02`、`STREAM=0x03` |
+| `PayloadLength` | 2B | Payload 字节数，不含 Header 和 CRC |
+| `SourceId` | 1B | 源逻辑节点 |
+| `DestinationId` | 1B | 目标逻辑节点 |
+| `MessageId` | 2B | 逻辑 Message ID |
+| `FrameIndex` | 1B | 当前分片序号，从 0 开始 |
+| `FrameCount` | 1B | 分片总数，未分片为 1 |
+| `CRC16` | 2B | CRC16-CCITT-FALSE |
+
+多字节整数在线格式中使用 Little-Endian。Frame Header 不出现 `VIDEO`、`OTA`、`FILE`、`Config` 等业务字段。
+
+### 3.3 Payload 如何设计
+
+AXTP 顶层只有三种 Payload：
+
+| PayloadType | 用途 | 典型内容 |
 |---|---|---|
-| CONTROL | OPEN、ACCEPT、HEARTBEAT、ACK、NACK、CLOSE、RESUME、WINDOW_UPDATE | 建连、流控、确认、恢复不再散落在业务协议里 |
-| RPC | Hello、Identify、Request、Response、Event、Batch | 设备查询、参数设置、事件推送统一表达 |
-| STREAM | OTA chunk、文件块、日志流、音视频、KVM/HID raw、传感器连续数据 | 大块/连续数据不再塞进 RPC body |
+| CONTROL | 运行时控制 | OPEN、ACCEPT、HEARTBEAT、ACK、NACK、CLOSE |
+| RPC | 业务控制面 | Hello、Identify、Request、Response、Event |
+| STREAM | 连续数据面 | OTA chunk、文件块、日志流、音频帧、视频帧 |
 
-关键设计是：业务类型不进入 PayloadType。比如 OTA 不再是一个顶层 payload，而是：
-
-```text
-RPC firmware.begin -> 返回 streamId/profile/chunkSize
-STREAM streamId/seqId/cursor/data -> 传输固件数据
-RPC firmware.verify/apply -> 校验和应用
-RPC Event firmware.updateProgress/updateCompleted/updateFailed -> 进度和结果
-```
-
-### 2.3 两条正式传输路径：兼容 Web 与嵌入式
-
-AXTP v1 Core 当前收敛为两类正式路径：
-
-| 路径 | 适用传输 | Frame | CONTROL | RPC | STREAM |
-|---|---|---|---:|---:|---:|
-| Standard Framed | AXTP-USB-HID、AXTP-TCP | 12B Standard Frame + CRC16 | 是 | JSON / Binary | 是 |
-| WebSocket Unframed JSON | AXTP-WS-JSON、AXTP-WS-CLOUD-REVERSE | 无 AXTP Frame | 否 | JSON `sid/op/d` | 否 |
-
-WebSocket Unframed JSON 被定义为正式 RPC-only 通道，适合浏览器、云端、调试工具和轻量控制。它不承载生产 STREAM。OTA、文件、音视频等连续数据必须走 Standard Framed 或后续明确声明的低带宽降级 profile。
-
-AXTP 同时区分物理连接角色和逻辑服务角色：
+#### CONTROL Payload
 
 ```text
-OPEN follows physical connection direction.
-Hello follows logical service direction.
+Standard Frame Header(payloadType=CONTROL)
+  + opcode:uint8
+  + controlId:uint16
+  + statusCode:uint16
+  + TLV body(N)
+  + CRC16
 ```
 
-因此云端反连时，设备可以是 WebSocket Physical Client，但仍然是 AXTP Logical Server，仍由设备发送 Hello 并暴露 method/event/stream 能力。
+CONTROL 只负责建连、确认、关闭、心跳和运行时控制，不负责业务方法。
 
-### 2.4 统一 RPC 和 Event
-
-AXTP RPC 使用统一的 `sid/op/d` envelope 语义：
-
-| op | 名称 | 方向 | 说明 |
-|---:|---|---|---|
-| 0 | Hello | Server -> Client | 服务端声明协议版本、认证要求 |
-| 2 | Identify | Client -> Server | 客户端认证、恢复、事件订阅 |
-| 3 | Identified | Server -> Client | 服务端确认并分配 sid |
-| 6 | Event | Server -> Client | 设备主动事件 |
-| 7 | Request | Client -> Server | 业务请求 |
-| 8 | RequestResponse | Server -> Client | 业务响应 |
-
-Binary RPC 与 JSON RPC 共用同一套 method/event/error/schema registry。区别只是编码：
-
-- WebSocket/调试/云端更适合 JSON。
-- HID/TCP/MCU 高吞吐路径更适合 Binary RPC + TLV。
-
-这让前端、云端、固件不再维护两套业务 API。
-
-### 2.5 Event 订阅：从全局位图变为域级掩码
-
-旧方案中的全局订阅位或各种 notify 结构无法支撑多域扩展。AXTP 使用 Domain-Scoped Event Mask：
+#### RPC Binary Payload
 
 ```text
-Domain Block = DomainId(1B) + MaskLen(1B) + Bitmask(NB, Little-Endian)
+Standard Frame Header(payloadType=RPC)
+  + rpcEncoding:uint8
+  + rpcOp:uint8
+  + requestId:uint32
+  + methodOrEventId:uint16
+  + statusCode:uint16
+  + bodyEncoding:uint8
+  + body(N)
+  + CRC16
 ```
 
-优点：
+Binary RPC 适合 HID/TCP/MCU 高效率路径。`methodOrEventId` 来自 Method/Event Registry，body 可以是 TLV 或其他已声明编码。
 
-- 对 MCU 是 O(1) 位运算。
-- 对客户端/云端可以用 Hex/Base64 字符串透明传输。
-- 每个 domain 独立扩展，不互相挤占 bit。
-- EventId 高字节与 DomainId 对齐，便于生成器自动校验和生成过滤逻辑。
+#### RPC JSON Payload
 
-MVP 阶段设备可以先全量广播核心事件，P1 再实现按掩码过滤。
-
-### 2.6 STREAM：把大块数据从 RPC 里拿出来
-
-STREAM Header 固定 16B：
+Standard Framed 中也可以承载 JSON RPC：
 
 ```text
-streamId:uint32 + seqId:uint32 + cursor:uint64
+Standard Frame Header(payloadType=RPC)
+  + UTF-8 JSON {"sid":"...","op":7,"d":{"id":1,"method":"device.getInfo","params":{}}}
+  + CRC16
 ```
 
-它不携带 `streamType`、`firmwareType`、`videoCodec`、`offset`、`timestamp` 等业务字段。业务含义由 RPC 建流时产生的 Stream Context 绑定：
+WebSocket Unframed JSON 不使用 Standard Frame：
 
-| 场景 | 控制面 | 数据面 cursor |
+```text
+WebSocket text message
+  = JSON {"sid":"...","op":7,"d":{"id":1,"method":"device.getInfo","params":{}}}
+```
+
+#### STREAM Payload
+
+```text
+Standard Frame Header(payloadType=STREAM)
+  + streamId:uint32
+  + seqId:uint32
+  + cursor:uint64
+  + data(N)
+  + CRC16
+```
+
+STREAM Header 固定 16B，不写业务类型。业务含义由 RPC 建流时绑定：
+
+| 场景 | 控制面 | 数据面 |
 |---|---|---|
-| OTA | `firmware.begin/verify/apply/abort` | `byteOffset` |
-| 文件 | `file.beginTransfer/endTransfer` | `byteOffset` |
-| 视频/音频 | `video.startPreview`、`audio.startStream` | `timestampUs` |
-| 日志 | `log.startStream` | `timestampUs` |
-| HID/KVM | `input.openKvm` | `timestampUs` |
+| OTA | `firmware.begin` 返回 stream 相关参数 | STREAM chunk，`cursor=byteOffset` |
+| HID audio/video | `stream.open` 绑定 `media.audio` / `media.video` profile | STREAM frame，`cursor=timestampUs` 或业务约定游标 |
+| 文件 | file transfer 草案/采纳后的 begin/end 方法 | STREAM chunk |
+| 日志 | log stream 草案/采纳后的 start/stop 方法 | STREAM record/chunk |
 
-这样做可以把可靠性、断点续传、窗口、ACK/NACK、资源回收做成通用能力，而不是每个业务重新设计。
+### 3.4 怎么在传输方案中使用和选择
 
-### 2.7 Registry-Driven：一份事实源生成所有产物
+| Transport Profile | Wire 模式 | CONTROL | RPC | STREAM | 适用场景 |
+|---|---|---:|---:|---:|---|
+| `AXTP-USB-HID` | Standard Framed | 是 | Binary / JSON | 是 | NA20/NT10 HID、大 report、设备直连 |
+| `AXTP-TCP` | Standard Framed | 是 | Binary / JSON | 是 | PC/App 与设备局域网直连 |
+| `AXTP-WS-JSON` | WebSocket Unframed JSON | 否 | JSON | 否 | 浏览器、调试工具、轻量上位机 |
+| `AXTP-WS-CLOUD-REVERSE` | WebSocket Unframed JSON | 否 | JSON | 否 | 设备主动连云端，云端作为 Logical Client |
+| Compact/BLE/UART | 低带宽降级路径 | 按降级 profile | 按降级 profile | 按降级 profile | P1/P2 特殊链路，不改变上层语义 |
 
-AXTP 仓库的核心流程是三段式编译：
+选择原则：
 
-```text
-registry/**/*.yaml + registry/domains/**/*.yaml
-        -> Source Model
-        -> protocol/axtp.protocol.yaml
-        -> docs/generated/ + tooling/mcp/ + runtimes/*/generated/ + tooling/test-vectors/
+- 需要 OTA、音视频、文件、日志等连续数据，优先选 Standard Framed。
+- 浏览器、云端、轻量 RPC 控制，优先选 WebSocket Unframed JSON。
+- HID/TCP 上如果需要调试便利，可以先用 framed JSON RPC；量产或低资源路径再切 Binary RPC/TLV。
+- BLE/UART/小 report HID 不新增业务 PayloadType，只通过低带宽降级 profile 改外层 framing、MTU 和确认策略。
+
+启动流程：
+
+```mermaid
+sequenceDiagram
+    participant PC as Physical Client
+    participant PS as Physical Server
+    participant LC as Logical Client
+    participant LS as Logical Server
+
+    Note over PC,PS: Transport connected
+    PC->>PS: CONTROL OPEN
+    PS-->>PC: CONTROL ACCEPT
+    Note over PC,PS: FRAMING_READY
+    LS-->>LC: RPC Hello
+    LC->>LS: RPC Identify
+    LS-->>LC: RPC Identified
+    LC->>LS: RPC capability.supportedMethods
+    LC->>LS: Business RPC / STREAM
+    LS-->>LC: RPC Response / Event / STREAM
 ```
 
-人工只维护 `registry/` 与 `registry/domains/` 下的 YAML。以下内容由 Generator 生成，不手写：
+WebSocket JSON 没有 CONTROL OPEN/ACCEPT，建连后由 Logical Server 发送 Hello。
+
+### 3.5 C++ runtime 怎么实现
+
+当前 C++ runtime 的核心结构是：
+
+```text
+ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker<>
+```
+
+框架图：
+
+```mermaid
+flowchart LR
+    T["ITransport<br/>bytes or complete text messages"]
+    E["AxtpEndpoint<br/>唯一 glue layer"]
+    C["AxtpCore<br/>协议解析/状态/编码"]
+    B["BasicBroker&lt;&gt;<br/>业务任务队列/handler dispatch"]
+
+    T -->|"onBytes()"| E
+    E -->|"byteSink()"| C
+    C -->|"CoreEvent"| E
+    E -->|"BrokerTask"| B
+    B -->|"BrokerResult"| E
+    E -->|"handleBrokerResult()"| C
+    C -->|"outbound bytes"| E
+    E -->|"sendBytes()"| T
+```
+
+分层图：
+
+```text
+Application / Business
+  使用 SDK 或 BasicBroker 注册业务 handler
+
+SDK / Tool
+  AxtpClient / AxtpServer / axtpctl
+  默认使用 dynamic RPC：methodName + JSON/TLV/Raw body
+
+Runtime Glue
+  AxtpEndpoint
+  连接 transport、core、broker，负责 poll 和 flush
+
+Protocol Core
+  AxtpCore
+  FrameDecoder / PayloadDecoder / JsonRpcDecoder / PayloadEncoder / FrameEncoder
+
+Transport
+  HidTransport / TcpTransport / WebSocket transport / MockTransport
+```
+
+各层给谁用：
+
+| 层级 | 给谁用 | 应该做什么 | 不应该做什么 |
+|---|---|---|---|
+| `ITransport` | 平台/驱动开发 | 读写 bytes/message，暴露 transport profile | 解析 frame、method、legacy command |
+| `AxtpCore` | 协议 runtime 开发 | decode/encode、状态机、CoreEvent、outbound bytes | 持有 transport 或调用业务 |
+| `AxtpEndpoint` | 应用集成/SDK | glue core、broker、transport，执行 poll 顺序 | 写业务逻辑 |
+| `BasicBroker<>` | 业务开发/SDK | 注册 method handler，返回 BrokerResult | 回调 core 或处理 socket/thread |
+| `AxtpClient/AxtpServer` | 上位机/应用开发 | dynamic RPC、mock handler、transport attach | 绕过 runtime 分层 |
+| `axtpctl` | 测试/联调 | mock 调用、method 列表、frame inspect | 把业务逻辑塞进 core |
+
+## 4. 怎么使用现在这套新协议
+
+### 4.1 根据业务逻辑实现一份协议草案
+
+先不要直接写 YAML。新增业务需求先进入 `docs/protocol/<domain>/<domain.feature>.md`。
+
+流程：
+
+```text
+业务需求
+  -> 搜索 docs/protocol 是否已有可复用草案
+  -> 按 domain.feature 归类
+  -> 写候选 method/event/schema/error/capability/profile
+  -> 标记 [REVIEW-DRAFT] / [REVIEW-ASK] / [REVIEW-BLOCKER]
+  -> 找相关研发、测试、架构评审
+```
+
+草案必须回答：
+
+- 这个能力属于哪个 domain 和 feature。
+- 谁调用，设备做什么，是否需要 event 或 stream。
+- 请求字段、响应字段、事件字段是什么。
+- 需要哪些错误码。
+- 是否有旧协议映射证据。
+- 是否影响 profile、capability、MVP 或兼容性。
+
+### 4.2 怎么把草案落到规范中
+
+新协议草案评审通过后，才进入采纳流程：
+
+```text
+docs/protocol/<domain>/<domain.feature>.md
+  -> human review
+  -> adopt-protocol-draft
+  -> reverse-confirm docs/specs/08-13
+  -> registry/**/*.yaml or registry/domains/**/*.yaml
+  -> generate-axtp-protocol
+  -> protocol/axtp.protocol.yaml
+  -> docs/generated/* + tooling/* + runtime generated headers
+```
+
+已采纳协议如果后续发现字段、枚举、命名或语义需要修正，不回到普通草案流程，也不直接手改 generated；使用 `amend-adopted-protocol` 记录 amendment、判断兼容性、修正 adopted proposal/specs/YAML，再重新生成。
+
+完整协议评审与发布流程：
+
+```mermaid
+flowchart TD
+    A["业务需求 / 旧协议线索 / 架构想法"]
+    B["业务分支<br/>business/domain-feature"]
+    C["axtp-protocol-workflow<br/>判断生命周期阶段"]
+    D{"是否已有 adopted/generated 事实?"}
+    E["draft-business-protocol<br/>起草或更新 docs/protocol/domain/domain.feature.md"]
+    F{"是否已有可复用草案?"}
+    F1["复用或修改现有草案"]
+    F2["新增 domain.feature 草案"]
+    G["草案评审<br/>业务 / 固件 / 上位机 / 后台 / SDK / 测试 / 架构"]
+    H{"Review 标记是否全部可采纳?"}
+    I["修正草案<br/>保留 REVIEW-ASK / REVIEW-FIX / REVIEW-BLOCKER"]
+    J["adopt-protocol-draft<br/>反向确认 specs 08-13<br/>固定草案为正式方案<br/>写入 registry YAML"]
+    J2["amend-adopted-protocol<br/>记录 amendment<br/>判断 draft vs stable 兼容性<br/>修正 proposal/specs/YAML"]
+    K{"validate:sources 是否通过?"}
+    L["修 specs / 草案 / amendment / YAML 源头"]
+    M["generate-axtp-protocol<br/>从 YAML 生成 Protocol IR / docs/generated / tooling / runtime generated"]
+    N{"validate:protocol / tests 是否通过?"}
+    O["修 YAML 或 Generator<br/>不手写 generated"]
+    P["提交 PR<br/>草案 + specs + YAML + generated diff"]
+    Q["代码评审 / 协议评审 / 测试确认"]
+    R["合并 main<br/>发布最新 generated 协议"]
+    S["研发 / 测试按 generated 产物实现和验收"]
+
+    A --> B --> C --> D
+    D -->|"否，新协议或未采纳草案"| E --> F
+    F -->|"是"| F1 --> G
+    F -->|"否"| F2 --> G
+    G --> H
+    H -->|"否"| I --> G
+    H -->|"是"| J --> K
+    D -->|"是，已采纳语义变更"| J2 --> K
+    K -->|"否"| L --> C
+    K -->|"是"| M --> N
+    N -->|"否"| O --> M
+    N -->|"是"| P --> Q --> R --> S
+```
+
+### 4.2.1 每个阶段谁来做什么
+
+| 阶段 | 主责角色 | 参与角色 | 主责动作 | 参与角色要确认的内容 | 阶段产物 |
+|---|---|---|---|---|---|
+| 需求输入 | 业务负责人 / 产品 / 架构 | 固件、上位机、后台、测试 | 提供业务目标、旧协议线索、触发场景、优先级 | 需求是否真实、是否要兼容旧协议、是否涉及 event/stream | 业务描述、旧协议证据、优先级 |
+| 建分支和路由 | 协议维护者 / 架构 | 提需求的人 | 建 `business/<domain-feature>` 或 feature 分支；用 `axtp-protocol-workflow` 判断阶段 | 这次是草案、采纳、修订、生成还是实现 | 分支和明确 workflow |
+| 草案设计 | 协议维护者 / 架构 | 业务、固件、上位机、后台、测试 | 用 `draft-business-protocol` 起草或更新 `docs/protocol/<domain>/<domain.feature>.md` | 业务语义、domain.feature、method/schema/event/error/capability 是否合理 | 带 `[REVIEW-*]` 的协议草案 |
+| 草案评审 | 架构 / 业务负责人 | 固件、上位机、后台、SDK/工具、测试 | 组织评审，逐项关闭或保留 review 标记 | 固件确认资源和状态机；上位机/后台确认调用方式；测试确认可测性；SDK/工具确认生成消费方式 | `[REVIEW-OK]` 的可采纳范围和 open questions |
+| 采纳到规范 | 协议维护者 / 架构 | 业务、固件、上位机、测试 | 用 `adopt-protocol-draft` 反向确认 specs 08-13，固定草案为正式方案，写 registry/domain YAML | 未确认事实没有进入 YAML；ID、`bit_offset`、fieldId 无冲突 | specs/YAML/source validation 结果 |
+| 已采纳修订 | 协议维护者 / 架构 | 业务、固件、上位机、后台、测试 | 用 `amend-adopted-protocol` 记录修订、判断兼容性、修正 adopted proposal/specs/YAML | draft/experimental 是否可直接修正；stable/MVP 是否必须 deprecate 或版本化 | amendment 记录、更新后的 YAML/source validation |
+| 生成产物 | 协议维护者 / SDK/工具 | 测试、研发 | 用 `generate-axtp-protocol` 从 YAML 生成 Protocol IR、generated docs、tooling、test vectors、runtime generated headers | generated diff 是否符合协议变更；测试向量是否覆盖关键路径 | `protocol/axtp.protocol.yaml`、`docs/generated/*`、runtime/tooling generated |
+| PR 和发布 | 协议维护者 / 研发负责人 | 业务、固件、上位机、后台、测试 | 提交 PR，说明草案、specs、YAML、generated diff、兼容影响和验证结果 | 各端确认能基于 generated 产物开发和验收 | 合并 main，发布最新 generated 协议 |
+| 研发实现和验收 | 固件 / 上位机 / 后台 / SDK | 测试、协议维护者 | 按 generated 文档、JSON、headers、test vectors 实现和联调 | 正向、错误、event、stream、legacy 兼容场景通过 | 端到端功能和测试验收 |
+
+采纳时必须确认：
+
+- `domain.feature` 符合 08 命名和 feature taxonomy。
+- method/event/error/capability/schema 的 ID 和 bit offset 不冲突。
+- fieldId 在 schema 内稳定且不复用。
+- `[REVIEW-ASK]` 和 `[REVIEW-BLOCKER]` 没有被写进 YAML。
+- legacy 映射只登记有证据的旧命令、旧状态码和 payload。
+
+修订时必须确认：
+
+- 目标事实已经进入 YAML/generated，而不是未采纳草案。
+- 当前 status 是 `draft/experimental` 还是 `mvp/stable`。
+- draft/experimental 字段删除或范围收窄有明确人工确认。
+- stable/MVP 字段、ID、method/event/capability 默认只能 deprecated 或版本化替代，不能静默删除或复用。
+- generated 产物只能由 Generator 刷新，不直接手改。
+
+### 4.3 怎么利用落成后的文件和资源
+
+采纳后研发使用 generated 产物，不依赖未采纳草案：
+
+| 产物 | 使用者 | 用途 |
+|---|---|---|
+| `docs/generated/protocol.md` | 所有人 | 最终协议参考 |
+| `docs/generated/protocol.json` | 工具、SDK、测试 | 机器可读协议模型 |
+| `docs/generated/*_registry.generated.md` | 研发、测试、评审 | 查 methodId、eventId、errorCode、capability |
+| `tooling/mcp/*.generated.json` | 工具链/MCP | 自动化查询协议事实 |
+| `tooling/test-vectors/*` | 测试、runtime | 线格式一致性测试 |
+| `runtimes/cpp-core/include/axtp/generated/*` | C++ runtime/SDK | 生成的 ID、traits、registry、codec |
+
+### 4.4 哪些可以手动改，哪些不能改
+
+可以手动改：
+
+- `docs/protocol/**`：业务草案和评审意见。
+- `docs/specs/**`：规范说明和治理规则。
+- `docs/dev/**`：研发流程、kickoff、skill 和工程说明。
+- `registry/**/*.yaml`：已确认协议事实源。
+- `registry/domains/**/*.yaml`：新增业务域事实源。
+- `runtimes/**` 中非 generated 的 runtime、SDK、tool 代码。
+- `generators/src/**`：生成器逻辑。
+
+不能手动改：
 
 - `protocol/axtp.protocol.yaml`
-- `docs/generated/protocol.md`
-- `docs/generated/protocol.json`
-- method/event/error/capability/legacy generated docs
+- `docs/generated/**`
 - `tooling/mcp/*.generated.json`
-- `runtimes/cpp-core/include/axtp/generated/*.h`
-- `tooling/test-vectors/*`
+- `tooling/test-vectors/**`
+- `runtimes/*/generated/**`
+- `runtimes/cpp-core/include/axtp/generated/**`
+- `generators/src/__snapshots__/**`
 
-这解决文档、固件枚举、客户端 schema、测试向量之间的漂移问题。
+如果 generated 内容错了，修源头，不修 generated。
 
-### 2.8 Legacy Adapter：兼容旧协议，但不污染 AXTP Core
+### 4.5 推荐评审流程
 
-AXTP 的兼容策略不是把旧协议塞进 core，而是在 core 外面放 Adapter：
+每个业务需求走独立业务分支或 feature 分支：
 
 ```text
-Legacy Protocol
-    -> Legacy Adapter
-    -> AXTP RPC / Event / STREAM
-    -> AXTP Core / Business
+main
+  -> business/<domain-feature> 或 feature/<ticket>
+  -> draft-business-protocol: docs/protocol 草案设计
+  -> 业务/固件/上位机/测试/架构评审
+  -> 修正 [REVIEW-*] 问题
+  -> adopt-protocol-draft: 对齐 specs 08-13 + 采纳到 registry/domains 或 registry
+  -> generate-axtp-protocol: 刷新 generated 产物
+  -> 如已采纳协议还需语义修正，走 amend-adopted-protocol + generate-axtp-protocol
+  -> 提交 PR
+  -> CI/评审通过
+  -> 合并 main
+  -> main 发布新的 docs/generated/protocol.md
+  -> 研发/测试按最新 generated 协议实现和验收
 ```
 
-Adapter 负责：
+评审建议：
 
-1. 嗅探 legacy 协议类型。
-2. 解析旧 `CmdValue`、`Seq/Class/Method`、status 和 raw payload。
-3. 查 `legacy-to-axtp-map.generated.yaml`。
-4. 转换成 AXTP method/event/stream/capability。
-5. 将 AXTP 响应翻译回 legacy 响应。
-6. 字段 schema 不完整时保留 raw legacy bytes 作为诊断信息。
+| 阶段 | 参与角色 | 重点 |
+|---|---|---|
+| 草案设计 | 业务负责人、架构 | domain.feature、交互模型、是否需要 event/stream |
+| 技术评审 | 固件、上位机、后台、SDK | 字段、错误码、传输选择、资源限制 |
+| 测试评审 | 测试、工具 | 可观测性、测试向量、兼容旧协议 |
+| 采纳评审 | 架构、协议维护者 | ID、schema、bit offset、generated diff |
+| 修订评审 | 架构、协议维护者、相关业务 owner | 删除/废弃/重命名/收窄是否兼容，是否需要版本化 |
+| 发布确认 | 研发负责人、测试 | generated 文档、SDK/tool、设备适配计划 |
 
-Adapter 不允许：
+## 5. 后续开发安排
 
-- 修改 AXTP Frame Header。
-- 新增业务 PayloadType。
-- 绕过 Registry 直接调业务。
-- 在 core 里硬编码 AXDP/VM33/数字标牌分支。
+以下以 `T0` 表示 kickoff/立项日。Owner 使用角色占位，具体姓名由项目管理在会议后补齐。
 
-这能保证新协议干净，同时给旧 App/旧设备一条可控迁移路径。
+| 阶段 | 时间节点 | 业务驱动 | 关键任务 | Owner 角色 | 输出物 |
+|---|---|---|---|---|---|
+| P0 | T0 - T+1 周 | 协议文档和研发共识 | README、How To Use、Kickoff、评审流程固化 | 架构、协议维护者 | 文档入口、流程说明 |
+| P0 | T0 - T+2 周 | NA20 + 大屏 + NT10 上位机适配 | 明确 HID audio/video 走 `AXTP-USB-HID` + `stream.open`/STREAM；梳理 AP 设置、Wi-Fi 写入、OTA、设备信息查询草案 | 架构、固件、上位机、测试 | `network.*`、`firmware.ota`、`device.info`、`stream.hidMedia` 评审清单 |
+| P1 | T+2 - T+4 周 | NA20/NT10 MVP 联调 | `device.getInfo`、`network.getApInfo`、AP/Wi-Fi 设置草案、OTA STREAM demo、HID media profile 联调 | 固件、上位机、SDK/工具、测试 | 端到端测试记录、必要协议草案/采纳 PR |
+| P1 | T+3 - T+5 周 | VM33 Pro 新版本协议适配 | 老协议保留；筛选新协议配置方案：时间同步、篮球进球事件、设备升级、设备信息查询 | 业务负责人、固件、上位机、架构 | VM33 新旧协议映射表、草案评审结论 |
+| P1 | T+4 - T+6 周 | UXPlay 控制方案 | 设计设置投屏密码、控制窗口大小、显示状态等 domain.feature 草案 | 上位机、设备端、架构、测试 | UXPlay 控制草案、评审问题清单 |
+| P2 | T+5 - T+8 周 | NearHub Launcher 与后台交互通用化 | 梳理 Launcher 设备管理命令，规整后台交互逻辑，定义可复用 method/event/schema | 后台、Launcher、架构、测试 | Launcher 通用化草案、兼容策略 |
+| P2 | T+6 - T+9 周 | 工具和测试体系 | 扩展 `axtpctl`、test vectors、mock/server 验证链路；沉淀生成协议到测试用例的路径 | SDK/工具、测试 | CLI 验证命令、测试矩阵 |
+| Observe | T0 起持续 | Rooms | 暂不改当前协议方案，只纳入兼容性观察和后续评审 | Rooms 业务负责人、架构 | 观察记录、后续迁移建议 |
 
-## 3. 开发者需要付出的适配工作
+### 5.1 NA20 + 大屏 + NT10
 
-### 3.1 当前已落地基础
+目标：基于 HID 的 audio/video 传输和上位机新协议适配。
 
-当前生成协议中已有：
+建议拆分：
 
-| 类别 | 已有内容 |
+| 能力 | 建议协议归属 | 传输选择 | 备注 |
+|---|---|---|---|
+| AP 设置 | `network.ap` / `network.softAp` 草案或采纳 | RPC over HID/TCP | 当前已有 `network.getApInfo` 和 `network.apInfoChanged` draft |
+| Wi-Fi 设置写入 | `network.wifi` 草案 | RPC over HID/TCP | 涉及密码、安全类型、连接结果 event |
+| OTA 固件升级 | `firmware.ota` | RPC + STREAM over HID/TCP | 当前已有 firmware MVP 方法和事件 |
+| 设备信息查询 | `device.info` | RPC | 当前已有 `device.getInfo` MVP |
+| HID audio/video | `stream.hidMedia` | `AXTP-USB-HID` + STREAM | 当前已有 `stream.open` 和 `AXTP-HID-MEDIA` draft |
+
+### 5.2 VM33 Pro 新版本协议适配
+
+策略：老协议继续保留，新功能逐步映射到 AXTP。
+
+优先筛选：
+
+| 能力 | 建议处理 |
 |---|---|
-| Methods | 10 个：`device.getInfo`、`capability.supportedMethods`、`display.getBrightness`、`display.setBrightness`、`firmware.begin/end/verify/apply`、`network.getApInfo`、`stream.open` |
-| Events | 7 个：display brightness、firmware progress/completed/failed、network AP、stream opened/error |
-| Errors | 154 个错误码 |
-| Profiles | `AXTP-MVP`、`AXTP-MVP-HID`、`AXTP-HID-MEDIA` |
-| Stable MVP | device、capability、display、firmware OTA 基础链路 |
-| Draft | network AP、stream HID media |
+| 时间同步策略 | 检查 `system.time` 草案，确认是否采纳为 method/event |
+| 篮球进球事件通知 | 先做业务草案，确认 domain 归属、event schema 和触发条件 |
+| 设备升级 | 优先复用 `firmware.ota` |
+| 设备信息查询 | 优先复用 `device.getInfo` |
 
-### 3.2 legacy 协议整体迁移工作量
+要求：VM33 旧协议映射必须有旧 method、payload、status 证据，不能把 TBD 写进 YAML。
 
-迁移工具生成的工作量快照：
+### 5.3 UXPlay 控制方案
 
-| 指标 | 数量 | 含义 |
-|---|---:|---|
-| legacy 映射总数 | 418 | 来自 AXDP、VM33、数字标牌等材料 |
-| RPC method 映射 | 361 | 控制、查询、设置、诊断等小参数能力 |
-| Event 映射 | 11 | notify/subscribe/status 统一为 AXTP Event |
-| STREAM 映射 | 11 | 固件、文件、日志、媒体、KVM、大块状态同步 |
-| Capability 映射 | 35 | legacy feature/config/support matrix 到 capability |
-| candidate registry patch | 406 | 需要按域 review 后进入 `registry/domains/` 的候选 |
-| adapter-only | 10 | deprecated 或兼容专用，不进入正式 registry |
-| existing registry mapping | 2 | `BetaDeviceInfo`、`BetaBrightnessSet` 已有权威映射 |
-| 候选新增 methods | 336 | 需要 domain owner 审查命名、schema、错误码 |
-| 候选新增 events | 11 | 需要 event schema、订阅位、触发条件 |
-| 候选新增 capabilities | 283 | 多来自配置项、设备能力矩阵和 feature bit |
-| 候选新增 schemas | 717 | 需要把 raw/legacy payload 逐步结构化 |
-| 候选 domain 文件 | 51 | 需要建立/合并到 `registry/domains/<domain>/domain.yaml` |
+优先草案：
 
-候选迁移的高频目标域：
-
-| 目标域 | 映射数量 | 说明 |
-|---|---:|---|
-| camera | 66 | 图像、曝光、跟踪、PTZ、画面策略 |
-| audio | 64 | 音量、降噪、回声、录音、Dante/AMX 音频相关 |
-| diagnostic | 33 | 产测、自检、健康状态、RS232/网络/存储检查 |
-| network | 27 | DHCP、IP、网关、Wi-Fi、NDI、扫描状态 |
-| misc | 25 | 历史杂项，需要二次归域 |
-| config | 23 | Config.Get/Set 类通用配置 |
-| device | 21 | 设备信息、唯一 ID、外设信息 |
-| system | 16 | 重启、时间、系统状态 |
-| firmware | 13 | OTA、升级、云升级 |
-| usb | 10 | HID call、VID/PID、USB 名称与模式 |
-
-这份数据意味着：AXTP MVP 已经能证明核心链路，但真正全量迁移是一个按域治理的工程项目。不能一次性把 336 个方法、717 个 schema 全部合入主干；应先按业务优先级分批。
-
-### 3.3 每条设备协议的适配步骤
-
-每条 legacy 命令或新业务 method 需要完成以下工项：
-
-| 步骤 | 产物 | 负责人 |
+| 能力 | 可能归属 | 关键问题 |
 |---|---|---|
-| 1. 分类 | 判断是 RPC、Event、STREAM、Capability 还是 adapter-only | 协议 owner + 业务 owner |
-| 2. 归域和命名 | `domain.verbObject` 或 `domain.objectChanged` | 协议 owner |
-| 3. ID 分配 | methodId/eventId/errorCode/capabilityId、bitOffset | 协议 owner |
-| 4. Schema 定义 | request/response/event/capability schema，字段 ID 和类型 | 业务 owner + 固件/客户端 |
-| 5. Error 映射 | 成功、参数错误、忙、未授权、超时、legacy status 映射 | 业务 owner + 测试 |
-| 6. Capability 绑定 | method 需要的 capability、profile 归属、MVP/P1/P2 状态 | 协议 owner |
-| 7. Adapter 转换 | legacy request/response/event/stream 到 AXTP 的编解码 | Adapter owner |
-| 8. Runtime handler | 固件或服务端 broker handler、stream context、资源回收 | 固件/服务端 |
-| 9. Client 调用 | JSON/TLV/SDK wrapper、event subscription、重连恢复 | 客户端/云端 |
-| 10. 测试 | generator 校验、协议向量、legacy adapter 向量、端到端场景 | 测试 |
+| 设置投屏密码 | `auth` / `signage` / `system` 需评审确认 | 密码生命周期、权限、是否回显 |
+| 控制窗口大小 | `output.layout` 或 `video.layout` | 坐标系、屏幕编号、比例、边界 |
+| 控制显示状态 | `display.output` / `output.layout` | 显示/隐藏、置顶、窗口状态 event |
 
-如果字段定义不完整，可以先以 `RAW_BYTES` 或 legacy diagnostic metadata 过渡，但必须在 issue 中记录字段补全计划，不能长期把核心业务停留在 raw payload。
+先评审 domain 边界，再采纳。
 
-### 3.4 按角色拆分的研发工作
+### 5.4 NearHub Launcher 与后台交互通用化
 
-| 角色 | 需要做什么 | 不应该做什么 |
-|---|---|---|
-| 协议/架构组 | 管理 ID、domain、schema、错误码、profile、PR 审查、版本策略 | 手写 generated 文件 |
-| 固件/MCU | 实现 `AxtpCore` 集成、CONTROL 状态机、RPC handler、STREAM context、资源回收、错误返回 | 在 transport 层解析 methodId 或 legacy command |
-| 客户端/前端 | 使用 `sid/op/d`、Identify、Request/Response、Event、method bitmap、eventMasks | 为每种传输维护不同业务 API |
-| 云端/Agent | 支持 WebSocket JSON RPC、Cloud Reverse 角色、工具 JSON/MCP、会话恢复策略 | 把云端 Physical Server 当 Logical Server |
-| Legacy Adapter | 使用生成映射表转换 AXDP/VM33/signage，不硬编码大 switch | 修改 AXTP Core wire format |
-| 测试 | 建立 conformance、legacy regression、跨传输 E2E、错误注入、抓包可观测性 | 只测 happy path |
-| 文档维护者 | 确保 source YAML、规范、生成文档和 kickoff 材料一致 | 用 Word/Markdown 单独维护协议真相 |
+目标：把 Launcher 与后台的设备管理逻辑从项目私有 API，整理成可复用 method/event/schema。
 
-### 3.5 推荐分期
+建议步骤：
 
-| 阶段 | 目标 | 退出标准 |
-|---|---|---|
-| P0: MVP 链路固化 | Standard Framed + WebSocket JSON 跑通 device/display/firmware/capability；现有 2 条 AXDP 映射可用 | `pnpm --dir generators build`、`test`、`generate`、`validate:sources` 通过；C++ phase tests 通过；MVP 端到端 demo 可复现 |
-| P0: Legacy Adapter 骨架 | Detector、Decoder、Mapper、StatusMapper、StreamBridge 框架落地 | migration test vectors 中 unknown/invalid/status/2 条 Beta 映射通过 |
-| P1: 高价值域迁移 | camera/audio/network/config/diagnostic 按域 review 合入候选 methods/events/schemas | 每个域有 owner、schema、adapter、测试向量和迁移说明 |
-| P1: Event/Capability 完整化 | eventMasks、Config Name capability、supportedMethods 按设备型号裁剪 | 订阅过滤、能力发现、权限降级测试通过 |
-| P1/P2: STREAM 扩展 | 文件、日志、媒体、KVM、传感器等 stream profile 分批稳定 | 每个 profile 有建流 RPC、资源限制、ACK/NACK、断点或失败策略 |
-| P2: 低带宽降级 | BLE/HID-64/UART Compact profile 实验 | 独立入口、可回退、CRC8/overflow test vector、不得改变 L2 payload |
+1. 读取 `docs/legacy-protocols/NearHub-Launcher*.md`。
+2. 按 domain.feature 分类现有命令。
+3. 已有能力复用现有草案或 registry。
+4. 新能力进入 `docs/protocol/<domain>/<domain.feature>.md`。
+5. 评审后再采纳到 YAML。
 
-## 4. 测试如何使用这套协议
+### 5.5 Rooms
 
-### 4.1 测试入口
+Rooms 暂时不改当前协议方案。当前只做三件事：
 
-协议仓库已经提供多类测试资产：
+- 保留旧协议运行。
+- 记录与 AXTP model 的差异。
+- 后续等业务窗口明确后再做草案评审。
 
-| 资产 | 用途 |
-|---|---|
-| `tooling/test-vectors/*.hex` | CONTROL、RPC、Event、STREAM、Compact 错误等线格式向量 |
-| `tooling/test-vectors/manifest.json` | 测试向量清单和元数据 |
-| `docs/migration/generated/test-vectors.generated.json` | legacy adapter 迁移测试向量 |
-| `docs/generated/protocol.json` | 机器可读协议模型，可用于测试平台生成用例 |
-| `tooling/mcp/*.generated.json` | 面向工具、Agent、自动化测试的 JSON 描述 |
-| `runtimes/cpp-core/tests/phase*.cpp` | C++ runtime 的分层测试 |
-| `runtimes/cpp-tools/axtpctl` | CLI 调试入口，适合端到端验证 |
+## 6. 测试和验收
 
-### 4.2 提交前基本命令
+### 6.1 协议仓库验收
+
+每次协议事实变更至少运行：
 
 ```bash
 pnpm --dir generators build
 pnpm --dir generators test
-pnpm --dir generators generate
 pnpm --dir generators validate:sources
+pnpm --dir generators generate
+pnpm --dir generators validate:protocol
+git diff --check
 ```
 
-如果修改了 C++ runtime，还需要运行对应 CMake/CTest 测试。现有测试命名已经按阶段组织：
+文档-only 变更至少运行：
 
-| 测试阶段 | 关注点 |
-|---|---|
-| phase1 | model / IO |
-| phase2 | inbound decode |
-| phase3 | outbound encode |
-| phase4 | core events、control、broker result |
-| phase5 | transport boundary |
-| phase6 | real transport |
-| phase7 | broker |
-| phase8 | API surface |
-| phase9 | HID transport |
-
-### 4.3 测试场景矩阵
-
-| 场景 | 必测点 |
-|---|---|
-| CONTROL 建连 | OPEN/ACCEPT、协商失败、heartbeat、close、非法状态拒绝 |
-| RPC 基础 | Hello/Identify/Identified、Request/Response、错误码、requestId 复用规则 |
-| Event | op=6、eventId/name 映射、eventMasks、全量广播兼容模式 |
-| STREAM OTA | firmware.begin -> STREAM chunk -> ACK/NACK -> verify/apply -> event |
-| 多传输一致性 | 同一 method 在 HID/TCP/WebSocket JSON 上语义一致 |
-| WebSocket Cloud Reverse | 设备作为 Physical Client 但 Logical Server 发送 Hello |
-| Legacy Adapter | 已知命令、未知命令、payload too short/long、legacy status 映射、stream bridging |
-| 错误注入 | CRC 错、fragment missing、method not found、busy、timeout、streamId 不存在 |
-| 回归 | generated 文件变更必须能追溯到 registry/source YAML |
-
-### 4.4 测试策略建议
-
-1. 用 generated test vectors 固化 wire format，防止 Frame/CONTROL/RPC/STREAM 误改。
-2. 用 protocol.json 和 registry JSON 自动生成 method/event/schema 覆盖清单。
-3. 用 legacy migration vectors 做兼容回归，避免迁移一批命令时破坏旧 App。
-4. 对 STREAM 做长包、断包、乱序、重复包、超时、资源回收测试。
-5. 对事件订阅做空订阅、单域、多域、高水位截断、未知 bit 测试。
-6. 对安全字段做脱敏、权限、鉴权前不可见 method 测试。
-
-## 5. 如何维护这套协议仓库
-
-### 5.1 单一事实源规则
-
-协议事实只允许进入：
-
-```text
-registry/**/*.yaml
-registry/domains/**/*.yaml
+```bash
+pnpm --dir generators build
+pnpm --dir generators test
+pnpm --dir generators validate:sources
+pnpm --dir generators validate:protocol
+git diff --check
 ```
 
-以下路径是生成产物，不手写：
+### 6.2 Runtime 验收
 
-```text
-protocol/axtp.protocol.yaml
-docs/generated/
-tooling/mcp/
-tooling/test-vectors/
-runtimes/*/generated/
-generators/src/__snapshots__/
-```
+C++ runtime 测试地图：
 
-如果生成结果不对，回到 Source YAML 修改，再重新生成。
-
-### 5.2 变更流程
-
-| 变更类型 | 应修改位置 | 必跑检查 |
-|---|---|---|
-| 新增业务 method/event/type | `registry/domains/<domain>/domain.yaml` | generate、validate:sources、相关 runtime/adapter 测试 |
-| 新增公共 schema | `registry/schema/*.yaml` | schema 引用、TLV field id、生成代码 |
-| 新增 error code | `registry/error/error_code.yaml` 或 domain YAML | error registry、status 映射、错误测试 |
-| 新增 capability | `registry/capability/` 或 domain YAML | supportedMethods/capability 生成校验 |
-| 迁移 legacy 命令 | `registry/legacy/legacy_mapping.yaml` 或 migration candidate patch | legacy vectors、adapter regression |
-| 调整 core 常量 | `registry/core/*.yaml` + 对应 spec | wire freeze 审查、全量测试 |
-
-### 5.3 审查原则
-
-1. Stable ID 不复用。废弃只能标记 deprecated，不能删除后重用。
-2. Core wire format 变更必须升级 Header Version，并经过架构审查。
-3. 新业务默认进 `registry/domains/<domain>/domain.yaml`，不要直接进 core registry。
-4. Domain 业务晋升 MVP/Core 时，必须迁移而不是复制，避免双事实源。
-5. Generated diff 必须和 source YAML diff 同 PR 提交。
-6. Legacy compatibility 默认由 Adapter 解决，不能修改 AXTP Core 来适配旧格式。
-7. 低带宽 profile 必须使用独立入口，不能在同一 session 中动态切换 frame profile。
-
-### 5.4 建议建立的治理机制
-
-| 机制 | 目的 |
+| 测试 | 覆盖 |
 |---|---|
-| ARB/协议评审 | 审查新 domain、core 常量、稳定 ID、wire 兼容性 |
-| Domain Owner | 对 camera/audio/network/config 等大域负责命名、schema、测试 |
-| Generated Artifact Check | CI 检查 generated 是否与 source YAML 同步 |
-| Legacy Migration Board | 跟踪 418 条映射的 review 状态、owner、风险、落地阶段 |
-| Release Notes | 区分 `specVersion` 与 `registryVersion`，说明新增/废弃/兼容行为 |
-| Conformance Gate | 新设备接入前必须通过 MVP 和所声明 profile 的一致性测试 |
+| `phase1_model_io_test` | model / IO primitives |
+| `phase2_inbound_test` | FramedBinary 和 WebSocketJsonRpc inbound decode |
+| `phase3_outbound_test` | FramedBinary 和 WebSocketJsonRpc outbound encode |
+| `phase4_core_test` | core events、control、broker result |
+| `phase5_transport_test` | `AxtpEndpoint` + mock transport |
+| `phase6_real_transport_test` | TCP/WebSocketJsonRpc transport flows |
+| `phase7_broker_test` | `BasicBroker<>` dynamic dispatch |
+| `phase8_api_surface_test` | aggregate header、packet/text IO、dynamic registry |
+| `phase9_hid_transport_test` | HID report slicing 和 ManualPoll |
 
-## 6. 后续还能如何扩展
+### 6.3 业务验收
 
-### 6.1 协议能力扩展
+每个业务能力 PR 需要能回答：
 
-| 方向 | 扩展方式 |
-|---|---|
-| BLE/HID-64/UART | 作为 Low-Bandwidth Degradation profile，复用 CONTROL/RPC/STREAM L2 语义 |
-| 文件/日志/媒体/传感器 | 新增 stream profile，不改 16B STREAM Header |
-| 完整 Capability Model | v2/P1 引入 `capability.getAll`、`capability.query`、动态能力详情 |
-| 更紧凑编码 | 后续可启用 CBOR/MessagePack，但必须复用 RPC 语义和 registry |
-| 安全与 ACL | 在 Hello/Identify、capability、method metadata 中完善认证、权限、脱敏策略 |
-| 多设备路由 | 使用 SourceId/DestinationId、sid 和 gateway routing 扩展 |
+- method/event/schema 是否出现在 generated protocol。
+- 设备能力是否能通过 capability 或 profile 表达。
+- 正常路径、参数错误、设备忙、不支持、状态不允许等错误是否可测。
+- 如果涉及旧协议，legacy adapter 是否有测试向量或映射证据。
+- 如果涉及 STREAM，是否有建流、传输、完成、失败、断开恢复或资源释放测试。
 
-### 6.2 工具链扩展
+## 7. 会议建议议程
 
-| 方向 | 价值 |
-|---|---|
-| TypeScript/Python SDK 生成 | 降低前端、云端和测试调用成本 |
-| Wireshark/抓包解析器生成 | 提升二进制链路可观测性 |
-| MCP Tool Schema 生成 | 让 Agent 能从协议事实源直接理解设备能力 |
-| 协议 Diff 工具 | 比较 registryVersion 之间的新增、废弃和 breaking risk |
-| 设备能力矩阵生成 | 从 capability/profile 生成型号、固件版本和功能覆盖表 |
-| Mock/Simulator 生成 | 用 protocol.json 快速生成设备模拟器和回归服务 |
-
-### 6.3 业务扩展
-
-当前 legacy 映射已经给出了后续优先方向：
-
-- camera/audio 是最大业务域，适合先做高频控制和核心设置。
-- diagnostic/network/config 是联调和运维收益最高的域。
-- firmware/file/log/media/KVM 应优先按 STREAM profile 处理，避免继续扩大 RPC body。
-- VM33 Config Name 中的 Wi-Fi、AP、OSD、Time、Volume 等能力应逐步从万能 Config 拆成稳定 schema 和 capability。
-
-## 7. Kickoff 还需要补充说明的问题
-
-除了 WHY/WHAT/HOW，项目 kickoff 建议明确以下事项：
-
-| 主题 | 需要说明的问题 |
-|---|---|
-| 项目范围 | P0 必须交付什么，P1/P2 明确延后什么 |
-| 非目标 | v1 不做完整 Capability Model、不让 WebSocket JSON 承载 STREAM、不动态协商 Header Profile |
-| 兼容策略 | 旧 App、旧固件、新 App、新固件如何组合运行，失败如何回退 |
-| Owner | 每个 domain、runtime、adapter、测试、文档的责任人 |
-| 里程碑 | MVP demo、legacy adapter skeleton、第一批 domain migration、设备试点、发布冻结 |
-| 风险 | 低带宽 MTU、legacy 字段缺失、命名不统一、schema 爆炸、敏感字段明文、测试资产不足 |
-| 成功指标 | 新增方法平均接入时间、联调问题定位时间、跨传输复用率、generated drift 为 0、legacy regression 通过率 |
-| 变更冻结 | v1 Core Freeze 后哪些字段只能 clarification，哪些需要 registryVersion 升级 |
-| 培训 | 固件、客户端、测试分别需要掌握哪些最小 API 和调试工具 |
-| 试点设备 | 选择哪类设备先跑通 HID/TCP/WebSocket/OTA/Event 全链路 |
-
-## 8. 建议的 kickoff 议程
-
-1. 背景：用 legacy 数据说明为什么不能继续烟囱式协议。
-2. 核心架构：Transport/Profile、Frame、CONTROL/RPC/STREAM、Registry。
-3. MVP Demo：OPEN/ACCEPT、Hello/Identify、supportedMethods、display.setBrightness、Event、firmware OTA STREAM。
-4. Legacy 兼容：Adapter 边界、418 条映射数据、第一批迁移策略。
-5. 开发工作量：按 P0/P1/P2 和 domain owner 拆分。
-6. 测试策略：generated vectors、runtime tests、legacy regression、端到端矩阵。
-7. 仓库治理：source YAML、generated 禁改、PR/CI/ARB 规则。
-8. 风险和开放问题：低带宽、schema 缺失、安全脱敏、发布节奏。
-9. 行动项：确定 owner、第一批迁移域、试点设备、下次评审时间。
-
-## 9. 首批行动清单
-
-| 优先级 | 行动项 | 产出 |
-|---|---|---|
-| P0 | 固化 AXTP MVP 端到端链路 | demo、测试记录、问题清单 |
-| P0 | 建立 Legacy Adapter skeleton | detector/decoder/mapper/status/stream bridge 基础代码 |
-| P0 | Review `legacy-to-axtp-map.generated.yaml` | 每条映射标记 accept/rework/adapter-only/drop |
-| P0 | Review `registry-patches.generated.yaml` | 按 domain 拆 PR，不一次性全量合入 |
-| P0 | 建立 CI generated drift 检查 | source YAML 与 generated 产物保持同步 |
-| P1 | camera/audio/network/config 四个域选 owner | domain migration 计划 |
-| P1 | 补齐事件订阅和 capability 策略 | eventMasks、supportedMethods、设备型号能力矩阵 |
-| P1 | 建立协议测试看板 | vector 覆盖率、legacy 回归、设备 E2E 通过率 |
-
-## 10. 参考资料
-
-- `docs/kickoff/AXTP_R&D_Kickoff.md`
-- `README.md`
-- `docs/specs/00-AXTP-Overview.md`
-- `docs/specs/01-AXTP-Protocol-Framework.md`
-- `docs/specs/02-AXTP-Frame-and-Payload-Spec.md`
-- `docs/specs/03-AXTP-Transport-Profiles.md`
-- `docs/specs/04-AXTP-Control-Session-Spec.md`
-- `docs/specs/05-AXTP-RPC-Session-Spec.md`
-- `docs/specs/06-AXTP-Stream-Spec.md`
-- `docs/specs/07-AXTP-Compatibility-and-Versioning.md`
-- `docs/specs/18-AXTP-Low-Bandwidth-Degradation.md`
-- `docs/specs/19-AXTP-Generator-v1实现规范.md`
-- `docs/archive/source-planning/AXTP-Legacy-Compatibility-Reference.md`
-- `docs/archive/source-planning/AXTP-Protocol-Plan.md`
-- `docs/migration/generated/migration-plan.generated.md`
-- `docs/migration/generated/compatibility-layer.generated.md`
-- `docs/migration/generated/cpp-legacy-adapter-plan.generated.md`
-- `docs/migration/generated/legacy-to-axtp-map.generated.yaml`
-- `docs/migration/generated/registry-patches.generated.yaml`
-- `docs/legacy-protocols/*.xlsx`
-- `docs/legacy-protocols/*.md`
+1. 为什么重做协议：旧协议问题、event/stream/治理缺口、后续设备需要。
+2. 新协议是什么：五层架构、CONTROL/RPC/STREAM、两条传输路径。
+3. Wire format：Standard Frame、CONTROL、RPC Binary、RPC JSON、STREAM。
+4. C++ runtime：`ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker<>`。
+5. 怎么用：草案、评审、采纳、生成、研发/测试消费。
+6. 已采纳协议怎么修：amendment、draft vs stable 判断、deprecate/version 策略。
+7. 后续安排：NA20/NT10、VM33 Pro、UXPlay、Launcher、Rooms。
+8. 决策事项：业务优先级、owner、T0 日期、首批 PR 范围。

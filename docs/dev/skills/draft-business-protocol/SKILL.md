@@ -78,7 +78,7 @@ Use the result to label implementation degree:
 | Partially adopted | Some facts exist in YAML, but draft has gaps |
 | Adopted | YAML/generated already cover the feature |
 
-If adopted, do not create a duplicate draft. Add a review note explaining the existing path and any remaining gap.
+If adopted, do not create a duplicate draft. If the user asks for a semantic change, field removal, deprecation, rename, narrowing, or extension to adopted facts, route to `amend-adopted-protocol`; otherwise add a review note explaining the existing path and any remaining gap.
 
 ### 4. Write The Draft
 

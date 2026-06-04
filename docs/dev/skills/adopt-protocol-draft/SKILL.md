@@ -93,7 +93,7 @@ Update the draft only enough to record adoption:
 
 - Mark accepted sections as `[REVIEW-OK]` or add an adoption note/table.
 - Preserve unresolved sections as open questions and keep them out of YAML.
-- Record that future protocol changes must update the `docs/protocol` proposal first, then re-run adoption.
+- Record that future unadopted facts must update the `docs/protocol` proposal first, then re-run adoption; already-adopted semantic changes must use `amend-adopted-protocol`.
 - Do not remove useful review history unless it is misleading.
 
 ### 5. Choose YAML Targets
@@ -170,5 +170,6 @@ Report:
 - Open questions or skipped draft sections.
 - Validation commands and results.
 - Next step: run `docs/dev/skills/generate-axtp-protocol/SKILL.md`.
+- Future post-adoption semantic changes must use `docs/dev/skills/amend-adopted-protocol/SKILL.md`.
 
 If adoption is blocked, do not edit YAML. Report the exact blocker and the minimum draft/spec update needed.

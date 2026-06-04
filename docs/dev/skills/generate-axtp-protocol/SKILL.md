@@ -5,7 +5,7 @@ description: Generate AXTP protocol artifacts from accepted registry YAML facts.
 
 # Generate AXTP Protocol
 
-Run the deterministic AXTP generation stage. This is the third workflow stage after `adopt-protocol-draft`.
+Run the deterministic AXTP generation stage after `adopt-protocol-draft` or `amend-adopted-protocol` has updated YAML facts.
 
 ## Boundaries
 
@@ -50,6 +50,8 @@ git diff --name-only -- registry registry/domains docs/specs docs/protocol gener
 ```
 
 If only rough drafts changed and no YAML was adopted, do not generate. Route back to `adopt-protocol-draft`.
+
+If only an adopted proposal or specs changed but the corresponding YAML facts were not amended, do not generate. Route to `amend-adopted-protocol` unless the change is documentation-only and intentionally does not affect generated output.
 
 ### 2. Run Generator Pipeline
 
@@ -97,7 +99,7 @@ Use `git diff --name-only` and targeted `rg`/JSON checks to confirm adopted meth
 - If `validate:sources` fails, the source YAML or specs alignment is wrong. Report the exact source facts to fix; do not patch generated files.
 - If `generate` changes unexpected files, report them and inspect Generator configuration before proceeding.
 - If `validate:protocol` fails, compare Protocol IR, generated docs, and relevant specs; fix source facts or Generator logic only if requested.
-- If tests fail due to snapshots, inspect whether generated output changed intentionally before updating snapshots.
+- If tests fail due to snapshots, inspect whether generated output changed intentionally before updating snapshots with the repo's Vitest snapshot workflow.
 
 ## Final Report
 

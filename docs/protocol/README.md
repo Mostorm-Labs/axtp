@@ -22,20 +22,31 @@ Codex skill: generate-axtp-protocol
 protocol/axtp.protocol.yaml
         ↓
 docs/generated/*、tooling/*、runtimes/*/generated/*
+        ↓ post-adoption semantic correction / field removal / deprecation / extension
+Codex skill: amend-adopted-protocol
+        ↓ update adopted proposal + specs/YAML
+registry/**/*.yaml + registry/domains/**/*.yaml
+        ↓
+Codex skill: generate-axtp-protocol
+        ↓
+refreshed protocol/axtp.protocol.yaml + generated artifacts
 ```
 
 ## Skill 分工
 
 | 阶段 | 触发输入 | Skill 做什么 | 允许修改 | 输出 |
 |---|---|---|---|---|
-| 总控路由 | 用户不确定应该起草、采纳、生成还是实现 | `axtp-protocol-workflow` 判断生命周期阶段并路由到正确 skill | 按被路由阶段决定 | 明确下一步 workflow |
+| 总控路由 | 用户不确定应该起草、采纳、修订、生成还是实现 | `axtp-protocol-workflow` 判断生命周期阶段并路由到正确 skill | 按被路由阶段决定 | 明确下一步 workflow |
 | 草案 | 大白话需求、架构草图、旧协议片段或评审意见 | `draft-business-protocol` 遍历 `docs/protocol/**` 和 legacy 线索，判断复用、修改或新增 domain.feature 草案 | `docs/protocol/**` 草案和待确认问题 | 可评审协议草案，带候选接口、字段、legacyRefs 和 `[REVIEW-*]` 标记 |
 | 采纳 | 内部评审确认后的草案 | `adopt-protocol-draft` 读取草案、specs 和现有 YAML，拒绝未确认 `[REVIEW-*]`，反向确认 08-13，固定草案状态，写入 YAML | `docs/protocol/**`、`docs/specs/08-13`、`registry/**`、`registry/domains/**` | formal proposal + YAML 机器事实源 |
+| 修订 | 已采纳或已生成的协议事实需要语义修正、字段删除、字段废弃、重命名或扩展 | `amend-adopted-protocol` 读取 adopted proposal、specs、YAML 和 generated 现状，判断兼容性，记录 amendment，修正 YAML 并重新生成 | `docs/protocol/**`、`docs/specs/08-13`、`registry/**`、`registry/domains/**`、Generator 生成产物 | amended proposal + 更新后的 YAML/生成物 |
 | 生成 | YAML 事实源已更新，需要刷新正式产物 | `generate-axtp-protocol` 从 YAML 运行 Generator pipeline 并验证输出 | 生成产物 | `protocol/axtp.protocol.yaml`、`docs/generated/*`、tooling/runtime generated 产物 |
 
-草案阶段不得写 registry YAML，不得直接生成最终协议；采纳阶段不得采纳 `[REVIEW-ASK]` 或 `[REVIEW-BLOCKER]` 标记的事实；生成阶段不得从 Markdown 推断新协议事实，只从 YAML 生成。
+草案阶段不得写 registry YAML，不得直接生成最终协议；采纳阶段不得采纳 `[REVIEW-ASK]` 或 `[REVIEW-BLOCKER]` 标记的事实；修订阶段不得绕过 adopted proposal 和 YAML 直接改 generated；生成阶段不得从 Markdown 推断新协议事实，只从 YAML 生成。
 
 采纳阶段也不应该靠人照着 Markdown 手填 YAML；应使用 `docs/dev/skills/adopt-protocol-draft/SKILL.md` 固化草案到 specs/YAML 的转译、编号、冲突检查和源级验证流程。
+
+已采纳协议的语义变更不应回到普通草案流程，也不应直接手改生成物；应使用 `docs/dev/skills/amend-adopted-protocol/SKILL.md` 记录修订依据、判断兼容性、修正 adopted proposal/specs/YAML，并重新运行 Generator。
 
 ## 使用规则
 
@@ -45,6 +56,7 @@ docs/generated/*、tooling/*、runtimes/*/generated/*
 - 未进入 migration approved 状态的旧协议材料，应先在本目录或交互式 skill 中完成 domain-feature 分类和待确认问题整理。
 - 不得从本目录直接生成 `protocol/axtp.protocol.yaml`；必须经过评审确认、08-13 反向确认、registry YAML，再由 `generate-axtp-protocol` 生成。
 - 研发只根据采纳后的 generated 产物开发和上架 feature，不依赖未采纳草案。
+- 已采纳协议如果要删除字段、收窄枚举/范围、改名、废弃或新增字段，必须先判断当前事实是 `draft/experimental` 还是 `mvp/stable`；draft 可按确认事实修正，stable/MVP 默认走 deprecate 或版本化替代。
 
 ## 采纳检查
 
