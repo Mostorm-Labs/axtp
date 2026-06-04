@@ -41,7 +41,7 @@ rpcEncoding(1) + rpcOp(1) + requestId(4)
 最小 JSON 调用：
 
 ```json
-{ "sid": "28378462323", "op": 7, "d": { "id": 1, "method": "device.getInfo" } }
+{ "sid": "28378462323", "op": 7, "d": { "id": 1, "method": "audio.getAlgorithmCapabilities" } }
 ```
 
 最小 Binary 调用：
@@ -50,8 +50,8 @@ rpcEncoding(1) + rpcOp(1) + requestId(4)
 Frame(payloadType=RPC)
   RPC Binary Header:
     rpcEncoding=BINARY, rpcOp=REQUEST, requestId=1,
-    methodOrEventId=device.getInfo, statusCode=SUCCESS, bodyEncoding=TLV8
-  body: TLV params
+    methodOrEventId=audio.getAlgorithmCapabilities, statusCode=SUCCESS, bodyEncoding=NONE
+  body: empty
 ```
 
 ---
@@ -245,9 +245,13 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
 ```json
 {
   "id": 1,
-  "method": "display.setBrightness",
+  "method": "audio.setAlgorithmConfig",
   "params": {
-    "value": 80
+    "config": {
+      "noiseSuppression": {
+        "level": 2
+      }
+    }
   }
 }
 ```
@@ -272,9 +276,13 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
   "op": 7,
   "d": {
     "id": 1,
-    "method": "display.setBrightness",
+    "method": "audio.setAlgorithmConfig",
     "params": {
-      "value": 80
+      "config": {
+        "noiseSuppression": {
+          "level": 2
+        }
+      }
     }
   }
 }
@@ -356,7 +364,13 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
       "code": 0
     },
     "result": {
-      "value": 80
+      "applyState": "applied",
+      "requiresAudioRestart": false,
+      "config": {
+        "noiseSuppression": {
+          "level": 2
+        }
+      }
     }
   }
 }
@@ -383,19 +397,26 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
 
 ```json
 {
-  "event": "display.brightnessChanged",
+  "event": "audio.algorithmConfigChanged",
   "intent": 1,
   "data": {
-    "value": 80,
-    "source": "local"
+    "reason": "user_request",
+    "applyState": "applied",
+    "requiresAudioRestart": false,
+    "config": {
+      "noiseSuppression": {
+        "level": 2
+      }
+    },
+    "changedFields": ["noiseSuppression.level"]
   }
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `event` | string | 是 | 事件名，PascalCase，对应 Registry eventId |
-| `intent` | uint32 | 是 | 订阅分类位，对应 Identify `eventSubscriptions` 位图中的某一位，客户端用于过滤 |
+| `event` | string | 是 | 事件名，`domain.eventName` 格式，对应 Registry eventId |
+| `intent` | uint32 | 是 | 订阅分类位，对应 Identify `eventMasks` 域级掩码中的某一位，客户端用于过滤 |
 | `data` | object | 否 | 事件数据，无数据时可省略 |
 
 Event 不携带 `id`（Binary 中 requestId 填 0）。
@@ -407,11 +428,18 @@ Event 不携带 `id`（Binary 中 requestId 填 0）。
   "sid": "28378462323",
   "op": 6,
   "d": {
-    "event": "display.brightnessChanged",
+    "event": "audio.algorithmConfigChanged",
     "intent": 1,
     "data": {
-      "value": 80,
-      "source": "local"
+      "reason": "user_request",
+      "applyState": "applied",
+      "requiresAudioRestart": false,
+      "config": {
+        "noiseSuppression": {
+          "level": 2
+        }
+      },
+      "changedFields": ["noiseSuppression.level"]
     }
   }
 }
@@ -427,8 +455,8 @@ Event 不携带 `id`（Binary 中 requestId 填 0）。
   "haltOnFailure": true,
   "executionType": 0,
   "requests": [
-    { "method": "display.setBrightness", "params": { "value": 80 } },
-    { "method": "SetDisplayContent", "params": { "content": "hello" } }
+    { "method": "audio.setAlgorithmConfig", "params": { "config": { "noiseSuppression": { "level": 2 } } } },
+    { "method": "audio.resetAlgorithmConfig", "params": { "items": ["noiseSuppression"] } }
   ]
 }
 ```
@@ -466,21 +494,21 @@ Event 不携带 `id`（Binary 中 requestId 填 0）。
 
 推荐动词：`get / set / list / open / close / start / stop / begin / end / verify / apply / abort / resume / subscribe / unsubscribe`
 
-示例：`device.getInfo / display.setBrightness / firmware.begin / stream.open`
+示例：`audio.getAlgorithmCapabilities / audio.getAlgorithmConfig / audio.setAlgorithmConfig / audio.resetAlgorithmConfig`
 
 ### 14.2 事件名
 
 格式：`domain.objectChanged / domain.actionCompleted / domain.actionFailed / domain.error`
 
-示例：`display.brightnessChanged / firmware.updateCompleted / stream.error`
+示例：`audio.algorithmConfigChanged / firmware.otaStateChanged / stream.errorReported`
 
 ### 14.3 与 Binary methodId/eventId 的映射
 
 方法名和事件名与 Binary 中的 uint16 ID 一一对应，由 Registry 统一管理：
 
 ```text
-"display.setBrightness"      ↔ methodId = 0x0602
-"display.brightnessChanged"  ↔ eventId  = 0x0607
+"audio.setAlgorithmConfig"       ↔ methodId = 0x0902
+"audio.algorithmConfigChanged"   ↔ eventId  = 0x0901
 ```
 
 ---
@@ -502,7 +530,7 @@ Application 层（RPC，所有模式）：
     → Identify (op=2)     Logical Client→Logical Server
     → Identified (op=3)   Logical Server→Logical Client，分配 sid
     → APP_READY
-    → capability.supportedMethods
+    → adopted business Request / Event
     → Request / Event / Reidentify
 ```
 
@@ -517,7 +545,7 @@ Hello 由 AXTP Logical Server 发送——即拥有并暴露 methods/events/stre
 
 WebSocket Unframed JSON 模式下，CONTROL 层不存在，Hello/Identify/Identified 是唯一的连接建立机制。Standard Framed 模式下，CONTROL OPEN/ACCEPT 先于 Hello/Identify 执行，两者不冲突。
 
-APP_READY 后，v1 Core 唯一强制能力发现入口是 `capability.supportedMethods`。该方法返回当前设备、当前固件、当前会话、当前鉴权状态下支持的 methodId 集合。完整 `capability.getAll` / `capability.query` / capability schema 属于 v2/P1 扩展，不作为 v1 Core 必选项。
+APP_READY 后，v1 Core 不强制任何业务 method。客户端以当前产品 generated registry 作为可调用 method 清单；若需要运行时能力发现，必须由已采纳业务草案显式定义对应查询 method。
 
 ---
 
@@ -559,6 +587,9 @@ Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [Bitmask: N B (Little-Endian)]
 | `0x04` | `0x0400-0x04FF` | `firmware.*` |
 | `0x05` | `0x0500-0x05FF` | `stream.*` |
 | `0x06` | `0x0600-0x06FF` | `display.*` |
+| `0x07` | `0x0700-0x07FF` | `camera.*` |
+| `0x08` | `0x0800-0x08FF` | `video.*` |
+| `0x09` | `0x0900-0x09FF` | `audio.*` |
 | `0x0A` | `0x0A00-0x0AFF` | `input.*` |
 | `0x0B` | `0x0B00-0x0BFF` | `output.*` |
 | `0x0C` | `0x0C00-0x0CFF` | `room.*` |
@@ -566,14 +597,13 @@ Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [Bitmask: N B (Little-Endian)]
 
 **高水位截断规则**：如果某域只用到 Bit 3，`MaskLen` 必须为 1，不得发送多余字节。
 
-**示例**：订阅 `display.*` 域的 Bit 0（brightnessChanged）和 `firmware.*` 域的 Bit 0/1（updateProgress/updateCompleted）：
+**示例**：订阅 `audio.*` 域的 Bit 0（audio.algorithmConfigChanged）：
 
 ```text
-eventMasks = "060101 040103"（去掉空格后为 "060101040103"）
+eventMasks = "090101"
 
 解析：
-  DomainId=0x06, MaskLen=1, Bitmask=0x01  → display.brightnessChanged (Bit 0)
-  DomainId=0x04, MaskLen=1, Bitmask=0x03  → firmware.updateProgress (Bit 0) + firmware.updateCompleted (Bit 1)
+  DomainId=0x09, MaskLen=1, Bitmask=0x01  → audio.algorithmConfigChanged (Bit 0)
 ```
 
 **设备端过滤（O(1) 判定）**：
@@ -600,21 +630,21 @@ MVP 阶段设备可采用"全量广播模式"：忽略 `eventMasks`，只要 App
 ## 17. RPC 与 STREAM 的协作
 
 ```text
-OTA:
-  RPC firmware.begin → 返回 streamId, profile=firmware.ota
+OTA（待 firmware.ota 草案采纳）:
+  RPC 已采纳建流方法 → 返回 streamId, profile=firmware.ota
   STREAM packet: streamId/seqId/cursor/data
-  RPC firmware.verify → 校验固件
-  RPC firmware.apply → 应用固件
+  RPC 已采纳校验方法 → 校验固件
+  RPC 已采纳安装方法 → 应用固件
 
-文件传输:
-  RPC file.beginTransfer → 返回 streamId
+文件传输（待 file.transfer 草案采纳）:
+  RPC 已采纳建流方法 → 返回 streamId
   STREAM packet: streamId/seqId/cursor/data
-  RPC file.endTransfer
+  RPC 已采纳完成方法
 
-视频预览:
-  RPC video.startPreview → 返回 streamId
+视频预览（待视频流草案采纳）:
+  RPC 已采纳建流方法 → 返回 streamId
   STREAM packet: streamId/seqId/cursor/data
-  RPC stream.close
+  RPC 已采纳停止方法
 ```
 
 ---
@@ -703,19 +733,19 @@ TLV 基本结构：`type(1B) + length(1B) + value(N)`，扩展长度格式见 16
 
 TLV 字段 ID 由 Method Registry 的 schema 定义，不在 RPC 协议中硬编码。fieldId 范围分配见 17《AXTP Schema Field Numbering》。
 
-示例（SetBrightness）：
+示例（简单 uint8 字段）：
 
 ```text
-JSON params: { "value": 80 }
-TLV body:    01 01 50
-             fieldId=0x01, length=1, value=80
+JSON params: { "level": 3 }
+TLV body:    01 01 03
+             fieldId=0x01, length=1, value=3
 ```
 
 ---
 
 ## 21. 完整示例
 
-### 21.1 SetBrightness（JSON）
+### 21.1 SetAlgorithmConfig（JSON）
 
 Request：
 
@@ -725,9 +755,13 @@ Request：
   "op": 7,
   "d": {
     "id": 1,
-    "method": "display.setBrightness",
+    "method": "audio.setAlgorithmConfig",
     "params": {
-      "value": 80
+      "config": {
+        "noiseSuppression": {
+          "level": 2
+        }
+      }
     }
   }
 }
@@ -746,7 +780,13 @@ Response 成功：
       "code": 0
     },
     "result": {
-      "value": 80
+      "applyState": "applied",
+      "requiresAudioRestart": false,
+      "config": {
+        "noiseSuppression": {
+          "level": 2
+        }
+      }
     }
   }
 }
@@ -763,108 +803,55 @@ Response 失败：
     "status": {
       "ok": false,
       "code": 603,
-      "msg": "Value out of range",
+      "msg": "noiseSuppression.level out of range",
       "details": {
-        "max": 100
+        "field": "noiseSuppression.level",
+        "max": 3
       }
     }
   }
 }
 ```
 
-### 21.2 BrightnessChanged（JSON Event）
+### 21.2 AlgorithmConfigChanged（JSON Event）
 
 ```json
 {
   "sid": "28378462323",
   "op": 6,
   "d": {
-    "event": "display.brightnessChanged",
+    "event": "audio.algorithmConfigChanged",
     "intent": 1,
     "data": {
-      "value": 80,
-      "source": "local"
+      "reason": "user_request",
+      "applyState": "applied",
+      "requiresAudioRestart": false,
+      "config": {
+        "noiseSuppression": {
+          "level": 2
+        }
+      },
+      "changedFields": ["noiseSuppression.level"]
     }
   }
 }
 ```
 
-### 21.3 SetBrightness（Binary）
+### 21.3 GetAlgorithmConfig（Binary，空选择器）
 
 ```text
 Request:
-02 07 01 00 00 00 02 06 00 00 01 01 01 50
-rpcEncoding=BINARY(2), rpcOp=Request(7), requestId=1, methodId=0x0602, statusCode=SUCCESS, bodyEncoding=TLV8
-body: fieldId=1, len=1, value=80
+02 07 01 00 00 00 01 09 00 00 00
+rpcEncoding=BINARY(2), rpcOp=Request(7), requestId=1, methodId=0x0901, statusCode=SUCCESS, bodyEncoding=NONE
+body: empty
 
 Response 成功:
-02 08 01 00 00 00 02 06 00 00 01 01 01 50
-rpcEncoding=BINARY(2), rpcOp=RequestResponse(8), requestId=1, methodId=0x0602, statusCode=SUCCESS, bodyEncoding=TLV8
-body: fieldId=1, len=1, value=80
+02 08 01 00 00 00 01 09 00 00 01 ...
+rpcEncoding=BINARY(2), rpcOp=RequestResponse(8), requestId=1, methodId=0x0901, statusCode=SUCCESS, bodyEncoding=TLV8
+body: TLV8 encoded AudioAlgorithmConfig, field layout comes from generated schema
 ```
 
-### 21.4 OpenStream（JSON）
-
-Request：
-
-```json
-{
-  "sid": "28378462323",
-  "op": 7,
-  "d": {
-    "id": 2,
-    "method": "stream.open",
-    "params": {
-      "profile": "firmware.ota",
-      "direction": "upload",
-      "totalSize": 1048576,
-      "sha256": "abc123..."
-    }
-  }
-}
-```
-
-Response：
-
-```json
-{
-  "sid": "28378462323",
-  "op": 8,
-  "d": {
-    "id": 2,
-    "status": {
-      "ok": true,
-      "code": 0
-    },
-    "result": {
-      "streamId": 33,
-      "profile": "firmware.ota",
-      "chunkSize": 512,
-      "ackMode": "stop_and_wait",
-      "cursorUnit": "byteOffset"
-    }
-  }
-}
-```
-
-### 21.5 FirmwareUpdateCompleted（JSON Event）
-
-```json
-{
-  "sid": "28378462323",
-  "op": 6,
-  "d": {
-    "event": "firmware.updateCompleted",
-    "intent": 4,
-    "data": {
-      "imageType": "mcu",
-      "version": "2.1.0"
-    }
-  }
-}
-```
-
-### 21.6 完整连接流程（JSON）
+### 21.4 完整连接流程（JSON）
 
 ```text
 [连接建立]
@@ -872,17 +859,17 @@ Server → Client:
   { "sid": "", "op": 0, "d": { "axtpVersion": "1.0.0", "rpcVersion": 1 } }
 
 Client → Server:
-  { "sid": "", "op": 2, "d": { "rpcVersion": 1, "eventMasks": "850101" } }
+  { "sid": "", "op": 2, "d": { "rpcVersion": 1, "eventMasks": "090101" } }
 
 Server → Client:
   { "sid": "28378462323", "op": 3, "d": { "negotiatedRpcVersion": 1 } }
 
 [业务调用]
 Client → Server:
-  { "sid": "28378462323", "op": 7, "d": { "id": 1, "method": "device.getInfo" } }
+  { "sid": "28378462323", "op": 7, "d": { "id": 1, "method": "audio.getAlgorithmConfig" } }
 
 Server → Client:
-  { "sid": "28378462323", "op": 8, "d": { "id": 1, "status": { "ok": true, "code": 0 }, "result": { "model": "AX100", "version": "1.0.0" } } }
+  { "sid": "28378462323", "op": 8, "d": { "id": 1, "status": { "ok": true, "code": 0 }, "result": { "noiseSuppression": { "level": 2 } } } }
 
 [断线重连]
 Client → Server:
@@ -985,19 +972,17 @@ method ↔ methodId 映射 / event ↔ eventId 映射
 业务 result / status.ok / status.code / status.msg / status.details 结构
 ```
 
-### 26.2 MVP 方法范围
+### 26.2 当前生成业务方法范围
 
 ```text
-device.getInfo / capability.supportedMethods
-display.getBrightness / display.setBrightness
-firmware.begin / firmware.end / firmware.verify / firmware.apply
+audio.getAlgorithmCapabilities / audio.getAlgorithmConfig
+audio.setAlgorithmConfig / audio.resetAlgorithmConfig
 ```
 
-### 26.3 MVP 事件范围
+### 26.3 当前生成业务事件范围
 
 ```text
-display.brightnessChanged
-firmware.updateProgress / firmware.updateCompleted / firmware.updateFailed
+audio.algorithmConfigChanged
 ```
 
 ### 26.4 可暂不实现

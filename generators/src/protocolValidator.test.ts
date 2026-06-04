@@ -25,21 +25,20 @@ describe("protocol definition loader", () => {
   it("loads and validates the current protocol definition", async () => {
     const model = await loadCurrentProtocol();
     expect(model.protocol.name).toBe("AXTP");
-    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 14 methods checked");
+    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 4 methods checked");
   });
 });
 
 describe("protocol source pipeline", () => {
   it("loads registry/domain sources and builds a valid protocol definition", async () => {
     const sources = await loadProtocolSources(repoRoot);
-    expect(validateSpec(sources)).toContain("[OK] method_registry.yaml: 14 methods checked");
-    expect(sources.methods.find((method) => method.name === "stream.open")?.requestSchema).toBe("StreamOpenRequest");
-    expect(sources.methods.find((method) => method.name === "network.getApInfo")?.responseSchema).toBe("NetworkGetApInfoResponse");
+    expect(validateSpec(sources)).toContain("[OK] method_registry.yaml: 4 methods checked");
+    expect(sources.methods.find((method) => method.name === "audio.setAlgorithmConfig")?.requestSchema).toBe("AudioSetAlgorithmConfigRequest");
+    expect(sources.methods.find((method) => method.name === "audio.getAlgorithmCapabilities")?.responseSchema).toBe("AudioGetAlgorithmCapabilitiesResponse");
     const model = buildProtocolDefinition(sources);
-    expect(model.methods.find((method) => method.name === "firmware.begin")?.request.type).toBe("FirmwareBeginRequest");
-    expect(model.methods.find((method) => method.name === "stream.open")?.response.type).toBe("StreamOpenResponse");
-    expect(model.methods.find((method) => method.name === "network.getApInfo")?.response.type).toBe("NetworkGetApInfoResponse");
-    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 14 methods checked");
+    expect(model.methods.find((method) => method.name === "audio.getAlgorithmConfig")?.response.type).toBe("AudioAlgorithmConfig");
+    expect(model.methods.find((method) => method.name === "audio.resetAlgorithmConfig")?.response.type).toBe("AudioSetAlgorithmConfigResponse");
+    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 4 methods checked");
   });
 
   it("rejects deprecated top-level domain YAML sources", async () => {
@@ -67,15 +66,15 @@ describe("protocol definition validator", () => {
     expect(() => validateProtocolDefinition(model)).toThrow(/duplicate eventId/);
   });
 
-  it("rejects non-contiguous method bit offsets in the same domain", async () => {
+  it("rejects non-contiguous method bitOffset values in the same domain", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    model.methods.find((method) => method.name === "display.setBrightness")!.bitOffset = 2;
+    model.methods.find((method) => method.name === "audio.resetAlgorithmConfig")!.bitOffset = 8;
     expect(() => validateProtocolDefinition(model)).toThrow(/bitOffset must be contiguous from 0/);
   });
 
-  it("rejects non-contiguous event bit offsets in the same domain", async () => {
+  it("rejects non-contiguous event bitOffset values in the same domain", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    model.events.find((event) => event.name === "firmware.updateCompleted")!.bitOffset = 3;
+    model.events.find((event) => event.name === "audio.algorithmConfigChanged")!.bitOffset = 3;
     expect(() => validateProtocolDefinition(model)).toThrow(/bitOffset must be contiguous from 0/);
   });
 
@@ -99,21 +98,24 @@ describe("protocol definition validator", () => {
 
   it("rejects old capability method mask derivation names", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    const response = model.schemas.find((schema) => schema.name === "CapabilitySupportedMethodsResponse")!;
-    response.fields.find((field) => field.name === "methodMasks")!.derivedFrom = "methods.bitOffset";
+    model.schemas.push({
+      name: "CapabilitySupportedMethodsResponse",
+      kind: "object",
+      fields: [{ fieldId: 0x01, name: "methodMasks", type: "bytes", required: true, derivedFrom: "methods.bitOffset" }]
+    });
     expect(() => validateProtocolDefinition(model)).toThrow(/methods\[\]\.bitOffset/);
   });
 
   it("rejects non-Empty empty request or response types", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    model.schemas.push({ name: "DeviceGetInfoRequest", kind: "object", fields: [] });
-    model.methods.find((method) => method.name === "device.getInfo")!.request.type = "DeviceGetInfoRequest";
+    model.schemas.push({ name: "AudioEmptyButNamedRequest", kind: "object", fields: [] });
+    model.methods.find((method) => method.name === "audio.getAlgorithmConfig")!.request.type = "AudioEmptyButNamedRequest";
     expect(() => validateProtocolDefinition(model)).toThrow(/empty request must use Empty/);
   });
 
   it("rejects duplicate type field ids", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    const response = model.schemas.find((schema) => schema.name === "DeviceGetInfoResponse")!;
+    const response = model.schemas.find((schema) => schema.name === "AudioSetAlgorithmConfigResponse")!;
     response.fields[1].fieldId = response.fields[0].fieldId;
     expect(() => validateProtocolDefinition(model)).toThrow(/duplicate fieldId/);
   });
@@ -152,27 +154,27 @@ describe("protocol definition validator", () => {
 
   it("rejects hid-64 profile references", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    model.profiles.find((profile) => profile.name === "AXTP-HID-MEDIA")!.transportProfiles = ["AXTP-HID-64"];
+    model.profiles.find((profile) => profile.name === "AXTP-MVP-HID")!.transportProfiles = ["AXTP-HID-64"];
     expect(() => validateProtocolDefinition(model)).toThrow(/AXTP-USB-HID/);
   });
 
   it("rejects missing method type references", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    const method = model.methods.find((item) => item.name === "display.setBrightness")!;
+    const method = model.methods.find((item) => item.name === "audio.setAlgorithmConfig")!;
     method.request.type = "MissingRequest";
     expect(() => validateProtocolDefinition(model)).toThrow(/missing type: MissingRequest/);
   });
 
   it("rejects missing method error references", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    model.methods.find((item) => item.name === "display.setBrightness")!.errors.push("MISSING_ERROR");
+    model.methods.find((item) => item.name === "audio.setAlgorithmConfig")!.errors.push("MISSING_ERROR");
     expect(() => validateProtocolDefinition(model)).toThrow(/missing error: MISSING_ERROR/);
   });
 
   it("rejects missing method event references", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    model.methods.find((item) => item.name === "display.setBrightness")!.events.push("display.missingEvent");
-    expect(() => validateProtocolDefinition(model)).toThrow(/missing event: display.missingEvent/);
+    model.methods.find((item) => item.name === "audio.setAlgorithmConfig")!.events.push("audio.missingEvent");
+    expect(() => validateProtocolDefinition(model)).toThrow(/missing event: audio.missingEvent/);
   });
 
   it("rejects missing profile method references", async () => {
@@ -256,8 +258,8 @@ describe("protocol definition emitters", () => {
       expect(markdown).toContain("Logical Server sends Hello");
       expect(markdown).not.toContain("AXTP-HID-64");
       expect(markdown).not.toContain("Compact Header");
-      expect(markdown).toContain("## firmware Methods");
-      expect(markdown).toContain("### firmware.begin");
+      expect(markdown).toContain("## audio Methods");
+      expect(markdown).toContain("### audio.setAlgorithmConfig");
       expect(markdown).toContain("#### Request Fields");
       expect(markdown).toContain("#### Response Fields");
       expect(markdown).toContain("#### Payload Fields");

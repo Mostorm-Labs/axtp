@@ -117,7 +117,8 @@ int main() {
         rpc.encoding = axtp::RpcEncoding::Tlv;
         rpc.op = axtp::RpcOp::Request;
         rpc.requestId = 7;
-        rpc.methodOrEventId = static_cast<std::uint16_t>(axtp::MethodId::DeviceGetInfo);
+        rpc.methodOrEventId =
+            static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmConfig);
         rpc.statusCode = axtp::ErrorCode::Success;
         rpc.bodyEncoding = axtp::RpcBodyEncoding::Tlv8;
         rpc.body = {0x10, 0x20};

@@ -12,18 +12,8 @@
 - [Capability Discovery](#capability-discovery)
 - [Methods](#methods)
   - [audio Methods](#audio-methods)
-  - [capability Methods](#capability-methods)
-  - [device Methods](#device-methods)
-  - [display Methods](#display-methods)
-  - [firmware Methods](#firmware-methods)
-  - [network Methods](#network-methods)
-  - [stream Methods](#stream-methods)
 - [Events](#events)
   - [audio Events](#audio-events)
-  - [display Events](#display-events)
-  - [firmware Events](#firmware-events)
-  - [network Events](#network-events)
-  - [stream Events](#stream-events)
 - [Additional Types](#additional-types)
 - [Errors Reference](#errors-reference)
 - [Profiles Reference](#profiles-reference)
@@ -33,12 +23,6 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 4 | 1 |
-| capability | 1 | 0 |
-| device | 1 | 0 |
-| display | 2 | 1 |
-| firmware | 4 | 3 |
-| network | 1 | 1 |
-| stream | 1 | 2 |
 
 ## Overview
 
@@ -91,7 +75,7 @@ Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP
 | Hello | Server | Client | - | Announce RPC session rules, protocol version and authentication requirements. |
 | Identify | Client | Server | - | Submit client identity and optional authentication data. |
 | Identified | Server | Client | - | Confirm that the RPC session is ready. |
-| capability.supportedMethods | Client | Server | - | Query the method bitmap available to the current session. |
+| Load Adopted Registry | Client | Server | - | Use the generated protocol registry to select adopted business methods for the current product. |
 
 ### Optional Lifecycle Extensions
 
@@ -145,7 +129,7 @@ This profile is a formal RPC-only path. It skips the Frame and CONTROL layers, u
 - Wait for Hello from the Logical Server.
 - Send Identify using the JSON sid/op/d envelope.
 - Wait for Identified.
-- Query capability.supportedMethods.
+- Load generated protocol registry for the current product build.
 - Start JSON RPC requests and receive JSON events.
 
 | WebSocket Unframed JSON | Standard Framed AXTP |
@@ -170,19 +154,13 @@ Every Standard Framed AXTP Frame carries exactly one payload. WebSocket Unframed
 | `RPC` | 0x02 | 11B | Binary request, response, event and error payload. |
 | `STREAM` | 0x03 | 16B | Chunk-oriented data plane payload. |
 
-## Capability Discovery
+## Generated Method Index
 
-Capability discovery is exposed through `capability.supportedMethods`. The `CapabilitySupportedMethodsResponse.methodMasks` field is derived from `methods[].bitOffset` within each method domain.
+The generated registry groups methods by domain. Each method keeps a stable `bitOffset` within its domain for generated indexes, test vectors, and any adopted runtime discovery method.
 
 | Domain | Methods |
 | ---- | ---- |
 | audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig |
-| capability | 0: capability.supportedMethods |
-| device | 0: device.getInfo |
-| display | 0: display.getBrightness<br>1: display.setBrightness |
-| firmware | 0: firmware.begin<br>1: firmware.end<br>2: firmware.verify<br>3: firmware.apply |
-| network | 0: network.getApInfo |
-| stream | 0: stream.open |
 
 # Methods
 
@@ -203,8 +181,8 @@ Return the current effective configuration for supported audio algorithm objects
 
 - Method ID: `0x0901`
 - Domain: `audio`
-- Bit Offset: `1`
-- Status: `draft`
+- bitOffset: `1`
+- Status: `stable`
 - Added in v1.0.0
 - Encodings: `json`, `tlv`
 - Required Capabilities: `audio.algorithm`
@@ -242,8 +220,8 @@ Partially update one or more audio algorithm configuration objects atomically.
 
 - Method ID: `0x0902`
 - Domain: `audio`
-- Bit Offset: `2`
-- Status: `draft`
+- bitOffset: `2`
+- Status: `stable`
 - Added in v1.0.0
 - Encodings: `json`, `tlv`
 - Required Capabilities: `audio.algorithm`
@@ -276,8 +254,8 @@ Return supported audio algorithm objects, fields, defaults, ranges, units, and u
 
 - Method ID: `0x090D`
 - Domain: `audio`
-- Bit Offset: `0`
-- Status: `draft`
+- bitOffset: `0`
+- Status: `stable`
 - Added in v1.0.0
 - Encodings: `json`, `tlv`
 - Required Capabilities: `audio.algorithm`
@@ -310,8 +288,8 @@ Reset all, selected, or selected-field audio algorithm configuration to declared
 
 - Method ID: `0x090E`
 - Domain: `audio`
-- Bit Offset: `3`
-- Status: `draft`
+- bitOffset: `3`
+- Status: `stable`
 - Added in v1.0.0
 - Encodings: `json`, `tlv`
 - Required Capabilities: `audio.algorithm`
@@ -338,422 +316,6 @@ Type: `AudioSetAlgorithmConfigResponse`
 
 ---
 
-## capability Methods
-
-### Methods in this domain
-
-- [capability.supportedMethods](#capabilitysupportedmethods)
-
----
-
-### capability.supportedMethods
-
-Return the per-domain method bitmap supported by the current session.
-
-- Method ID: `0x0201`
-- Domain: `capability`
-- Bit Offset: `0`
-- Status: `stable`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `capability.supportedMethods`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `RPC_METHOD_NOT_FOUND`
-
-#### Request Fields
-
-Type: `Empty`
-
-No fields.
-
-#### Response Fields
-
-Type: `CapabilitySupportedMethodsResponse`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| methodMaskCount | UInt16 | 0x01 | - | None | N/A |
-| methodMasks | Bytes | 0x02 | - | derivedFrom=methods[].bitOffset | N/A |
-
----
-
-## device Methods
-
-### Methods in this domain
-
-- [device.getInfo](#devicegetinfo)
-
----
-
-### device.getInfo
-
-Return static device identity and firmware metadata.
-
-- Method ID: `0x0101`
-- Domain: `device`
-- Bit Offset: `0`
-- Status: `stable`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `device.info`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `RPC_METHOD_NOT_FOUND`, `RPC_PARAM_INVALID`
-
-#### Request Fields
-
-Type: `Empty`
-
-No fields.
-
-#### Response Fields
-
-Type: `DeviceGetInfoResponse`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?vendor | String | 0x01 | - | maxLength=32 | Omit if not used. |
-| ?product | String | 0x02 | - | maxLength=32 | Omit if not used. |
-| ?firmwareVersion | String | 0x03 | - | maxLength=32 | Omit if not used. |
-| ?serialNumber | String | 0x04 | - | maxLength=64 | Omit if not used. |
-
----
-
-## display Methods
-
-### Methods in this domain
-
-- [display.getBrightness](#displaygetbrightness)
-- [display.setBrightness](#displaysetbrightness)
-
----
-
-### display.getBrightness
-
-Read the current display brightness percentage.
-
-- Method ID: `0x0601`
-- Domain: `display`
-- Bit Offset: `0`
-- Status: `stable`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `display.brightness`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `RPC_METHOD_NOT_FOUND`
-
-#### Request Fields
-
-Type: `Empty`
-
-No fields.
-
-#### Response Fields
-
-Type: `DisplayGetBrightnessResponse`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| value | UInt8 | 0x01 | - | min=0, max=100 | N/A |
-
----
-
-### display.setBrightness
-
-Set the display brightness and optionally request a transition duration.
-
-- Method ID: `0x0602`
-- Domain: `display`
-- Bit Offset: `1`
-- Status: `stable`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `display.brightness`
-- Possible Events: `display.brightnessChanged`
-- Possible Errors: `SUCCESS`, `RPC_PARAM_INVALID`, `BUSY`
-
-#### Request Fields
-
-Type: `DisplaySetBrightnessRequest`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| value | UInt8 | 0x01 | - | min=0, max=100 | N/A |
-| ?transitionMs | UInt16 | 0x02 | - | min=0, max=60000 | Omit if not used. |
-
-#### Response Fields
-
-Type: `Empty`
-
-No fields.
-
----
-
-## firmware Methods
-
-### Methods in this domain
-
-- [firmware.begin](#firmwarebegin)
-- [firmware.end](#firmwareend)
-- [firmware.verify](#firmwareverify)
-- [firmware.apply](#firmwareapply)
-
----
-
-### firmware.begin
-
-Begin a firmware OTA transfer and allocate the STREAM context.
-
-- Method ID: `0x0402`
-- Domain: `firmware`
-- Bit Offset: `0`
-- Status: `stable`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `firmware.ota`
-- Possible Events: `firmware.updateProgress`
-- Possible Errors: `SUCCESS`, `RPC_PARAM_INVALID`, `BUSY`
-
-#### Request Fields
-
-Type: `FirmwareBeginRequest`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| imageType | Enum | 0x01 | Firmware image type. | None | N/A |
-| imageSize | UInt64 | 0x02 | Full firmware image size in bytes. | None | N/A |
-| imageVersion | String | 0x03 | Target firmware version. | maxLength=32 | N/A |
-| verifyType | String | 0x04 | Object-level verification algorithm such as md5, crc32 or sha256. | maxLength=16 | N/A |
-| verifyValue | String | 0x05 | Hex verification value for the full firmware image. | maxLength=64 | N/A |
-| ?chunkSizeHint | UInt16 | 0x06 | Preferred STREAM chunk size in bytes. | None | Omit if not used. |
-| ?windowSizeHint | UInt16 | 0x07 | Preferred stream-layer send window. | None | Omit if not used. |
-| ?flags | UInt16 | 0x08 | OTA behavior flags such as resume or force-update hints. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `FirmwareBeginResponse`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| transferId | UInt32 | 0x01 | OTA transfer identifier. | None | N/A |
-| streamId | UInt32 | 0x02 | STREAM data channel identifier. | None | N/A |
-| acceptedOffset | UInt64 | 0x03 | First byte offset the sender should transmit. | None | N/A |
-| chunkSize | UInt16 | 0x04 | Negotiated STREAM chunk size in bytes. | None | N/A |
-| windowSize | UInt16 | 0x05 | Negotiated stream-layer send window. | None | N/A |
-| ?resumeToken | Bytes | 0x06 | Opaque resume token. | maxLength=32 | Omit if not used. |
-| otaState | Enum | 0x07 | Current OTA state. | None | N/A |
-| profile | String | 0x08 | Bound Stream Profile, usually firmware.ota. | maxLength=32 | N/A |
-| ackMode | Enum | 0x09 | Stream-layer reliability mode. | None | N/A |
-| cursorUnit | Enum | 0x0A | Cursor unit used by STREAM packets, usually byteOffset. | None | N/A |
-| ?maxDataSize | UInt16 | 0x0B | Maximum STREAM data bytes per packet. | None | Omit if not used. |
-
----
-
-### firmware.end
-
-Finish sending firmware data for the active OTA stream.
-
-- Method ID: `0x0403`
-- Domain: `firmware`
-- Bit Offset: `1`
-- Status: `stable`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `firmware.ota`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `BUSY`
-
-#### Request Fields
-
-Type: `FirmwareEndRequest`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| transferId | UInt32 | 0x01 | OTA transfer identifier. | None | N/A |
-| ?totalBytesSent | UInt64 | 0x02 | Total firmware bytes sent by the host. | None | Omit if not used. |
-| ?totalChunks | UInt32 | 0x03 | Total STREAM chunks sent by the host. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `FirmwareEndResponse`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| receivedBytes | UInt64 | 0x01 | Total bytes accepted by the device. | None | N/A |
-| ?receivedChunks | UInt32 | 0x02 | Total chunks accepted by the device. | None | Omit if not used. |
-| otaState | Enum | 0x03 | Current OTA state. | None | N/A |
-
----
-
-### firmware.verify
-
-Verify the transferred firmware object before applying it.
-
-- Method ID: `0x0404`
-- Domain: `firmware`
-- Bit Offset: `2`
-- Status: `stable`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `firmware.ota`
-- Possible Events: `firmware.updateCompleted`, `firmware.updateFailed`
-- Possible Errors: `SUCCESS`, `STREAM_CRC_ERROR`, `BUSY`
-
-#### Request Fields
-
-Type: `FirmwareVerifyRequest`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| transferId | UInt32 | 0x01 | OTA transfer identifier. | None | N/A |
-
-#### Response Fields
-
-Type: `FirmwareVerifyResponse`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| verifyResult | Enum | 0x01 | Verification result for the transferred image. | None | N/A |
-| otaState | Enum | 0x02 | Current OTA state. | None | N/A |
-
----
-
-### firmware.apply
-
-Apply a verified firmware image.
-
-- Method ID: `0x0405`
-- Domain: `firmware`
-- Bit Offset: `3`
-- Status: `stable`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `firmware.ota`
-- Possible Events: `firmware.updateCompleted`, `firmware.updateFailed`
-- Possible Errors: `SUCCESS`, `BUSY`
-
-#### Request Fields
-
-Type: `FirmwareApplyRequest`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| transferId | UInt32 | 0x01 | OTA transfer identifier. | None | N/A |
-| applyMode | Enum | 0x02 | Apply mode such as APPLY_NOW, APPLY_ON_REBOOT or STAGE_ONLY. | None | N/A |
-
-#### Response Fields
-
-Type: `FirmwareApplyResponse`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| otaState | Enum | 0x01 | Current OTA state. | None | N/A |
-| rebootRequired | Boolean | 0x02 | Whether applying the image requires reboot. | None | N/A |
-
----
-
-## network Methods
-
-### Methods in this domain
-
-- [network.getApInfo](#networkgetapinfo)
-
----
-
-### network.getApInfo
-
-Return information about the device-hosted SoftAP.
-
-- Method ID: `0x0E07`
-- Domain: `network`
-- Bit Offset: `0`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.softAp`
-- Possible Events: `network.apInfoChanged`
-- Possible Errors: `SUCCESS`, `RPC_METHOD_NOT_FOUND`, `CAPABILITY_METHOD_UNSUPPORTED`, `NOT_SUPPORTED`, `INVALID_STATE`
-
-#### Request Fields
-
-Type: `Empty`
-
-No fields.
-
-#### Response Fields
-
-Type: `NetworkGetApInfoResponse`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| enabled | Boolean | 0x01 | Whether the device-hosted SoftAP is currently enabled. | None | N/A |
-| ?ssid | String | 0x02 | SoftAP SSID advertised by the device. | maxLength=32 | Omit if not used. |
-| ?bssid | String | 0x03 | SoftAP BSSID or MAC address in colon-separated form. | maxLength=17 | Omit if not used. |
-| ?band | Enum | 0x04 | SoftAP radio band, such as 2.4GHz, 5GHz or 6GHz. | None | Omit if not used. |
-| ?channel | UInt16 | 0x05 | Wi-Fi channel used by the SoftAP. | min=1, max=233 | Omit if not used. |
-| ?security | Enum | 0x06 | SoftAP security mode, such as open, wpa2_psk or wpa3_sae. | None | Omit if not used. |
-| ?ipAddress | String | 0x07 | IPv4 or IPv6 address assigned to the device on the SoftAP interface. | maxLength=45 | Omit if not used. |
-| ?clientCount | UInt16 | 0x08 | Number of clients currently associated with the SoftAP. | None | Omit if not used. |
-
----
-
-## stream Methods
-
-### Methods in this domain
-
-- [stream.open](#streamopen)
-
----
-
-### stream.open
-
-Open an AXTP STREAM media channel over USB HID High Speed using media.video or media.audio, without UVC or UAC.
-
-- Method ID: `0x0501`
-- Domain: `stream`
-- Bit Offset: `0`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `stream.hidMedia`
-- Possible Events: `stream.opened`, `stream.error`
-- Possible Errors: `SUCCESS`, `BUSY`, `RPC_PARAM_INVALID`, `MEDIA_SOURCE_NOT_FOUND`, `MEDIA_SOURCE_UNAVAILABLE`, `MEDIA_CODEC_UNSUPPORTED`, `MEDIA_RESOLUTION_UNSUPPORTED`, `MEDIA_FRAMERATE_UNSUPPORTED`, `MEDIA_STREAM_START_FAILED`
-
-#### Request Fields
-
-Type: `StreamOpenRequest`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| profile | String | 0x01 | Stream Profile name. For this method use media.video or media.audio. | maxLength=32 | N/A |
-| transportProfile | String | 0x02 | Transport Profile name. HID media streams use AXTP-USB-HID. | maxLength=32 | N/A |
-| direction | Enum | 0x03 | Stream direction; values are device_to_host, host_to_device, or bidirectional. | None | N/A |
-| mediaKind | Enum | 0x04 | Media kind carried by this stream; values are video or audio. | None | N/A |
-| ?sourceId | UInt16 | 0x05 | Device-local media source identifier. | None | Omit if not used. |
-| codec | String | 0x06 | Codec or sample format, for example h264, mjpeg, pcm_s16le, or opus. | maxLength=32 | N/A |
-| ?width | UInt16 | 0x07 | Video width in pixels. Required for video streams when not implied by sourceId. | None | Omit if not used. |
-| ?height | UInt16 | 0x08 | Video height in pixels. Required for video streams when not implied by sourceId. | None | Omit if not used. |
-| ?frameRate | UInt16 | 0x09 | Video frame rate in frames per second. | None | Omit if not used. |
-| ?sampleRate | UInt32 | 0x0A | Audio sample rate in Hz. | None | Omit if not used. |
-| ?channelCount | UInt8 | 0x0B | Number of audio channels. | None | Omit if not used. |
-| ?chunkSizeHint | UInt16 | 0x0C | Preferred STREAM data bytes per Standard Frame after the 16B STREAM header. | None | Omit if not used. |
-| ?windowSizeHint | UInt16 | 0x0D | Preferred stream flow-control window in chunks. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `StreamOpenResponse`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM channel identifier bound to the selected Stream Profile. | None | N/A |
-| profile | String | 0x02 | Accepted Stream Profile name. | maxLength=32 | N/A |
-| transportProfile | String | 0x03 | Accepted Transport Profile name. | maxLength=32 | N/A |
-| chunkSize | UInt16 | 0x04 | STREAM data bytes to place in each Standard Frame after the 16B STREAM header. | None | N/A |
-| windowSize | UInt16 | 0x05 | Negotiated stream flow-control window in chunks. | None | N/A |
-| ackMode | Enum | 0x06 | Stream acknowledgement mode, such as best_effort or stop_and_wait. | None | N/A |
-| cursorUnit | Enum | 0x07 | Cursor unit used in the 64-bit STREAM cursor, usually timestampUs for media streams. | None | N/A |
-
----
-
 # Events
 
 ## audio Events
@@ -770,8 +332,8 @@ Emitted when audio algorithm configuration changes after set, reset, profile, re
 
 - Event ID: `0x0901`
 - Domain: `audio`
-- Bit Offset: `0`
-- Status: `draft`
+- bitOffset: `0`
+- Status: `stable`
 - Severity: `info`
 - Added in v1.0.0
 - Trigger: `audio.setAlgorithmConfig`, `audio.resetAlgorithmConfig`, `profile changed`, `factory reset`, `restore config`, `device policy`
@@ -788,217 +350,6 @@ Type: `AudioAlgorithmConfigChangedEvent`
 | requiresAudioRestart | Boolean | 0x03 | Whether the change requires restarting the audio link or rebuilding the audio pipeline. | None | N/A |
 | config | AudioAlgorithmConfig | 0x04 | Changed or affected algorithm configuration values. | None | N/A |
 | ?changedFields | Bytes | 0x05 | Optional JSON array of changed field paths such as noiseSuppression.level. | maxLength=256 | Omit if not used. |
-
----
-
-## display Events
-
-### Events in this domain
-
-- [display.brightnessChanged](#displaybrightnesschanged)
-
----
-
-### display.brightnessChanged
-
-Emitted when display brightness changes.
-
-- Event ID: `0x0607`
-- Domain: `display`
-- Bit Offset: `0`
-- Status: `stable`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `display.setBrightness`, `device_local_change`
-- Required Capabilities: `display.brightness`
-
-#### Payload Fields
-
-Type: `DisplayBrightnessChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| value | UInt8 | 0x01 | - | min=0, max=100 | N/A |
-| ?previousValue | UInt8 | 0x02 | - | min=0, max=100 | Omit if not used. |
-
----
-
-## firmware Events
-
-### Events in this domain
-
-- [firmware.updateProgress](#firmwareupdateprogress)
-- [firmware.updateCompleted](#firmwareupdatecompleted)
-- [firmware.updateFailed](#firmwareupdatefailed)
-
----
-
-### firmware.updateProgress
-
-Emitted while firmware OTA transfer or processing advances.
-
-- Event ID: `0x0402`
-- Domain: `firmware`
-- Bit Offset: `0`
-- Status: `stable`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `firmware.begin`, `stream.ota.chunk`
-- Required Capabilities: `firmware.ota`
-
-#### Payload Fields
-
-Type: `FirmwareUpdateProgressEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| transferId | UInt32 | 0x01 | - | None | N/A |
-| percent | UInt8 | 0x02 | - | min=0, max=100 | N/A |
-
----
-
-### firmware.updateCompleted
-
-Emitted when firmware update processing completes successfully.
-
-- Event ID: `0x0403`
-- Domain: `firmware`
-- Bit Offset: `1`
-- Status: `stable`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `firmware.verify`, `firmware.apply`
-- Required Capabilities: `firmware.ota`
-
-#### Payload Fields
-
-Type: `FirmwareUpdateCompletedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?version | String | 0x01 | - | maxLength=32 | Omit if not used. |
-
----
-
-### firmware.updateFailed
-
-Emitted when firmware update processing fails.
-
-- Event ID: `0x0404`
-- Domain: `firmware`
-- Bit Offset: `2`
-- Status: `stable`
-- Severity: `error`
-- Added in v1.0.0
-- Trigger: `firmware.verify`, `firmware.apply`, `stream.error`
-- Required Capabilities: `firmware.ota`
-
-#### Payload Fields
-
-Type: `FirmwareUpdateFailedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| errorCode | UInt16 | 0x01 | - | None | N/A |
-| ?message | String | 0x02 | - | maxLength=96 | Omit if not used. |
-
----
-
-## network Events
-
-### Events in this domain
-
-- [network.apInfoChanged](#networkapinfochanged)
-
----
-
-### network.apInfoChanged
-
-Emitted when the device-hosted SoftAP state or visible AP information changes.
-
-- Event ID: `0x0E01`
-- Domain: `network`
-- Bit Offset: `0`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `network.getApInfo`, `SoftAP state changed`
-- Required Capabilities: `network.softAp`
-
-#### Payload Fields
-
-Type: `NetworkApInfoChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| enabled | Boolean | 0x01 | Whether the device-hosted SoftAP is currently enabled. | None | N/A |
-| ?ssid | String | 0x02 | SoftAP SSID advertised by the device. | maxLength=32 | Omit if not used. |
-| ?bssid | String | 0x03 | SoftAP BSSID or MAC address in colon-separated form. | maxLength=17 | Omit if not used. |
-| ?band | Enum | 0x04 | SoftAP radio band, such as 2.4GHz, 5GHz or 6GHz. | None | Omit if not used. |
-| ?channel | UInt16 | 0x05 | Wi-Fi channel used by the SoftAP. | min=1, max=233 | Omit if not used. |
-| ?security | Enum | 0x06 | SoftAP security mode, such as open, wpa2_psk or wpa3_sae. | None | Omit if not used. |
-| ?ipAddress | String | 0x07 | IPv4 or IPv6 address assigned to the device on the SoftAP interface. | maxLength=45 | Omit if not used. |
-| ?clientCount | UInt16 | 0x08 | Number of clients currently associated with the SoftAP. | None | Omit if not used. |
-
----
-
-## stream Events
-
-### Events in this domain
-
-- [stream.opened](#streamopened)
-- [stream.error](#streamerror)
-
----
-
-### stream.opened
-
-Emitted after a STREAM media channel is opened and bound to a streamId.
-
-- Event ID: `0x0501`
-- Domain: `stream`
-- Bit Offset: `0`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `stream.open`
-- Required Capabilities: `stream.hidMedia`
-
-#### Payload Fields
-
-Type: `StreamOpenedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | Opened STREAM channel identifier. | None | N/A |
-| profile | String | 0x02 | Bound Stream Profile name. | maxLength=32 | N/A |
-| transportProfile | String | 0x03 | Bound Transport Profile name. | maxLength=32 | N/A |
-| mediaKind | Enum | 0x04 | Media kind carried by the stream; values are video or audio. | None | N/A |
-
----
-
-### stream.error
-
-Emitted when a STREAM media channel fails or cannot continue.
-
-- Event ID: `0x0503`
-- Domain: `stream`
-- Bit Offset: `1`
-- Status: `draft`
-- Severity: `error`
-- Added in v1.0.0
-- Trigger: `stream.open`, `stream runtime`
-- Required Capabilities: `stream.hidMedia`
-
-#### Payload Fields
-
-Type: `StreamErrorEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?streamId | UInt32 | 0x01 | STREAM channel identifier, absent if the failure happened before allocation. | None | Omit if not used. |
-| errorCode | UInt16 | 0x02 | AXTP ErrorCode value describing the stream failure. | None | N/A |
-| ?message | String | 0x03 | Optional diagnostic text. | maxLength=128 | Omit if not used. |
 
 ---
 
@@ -1307,28 +658,11 @@ Kind: `object`
 
 ---
 
-## FirmwareOtaCapability
+## Empty
 
 Kind: `object`
 
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| maxImageSize | UInt32 | 0x01 | - | None | N/A |
-| maxChunkSize | UInt16 | 0x02 | - | None | N/A |
-
----
-
-## StreamHidMediaCapability
-
-Describes HID-backed media STREAM support.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| transportProfile | String | 0x01 | Supported HID Transport Profile, usually AXTP-USB-HID. | maxLength=32 | N/A |
-| maxStreamCount | UInt8 | 0x02 | Maximum simultaneously opened media streams. | None | N/A |
-| maxChunkSize | UInt16 | 0x03 | Maximum STREAM data bytes per Standard Frame after the 16B STREAM header. | None | N/A |
-| supportsVideo | Boolean | 0x04 | Device can open media.video streams over HID. | None | N/A |
-| supportsAudio | Boolean | 0x05 | Device can open media.audio streams over HID. | None | N/A |
+No fields.
 
 ---
 
@@ -1493,25 +827,13 @@ Describes HID-backed media STREAM support.
 
 # Profiles Reference
 
-## AXTP-HID-MEDIA
-
-- Status: `draft`
-- Added in v1.0.0
-- Extends: `AXTP-MVP-HID`
-- Required Methods: `stream.open`
-- Required Events: `stream.opened`, `stream.error`
-- Required Errors: `SUCCESS`, `BUSY`, `RPC_PARAM_INVALID`, `MEDIA_SOURCE_NOT_FOUND`, `MEDIA_SOURCE_UNAVAILABLE`, `MEDIA_CODEC_UNSUPPORTED`, `MEDIA_STREAM_START_FAILED`
-- Notes: -
-
----
-
 ## AXTP-MVP
 
 - Status: `stable`
 - Added in v1.0.0
 - Extends: `-`
-- Required Methods: `device.getInfo`, `capability.supportedMethods`, `firmware.begin`, `firmware.end`, `firmware.verify`, `firmware.apply`, `display.getBrightness`, `display.setBrightness`
-- Required Events: `firmware.updateProgress`, `firmware.updateCompleted`, `firmware.updateFailed`, `display.brightnessChanged`
+- Required Methods: `None`
+- Required Events: `None`
 - Required Errors: `SUCCESS`, `RPC_METHOD_NOT_FOUND`, `RPC_PARAM_INVALID`, `STREAM_NOT_FOUND`, `STREAM_CRC_ERROR`, `BUSY`
 - Notes: -
 
@@ -1522,8 +844,8 @@ Describes HID-backed media STREAM support.
 - Status: `stable`
 - Added in v1.0.0
 - Extends: `AXTP-MVP`
-- Required Methods: `device.getInfo`, `capability.supportedMethods`, `firmware.begin`, `firmware.end`, `firmware.verify`, `firmware.apply`, `display.getBrightness`, `display.setBrightness`
-- Required Events: `firmware.updateProgress`, `firmware.updateCompleted`, `firmware.updateFailed`, `display.brightnessChanged`
+- Required Methods: `None`
+- Required Events: `None`
 - Required Errors: `SUCCESS`, `RPC_METHOD_NOT_FOUND`, `RPC_PARAM_INVALID`, `STREAM_NOT_FOUND`, `STREAM_CRC_ERROR`, `BUSY`
 - Notes: -
 

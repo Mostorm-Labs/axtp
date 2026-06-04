@@ -70,8 +70,8 @@ Standard Framed 模式中，Frame Header 的 `PayloadType` 固定为三类：
 PayloadType 只选择一级 parser，不表达具体业务类型：
 
 ```text
-正确：PayloadType = RPC,    methodId = firmware.begin
-正确：PayloadType = STREAM, streamId = firmware.begin 返回的 streamId
+正确：PayloadType = RPC,    methodId = 已采纳业务方法
+正确：PayloadType = STREAM, streamId = 已采纳建流方法返回的 streamId
 错误：PayloadType = VIDEO / OTA / FILE
 ```
 

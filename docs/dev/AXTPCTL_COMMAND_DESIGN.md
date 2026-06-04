@@ -38,8 +38,8 @@ axtpctl \
 ### call
 
 ```bash
-axtpctl --transport mock call device.getInfo --json '{}'
-axtpctl --transport mock call display.setBrightness --json '{"value":80}'
+axtpctl --transport mock call audio.getAlgorithmConfig --json '{}'
+axtpctl --transport mock call audio.setAlgorithmConfig --json '{"noiseSuppression":{"enabled":true,"level":3}}'
 axtpctl --transport mock call --method-id 0x90010001 --raw-hex cafe
 axtpctl --transport mock --registry-file ./methods.json call vendor.echo --json '{"value":80}'
 ```

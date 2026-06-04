@@ -22,26 +22,26 @@ LEGACY_DIR = ROOT / "docs" / "legacy-protocols"
 OUTPUT_DIR = ROOT / "docs" / "migration" / "generated"
 
 EXISTING_METHODS = {
-    "device.getInfo": {"id": 0x0101, "domain": "device", "bit_offset": 0},
-    "capability.supportedMethods": {"id": 0x0201, "domain": "capability", "bit_offset": 0},
-    "display.getBrightness": {"id": 0x0601, "domain": "display", "bit_offset": 0},
-    "display.setBrightness": {"id": 0x0602, "domain": "display", "bit_offset": 1},
-    "firmware.begin": {"id": 0x0402, "domain": "firmware", "bit_offset": 0},
-    "firmware.end": {"id": 0x0403, "domain": "firmware", "bit_offset": 1},
-    "firmware.verify": {"id": 0x0404, "domain": "firmware", "bit_offset": 2},
-    "firmware.apply": {"id": 0x0405, "domain": "firmware", "bit_offset": 3},
-    "stream.open": {"id": 0x0501, "domain": "stream", "bit_offset": 0},
-    "network.getApInfo": {"id": 0x0E07, "domain": "network", "bit_offset": 0},
+    "device.getInfo": {"id": 0x0101, "domain": "device", "bitOffset": 0},
+    "capability.supportedMethods": {"id": 0x0201, "domain": "capability", "bitOffset": 0},
+    "display.getBrightness": {"id": 0x0601, "domain": "display", "bitOffset": 0},
+    "display.setBrightness": {"id": 0x0602, "domain": "display", "bitOffset": 1},
+    "firmware.begin": {"id": 0x0402, "domain": "firmware", "bitOffset": 0},
+    "firmware.end": {"id": 0x0403, "domain": "firmware", "bitOffset": 1},
+    "firmware.verify": {"id": 0x0404, "domain": "firmware", "bitOffset": 2},
+    "firmware.apply": {"id": 0x0405, "domain": "firmware", "bitOffset": 3},
+    "stream.open": {"id": 0x0501, "domain": "stream", "bitOffset": 0},
+    "network.getApInfo": {"id": 0x0E07, "domain": "network", "bitOffset": 0},
 }
 
 EXISTING_EVENTS = {
-    "display.brightnessChanged": {"id": 0x0607, "domain": "display", "bit_offset": 0},
-    "firmware.updateProgress": {"id": 0x0402, "domain": "firmware", "bit_offset": 0},
-    "firmware.updateCompleted": {"id": 0x0403, "domain": "firmware", "bit_offset": 1},
-    "firmware.updateFailed": {"id": 0x0404, "domain": "firmware", "bit_offset": 2},
-    "stream.opened": {"id": 0x0501, "domain": "stream", "bit_offset": 0},
-    "stream.error": {"id": 0x0503, "domain": "stream", "bit_offset": 1},
-    "network.apInfoChanged": {"id": 0x0E01, "domain": "network", "bit_offset": 0},
+    "display.brightnessChanged": {"id": 0x0607, "domain": "display", "bitOffset": 0},
+    "firmware.updateProgress": {"id": 0x0402, "domain": "firmware", "bitOffset": 0},
+    "firmware.updateCompleted": {"id": 0x0403, "domain": "firmware", "bitOffset": 1},
+    "firmware.updateFailed": {"id": 0x0404, "domain": "firmware", "bitOffset": 2},
+    "stream.opened": {"id": 0x0501, "domain": "stream", "bitOffset": 0},
+    "stream.error": {"id": 0x0503, "domain": "stream", "bitOffset": 1},
+    "network.apInfoChanged": {"id": 0x0E01, "domain": "network", "bitOffset": 0},
 }
 
 EXISTING_CAPABILITIES = {
@@ -511,10 +511,10 @@ def allocate_ids(rows: list[Mapping]) -> tuple[dict[str, int], dict[str, int]]:
 
     method_ord: dict[str, int] = defaultdict(int)
     for item in EXISTING_METHODS.values():
-        method_ord[item["domain"]] = max(method_ord[item["domain"]], item["id"] & 0xFF, item["bit_offset"] + 1)
+        method_ord[item["domain"]] = max(method_ord[item["domain"]], item["id"] & 0xFF, item["bitOffset"] + 1)
     event_ord: dict[str, int] = defaultdict(int)
     for item in EXISTING_EVENTS.values():
-        event_ord[item["domain"]] = max(event_ord[item["domain"]], item["id"] & 0xFF, item["bit_offset"] + 1)
+        event_ord[item["domain"]] = max(event_ord[item["domain"]], item["id"] & 0xFF, item["bitOffset"] + 1)
     cap_ord: dict[str, int] = defaultdict(int)
     for item in EXISTING_CAPABILITIES.values():
         cap_ord[item["domain"]] = max(cap_ord[item["domain"]], item["id"] & 0xFF)
@@ -557,7 +557,7 @@ def build_registry_patch(rows: list[Mapping]) -> dict[str, Any]:
                         "name": method,
                         "domain": domain,
                         "status": row.status if row.status != "deprecated" else "draft",
-                        "bit_offset": low - 1,
+                        "bitOffset": low - 1,
                         "since": "1.0.0",
                         "description": row.description,
                         "rpc_op": "request_response",
@@ -609,7 +609,7 @@ def build_registry_patch(rows: list[Mapping]) -> dict[str, Any]:
                         "name": event,
                         "domain": domain,
                         "status": row.status if row.status != "deprecated" else "draft",
-                        "bit_offset": low - 1,
+                        "bitOffset": low - 1,
                         "since": "1.0.0",
                         "description": row.description,
                         "event_schema": schema,

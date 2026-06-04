@@ -201,7 +201,7 @@ Standard Framed 中也可以承载 JSON RPC：
 
 ```text
 Standard Frame Header(payloadType=RPC)
-  + UTF-8 JSON {"sid":"...","op":7,"d":{"id":1,"method":"device.getInfo","params":{}}}
+  + UTF-8 JSON {"sid":"...","op":7,"d":{"id":1,"method":"audio.getAlgorithmConfig","params":{}}}
   + CRC16
 ```
 
@@ -209,7 +209,7 @@ WebSocket Unframed JSON 不使用 Standard Frame：
 
 ```text
 WebSocket text message
-  = JSON {"sid":"...","op":7,"d":{"id":1,"method":"device.getInfo","params":{}}}
+  = JSON {"sid":"...","op":7,"d":{"id":1,"method":"audio.getAlgorithmConfig","params":{}}}
 ```
 
 #### STREAM Payload
@@ -227,8 +227,8 @@ STREAM Header 固定 16B，不写业务类型。业务含义由 RPC 建流时绑
 
 | 场景 | 控制面 | 数据面 |
 |---|---|---|
-| OTA | `firmware.begin` 返回 stream 相关参数 | STREAM chunk，`cursor=byteOffset` |
-| HID audio/video | `stream.open` 绑定 `media.audio` / `media.video` profile | STREAM frame，`cursor=timestampUs` 或业务约定游标 |
+| OTA | `firmware.ota` 草案采纳后的业务建流方法返回 stream 相关参数 | STREAM chunk，`cursor=byteOffset` |
+| HID audio/video | 业务域采纳后的建流方法绑定 audio/video profile | STREAM frame，`cursor=timestampUs` 或业务约定游标 |
 | 文件 | file transfer 草案/采纳后的 begin/end 方法 | STREAM chunk |
 | 日志 | log stream 草案/采纳后的 start/stop 方法 | STREAM record/chunk |
 
@@ -265,7 +265,7 @@ sequenceDiagram
     LS-->>LC: RPC Hello
     LC->>LS: RPC Identify
     LS-->>LC: RPC Identified
-    LC->>LS: RPC capability.supportedMethods
+    LC->>LS: Business capability/config RPC
     LC->>LS: Business RPC / STREAM
     LS-->>LC: RPC Response / Event / STREAM
 ```
@@ -429,7 +429,7 @@ flowchart TD
 | 交互流程方案 | 协议维护者 / 架构 | 产品、固件、上位机、后台、测试 | 用 `plan-protocol-flow` 从 UI 原型、用户 story 或端到端场景生成 `docs/flows/<scenario>.md` | story 是否完整；每一步是已有协议、协议缺口还是 UI/业务逻辑 | 场景流程文档、协议覆盖表、草案/修订缺口清单 |
 | 草案设计 | 协议维护者 / 架构 | 业务、固件、上位机、后台、测试 | 用 `draft-business-protocol` 起草或更新 `docs/protocol/<domain>/<domain.feature>.md` | 业务语义、domain.feature、method/schema/event/error/capability 是否合理 | 带 `[REVIEW-*]` 的协议草案 |
 | 草案评审 | 架构 / 业务负责人 | 固件、上位机、后台、SDK/工具、测试 | 组织评审，逐项关闭或保留 review 标记 | 固件确认资源和状态机；上位机/后台确认调用方式；测试确认可测性；SDK/工具确认生成消费方式 | `[REVIEW-OK]` 的可采纳范围和 open questions |
-| 采纳到规范 | 协议维护者 / 架构 | 业务、固件、上位机、测试 | 用 `adopt-protocol-draft` 反向确认 specs 08-13，固定草案为正式方案，写 registry/domain YAML | 未确认事实没有进入 YAML；ID、`bit_offset`、fieldId 无冲突 | specs/YAML/source validation 结果 |
+| 采纳到规范 | 协议维护者 / 架构 | 业务、固件、上位机、测试 | 用 `adopt-protocol-draft` 反向确认 specs 08-13，固定草案为正式方案，写 registry/domain YAML | 未确认事实没有进入 YAML；ID、`bitOffset`、fieldId 无冲突 | specs/YAML/source validation 结果 |
 | 已采纳修订 | 协议维护者 / 架构 | 业务、固件、上位机、后台、测试 | 用 `amend-adopted-protocol` 记录修订、判断兼容性、修正 adopted proposal/specs/YAML | draft/experimental 是否可直接修正；stable/MVP 是否必须 deprecate 或版本化 | amendment 记录、更新后的 YAML/source validation |
 | 生成产物 | 协议维护者 / SDK/工具 | 测试、研发 | 用 `generate-axtp-protocol` 从 YAML 生成 Protocol IR、generated docs、tooling、test vectors、runtime generated headers | generated diff 是否符合协议变更；测试向量是否覆盖关键路径 | `protocol/axtp.protocol.yaml`、`docs/generated/*`、runtime/tooling generated |
 | PR 和发布 | 协议维护者 / 研发负责人 | 业务、固件、上位机、后台、测试 | 提交 PR，说明草案、specs、YAML、generated diff、兼容影响和验证结果 | 各端确认能基于 generated 产物开发和验收 | 合并 main，发布最新 generated 协议 |
@@ -438,7 +438,7 @@ flowchart TD
 采纳时必须确认：
 
 - `domain.feature` 符合 08 命名和 feature taxonomy。
-- method/event/error/capability/schema 的 ID 和 bit offset 不冲突。
+- method/event/error/capability/schema 的 ID 和 bitOffset 不冲突。
 - fieldId 在 schema 内稳定且不复用。
 - `[REVIEW-ASK]` 和 `[REVIEW-BLOCKER]` 没有被写进 YAML。
 - legacy 映射只登记有证据的旧命令、旧状态码和 payload。
@@ -516,7 +516,7 @@ main
 | 草案设计 | 业务负责人、架构 | domain.feature、交互模型、是否需要 event/stream |
 | 技术评审 | 固件、上位机、后台、SDK | 字段、错误码、传输选择、资源限制 |
 | 测试评审 | 测试、工具 | 可观测性、测试向量、兼容旧协议 |
-| 采纳评审 | 架构、协议维护者 | ID、schema、bit offset、generated diff |
+| 采纳评审 | 架构、协议维护者 | ID、schema、bitOffset、generated diff |
 | 修订评审 | 架构、协议维护者、相关业务 owner | 删除/废弃/重命名/收窄是否兼容，是否需要版本化 |
 | 发布确认 | 研发负责人、测试 | generated 文档、SDK/tool、设备适配计划 |
 
@@ -528,7 +528,7 @@ main
 |---|---|---|---|---|---|
 | P0 | T0 - T+1 周 | 协议文档和研发共识 | README、How To Use、Kickoff、评审流程固化 | 架构、协议维护者 | 文档入口、流程说明 |
 | P0 | T0 - T+2 周 | NA20 + 大屏 + NT10 上位机适配 | 明确 HID audio/video 走 `AXTP-USB-HID` + `stream.open`/STREAM；梳理 AP 设置、Wi-Fi 写入、OTA、设备信息查询草案 | 架构、固件、上位机、测试 | `network.*`、`firmware.ota`、`device.info`、`stream.hidMedia` 评审清单 |
-| P1 | T+2 - T+4 周 | NA20/NT10 MVP 联调 | `device.getInfo`、`network.getApInfo`、AP/Wi-Fi 设置草案、OTA STREAM demo、HID media profile 联调 | 固件、上位机、SDK/工具、测试 | 端到端测试记录、必要协议草案/采纳 PR |
+| P1 | T+2 - T+4 周 | NA20/NT10 业务联调 | 已采纳 `audio.*` 方法、AP/Wi-Fi 设置草案、OTA STREAM 草案、HID media profile 草案联调 | 固件、上位机、SDK/工具、测试 | 端到端测试记录、必要协议草案/采纳 PR |
 | P1 | T+3 - T+5 周 | VM33 Pro 新版本协议适配 | 老协议保留；筛选新协议配置方案：时间同步、篮球进球事件、设备升级、设备信息查询 | 业务负责人、固件、上位机、架构 | VM33 新旧协议映射表、草案评审结论 |
 | P1 | T+4 - T+6 周 | UXPlay 控制方案 | 设计设置投屏密码、控制窗口大小、显示状态等 domain.feature 草案 | 上位机、设备端、架构、测试 | UXPlay 控制草案、评审问题清单 |
 | P2 | T+5 - T+8 周 | NearHub Launcher 与后台交互通用化 | 梳理 Launcher 设备管理命令，规整后台交互逻辑，定义可复用 method/event/schema | 后台、Launcher、架构、测试 | Launcher 通用化草案、兼容策略 |
@@ -545,9 +545,9 @@ main
 |---|---|---|---|
 | AP 设置 | `network.ap` / `network.softAp` 草案或采纳 | RPC over HID/TCP | 当前已有 `network.getApInfo` 和 `network.apInfoChanged` draft |
 | Wi-Fi 设置写入 | `network.wifi` 草案 | RPC over HID/TCP | 涉及密码、安全类型、连接结果 event |
-| OTA 固件升级 | `firmware.ota` | RPC + STREAM over HID/TCP | 当前已有 firmware MVP 方法和事件 |
-| 设备信息查询 | `device.info` | RPC | 当前已有 `device.getInfo` MVP |
-| HID audio/video | `stream.hidMedia` | `AXTP-USB-HID` + STREAM | 当前已有 `stream.open` 和 `AXTP-HID-MEDIA` draft |
+| OTA 固件升级 | `firmware.ota` | RPC + STREAM over HID/TCP | 等草案采纳后才进入 generated contract |
+| 设备信息查询 | `device.info` | RPC | 等草案采纳后才进入 generated contract |
+| HID audio/video | 业务域 media/stream 草案 | `AXTP-USB-HID` + STREAM | 不把旧 `stream.open` / HID media draft 当作当前生成协议 |
 
 ### 5.2 VM33 Pro 新版本协议适配
 
@@ -560,7 +560,7 @@ main
 | 时间同步策略 | 检查 `system.time` 草案，确认是否采纳为 method/event |
 | 篮球进球事件通知 | 先做业务草案，确认 domain 归属、event schema 和触发条件 |
 | 设备升级 | 优先复用 `firmware.ota` |
-| 设备信息查询 | 优先复用 `device.getInfo` |
+| 设备信息查询 | 先评审 `device.info` 草案；采纳前继续走 VM33 旧协议 |
 
 要求：VM33 旧协议映射必须有旧 method、payload、status 证据，不能把 TBD 写进 YAML。
 

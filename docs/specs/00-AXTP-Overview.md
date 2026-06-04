@@ -90,7 +90,7 @@ Physical Server -> Physical Client: CONTROL ACCEPT
 Logical Server  -> Logical Client:  RPC Hello
 Logical Client  -> Logical Server:  RPC Identify
 Logical Server  -> Logical Client:  RPC Identified
-Logical Client  -> Logical Server:  RPC capability.supportedMethods
+Logical Client  -> Logical Server:  RPC adopted business methods from generated registry
 ```
 
 WebSocket Unframed JSON：
@@ -100,7 +100,7 @@ WebSocket connected
 Logical Server -> Logical Client: Hello (op=0)
 Logical Client -> Logical Server: Identify (op=2)
 Logical Server -> Logical Client: Identified (op=3)
-Logical Client -> Logical Server: Request capability.supportedMethods (op=7)
+Logical Client -> Logical Server: Request adopted business methods (op=7)
 ```
 
 `READY` 保留为可选三步确认名称，但 v1 Core 默认不要求实现；默认握手只要求 OPEN / ACCEPT。
@@ -147,17 +147,14 @@ Method/Event Bitmap
 
 ## 8. v1 最小落地范围
 
-v1 MVP 端到端验证链路：
+v1 Core 端到端验证链路只固定传输、会话和 RPC/STREAM 机制；业务链路必须来自已采纳草案：
 
 ```text
 CONTROL OPEN / ACCEPT
-  -> RPC capability.supportedMethods
-  -> RPC device.getInfo
-  -> RPC brightness.set / Event brightness.changed
-  -> RPC firmware.begin
-  -> STREAM OTA chunk + CONTROL ACK/NACK
-  -> RPC firmware.verify
-  -> RPC Event firmware.updateCompleted
+  -> RPC Hello / Identify / Identified
+  -> RPC adopted business request
+  -> RPC adopted business event, if declared
+  -> STREAM data only after an adopted business method binds streamId
   -> CONTROL CLOSE
 ```
 
@@ -169,7 +166,7 @@ CONTROL OPEN / ACCEPT
 
 v1 明确不实现以下内容：
 
-1. **完整 Capability Model**：v1 只实现 `capability.supportedMethods`（返回当前会话支持的 methodId bitmap）。`capability.getAll` / `capability.query` 留到 v2。
+1. **默认业务 Capability Model**：v1 Core 不内置业务能力发现方法；如果产品需要运行时能力发现，必须先通过草案评审采纳对应业务或 capability 方法。
 2. **WebSocket Unframed JSON 作为生产 STREAM 路径**：WebSocket Unframed JSON 是正式 RPC-only 通道，但不承载 STREAM，不参与 CONTROL ACK/NACK / RESUME。
 3. **动态 Header 协商**：Frame 形态由 Transport Profile 固定决定，v1 不支持运行时协商。
 4. **8B Stream Header**：v1 统一使用 16B Stream Header，不保留 8B 变体。

@@ -40,7 +40,7 @@ function asArray(value: unknown): any[] {
 function mapMethod(item: any, file: string, defaultDomain: string): Method {
   return {
     id: normalizeId(item.id, `${file}:${item.name}`),
-    bitOffset: normalizeId(item.bit_offset ?? item.bitOffset, `${file}:${item.name}.bit_offset`),
+    bitOffset: normalizeId(item.bitOffset, `${file}:${item.name}.bitOffset`),
     name: String(item.name),
     domain: String(item.domain ?? defaultDomain),
     status: item.status ?? "draft",
@@ -61,7 +61,7 @@ function mapMethod(item: any, file: string, defaultDomain: string): Method {
 function mapEvent(item: any, file: string, defaultDomain: string): Event {
   return {
     id: normalizeId(item.id, `${file}:${item.name}`),
-    bitOffset: normalizeId(item.bit_offset ?? item.bitOffset, `${file}:${item.name}.bit_offset`),
+    bitOffset: normalizeId(item.bitOffset, `${file}:${item.name}.bitOffset`),
     name: String(item.name),
     domain: String(item.domain ?? defaultDomain),
     status: item.status ?? "draft",

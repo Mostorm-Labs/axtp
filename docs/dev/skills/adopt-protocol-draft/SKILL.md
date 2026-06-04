@@ -17,7 +17,7 @@ Convert a reviewed AXTP protocol draft into formal protocol facts. This is the s
 - New business features default to `registry/domains/<domain>/domain.yaml`.
 - Use core `registry/` files only for Core/MVP adopted facts, shared schemas, core constants, profile governance, or accepted legacy mappings.
 - Never duplicate the same method/event/error/schema/capability/profile in both core registry files and domain YAML.
-- Preserve stable IDs, field IDs, `bit_offset`, and names.
+- Preserve stable IDs, field IDs, `bitOffset`, and names.
 
 ## Required Evidence
 
@@ -79,7 +79,7 @@ Reverse-confirm the accepted proposal into specs where needed:
 | Spec | Confirm or update |
 |---|---|
 | 08 | domain.feature naming, method/event naming templates, feature taxonomy |
-| 09 | domain placement, ID range, DomainId, bit offset, mapping to Protocol Definition |
+| 09 | domain placement, ID range, DomainId, bitOffset, mapping to Protocol Definition |
 | 10 | method registry rules or accepted method table references if the local spec pattern requires it |
 | 11 | event registry rules or accepted event table references if needed |
 | 12 | error code rules and domain-specific error placement |
@@ -112,14 +112,14 @@ Use these defaults:
 
 If no valid target exists, stop and report the required governance change.
 
-### 6. Assign IDs And Bit Offsets
+### 6. Assign IDs And bitOffset values
 
 Compute from specs and existing YAML:
 
 - Method IDs must be globally unique and in the correct domain range.
 - Event IDs must be globally unique and in the correct domain range.
 - Capability IDs and DomainId/Domain-Scoped Mask rules must follow specs 09 and 13.
-- `bit_offset` must be unique within the domain and should remain contiguous unless existing YAML intentionally reserves gaps.
+- `bitOffset` must be unique within the domain and should remain contiguous unless existing YAML intentionally reserves gaps.
 - New schema field IDs start from `0x01` in accepted field order unless explicitly specified.
 - Existing schema field IDs must be preserved; append with the next safe ID.
 - Prefer existing common errors before adding domain-specific errors.
@@ -132,7 +132,7 @@ Use `apply_patch`. Keep edits scoped to specs 08-13, spec 14 when applicable, th
 
 Rules:
 
-- Use source field names already used by the repo, such as `id`, `bit_offset`, `request_schema`, `response_schema`, and `event_schema`.
+- Use source field names already used by the repo, such as `id`, `bitOffset`, `request_schema`, `response_schema`, and `event_schema`.
 - Keep status as `draft` unless the draft and governance explicitly say MVP/stable.
 - Preserve existing ordering patterns.
 - Do not copy review prose, `[REVIEW-*]`, open questions, or `TBD` values into YAML.
@@ -168,7 +168,7 @@ Report:
 - Specs 08-13/14 files changed, if any.
 - Draft file changes and adoption marker.
 - YAML source files changed.
-- Assigned IDs, `bit_offset`, and schema field IDs.
+- Assigned IDs, `bitOffset`, and schema field IDs.
 - Open questions or skipped draft sections.
 - Validation commands and results.
 - Next step: run `docs/dev/skills/generate-axtp-protocol/SKILL.md`.

@@ -39,9 +39,9 @@ Capability ID：`firmware.ota`
 
 本方案是业务协议方案和人工评审输入。采纳后，稳定事实必须写入 `registry/domains/firmware/domain.yaml` 或对应 registry YAML，并由 Generator 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。本文不直接分配新的 numeric methodId、eventId 或 fieldId；数值以 registry/generated 为准。
 
-当前仓库的 `registry/method/method_registry.yaml` 仍保留早期 MVP 名称 `firmware.begin` / `firmware.end` / `firmware.verify` / `firmware.apply`。本文采用 08/10/14 规范中评审后的明确命名：
+当前 generated contract 不包含 OTA 业务方法；旧 MVP 名称 `firmware.begin` / `firmware.end` / `firmware.verify` / `firmware.apply` 只作为迁移输入和命名对照。本文采用 08/10/14 规范中评审后的明确命名：
 
-| 本文推荐方法 | 当前生成物兼容名 | 兼容说明 |
+| 本文推荐方法 | 旧 MVP / legacy 对照名 | 兼容说明 |
 |---|---|---|
 | `firmware.beginOta` | `firmware.begin` | 创建 OTA 会话并返回 `streamId` / `transferId`。 |
 | `firmware.commitOtaBatch` | `firmware.end` | 旧单镜像流程中可表示数据发送完成；新协议扩展为多文件/分批提交。 |
@@ -50,7 +50,7 @@ Capability ID：`firmware.ota`
 | `firmware.otaProgressReported` | `firmware.updateProgress` | 新事件命名更明确。 |
 | `firmware.otaStateChanged` / `firmware.otaResultReported` | `firmware.updateCompleted` / `firmware.updateFailed` | 当前完成/失败事件可由新状态/结果事件兼容表达。 |
 
-落 registry 时可以选择保留旧名作为 stable 兼容方法，也可以新增本文推荐名；不得在不迁移 schema 的情况下直接改变旧方法语义。
+落 registry 时必须以已通过草案为准；不得因为旧 MVP 名称存在过，就在未评审 schema 的情况下重新生成 OTA 方法。
 
 ---
 
@@ -133,7 +133,7 @@ system 负责“设备如何重启”。
 | method | `firmware.cancelOta` | P1 | 取消未进入不可中断阶段的 OTA。 |
 | method | `firmware.confirmOta` | P1 | A/B 或可回滚系统在新版本启动后确认成功。 |
 | method | `firmware.rollbackOta` | P1 | 回滚到上一个可用版本。 |
-| method | `firmware.getInfo` | P1 | 查询固件详细版本信息；当前 MVP 可继续由 `device.getInfo` 承载基础信息。 |
+| method | `firmware.getInfo` | P1 | 查询固件详细版本信息；采纳前继续使用旧业务协议或设备现有接口。 |
 | event | `firmware.otaProgressReported` | P0 | 周期性进度上报。 |
 | event | `firmware.otaStateChanged` | P0 | 状态变化通知。 |
 | event | `firmware.otaResultReported` | P1 | 成功、失败、回滚等最终结果通知。 |
@@ -372,7 +372,7 @@ URL 模式下设备负责下载，但 firmware 域不负责配置网络。设备
 }
 ```
 
-当前 MVP 若未注册 `firmware.getInfo`，客户端应先使用 `device.getInfo` 获取基础固件版本。
+`firmware.getInfo` 采纳前，客户端应继续使用旧业务协议或设备现有接口获取基础固件版本。
 
 ### 7.2 firmware.getOtaCapabilities
 
@@ -1254,7 +1254,7 @@ cleanup
 ### 19.1 STREAM OTA
 
 ```text
-1. Client -> device.getInfo 或 firmware.getInfo
+1. Client -> firmware.getInfo；采纳前继续使用旧业务协议查询版本
 2. Client -> firmware.getOtaCapabilities
 3. Client -> firmware.beginOta(manifest, transferMode=stream)
 4. Device -> otaSessionId, streamId, transferId, chunkSize, resumeToken
@@ -1266,7 +1266,7 @@ cleanup
 10. Device -> firmware.otaStateChanged(reboot_required), if needed
 11. Client -> system.reboot 或等待自动重启
 12. Client reconnect
-13. Client -> device.getInfo 或 firmware.getInfo
+13. Client -> firmware.getInfo；采纳前继续使用旧业务协议查询版本
 14. Client -> firmware.confirmOta, if supported
 ```
 
@@ -1322,7 +1322,7 @@ cleanup
 | VM33 HTTP JSON | `Upgrade.Setup` | - | `firmware.beginOta` | 可映射 multipart 升级准备，`Total` -> file size，`Md5` -> legacy hash。 |
 | VM33 HTTP JSON | `Upgrade.Upgrade` | - | STREAM `firmware.ota` 或 file 暂存模式 | 可映射分片上传，`Pos` / `Size` -> range。 |
 | VM33 HTTP JSON | `Upgrade.Progress` | - | `firmware.getOtaState` / `getOtaTransferState` | 可映射本地升级进度。 |
-| VM33 HTTP JSON | `Upgrade.Version` | - | `firmware.getInfo` 或 `device.getInfo` | 可映射版本查询。 |
+| VM33 HTTP JSON | `Upgrade.Version` | - | `firmware.getInfo` | 可映射版本查询；`device.info` 如需承载基础版本需另行评审。 |
 | VM33 HTTP JSON | `Upgrade.CloudUpgrade` | - | `firmware.beginOta(source.type=url)` | 可映射 URL 远程升级，`SerialNumber` / `Destination` 映射到 P1 `targetDevices`。 |
 | VM33 HTTP JSON | `Upgrade.CloudProgress` | - | `firmware.getOtaState` | 可映射 URL 升级进度。 |
 
@@ -1360,10 +1360,10 @@ capabilities:
 
 | 方法 | 分级 | 当前处理建议 |
 |---|---|---|
-| `firmware.beginOta` | P0 | 若保留旧 `firmware.begin`，需要声明 alias 或新增方法。 |
-| `firmware.commitOtaBatch` | P0 | 旧 `firmware.end` 只能覆盖单镜像完成语义。 |
-| `firmware.verifyOtaFiles` | P0 | 可兼容旧 `firmware.verify`。 |
-| `firmware.installOta` | P0 | 可兼容旧 `firmware.apply`。 |
+| `firmware.beginOta` | P0 | 需按草案 schema 采纳；旧 `firmware.begin` 只作为 legacy alias 评审输入。 |
+| `firmware.commitOtaBatch` | P0 | 旧 `firmware.end` 只能作为单镜像完成语义的迁移证据。 |
+| `firmware.verifyOtaFiles` | P0 | 旧 `firmware.verify` 只作为迁移证据。 |
+| `firmware.installOta` | P0 | 旧 `firmware.apply` 只作为迁移证据。 |
 | `firmware.getOtaCapabilities` | P1 | 能力字段进入 `FirmwareOtaCapability` schema。 |
 | `firmware.getOtaState` | P1 | 状态查询。 |
 | `firmware.getOtaTransferState` | P1 | 断点续传。 |
@@ -1374,7 +1374,7 @@ capabilities:
 
 采纳检查：
 
-1. 先决定旧 `firmware.begin/end/verify/apply` 是保留 stable、添加 alias，还是新增推荐名。
+1. 先决定旧 `firmware.begin/end/verify/apply` 是否需要 adapter-only alias；稳定方法名和 schema 以本草案评审结论为准。
 2. 更新 `registry/method/method_registry.yaml`、`registry/event/event_registry.yaml`、`registry/schema/firmware_schema.yaml` 和 `registry/core/stream_profile.yaml`。
 3. 确认 `file.transfer` 是否已定稿；未定稿时不要把 file 暂存方法写成 P0。
 4. 只把已确认的 legacy 字段写入 `legacyRefs`；`CommonSet/GetNoTargetStrategyState` 不得继续作为 OTA legacyRef。

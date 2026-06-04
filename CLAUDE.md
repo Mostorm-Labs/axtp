@@ -145,7 +145,7 @@ methods:
     name: sensor.getValue
     domain: sensor
     status: draft
-    bit_offset: 0
+    bitOffset: 0
     rpc_op: request_response
     request_schema: SensorGetValueRequest
     response_schema: SensorGetValueResponse

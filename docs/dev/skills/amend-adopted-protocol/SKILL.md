@@ -13,7 +13,7 @@ Change a protocol that has already passed adoption and entered YAML/generated ar
 - Do not infer new facts from generated files. Generated files are evidence of current output only.
 - Do not hand-edit `protocol/axtp.protocol.yaml`, `docs/generated/*`, `tooling/mcp/*`, `tooling/test-vectors/*`, `runtimes/*/generated/*`, or `runtimes/cpp-core/include/axtp/generated/*`.
 - Do not silently break `stable` or `mvp` wire contracts. For stable/MVP facts, prefer `deprecated`, optional additions, or versioned replacements over deletion or semantic mutation.
-- Preserve IDs, `bit_offset`, field IDs, method/event names, and capability IDs for unchanged semantics.
+- Preserve IDs, `bitOffset`, field IDs, method/event names, and capability IDs for unchanged semantics.
 - Do not reuse a removed/deprecated stable ID or field ID for a different meaning.
 - If the requested change lacks exact confirmed facts, update the adopted draft with `[REVIEW-ASK]` / `[REVIEW-FIX]` only and do not patch YAML.
 - Legacy mappings require concrete legacy command IDs, payload/status mapping evidence, and an explicit target method/field path.
@@ -117,7 +117,7 @@ Patch `registry/**/*.yaml` or `registry/domains/**/*.yaml` with `apply_patch`.
 Rules:
 
 - Edit the existing source of truth; do not duplicate the same fact in core and domain YAML.
-- Preserve unchanged IDs, `bit_offset`, field IDs, names, and statuses.
+- Preserve unchanged IDs, `bitOffset`, field IDs, names, and statuses.
 - Append new field IDs in accepted order.
 - Remove draft-only fields only when confirmed and not stable/MVP.
 - Deprecate stable/MVP fields instead of deleting.
@@ -183,7 +183,7 @@ Report:
 - confirmed change facts and compatibility action
 - proposal/spec/YAML files changed
 - generated files changed by Generator
-- IDs, `bit_offset`, field IDs preserved, removed, deprecated, or newly assigned
+- IDs, `bitOffset`, field IDs preserved, removed, deprecated, or newly assigned
 - open questions or skipped sections
 - validation and generation commands with results
 

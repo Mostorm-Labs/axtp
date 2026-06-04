@@ -32,28 +32,28 @@ Extended Length:    fieldId(1) + FF + extendedLength(2, LE) + value(N)
 对象就是多个 TLV 字段顺序排列：
 
 ```text
-display.setBrightness.params:
-  value:uint8=80          -> 01 01 50
-  transitionMs:uint16=300 -> 02 02 2C 01
+ExampleLevelConfig:
+  level:uint8=3             -> 01 01 03
+  applyDelayMs:uint16=300   -> 02 02 2C 01
 
 encoded body:
-  01 01 50 02 02 2C 01
+  01 01 03 02 02 2C 01
 ```
 
 数组在 MVP 中推荐用 repeated TLV：
 
 ```text
-supportedMethodIds = [0x0101, 0x0201]
+supportedIds = [0x0101, 0x0201]
   01 02 01 01
   01 02 01 02
 ```
 
-`firmware.begin params` 这类 RPC Binary body 会被放在 Binary RPC 11B Header 之后：
+已采纳业务 method 的 RPC Binary body 会被放在 Binary RPC 11B Header 之后：
 
 ```text
 Frame Header(payloadType=RPC)
   + RPC Binary Header(11B, bodyEncoding=TLV8)
-  + TLV body(firmware.begin params)
+  + TLV body(method params)
   + CRC16
 ```
 
@@ -232,24 +232,24 @@ Generator v1 使用 YAML 描述 TLV schema：
 
 ```yaml
 schemas:
-  display.setBrightness.params:
+  ExampleLevelConfig:
     encoding: tlv
     fields:
       - fieldId: 0x01
-        name: value
+        name: level
         type: uint8
         required: true
         min: 0
-        max: 100
+        max: 3
 
       - fieldId: 0x02
-        name: autoMode
-        type: bool
+        name: applyDelayMs
+        type: uint16
         required: false
-        default: false
+        default: 0
 ```
 
-对应 TLV：`01 01 50  02 01 00`
+对应 TLV：`01 01 03  02 02 00 00`
 
 ---
 
@@ -366,25 +366,25 @@ STREAM packet 不携带 metadata。业务上下文在 RPC 建流请求/响应中
 
 ---
 
-## 20. 完整编码示例：firmware.begin params
+## 20. 完整编码示例：业务建流 params
 
 ```yaml
 schemas:
-  firmware.begin.params:
+  ExampleTransferBeginParams:
     encoding: tlv
     fields:
       - fieldId: 0x01
-        name: imageType
+        name: objectType
         type: enum
-        enum: FirmwareImageType
+        enum: TransferObjectType
         encoding: uint8
         required: true
       - fieldId: 0x02
-        name: imageSize
+        name: objectSize
         type: uint32
         required: true
       - fieldId: 0x03
-        name: imageSha256
+        name: verifyValue
         type: fixed_bytes
         length: 32
         required: true
@@ -404,7 +404,7 @@ TLV Body：
 04 02 00 02
 ```
 
-含义：imageType=MCU_FIRMWARE, imageSize=1048576, imageSha256=32B, chunkSize=512
+含义：objectType=FIRMWARE, objectSize=1048576, verifyValue=32B, chunkSize=512。该示例只说明 TLV 编码，不声明当前 generated method。
 
 ---
 

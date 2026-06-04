@@ -82,11 +82,12 @@ void printUsage() {
               << "  inspect frame --hex HEX\n"
               << "\n"
               << "Examples:\n"
-              << "  axtpctl -c device.getInfo\n"
-              << "  axtpctl -c capability.getAll\n"
-              << "  axtpctl -c display.setBrightness --json '{\"value\":80}'\n"
-              << "  axtpctl -t hid --vid 0x1234 --pid 0x5678 -c device.getInfo\n"
-              << "  axtpctl -t tcp --host 127.0.0.1 --port 9000 -c device.getInfo -o json\n";
+              << "  axtpctl -c audio.getAlgorithmConfig\n"
+              << "  axtpctl -c audio.getAlgorithmCapabilities\n"
+              << "  axtpctl -c audio.setAlgorithmConfig --json "
+                 "'{\"noiseSuppression\":{\"enabled\":true,\"level\":3}}'\n"
+              << "  axtpctl -t hid --vid 0x1234 --pid 0x5678 -c audio.getAlgorithmConfig\n"
+              << "  axtpctl -t tcp --host 127.0.0.1 --port 9000 -c audio.getAlgorithmConfig -o json\n";
 }
 
 bool isOption(const std::string& text) {
@@ -453,23 +454,22 @@ std::string errorName(axtp::ErrorCode code) {
 
 void installMockHandlers(axtp::sdk::AxtpClient& client) {
     client.registerMethod(
-        static_cast<std::uint16_t>(axtp::MethodId::DeviceGetInfo), [](const axtp::RpcPayload&) {
+        static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmConfig),
+        [](const axtp::RpcPayload&) {
             const std::string body =
-                R"({"vendor":"AuditoryWorks","product":"AXTP Mock","firmwareVersion":"0.0.0"})";
+                R"({"noiseSuppression":{"enabled":true,"level":3},"echoCancellation":{"enabled":true}})";
             return axtp::Bytes(body.begin(), body.end());
         });
-    client.registerMethod(static_cast<std::uint16_t>(axtp::MethodId::DisplaySetBrightness),
+    client.registerMethod(static_cast<std::uint16_t>(axtp::MethodId::AudioSetAlgorithmConfig),
                           [](const axtp::RpcPayload&) { return axtp::Bytes{}; });
-    client.registerMethod(static_cast<std::uint16_t>(axtp::MethodId::DisplayGetBrightness),
+    client.registerMethod(static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmCapabilities),
                           [](const axtp::RpcPayload&) {
-                              const std::string body = R"({"value":80})";
+                              const std::string body =
+                                  R"({"algorithms":{"noiseSuppression":{"level":{"min":0,"max":5}}}})";
                               return axtp::Bytes(body.begin(), body.end());
                           });
-    client.registerMethod(static_cast<std::uint16_t>(axtp::MethodId::CapabilitySupportedMethods),
-                          [](const axtp::RpcPayload&) {
-                              const std::string body = R"({"methodMaskCount":0,"methodMasks":""})";
-                              return axtp::Bytes(body.begin(), body.end());
-                          });
+    client.registerMethod(static_cast<std::uint16_t>(axtp::MethodId::AudioResetAlgorithmConfig),
+                          [](const axtp::RpcPayload&) { return axtp::Bytes{}; });
 }
 
 bool attachTransport(const CliOptions& options, axtp::sdk::AxtpClient* client) {

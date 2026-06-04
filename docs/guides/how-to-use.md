@@ -27,8 +27,8 @@ docs/generated/* + tooling/* + runtime generated headers
 | YAML 位置 | 事实来源 | 产生方式 | 和 specs / docs/protocol 的关系 |
 |---|---|---|---|
 | `registry/core/*.yaml` | AXTP Core 架构裁决、wire format、payload type、RPC op、transport profile、stream profile 等核心规则 | 根据 `docs/specs/00-06`、`18`、`19` 中已冻结或已确认的规则人工维护 | `docs/specs` 是规则说明和治理依据；Core YAML 是这些规则的机器可读表达 |
-| `registry/method`、`registry/event`、`registry/error`、`registry/capability`、`registry/schema` | 已采纳的 MVP/Core method、event、error、capability、公共 schema | 从已确认的规范表、MVP 决策、稳定公共能力中人工写入 | 对应规则由 `docs/specs/08-14` 约束；不是从 generated 文档反推 |
-| `registry/domains/<domain>/domain.yaml` | 已评审通过的新业务域能力，例如 network、stream 等 domain 下的 method/event/schema/capability | 先在 `docs/protocol/<domain>/<domain.feature>.md` 写草案，评审通过后采纳到 domain YAML | `docs/protocol` 是草案和评审输入；domain YAML 才是采纳后的正式机器事实 |
+| `registry/method`、`registry/event`、`registry/error`、`registry/capability`、`registry/schema` | 已采纳的 Core/shared method、event、error、capability、公共 schema | 从已确认的规范表、Core 决策、稳定公共能力中人工写入 | 对应规则由 `docs/specs/08-14` 约束；不是从 generated 文档反推 |
+| `registry/domains/<domain>/domain.yaml` | 已评审通过的新业务域能力，例如 `audio.algorithm` 下的 method/event/schema/capability | 先在 `docs/protocol/<domain>/<domain.feature>.md` 写草案，评审通过后采纳到 domain YAML | `docs/protocol` 是草案和评审输入；domain YAML 才是采纳后的正式机器事实 |
 | `registry/legacy/legacy_mapping.yaml` | 已确认的旧协议命令、状态码、payload 到 AXTP method/event/stream 的映射 | 根据 `docs/legacy-protocols/**`、`docs/migration/**` 和人工确认结果写入 | 旧协议材料只是证据来源；没有证据的 TBD 映射不能写入 YAML |
 
 因此按下面规则操作：
@@ -58,13 +58,13 @@ docs/generated/* + tooling/* + runtime generated headers
 | 流程阶段 | 协议维护者 / 架构 | 产品、固件、上位机、后台、测试 | 使用 `plan-protocol-flow` 从业务 story 或 UI 原型生成 `docs/flows/**`，逐步列出协议调用、事件、已有覆盖和缺口 | 确认交互流程是否完整，哪些步骤是协议、哪些是 UI/业务逻辑 | 场景流程方案和下一步草案/修订清单 |
 | 草案阶段 | 协议维护者 / 架构 | 业务、固件、上位机、后台、测试 | 使用 `draft-business-protocol` 搜索复用项，起草或更新 `docs/protocol/**`，写候选 method/schema/event/error/capability | 业务确认语义，固件确认可实现性，上位机/后台确认调用方式，测试确认可测性 | 草案带 `[REVIEW-*]`，open questions 明确 |
 | 草案评审 | 架构 / 业务负责人 | 固件、上位机、后台、SDK/工具、测试 | 组织评审，逐项处理 `[REVIEW-*]` | 各端确认字段、错误码、事件、stream、legacy 映射和兼容边界 | 可采纳内容均为 `[REVIEW-OK]` 或等价确认 |
-| 采纳阶段 | 协议维护者 / 架构 | 业务、固件、上位机、测试 | 使用 `adopt-protocol-draft` 对齐 specs 08-13/14，固定草案状态，写入 YAML，分配 ID / `bit_offset` / fieldId | 确认没有未解决 review blocker 被写入 YAML | `validate:sources` 通过，YAML 只含已确认事实 |
+| 采纳阶段 | 协议维护者 / 架构 | 业务、固件、上位机、测试 | 使用 `adopt-protocol-draft` 对齐 specs 08-13/14，固定草案状态，写入 YAML，分配 ID / `bitOffset` / fieldId | 确认没有未解决 review blocker 被写入 YAML | `validate:sources` 通过，YAML 只含已确认事实 |
 | 修订阶段 | 协议维护者 / 架构 | 业务、固件、上位机、后台、测试 | 使用 `amend-adopted-protocol` 修正已采纳事实，记录 amendment，判断删除/废弃/版本化策略 | 确认 draft/experimental 可直接修正，stable/MVP 不静默破坏 wire 合同 | amendment 记录、YAML/source validation、generated diff |
 | 生成阶段 | 协议维护者 / SDK/工具 | 测试、研发 | 使用 `generate-axtp-protocol` 从 YAML 生成 Protocol IR、generated docs、tooling、test vectors、runtime generated headers | 确认 generated diff 符合本次协议变化 | `validate:protocol`、Generator tests、`git diff --check` 通过 |
 | PR 发布 | 协议维护者 / 研发负责人 | 业务、固件、上位机、后台、测试 | 提交草案、specs、YAML、generated diff，说明兼容影响和测试结果 | 评审 generated 文档是否能支撑实现和验收 | PR 合并 main，generated 协议成为研发/测试依据 |
 | 研发实现 | 固件 / 上位机 / 后台 / SDK | 测试、协议维护者 | 按 `docs/generated/protocol.md/json`、generated headers 和 test vectors 实现功能 | 测试确认正向、错误、event、stream、legacy 兼容用例 | 端到端联调和测试通过 |
 
-`adopt-protocol-draft` 做的是“受控转译”：读取草案、specs 和现有 YAML，检查 `[REVIEW-*]` 状态，反向确认 08-13/14，计算 ID / `bit_offset` / fieldId，固定草案状态，并写入 YAML。它不是简单的 Markdown parser，因为协议采纳必须处理冲突、编号、兼容性和未确认事实。
+`adopt-protocol-draft` 做的是“受控转译”：读取草案、specs 和现有 YAML，检查 `[REVIEW-*]` 状态，反向确认 08-13/14，计算 ID / `bitOffset` / fieldId，固定草案状态，并写入 YAML。它不是简单的 Markdown parser，因为协议采纳必须处理冲突、编号、兼容性和未确认事实。
 
 实际开发时：
 
@@ -99,16 +99,10 @@ sed -n '1,120p' docs/generated/method_registry.generated.md
 
 | methodId | name | status | 用途 |
 |---:|---|---|---|
-| `0x0101` | `device.getInfo` | mvp | 查询设备信息 |
-| `0x0201` | `capability.supportedMethods` | mvp | 查询当前会话支持的 method bitmap |
-| `0x0402` | `firmware.begin` | mvp | 开始固件升级 |
-| `0x0403` | `firmware.end` | mvp | 结束固件数据传输 |
-| `0x0404` | `firmware.verify` | mvp | 校验固件 |
-| `0x0405` | `firmware.apply` | mvp | 应用固件 |
-| `0x0501` | `stream.open` | draft | 打开 HID media stream |
-| `0x0601` | `display.getBrightness` | mvp | 查询亮度 |
-| `0x0602` | `display.setBrightness` | mvp | 设置亮度 |
-| `0x0E07` | `network.getApInfo` | draft | 查询 AP 信息 |
+| `0x090D` | `audio.getAlgorithmCapabilities` | stable | 查询音频算法字段、范围、默认值和更新策略 |
+| `0x0901` | `audio.getAlgorithmConfig` | stable | 查询当前音频算法配置 |
+| `0x0902` | `audio.setAlgorithmConfig` | stable | 部分更新音频算法配置 |
+| `0x090E` | `audio.resetAlgorithmConfig` | stable | 恢复全部、指定算法或指定字段默认值 |
 
 ### 2.3 查 event
 
@@ -120,13 +114,7 @@ sed -n '1,120p' docs/generated/event_registry.generated.md
 
 | eventId | name | status | 用途 |
 |---:|---|---|---|
-| `0x0402` | `firmware.updateProgress` | mvp | OTA 进度 |
-| `0x0403` | `firmware.updateCompleted` | mvp | OTA 完成 |
-| `0x0404` | `firmware.updateFailed` | mvp | OTA 失败 |
-| `0x0501` | `stream.opened` | draft | stream 已打开 |
-| `0x0503` | `stream.error` | draft | stream 异常 |
-| `0x0607` | `display.brightnessChanged` | mvp | 亮度变化 |
-| `0x0E01` | `network.apInfoChanged` | draft | AP 信息变化 |
+| `0x0901` | `audio.algorithmConfigChanged` | stable | 音频算法配置变化 |
 
 ### 2.4 查机器可读协议
 
@@ -162,7 +150,7 @@ pnpm --dir generators validate:sources
 
 - ID 唯一性。
 - method/event/schema 引用。
-- domain/bit offset 规则。
+- domain/bitOffset 规则。
 - Source YAML 和关键 wire 事实的一致性。
 
 ### 3.4 生成所有产物
@@ -233,33 +221,33 @@ cmake --build build/axtpctl
 ./build/axtpctl/axtpctl --help
 ```
 
-### 4.2 Mock 调用 device.getInfo
+### 4.2 Mock 查询音频算法能力
 
 ```bash
-./build/axtpctl/axtpctl --transport mock call device.getInfo --json '{}'
+./build/axtpctl/axtpctl --transport mock call audio.getAlgorithmCapabilities --json '{}'
 ```
 
 短命令：
 
 ```bash
-./build/axtpctl/axtpctl -c device.getInfo -o json
+./build/axtpctl/axtpctl -c audio.getAlgorithmCapabilities -o json
 ```
 
 用途：不用真实设备，先验证 method registry、SDK dynamic call 和 CLI 参数。
 
-### 4.3 Mock 调用 display.setBrightness
+### 4.3 Mock 设置音频算法等级
 
 ```bash
 ./build/axtpctl/axtpctl \
   --transport mock \
-  call display.setBrightness \
-  --json '{"value":80}'
+  call audio.setAlgorithmConfig \
+  --json '{"config":{"noiseSuppression":{"level":2}}}'
 ```
 
 短命令：
 
 ```bash
-./build/axtpctl/axtpctl -c display.setBrightness --json '{"value":80}' -o json
+./build/axtpctl/axtpctl -c audio.setAlgorithmConfig --json '{"config":{"noiseSuppression":{"level":2}}}' -o json
 ```
 
 ### 4.4 查看 method 列表
@@ -291,7 +279,7 @@ HID 示例形态：
   --transport hid \
   --vid 0x1234 \
   --pid 0x5678 \
-  -c device.getInfo \
+  -c audio.getAlgorithmCapabilities \
   -o json
 ```
 
@@ -302,7 +290,7 @@ TCP 示例形态：
   --transport tcp \
   --host 127.0.0.1 \
   --port 9000 \
-  -c device.getInfo \
+  -c audio.getAlgorithmCapabilities \
   -o json
 ```
 
@@ -326,10 +314,10 @@ SDK 的 P0 策略是 dynamic RPC first。业务调用优先用 method name/id + 
 int main() {
     axtp::sdk::AxtpClient client;
 
-    auto info = client.callJson("device.getInfo", "{}");
-    auto result = client.callJson("display.setBrightness", R"({"value":80})");
+    auto capability = client.callJson("audio.getAlgorithmCapabilities", "{}");
+    auto result = client.callJson("audio.setAlgorithmConfig", R"({"config":{"noiseSuppression":{"level":2}}})");
 
-    (void)info;
+    (void)capability;
     (void)result;
     return 0;
 }
@@ -338,7 +326,7 @@ int main() {
 执行路径：
 
 ```text
-AxtpClient::callJson("device.getInfo", "{}")
+AxtpClient::callJson("audio.getAlgorithmCapabilities", "{}")
   -> MethodRegistry::findMethodId()
   -> RpcPayload
   -> AxtpEndpoint::sendRpcRequest()
@@ -354,7 +342,7 @@ AxtpClient::callJson("device.getInfo", "{}")
 
 ```cpp
 axtp::Bytes tlvBody = {/* encoded TLV bytes */};
-auto response = client.callTlv("display.setBrightness", tlvBody);
+auto response = client.callTlv("audio.setAlgorithmConfig", tlvBody);
 
 axtp::Bytes raw = {0xca, 0xfe};
 auto rawResponse = client.callRawBytes(0x90010001, raw);
@@ -364,16 +352,13 @@ Raw API 适合调试、vendor private method 和 legacy bridge。正式业务应
 
 ### 5.3 Typed facade
 
-当前 SDK 有手写或 generated-style facade：
+Typed facade 只有在对应业务协议已采纳并生成 wrapper 后才应暴露；当前优先使用 dynamic RPC：
 
 ```cpp
-#include "axtp_sdk/axtp_device.hpp"
+#include "axtp_sdk/axtp_client.hpp"
 
 axtp::sdk::AxtpClient client;
-axtp::sdk::AxtpDevice device(client);
-
-auto info = device.device.getInfo();
-device.display.setBrightness(80);
+auto config = client.callJson("audio.getAlgorithmConfig", "{}");
 ```
 
 Typed API 是 dynamic/raw RPC 的便利包装，不应该绕过 MethodRegistry 和 runtime 分层。
@@ -453,10 +438,12 @@ WebSocketJsonRpc 不走 AX Standard Frame、CRC 或 message fragmentation。
 
 ## 7. OTA / STREAM 怎么用
 
-OTA 不应该把固件块塞进普通 RPC body。推荐流程：
+当前 generated 协议没有已采纳 OTA 控制面方法。OTA 不应该把固件块塞进普通 RPC body；需要做 OTA 时，先完成 `docs/protocol/firmware/firmware.ota.md` 的评审采纳，再由 Generator 生成正式 method/event/profile。
+
+采纳后的推荐形态应保持：
 
 ```text
-RPC firmware.begin
+RPC <firmware OTA begin method>
   -> 设备返回升级上下文、建议 chunkSize、可能的 stream 参数
 
 STREAM chunks
@@ -465,12 +452,8 @@ STREAM chunks
   -> cursor:uint64 = byteOffset
   -> data(N)
 
-RPC firmware.end
-RPC firmware.verify
-RPC firmware.apply
-
-RPC Event firmware.updateProgress
-RPC Event firmware.updateCompleted / firmware.updateFailed
+RPC <firmware OTA commit/verify/install methods>
+RPC Event <firmware OTA progress/state/result events>
 ```
 
 Wire 形态：
@@ -478,11 +461,11 @@ Wire 形态：
 ```text
 Control plane:
   PayloadType = RPC
-  methodId = firmware.begin / firmware.end / firmware.verify / firmware.apply
+  methodId = 已采纳 OTA method
 
 Data plane:
   PayloadType = STREAM
-  streamId = begin/open 阶段绑定的 streamId
+  streamId = 已采纳建流阶段绑定的 streamId
   seqId = chunk 序号
   cursor = byteOffset
   data = 固件数据块
@@ -502,17 +485,17 @@ Data plane:
 
 | 能力 | AXTP 形态 | 传输 |
 |---|---|---|
-| 设备信息查询 | `device.getInfo` | RPC over `AXTP-USB-HID` |
-| AP 信息查询 | `network.getApInfo` | RPC over `AXTP-USB-HID` |
+| 设备信息查询 | 待 `device.info` 草案评审采纳 | RPC over `AXTP-USB-HID` |
+| AP 信息查询 | 待 `network.softAp` 或相关草案评审采纳 | RPC over `AXTP-USB-HID` |
 | AP 设置 | `network.ap` 草案，评审后采纳 | RPC over `AXTP-USB-HID` |
 | Wi-Fi 设置写入 | `network.wifi` 草案，评审后采纳 | RPC over `AXTP-USB-HID` |
-| OTA | `firmware.begin/end/verify/apply` + STREAM | Standard Framed HID |
-| audio/video | `stream.open` + `stream.hidMedia` profile + STREAM | Standard Framed HID |
+| OTA | `firmware.ota` 草案评审后采纳，控制面 RPC + STREAM | Standard Framed HID |
+| audio/video | 业务域建流草案评审后采纳，数据面 STREAM | Standard Framed HID |
 
 HID audio/video 的关键点：
 
 ```text
-RPC stream.open
+RPC <adopted media/open method>
   request: profile = media.video 或 media.audio, transportProfile = AXTP-USB-HID
   response: streamId, negotiated chunk/frame size, runtime 参数
 
@@ -523,7 +506,7 @@ STREAM
   data(N)
 
 RPC/Event
-  stream.opened / stream.error
+  <adopted media stream events>
 ```
 
 不要新增 `PayloadType=VIDEO` 或 `PayloadType=AUDIO`。视频和音频是 stream profile 和建流上下文，不是顶层 payload。
@@ -538,8 +521,8 @@ RPC/Event
 |---|---|
 | 时间同步策略 | 查 `docs/protocol/system/system.time.md`，确认是否复用或补草案 |
 | 篮球进球事件通知 | 新建或更新合适 domain.feature 草案，明确 event name、payload、触发条件 |
-| 设备升级 | 优先复用 `firmware.ota` 和 firmware MVP 方法 |
-| 设备信息查询 | 优先复用 `device.getInfo` |
+| 设备升级 | 先评审/采纳 `firmware.ota` 或 VM33 Pro 专属新增草案，再生成实现 |
+| 设备信息查询 | 先评审/采纳 `device.info` 或 VM33 Pro 专属新增草案，再生成实现 |
 
 VM33 迁移流程：
 
@@ -686,7 +669,7 @@ docs/protocol/auth/auth.screenCastPassword.md formal adoption note
 registry/domains/<domain>/domain.yaml
 ```
 
-采纳 skill 会先确认草案没有 unresolved `[REVIEW-ASK]`、`[REVIEW-FIX]` 或 `[REVIEW-BLOCKER]`，再根据 specs 和现有 YAML 分配正式 ID、`bit_offset` 和 schema fieldId。
+采纳 skill 会先确认草案没有 unresolved `[REVIEW-ASK]`、`[REVIEW-FIX]` 或 `[REVIEW-BLOCKER]`，再根据 specs 和现有 YAML 分配正式 ID、`bitOffset` 和 schema fieldId。
 
 ### Step 7: 生成
 

@@ -651,7 +651,7 @@ network.getWifiState
 video.setFramingMode
   capability: video.framing
 
-firmware.begin
+firmware.beginOta
   capability: firmware.ota
 ```
 
@@ -707,12 +707,12 @@ legacy command -> domain.feature -> method/event -> schema adapter
 | `network.softAp` | `network.ap` | SoftAP 是 AP 工作模式；AP 能力还包含 config/state/client。 | draft 可直接迁移，或保留 alias 一个版本。 | `network.getApInfo` 可演进为 `network.getApState` / `network.getApConfig`。 | `network.apInfoChanged` 可演进为 `network.apStateChanged` / `network.apConfigChanged`。 |
 | `stream.hidMedia` | `video.stream` / `audio.recording` / `stream.flowControl` | HID 是 transport，media 是业务类型；stream 域不承担业务分类。 | draft 可迁移；如保留，只作为 profile 兼容说明。 | `stream.open` 迁移到 `video.openStream`、`audio.openRecordingStream` 或其他业务建流方法。 | `stream.opened`、`stream.error` 迁移到业务域 stream state/error 事件；公共流控错误保留在 stream/control 层。 |
 | `stream.open` | 业务域 open stream 方法 | 常规 `stream.open` 会让 stream 域承载业务分类。 | draft 不建议晋升为 Core/MVP；如保留，限定为 P1 vendor/private 通用建流。 | `video.openStream`、`log.openStream`、`file.beginTransfer`、`firmware.beginOta`。 | 业务域 `streamStateChanged`。 |
-| `display.brightnessMin` | `display.brightness` | min 是 brightness capability schema 字段，不是独立 feature。 | v1 MVP 字段级 fact 可兼容保留；v2 收敛到 schema。 | `display.getBrightness` / `display.setBrightness`；未来 `display.getBrightnessCapabilities`。 | `display.brightnessChanged`。 |
-| `display.brightnessMax` | `display.brightness` | max 是 brightness capability schema 字段，不是独立 feature。 | v1 MVP 字段级 fact 可兼容保留；v2 收敛到 schema。 | 同上。 | 同上。 |
-| `display.brightnessStep` | `display.brightness` | step 是 brightness capability schema 字段，不是独立 feature。 | v1 MVP 字段级 fact 可兼容保留；v2 收敛到 schema。 | 同上。 | 同上。 |
-| `firmware.begin` / `firmware.end` / `firmware.verify` / `firmware.apply` | `firmware.beginOta` / `firmware.cancelOta` / `firmware.verifyOtaFiles` / `firmware.installOta` | 旧名可工作，但新模板应显式绑定 OTA feature。 | stable v1 方法保留；新增能力使用 Ota 后缀。 | 当前方法仍归属 `firmware.ota`。 | 当前事件仍归属 `firmware.ota`。 |
-| `firmware.updateProgress` | `firmware.otaProgressReported` | update 是泛词，progress reported 更明确。 | stable v1 事件保留；新增事件使用推荐模板。 | `firmware.begin` / `firmware.verify` / `firmware.apply`。 | `firmware.updateProgress`。 |
-| `firmware.updateCompleted` / `firmware.updateFailed` | `firmware.otaStateChanged` / `firmware.otaResultReported` | completed/failed 是 OTA 状态或结果。 | stable v1 事件保留；新增事件使用推荐模板。 | `firmware.verify` / `firmware.apply`。 | 当前完成/失败事件。 |
+| `display.brightnessMin` | `display.brightness` | min 是 brightness capability schema 字段，不是独立 feature。 | 未采纳字段不得生成；后续 display 草案应收敛到 schema。 | 待 display 草案定义。 | 待 display 草案定义。 |
+| `display.brightnessMax` | `display.brightness` | max 是 brightness capability schema 字段，不是独立 feature。 | 未采纳字段不得生成；后续 display 草案应收敛到 schema。 | 同上。 | 同上。 |
+| `display.brightnessStep` | `display.brightness` | step 是 brightness capability schema 字段，不是独立 feature。 | 未采纳字段不得生成；后续 display 草案应收敛到 schema。 | 同上。 | 同上。 |
+| `firmware.begin` / `firmware.end` / `firmware.verify` / `firmware.apply` | `firmware.beginOta` / `firmware.cancelOta` / `firmware.verifyOtaFiles` / `firmware.installOta` | 旧名不作为当前生成合同；新模板应显式绑定 OTA feature。 | 待 `firmware.ota` 草案采纳后才可生成。 | 待 `firmware.ota` 草案定义。 | 待 `firmware.ota` 草案定义。 |
+| `firmware.updateProgress` | `firmware.otaProgressReported` | update 是泛词，progress reported 更明确。 | 待 `firmware.ota` 草案采纳后才可生成。 | 待 `firmware.ota` 草案定义。 | 待 `firmware.ota` 草案定义。 |
+| `firmware.updateCompleted` / `firmware.updateFailed` | `firmware.otaStateChanged` / `firmware.otaResultReported` | completed/failed 是 OTA 状态或结果。 | 待 `firmware.ota` 草案采纳后才可生成。 | 待 `firmware.ota` 草案定义。 | 待 `firmware.ota` 草案定义。 |
 
 ---
 

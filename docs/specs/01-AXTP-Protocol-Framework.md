@@ -109,7 +109,7 @@ Server -> Client: CONTROL ACCEPT
 Server -> Client: RPC Hello
 Client -> Server: RPC Identify
 Server -> Client: RPC Identified
-Client -> Server: RPC capability.supportedMethods
+Client -> Server: RPC adopted business methods from generated registry
 ```
 
 `READY` 保留为可选三步确认名称，但 v1 Core 默认不要求实现；默认握手只要求 OPEN / ACCEPT。
@@ -118,7 +118,7 @@ Client -> Server: RPC capability.supportedMethods
 
 ## 7. v1 Capability 策略
 
-v1 Core 保留 `capability` 域，但不实现完整 Capability Model。v1 Core 只强制 `capability.supportedMethods`，用于返回当前设备、当前固件、当前会话、当前鉴权状态下支持的 methodId 集合。
+v1 Core 保留 `capability` 域，但不内置默认业务能力发现 method。业务能力发现必须由已采纳草案显式定义；在此之前，客户端以当前产品生成的 registry 作为可调用方法清单，设备可用标准 RPC 错误表示未支持或不可用。
 
 完整 `capability.getAll` / `capability.query` / capability schema 属于 v2/P1 扩展。
 

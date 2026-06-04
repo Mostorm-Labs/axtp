@@ -373,20 +373,20 @@ registry/
 ### 4. Registry 对象通用字段
 
 ```yaml
-id: 0x0101
-name: device.getInfo
+id: 0x0901
+name: audio.getAlgorithmConfig
 kind: method
 status: stable
-domain: device
-domainId: 0x01        # 域级掩码中的 DomainId（event/capability 可用；method 由 domain name 分组）
+domain: audio
+domainId: 0x09        # 域级掩码中的 DomainId（event/capability 可用；method 由 domain name 分组）
 bitOffset: 0          # 域内 method/event 掩码位偏移，必须在同 domain 内连续
 version:
   since: 1.0.0
   deprecated: null
   removed: null
-description: Get basic device information.
-owner: core
-mvp: true
+description: Return the current effective configuration for supported audio algorithm objects.
+owner: audio
+mvp: false
 legacy:
   cmdValue: null
   source: null
@@ -395,7 +395,7 @@ legacy:
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
 | `id` | 是 | 数值 ID，必须唯一 |
-| `name` | 是 | 可读名称，例如 `device.getInfo` |
+| `name` | 是 | 可读名称，例如 `audio.getAlgorithmConfig` |
 | `kind` | 是 | `method/event/error/capability/enum/schema` |
 | `status` | 是 | 生命周期状态 |
 | `domain` | 视情况 | 所属业务域 |
@@ -660,24 +660,24 @@ Method 条目格式：
 
 ```yaml
 methods:
-  - id: 0x0602
-    name: display.setBrightness
+  - id: 0x0902
+    name: audio.setAlgorithmConfig
     kind: method
-    status: mvp
-    domain: display
-    description: Set display brightness value.
+    status: stable
+    domain: audio
+    description: Partially update audio algorithm configuration.
     schema:
-      params: DisplaySetBrightnessParams
-      result: DisplaySetBrightnessResult
+      params: AudioSetAlgorithmConfigRequest
+      result: AudioSetAlgorithmConfigResponse
     errors:
-      - RPC_PARAM_INVALID
+      - INVALID_ARGUMENT
       - BUSY
     events:
-      - display.brightnessChanged
+      - audio.algorithmConfigChanged
     legacy:
       cmdValue: null
       source: null
-    mvp: true
+    mvp: false
 ```
 
 Method 规则：
@@ -802,7 +802,7 @@ CapabilityId 使用 `uint16`，同样按第 9 章 Domain Registry 的 `DomainId`
 
 Capability 规则：
 - 协议运行参数可在 `CONTROL OPEN / ACCEPT` 中协商
-- v1 Core 业务方法能力必须通过 RPC 查询（`capability.supportedMethods`）；完整 `capability.getRegistry` 属于 v2/P1
+- v1 Core 不内置默认业务能力发现；业务能力查询必须由已采纳 method 显式定义
 - Capability 不等于 Method；Method 是否可调用由 Capability 与 Method Registry 共同判断
 - 每个 Capability 必须在其 Domain 内分配唯一 `bitOffset`（0-255），由 Registry 自增分配，用于 `capabilityMasks` 域级掩码响应
 - `domainId` 与 MethodId 高字节对齐（如 `display.*` MethodId 为 `0x06xx`，domainId = `0x06`）
@@ -915,23 +915,20 @@ PayloadType:    CONTROL / RPC / STREAM
 Control Opcode: OPEN / ACCEPT / HEARTBEAT / HEARTBEAT_ACK / ACK / NACK / CLOSE / CLOSE_ACK
 RPC Op:         HELLO / IDENTIFY / IDENTIFIED / EVENT / REQUEST / REQUEST_RESPONSE
 RPC Encoding:   JSON / BINARY
-Stream Profile: firmware.ota
+Stream Profile: none by default; business stream profiles require adopted drafts
 ```
 
-#### 20.2 MVP Method
+#### 20.2 Current Generated Method
 
 ```text
-device.getInfo
-capability.supportedMethods
-display.getBrightness / display.setBrightness
-firmware.beginOta / firmware.commitOtaBatch / firmware.verifyOtaFiles / firmware.installOta
+audio.getAlgorithmCapabilities
+audio.getAlgorithmConfig / audio.setAlgorithmConfig / audio.resetAlgorithmConfig
 ```
 
-#### 20.3 MVP Event
+#### 20.3 Current Generated Event
 
 ```text
-display.brightnessChanged
-firmware.otaProgressReported / firmware.otaStateChanged / firmware.otaResultReported
+audio.algorithmConfigChanged
 ```
 
 #### 20.4 MVP ErrorCode
@@ -945,13 +942,11 @@ RPC_ENCODING_UNSUPPORTED / RPC_METHOD_NOT_FOUND / RPC_PARAM_INVALID
 STREAM_NOT_FOUND / STREAM_TIMEOUT / STREAM_CRC_ERROR / FW_VERIFY_FAILED
 ```
 
-#### 20.5 MVP Capability
+#### 20.5 Current Generated Capability
 
 ```text
 protocol.payload.control / protocol.payload.rpc / protocol.payload.stream
-device.info / capability.supportedMethods
-display.brightness
-firmware.ota
+audio.algorithm
 ```
 
 说明：本节使用 domain-feature 治理后的主名称。旧名只允许出现在 legacy、deprecated 或 migration 说明中。
@@ -996,7 +991,7 @@ firmware.ota
 
 AXTP 使用统一的域级二进制掩码体系，同时应用于：
 
-- **能力查询**：v1 Core 使用 `capability.supportedMethods` 响应中的 method bitmap；v2/P1 可使用 `capability.getRegistry` 响应中的 `capabilityMasks`
+- **能力查询**：如后续采纳 capability 查询 method，可使用 method bitmap 或 `capabilityMasks`
 - **事件订阅**：`IDENTIFY / REIDENTIFY` 请求中的 `eventMasks`
 
 #### 23.1 设计原则

@@ -45,7 +45,7 @@ Capability ID：`audio.eq`
 | `audio.algorithm` | NS、AEC、AGC、BF、DR、VAD、DOA、howling suppression 等通用音频算法配置。 |
 | `stream` | 音频数据面传输；EQ 配置本身不承载 PCM、频谱或算法结果流。 |
 | `diagnostic` | 产测、校准、工厂写入、算法授权和私有调参流程。 |
-| `capability` | v1 使用 `capability.supportedMethods` 发现当前会话可调用方法；完整 capability registry 查询属于 v2/P1 扩展。 |
+| `capability` | 当前 generated contract 不包含全局 capability RPC；EQ 可调用性由草案采纳后的业务能力查询或后续 capability 草案决定。 |
 
 EQ 可以被实现为 DSP 算法的一部分，但协议上独立于 `audio.algorithm`，原因是 EQ 具有 path、preset、bands、gainDb、frequencyHz、q 等专用结构。
 
@@ -768,7 +768,7 @@ set/reset 成功后返回 `state`：
 
 | 场景 | ErrorCode | 说明 |
 |---|---|---|
-| 方法存在但当前会话不支持 | `CAPABILITY_METHOD_UNSUPPORTED` 或 `RPC_METHOD_NOT_SUPPORTED` | `capability.supportedMethods` 未暴露对应方法时使用。 |
+| 方法存在但当前会话不支持 | `CAPABILITY_METHOD_UNSUPPORTED` 或 `RPC_METHOD_NOT_SUPPORTED` | 业务能力查询或会话策略判定该方法不可调用时使用。 |
 | 设备不支持 `audio.eq` | `NOT_SUPPORTED` | 设备级不支持。 |
 | path 枚举非法 | `RPC_PARAM_INVALID` | 例如 `paths: ["record"]`。 |
 | 指定 path 合法但设备不支持该 path | `NOT_SUPPORTED` | error `data.path` 指明 path。 |
@@ -854,7 +854,7 @@ path 不支持：
 
 ## 12. 与 capability 域的关系
 
-AXTP v1 Core 的强制能力发现入口是 `capability.supportedMethods`。客户端可先确认当前会话是否支持：
+当前 generated contract 不包含全局 `capability.*` RPC。`audio.eq` 草案采纳前，客户端不能假设存在统一能力发现入口；采纳后可通过业务域能力方法确认当前会话是否支持：
 
 ```text
 audio.getEqCapabilities
@@ -865,9 +865,9 @@ audio.resetEqConfig
 
 `audio.getEqCapabilities` 是 audio 域内的细粒度能力查询，负责返回 path、preset、band、范围、默认值等 EQ 专用信息。
 
-二者不是重复关系：
+若后续采纳 capability 域 RPC，它与 `audio.getEqCapabilities` 不是重复关系：
 
-1. `capability.supportedMethods` 判断方法是否可调用。
+1. capability 域 RPC 判断方法是否可调用。
 2. `audio.getEqCapabilities` 判断某个 EQ path 和参数是否可用。
 3. v2/P1 的 `capability.getRegistry` 或 `capability.getDomainRegistry` 可以暴露 `audio.eq` capability schema，但不能替代 `audio.getEqCapabilities` 的运行时细节。
 

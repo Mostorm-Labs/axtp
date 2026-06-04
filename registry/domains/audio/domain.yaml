@@ -5,8 +5,8 @@ methods:
   - id: 0x090D
     name: audio.getAlgorithmCapabilities
     domain: audio
-    status: draft
-    bit_offset: 0
+    status: stable
+    bitOffset: 0
     since: 1.0.0
     description: Return supported audio algorithm objects, fields, defaults, ranges, units, and update policy.
     rpc_op: request_response
@@ -26,8 +26,8 @@ methods:
   - id: 0x0901
     name: audio.getAlgorithmConfig
     domain: audio
-    status: draft
-    bit_offset: 1
+    status: stable
+    bitOffset: 1
     since: 1.0.0
     description: Return the current effective configuration for supported audio algorithm objects.
     rpc_op: request_response
@@ -47,8 +47,8 @@ methods:
   - id: 0x0902
     name: audio.setAlgorithmConfig
     domain: audio
-    status: draft
-    bit_offset: 2
+    status: stable
+    bitOffset: 2
     since: 1.0.0
     description: Partially update one or more audio algorithm configuration objects atomically.
     rpc_op: request_response
@@ -74,8 +74,8 @@ methods:
   - id: 0x090E
     name: audio.resetAlgorithmConfig
     domain: audio
-    status: draft
-    bit_offset: 3
+    status: stable
+    bitOffset: 3
     since: 1.0.0
     description: Reset all, selected, or selected-field audio algorithm configuration to declared default values.
     rpc_op: request_response
@@ -102,8 +102,8 @@ events:
   - id: 0x0901
     name: audio.algorithmConfigChanged
     domain: audio
-    status: draft
-    bit_offset: 0
+    status: stable
+    bitOffset: 0
     since: 1.0.0
     description: Emitted when audio algorithm configuration changes after set, reset, profile, restore, factory reset, or device policy changes.
     event_schema: AudioAlgorithmConfigChangedEvent
@@ -866,7 +866,7 @@ capabilities:
   - id: 0x0901
     name: audio.algorithm
     domain: audio
-    status: draft
+    status: stable
     since: 1.0.0
     description: Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification.
     type: object

@@ -48,7 +48,7 @@ function mapCommon(items: any[], file: string): CommonRegistryItem[] {
 function mapMethod(item: any, file: string): Method {
   return {
     id: normalizeId(item.id, `${file}:${item.name}`),
-    bitOffset: normalizeId(item.bit_offset ?? item.bitOffset, `${file}:${item.name}.bit_offset`),
+    bitOffset: normalizeId(item.bitOffset, `${file}:${item.name}.bitOffset`),
     name: String(item.name),
     domain: String(item.domain),
     status: item.status ?? "mvp",
@@ -69,7 +69,7 @@ function mapMethod(item: any, file: string): Method {
 function mapEvent(item: any, file: string): Event {
   return {
     id: normalizeId(item.id, `${file}:${item.name}`),
-    bitOffset: normalizeId(item.bit_offset ?? item.bitOffset, `${file}:${item.name}.bit_offset`),
+    bitOffset: normalizeId(item.bitOffset, `${file}:${item.name}.bitOffset`),
     name: String(item.name),
     domain: String(item.domain),
     status: item.status ?? "mvp",

@@ -25,11 +25,11 @@ enum class RpcOp : std::uint8_t {
 };
 
 enum class MethodId : std::uint16_t {
-    DisplaySetBrightness = 0x0602,
+    AudioSetAlgorithmConfig = 0x0902,
 };
 
 enum class EventId : std::uint16_t {
-    DisplayBrightnessChanged = 0x0607,
+    AudioAlgorithmConfigChanged = 0x0901,
 };
 
 enum class ErrorCode : std::uint16_t {
@@ -37,7 +37,7 @@ enum class ErrorCode : std::uint16_t {
 };
 
 enum class CapabilityId : std::uint16_t {
-    DisplayBrightness = 0x0601,
+    AudioAlgorithm = 0x0901,
 };
 
 } // namespace axtp

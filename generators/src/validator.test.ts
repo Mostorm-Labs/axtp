@@ -18,62 +18,67 @@ function baseSpec(): SpecModel {
     rpcEncodings: [{ id: 2, value: 2, name: "BINARY", domain: "rpc", status: "mvp" }],
     rpcBodyEncodings: [{ id: 1, value: 1, name: "TLV8", domain: "rpc", status: "mvp" }],
     rpcOps: [{ id: 7, value: 7, name: "REQUEST", domain: "rpc", status: "mvp" }],
-    streamProfiles: [{ id: 1, value: 1, name: "firmware.ota", domain: "firmware", status: "mvp" }],
+    streamProfiles: [],
     methods: [{
-      id: 0x0602,
-      name: "display.setBrightness",
-      domain: "display",
-      status: "mvp",
+      id: 0x0902,
+      name: "audio.setAlgorithmConfig",
+      domain: "audio",
+      status: "stable",
       bitOffset: 0,
       rpcOp: "request_response",
-      requestSchema: "DisplaySetBrightnessRequest",
-      responseSchema: "CommonEmptyResponse",
+      requestSchema: "AudioSetAlgorithmConfigRequest",
+      responseSchema: "AudioSetAlgorithmConfigResponse",
       recommendedEncoding: ["binary_tlv"],
-      capabilities: ["display.brightness"],
-      events: ["display.brightnessChanged"],
+      capabilities: ["audio.algorithm"],
+      events: ["audio.algorithmConfigChanged"],
       errors: ["SUCCESS"]
     }],
     events: [{
-      id: 0x0607,
-      name: "display.brightnessChanged",
-      domain: "display",
-      status: "mvp",
+      id: 0x0901,
+      name: "audio.algorithmConfigChanged",
+      domain: "audio",
+      status: "stable",
       bitOffset: 0,
-      eventSchema: "DisplayBrightnessChangedEvent",
-      trigger: ["display.setBrightness"],
-      capabilities: ["display.brightness"]
+      eventSchema: "AudioAlgorithmConfigChangedEvent",
+      trigger: ["audio.setAlgorithmConfig"],
+      capabilities: ["audio.algorithm"]
     }],
-    errors: [{ id: 0, name: "SUCCESS", domain: "common", status: "mvp", retryable: false }],
+    errors: [{ id: 0, name: "SUCCESS", domain: "common", status: "stable", retryable: false }],
     capabilities: [
-      { id: 0x0601, name: "display.brightness", domain: "display", status: "mvp", type: "bool" }
+      { id: 0x0901, name: "audio.algorithm", domain: "audio", status: "stable", type: "object", schema: "AudioAlgorithmCapability" }
     ],
     legacyMappings: [{
       legacyProtocol: "axdp_hid",
       legacyCmdValue: 0x42,
-      legacyName: "BetaDisplaySetBrightness",
-      axtpMethodId: 0x0602,
-      axtpMethodName: "display.setBrightness",
+      legacyName: "CommonSetNoiseSuppressionLevel",
+      axtpMethodId: 0x0902,
+      axtpMethodName: "audio.setAlgorithmConfig",
       direction: "request_response",
       statusMapping: { "0x00": "SUCCESS" }
     }],
     schemas: [
-      { name: "CommonEmptyResponse", type: "object", fields: [] },
+      { name: "AudioAlgorithmCapability", type: "object", fields: [] },
       {
-        name: "DisplaySetBrightnessRequest",
+        name: "AudioSetAlgorithmConfigRequest",
         type: "object",
-        fields: [{ id: 1, name: "value", type: "uint8", required: true, deprecated: false, min: 0, max: 100 }]
+        fields: [{ id: 1, name: "config", type: "object", required: true, deprecated: false }]
       },
       {
-        name: "DisplayBrightnessChangedEvent",
+        name: "AudioSetAlgorithmConfigResponse",
         type: "object",
-        fields: [{ id: 1, name: "value", type: "uint8", required: true, deprecated: false, min: 0, max: 100 }]
+        fields: [{ id: 1, name: "applyState", type: "enum", required: true, deprecated: false }]
+      },
+      {
+        name: "AudioAlgorithmConfigChangedEvent",
+        type: "object",
+        fields: [{ id: 1, name: "reason", type: "enum", required: true, deprecated: false }]
       }
     ],
     mvpProfile: {
-      methods: ["display.setBrightness"],
-      events: ["display.brightnessChanged"],
+      methods: [],
+      events: [],
       errors: ["SUCCESS"],
-      capabilities: ["display.brightness"]
+      capabilities: []
     }
   };
 }
@@ -96,10 +101,10 @@ describe("validateSpec", () => {
     expect(() => validateSpec(spec)).toThrow(/AXTP-GEN-1002|duplicate methodId/);
   });
 
-  it("rejects non-contiguous source bit offsets", () => {
+  it("rejects non-contiguous source bitOffset values", () => {
     const spec = baseSpec();
     spec.methods[0].bitOffset = 2;
-    expect(() => validateSpec(spec)).toThrow(/bit_offset must be contiguous from 0/);
+    expect(() => validateSpec(spec)).toThrow(/bitOffset must be contiguous from 0/);
   });
 
   it("rejects missing schema references", () => {
@@ -122,7 +127,7 @@ describe("validateSpec", () => {
 
   it("rejects missing MVP items", () => {
     const spec = baseSpec();
-    spec.mvpProfile.methods.push("device.getInfo");
+    spec.mvpProfile.methods.push("missing.method");
     expect(() => validateSpec(spec)).toThrow(/missing method/);
   });
 

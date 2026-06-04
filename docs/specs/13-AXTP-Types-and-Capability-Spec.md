@@ -12,14 +12,14 @@
 
 ## 0. 速读：新增 Schema / Capability 怎么做
 
-Schema 描述 RPC/TLV/Capability 对象的字段结构；Capability 描述设备在当前固件、会话和鉴权状态下可用的能力。v1 Core 只强制 `capability.supportedMethods`，完整 Capability Model 留到 v2/P1。
+Schema 描述 RPC/TLV/Capability 对象的字段结构；Capability 描述设备在当前固件、会话和鉴权状态下可用的能力。v1 Core 不内置默认业务能力发现 method；运行时能力发现必须由已采纳业务或 capability 草案显式定义。
 
 新增 schema 或 capability 的默认流程：
 
 ```text
 1. 从 docs/protocol/<domain>/<domain.feature>.md 收集候选 schema、capability 和字段。
 2. 先按 08 判断 domain.feature 粒度。
-3. 确认协议草案后，反向确认本文件中的 schema fieldId、capabilityId、supportedMethods 关系和规划表是否需要更新。
+3. 确认协议草案后，反向确认本文件中的 schema fieldId、capabilityId、capability 关系和规划表是否需要更新。
 4. 普通业务 schema/capability 写入 registry/domains/<domain>/domain.yaml。
 5. 跨 domain 公共 schema 或 Core/MVP capability 才写入 registry/schema/ 或 registry/capability/。
 6. object 字段必须分配 schema-local fieldId；stable 后不得复用。
@@ -30,7 +30,7 @@ Schema 描述 RPC/TLV/Capability 对象的字段结构；Capability 描述设备
 | 你要表达 | 推荐位置 | 注意 |
 |---|---|---|
 | method params/result/event data | schema | fieldId 由 17 约束，TLV 编码由 16 约束 |
-| 当前会话可调用 method 集合 | `capability.supportedMethods` | v1 Core 必选 |
+| 当前产品可调用 method 集合 | generated registry 或已采纳能力查询 method | 不由 v1 Core 默认生成 |
 | 设备业务能力块 | `domain.feature` capability | 不要按旧 CmdValue 逐条膨胀 |
 | 协议运行参数 | CONTROL OPEN / ACCEPT | 不放入业务 capability |
 
@@ -105,21 +105,15 @@ generated/conformance schema validation cases
 
 ## 6. v1 Capability 策略
 
-AXTP v1 Core 保留 capability 域，但不实现完整 Capability Model。
+AXTP v1 Core 保留 capability 域，但不实现完整 Capability Model，也不强制生成默认业务能力发现 request。
 
-v1 Core 唯一强制能力发现 request：
-
-```text
-capability.supportedMethods
-```
-
-语义：
+若后续 capability 草案采纳了 method 集合查询，其语义应为：
 
 ```text
 返回当前设备、当前固件、当前会话、当前鉴权状态下支持的 methodId 集合。
 ```
 
-`capability.supportedMethods` 的 method bitmap 按 domain 分段，由 `methods[].bitOffset` 自动派生：每个 domain 内第 N bit 置 1 表示该 domain 下 `bitOffset=N` 的 method 当前可用。
+method bitmap 按 domain 分段，由 `methods[].bitOffset` 自动派生：每个 domain 内第 N bit 置 1 表示该 domain 下 `bitOffset=N` 的 method 当前可用。
 
 Binary 响应使用域级方法掩码链：
 
@@ -162,14 +156,8 @@ Domain Block = [DomainId:1B] + [MaskLen:1B] + [MethodBitmask:N B Little-Endian]
 
 | Domain | Feature / Capability | Methods | Events | 范围 |
 |---|---|---|---|---|
-| protocol | `protocol.payload.control`、`protocol.payload.rpc`、`protocol.payload.stream` | CONTROL / RPC / STREAM parser | - | MVP |
-| device | `device.info` | `device.getInfo` | - | MVP |
-| capability | `capability.supportedMethods` | `capability.supportedMethods` | - | MVP |
-| firmware | `firmware.ota` | `firmware.begin`、`firmware.end`、`firmware.verify`、`firmware.apply` | `firmware.updateProgress`、`firmware.updateCompleted`、`firmware.updateFailed` | MVP |
-| display | `display.brightness` | `display.getBrightness`、`display.setBrightness` | `display.brightnessChanged` | MVP |
-| stream | `stream.hidMedia` | `stream.open` | `stream.opened`、`stream.error` | draft |
-| network | `network.softAp` | `network.getApInfo` | `network.apInfoChanged` | draft |
-| audio | `audio.algorithm` | `audio.getAlgorithmCapabilities`、`audio.getAlgorithmConfig`、`audio.setAlgorithmConfig`、`audio.resetAlgorithmConfig` | `audio.algorithmConfigChanged` | draft |
+| protocol | `protocol.payload.control`、`protocol.payload.rpc`、`protocol.payload.stream` | CONTROL / RPC / STREAM parser | - | Core |
+| audio | `audio.algorithm` | `audio.getAlgorithmCapabilities`、`audio.getAlgorithmConfig`、`audio.setAlgorithmConfig`、`audio.resetAlgorithmConfig` | `audio.algorithmConfigChanged` | stable |
 
 未进入本表的 `domain.feature` 仍可在本文件后续 CapabilityId 表中预留编号；只有写入 YAML 事实源并通过 Generator 校验后，才成为当前可生成协议事实。
 
@@ -201,8 +189,8 @@ v2 Capability Model 可以引用 `schemas:`，但不得改变 v1 method/event/er
 ## 正式 CapabilityId 与 Capability 注册表
 
 版本：v1.1
-状态：MVP Capability Registry 规范（精简版）
-适用范围：AXTP Capability 分类、CapabilityId 编号、条目结构、查询方法、MVP 集合、老协议适配
+状态：Capability Registry 规范（精简版）
+适用范围：AXTP Capability 分类、CapabilityId 编号、条目结构、查询方法、当前生成集合、老协议适配
 
 ---
 
@@ -286,10 +274,7 @@ CapabilityId 使用 `uint16`，按 09《AXTP Protocol Definition Mapping Spec》
   discovery:
     controlHello: true
     rpc: true
-  relatedMethods:
-    - capability.supportedMethods
-    - capability.getRegistry
-    - capability.getDomainRegistry
+  relatedMethods: []
   since: 1.0.0
 ```
 
@@ -298,7 +283,7 @@ CapabilityId 使用 `uint16`，按 09《AXTP Protocol Definition Mapping Spec》
 | `id` | capabilityId |
 | `name` | capability 名称 |
 | `domain` | 所属域 |
-| `domainId` | `capability.supportedMethods` 或 v2 `capability.getRegistry` 响应中的 DomainId（1B）；业务 capability 与 MethodId 高字节对齐，协议/通用 capability 使用 `0x00` |
+| `domainId` | capability 查询响应中的 DomainId（1B）；业务 capability 与 MethodId 高字节对齐，协议/通用 capability 使用 `0x00` |
 | `bitOffset` | 该 capability 在 Domain 内的掩码位偏移（0-255），由 Registry 自增分配 |
 | `status` | draft / mvp / stable / deprecated / reserved |
 | `type` | bool / uint / enum / bitmap / object / array |
@@ -315,11 +300,11 @@ CapabilityId 使用 `uint16`，按 09《AXTP Protocol Definition Mapping Spec》
 
 ---
 
-### 4.1 capability.supportedMethods 响应格式：域级方法掩码
+### 4.1 可选 method bitmap 响应格式：域级方法掩码
 
-AXTP v1 Core 唯一强制能力发现入口是 `capability.supportedMethods`。它返回当前设备、当前固件、当前会话、当前鉴权状态下支持的 methodId 集合。
+AXTP v1 Core 不强制生成全局 supported-methods 查询方法。如果后续已采纳的 capability 协议需要返回当前设备、当前固件、当前会话、当前鉴权状态下支持的 methodId 集合，必须使用本节的域级方法掩码格式。
 
-`capability.supportedMethods` 的 Binary 响应使用域级二进制掩码链（Domain Mask Packets Chain）：
+该 Binary 响应使用域级二进制掩码链（Domain Mask Packets Chain）：
 
 ```text
 Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [MethodBitmask: N B (Little-Endian)]
@@ -429,11 +414,7 @@ bool isCapabilitySupported(const uint8_t* bitmask, uint8_t maskLen, uint8_t bitO
 
 ### 7. 能力查询能力注册表
 
-| capabilityId | name | 类型 | 状态 | 说明 |
-|---:| --- |---| --- |---|
-| `0x0201` | `capability.supportedMethods` | bool | mvp | 支持 `capability.supportedMethods` 方法 |
-
-后续 `capability.getRegistry / capability.getDomainRegistry / capability.hasMethod / capability.getLimits / capability.negotiate` 等能力均继续分配在 `0x02xx`。
+当前没有已采纳的 capability 查询 method。后续若采纳 `capability.getRegistry / capability.getDomainRegistry / capability.hasMethod / capability.getLimits / capability.negotiate` 等能力，应继续分配在 `0x02xx`。
 
 ---
 
@@ -720,13 +701,7 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 
 ### 28. Capability 查询方法
 
-v1 Core 必须实现：
-
-| methodId | methodName | 说明 |
-|---:| --- |---|
-| `0x0201` | `capability.supportedMethods` | 获取当前会话可调用 methodId 集合 |
-
-v2/P1 建议后续实现：
+后续建议能力查询：
 
 | methodId | methodName | 说明 |
 |---:| --- |---|
@@ -856,19 +831,17 @@ legacyMapping 字段：
 
 ---
 
-### 34. MVP Capability 集合
+### 34. 当前生成 Capability 集合
 
-MVP Capability 集合以 `registry/capability/capability_registry.yaml` 与 `registry/domains/<domain>/domain.yaml` 为事实源。Capability 采用 `domain.feature` 能力块表达；字段级限制进入 feature capability schema。下列集合是 AXTP v1 MVP 目标合同。
+Capability 集合以 `registry/capability/capability_registry.yaml` 与 `registry/domains/<domain>/domain.yaml` 为事实源。Capability 采用 `domain.feature` 能力块表达；字段级限制进入 feature capability schema。下列集合是当前生成合同。
 
 | capabilityId | capabilityName | Type | 说明 |
 |---:| --- |---| --- |
 | `0x0001` | `protocol.payload.control` | bool | 支持 CONTROL payload |
 | `0x0002` | `protocol.payload.rpc` | bool | 支持 RPC payload |
 | `0x0003` | `protocol.payload.stream` | bool | 支持 STREAM payload |
-| `0x0101` | `device.info` | bool | 支持 device.getInfo |
-| `0x0201` | `capability.supportedMethods` | bool | 支持 capability.supportedMethods |
-| `0x0401` | `firmware.ota` | object | 支持基于 STREAM 的 OTA |
-| `0x0601` | `display.brightness` | bool | 支持亮度控制 |
+| `0x0009` | `protocol.reservedRequestIdWidth` | reserved | 历史 requestId 位宽协商占位；AXTP v1 固定 requestId 为 uint32 |
+| `0x0901` | `audio.algorithm` | object | 支持音频算法能力查询、配置、重置和变化通知 |
 
 ---
 

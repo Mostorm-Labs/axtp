@@ -313,9 +313,11 @@ export function validateProtocolDefinition(model: ProtocolModel): string[] {
   assertEventReferences(model.events, typeNames);
 
   const supportedMethodsResponse = model.schemas.find((item) => item.name === "CapabilitySupportedMethodsResponse");
-  const methodMasks = supportedMethodsResponse?.fields.find((field) => field.name === "methodMasks");
-  if (!methodMasks || methodMasks.derivedFrom !== "methods[].bitOffset") {
-    fail("CapabilitySupportedMethodsResponse", "methodMasks", "capability.supportedMethods methodMasks must derive from methods[].bitOffset");
+  if (supportedMethodsResponse) {
+    const methodMasks = supportedMethodsResponse.fields.find((field) => field.name === "methodMasks");
+    if (!methodMasks || methodMasks.derivedFrom !== "methods[].bitOffset") {
+      fail("CapabilitySupportedMethodsResponse", "methodMasks", "optional methodMasks must derive from methods[].bitOffset");
+    }
   }
 
   for (const transport of model.transports) {

@@ -133,11 +133,11 @@ Generated-style facades provide discoverable methods:
 AxtpClient client;
 AxtpDevice device(client);
 
-auto info = device.device.getInfo();
-device.display.setBrightness(80);
+auto config = device.audio.getAlgorithmConfig();
+device.audio.setAlgorithmConfig(request);
 ```
 
-These facades are hand-written P0 placeholders matching the generated shape. A later generator update should emit the full set from the protocol registry, but adding a new business method should not require recompiling the SDK if the caller can provide method name/id plus JSON/TLV/Raw body.
+These facades are hand-written P0 placeholders matching the currently adopted protocol surface. A later generator update should emit the full set from the protocol registry, but adding a new business method should not require recompiling the SDK if the caller can provide method name/id plus JSON/TLV/Raw body.
 
 ## Endpoint And Options
 
@@ -191,8 +191,8 @@ SDK wrappers must keep this direction. They may own endpoint, broker, and transp
 The SDK should prefer dynamic calls in public examples:
 
 ```cpp
-client.callJson("device.getInfo", "{}");
-client.callTlv("display.setBrightness", bytes);
+client.callJson("audio.getAlgorithmConfig", "{}");
+client.callTlv("audio.setAlgorithmConfig", bytes);
 client.callRawBytes(0x90010001, bytes);
 ```
 

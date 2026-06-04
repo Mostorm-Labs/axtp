@@ -43,7 +43,7 @@
 | Type | Item | Status |
 |---|---|---|
 | Assumption | 拖动条调整的是算法强度等级，而不是算法开关、音频路由、音量或 EQ。 | `[REVIEW-DRAFT]` |
-| Assumption | App 连接设备后可完成 AXTP session，并可调用 `capability.supportedMethods`。 | `[REVIEW-DRAFT]` |
+| Assumption | App 连接设备后可完成 AXTP session，并已加载当前产品生成的 AXTP registry。 | `[REVIEW-DRAFT]` |
 | Assumption | UI 变更提交采用松手提交或 300-500 ms 防抖提交，避免拖动过程高频 RPC。 | `[REVIEW-DRAFT]` |
 | Question | 恢复默认是恢复本页所有 slider 字段，还是恢复 `audio.algorithm` 的全部字段，包括 enabled 和高级参数？ | `[REVIEW-ASK]` |
 | Question | UI 是否需要显示算法开关、当前算法运行状态、DOA/beam 实时结果或试听预览？ | `[REVIEW-ASK]` |
@@ -54,7 +54,7 @@
 
 | Need | Coverage state | AXTP protocol | Evidence | Next action |
 |---|---|---|---|---|
-| 确认设备是否支持音频算法配置 | Adopted/generated | `capability.supportedMethods`, `audio.algorithm` capability | `docs/generated/protocol.md`, `registry/domains/audio/domain.yaml` | App 实现能力门禁。 |
+| 确认设备是否支持音频算法配置 | Adopted/generated | Generated registry, `audio.getAlgorithmCapabilities`, `audio.algorithm` capability | `docs/generated/protocol.md`, `registry/domains/audio/domain.yaml` | App 实现能力门禁。 |
 | 查询可展示的算法和 slider 范围 | Adopted/generated | `audio.getAlgorithmCapabilities` | `docs/generated/protocol.md#audiogetalgorithmcapabilities` | App 按返回 descriptor 渲染 UI。 |
 | 查询当前等级值 | Adopted/generated | `audio.getAlgorithmConfig` | `docs/generated/protocol.md#audiogetalgorithmconfig` | App 初始化页面。 |
 | 调整单个或多个等级值 | Adopted/generated | `audio.setAlgorithmConfig` | `docs/generated/protocol.md#audiosetalgorithmconfig` | App 在松手、防抖或保存时提交 partial config。 |
@@ -72,8 +72,7 @@ sequenceDiagram
     participant Audio as Audio Algorithm Service
 
     User->>App: Open audio algorithm tuning page
-    App->>Device: capability.supportedMethods
-    Device-->>App: supported audio.algorithm methods
+    App->>App: Load generated AXTP registry
     App->>Device: audio.getAlgorithmCapabilities
     Device-->>App: algorithms, fields, min/max/step/default
     App->>Device: audio.getAlgorithmConfig
@@ -101,7 +100,7 @@ sequenceDiagram
 
 | Step | Actor | User or system action | Protocol call/event | Request / event payload notes | Response / state result | Error or fallback |
 |---:|---|---|---|---|---|---|
-| 1 | App | 进入页面后检查设备能力。 | `capability.supportedMethods` | 读取当前 session 支持的方法集合。 | 若包含 `audio.getAlgorithmCapabilities`、`audio.getAlgorithmConfig`、`audio.setAlgorithmConfig`、`audio.resetAlgorithmConfig`，页面可用。 | 不支持时隐藏页面或展示固件不支持提示。 |
+| 1 | App | 进入页面后检查当前生成协议是否包含音频算法方法。 | Generated registry lookup | 读取当前产品包中的 generated method/event registry。 | 若包含 `audio.getAlgorithmCapabilities`、`audio.getAlgorithmConfig`、`audio.setAlgorithmConfig`、`audio.resetAlgorithmConfig`，继续运行时查询。 | 若当前 App 包不含这些方法，页面隐藏或提示版本不支持。 |
 | 2 | App | 加载算法参数能力。 | `audio.getAlgorithmCapabilities` | `items` 可省略查询全部，也可传产品关心的算法对象数组。 | 返回支持算法、字段、默认值、范围、步进、单位和是否需要重启。 | `NOT_SUPPORTED` / `INVALID_ARGUMENT` 时页面不可用或降级。 |
 | 3 | App | 加载当前配置。 | `audio.getAlgorithmConfig` | `items` 与 capability 查询保持一致。 | 返回当前有效配置。 | 读取失败时保留页面空态并允许重试。 |
 | 4 | App | 渲染 sliders。 | Non-protocol | 只渲染 `supported=true` 且 descriptor 中存在 numeric `min/max/step/defaultInt32` 的字段。 | UI slider 值来自当前 config；默认标记来自 capabilities。 | 不支持或缺少 descriptor 的字段不展示。 |
@@ -116,7 +115,6 @@ sequenceDiagram
 
 | Method/Event | Purpose in this flow | Source |
 |---|---|---|
-| `capability.supportedMethods` | 页面入口门禁，判断设备是否支持 `audio.algorithm` 相关方法。 | `docs/generated/protocol.md` |
 | `audio.getAlgorithmCapabilities` | 发现支持算法、字段、范围、步进、默认值和更新策略。 | `docs/generated/protocol.md` |
 | `audio.getAlgorithmConfig` | 读取当前算法等级值。 | `docs/generated/protocol.md` |
 | `audio.setAlgorithmConfig` | 提交拖动条变化，支持 partial config 和原子更新。 | `docs/generated/protocol.md` |
@@ -227,8 +225,8 @@ UI 应从 capabilities 动态生成；下面是当前 generated schema 中适合
 
 | Fixture | Expected result |
 |---|---|
-| `audio-algorithm-page-load` | App 通过 supported methods、capabilities 和 config 成功渲染 sliders。 |
-| `audio-algorithm-unsupported` | 缺少 `audio.algorithm` 方法时，页面显示不支持或引导升级。 |
+| `audio-algorithm-page-load` | App 通过 generated registry、capabilities 和 config 成功渲染 sliders。 |
+| `audio-algorithm-unsupported` | 当前 generated registry 缺少 `audio.algorithm` 方法，或设备返回 `NOT_SUPPORTED` 时，页面显示不支持或引导升级。 |
 | `audio-algorithm-slider-set` | 调整 `noiseSuppression.level` 后，设备返回最终 config，UI 显示新值。 |
 | `audio-algorithm-slider-batch-set` | 多个 slider 批量提交时，设备原子应用或整体拒绝。 |
 | `audio-algorithm-out-of-range` | App 本地阻止超范围值；若设备仍返回 `OUT_OF_RANGE`，UI 回滚并提示。 |
@@ -239,7 +237,7 @@ UI 应从 capabilities 动态生成；下面是当前 generated schema 中适合
 
 ## 9. Acceptance Gates
 
-- 页面只在 `capability.supportedMethods` 表示支持 `audio.algorithm` 相关方法时可用。
+- 页面只在当前 generated registry 包含 `audio.algorithm` 相关方法，且设备 `audio.getAlgorithmCapabilities` 返回支持时可用。
 - Slider 范围、步进、默认值和是否可展示全部来自 `audio.getAlgorithmCapabilities`。
 - 当前值来自 `audio.getAlgorithmConfig` 或 set/reset response，不由 App 猜测。
 - Slider 修改使用 `audio.setAlgorithmConfig` partial update。

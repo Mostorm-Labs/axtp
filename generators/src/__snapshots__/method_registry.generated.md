@@ -2,4 +2,4 @@
 
 | methodId | name | domain | status | request | response | legacy |
 |---:|---|---|---|---|---|---|
-| `0x0602` | `display.setBrightness` | display | mvp | DisplaySetBrightnessRequest | CommonEmptyResponse | - |
+| `0x0902` | `audio.setAlgorithmConfig` | audio | stable | AudioSetAlgorithmConfigRequest | AudioSetAlgorithmConfigResponse | - |

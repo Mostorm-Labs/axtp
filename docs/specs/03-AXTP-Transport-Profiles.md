@@ -97,7 +97,7 @@ sequenceDiagram
     LC->>LS: RPC Identify
     LS-->>LC: RPC Identified
     Note over LC,LS: APP_READY
-    LC->>LS: RPC capability.supportedMethods
+    LC->>LS: RPC adopted business request
     LC->>LS: RPC Request / STREAM data
     LS-->>LC: RPC Response / Event / STREAM data
 ```
@@ -125,7 +125,7 @@ sequenceDiagram
     LC->>LS: Identify (op=2)
     LS-->>LC: Identified (op=3)
     Note over LC,LS: APP_READY
-    LC->>LS: Request capability.supportedMethods (op=7)
+    LC->>LS: Request adopted business method (op=7)
     LC->>LS: Request over JSON {sid, op, d}
     LS-->>LC: Response / Event over JSON {sid, op, d}
 ```
@@ -156,7 +156,7 @@ sequenceDiagram
     Cloud->>Device: Identify (op=2)
     Device-->>Cloud: Identified (op=3)
     Note over Device,Cloud: APP_READY
-    Cloud->>Device: Request capability.supportedMethods (op=7)
+    Cloud->>Device: Request adopted business method (op=7)
     Cloud->>Device: Business Request
     Device-->>Cloud: Response / Event
 ```

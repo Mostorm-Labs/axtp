@@ -41,8 +41,8 @@ int main() {
     axtp::MockTransport transport;
     endpoint.attachTransport(transport);
 
-    broker.registerMethod(0x0101, [](const axtp::RpcPayload& request) {
-        assert(request.methodOrEventId == 0x0101);
+    broker.registerMethod(0x0901, [](const axtp::RpcPayload& request) {
+        assert(request.methodOrEventId == 0x0901);
         return axtp::Bytes{0x77};
     });
 
@@ -50,7 +50,7 @@ int main() {
     request.encoding = axtp::RpcEncoding::Tlv;
     request.op = axtp::RpcOp::Request;
     request.requestId = 900;
-    request.methodOrEventId = 0x0101;
+    request.methodOrEventId = 0x0901;
     request.bodyEncoding = axtp::RpcBodyEncoding::Tlv8;
 
     CapturingByteWriter writer;
@@ -74,14 +74,16 @@ int main() {
         axtp::BasicBroker<> dynamicBroker;
         dynamicBroker.registry().addMethod(0x90010001, "vendor.echo");
         dynamicBroker.registerJsonMethod(
-            "device.getInfo", [](const axtp::RpcContext& context, std::string_view params) {
-                assert(context.methodName == "device.getInfo");
+            "audio.getAlgorithmConfig",
+            [](const axtp::RpcContext& context, std::string_view params) {
+                assert(context.methodName == "audio.getAlgorithmConfig");
                 assert(params == "{}");
                 return std::string(R"({"ok":true})");
             });
         dynamicBroker.registerTlvMethod(
-            "display.setBrightness", [](const axtp::RpcContext& context, const axtp::Bytes& body) {
-                assert(context.methodId == 0x0602);
+            "audio.setAlgorithmConfig",
+            [](const axtp::RpcContext& context, const axtp::Bytes& body) {
+                assert(context.methodId == 0x0902);
                 assert((body == axtp::Bytes{0x01, 0x01, 0x50}));
                 return axtp::Bytes{0x02, 0x01, 0x01};
             });
@@ -98,7 +100,7 @@ int main() {
         jsonTask.rpc.encoding = axtp::RpcEncoding::Json;
         jsonTask.rpc.op = axtp::RpcOp::Request;
         jsonTask.rpc.requestId = 1001;
-        jsonTask.rpc.methodOrEventId = 0x0101;
+        jsonTask.rpc.methodOrEventId = 0x0901;
         jsonTask.rpc.bodyEncoding = axtp::RpcBodyEncoding::RawBytes;
         jsonTask.rpc.body = {'{', '}'};
         dynamicBroker.submit(std::move(jsonTask));
@@ -108,7 +110,7 @@ int main() {
         tlvTask.rpc.encoding = axtp::RpcEncoding::Tlv;
         tlvTask.rpc.op = axtp::RpcOp::Request;
         tlvTask.rpc.requestId = 1002;
-        tlvTask.rpc.methodOrEventId = 0x0602;
+        tlvTask.rpc.methodOrEventId = 0x0902;
         tlvTask.rpc.bodyEncoding = axtp::RpcBodyEncoding::Tlv8;
         tlvTask.rpc.body = {0x01, 0x01, 0x50};
         dynamicBroker.submit(std::move(tlvTask));

@@ -42,7 +42,7 @@ Capability ID：`audio.algorithm`
 
 | 日期 | 修订 | 理由 | 兼容策略 | YAML 目标 |
 |---|---|---|---|---|
-| 2026-06-04 | 删除各算法配置对象和能力描述对象中的 `mode` 字段；补完整 `audio.getAlgorithmCapabilities` 全量返回示例。 | 当前业务只需要 `level` 及各算法明确数值/布尔参数，暂不需要按模式枚举配置算法。 | 已采纳 draft 事实修订；删除 draft-only 字段，不复用被删除 fieldId，保留 method/event/capability ID、`bit_offset` 和其他字段 ID。 | `registry/domains/audio/domain.yaml` |
+| 2026-06-04 | 删除各算法配置对象和能力描述对象中的 `mode` 字段；补完整 `audio.getAlgorithmCapabilities` 全量返回示例。 | 当前业务只需要 `level` 及各算法明确数值/布尔参数，暂不需要按模式枚举配置算法。 | 已采纳 draft 事实修订；删除 draft-only 字段，不复用被删除 fieldId，保留 method/event/capability ID、`bitOffset` 和其他字段 ID。 | `registry/domains/audio/domain.yaml` |
 
 ---
 

@@ -50,7 +50,7 @@ axtp::Bytes encodeRpcRequest(std::uint32_t requestId) {
     request.encoding = axtp::RpcEncoding::Tlv;
     request.op = axtp::RpcOp::Request;
     request.requestId = requestId;
-    request.methodOrEventId = 0x0101;
+    request.methodOrEventId = 0x0901;
     request.bodyEncoding = axtp::RpcBodyEncoding::Tlv8;
     CapturingByteWriter writer;
     axtp::OutboundProcessor outbound(writer);
@@ -82,7 +82,7 @@ int main() {
     {
         axtp::BasicBroker<> broker;
         axtp::AxtpEndpoint endpoint(broker);
-        broker.registerMethod(0x0101, [](const axtp::RpcPayload&) { return axtp::Bytes{0xA1}; });
+        broker.registerMethod(0x0901, [](const axtp::RpcPayload&) { return axtp::Bytes{0xA1}; });
 
         axtp::TcpTransport server(0);
         endpoint.attachTransport(server);
@@ -130,18 +130,18 @@ int main() {
     {
         axtp::BasicBroker<> broker;
         axtp::AxtpEndpoint endpoint(broker);
-        broker.registerMethod(0x0101, [](const axtp::RpcPayload& request) {
+        broker.registerMethod(0x0901, [](const axtp::RpcPayload& request) {
             assert(request.meta.sourceProtocol == axtp::SourceProtocol::JsonRpc);
-            assert(request.meta.jsonMethodOrEventName == "device.getInfo");
-            const std::string result = R"({"model":"AXTP"})";
+            assert(request.meta.jsonMethodOrEventName == "audio.getAlgorithmConfig");
+            const std::string result = R"({"noiseSuppression":{"enabled":true,"level":3}})";
             return axtp::Bytes(result.begin(), result.end());
         });
-        broker.registerMethod(0x0602, [](const axtp::RpcPayload& request) {
+        broker.registerMethod(0x0902, [](const axtp::RpcPayload& request) {
             const std::string params(request.body.begin(), request.body.end());
-            assert(params == R"({"value":80})");
+            assert(params == R"({"noiseSuppression":{"enabled":true,"level":3}})");
             return axtp::Bytes{};
         });
-        broker.registerMethod(0x0601, [](const axtp::RpcPayload&) { return axtp::Bytes{0xB1}; });
+        broker.registerMethod(0x090D, [](const axtp::RpcPayload&) { return axtp::Bytes{0xB1}; });
 
         axtp::MockTransport transport;
         endpoint.attachTransport(transport);
@@ -149,7 +149,8 @@ int main() {
         transport.bind(adapter);
         transport.open();
 
-        injectJson(transport, R"({"sid":"","op":7,"d":{"id":700,"method":"device.getInfo"}})");
+        injectJson(transport,
+                   R"({"sid":"","op":7,"d":{"id":700,"method":"audio.getAlgorithmConfig"}})");
         auto beforeIdentify = popJson(transport, "before identify");
         assert(beforeIdentify.at("op").as_int64() ==
                static_cast<int>(axtp::RpcOp::RequestResponse));
@@ -164,20 +165,20 @@ int main() {
 
         injectJson(transport,
                    R"({"sid":")" + sid +
-                       R"(","op":7,"d":{"id":701,"method":"device.getInfo","params":{}}})");
-        auto response = popJson(transport, "device.getInfo");
+                       R"(","op":7,"d":{"id":701,"method":"audio.getAlgorithmConfig","params":{}}})");
+        auto response = popJson(transport, "audio.getAlgorithmConfig");
         assert(response.at("sid").as_string() == sid);
         assert(response.at("op").as_int64() == static_cast<int>(axtp::RpcOp::RequestResponse));
         auto d = response.at("d").as_object();
         assert(d.at("id").as_int64() == 701);
         assert(d.at("status").as_object().at("ok").as_bool());
-        assert(d.at("result").as_object().at("model").as_string() == "AXTP");
+        assert(d.at("result").as_object().contains("noiseSuppression"));
 
         injectJson(
             transport,
             R"({"sid":")" + sid +
-                R"(","op":7,"d":{"id":702,"method":"display.setBrightness","params":{"value":80}}})");
-        response = popJson(transport, "display.setBrightness");
+                R"(","op":7,"d":{"id":702,"method":"audio.setAlgorithmConfig","params":{"noiseSuppression":{"enabled":true,"level":3}}}})");
+        response = popJson(transport, "audio.setAlgorithmConfig");
         d = response.at("d").as_object();
         assert(d.at("id").as_int64() == 702);
         assert(d.at("status").as_object().at("ok").as_bool());
@@ -185,7 +186,7 @@ int main() {
 
         injectJson(transport,
                    R"({"sid":")" + sid +
-                       R"(","op":7,"d":{"id":703,"method":"display.unknown","params":{}}})");
+                       R"(","op":7,"d":{"id":703,"method":"audio.unknown","params":{}}})");
         response = popJson(transport, "unknown method");
         d = response.at("d").as_object();
         assert(d.at("status").as_object().at("code").as_int64() ==
@@ -193,7 +194,7 @@ int main() {
 
         injectJson(transport,
                    R"({"sid":")" + sid +
-                       R"(","op":7,"d":{"id":704,"method":"display.getBrightness","params":{}}})");
+                       R"(","op":7,"d":{"id":704,"method":"audio.getAlgorithmCapabilities","params":{}}})");
         response = popJson(transport, "invalid JSON response body");
         d = response.at("d").as_object();
         assert(d.at("status").as_object().at("code").as_int64() ==
@@ -209,36 +210,36 @@ int main() {
 
         axtp::RpcPayload event;
         event.op = axtp::RpcOp::Event;
-        event.methodOrEventId = 0x0607;
+        event.methodOrEventId = 0x0901;
         event.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
         event.meta.jsonSid = sid;
-        const std::string eventData = R"({"value":81})";
+        const std::string eventData = R"({"reason":"manual","applyState":"applied"})";
         event.body = axtp::Bytes(eventData.begin(), eventData.end());
         adapter.sendEvent(std::move(event));
         auto eventJson = popJson(transport, "event");
         assert(eventJson.at("op").as_int64() == static_cast<int>(axtp::RpcOp::Event));
         auto eventD = eventJson.at("d").as_object();
-        assert(eventD.at("event").as_string() == "display.brightnessChanged");
-        assert(eventD.at("data").as_object().at("value").as_int64() == 81);
+        assert(eventD.at("event").as_string() == "audio.algorithmConfigChanged");
+        assert(eventD.at("data").as_object().at("reason").as_string() == "manual");
     }
 
     {
         CapturingPayloadSink sink;
         axtp::JsonRpcDecoder inbound(sink);
         const std::string text =
-            R"({"sid":"json-session","op":7,"d":{"id":901,"method":"device.getInfo","params":{}}})";
+            R"({"sid":"json-session","op":7,"d":{"id":901,"method":"audio.getAlgorithmConfig","params":{}}})";
         inbound.onBytes(reinterpret_cast<const axtp::Byte*>(text.data()), text.size());
         assert(sink.rpcs.size() == 1);
         assert(sink.rpcs[0].op == axtp::RpcOp::Request);
         assert(sink.rpcs[0].requestId == 901);
-        assert(sink.rpcs[0].methodOrEventId == 0x0101);
+        assert(sink.rpcs[0].methodOrEventId == 0x0901);
         assert(sink.rpcs[0].meta.sourceProtocol == axtp::SourceProtocol::JsonRpc);
     }
 
     {
         axtp::BasicBroker<> broker;
         axtp::AxtpEndpoint endpoint(broker);
-        broker.registerMethod(0x0101, [](const axtp::RpcPayload&) {
+        broker.registerMethod(0x0901, [](const axtp::RpcPayload&) {
             const std::string result = R"({"ok":true})";
             return axtp::Bytes(result.begin(), result.end());
         });
@@ -276,7 +277,7 @@ int main() {
             buffer.consume(buffer.size());
             ws.write(boost::asio::buffer(
                 std::string(R"({"sid":")" + sid +
-                            R"(","op":7,"d":{"id":801,"method":"device.getInfo","params":{}}})")));
+                            R"(","op":7,"d":{"id":801,"method":"audio.getAlgorithmConfig","params":{}}})")));
             ws.read(buffer);
             responseText = boost::beast::buffers_to_string(buffer.data());
             clientDone = true;

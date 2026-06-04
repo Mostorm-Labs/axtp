@@ -63,7 +63,7 @@ Key points:
 WebSocketJsonRpc 是正式 AXTP wire mode，输入是一条完整 UTF-8 text message：
 
 ```json
-{"sid":"...","op":7,"d":{"id":1,"method":"device.getInfo","params":{}}}
+{"sid":"...","op":7,"d":{"id":1,"method":"audio.getAlgorithmConfig","params":{}}}
 ```
 
 执行路径：
@@ -95,7 +95,7 @@ Rules:
 SDK client 默认动态 RPC：
 
 ```text
-AxtpClient::callJson("device.getInfo", "{}")
+AxtpClient::callJson("audio.getAlgorithmConfig", "{}")
   -> MethodRegistry::findMethodId()
   -> RpcPayload{op=Request, encoding=Json, body="{}"}
   -> AxtpEndpoint::sendRpcRequest()

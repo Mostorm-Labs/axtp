@@ -60,7 +60,9 @@ export async function emitCppFiles(spec: SpecModel, cppDir: string): Promise<voi
     writeTextFile(path.join(cppDir, "axtp_event_registry_generated.h"), emitEventRegistry(spec)),
     writeTextFile(path.join(cppDir, "axtp_error_code_generated.h"), emitErrorRegistry(spec)),
     writeTextFile(path.join(cppDir, "axtp_capability_generated.h"), emitCapabilityRegistry(spec)),
-    writeTextFile(path.join(cppDir, "axtp_tlv_codec_generated.h"), emitTlvSkeleton(spec))
+    writeTextFile(path.join(cppDir, "axtp_tlv_codec_generated.h"), emitTlvSkeleton(spec)),
+    writeTextFile(path.join(cppDir, "method_traits.h"), emitMethodTraits(spec)),
+    writeTextFile(path.join(cppDir, "schema_codec.h"), emitSchemaCodec())
   ]);
 }
 
@@ -283,6 +285,128 @@ ${fieldNamespaces}
 ${structs}
 
 ${declarations}
+
+} // namespace axtp
+`;
+}
+
+function emitMethodTraits(spec: SpecModel): string {
+  const methods = sortById(spec.methods).map((method) => `template <>
+struct MethodTraits<MethodId::${cppName(method.name)}> {
+    using Request = ${cppName(method.requestSchema)};
+    using Response = ${cppName(method.responseSchema)};
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::${cppName(method.name)});
+    static constexpr const char* name = "${method.name}";
+};`).join("\n\n");
+
+  const events = sortById(spec.events).map((event) => `template <>
+struct EventTraits<EventId::${cppName(event.name)}> {
+    using Event = ${cppName(event.eventSchema)};
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::${cppName(event.name)});
+    static constexpr const char* name = "${event.name}";
+};`).join("\n\n");
+
+  return `${banner}#pragma once
+#include <cstdint>
+
+#include "axtp/generated/axtp_ids_generated.h"
+#include "axtp/generated/axtp_tlv_codec_generated.h"
+
+namespace axtp {
+
+template <MethodId Id>
+struct MethodTraits;
+
+${methods}
+
+template <EventId Id>
+struct EventTraits;
+
+${events}
+
+} // namespace axtp
+`;
+}
+
+function emitSchemaCodec(): string {
+  return `${banner}#pragma once
+
+#include <exception>
+#include <string>
+
+#include <boost/json.hpp>
+
+#include "axtp/generated/method_traits.h"
+#include "axtp/model/bytes.hpp"
+#include "axtp/model/payload.hpp"
+
+namespace axtp {
+
+class SchemaCodec {
+public:
+    static RpcBodyEncoding bodyEncodingFor(RpcEncoding encoding) {
+        if (encoding == RpcEncoding::Tlv || encoding == RpcEncoding::Binary) {
+            return RpcBodyEncoding::Tlv8;
+        }
+        return RpcBodyEncoding::RawBytes;
+    }
+
+    template <MethodId Id>
+    static Bytes encodeRequest(const typename MethodTraits<Id>::Request& request, RpcEncoding encoding) {
+        if (encoding != RpcEncoding::Json) {
+            return {};
+        }
+        const auto json = requestToJson<Id>(request);
+        const auto text = boost::json::serialize(json);
+        return Bytes(text.begin(), text.end());
+    }
+
+    template <MethodId Id>
+    static typename MethodTraits<Id>::Response decodeResponse(const Bytes& bytes, RpcEncoding encoding) {
+        typename MethodTraits<Id>::Response response{};
+        if (encoding != RpcEncoding::Json || bytes.empty()) {
+            return response;
+        }
+        try {
+            const std::string text(bytes.begin(), bytes.end());
+            const auto parsed = boost::json::parse(text);
+            if (parsed.is_object()) {
+                fillResponse<Id>(parsed.as_object(), response);
+            }
+        } catch (const std::exception&) {
+        }
+        return response;
+    }
+
+    template <EventId Id>
+    static Bytes encodeEvent(const typename EventTraits<Id>::Event& event, RpcEncoding encoding) {
+        if (encoding != RpcEncoding::Json) {
+            return {};
+        }
+        const auto json = eventToJson<Id>(event);
+        const auto text = boost::json::serialize(json);
+        return Bytes(text.begin(), text.end());
+    }
+
+private:
+    template <MethodId Id>
+    static boost::json::object requestToJson(const typename MethodTraits<Id>::Request& request) {
+        (void)request;
+        return {};
+    }
+
+    template <MethodId Id>
+    static void fillResponse(const boost::json::object& object, typename MethodTraits<Id>::Response& response) {
+        (void)object;
+        (void)response;
+    }
+
+    template <EventId Id>
+    static boost::json::object eventToJson(const typename EventTraits<Id>::Event& event) {
+        (void)event;
+        return {};
+    }
+};
 
 } // namespace axtp
 `;

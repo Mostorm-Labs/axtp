@@ -71,8 +71,8 @@ function assertDomainBitOffsets<T extends { name: string; domain: string; bitOff
         code: "AXTP-GEN-1004",
         file,
         entry: item.name,
-        field: "bit_offset",
-        message: `${label} bit_offset is required and must be a non-negative integer`
+        field: "bitOffset",
+        message: `${label} bitOffset is required and must be a non-negative integer`
       });
     }
     const list = byDomain.get(item.domain) ?? [];
@@ -88,8 +88,8 @@ function assertDomainBitOffsets<T extends { name: string; domain: string; bitOff
           code: "AXTP-GEN-1002",
           file,
           entry: item.name,
-          field: "bit_offset",
-          message: `duplicate ${label} bit_offset in domain ${domain}: ${item.bitOffset} (${existing} / ${item.name})`
+          field: "bitOffset",
+          message: `duplicate ${label} bitOffset in domain ${domain}: ${item.bitOffset} (${existing} / ${item.name})`
         });
       }
       seen.set(item.bitOffset, item.name);
@@ -101,8 +101,8 @@ function assertDomainBitOffsets<T extends { name: string; domain: string; bitOff
           code: "AXTP-GEN-1004",
           file,
           entry: domain,
-          field: "bit_offset",
-          message: `${label} bit_offset must be contiguous from 0 in domain ${domain}: ${bits.join(",")}`
+          field: "bitOffset",
+          message: `${label} bitOffset must be contiguous from 0 in domain ${domain}: ${bits.join(",")}`
         });
       }
     });

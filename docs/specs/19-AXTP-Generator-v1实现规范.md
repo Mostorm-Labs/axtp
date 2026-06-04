@@ -118,7 +118,7 @@ generators/src/__snapshots__/*
 
 `protocol/axtp.protocol.yaml` 只是聚合 IR，不是人工编辑入口。新增业务默认写入 `registry/domains/<domain>/domain.yaml`；只有核心常量、公共 schema、MVP/Core 已采纳条目和 legacy 映射才写入对应 `registry/` 源文件。
 
-同一个 method/event/type/error/capability/profile 不得同时在 core registry 与 domain YAML 中重复定义。Generator 必须把两类 source 逻辑合并为一个 Source Model，并在重复 name、ID 或 bit_offset 时失败。
+同一个 method/event/type/error/capability/profile 不得同时在 core registry 与 domain YAML 中重复定义。Generator 必须把两类 source 逻辑合并为一个 Source Model，并在重复 name、ID 或 bitOffset 时失败。
 
 ### 2.2 三段式编译
 
@@ -178,7 +178,7 @@ STREAM header = 16B
 STREAM fields = streamId:uint32, seqId:uint32, cursor:uint64
 CONTROL OPEN/ACCEPT required
 CONTROL READY optional, not required
-capability.supportedMethods.methodMasks derivedFrom = methods[].bitOffset
+CapabilitySupportedMethodsResponse.methodMasks derives from methods[].bitOffset only when that optional schema is present
 ```
 
 ---
@@ -283,18 +283,15 @@ registry/schema/*.yaml
 registry/legacy/legacy_mapping.yaml
 ```
 
-这些文件适合放稳定基础能力，例如：
+这些文件适合放稳定基础能力和核心共享事实，例如：
 
 ```text
-device.getInfo
-capability.supportedMethods
-display.getBrightness
-display.setBrightness
-firmware.begin/end/verify/apply
 CONTROL / RPC / STREAM shared schemas
+protocol payload capabilities
+accepted legacy mappings
 ```
 
-这些文件表示“核心公共事实”，不是所有新增业务的默认落点。只有当一个 domain 业务被治理为 Core/MVP 稳定能力时，才从 `registry/domains/<domain>/domain.yaml` 晋升到这里。晋升必须保持原有 methodId/eventId/errorCode/fieldId/bit_offset 不变，并从 domain YAML 删除对应条目，避免双事实源。
+这些文件表示“核心公共事实”，不是所有新增业务的默认落点。只有当一个 domain 业务被治理为 Core/MVP 稳定能力时，才从 `registry/domains/<domain>/domain.yaml` 晋升到这里。晋升必须保持原有 methodId/eventId/errorCode/fieldId/bitOffset 不变，并从 domain YAML 删除对应条目，避免双事实源。
 
 ### 4.3 Domain YAML
 
@@ -321,7 +318,7 @@ methods:
     name: stream.open
     domain: stream
     status: draft
-    bit_offset: 0
+    bitOffset: 0
     since: 1.0.0
     description: Open an AXTP STREAM media channel.
     rpc_op: request_response
@@ -337,7 +334,7 @@ events:
     name: stream.opened
     domain: stream
     status: draft
-    bit_offset: 0
+    bitOffset: 0
     since: 1.0.0
     description: Emitted after a stream is opened.
     event_schema: StreamOpenedEvent
@@ -357,32 +354,14 @@ types:
         description: Stream Profile name.
 
 errors:
-  - id: 0x0801
-    name: MEDIA_SOURCE_NOT_FOUND
-    domain: media
-    status: draft
-    description: Requested media source does not exist.
-    retryable: false
-
 capabilities:
-  - id: 0x050A
-    name: stream.hidMedia
-    domain: stream
-    status: draft
+  - id: 0x0901
+    name: audio.algorithm
+    domain: audio
+    status: stable
     type: object
-    schema: StreamHidMediaCapability
-    description: Device supports HID-backed media streams.
-
-profiles:
-  - name: AXTP-HID-MEDIA
-    since: 1.0.0
-    status: draft
-    extends: AXTP-MVP-HID
-    requiredMethods: [stream.open]
-    requiredEvents: [stream.opened]
-    requiredErrors: [SUCCESS, RPC_PARAM_INVALID]
-    requiredTypes: [StreamOpenRequest, StreamOpenResponse]
-    transportProfiles: [AXTP-USB-HID]
+    schema: AudioAlgorithmCapability
+    description: Device supports runtime audio algorithm configuration.
     frameProfile: STANDARD_FRAME
 ```
 
@@ -426,7 +405,7 @@ IR 规则：
 
 - `methods[].id` 转为 `methods[].methodId`。
 - `events[].id` 转为 `events[].eventId`。
-- `bit_offset` 转为 `bitOffset`。
+- `methods[].bitOffset` 与 `events[].bitOffset` 原样进入 Protocol IR，并保持 domain 内稳定。
 - 空 request/response schema 必须标准化为 `Empty`。
 - `status=mvp` 在 Protocol IR 中可映射为 `stable`。
 - 默认 `AXTP-MVP` 和 `AXTP-MVP-HID` profiles 必须保留；domain profiles 追加，不得覆盖默认 profiles。
@@ -493,23 +472,23 @@ Types Reference
 ```markdown
 ---
 
-### firmware.begin
+### audio.setAlgorithmConfig
 
-Begin a firmware OTA transfer and allocate the STREAM context.
+Partially update one or more audio algorithm configuration objects atomically.
 
-- Method ID: `0x0402`
-- Domain: `firmware`
-- Bit Offset: `0`
+- Method ID: `0x0902`
+- Domain: `audio`
+- bitOffset: `2`
 - Status: `stable`
 - Added in v1.0.0
-- Encodings: `json`, `binary_tlv`
-- Required Capabilities: `firmware.ota`
-- Possible Events: `firmware.updateProgress`
-- Possible Errors: `SUCCESS`, `RPC_PARAM_INVALID`, `BUSY`
+- Encodings: `json`, `tlv`
+- Required Capabilities: `audio.algorithm`
+- Possible Events: `audio.algorithmConfigChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `INTERNAL_ERROR`
 
 #### Request Fields
 
-Type: `FirmwareBeginRequest`
+Type: `AudioSetAlgorithmConfigRequest`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
@@ -588,8 +567,8 @@ errorCode/name 全局唯一
 capabilityId/name 全局唯一
 schema name 唯一
 schema 内 fieldId/name 唯一
-method bit_offset 在同 domain 内唯一且从 0 连续
-event bit_offset 在同 domain 内唯一且从 0 连续
+method bitOffset 在同 domain 内唯一且从 0 连续
+event bitOffset 在同 domain 内唯一且从 0 连续
 method request_schema/response_schema 必须存在
 event event_schema 必须存在
 capability schema 必须存在
@@ -622,7 +601,7 @@ error category 必须符合 code range
 Empty request/response 必须使用 Empty
 STREAM header 必须为 streamId:uint32 / seqId:uint32 / cursor:uint64
 CONTROL OPEN/ACCEPT 必须 required，READY 必须 optional
-CapabilitySupportedMethodsResponse.methodMasks derivedFrom 必须为 methods[].bitOffset
+CapabilitySupportedMethodsResponse.methodMasks 若存在，derivedFrom 必须为 methods[].bitOffset
 ```
 
 ### 7.3 Docs Consistency 校验
@@ -641,7 +620,7 @@ docs/specs/04-AXTP-Control-Session-Spec.md:
   READY optional
 
 docs/specs/13-AXTP-Types-and-Capability-Spec.md:
-  method bitmap derived from methods[].bitOffset
+  optional method bitmap derived from methods[].bitOffset
 ```
 
 ---
@@ -717,7 +696,7 @@ node dist/cli.js generate-registry --spec ..
 - 不得直接编辑 `docs/generated/protocol.md/json`。
 - 不得在 core registry 与 domain YAML 中重复定义同一协议事实。
 - 不得复用 stable/deprecated wire value 表示新语义。
-- 新增 method/event 必须显式填写 `bit_offset`。
+- 新增 method/event 必须显式填写 `bitOffset`。
 - Stream/OTA 校验字段优先使用 `verifyType` / `verifyValue`。
 - Stream Profile 不进入 STREAM header；由 RPC 建流绑定到 `streamId`。
 
@@ -792,7 +771,7 @@ docs consistency validation
 protocol.generated.json snapshot
 protocol.generated.md snapshot
 duplicate method/event ID rejection
-non-contiguous bit_offset rejection
+non-contiguous bitOffset rejection
 missing type/error/event/profile references rejection
 forbidden legacy Protocol Definition fields rejection
 STREAM header fact rejection
@@ -854,7 +833,7 @@ P1 目标是把当前文档编译器扩展为完整协议资产编译器。
 自动检查 docs/specs planning table 与 YAML 的 ID 偏移
 提供 suggest-id 命令
 提供 reserve-id 命令
-禁止隐式 bit_offset 重排
+禁止隐式 bitOffset 重排
 生成 ID allocation report
 ```
 
@@ -955,7 +934,7 @@ Protocol IR 校验失败
 generated protocol artifacts 未同步
 snapshot 未更新
 重复 ID
-bit_offset 不连续
+bitOffset 不连续
 schema 引用缺失
 profile 引用缺失
 reserved 条目被新实现引用

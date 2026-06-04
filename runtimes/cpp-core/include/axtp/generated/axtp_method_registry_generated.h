@@ -14,22 +14,12 @@ struct MethodDescriptor {
 };
 
 inline constexpr MethodDescriptor kMethodRegistry[] = {
-    { 0x0101, "device.getInfo", "device", "DeviceGetInfoRequest", "DeviceGetInfoResponse" },
-    { 0x0201, "capability.supportedMethods", "capability", "CapabilitySupportedMethodsRequest", "CapabilitySupportedMethodsResponse" },
-    { 0x0402, "firmware.begin", "firmware", "FirmwareBeginRequest", "FirmwareBeginResponse" },
-    { 0x0403, "firmware.end", "firmware", "FirmwareEndRequest", "FirmwareEndResponse" },
-    { 0x0404, "firmware.verify", "firmware", "FirmwareVerifyRequest", "FirmwareVerifyResponse" },
-    { 0x0405, "firmware.apply", "firmware", "FirmwareApplyRequest", "FirmwareApplyResponse" },
-    { 0x0501, "stream.open", "stream", "StreamOpenRequest", "StreamOpenResponse" },
-    { 0x0601, "display.getBrightness", "display", "DisplayGetBrightnessRequest", "DisplayGetBrightnessResponse" },
-    { 0x0602, "display.setBrightness", "display", "DisplaySetBrightnessRequest", "CommonEmptyResponse" },
     { 0x0901, "audio.getAlgorithmConfig", "audio", "AudioGetAlgorithmConfigRequest", "AudioAlgorithmConfig" },
     { 0x0902, "audio.setAlgorithmConfig", "audio", "AudioSetAlgorithmConfigRequest", "AudioSetAlgorithmConfigResponse" },
     { 0x090D, "audio.getAlgorithmCapabilities", "audio", "AudioGetAlgorithmCapabilitiesRequest", "AudioGetAlgorithmCapabilitiesResponse" },
     { 0x090E, "audio.resetAlgorithmConfig", "audio", "AudioResetAlgorithmConfigRequest", "AudioSetAlgorithmConfigResponse" },
-    { 0x0E07, "network.getApInfo", "network", "NetworkGetApInfoRequest", "NetworkGetApInfoResponse" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 14;
+inline constexpr std::size_t kMethodRegistryCount = 4;
 
 } // namespace axtp

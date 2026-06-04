@@ -31,18 +31,18 @@ enable_testing()
 add_test(NAME axtpctl_help COMMAND axtpctl --help)
 add_test(NAME axtpctl_capability_methods COMMAND axtpctl capability methods)
 add_test(NAME axtpctl_list_methods COMMAND axtpctl list-methods)
-add_test(NAME axtpctl_mock_call COMMAND axtpctl --transport mock call device.getInfo --json {})
+add_test(NAME axtpctl_mock_call COMMAND axtpctl --transport mock call audio.getAlgorithmConfig --json {})
 add_test(NAME axtpctl_short_command
-    COMMAND axtpctl -c device.getInfo -o json
+    COMMAND axtpctl -c audio.getAlgorithmConfig -o json
 )
 add_test(NAME axtpctl_long_command
-    COMMAND axtpctl --command device.getInfo --output json
+    COMMAND axtpctl --command audio.getAlgorithmConfig --output json
 )
 add_test(NAME axtpctl_short_command_json
-    COMMAND axtpctl -c display.setBrightness --json [=[{"value":80}]=] -o json
+    COMMAND axtpctl -c audio.setAlgorithmConfig --json [=[{"noiseSuppression":{"enabled":true,"level":3}}]=] -o json
 )
 add_test(NAME axtpctl_short_command_json_file
-    COMMAND axtpctl -c display.setBrightness --json-file ${CMAKE_CURRENT_SOURCE_DIR}/tests/params_brightness.json -o json
+    COMMAND axtpctl -c audio.setAlgorithmConfig --json-file ${CMAKE_CURRENT_SOURCE_DIR}/tests/params_algorithm_config.json -o json
 )
 add_test(NAME axtpctl_raw_method_id
     COMMAND axtpctl --transport mock call --method-id 0x90010001 --raw-hex cafe --output hex
@@ -60,11 +60,11 @@ add_test(NAME axtpctl_unknown_method
 set_tests_properties(axtpctl_unknown_method PROPERTIES WILL_FAIL TRUE)
 
 add_test(NAME axtpctl_bad_json
-    COMMAND axtpctl -c display.setBrightness --json [=[{bad json}]=]
+    COMMAND axtpctl -c audio.setAlgorithmConfig --json [=[{bad json}]=]
 )
 set_tests_properties(axtpctl_bad_json PROPERTIES WILL_FAIL TRUE)
 
 add_test(NAME axtpctl_json_conflict
-    COMMAND axtpctl -c display.setBrightness --json {} --json-file ${CMAKE_CURRENT_SOURCE_DIR}/tests/params_brightness.json
+    COMMAND axtpctl -c audio.setAlgorithmConfig --json {} --json-file ${CMAKE_CURRENT_SOURCE_DIR}/tests/params_algorithm_config.json
 )
 set_tests_properties(axtpctl_json_conflict PROPERTIES WILL_FAIL TRUE)

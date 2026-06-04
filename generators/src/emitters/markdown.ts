@@ -48,5 +48,5 @@ function legacyTable(spec: SpecModel): string {
   const rows = [...spec.legacyMappings].sort((a, b) => a.legacyCmdValue - b.legacyCmdValue).map((item) =>
     `| ${item.legacyProtocol} | \`${hex(item.legacyCmdValue, 8)}\` | ${item.legacyName} | \`${hex(item.axtpMethodId)}\` | \`${item.axtpMethodName}\` |`
   ).join("\n");
-  return `# Legacy Mapping\n\n| legacyProtocol | legacyCmdValue | legacyName | methodId | methodName |\n|---|---:|---|---:|---|\n${rows}\n`;
+  return `# Legacy Mapping\n\n| legacyProtocol | legacyCmdValue | legacyName | methodId | methodName |\n|---|---:|---|---:|---|${rows ? `\n${rows}` : ""}`;
 }

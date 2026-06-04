@@ -1,18 +1,6 @@
 mvp:
-  methods:
-    - device.getInfo
-    - capability.supportedMethods
-    - firmware.begin
-    - firmware.end
-    - firmware.verify
-    - firmware.apply
-    - display.getBrightness
-    - display.setBrightness
-  events:
-    - firmware.updateProgress
-    - firmware.updateCompleted
-    - firmware.updateFailed
-    - display.brightnessChanged
+  methods: []
+  events: []
   errors:
     - SUCCESS
     - RPC_METHOD_NOT_FOUND
@@ -24,10 +12,3 @@ mvp:
     - protocol.payload.control
     - protocol.payload.rpc
     - protocol.payload.stream
-    - device.info
-    - capability.supportedMethods
-    - firmware.ota
-    - display.brightness
-    - display.brightnessMin
-    - display.brightnessMax
-    - display.brightnessStep

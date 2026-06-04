@@ -41,109 +41,16 @@
       "idHex": "0x0009"
     },
     {
-      "id": 257,
-      "name": "device.info",
-      "domain": "device",
-      "status": "mvp",
-      "description": "Device supports device.getInfo.",
-      "deprecated": false,
-      "type": "bool",
-      "idHex": "0x0101"
-    },
-    {
-      "id": 513,
-      "name": "capability.supportedMethods",
-      "domain": "capability",
-      "status": "mvp",
-      "description": "Device supports capability.supportedMethods.",
-      "deprecated": false,
-      "type": "bool",
-      "idHex": "0x0201"
-    },
-    {
-      "id": 1025,
-      "name": "firmware.ota",
-      "domain": "firmware",
-      "status": "mvp",
-      "description": "Device supports firmware OTA over STREAM.",
-      "deprecated": false,
-      "type": "object",
-      "schema": "FirmwareOtaCapability",
-      "idHex": "0x0401"
-    },
-    {
-      "id": 1290,
-      "name": "stream.hidMedia",
-      "domain": "stream",
-      "status": "draft",
-      "description": "Device supports opening media.video and/or media.audio streams over AXTP-USB-HID.",
-      "deprecated": false,
-      "type": "object",
-      "schema": "StreamHidMediaCapability",
-      "idHex": "0x050A"
-    },
-    {
-      "id": 1537,
-      "name": "display.brightness",
-      "domain": "display",
-      "status": "mvp",
-      "description": "Device supports display brightness control.",
-      "deprecated": false,
-      "type": "bool",
-      "idHex": "0x0601"
-    },
-    {
-      "id": 1538,
-      "name": "display.brightnessMin",
-      "domain": "display",
-      "status": "mvp",
-      "description": "Minimum display brightness value.",
-      "deprecated": false,
-      "type": "uint16",
-      "idHex": "0x0602"
-    },
-    {
-      "id": 1539,
-      "name": "display.brightnessMax",
-      "domain": "display",
-      "status": "mvp",
-      "description": "Maximum display brightness value.",
-      "deprecated": false,
-      "type": "uint16",
-      "idHex": "0x0603"
-    },
-    {
-      "id": 1540,
-      "name": "display.brightnessStep",
-      "domain": "display",
-      "status": "mvp",
-      "description": "Display brightness step.",
-      "deprecated": false,
-      "type": "uint16",
-      "idHex": "0x0604"
-    },
-    {
       "id": 2305,
       "name": "audio.algorithm",
       "domain": "audio",
-      "status": "draft",
+      "status": "stable",
       "description": "Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification.",
       "since": "1.0.0",
       "deprecated": false,
       "type": "object",
       "schema": "AudioAlgorithmCapability",
       "idHex": "0x0901"
-    },
-    {
-      "id": 3590,
-      "name": "network.softAp",
-      "domain": "network",
-      "status": "draft",
-      "description": "Device supports hosting and reporting SoftAP information.",
-      "since": "1.0.0",
-      "deprecated": false,
-      "type": "bool",
-      "idHex": "0x0E06"
     }
   ]
 }

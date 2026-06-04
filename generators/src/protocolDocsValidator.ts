@@ -59,9 +59,11 @@ function assertYamlControl(model: ProtocolModel): void {
 
 function assertYamlCapability(model: ProtocolModel): void {
   const supportedMethodsResponse = model.schemas.find((schema) => schema.name === "CapabilitySupportedMethodsResponse");
-  const methodMasks = supportedMethodsResponse?.fields.find((field) => field.name === "methodMasks");
-  if (!methodMasks || methodMasks.derivedFrom !== "methods[].bitOffset") {
-    fail("protocol/axtp.protocol.yaml", "CapabilitySupportedMethodsResponse.methodMasks", "methodMasks must derive from methods[].bitOffset");
+  if (supportedMethodsResponse) {
+    const methodMasks = supportedMethodsResponse.fields.find((field) => field.name === "methodMasks");
+    if (!methodMasks || methodMasks.derivedFrom !== "methods[].bitOffset") {
+      fail("protocol/axtp.protocol.yaml", "CapabilitySupportedMethodsResponse.methodMasks", "methodMasks must derive from methods[].bitOffset");
+    }
   }
 }
 
@@ -85,8 +87,6 @@ export function validateProtocolDocsConsistency(model: ProtocolModel, docs: Prot
   requirePattern(docs.controlSpec, /READY[\s\S]{0,80}可选/, "docs/specs/04-AXTP-Control-Session-Spec.md", "READY", "control spec must define READY as optional");
   requirePattern(docs.controlSpec, /默认握手只要求 OPEN \/ ACCEPT/, "docs/specs/04-AXTP-Control-Session-Spec.md", "READY", "control spec must state that default handshake only requires OPEN / ACCEPT");
 
-  requirePattern(docs.typesSpec, /methods\[\]\.bitOffset/, "docs/specs/13-AXTP-Types-and-Capability-Spec.md", "capability.supportedMethods", "types spec must derive method bitmap from methods[].bitOffset");
-
   assertYamlStreamHeader(model);
   assertYamlControl(model);
   assertYamlCapability(model);
@@ -94,6 +94,6 @@ export function validateProtocolDocsConsistency(model: ProtocolModel, docs: Prot
   return [
     "[OK] docs/specs: STREAM header facts checked",
     "[OK] docs/specs: CONTROL OPEN/ACCEPT/READY facts checked",
-    "[OK] docs/specs: capability bitmap facts checked"
+    "[OK] docs/specs: optional capability discovery facts checked"
   ];
 }

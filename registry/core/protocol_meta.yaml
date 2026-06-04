@@ -55,10 +55,10 @@ architecture:
       from: Server
       to: Client
       description: Confirm that the RPC session is ready.
-    - step: capability.supportedMethods
+    - step: Load Adopted Registry
       from: Client
       to: Server
-      description: Query the method bitmap available to the current session.
+      description: Use the generated protocol registry to select adopted business methods for the current product.
   optionalLifecycleExtensions:
     - step: READY
       status: optional
@@ -73,7 +73,7 @@ guide:
         - For WebSocket Unframed JSON, skip CONTROL and wait for Hello after the WebSocket opens.
         - Wait for Hello.
         - Send Identify if required.
-        - Query capability.supportedMethods.
+        - Load generated protocol registry for the current product build.
         - Start RPC requests.
     - title: WebSocket Unframed JSON Startup
       steps:
@@ -81,7 +81,7 @@ guide:
         - Wait for Hello from the Logical Server.
         - Send Identify using the JSON sid/op/d envelope.
         - Wait for Identified.
-        - Query capability.supportedMethods.
+        - Load generated protocol registry for the current product build.
         - Start JSON RPC requests and receive JSON events.
     - title: Cloud Reverse Connection
       steps:

@@ -328,7 +328,7 @@ events:
 
 ## 13. 待确认问题
 
-1. `output.getLayoutCapabilities` 是否需要成为正式 method，还是通过 `capability.supportedMethods` 和 `output.getLayoutConfig(includeCapabilities=true)` 覆盖？
+1. `output.getLayoutCapabilities` 是否需要成为正式 method，还是由后续 capability 草案与 `output.getLayoutConfig(includeCapabilities=true)` 覆盖？
 2. `OutputCanvas.unit` 是否使用 pixel、normalized10000，还是允许二者都支持？
 3. `sourceRef` 应引用 `output.source` 还是 `output.routing` 的对象 ID？是否需要统一命名为 `routeId`？
 4. Rooms 的 SceneOutConfig 与 room scene 是否存在重叠？哪些字段应留在 `room.layout`，哪些归 `output.layout`？

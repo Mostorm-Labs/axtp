@@ -53,8 +53,9 @@ sequenceDiagram
     participant App
     participant Device
     User->>App: Open feature page
-    App->>Device: capability.supportedMethods
-    Device-->>App: supported methods
+    App->>App: Load generated AXTP registry
+    App->>Device: <adopted capability/config query>
+    Device-->>App: <supported feature facts>
 ```
 
 ## 6. Interaction Steps
@@ -85,7 +86,7 @@ sequenceDiagram
 
 ## 9. Acceptance Gates
 
-- All required adopted/generated methods are available through `capability.supportedMethods`.
+- All required adopted/generated methods are present in the generated registry, and any runtime capability/config query confirms device support.
 - App and device use generated schemas for protocol payloads.
 - All missing/draft-only protocol gaps have an owner and next workflow.
 - Error and unsupported-method behavior is visible in the UI or product flow.

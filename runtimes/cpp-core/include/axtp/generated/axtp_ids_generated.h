@@ -63,31 +63,14 @@ enum class RpcOp : std::uint8_t {
 };
 
 enum class MethodId : std::uint16_t {
-    DeviceGetInfo = 0x0101,
-    CapabilitySupportedMethods = 0x0201,
-    FirmwareBegin = 0x0402,
-    FirmwareEnd = 0x0403,
-    FirmwareVerify = 0x0404,
-    FirmwareApply = 0x0405,
-    StreamOpen = 0x0501,
-    DisplayGetBrightness = 0x0601,
-    DisplaySetBrightness = 0x0602,
     AudioGetAlgorithmConfig = 0x0901,
     AudioSetAlgorithmConfig = 0x0902,
     AudioGetAlgorithmCapabilities = 0x090D,
     AudioResetAlgorithmConfig = 0x090E,
-    NetworkGetApInfo = 0x0E07,
 };
 
 enum class EventId : std::uint16_t {
-    FirmwareUpdateProgress = 0x0402,
-    FirmwareUpdateCompleted = 0x0403,
-    FirmwareUpdateFailed = 0x0404,
-    StreamOpened = 0x0501,
-    StreamError = 0x0503,
-    DisplayBrightnessChanged = 0x0607,
     AudioAlgorithmConfigChanged = 0x0901,
-    NetworkApInfoChanged = 0x0E01,
 };
 
 enum class ErrorCode : std::uint16_t {
@@ -252,16 +235,7 @@ enum class CapabilityId : std::uint16_t {
     ProtocolPayloadRpc = 0x0002,
     ProtocolPayloadStream = 0x0003,
     ProtocolReservedRequestIdWidth = 0x0009,
-    DeviceInfo = 0x0101,
-    CapabilitySupportedMethods = 0x0201,
-    FirmwareOta = 0x0401,
-    StreamHidMedia = 0x050A,
-    DisplayBrightness = 0x0601,
-    DisplayBrightnessMin = 0x0602,
-    DisplayBrightnessMax = 0x0603,
-    DisplayBrightnessStep = 0x0604,
     AudioAlgorithm = 0x0901,
-    NetworkSoftAp = 0x0E06,
 };
 
 } // namespace axtp

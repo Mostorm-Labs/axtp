@@ -63,7 +63,7 @@ generate-axtp-protocol
 - New business features default to `docs/protocol/**` first, then `registry/domains/<domain>/domain.yaml` after adoption.
 - Already-adopted semantic changes must update the proposal and YAML facts first, then regenerate; do not patch generated files directly.
 - Use core `registry/` files only for core constants, shared schemas, MVP/Core adopted entries, profile governance, and accepted legacy mappings.
-- Preserve stable wire values. Never reuse deprecated or stable IDs, field IDs, or `bit_offset` values for different semantics.
+- Preserve stable wire values. Never reuse deprecated or stable IDs, field IDs, or `bitOffset` values for different semantics.
 
 ## Direct Maintenance Guardrail
 
@@ -73,7 +73,7 @@ Before direct registry maintenance, report:
 Reason direct maintenance is safe:
 Evidence read:
 YAML targets:
-IDs/fieldIds/bit_offset preservation plan:
+IDs/fieldIds/bitOffset preservation plan:
 Generated outputs expected:
 Open questions:
 ```

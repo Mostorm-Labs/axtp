@@ -41,9 +41,9 @@ int main() {
     assert(sink.last.data[0] == 0x41);
 
     auto registry = axtp::MethodRegistry::fromGeneratedDefaults();
-    const auto methodId = registry.findMethodId("device.getInfo");
+    const auto methodId = registry.findMethodId("audio.getAlgorithmConfig");
     assert(methodId.has_value());
-    assert(*methodId == 0x0101);
+    assert(*methodId == 0x0901);
     registry.addMethod(0x90010001, "vendor.echo");
     assert(registry.containsMethod("vendor.echo"));
 

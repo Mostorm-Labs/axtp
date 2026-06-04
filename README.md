@@ -150,10 +150,10 @@ git diff --check
 
 | 类型 | 数量 / 内容 |
 |---|---|
-| Methods | 10 |
-| Events | 7 |
+| Methods | 4 |
+| Events | 1 |
 | Errors | 154 |
-| Profiles | `AXTP-MVP`、`AXTP-MVP-HID`、`AXTP-HID-MEDIA` |
+| Profiles | `AXTP-MVP`、`AXTP-MVP-HID` |
 | Transports | `AXTP-USB-HID`、`AXTP-TCP`、`AXTP-WS-JSON`、`AXTP-WS-CLOUD-REVERSE` |
 
 以 [docs/generated/protocol.md](docs/generated/protocol.md) 和 [docs/generated/protocol.json](docs/generated/protocol.json) 作为研发、测试和工具集成的当前协议参考。
