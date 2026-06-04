@@ -329,7 +329,7 @@
       "name": "audio.getAlgorithmCapabilities",
       "domain": "audio",
       "status": "draft",
-      "description": "Return supported audio algorithm objects, fields, defaults, ranges, enum values, and update policy.",
+      "description": "Return supported audio algorithm objects, fields, defaults, ranges, units, and update policy.",
       "since": "1.0.0",
       "deprecated": false,
       "rpcOp": "request_response",

@@ -240,7 +240,6 @@ namespace fields::audio_noise_suppression_capabilities {
 constexpr std::uint8_t SUPPORTED = 0x01;
 constexpr std::uint8_t DISPLAY_NAME = 0x02;
 constexpr std::uint8_t ENABLED = 0x03;
-constexpr std::uint8_t MODE = 0x04;
 constexpr std::uint8_t LEVEL = 0x05;
 }
 
@@ -248,7 +247,6 @@ namespace fields::audio_echo_cancellation_capabilities {
 constexpr std::uint8_t SUPPORTED = 0x01;
 constexpr std::uint8_t DISPLAY_NAME = 0x02;
 constexpr std::uint8_t ENABLED = 0x03;
-constexpr std::uint8_t MODE = 0x04;
 constexpr std::uint8_t TAIL_LENGTH_MS = 0x05;
 constexpr std::uint8_t NLP_LEVEL = 0x06;
 }
@@ -267,7 +265,6 @@ namespace fields::audio_beamforming_capabilities {
 constexpr std::uint8_t SUPPORTED = 0x01;
 constexpr std::uint8_t DISPLAY_NAME = 0x02;
 constexpr std::uint8_t ENABLED = 0x03;
-constexpr std::uint8_t MODE = 0x04;
 constexpr std::uint8_t LOOK_DIRECTION_DEG = 0x05;
 constexpr std::uint8_t BEAM_WIDTH_DEG = 0x06;
 }
@@ -276,7 +273,6 @@ namespace fields::audio_dereverberation_capabilities {
 constexpr std::uint8_t SUPPORTED = 0x01;
 constexpr std::uint8_t DISPLAY_NAME = 0x02;
 constexpr std::uint8_t ENABLED = 0x03;
-constexpr std::uint8_t MODE = 0x04;
 constexpr std::uint8_t LEVEL = 0x05;
 }
 
@@ -301,7 +297,6 @@ namespace fields::audio_howling_suppression_capabilities {
 constexpr std::uint8_t SUPPORTED = 0x01;
 constexpr std::uint8_t DISPLAY_NAME = 0x02;
 constexpr std::uint8_t ENABLED = 0x03;
-constexpr std::uint8_t MODE = 0x04;
 constexpr std::uint8_t LEVEL = 0x05;
 }
 
@@ -318,13 +313,11 @@ constexpr std::uint8_t HOWLING_SUPPRESSION = 0x08;
 
 namespace fields::audio_noise_suppression_config {
 constexpr std::uint8_t ENABLED = 0x01;
-constexpr std::uint8_t MODE = 0x02;
 constexpr std::uint8_t LEVEL = 0x03;
 }
 
 namespace fields::audio_echo_cancellation_config {
 constexpr std::uint8_t ENABLED = 0x01;
-constexpr std::uint8_t MODE = 0x02;
 constexpr std::uint8_t TAIL_LENGTH_MS = 0x03;
 constexpr std::uint8_t NLP_LEVEL = 0x04;
 }
@@ -339,14 +332,12 @@ constexpr std::uint8_t RELEASE_TIME_MS = 0x05;
 
 namespace fields::audio_beamforming_config {
 constexpr std::uint8_t ENABLED = 0x01;
-constexpr std::uint8_t MODE = 0x02;
 constexpr std::uint8_t LOOK_DIRECTION_DEG = 0x03;
 constexpr std::uint8_t BEAM_WIDTH_DEG = 0x04;
 }
 
 namespace fields::audio_dereverberation_config {
 constexpr std::uint8_t ENABLED = 0x01;
-constexpr std::uint8_t MODE = 0x02;
 constexpr std::uint8_t LEVEL = 0x03;
 }
 
@@ -365,7 +356,6 @@ constexpr std::uint8_t SMOOTHING_MS = 0x04;
 
 namespace fields::audio_howling_suppression_config {
 constexpr std::uint8_t ENABLED = 0x01;
-constexpr std::uint8_t MODE = 0x02;
 constexpr std::uint8_t LEVEL = 0x03;
 }
 
@@ -708,8 +698,6 @@ struct AudioNoiseSuppressionCapabilities {
     bool has_displayName = false;
     std::uint32_t enabled = 0;
     bool has_enabled = false;
-    std::uint32_t mode = 0;
-    bool has_mode = false;
     std::uint32_t level = 0;
     bool has_level = false;
 };
@@ -720,8 +708,6 @@ struct AudioEchoCancellationCapabilities {
     bool has_displayName = false;
     std::uint32_t enabled = 0;
     bool has_enabled = false;
-    std::uint32_t mode = 0;
-    bool has_mode = false;
     std::uint32_t tailLengthMs = 0;
     bool has_tailLengthMs = false;
     std::uint32_t nlpLevel = 0;
@@ -750,8 +736,6 @@ struct AudioBeamformingCapabilities {
     bool has_displayName = false;
     std::uint32_t enabled = 0;
     bool has_enabled = false;
-    std::uint32_t mode = 0;
-    bool has_mode = false;
     std::uint32_t lookDirectionDeg = 0;
     bool has_lookDirectionDeg = false;
     std::uint32_t beamWidthDeg = 0;
@@ -764,8 +748,6 @@ struct AudioDereverberationCapabilities {
     bool has_displayName = false;
     std::uint32_t enabled = 0;
     bool has_enabled = false;
-    std::uint32_t mode = 0;
-    bool has_mode = false;
     std::uint32_t level = 0;
     bool has_level = false;
 };
@@ -802,8 +784,6 @@ struct AudioHowlingSuppressionCapabilities {
     bool has_displayName = false;
     std::uint32_t enabled = 0;
     bool has_enabled = false;
-    std::uint32_t mode = 0;
-    bool has_mode = false;
     std::uint32_t level = 0;
     bool has_level = false;
 };
@@ -830,8 +810,6 @@ struct AudioAlgorithmConfig {
 struct AudioNoiseSuppressionConfig {
     bool enabled = false;
     bool has_enabled = false;
-    std::uint32_t mode = 0;
-    bool has_mode = false;
     std::uint8_t level = 0;
     bool has_level = false;
 };
@@ -839,8 +817,6 @@ struct AudioNoiseSuppressionConfig {
 struct AudioEchoCancellationConfig {
     bool enabled = false;
     bool has_enabled = false;
-    std::uint32_t mode = 0;
-    bool has_mode = false;
     std::uint32_t tailLengthMs = 0;
     bool has_tailLengthMs = false;
     std::uint8_t nlpLevel = 0;
@@ -863,8 +839,6 @@ struct AudioAutoGainControlConfig {
 struct AudioBeamformingConfig {
     bool enabled = false;
     bool has_enabled = false;
-    std::uint32_t mode = 0;
-    bool has_mode = false;
     std::int32_t lookDirectionDeg = 0;
     bool has_lookDirectionDeg = false;
     std::uint32_t beamWidthDeg = 0;
@@ -874,8 +848,6 @@ struct AudioBeamformingConfig {
 struct AudioDereverberationConfig {
     bool enabled = false;
     bool has_enabled = false;
-    std::uint32_t mode = 0;
-    bool has_mode = false;
     std::uint8_t level = 0;
     bool has_level = false;
 };
@@ -903,8 +875,6 @@ struct AudioDirectionOfArrivalConfig {
 struct AudioHowlingSuppressionConfig {
     bool enabled = false;
     bool has_enabled = false;
-    std::uint32_t mode = 0;
-    bool has_mode = false;
     std::uint8_t level = 0;
     bool has_level = false;
 };

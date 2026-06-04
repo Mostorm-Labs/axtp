@@ -1099,7 +1099,7 @@
     {
       "name": "AudioGetAlgorithmCapabilitiesResponse",
       "kind": "object",
-      "description": "Supported algorithm objects, fields, defaults, ranges, enum values, and update policy.",
+      "description": "Supported algorithm objects, fields, defaults, ranges, units, and update policy.",
       "fields": [
         {
           "fieldId": 1,
@@ -1324,13 +1324,6 @@
           "description": "enabled property descriptor."
         },
         {
-          "fieldId": 4,
-          "name": "mode",
-          "type": "AudioAlgorithmPropertyCapability",
-          "required": false,
-          "description": "mode property descriptor."
-        },
-        {
           "fieldId": 5,
           "name": "level",
           "type": "AudioAlgorithmPropertyCapability",
@@ -1365,13 +1358,6 @@
           "type": "AudioAlgorithmPropertyCapability",
           "required": false,
           "description": "enabled property descriptor."
-        },
-        {
-          "fieldId": 4,
-          "name": "mode",
-          "type": "AudioAlgorithmPropertyCapability",
-          "required": false,
-          "description": "mode property descriptor."
         },
         {
           "fieldId": 5,
@@ -1474,13 +1460,6 @@
           "description": "enabled property descriptor."
         },
         {
-          "fieldId": 4,
-          "name": "mode",
-          "type": "AudioAlgorithmPropertyCapability",
-          "required": false,
-          "description": "mode property descriptor."
-        },
-        {
           "fieldId": 5,
           "name": "lookDirectionDeg",
           "type": "AudioAlgorithmPropertyCapability",
@@ -1522,13 +1501,6 @@
           "type": "AudioAlgorithmPropertyCapability",
           "required": false,
           "description": "enabled property descriptor."
-        },
-        {
-          "fieldId": 4,
-          "name": "mode",
-          "type": "AudioAlgorithmPropertyCapability",
-          "required": false,
-          "description": "mode property descriptor."
         },
         {
           "fieldId": 5,
@@ -1660,13 +1632,6 @@
           "description": "enabled property descriptor."
         },
         {
-          "fieldId": 4,
-          "name": "mode",
-          "type": "AudioAlgorithmPropertyCapability",
-          "required": false,
-          "description": "mode property descriptor."
-        },
-        {
           "fieldId": 5,
           "name": "level",
           "type": "AudioAlgorithmPropertyCapability",
@@ -1751,13 +1716,6 @@
           "description": "Whether noise suppression is enabled."
         },
         {
-          "fieldId": 2,
-          "name": "mode",
-          "type": "enum",
-          "required": false,
-          "description": "Suppression mode; values are off, low, medium, high, and auto."
-        },
-        {
           "fieldId": 3,
           "name": "level",
           "type": "uint8",
@@ -1779,13 +1737,6 @@
           "type": "bool",
           "required": false,
           "description": "Whether echo cancellation is enabled."
-        },
-        {
-          "fieldId": 2,
-          "name": "mode",
-          "type": "enum",
-          "required": false,
-          "description": "Echo cancellation mode; values are off, low, medium, high, and auto."
         },
         {
           "fieldId": 3,
@@ -1870,13 +1821,6 @@
           "description": "Whether beamforming is enabled."
         },
         {
-          "fieldId": 2,
-          "name": "mode",
-          "type": "enum",
-          "required": false,
-          "description": "Beamforming mode; values are fixed, adaptive, and auto."
-        },
-        {
           "fieldId": 3,
           "name": "lookDirectionDeg",
           "type": "int32",
@@ -1907,13 +1851,6 @@
           "type": "bool",
           "required": false,
           "description": "Whether dereverberation is enabled."
-        },
-        {
-          "fieldId": 2,
-          "name": "mode",
-          "type": "enum",
-          "required": false,
-          "description": "Dereverberation mode; values are off, low, medium, high, and auto."
         },
         {
           "fieldId": 3,
@@ -2008,13 +1945,6 @@
           "type": "bool",
           "required": false,
           "description": "Whether howling suppression is enabled."
-        },
-        {
-          "fieldId": 2,
-          "name": "mode",
-          "type": "enum",
-          "required": false,
-          "description": "Howling suppression mode; values are off, low, medium, high, and auto."
         },
         {
           "fieldId": 3,
@@ -2634,7 +2564,7 @@
     },
     {
       "name": "audio.getAlgorithmCapabilities",
-      "description": "Return supported audio algorithm objects, fields, defaults, ranges, enum values, and update policy.",
+      "description": "Return supported audio algorithm objects, fields, defaults, ranges, units, and update policy.",
       "methodId": 2317,
       "bitOffset": 0,
       "domain": "audio",

@@ -921,7 +921,7 @@
     {
       "name": "AudioGetAlgorithmCapabilitiesResponse",
       "type": "object",
-      "description": "Supported algorithm objects, fields, defaults, ranges, enum values, and update policy.",
+      "description": "Supported algorithm objects, fields, defaults, ranges, units, and update policy.",
       "fields": [
         {
           "id": 1,
@@ -1173,14 +1173,6 @@
           "description": "enabled property descriptor."
         },
         {
-          "id": 4,
-          "name": "mode",
-          "type": "AudioAlgorithmPropertyCapability",
-          "required": false,
-          "deprecated": false,
-          "description": "mode property descriptor."
-        },
-        {
           "id": 5,
           "name": "level",
           "type": "AudioAlgorithmPropertyCapability",
@@ -1219,14 +1211,6 @@
           "required": false,
           "deprecated": false,
           "description": "enabled property descriptor."
-        },
-        {
-          "id": 4,
-          "name": "mode",
-          "type": "AudioAlgorithmPropertyCapability",
-          "required": false,
-          "deprecated": false,
-          "description": "mode property descriptor."
         },
         {
           "id": 5,
@@ -1341,14 +1325,6 @@
           "description": "enabled property descriptor."
         },
         {
-          "id": 4,
-          "name": "mode",
-          "type": "AudioAlgorithmPropertyCapability",
-          "required": false,
-          "deprecated": false,
-          "description": "mode property descriptor."
-        },
-        {
           "id": 5,
           "name": "lookDirectionDeg",
           "type": "AudioAlgorithmPropertyCapability",
@@ -1395,14 +1371,6 @@
           "required": false,
           "deprecated": false,
           "description": "enabled property descriptor."
-        },
-        {
-          "id": 4,
-          "name": "mode",
-          "type": "AudioAlgorithmPropertyCapability",
-          "required": false,
-          "deprecated": false,
-          "description": "mode property descriptor."
         },
         {
           "id": 5,
@@ -1549,14 +1517,6 @@
           "description": "enabled property descriptor."
         },
         {
-          "id": 4,
-          "name": "mode",
-          "type": "AudioAlgorithmPropertyCapability",
-          "required": false,
-          "deprecated": false,
-          "description": "mode property descriptor."
-        },
-        {
           "id": 5,
           "name": "level",
           "type": "AudioAlgorithmPropertyCapability",
@@ -1651,14 +1611,6 @@
           "description": "Whether noise suppression is enabled."
         },
         {
-          "id": 2,
-          "name": "mode",
-          "type": "enum",
-          "required": false,
-          "deprecated": false,
-          "description": "Suppression mode; values are off, low, medium, high, and auto."
-        },
-        {
           "id": 3,
           "name": "level",
           "type": "uint8",
@@ -1682,14 +1634,6 @@
           "required": false,
           "deprecated": false,
           "description": "Whether echo cancellation is enabled."
-        },
-        {
-          "id": 2,
-          "name": "mode",
-          "type": "enum",
-          "required": false,
-          "deprecated": false,
-          "description": "Echo cancellation mode; values are off, low, medium, high, and auto."
         },
         {
           "id": 3,
@@ -1782,14 +1726,6 @@
           "description": "Whether beamforming is enabled."
         },
         {
-          "id": 2,
-          "name": "mode",
-          "type": "enum",
-          "required": false,
-          "deprecated": false,
-          "description": "Beamforming mode; values are fixed, adaptive, and auto."
-        },
-        {
           "id": 3,
           "name": "lookDirectionDeg",
           "type": "int32",
@@ -1823,14 +1759,6 @@
           "required": false,
           "deprecated": false,
           "description": "Whether dereverberation is enabled."
-        },
-        {
-          "id": 2,
-          "name": "mode",
-          "type": "enum",
-          "required": false,
-          "deprecated": false,
-          "description": "Dereverberation mode; values are off, low, medium, high, and auto."
         },
         {
           "id": 3,
@@ -1934,14 +1862,6 @@
           "required": false,
           "deprecated": false,
           "description": "Whether howling suppression is enabled."
-        },
-        {
-          "id": 2,
-          "name": "mode",
-          "type": "enum",
-          "required": false,
-          "deprecated": false,
-          "description": "Howling suppression mode; values are off, low, medium, high, and auto."
         },
         {
           "id": 3,

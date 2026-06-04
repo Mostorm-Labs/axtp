@@ -272,7 +272,7 @@ Type: `AudioSetAlgorithmConfigResponse`
 
 ### audio.getAlgorithmCapabilities
 
-Return supported audio algorithm objects, fields, defaults, ranges, enum values, and update policy.
+Return supported audio algorithm objects, fields, defaults, ranges, units, and update policy.
 
 - Method ID: `0x090D`
 - Domain: `audio`
@@ -1103,7 +1103,6 @@ Beamforming supported fields.
 | supported | Boolean | 0x01 | Whether the device supports beamforming. | None | N/A |
 | ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
 | ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
-| ?mode | AudioAlgorithmPropertyCapability | 0x04 | mode property descriptor. | None | Omit if not used. |
 | ?lookDirectionDeg | AudioAlgorithmPropertyCapability | 0x05 | lookDirectionDeg property descriptor. | None | Omit if not used. |
 | ?beamWidthDeg | AudioAlgorithmPropertyCapability | 0x06 | beamWidthDeg property descriptor. | None | Omit if not used. |
 
@@ -1116,7 +1115,6 @@ Beamforming configuration object.
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?enabled | Boolean | 0x01 | Whether beamforming is enabled. | None | Omit if not used. |
-| ?mode | Enum | 0x02 | Beamforming mode; values are fixed, adaptive, and auto. | None | Omit if not used. |
 | ?lookDirectionDeg | Int32 | 0x03 | Fixed beam look direction in degrees. | min=-180, max=180 | Omit if not used. |
 | ?beamWidthDeg | UInt32 | 0x04 | Beam width in degrees. | min=10, max=180 | Omit if not used. |
 
@@ -1131,7 +1129,6 @@ Dereverberation supported fields.
 | supported | Boolean | 0x01 | Whether the device supports dereverberation. | None | N/A |
 | ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
 | ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
-| ?mode | AudioAlgorithmPropertyCapability | 0x04 | mode property descriptor. | None | Omit if not used. |
 | ?level | AudioAlgorithmPropertyCapability | 0x05 | level property descriptor. | None | Omit if not used. |
 
 ---
@@ -1143,7 +1140,6 @@ Dereverberation configuration object.
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?enabled | Boolean | 0x01 | Whether dereverberation is enabled. | None | Omit if not used. |
-| ?mode | Enum | 0x02 | Dereverberation mode; values are off, low, medium, high, and auto. | None | Omit if not used. |
 | ?level | UInt8 | 0x03 | Dereverberation strength. | min=0, max=3 | Omit if not used. |
 
 ---
@@ -1185,7 +1181,6 @@ Echo cancellation supported fields.
 | supported | Boolean | 0x01 | Whether the device supports echoCancellation. | None | N/A |
 | ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
 | ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
-| ?mode | AudioAlgorithmPropertyCapability | 0x04 | mode property descriptor. | None | Omit if not used. |
 | ?tailLengthMs | AudioAlgorithmPropertyCapability | 0x05 | tailLengthMs property descriptor. | None | Omit if not used. |
 | ?nlpLevel | AudioAlgorithmPropertyCapability | 0x06 | nlpLevel property descriptor. | None | Omit if not used. |
 
@@ -1198,7 +1193,6 @@ Echo cancellation configuration object.
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?enabled | Boolean | 0x01 | Whether echo cancellation is enabled. | None | Omit if not used. |
-| ?mode | Enum | 0x02 | Echo cancellation mode; values are off, low, medium, high, and auto. | None | Omit if not used. |
 | ?tailLengthMs | UInt32 | 0x03 | Echo tail length in milliseconds; modifying it may require restarting the audio link. | min=64, max=512 | Omit if not used. |
 | ?nlpLevel | UInt8 | 0x04 | Non-linear processing strength. | min=0, max=3 | Omit if not used. |
 
@@ -1213,7 +1207,6 @@ Howling suppression supported fields.
 | supported | Boolean | 0x01 | Whether the device supports howlingSuppression. | None | N/A |
 | ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
 | ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
-| ?mode | AudioAlgorithmPropertyCapability | 0x04 | mode property descriptor. | None | Omit if not used. |
 | ?level | AudioAlgorithmPropertyCapability | 0x05 | level property descriptor. | None | Omit if not used. |
 
 ---
@@ -1225,7 +1218,6 @@ Howling suppression configuration object.
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?enabled | Boolean | 0x01 | Whether howling suppression is enabled. | None | Omit if not used. |
-| ?mode | Enum | 0x02 | Howling suppression mode; values are off, low, medium, high, and auto. | None | Omit if not used. |
 | ?level | UInt8 | 0x03 | Howling suppression strength. | min=0, max=3 | Omit if not used. |
 
 ---
@@ -1239,7 +1231,6 @@ Noise suppression supported fields.
 | supported | Boolean | 0x01 | Whether the device supports noiseSuppression. | None | N/A |
 | ?displayName | String | 0x02 | UI-readable display name. | maxLength=64 | Omit if not used. |
 | ?enabled | AudioAlgorithmPropertyCapability | 0x03 | enabled property descriptor. | None | Omit if not used. |
-| ?mode | AudioAlgorithmPropertyCapability | 0x04 | mode property descriptor. | None | Omit if not used. |
 | ?level | AudioAlgorithmPropertyCapability | 0x05 | level property descriptor. | None | Omit if not used. |
 
 ---
@@ -1251,7 +1242,6 @@ Noise suppression configuration object.
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?enabled | Boolean | 0x01 | Whether noise suppression is enabled. | None | Omit if not used. |
-| ?mode | Enum | 0x02 | Suppression mode; values are off, low, medium, high, and auto. | None | Omit if not used. |
 | ?level | UInt8 | 0x03 | Suppression strength. | min=0, max=3 | Omit if not used. |
 
 ---

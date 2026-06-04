@@ -762,7 +762,7 @@ schemas:
         description: Optional JSON array of changed field paths such as noiseSuppression.level.
   AudioGetAlgorithmCapabilitiesResponse:
     kind: object
-    description: Supported algorithm objects, fields, defaults, ranges, enum values, and update policy.
+    description: Supported algorithm objects, fields, defaults, ranges, units, and update policy.
     fields:
       - fieldId: 1
         name: capability
@@ -920,11 +920,6 @@ schemas:
         type: AudioAlgorithmPropertyCapability
         required: false
         description: enabled property descriptor.
-      - fieldId: 4
-        name: mode
-        type: AudioAlgorithmPropertyCapability
-        required: false
-        description: mode property descriptor.
       - fieldId: 5
         name: level
         type: AudioAlgorithmPropertyCapability
@@ -950,11 +945,6 @@ schemas:
         type: AudioAlgorithmPropertyCapability
         required: false
         description: enabled property descriptor.
-      - fieldId: 4
-        name: mode
-        type: AudioAlgorithmPropertyCapability
-        required: false
-        description: mode property descriptor.
       - fieldId: 5
         name: tailLengthMs
         type: AudioAlgorithmPropertyCapability
@@ -1025,11 +1015,6 @@ schemas:
         type: AudioAlgorithmPropertyCapability
         required: false
         description: enabled property descriptor.
-      - fieldId: 4
-        name: mode
-        type: AudioAlgorithmPropertyCapability
-        required: false
-        description: mode property descriptor.
       - fieldId: 5
         name: lookDirectionDeg
         type: AudioAlgorithmPropertyCapability
@@ -1060,11 +1045,6 @@ schemas:
         type: AudioAlgorithmPropertyCapability
         required: false
         description: enabled property descriptor.
-      - fieldId: 4
-        name: mode
-        type: AudioAlgorithmPropertyCapability
-        required: false
-        description: mode property descriptor.
       - fieldId: 5
         name: level
         type: AudioAlgorithmPropertyCapability
@@ -1155,11 +1135,6 @@ schemas:
         type: AudioAlgorithmPropertyCapability
         required: false
         description: enabled property descriptor.
-      - fieldId: 4
-        name: mode
-        type: AudioAlgorithmPropertyCapability
-        required: false
-        description: mode property descriptor.
       - fieldId: 5
         name: level
         type: AudioAlgorithmPropertyCapability
@@ -1218,11 +1193,6 @@ schemas:
         type: bool
         required: false
         description: Whether noise suppression is enabled.
-      - fieldId: 2
-        name: mode
-        type: enum
-        required: false
-        description: Suppression mode; values are off, low, medium, high, and auto.
       - fieldId: 3
         name: level
         type: uint8
@@ -1239,11 +1209,6 @@ schemas:
         type: bool
         required: false
         description: Whether echo cancellation is enabled.
-      - fieldId: 2
-        name: mode
-        type: enum
-        required: false
-        description: Echo cancellation mode; values are off, low, medium, high, and auto.
       - fieldId: 3
         name: tailLengthMs
         type: uint32
@@ -1304,11 +1269,6 @@ schemas:
         type: bool
         required: false
         description: Whether beamforming is enabled.
-      - fieldId: 2
-        name: mode
-        type: enum
-        required: false
-        description: Beamforming mode; values are fixed, adaptive, and auto.
       - fieldId: 3
         name: lookDirectionDeg
         type: int32
@@ -1332,11 +1292,6 @@ schemas:
         type: bool
         required: false
         description: Whether dereverberation is enabled.
-      - fieldId: 2
-        name: mode
-        type: enum
-        required: false
-        description: Dereverberation mode; values are off, low, medium, high, and auto.
       - fieldId: 3
         name: level
         type: uint8
@@ -1404,11 +1359,6 @@ schemas:
         type: bool
         required: false
         description: Whether howling suppression is enabled.
-      - fieldId: 2
-        name: mode
-        type: enum
-        required: false
-        description: Howling suppression mode; values are off, low, medium, high, and auto.
       - fieldId: 3
         name: level
         type: uint8
@@ -1854,7 +1804,7 @@ methods:
       name: BetaBrightnessSet
       payloadFormat: fixed_struct
   - name: audio.getAlgorithmCapabilities
-    description: Return supported audio algorithm objects, fields, defaults, ranges, enum values, and update policy.
+    description: Return supported audio algorithm objects, fields, defaults, ranges, units, and update policy.
     methodId: 2317
     bitOffset: 0
     domain: audio

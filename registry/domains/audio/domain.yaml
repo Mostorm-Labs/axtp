@@ -8,7 +8,7 @@ methods:
     status: draft
     bit_offset: 0
     since: 1.0.0
-    description: Return supported audio algorithm objects, fields, defaults, ranges, enum values, and update policy.
+    description: Return supported audio algorithm objects, fields, defaults, ranges, units, and update policy.
     rpc_op: request_response
     request_schema: AudioGetAlgorithmCapabilitiesRequest
     response_schema: AudioGetAlgorithmCapabilitiesResponse
@@ -237,7 +237,7 @@ types:
 
   AudioGetAlgorithmCapabilitiesResponse:
     kind: object
-    description: Supported algorithm objects, fields, defaults, ranges, enum values, and update policy.
+    description: Supported algorithm objects, fields, defaults, ranges, units, and update policy.
     fields:
       - id: 0x01
         name: capability
@@ -399,11 +399,6 @@ types:
         type: AudioAlgorithmPropertyCapability
         required: false
         description: enabled property descriptor.
-      - id: 0x04
-        name: mode
-        type: AudioAlgorithmPropertyCapability
-        required: false
-        description: mode property descriptor.
       - id: 0x05
         name: level
         type: AudioAlgorithmPropertyCapability
@@ -430,11 +425,6 @@ types:
         type: AudioAlgorithmPropertyCapability
         required: false
         description: enabled property descriptor.
-      - id: 0x04
-        name: mode
-        type: AudioAlgorithmPropertyCapability
-        required: false
-        description: mode property descriptor.
       - id: 0x05
         name: tailLengthMs
         type: AudioAlgorithmPropertyCapability
@@ -507,11 +497,6 @@ types:
         type: AudioAlgorithmPropertyCapability
         required: false
         description: enabled property descriptor.
-      - id: 0x04
-        name: mode
-        type: AudioAlgorithmPropertyCapability
-        required: false
-        description: mode property descriptor.
       - id: 0x05
         name: lookDirectionDeg
         type: AudioAlgorithmPropertyCapability
@@ -543,11 +528,6 @@ types:
         type: AudioAlgorithmPropertyCapability
         required: false
         description: enabled property descriptor.
-      - id: 0x04
-        name: mode
-        type: AudioAlgorithmPropertyCapability
-        required: false
-        description: mode property descriptor.
       - id: 0x05
         name: level
         type: AudioAlgorithmPropertyCapability
@@ -641,11 +621,6 @@ types:
         type: AudioAlgorithmPropertyCapability
         required: false
         description: enabled property descriptor.
-      - id: 0x04
-        name: mode
-        type: AudioAlgorithmPropertyCapability
-        required: false
-        description: mode property descriptor.
       - id: 0x05
         name: level
         type: AudioAlgorithmPropertyCapability
@@ -706,11 +681,6 @@ types:
         type: bool
         required: false
         description: Whether noise suppression is enabled.
-      - id: 0x02
-        name: mode
-        type: enum
-        required: false
-        description: Suppression mode; values are off, low, medium, high, and auto.
       - id: 0x03
         name: level
         type: uint8
@@ -728,11 +698,6 @@ types:
         type: bool
         required: false
         description: Whether echo cancellation is enabled.
-      - id: 0x02
-        name: mode
-        type: enum
-        required: false
-        description: Echo cancellation mode; values are off, low, medium, high, and auto.
       - id: 0x03
         name: tailLengthMs
         type: uint32
@@ -795,11 +760,6 @@ types:
         type: bool
         required: false
         description: Whether beamforming is enabled.
-      - id: 0x02
-        name: mode
-        type: enum
-        required: false
-        description: Beamforming mode; values are fixed, adaptive, and auto.
       - id: 0x03
         name: lookDirectionDeg
         type: int32
@@ -824,11 +784,6 @@ types:
         type: bool
         required: false
         description: Whether dereverberation is enabled.
-      - id: 0x02
-        name: mode
-        type: enum
-        required: false
-        description: Dereverberation mode; values are off, low, medium, high, and auto.
       - id: 0x03
         name: level
         type: uint8
@@ -899,11 +854,6 @@ types:
         type: bool
         required: false
         description: Whether howling suppression is enabled.
-      - id: 0x02
-        name: mode
-        type: enum
-        required: false
-        description: Howling suppression mode; values are off, low, medium, high, and auto.
       - id: 0x03
         name: level
         type: uint8

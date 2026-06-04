@@ -1,6 +1,6 @@
 # AXTP 音频算法配置协议方案
 
-版本：v0.2
+版本：v0.3
 
 归属域：`audio`
 
@@ -35,6 +35,14 @@ Capability ID：`audio.algorithm`
 事实源：`registry/domains/audio/domain.yaml`
 
 本次未采纳：所有 `[REVIEW-ASK]` legacy/授权/默认值读写/算法线程/beam report 条目仍为人工待确认问题，不进入 `legacyRefs` 或 YAML。未来新增未采纳事实应先更新本文草案并完成评审，再执行 `adopt-protocol-draft`；已采纳事实的语义修正、字段删除或废弃应执行 `amend-adopted-protocol`。
+
+---
+
+## 修订记录
+
+| 日期 | 修订 | 理由 | 兼容策略 | YAML 目标 |
+|---|---|---|---|---|
+| 2026-06-04 | 删除各算法配置对象和能力描述对象中的 `mode` 字段；补完整 `audio.getAlgorithmCapabilities` 全量返回示例。 | 当前业务只需要 `level` 及各算法明确数值/布尔参数，暂不需要按模式枚举配置算法。 | 已采纳 draft 事实修订；删除 draft-only 字段，不复用被删除 fieldId，保留 method/event/capability ID、`bit_offset` 和其他字段 ID。 | `registry/domains/audio/domain.yaml` |
 
 ---
 
@@ -135,8 +143,7 @@ BF
 {
   "noiseSuppression": {
     "enabled": true,
-    "level": 2,
-    "mode": "auto"
+    "level": 2
   },
   "echoCancellation": {
     "enabled": true,
@@ -179,7 +186,6 @@ BF
 {
   "noiseSuppression": {
     "enabled": true,
-    "mode": "auto",
     "level": 2
   }
 }
@@ -188,7 +194,6 @@ BF
 | 字段 | 类型 | 建议范围/枚举 | 说明 |
 |---|---|---|---|
 | `enabled` | boolean | `true / false` | 是否启用噪声抑制。 |
-| `mode` | enum | `off / low / medium / high / auto` | 抑制模式。 |
 | `level` | uint8 | `0..3` | 抑制强度。 |
 
 ### 6.2 echoCancellation
@@ -197,7 +202,6 @@ BF
 {
   "echoCancellation": {
     "enabled": true,
-    "mode": "auto",
     "tailLengthMs": 128,
     "nlpLevel": 2
   }
@@ -207,7 +211,6 @@ BF
 | 字段 | 类型 | 建议范围/枚举 | 说明 |
 |---|---|---|---|
 | `enabled` | boolean | `true / false` | 是否启用回声消除。 |
-| `mode` | enum | `off / low / medium / high / auto` | AEC 工作模式。 |
 | `tailLengthMs` | uint32 | `64..512` ms | 回声尾长；修改可能需要重启音频链路。 |
 | `nlpLevel` | uint8 | `0..3` | 非线性处理强度。 |
 
@@ -239,7 +242,6 @@ BF
 {
   "beamforming": {
     "enabled": true,
-    "mode": "adaptive",
     "lookDirectionDeg": 0,
     "beamWidthDeg": 60
   }
@@ -249,7 +251,6 @@ BF
 | 字段 | 类型 | 建议范围/枚举 | 说明 |
 |---|---|---|---|
 | `enabled` | boolean | `true / false` | 是否启用波束形成。 |
-| `mode` | enum | `fixed / adaptive / auto` | 波束形成模式。 |
 | `lookDirectionDeg` | int32 | `-180..180` degree | 固定波束指向。 |
 | `beamWidthDeg` | uint32 | `10..180` degree | 波束宽度。 |
 
@@ -259,7 +260,6 @@ BF
 {
   "dereverberation": {
     "enabled": true,
-    "mode": "auto",
     "level": 2
   }
 }
@@ -268,7 +268,6 @@ BF
 | 字段 | 类型 | 建议范围/枚举 | 说明 |
 |---|---|---|---|
 | `enabled` | boolean | `true / false` | 是否启用去混响。 |
-| `mode` | enum | `off / low / medium / high / auto` | 去混响模式。 |
 | `level` | uint8 | `0..3` | 去混响强度。 |
 
 ### 6.6 voiceActivityDetection
@@ -317,7 +316,6 @@ BF
 {
   "howlingSuppression": {
     "enabled": true,
-    "mode": "auto",
     "level": 2
   }
 }
@@ -326,7 +324,6 @@ BF
 | 字段 | 类型 | 建议范围/枚举 | 说明 |
 |---|---|---|---|
 | `enabled` | boolean | `true / false` | 是否启用啸叫抑制。 |
-| `mode` | enum | `off / low / medium / high / auto` | 啸叫抑制模式。 |
 | `level` | uint8 | `0..3` | 抑制强度。 |
 
 ---
@@ -363,6 +360,8 @@ BF
 
 ### 7.3 返回
 
+下面示例展示一台全量支持 `audio.algorithm` 的设备返回结构；实际设备可以只返回自身支持的算法和字段。
+
 ```json
 {
   "result": {
@@ -380,11 +379,6 @@ BF
           "enabled": {
             "type": "boolean",
             "defaultValue": true
-          },
-          "mode": {
-            "type": "enum",
-            "defaultValue": "auto",
-            "values": ["off", "low", "medium", "high", "auto"]
           },
           "level": {
             "type": "uint8",
@@ -404,11 +398,6 @@ BF
           "enabled": {
             "type": "boolean",
             "defaultValue": true
-          },
-          "mode": {
-            "type": "enum",
-            "defaultValue": "auto",
-            "values": ["off", "low", "medium", "high", "auto"]
           },
           "tailLengthMs": {
             "type": "uint32",
@@ -457,6 +446,157 @@ BF
             "range": {
               "min": 0,
               "max": 36,
+              "step": 1
+            }
+          },
+          "attackTimeMs": {
+            "type": "uint32",
+            "unit": "ms",
+            "defaultValue": 10,
+            "range": {
+              "min": 1,
+              "max": 1000,
+              "step": 1
+            }
+          },
+          "releaseTimeMs": {
+            "type": "uint32",
+            "unit": "ms",
+            "defaultValue": 200,
+            "range": {
+              "min": 10,
+              "max": 5000,
+              "step": 10
+            }
+          }
+        }
+      },
+      "beamforming": {
+        "supported": true,
+        "displayName": "Beamforming",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "defaultValue": true
+          },
+          "lookDirectionDeg": {
+            "type": "int32",
+            "unit": "degree",
+            "defaultValue": 0,
+            "range": {
+              "min": -180,
+              "max": 180,
+              "step": 1
+            }
+          },
+          "beamWidthDeg": {
+            "type": "uint32",
+            "unit": "degree",
+            "defaultValue": 60,
+            "range": {
+              "min": 10,
+              "max": 180,
+              "step": 1
+            }
+          }
+        }
+      },
+      "dereverberation": {
+        "supported": true,
+        "displayName": "Dereverberation",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "defaultValue": true
+          },
+          "level": {
+            "type": "uint8",
+            "defaultValue": 2,
+            "range": {
+              "min": 0,
+              "max": 3,
+              "step": 1
+            }
+          }
+        }
+      },
+      "voiceActivityDetection": {
+        "supported": true,
+        "displayName": "Voice Activity Detection",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "defaultValue": true
+          },
+          "sensitivity": {
+            "type": "uint8",
+            "defaultValue": 2,
+            "range": {
+              "min": 0,
+              "max": 3,
+              "step": 1
+            }
+          },
+          "hangoverMs": {
+            "type": "uint32",
+            "unit": "ms",
+            "defaultValue": 200,
+            "range": {
+              "min": 0,
+              "max": 2000,
+              "step": 10
+            }
+          }
+        }
+      },
+      "directionOfArrival": {
+        "supported": true,
+        "displayName": "Direction of Arrival",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "defaultValue": true
+          },
+          "reportingEnabled": {
+            "type": "boolean",
+            "defaultValue": true
+          },
+          "reportIntervalMs": {
+            "type": "uint32",
+            "unit": "ms",
+            "defaultValue": 100,
+            "range": {
+              "min": 20,
+              "max": 5000,
+              "step": 20
+            }
+          },
+          "smoothingMs": {
+            "type": "uint32",
+            "unit": "ms",
+            "defaultValue": 300,
+            "range": {
+              "min": 0,
+              "max": 5000,
+              "step": 10
+            }
+          }
+        }
+      },
+      "howlingSuppression": {
+        "supported": true,
+        "displayName": "Howling Suppression",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "defaultValue": true
+          },
+          "level": {
+            "type": "uint8",
+            "defaultValue": 2,
+            "range": {
+              "min": 0,
+              "max": 3,
               "step": 1
             }
           }
@@ -522,7 +662,6 @@ BF
   "result": {
     "noiseSuppression": {
       "enabled": true,
-      "mode": "auto",
       "level": 2
     },
     "autoGainControl": {
@@ -603,7 +742,6 @@ BF
     "config": {
       "noiseSuppression": {
         "enabled": true,
-        "mode": "auto",
         "level": 3
       }
     }
@@ -621,7 +759,6 @@ BF
     "config": {
       "echoCancellation": {
         "enabled": true,
-        "mode": "auto",
         "tailLengthMs": 256,
         "nlpLevel": 2
       }
@@ -688,7 +825,7 @@ BF
   "method": "audio.resetAlgorithmConfig",
   "params": {
     "items": {
-      "noiseSuppression": ["level", "mode"],
+      "noiseSuppression": ["level"],
       "autoGainControl": ["targetLevelDb", "maxGainDb"]
     }
   }
@@ -705,7 +842,6 @@ BF
     "config": {
       "noiseSuppression": {
         "enabled": true,
-        "mode": "auto",
         "level": 2
       }
     }
@@ -752,7 +888,6 @@ BF
     "config": {
       "noiseSuppression": {
         "enabled": true,
-        "mode": "auto",
         "level": 3
       }
     },
@@ -835,22 +970,6 @@ BF
 }
 ```
 
-参数组合冲突示例：
-
-```json
-{
-  "error": {
-    "code": "INVALID_ARGUMENT",
-    "message": "beamforming.lookDirectionDeg is required when beamforming.mode is fixed",
-    "data": {
-      "field": "beamforming.lookDirectionDeg",
-      "dependsOn": "beamforming.mode",
-      "expected": "fixed mode requires lookDirectionDeg"
-    }
-  }
-}
-```
-
 `requiresAudioRestart` 不应作为错误返回。配置可保存但需重启音频链路时，应成功返回 `applyState=pending_restart`。
 
 ---
@@ -865,8 +984,8 @@ BF
 | `CommonSetNoiseSuppressionLevel` | `0xC004F / 0x004F -> 0x00CF` | `audio.setAlgorithmConfig` | 可映射到 `noiseSuppression.level`。 |
 | `CommonGetReverberationSuppressionLevel` | `0xC0051 / 0x0051 -> 0x00D1` | `audio.getAlgorithmConfig` | 可映射到 `dereverberation.level` 或 `reverberationSuppression.level`，字段名需人工确认。 |
 | `CommonSetReverberationSuppressionLevel` | `0xC0052 / 0x0052 -> 0x00D2` | `audio.setAlgorithmConfig` | 可映射到 `dereverberation.level` 或 `reverberationSuppression.level`，字段名需人工确认。 |
-| `CommonGetEchoCancellationLevel` | `0xC0053 / 0x0053 -> 0x00D3` | `audio.getAlgorithmConfig` | 可映射到 `echoCancellation.nlpLevel` 或 `echoCancellation.mode/level`，字段需确认。 |
-| `CommonSetEchoCancellationLevel` | `0xC0054 / 0x0054 -> 0x00D4` | `audio.setAlgorithmConfig` | 可映射到 `echoCancellation.nlpLevel` 或 `echoCancellation.mode/level`，字段需确认。 |
+| `CommonGetEchoCancellationLevel` | `0xC0053 / 0x0053 -> 0x00D3` | `audio.getAlgorithmConfig` | 可映射到 `echoCancellation.nlpLevel`，字段需确认。 |
+| `CommonSetEchoCancellationLevel` | `0xC0054 / 0x0054 -> 0x00D4` | `audio.setAlgorithmConfig` | 可映射到 `echoCancellation.nlpLevel`，字段需确认。 |
 | `CommonResetAudioAlgorithmParams` | `0xC0060 / 0x0060 -> 0x00E0` | `audio.resetAlgorithmConfig` | 可映射为 reset 全部或指定算法，需确认 payload 是否带范围。 |
 | `CommonSetAlgoEnable` | `0xC006B / 0x006B -> 0x00EB` | `audio.setAlgorithmConfig` | 可映射到一个或多个算法的 `enabled`，需确认旧 bitmask/枚举含义。 |
 | `CommonGetAlgoEnable` | `0xC006C / 0x006C -> 0x00EC` | `audio.getAlgorithmConfig` | 可映射到 `enabled` 字段集合，需确认返回结构。 |
@@ -884,7 +1003,7 @@ BF
 | `CommonContinueAiAlgThrd` | `0xC0118 / 0x0118 -> 0x0198` | 待确认 | 可能是算法线程运行态控制，不一定是配置。 |
 | `CommonAudioBeamReport` | `0xC0201 / 0x0201 -> 0x0281` | 待确认 | 可能是 beam/DOA 上报开关或结果上报，不应直接放入 `algorithmConfigChanged`。 |
 
-Rooms 和 VM33 中的 beam map、speaker highlight、AGC mode 等条目可作为后续映射输入，但由于 Rooms 已在设备中使用、VM33 原通道为 HTTP，本文仅定义新 AXTP 目标协议，不重写旧协议 envelope。
+Rooms 和 VM33 中的 beam map、speaker highlight、AGC 参数等条目可作为后续映射输入，但由于 Rooms 已在设备中使用、VM33 原通道为 HTTP，本文仅定义新 AXTP 目标协议，不重写旧协议 envelope。
 
 ---
 
@@ -894,16 +1013,17 @@ Rooms 和 VM33 中的 beam map、speaker highlight、AGC mode 等条目可作为
 
 ```yaml
 capabilities:
-  - id: audio.algorithm
-    name: Audio algorithm configuration
-    methods:
-      - audio.getAlgorithmCapabilities
-      - audio.getAlgorithmConfig
-      - audio.setAlgorithmConfig
-      - audio.resetAlgorithmConfig
-    events:
-      - audio.algorithmConfigChanged
+  - id: 0x0901
+    name: audio.algorithm
+    domain: audio
+    status: draft
+    since: 1.0.0
+    description: Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification.
+    type: object
+    schema: AudioAlgorithmCapability
 ```
+
+关联 method/event 由各 method/event 条目的 `capabilities: [audio.algorithm]` 建立。
 
 method/event/capability numeric ID 以 registry 为准。当前 specs 中已规划：
 
