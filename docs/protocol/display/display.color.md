@@ -15,7 +15,7 @@ Capability ID：`display.color`
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
 | `[REVIEW-DRAFT]` | `display.color` capability | 本文是按 08 taxonomy 创建的单 feature 治理草案。 | 人工确认业务语义、schema 和 legacyRefs 后进入 `registry/domains/display/domain.yaml`。 |
-| `[REVIEW-ASK]` | legacy 映射 | legacy 映射需从 `docs/protocol/legacy-classification/` 中按 `target_capability` 筛选后人工确认。 | 落 registry 前补充确定的旧协议命令、字段路径和覆盖状态。 |
+| `[REVIEW-ASK]` | legacy 映射 | legacy 映射需从 `docs/legacy-classification/` 中按 `target_capability` 筛选后人工确认。 | 落 registry 前补充确定的旧协议命令、字段路径和覆盖状态。 |
 
 ---
 
@@ -61,7 +61,7 @@ Capability ID：`display.color`
 
 | 来源 | 旧协议条目 | 候选映射 | 状态 |
 |---|---|---|---|
-| AXDP / Rooms / VM33 / Signage | 待从 `docs/protocol/legacy-classification/` 筛选 | `display.color` | `[REVIEW-ASK]` |
+| AXDP / Rooms / VM33 / Signage | 待从 `docs/legacy-classification/` 筛选 | `display.color` | `[REVIEW-ASK]` |
 
 ---
 

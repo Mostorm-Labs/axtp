@@ -21,7 +21,7 @@ AXTP 的核心约定是：业务方案先进入草案，评审采纳后写入 YA
 | 理解协议怎么在线上传 | [docs/specs/README.md](docs/specs/README.md) -> 00 / 02 / 03 / 04 / 05 / 06 |
 | 查当前可实现协议 | [docs/generated/protocol.md](docs/generated/protocol.md) 和 [docs/generated/protocol.json](docs/generated/protocol.json) |
 | 新增或修改业务协议 | [docs/protocol/README.md](docs/protocol/README.md) -> 对应 `docs/dev/skills/**` |
-| 运行 Generator 或 CLI/SDK/runtime | [docs/how-to-use/AXTP_How_To_Use.md](docs/how-to-use/AXTP_How_To_Use.md) |
+| 运行 Generator 或 CLI/SDK/runtime | [docs/guides/how-to-use.md](docs/guides/how-to-use.md) |
 | C++ runtime/SDK 接入 | [runtimes/cpp-core/ARCHITECTURE.md](runtimes/cpp-core/ARCHITECTURE.md) 和 [docs/dev/AXTP_SDK_API_DESIGN.md](docs/dev/AXTP_SDK_API_DESIGN.md) |
 | 研发启动会材料 | [docs/dev/AXTP_RD_KICKOFF_GUIDE.md](docs/dev/AXTP_RD_KICKOFF_GUIDE.md) |
 
@@ -124,7 +124,7 @@ git diff --check
 
 - `docs/specs/**`
 - `docs/protocol/**`
-- `docs/how-to-use/**`
+- `docs/guides/**`
 - `docs/dev/**`
 - `registry/**/*.yaml`
 - `registry/domains/**/*.yaml`

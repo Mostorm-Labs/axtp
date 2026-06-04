@@ -4,7 +4,7 @@
 
 生成脚本：`tooling/legacy_classification/classify_legacy_protocols.py`
 
-CSV 明细：`docs/protocol/legacy-classification/legacy-protocol-classification.csv`
+CSV 明细：`docs/legacy-classification/legacy-protocol-classification.csv`
 
 ## 字段说明
 
@@ -173,10 +173,10 @@ CSV 明细：`docs/protocol/legacy-classification/legacy-protocol-classification
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 41 | command | AlphaUpgradeInfo |  | AlphaUpgradeInfo |  |  | firmware.ota | firmware.beginOta |  | docs/protocol/firmware/firmware.ota.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 42 | command | AlphaUpgradeData |  | AlphaUpgradeData |  |  | firmware.ota | firmware.commitOtaBatch |  | docs/protocol/firmware/firmware.ota.md | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 43 | command | AlphaDeviceInfo |  | AlphaDeviceInfo |  |  | device.identity | device.setIdentityConfig |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 44 | command | AlphaDeviceType |  | AlphaDeviceType |  |  | device.identity | device.setIdentityConfig |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 45 | command | BetaDeviceReset |  | BetaDeviceReset |  |  | system.initialization | system.reset |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 46 | command | BetaDeviceInfo |  | BetaDeviceInfo |  |  | device.identity | device.setIdentityConfig |  |  | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 43 | command | AlphaDeviceInfo |  | AlphaDeviceInfo |  |  | device.identity | device.setIdentityConfig |  | docs/protocol/device/device.identity.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 44 | command | AlphaDeviceType |  | AlphaDeviceType |  |  | device.identity | device.setIdentityConfig |  | docs/protocol/device/device.identity.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 45 | command | BetaDeviceReset |  | BetaDeviceReset |  |  | system.initialization | system.reset |  | docs/protocol/system/system.initialization.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 46 | command | BetaDeviceInfo |  | BetaDeviceInfo |  |  | device.identity | device.setIdentityConfig |  | docs/protocol/device/device.identity.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 47 | command | BetaStartUpgrade |  | BetaStartUpgrade |  |  | firmware.ota | firmware.beginOta |  | docs/protocol/firmware/firmware.ota.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 48 | command | BetaStopUpgrade |  | BetaStopUpgrade |  |  | firmware.ota | firmware.cancelOta |  | docs/protocol/firmware/firmware.ota.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 49 | command | BetaUpgradeInfo |  | BetaUpgradeInfo |  |  | firmware.ota | firmware.beginOta |  | docs/protocol/firmware/firmware.ota.md | high |
@@ -186,49 +186,49 @@ CSV 明细：`docs/protocol/legacy-classification/legacy-protocol-classification
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 53 | command | CommonSetVideoMode |  | CommonSetVideoMode |  |  | video.framing | video.setFramingMode |  | docs/protocol/video/video.framing.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 54 | command | CommonGetVideoMode |  | CommonGetVideoMode |  |  | video.framing | video.getFramingMode |  | docs/protocol/video/video.framing.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 55 | command | CommonGetPeopleNumber |  | CommonGetPeopleNumber |  |  | video.framing | video.getFramingConfig |  | docs/protocol/video/video.framing.md | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 56 | command | CommonSetMicUsed |  | CommonSetMicUsed |  |  | audio.input | audio.setInputConfig |  |  | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 56 | command | CommonSetMicUsed |  | CommonSetMicUsed |  |  | audio.input | audio.setInputConfig |  | docs/protocol/audio/audio.input.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 57 | command | CommonAudioRecord |  | CommonAudioRecord |  |  | audio.recording | audio.startRecording |  | docs/protocol/audio/audio.recording.md | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 58 | command | CommonSetTestResult |  | CommonSetTestResult |  |  | diagnostic.selfTest | diagnostic.runSelfTest |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 59 | command | CommonGetTestResult |  | CommonGetTestResult |  |  | diagnostic.selfTest | diagnostic.runSelfTest |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 60 | command | CommonSetEncryptedInfo |  | CommonSetEncryptedInfo |  |  | diagnostic.manufacturing | diagnostic.setManufacturingData |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 61 | command | CommonGetEncryptedInfo |  | CommonGetEncryptedInfo |  |  | device.info | device.getInfo |  |  | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 58 | command | CommonSetTestResult |  | CommonSetTestResult |  |  | diagnostic.selfTest | diagnostic.runSelfTest |  | docs/protocol/diagnostic/diagnostic.selfTest.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 59 | command | CommonGetTestResult |  | CommonGetTestResult |  |  | diagnostic.selfTest | diagnostic.runSelfTest |  | docs/protocol/diagnostic/diagnostic.selfTest.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 60 | command | CommonSetEncryptedInfo |  | CommonSetEncryptedInfo |  |  | diagnostic.manufacturing | diagnostic.setManufacturingData |  | docs/protocol/diagnostic/diagnostic.manufacturing.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 61 | command | CommonGetEncryptedInfo |  | CommonGetEncryptedInfo |  |  | device.info | device.getInfo |  | docs/protocol/device/device.info.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 62 | command | CommonGetGyroSlopeAngle |  | CommonGetGyroSlopeAngle |  |  | sensor.motion | sensor.getMotionState |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 63 | command | CommonSetUacState |  | CommonSetUacState |  |  | audio.uac | audio.setUacConfig |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 64 | command | CommonGetUacState |  | CommonGetUacState |  |  | audio.uac | audio.getUacState |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 65 | command | CommonTestAudioConsistency |  | CommonTestAudioConsistency |  |  | diagnostic.audioTest | diagnostic.runAudioTest |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 66 | command | CommonTestNetworkPort |  | CommonTestNetworkPort |  |  | diagnostic.networkTest | diagnostic.runNetworkTest |  |  | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 63 | command | CommonSetUacState |  | CommonSetUacState |  |  | audio.uac | audio.setUacConfig |  | docs/protocol/audio/audio.uac.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 64 | command | CommonGetUacState |  | CommonGetUacState |  |  | audio.uac | audio.getUacState |  | docs/protocol/audio/audio.uac.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 65 | command | CommonTestAudioConsistency |  | CommonTestAudioConsistency |  |  | diagnostic.audioTest | diagnostic.runAudioTest |  | docs/protocol/diagnostic/diagnostic.audioTest.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 66 | command | CommonTestNetworkPort |  | CommonTestNetworkPort |  |  | diagnostic.networkTest | diagnostic.runNetworkTest |  | docs/protocol/diagnostic/diagnostic.networkTest.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 67 | command | CommonSetVideoTrackMode |  | CommonSetVideoTrackMode |  |  | video.framing | video.setFramingMode |  | docs/protocol/video/video.framing.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 68 | command | CommonGetVideoTrackMode |  | CommonGetVideoTrackMode |  |  | video.framing | video.getFramingMode |  | docs/protocol/video/video.framing.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 69 | command | CommonSetMirrorState |  | CommonSetMirrorState |  |  | video.outputTransform | video.setOutputTransform |  | docs/protocol/video/video.outputTransform.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 70 | command | CommonGetMirrorState |  | CommonGetMirrorState |  |  | video.outputTransform | video.getOutputTransform |  | docs/protocol/video/video.outputTransform.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 71 | command | CommonSetSpeakerTrackDelay |  | CommonSetSpeakerTrackDelay |  |  | video.framing | video.setFramingMode |  | docs/protocol/video/video.framing.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 72 | command | CommonGetSpeakerTrackDelay |  | CommonGetSpeakerTrackDelay |  |  | video.framing | video.getFramingMode |  | docs/protocol/video/video.framing.md | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 73 | command | CommonSetSplitScreenNumber |  | CommonSetSplitScreenNumber |  |  | video.layout | video.setLayoutConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 74 | command | CommonGetSplitScreenNumber |  | CommonGetSplitScreenNumber |  |  | video.layout | video.getLayoutConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 75 | command | CommonSetUsbName |  | CommonSetUsbName |  |  | input.hid | input.setHidConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 76 | command | CommonGetUsbName |  | CommonGetUsbName |  |  | input.hid | input.getHidConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 77 | command | CommonSetUsbPid |  | CommonSetUsbPid |  |  | input.hid | input.setHidConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 78 | command | CommonGetUsbPid |  | CommonGetUsbPid |  |  | input.hid | input.getHidConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 79 | command | CommonSetUsbVid |  | CommonSetUsbVid |  |  | input.hid | input.setHidConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 80 | command | CommonGetUsbVid |  | CommonGetUsbVid |  |  | input.hid | input.getHidConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 81 | command | CommonSetReboot |  | CommonSetReboot |  |  | system.lifecycle | system.reboot |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 82 | command | CommonSetPowerLineFreq |  | CommonSetPowerLineFreq |  |  | camera.exposure | camera.setExposureConfig |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 83 | command | CommonGetPowerLineFreq |  | CommonGetPowerLineFreq |  |  | camera.exposure | camera.getExposureConfig |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 84 | command | CommonGetDeviceUniqueId |  | CommonGetDeviceUniqueId |  |  | device.identity | device.getIdentity |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 85 | command | CommonSetDeviceUniqueId |  | CommonSetDeviceUniqueId |  |  | device.identity | device.setIdentityConfig |  |  | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 73 | command | CommonSetSplitScreenNumber |  | CommonSetSplitScreenNumber |  |  | video.layout | video.setLayoutConfig |  | docs/protocol/video/video.layout.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 74 | command | CommonGetSplitScreenNumber |  | CommonGetSplitScreenNumber |  |  | video.layout | video.getLayoutConfig |  | docs/protocol/video/video.layout.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 75 | command | CommonSetUsbName |  | CommonSetUsbName |  |  | input.hid | input.setHidConfig |  | docs/protocol/input/input.hid.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 76 | command | CommonGetUsbName |  | CommonGetUsbName |  |  | input.hid | input.getHidConfig |  | docs/protocol/input/input.hid.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 77 | command | CommonSetUsbPid |  | CommonSetUsbPid |  |  | input.hid | input.setHidConfig |  | docs/protocol/input/input.hid.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 78 | command | CommonGetUsbPid |  | CommonGetUsbPid |  |  | input.hid | input.getHidConfig |  | docs/protocol/input/input.hid.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 79 | command | CommonSetUsbVid |  | CommonSetUsbVid |  |  | input.hid | input.setHidConfig |  | docs/protocol/input/input.hid.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 80 | command | CommonGetUsbVid |  | CommonGetUsbVid |  |  | input.hid | input.getHidConfig |  | docs/protocol/input/input.hid.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 81 | command | CommonSetReboot |  | CommonSetReboot |  |  | system.lifecycle | system.reboot |  | docs/protocol/system/system.lifecycle.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 82 | command | CommonSetPowerLineFreq |  | CommonSetPowerLineFreq |  |  | camera.exposure | camera.setExposureConfig |  | docs/protocol/camera/camera.exposure.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 83 | command | CommonGetPowerLineFreq |  | CommonGetPowerLineFreq |  |  | camera.exposure | camera.getExposureConfig |  | docs/protocol/camera/camera.exposure.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 84 | command | CommonGetDeviceUniqueId |  | CommonGetDeviceUniqueId |  |  | device.identity | device.getIdentity |  | docs/protocol/device/device.identity.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 85 | command | CommonSetDeviceUniqueId |  | CommonSetDeviceUniqueId |  |  | device.identity | device.setIdentityConfig |  | docs/protocol/device/device.identity.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 86 | command | CommonGetAlgAuthContent |  | CommonGetAlgAuthContent |  |  | audio.algorithm | audio.getAlgorithmConfig |  | docs/protocol/audio/audio.algorithm.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 87 | command | CommonSetAlgAuthContent |  | CommonSetAlgAuthContent |  |  | audio.algorithm | audio.setAlgorithmConfig |  | docs/protocol/audio/audio.algorithm.md | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 88 | command | CommonSetWdrState |  | CommonSetWdrState |  |  | camera.exposure | camera.setExposureConfig |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 89 | command | CommonGetWdrState |  | CommonGetWdrState |  |  | camera.exposure | camera.getExposureConfig |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 90 | command | CommonSetOsdMirrorState |  | CommonSetOsdMirrorState |  |  | video.osd | video.setOsdConfig |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 91 | command | CommonGetOsdMirrorState |  | CommonGetOsdMirrorState |  |  | video.osd | video.getOsdConfig |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 92 | command | CommonSetAFCalibration |  | CommonSetAFCalibration |  |  | camera.calibration | camera.startCalibration |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 93 | command | CommonStartAudioTest |  | CommonStartAudioTest |  |  | diagnostic.audioTest | diagnostic.runAudioTest |  |  | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 88 | command | CommonSetWdrState |  | CommonSetWdrState |  |  | camera.exposure | camera.setExposureConfig |  | docs/protocol/camera/camera.exposure.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 89 | command | CommonGetWdrState |  | CommonGetWdrState |  |  | camera.exposure | camera.getExposureConfig |  | docs/protocol/camera/camera.exposure.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 90 | command | CommonSetOsdMirrorState |  | CommonSetOsdMirrorState |  |  | video.osd | video.setOsdConfig |  | docs/protocol/video/video.osd.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 91 | command | CommonGetOsdMirrorState |  | CommonGetOsdMirrorState |  |  | video.osd | video.getOsdConfig |  | docs/protocol/video/video.osd.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 92 | command | CommonSetAFCalibration |  | CommonSetAFCalibration |  |  | camera.calibration | camera.startCalibration |  | docs/protocol/camera/camera.calibration.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 93 | command | CommonStartAudioTest |  | CommonStartAudioTest |  |  | diagnostic.audioTest | diagnostic.runAudioTest |  | docs/protocol/diagnostic/diagnostic.audioTest.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 94 | command | CommonSetFlipState |  | CommonSetFlipState |  |  | video.outputTransform | video.setOutputTransform |  | docs/protocol/video/video.outputTransform.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 95 | command | CommonGetFlipState |  | CommonGetFlipState |  |  | video.outputTransform | video.getOutputTransform |  | docs/protocol/video/video.outputTransform.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 96 | command | CommonGetNoiseSuppressionLevel |  | CommonGetNoiseSuppressionLevel |  |  | audio.algorithm | audio.getAlgorithmConfig |  | docs/protocol/audio/audio.algorithm.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 97 | command | CommonSetNoiseSuppressionLevel |  | CommonSetNoiseSuppressionLevel |  |  | audio.algorithm | audio.setAlgorithmConfig |  | docs/protocol/audio/audio.algorithm.md | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 98 | command | CommonGetBootDetect |  | CommonGetBootDetect |  |  | system.initialization | system.getInitializationState |  |  | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 98 | command | CommonGetBootDetect |  | CommonGetBootDetect |  |  | system.initialization | system.getInitializationState |  | docs/protocol/system/system.initialization.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 99 | command | CommonGetReverberationSuppressionLevel |  | CommonGetReverberationSuppressionLevel |  |  | audio.algorithm | audio.getAlgorithmConfig |  | docs/protocol/audio/audio.algorithm.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 100 | command | CommonSetReverberationSuppressionLevel |  | CommonSetReverberationSuppressionLevel |  |  | audio.algorithm | audio.setAlgorithmConfig |  | docs/protocol/audio/audio.algorithm.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 101 | command | CommonGetEchoCancellationLevel |  | CommonGetEchoCancellationLevel |  |  | audio.algorithm | audio.getAlgorithmConfig |  | docs/protocol/audio/audio.algorithm.md | medium |
@@ -244,26 +244,26 @@ CSV 明细：`docs/protocol/legacy-classification/legacy-protocol-classification
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 111 | command | CommonGetDefaultRecordEqParams |  | CommonGetDefaultRecordEqParams |  |  | audio.eq | audio.resetEqConfig |  | docs/protocol/audio/audio.eq.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 112 | command | CommonSetDefaultRecordEqParams |  | CommonSetDefaultRecordEqParams |  |  | audio.eq | audio.resetEqConfig |  | docs/protocol/audio/audio.eq.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 113 | command | CommonResetAudioAlgorithmParams |  | CommonResetAudioAlgorithmParams |  |  | audio.algorithm | audio.resetAlgorithmConfig |  | docs/protocol/audio/audio.algorithm.md | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 114 | command | CommonGetMuteLightEnhancement |  | CommonGetMuteLightEnhancement |  |  | audio.volume | audio.getVolumeState |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 115 | command | CommonSetMuteLightEnhancement |  | CommonSetMuteLightEnhancement |  |  | audio.volume | audio.setVolumeConfig |  |  | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 114 | command | CommonGetMuteLightEnhancement |  | CommonGetMuteLightEnhancement |  |  | audio.volume | audio.getVolumeState |  | docs/protocol/audio/audio.volume.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 115 | command | CommonSetMuteLightEnhancement |  | CommonSetMuteLightEnhancement |  |  | audio.volume | audio.setVolumeConfig |  | docs/protocol/audio/audio.volume.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 116 | command | CommonAudioRecordStart |  | CommonAudioRecordStart |  |  | audio.recording | audio.startRecording |  | docs/protocol/audio/audio.recording.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 117 | command | CommonAudioRecordStop |  | CommonAudioRecordStop |  |  | audio.recording | audio.stopRecording |  | docs/protocol/audio/audio.recording.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 118 | command | CommonAudioRecordData |  | CommonAudioRecordData |  |  | audio.recording | audio.startRecording |  | docs/protocol/audio/audio.recording.md | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 119 | command | CommonGetAFCalibration |  | CommonGetAFCalibration |  |  | camera.calibration | camera.getCalibrationState |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 120 | command | CommonGetDDRCapacity |  | CommonGetDDRCapacity |  |  | storage.disk | storage.getDiskState |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 121 | command | CommonSetPanTiltZoom |  | CommonSetPanTiltZoom |  |  | camera.zoom | camera.setZoomConfig |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 122 | command | CommonGetPanTiltZoom |  | CommonGetPanTiltZoom |  |  | camera.zoom | camera.getZoomState |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 123 | command | CommonGetDumpInfo |  | CommonGetDumpInfo |  |  | diagnostic.report | diagnostic.getReportExportState |  |  | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 119 | command | CommonGetAFCalibration |  | CommonGetAFCalibration |  |  | camera.calibration | camera.getCalibrationState |  | docs/protocol/camera/camera.calibration.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 120 | command | CommonGetDDRCapacity |  | CommonGetDDRCapacity |  |  | storage.disk | storage.getDiskState |  | docs/protocol/storage/storage.disk.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 121 | command | CommonSetPanTiltZoom |  | CommonSetPanTiltZoom |  |  | camera.zoom | camera.setZoomConfig |  | docs/protocol/camera/camera.zoom.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 122 | command | CommonGetPanTiltZoom |  | CommonGetPanTiltZoom |  |  | camera.zoom | camera.getZoomState |  | docs/protocol/camera/camera.zoom.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 123 | command | CommonGetDumpInfo |  | CommonGetDumpInfo |  |  | diagnostic.report | diagnostic.getReportExportState |  | docs/protocol/diagnostic/diagnostic.report.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 124 | command | CommonSetAlgoEnable |  | CommonSetAlgoEnable |  |  | audio.algorithm | audio.setAlgorithmConfig |  | docs/protocol/audio/audio.algorithm.md | medium |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 125 | command | CommonGetAlgoEnable |  | CommonGetAlgoEnable |  |  | audio.algorithm | audio.getAlgorithmConfig |  | docs/protocol/audio/audio.algorithm.md | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 126 | command | CommonSetHidCall |  | CommonSetHidCall |  |  | input.hid | input.setHidConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 127 | command | CommonGetHidCall |  | CommonGetHidCall |  |  | input.hid | input.getHidConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 128 | command | CommonSetUsbSpeedMode |  | CommonSetUsbSpeedMode |  |  | input.hid | input.setHidConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 129 | command | CommonGetUsbSpeedMode |  | CommonGetUsbSpeedMode |  |  | input.hid | input.getHidConfig |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 130 | command | CommonGetBootInfo |  | CommonGetBootInfo |  |  | system.initialization | system.getInitializationState |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 131 | command | CommonSetBootErase |  | CommonSetBootErase |  |  | system.initialization | system.startInitialization |  |  | medium |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 132 | command | CommonSetPrivacyEnable |  | CommonSetPrivacyEnable |  |  | privacy.state | privacy.setModeConfig |  |  | high |
-| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 133 | command | CommonGetPrivacyEnable |  | CommonGetPrivacyEnable |  |  | privacy.state | privacy.getState |  |  | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 126 | command | CommonSetHidCall |  | CommonSetHidCall |  |  | input.hid | input.setHidConfig |  | docs/protocol/input/input.hid.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 127 | command | CommonGetHidCall |  | CommonGetHidCall |  |  | input.hid | input.getHidConfig |  | docs/protocol/input/input.hid.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 128 | command | CommonSetUsbSpeedMode |  | CommonSetUsbSpeedMode |  |  | input.hid | input.setHidConfig |  | docs/protocol/input/input.hid.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 129 | command | CommonGetUsbSpeedMode |  | CommonGetUsbSpeedMode |  |  | input.hid | input.getHidConfig |  | docs/protocol/input/input.hid.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 130 | command | CommonGetBootInfo |  | CommonGetBootInfo |  |  | system.initialization | system.getInitializationState |  | docs/protocol/system/system.initialization.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 131 | command | CommonSetBootErase |  | CommonSetBootErase |  |  | system.initialization | system.startInitialization |  | docs/protocol/system/system.initialization.md | medium |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 132 | command | CommonSetPrivacyEnable |  | CommonSetPrivacyEnable |  |  | privacy.state | privacy.setModeConfig |  | docs/protocol/privacy/privacy.state.md | high |
+| axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 133 | command | CommonGetPrivacyEnable |  | CommonGetPrivacyEnable |  |  | privacy.state | privacy.getState |  | docs/protocol/privacy/privacy.state.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 134 | command | CommonSetNDIState |  | CommonSetNDIState |  |  | video.ndi | video.setNdiConfig |  | docs/protocol/video/video.ndi.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 135 | command | CommonGetNDIState |  | CommonGetNDIState |  |  | video.ndi | video.getNdiConfig |  | docs/protocol/video/video.ndi.md | high |
 | axdp_hid | docs/legacy-protocols/AXDP源码协议扫描清单.md | 136 | command | CommonGetIPConfig |  | CommonGetIPConfig |  |  | network.ip | network.getIpConfig |  | docs/protocol/network/network.ip.md | high |

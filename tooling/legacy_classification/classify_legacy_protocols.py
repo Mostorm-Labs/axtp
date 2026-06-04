@@ -20,36 +20,31 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY_DIR = ROOT / "docs" / "legacy-protocols"
 PROTOCOL_DIR = ROOT / "docs" / "protocol"
 SPECS_DIR = ROOT / "docs" / "specs"
-OUT_DIR = PROTOCOL_DIR / "legacy-classification"
+OUT_DIR = ROOT / "docs" / "legacy-classification"
 
 METHOD_SPEC = "docs/specs/10-AXTP-Methods-Registry-Spec.md"
 EVENT_SPEC = "docs/specs/11-AXTP-Events-Registry-Spec.md"
 
 
-PROTOCOL_DOC_BY_CAPABILITY = {
-    "audio.algorithm": "docs/protocol/audio/audio.algorithm.md",
-    "audio.eq": "docs/protocol/audio/audio.eq.md",
-    "audio.recording": "docs/protocol/audio/audio.record.md",
-    "camera.focus": "docs/protocol/camera/camera.focus.md",
-    "file.transfer": "docs/protocol/file/file.transfer.md",
-    "firmware.ota": "docs/protocol/firmware/firmware.ota.md",
-    "log.export": "docs/protocol/log/log.transfer.md",
-    "log.files": "docs/protocol/log/log.transfer.md",
-    "log.stream": "docs/protocol/log/log.transfer.md",
-    "network.ap": "docs/protocol/network/network.config.md",
-    "network.bluetooth": "docs/protocol/network/network.config.md",
-    "network.interface": "docs/protocol/network/network.config.md",
-    "network.ip": "docs/protocol/network/network.config.md",
-    "network.serviceEndpoint": "docs/protocol/network/network.config.md",
-    "network.wifi": "docs/protocol/network/network.config.md",
-    "stream.flowControl": "docs/protocol/stream/stream.flowcontrol.md",
-    "video.framing": "docs/protocol/video/video.framing.md",
-    "video.ndi": "docs/protocol/video/video.ndi.md",
-    "video.outputTransform": "docs/protocol/video/video.framing.md",
-    "video.pip": "docs/protocol/video/video.framing.md",
-    "video.rtsp": "docs/protocol/video/video.ndi.md",
-    "video.stream": "docs/protocol/video/video.stream.md",
-}
+def source_rel(path: Path) -> str:
+    return str(path.relative_to(ROOT))
+
+
+def discover_protocol_docs() -> dict[str, str]:
+    docs: dict[str, str] = {}
+    if not PROTOCOL_DIR.exists():
+        return docs
+    for path in sorted(PROTOCOL_DIR.glob("*/*.md")):
+        if path.name == "README.md":
+            continue
+        capability = path.stem
+        if "." not in capability:
+            continue
+        docs[capability] = source_rel(path)
+    return docs
+
+
+PROTOCOL_DOC_BY_CAPABILITY = discover_protocol_docs()
 
 
 @dataclass
@@ -139,10 +134,6 @@ def split_md_row(line: str) -> list[str]:
             cur.append(ch)
     cells.append(clean("".join(cur)))
     return cells
-
-
-def source_rel(path: Path) -> str:
-    return str(path.relative_to(ROOT))
 
 
 def load_symbol_sources() -> tuple[dict[str, set[str]], set[str], set[str]]:

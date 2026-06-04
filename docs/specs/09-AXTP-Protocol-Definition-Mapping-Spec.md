@@ -66,7 +66,7 @@ registry/domains/**/*.yaml
 
 ```text
 docs/protocol/<domain>/<domain.feature>.md
-docs/protocol/legacy-classification/**
+docs/legacy-classification/**
 ```
 
 这些文件可以用于生成或整理协议草案，但采纳前不得视为当前协议合同。
@@ -135,7 +135,7 @@ profiles: []
 ```text
 方案输入段：
   docs/protocol/<domain>/<domain.feature>.md
-  docs/protocol/legacy-classification/**
+  docs/legacy-classification/**
   docs/specs/08-13 反向确认规则
         ↓
 协议草案更新与人工确认

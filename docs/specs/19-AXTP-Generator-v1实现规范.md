@@ -103,7 +103,7 @@ registry/domains/**/*.yaml
 
 ```text
 docs/protocol/<domain>/<domain.feature>.md
-docs/protocol/legacy-classification/**
+docs/legacy-classification/**
 ```
 
 以下文件和目录是生成产物，不得手写：
