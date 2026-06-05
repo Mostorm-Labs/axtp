@@ -102,15 +102,28 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 - `[REVIEW-BLOCKER]`：当前文档定位会误导新协议生成，必须先重写或拆分。
 
 
-## 优先实现的协议文档
+## 协议采纳/生成优先级
 
-- `video/video.framing.md`
-- `video/video.stream.md`
-- `video/video.ndi.md`
-- `video/video.rtsp.md`
-- `network/network.wifi.md`
-- `network/network.ap.md`
-- `network/network.ip.md`
-- `firmware/firmware.update.md`
-- `camera/camera.focus.md`
-- `audio/audio.recording.md`
+本表用于安排后续从草案到 YAML、再到 generated 产物的顺序。统计依据为 `docs/legacy-classification/legacy-protocol-classification.csv` 和 `docs/legacy-classification/README.md`；当前 `docs/generated/protocol.md` 只有 `audio.algorithm` 已生成，其余业务域大多仍是草案状态。
+
+| 优先级 | 生成批次 | Legacy 覆盖 | 当前状态 | 建议动作 |
+|---|---|---:|---|---|
+| P1 | `device.*` / `system.*`：[`device.info`](device/device.info.md)、[`device.identity`](device/device.identity.md)、[`device.state`](device/device.state.md)、[`device.childDevice`](device/device.childDevice.md)、[`system.lifecycle`](system/system.lifecycle.md)、[`system.initialization`](system/system.initialization.md)、[`system.time`](system/system.time.md) | 64 条，覆盖 AXDP / Rooms / Signage / VM33 | 草案已存在，未进入 generated | 最先采纳生成。它们是设备识别、状态读取、重启、初始化、时间同步等通用底座，后续业务和工具都依赖这些基础事实。 |
+| P2 | [`video.framing`](video/video.framing.md) | 22 条，主要来自 AXDP，少量 VM33 | 草案已存在，未进入 generated | 紧跟 P1 生成。framing mode 是 legacy 高频控制项，也会影响 camera tracking、布局和画面输出的语义边界。 |
+| P2b | [`output.layout`](output/output.layout.md) / [`video.layout`](video/video.layout.md) | 28 条，`output.layout` 20 条、`video.layout` 8 条 | 草案已存在，未进入 generated | 原始优先级清单未单列，但 legacy 覆盖高。若近期要做输出画面、拼接、多画面或分屏，建议插在 P2 后、camera 控制前。 |
+| P3 | [`camera.focus`](camera/camera.focus.md)、[`camera.zoom`](camera/camera.zoom.md)、[`camera.ptz`](camera/camera.ptz.md) | 20 条，覆盖 AXDP / VM33 | 草案已存在，未进入 generated | 按同一 camera control 批次采纳。focus 和 zoom 命中多，PTZ 条目少但和控制体验强相关，适合一起确认 schema 与状态事件。 |
+| P4 | [`camera.image`](camera/camera.image.md)、[`camera.exposure`](camera/camera.exposure.md)、[`camera.calibration`](camera/camera.calibration.md)、[`camera.whiteBalance`](camera/camera.whiteBalance.md) | 12 条直接归类；VM33 Camera 配置另有 whiteBalance 字段线索 | 草案已存在，未进入 generated；`camera.image` 有低置信度拆分问题 | 先补 VM33 Camera 配置字段，再采纳 image/exposure/calibration；whiteBalance 当前分类 CSV 没有直接命中，建议随 camera 配置批次保留，但放在本批次后段确认。 |
+| P5 | `diagnostic.*` 产测：[`diagnostic.networkTest`](diagnostic/diagnostic.networkTest.md)、[`diagnostic.manufacturing`](diagnostic/diagnostic.manufacturing.md)、[`diagnostic.selfTest`](diagnostic/diagnostic.selfTest.md)、[`diagnostic.audioTest`](diagnostic/diagnostic.audioTest.md)、[`diagnostic.inputTest`](diagnostic/diagnostic.inputTest.md)、[`diagnostic.storageTest`](diagnostic/diagnostic.storageTest.md)、[`diagnostic.videoTest`](diagnostic/diagnostic.videoTest.md)、[`diagnostic.kvmTest`](diagnostic/diagnostic.kvmTest.md) | 33 条，覆盖 AXDP / Rooms / VM33 | 草案已存在，未进入 generated | 面向工厂和维修闭环，建议在用户侧 camera / video 基础能力之后生成；如果产线接入排期更早，可把 `diagnostic.manufacturing` 与 `diagnostic.networkTest` 提前成 P3b。 |
+| P6 | AXTP core / `axtpctl` | 不属于 legacy business 分类；core 已在 `registry/core/**`、`registry/schema/**`、`registry/error/**` 和 generated 中存在 | Core 已生成；`axtpctl` 属于工具/SDK 跟随项 | 不作为普通业务草案插队。每完成一批业务生成后，再让 `axtpctl` 命令、测试向量和 runtime 示例跟随 generated 事实更新。 |
+| P7 | `room.*` / `signage.*`：[`room.source`](room/room.source.md)、[`room.layout`](room/room.layout.md)、[`room.schedule`](room/room.schedule.md)、[`room.participant`](room/room.participant.md)、[`signage.playlist`](signage/signage.playlist.md)、[`signage.schedule`](signage/signage.schedule.md)、[`signage.osd`](signage/signage.osd.md)、[`signage.media`](signage/signage.media.md) | 28 条，主要来自 Rooms / Signage / VM33 | 草案已存在，未进入 generated | 放后面生成。它们更偏产品场景和应用层编排；若 Rooms 业务先启动，可单独把 `room.source` 提前，因为它有 11 条 legacy 命中。 |
+
+### 旁路高覆盖候选
+
+以下能力不在本轮主优先级清单里，但 legacy 覆盖量高，排期时不应遗漏：
+
+| 候选能力 | Legacy 覆盖 | 建议 |
+|---|---:|---|
+| [`network.wifi`](network/network.wifi.md)、[`network.ip`](network/network.ip.md)、[`network.ap`](network/network.ap.md) | 38 条 | 若设备上线、配网或发现流程先行，应作为 P1 后的并行批次。 |
+| [`firmware.update`](firmware/firmware.update.md) / [`firmware.updatePolicy`](firmware/firmware.updatePolicy.md) | 22 条 | 跨 AXDP / Rooms / Signage / VM33，适合在基础 device/system 生成后启动采纳。 |
+| [`audio.volume`](audio/audio.volume.md)、[`audio.input`](audio/audio.input.md)、[`audio.recording`](audio/audio.recording.md) | 31 条 | `audio.algorithm` 已 generated；这些可作为音频第二批。 |
+| [`video.stream`](video/video.stream.md)、[`video.ndi`](video/video.ndi.md)、[`video.rtsp`](video/video.rtsp.md) | 23 条 | 与 framing、camera、layout 相关，建议等 P2/P3 的控制面边界稳定后采纳。 |
