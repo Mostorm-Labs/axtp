@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate AXTP legacy migration planning artifacts.
 
-The generator intentionally writes docs/migration/generated/* only. It treats
+The generator intentionally writes docs/legacy-migration/generated/* only. It treats
 registry changes as candidate patches and keeps AXTP Core facts read-only.
 """
 
@@ -18,8 +18,8 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[2]
-LEGACY_DIR = ROOT / "docs" / "legacy-protocols"
-OUTPUT_DIR = ROOT / "docs" / "migration" / "generated"
+LEGACY_DIR = ROOT / "docs" / "legacy-migration" / "evidence"
+OUTPUT_DIR = ROOT / "docs" / "legacy-migration" / "generated"
 
 EXISTING_METHODS = {
     "device.getInfo": {"id": 0x0101, "domain": "device", "bitOffset": 0},
@@ -293,7 +293,7 @@ def read_axdp_methods() -> list[Mapping]:
         stream = should_stream(v2, payload, desc)
         rows.append(
             Mapping(
-                source="docs/legacy-protocols/AXDP设备能力协议集.xlsx:USB设备HID交互协议集",
+                source="docs/legacy-migration/evidence/AXDP设备能力协议集.xlsx:USB设备HID交互协议集",
                 legacy_protocol="axdp_hid",
                 legacy_id=legacy_id,
                 legacy_name=legacy_name,
@@ -337,7 +337,7 @@ def read_vm33_methods() -> tuple[list[Mapping], list[Mapping], list[Mapping], li
         stream = should_stream(method, payload, desc)
         methods.append(
             Mapping(
-                source="docs/legacy-protocols/VM33_Protocol_V1_V2_Mapping.xlsx:V1_V2_Method_Mapping",
+                source="docs/legacy-migration/evidence/VM33_Protocol_V1_V2_Mapping.xlsx:V1_V2_Method_Mapping",
                 legacy_protocol="vm33_http_json",
                 legacy_id=legacy_id,
                 legacy_name=legacy_name,
@@ -363,7 +363,7 @@ def read_vm33_methods() -> tuple[list[Mapping], list[Mapping], list[Mapping], li
         domain = event.split(".", 1)[0] if "." in event else "event"
         events.append(
             Mapping(
-                source="docs/legacy-protocols/VM33_Protocol_V1_V2_Mapping.xlsx:Event_Subscribe_Mapping",
+                source="docs/legacy-migration/evidence/VM33_Protocol_V1_V2_Mapping.xlsx:Event_Subscribe_Mapping",
                 legacy_protocol="vm33_http_json",
                 legacy_id=clean(row.get("EventId")),
                 legacy_name=clean(row.get("V1来源")),
@@ -388,7 +388,7 @@ def read_vm33_methods() -> tuple[list[Mapping], list[Mapping], list[Mapping], li
         domain = key.split(".", 1)[0] if "." in key else "config"
         caps.append(
             Mapping(
-                source="docs/legacy-protocols/VM33_Protocol_V1_V2_Mapping.xlsx:Config_Name_Mapping",
+                source="docs/legacy-migration/evidence/VM33_Protocol_V1_V2_Mapping.xlsx:Config_Name_Mapping",
                 legacy_protocol="vm33_http_json",
                 legacy_id=clean(row.get("ConfigId")),
                 legacy_name=clean(row.get("V1 Name")),
@@ -711,10 +711,10 @@ def build_registry_patch(rows: list[Mapping]) -> dict[str, Any]:
             "sources": [
                 "protocol/axtp.protocol.yaml",
                 "registry/**/*.yaml",
-                "docs/legacy-protocols/*.xlsx",
-                "docs/legacy-protocols/*.md",
-                "docs/migration/*.md",
-                "docs/migration/AXTP_Legacy_Migration_Matrix.xlsx",
+                "docs/legacy-migration/evidence/*.xlsx",
+                "docs/legacy-migration/evidence/*.md",
+                "docs/legacy-migration/plans/*.md",
+                "docs/legacy-migration/plans/AXTP_Legacy_Migration_Matrix.xlsx",
             ],
             "policy": {
                 "frame_header": "unchanged",
@@ -1056,7 +1056,7 @@ def build_cpp_plan(rows: list[Mapping]) -> str:
 
 ## Goal
 
-Provide a C++ legacy adapter skeleton that consumes `docs/migration/generated/legacy-to-axtp-map.generated.yaml` and exposes LEGACY_PROTOCOLS traffic as AXTP v1 RPC/Event/STREAM operations.
+Provide a C++ legacy adapter skeleton that consumes `docs/legacy-migration/generated/legacy-to-axtp-map.generated.yaml` and exposes LEGACY_PROTOCOLS traffic as AXTP v1 RPC/Event/STREAM operations.
 
 ## Components
 

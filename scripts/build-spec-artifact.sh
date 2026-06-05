@@ -58,9 +58,9 @@ copy_file() {
 copy_dir "$root/docs/specs" "$artifact_dir/specs" "specs"
 copy_dir "$root/registry" "$artifact_dir/registry" "registry"
 copy_dir "$root/schemas" "$artifact_dir/schemas" "schemas"
-copy_dir "$root/conformance" "$artifact_dir/conformance" "conformance"
-copy_dir "$root/docs/migration" "$artifact_dir/migration" "migration"
-copy_file "$root/CHANGELOG.md" "$artifact_dir/CHANGELOG.md" "CHANGELOG.md"
+copy_dir "$root/docs/conformance" "$artifact_dir/conformance" "conformance"
+copy_dir "$root/docs/legacy-migration" "$artifact_dir/legacy-migration" "legacy migration"
+copy_file "$root/docs/release/CHANGELOG.md" "$artifact_dir/CHANGELOG.md" "CHANGELOG.md"
 
 sed \
   -e "s|{{VERSION}}|$version|g" \

@@ -60,7 +60,7 @@ Source Model
         ↓  buildProtocolDefinitionRaw
 protocol/axtp.protocol.yaml          ← Protocol IR (generated, do not edit)
         ↓  emitRepositoryArtifacts
-docs/generated/          tooling/mcp/          runtimes/*/generated/
+docs/generated/          tooling/mcp/          tooling/test-vectors/
 ```
 
 This pipeline starts after YAML facts have already been adopted. `docs/protocol/**` and `docs/specs/**` are not Generator inputs for new facts.

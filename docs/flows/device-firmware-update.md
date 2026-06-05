@@ -2,7 +2,7 @@
 
 > Status: flow design
 > Scope: PC host updates a directly connected device through the generic `firmware.update` capability
-> Source inputs: `docs/business/device-firmware-update.md`, `docs/protocol/firmware/firmware.update.md`, `docs/protocol/firmware/firmware.info.md`, `docs/legacy-classification/firmware.md`
+> Source inputs: `docs/business/device-firmware-update.md`, `docs/protocol/firmware/firmware.update.md`, `docs/protocol/firmware/firmware.info.md`, `docs/legacy-migration/classification/firmware.md`
 > Protocol lifecycle: Stage 10 `plan-protocol-flow`
 
 本文根据“设备接到 PC 上位机后可以读取当前版本并执行固件更新，且需要从单个 `.bin` 扩展到多个 `.bin` 文件”的业务需求，梳理上位机、设备、固件升级服务和 AXTP 协议之间的交互流程。

@@ -68,7 +68,7 @@ Patch 发布不得改变 wire compatibility。Minor 发布可以扩展生成 reg
 - Compatibility notes
 - Runtime impact
 
-Release notes 应链接到 `CHANGELOG.md`，并说明精确 tag 和 commit。
+Release notes 应链接到 `docs/release/CHANGELOG.md`，并说明精确 tag 和 commit。
 
 ## 与现有 AXTP 版本字段的关系
 

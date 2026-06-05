@@ -27,7 +27,7 @@ cd "${repo_root}"
 
 required_files=(
   "README.md"
-  "CHANGELOG.md"
+  "docs/release/CHANGELOG.md"
   "docs/release/AXTP_SPEC_VERSIONING.md"
   "docs/release/AXTP_SPEC_RELEASE_CHECKLIST.md"
   "docs/release/AXTP_RUNTIME_SPEC_LOCK.md"
@@ -57,8 +57,10 @@ if [[ "${ALLOW_DIRTY:-0}" != "1" ]] && [[ -n "$(git status --porcelain)" ]]; the
   exit 1
 fi
 
-if ! grep -q "^## ${tag}$" CHANGELOG.md; then
-  echo "CHANGELOG.md is missing section: ## ${tag}" >&2
+changelog="docs/release/CHANGELOG.md"
+
+if ! grep -q "^## ${tag}$" "${changelog}"; then
+  echo "${changelog} is missing section: ## ${tag}" >&2
   exit 1
 fi
 
@@ -67,16 +69,16 @@ section="$(
     $0 == "## " tag { in_section = 1; next }
     in_section && /^## / { exit }
     in_section { print }
-  ' CHANGELOG.md
+  ' "${changelog}"
 )"
 
 if [[ -z "${section//[[:space:]]/}" ]]; then
-  echo "CHANGELOG.md section for ${tag} is empty." >&2
+  echo "${changelog} section for ${tag} is empty." >&2
   exit 1
 fi
 
 if grep -q "TBD" <<<"${section}"; then
-  echo "CHANGELOG.md section for ${tag} still contains TBD placeholders." >&2
+  echo "${changelog} section for ${tag} still contains TBD placeholders." >&2
   exit 1
 fi
 

@@ -175,7 +175,7 @@ capability schema
 按事件/流/profile 的复杂能力协商
 ```
 
-v2 Capability Model 可以引用 `schemas:`，但不得改变 v1 method/event/error/schema 的 stable wire format。完整 v2/P1 设计材料归档在 `docs/archive/future/AXTP-Capability-Model-v2.md`，不得回流为 v1 Core 必选项。
+v2 Capability Model 可以引用 `schemas:`，但不得改变 v1 method/event/error/schema 的 stable wire format。完整 v2/P1 设计材料归档在 `docs/architecture/AXTP-Capability-Model-v2.md`，不得回流为 v1 Core 必选项。
 
 
 

@@ -1,710 +1,168 @@
 # AXTP How To Use
 
-本文用具体例子说明当前仓库怎么查协议、怎么生成产物、怎么找到 runtime 仓库，以及怎么把业务需求变成可评审草案，再采纳为正式协议。
+This guide explains how to use the AXTP main repository after the runtime
+split. The main repository is for protocol facts, drafts, generated references,
+conformance cases, release artifacts, and maintainer workflows. Language
+runtime code and runtime-specific API docs live in their own repositories.
 
-## 1. 先理解权威模型
+## 1. Understand The Source Model
 
-这个文件是实操手册：查当前协议、跑 Generator、用 CLI/SDK/runtime、把业务需求推进到可采纳协议。开始操作前先记住四类材料：
+AXTP uses a staged protocol pipeline:
 
 ```text
-docs/protocol/<domain>/<domain.feature>.md
-  业务草案和评审输入，不是最终实现合同
-
-registry/**/*.yaml + registry/domains/**/*.yaml
-  人工维护的机器事实源，是 Generator 输入
-
-protocol/axtp.protocol.yaml
-  Generator 输出的 Protocol IR，不手写
-
-docs/generated/* + tooling/*
-  Generator 输出的人读协议、工具 JSON 和测试向量，不手写
+docs/business/<requirement>.md
+  -> docs/flows/<scenario>.md
+  -> docs/protocol/<domain>/<domain.feature>.md
+  -> registry/**/*.yaml + registry/domains/**/*.yaml
+  -> protocol/axtp.protocol.yaml
+  -> docs/generated/**
 ```
 
-### 1.1 YAML 从哪里来
+Only YAML facts and generated outputs are current implementation contracts.
+Business docs, flow plans, protocol drafts, and legacy migration notes are
+review inputs until they are adopted into `registry/`.
 
-`registry/**/*.yaml` 和 `registry/domains/**/*.yaml` 不是从 Markdown 自动生成的，也不是 Generator 的输出。它们是人工评审后写入的机器事实源，通常由协议维护者、架构师或协议采纳流程把已经确认的规范事实整理成 YAML：
+## 2. Find Current Protocol Facts
 
-| YAML 位置 | 事实来源 | 产生方式 | 和 specs / docs/protocol 的关系 |
-|---|---|---|---|
-| `registry/core/*.yaml` | AXTP Core 架构裁决、wire format、payload type、RPC op、transport profile、stream profile 等核心规则 | 根据 `docs/specs/00-06`、`18`、`19` 中已冻结或已确认的规则人工维护 | `docs/specs` 是规则说明和治理依据；Core YAML 是这些规则的机器可读表达 |
-| `registry/error`、`registry/capability`、`registry/schema`，以及按需创建的 `registry/method`、`registry/event` | 已采纳的 Core/shared error、capability、公共 schema，以及被治理为 Core/shared 的 method/event | 从已确认的规范表、Core 决策、稳定公共能力中人工写入 | 对应规则由 `docs/specs/08-14` 约束；不是从 generated 文档反推；空集合不保留占位文件 |
-| `registry/domains/<domain>/domain.yaml` | 已评审通过的新业务域能力，例如 `audio.algorithm` 下的 method/event/schema/capability | 先在 `docs/protocol/<domain>/<domain.feature>.md` 写草案，评审通过后采纳到 domain YAML | `docs/protocol` 是草案和评审输入；domain YAML 才是采纳后的正式机器事实 |
-| `registry/legacy/legacy_mapping.yaml` | 已确认的旧协议命令、状态码、payload 到 AXTP method/event/stream 的映射 | 根据 `docs/legacy-protocols/**`、`docs/migration/**` 和人工确认结果按需创建并写入 | 旧协议材料只是证据来源；没有证据的 TBD 映射不能写入 YAML；没有已采纳映射时不保留空文件 |
-
-因此按下面规则操作：
-
-- 修改普通业务能力时，通常先改 `docs/protocol/**` 草案，评审后再改 `registry/domains/<domain>/domain.yaml`。
-- 修改命名、ID、schema、profile、兼容性等治理规则时，需要同步确认 `docs/specs/08-14`，再落 YAML。
-- 修改 Standard Frame、CONTROL/RPC/STREAM payload header、transport profile 等 Core 规则时，必须先确认 `docs/specs/00-06/18/19` 的规范变化，再改 `registry/core/**` 或 Generator 校验逻辑。
-- Generator 只读取 YAML、校验 YAML、聚合 Protocol IR、输出 generated 产物；它不负责把 `docs/protocol` 草案自动变成 YAML。
-
-### 1.2 协议生命周期
-
-完整 skill 索引见 `docs/dev/skills/README.md`。目录编号用于人类浏览排序，`SKILL.md` 的 `name` 保持语义化触发名。
-
-| 层级 | Skill | 输入 | 输出 | 边界 |
-|---|---|---|---|---|
-| 总控路由 | `docs/dev/skills/00-axtp-protocol-workflow/SKILL.md` | 用户提出的“新增/修改/迁移/采纳/实现业务协议”任务 | 判断应该进入草案、采纳、修订、生成还是 runtime 实现 | 默认不直接写 YAML，先路由 |
-| Stage 10 流程阶段 | `docs/dev/skills/10-plan-protocol-flow/SKILL.md` | 业务场景、用户 story、UI 原型、端到端交互 | `docs/flows/<scenario>.md` 场景流程方案 | 只梳理协议步骤、已有覆盖和缺口，不写 YAML；缺口再转 Stage 20/40 |
-| 草案阶段 | `docs/dev/skills/20-draft-business-protocol/SKILL.md` | 大白话需求、旧协议线索、产品/架构想法 | `docs/protocol/<domain>/<domain.feature>.md` 草案 | 不写 registry，不生成正式协议 |
-| 采纳阶段 | `docs/dev/skills/30-adopt-protocol-draft/SKILL.md` | 已评审草案 MD | specs 08-13 对齐；涉及 profile/MVP 时同步 14；草案 formalized；写入 YAML | 不采纳未确认 `[REVIEW-*]`，不手写 generated |
-| 修订阶段 | `docs/dev/skills/40-amend-adopted-protocol/SKILL.md` | 已采纳或已生成协议的语义修正、字段删除、废弃、重命名或扩展 | amendment 记录、proposal/specs/YAML 修正、generated 重新生成 | 先判断 draft/experimental vs stable/MVP，不直接手写 generated |
-| 生成阶段 | `docs/dev/skills/50-generate-axtp-protocol/SKILL.md` | 已采纳 YAML 事实源 | Protocol IR、generated docs、tooling JSON、test vectors | 只从 YAML 生成，不从 Markdown 推断新事实 |
-
-每个阶段的责任分工如下：
-
-| 阶段 | 主责角色 | 参与角色 | 主责做什么 | 参与角色确认什么 | 完成标准 |
-|---|---|---|---|---|---|
-| 需求输入 | 业务负责人 / 产品 / 架构 | 固件、上位机、后台、测试 | 描述业务目标、触发条件、设备行为、旧协议线索和优先级 | 确认需求是否真实存在、是否有旧协议兼容要求 | 有明确业务描述或旧协议证据 |
-| 总控路由 | 协议维护者 / 架构 | 提需求的人 | 使用 `axtp-protocol-workflow` 判断走草案、采纳、生成还是 runtime 实现 | 确认当前阶段判断是否符合预期 | 明确下一步 skill 和允许修改范围 |
-| Stage 10 流程阶段 | 协议维护者 / 架构 | 产品、固件、上位机、后台、测试 | 使用 `plan-protocol-flow` 从业务 story 或 UI 原型生成 `docs/flows/**`，逐步列出协议调用、事件、已有覆盖和缺口 | 确认交互流程是否完整，哪些步骤是协议、哪些是 UI/业务逻辑 | 场景流程方案和下一步草案/修订清单 |
-| 草案阶段 | 协议维护者 / 架构 | 业务、固件、上位机、后台、测试 | 使用 `draft-business-protocol` 搜索复用项，起草或更新 `docs/protocol/**`，写候选 method/schema/event/error/capability | 业务确认语义，固件确认可实现性，上位机/后台确认调用方式，测试确认可测性 | 草案带 `[REVIEW-*]`，open questions 明确 |
-| 草案评审 | 架构 / 业务负责人 | 固件、上位机、后台、SDK/工具、测试 | 组织评审，逐项处理 `[REVIEW-*]` | 各端确认字段、错误码、事件、stream、legacy 映射和兼容边界 | 可采纳内容均为 `[REVIEW-OK]` 或等价确认 |
-| 采纳阶段 | 协议维护者 / 架构 | 业务、固件、上位机、测试 | 使用 `adopt-protocol-draft` 对齐 specs 08-13/14，固定草案状态，写入 YAML，分配 ID / `bitOffset` / fieldId | 确认没有未解决 review blocker 被写入 YAML | `validate:sources` 通过，YAML 只含已确认事实 |
-| 修订阶段 | 协议维护者 / 架构 | 业务、固件、上位机、后台、测试 | 使用 `amend-adopted-protocol` 修正已采纳事实，记录 amendment，判断删除/废弃/版本化策略 | 确认 draft/experimental 可直接修正，stable/MVP 不静默破坏 wire 合同 | amendment 记录、YAML/source validation、generated diff |
-| 生成阶段 | 协议维护者 / SDK/工具 | 测试、研发 | 使用 `generate-axtp-protocol` 从 YAML 生成 Protocol IR、generated docs、tooling JSON 和 test vectors | 确认 generated diff 符合协议变更 | `validate:protocol`、Generator tests、`git diff --check` 通过 |
-| PR 发布 | 协议维护者 / 研发负责人 | 业务、固件、上位机、后台、测试 | 提交草案、specs、YAML、generated diff，说明兼容影响和测试结果 | 评审 generated 文档是否能支撑实现和验收 | PR 合并 main，generated 协议成为研发/测试依据 |
-| 研发实现 | 固件 / 上位机 / 后台 / SDK | 测试、协议维护者 | 按 `docs/generated/protocol.md/json`、generated headers 和 test vectors 实现功能 | 测试确认正向、错误、event、stream、legacy 兼容用例 | 端到端联调和测试通过 |
-
-`adopt-protocol-draft` 做的是“受控转译”：读取草案、specs 和现有 YAML，检查 `[REVIEW-*]` 状态，反向确认 08-13/14，计算 ID / `bitOffset` / fieldId，固定草案状态，并写入 YAML。它不是简单的 Markdown parser，因为协议采纳必须处理冲突、编号、兼容性和未确认事实。
-
-实际开发时：
-
-- 产品/架构/研发讨论端到端场景或 UI 原型时，先用 Stage 10 `plan-protocol-flow` 写 `docs/flows/**`，把 story 步骤、已有协议覆盖、协议缺口和 UI-only 行为列清楚。
-- 明确需要新增或修改协议后，再写 `docs/protocol/**` 草案。
-- 草案评审通过后，使用 `adopt-protocol-draft` 把已确认事实写入 `registry/**` 或 `registry/domains/**`。
-- 已采纳协议需要删除字段、收窄范围、重命名、废弃或扩展时，使用 `amend-adopted-protocol`，不要回到普通草案流程或手改 generated。
-- 使用 `generate-axtp-protocol` 运行 Generator，刷新 generated 文档、工具 JSON 和测试向量。
-- 研发和测试按 generated 产物实现，不按未采纳草案实现。
-
-## 2. 查当前协议
-
-### 2.1 看完整协议参考
-
-```bash
-open docs/generated/protocol.md
-```
-
-或者直接看 Markdown：
+Read the generated protocol reference:
 
 ```bash
 sed -n '1,220p' docs/generated/protocol.md
 ```
 
-### 2.2 查 method
+Use the generated registries for focused lookup:
 
 ```bash
 sed -n '1,120p' docs/generated/method_registry.generated.md
-```
-
-当前已有 method：
-
-| methodId | name | status | 用途 |
-|---:|---|---|---|
-| `0x090D` | `audio.getAlgorithmCapabilities` | stable | 查询音频算法字段、范围、默认值和更新策略 |
-| `0x0901` | `audio.getAlgorithmConfig` | stable | 查询当前音频算法配置 |
-| `0x0902` | `audio.setAlgorithmConfig` | stable | 部分更新音频算法配置 |
-| `0x090E` | `audio.resetAlgorithmConfig` | stable | 恢复全部、指定算法或指定字段默认值 |
-
-### 2.3 查 event
-
-```bash
 sed -n '1,120p' docs/generated/event_registry.generated.md
+sed -n '1,120p' docs/generated/error_code.generated.md
+sed -n '1,120p' docs/generated/capability_registry.generated.md
 ```
 
-当前已有 event：
-
-| eventId | name | status | 用途 |
-|---:|---|---|---|
-| `0x0901` | `audio.algorithmConfigChanged` | stable | 音频算法配置变化 |
-
-### 2.4 查机器可读协议
+Use the machine-readable protocol model for tooling:
 
 ```bash
-node -e "const p=require('./docs/generated/protocol.json'); console.log(p.methods.map(m => [m.methodId, m.name]));"
+jq '.protocol.version' docs/generated/protocol.json
 ```
 
-`docs/generated/protocol.json` 适合 SDK、工具、测试和自动化脚本消费。
+## 3. Run The Generator
 
-## 3. 运行 Generator
-
-本仓库保留自己的 `generators/`，只负责生成主库文档和工具产物。五个 runtime / mock 仓库也各自维护 generator，用于生成各自 runtime/server 产物。
-
-### 3.1 安装主库 Generator 依赖
+Install dependencies:
 
 ```bash
 pnpm --dir generators install
 ```
 
-主库提交了 `generators/pnpm-lock.yaml`，建议使用 pnpm。
-
-### 3.2 构建主库 Generator
+Build and validate source YAML:
 
 ```bash
 pnpm --dir generators build
-```
-
-### 3.3 校验 Source YAML
-
-```bash
 pnpm --dir generators validate:sources
 ```
 
-这个命令会检查：
-
-- ID 唯一性。
-- method/event/schema 引用。
-- domain/bitOffset 规则。
-- Source YAML 和关键 wire 事实的一致性。
-
-### 3.4 生成所有产物
+Regenerate all main-repo protocol artifacts:
 
 ```bash
 pnpm --dir generators generate
-```
-
-会刷新：
-
-```text
-protocol/axtp.protocol.yaml
-docs/generated/protocol.md
-docs/generated/protocol.json
-docs/generated/*_registry.generated.md
-tooling/mcp/*.generated.json
-tooling/test-vectors/*
-```
-
-### 3.5 校验 Protocol IR
-
-```bash
 pnpm --dir generators validate:protocol
 ```
 
-### 3.6 生成 runtime 产物
-
-在对应 runtime 仓库中运行该仓库自己的 generator，并把 `AXTP_SPEC_PATH` 指向本 AXTP 主库：
+Run generator tests:
 
 ```bash
-export AXTP_SPEC_PATH=/path/to/axtp
-cd /path/to/mostormlabs/axtp-ts-runtime
-pnpm --dir generators install
-pnpm --dir generators build
-pnpm --dir generators generate:runtime
-```
-
-### 3.7 文档-only 改动的建议检查
-
-如果只改 README、How To Use、Kickoff 这类文档：
-
-```bash
-pnpm --dir generators build
 pnpm --dir generators test
-pnpm --dir generators validate:sources
-pnpm --dir generators validate:protocol
-git diff --check
 ```
 
-## 4. 使用 axtpctl
+## 4. Validate Conformance Cases
 
-`axtpctl` 是调试、产测和集成检查工具，已迁移到独立 C++ runtime 仓库：
-
-```text
-https://github.com/Mostorm-Labs/axtp-cpp-runtime
-```
-
-以下命令在 `axtp-cpp-runtime` 仓库根目录执行。工具位置是：
-
-```text
-tools/axtpctl
-```
-
-P0 支持：
-
-- `--help`
-- `call <method|--method-id>`
-- `capability methods`
-- `list-methods`
-- `ping`
-- `inspect frame --hex <HEX>`
-
-### 4.1 构建 axtpctl
-
-按工具目录单独构建：
+Conformance cases live under `docs/conformance/`.
 
 ```bash
-cmake -S tools/axtpctl -B build/axtpctl
-cmake --build build/axtpctl
+pnpm --dir generators build
+scripts/validate-conformance.sh
 ```
 
-运行帮助：
-
-```bash
-./build/axtpctl/axtpctl --help
-```
-
-### 4.2 Mock 查询音频算法能力
-
-```bash
-./build/axtpctl/axtpctl --transport mock call audio.getAlgorithmCapabilities --json '{}'
-```
-
-短命令：
-
-```bash
-./build/axtpctl/axtpctl -c audio.getAlgorithmCapabilities -o json
-```
-
-用途：不用真实设备，先验证 method registry、SDK dynamic call 和 CLI 参数。
-
-### 4.3 Mock 设置音频算法等级
-
-```bash
-./build/axtpctl/axtpctl \
-  --transport mock \
-  call audio.setAlgorithmConfig \
-  --json '{"config":{"noiseSuppression":{"level":2}}}'
-```
-
-短命令：
-
-```bash
-./build/axtpctl/axtpctl -c audio.setAlgorithmConfig --json '{"config":{"noiseSuppression":{"level":2}}}' -o json
-```
-
-### 4.4 查看 method 列表
-
-```bash
-./build/axtpctl/axtpctl list-methods
-```
-
-或者：
-
-```bash
-./build/axtpctl/axtpctl capability methods
-```
-
-### 4.5 检查 frame hex
-
-```bash
-./build/axtpctl/axtpctl inspect frame --hex 415801020000000000000001a950
-```
-
-这个命令用于解析 Standard Frame header、payload length、payload type 和 CRC 信息。普通业务调用不应该绕过 SDK；只有 inspect 这类诊断命令可以直接碰 frame parser。
-
-### 4.6 调真实设备的方向
-
-HID 示例形态：
-
-```bash
-./build/axtpctl/axtpctl \
-  --transport hid \
-  --vid 0x1234 \
-  --pid 0x5678 \
-  -c audio.getAlgorithmCapabilities \
-  -o json
-```
-
-TCP 示例形态：
-
-```bash
-./build/axtpctl/axtpctl \
-  --transport tcp \
-  --host 127.0.0.1 \
-  --port 9000 \
-  -c audio.getAlgorithmCapabilities \
-  -o json
-```
-
-实际可用性取决于对应 concrete transport 和设备端实现是否已接入。
-
-## 5. C++ SDK dynamic RPC
-
-SDK 已迁移到 `axtp-cpp-runtime` 仓库，位置：
-
-```text
-sdk
-```
-
-SDK 的 P0 策略是 dynamic RPC first。业务调用优先用 method name/id + JSON/TLV/Raw body，不强制依赖 typed generated wrappers。
-
-### 5.1 JSON 调用
-
-```cpp
-#include "axtp_client.hpp"
-
-int main() {
-    axtp::sdk::AxtpClient client;
-
-    auto capability = client.callJson("audio.getAlgorithmCapabilities", "{}");
-    auto result = client.callJson("audio.setAlgorithmConfig", R"({"config":{"noiseSuppression":{"level":2}}})");
-
-    (void)capability;
-    (void)result;
-    return 0;
-}
-```
-
-执行路径：
-
-```text
-AxtpClient::callJson("audio.getAlgorithmCapabilities", "{}")
-  -> MethodRegistry::findMethodId()
-  -> RpcPayload
-  -> AxtpEndpoint::sendRpcRequest()
-  -> AxtpCore outbound encode
-  -> ITransport::sendBytes()
-  -> poll loop
-  -> SDK result
-```
-
-如果注册了 local mock handler，`callRaw()` 可以不经过真实 transport；否则需要 attach transport 并进入 poll loop。
-
-### 5.2 Raw/TLV 调用
-
-```cpp
-axtp::Bytes tlvBody = {/* encoded TLV bytes */};
-auto response = client.callTlv("audio.setAlgorithmConfig", tlvBody);
-
-axtp::Bytes raw = {0xca, 0xfe};
-auto rawResponse = client.callRawBytes(0x90010001, raw);
-```
-
-Raw API 适合调试、vendor private method 和 legacy bridge。正式业务应优先有 registry method/schema。
-
-### 5.3 Typed facade
-
-Typed facade 只有在对应业务协议已采纳并生成 wrapper 后才应暴露；当前优先使用 dynamic RPC：
-
-```cpp
-#include "axtp_client.hpp"
-
-axtp::sdk::AxtpClient client;
-auto config = client.callJson("audio.getAlgorithmConfig", "{}");
-```
-
-Typed API 是 dynamic/raw RPC 的便利包装，不应该绕过 MethodRegistry 和 runtime 分层。
-
-## 6. C++ runtime 接入
-
-本节代码示例属于 `axtp-cpp-runtime` 仓库。AXTP 主库只维护协议事实源和 generated 协议产物；runtime 仓库通过 `AXTP_SPEC.lock.yaml` 绑定本仓库的 spec tag / commit。
-
-推荐 runtime 结构：
-
-```text
-ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker<>
-```
-
-### 6.1 普通应用生命周期
-
-```cpp
-#include "axtp.hpp"
-
-int main() {
-    axtp::BasicBroker<> broker;
-    axtp::AxtpEndpoint endpoint(broker);
-
-    // app owns concrete transport
-    // endpoint.attachTransport(transport);
-    // transport.open();
-
-    while (true) {
-        // 1. poll concrete transport if it is ManualPoll
-        // 2. drain core events, broker tasks, broker results, outbound bytes
-        endpoint.poll();
-    }
-}
-```
-
-### 6.2 分层职责
-
-| 层 | 应该做 | 不应该做 |
-|---|---|---|
-| `ITransport` | 读写 bytes/message | 解析 AXTP frame、method 或旧协议 |
-| `AxtpCore` | decode/encode、协议状态、CoreEvent | 持有 transport、调用业务 handler |
-| `AxtpEndpoint` | 连接 core、broker、transport | 写业务逻辑 |
-| `BasicBroker<>` | 注册和分发业务 handler | 回调 core、处理 socket/thread |
-| SDK/CLI | 提供易用 API 和命令 | 把平台依赖下沉到 cpp/core |
-
-### 6.3 FramedBinary inbound 路径
-
-```text
-ITransport bytes
-  -> AxtpEndpoint
-  -> AxtpCore::byteSink()
-  -> FrameDecoder
-  -> MessageReassembler
-  -> PayloadDecoder
-  -> CoreEvent::RpcRequest
-  -> BasicBroker<> handler
-  -> BrokerResult
-  -> AxtpCore outbound encode
-  -> ITransport::sendBytes()
-```
-
-### 6.4 WebSocketJsonRpc 路径
-
-```text
-WebSocket text message
-  -> ITransport::bind sink
-  -> AxtpEndpoint::onTransportBytes()
-  -> AxtpCore::byteSink()
-  -> JsonRpcDecoder
-  -> RpcPayload
-  -> CoreEvent
-  -> BasicBroker<>
-  -> JsonRpcEncoder
-  -> UTF-8 JSON response bytes
-  -> ITransport::sendBytes()
-```
-
-WebSocketJsonRpc 不走 AX Standard Frame、CRC 或 message fragmentation。
-
-## 7. 固件更新 / STREAM 怎么用
-
-当前 generated 协议没有已采纳的固件更新控制面方法。固件更新不应该把固件块塞进普通 RPC body；需要做固件更新时，先完成 `docs/protocol/firmware/firmware.update.md` 的评审采纳，再由 Generator 生成正式 method/event/profile。
-
-采纳后的推荐形态应保持：
-
-```text
-RPC <firmware.update begin method>
-  -> 设备返回升级上下文、建议 chunkSize、可能的 stream 参数
-
-STREAM chunks
-  -> streamId:uint32
-  -> seqId:uint32
-  -> cursor:uint64 = byteOffset
-  -> data(N)
-
-RPC <firmware.update commit/verify/install methods>
-RPC Event <firmware.update progress/state/result events>
-```
-
-Wire 形态：
-
-```text
-Control plane:
-  PayloadType = RPC
-  methodId = 已采纳 `firmware.update` method
-
-Data plane:
-  PayloadType = STREAM
-  streamId = 已采纳建流阶段绑定的 streamId
-  seqId = chunk 序号
-  cursor = byteOffset
-  data = 固件数据块
-```
-
-要点：
-
-- `STREAM` Header 不写 `firmwareType`、`imageType`、`otaType`。
-- 固件类型、版本、校验、大小等业务字段属于 RPC request/response schema。
-- 进度和结果用 event，不靠轮询或私有 notify。
-
-## 8. NA20 / NT10 HID media 示例
-
-需求：NA20 搭配大屏，基于 HID 做 audio/video 传输，上位机对 NA20 和 NT10 适配新协议。
-
-建议拆分：
-
-| 能力 | AXTP 形态 | 传输 |
-|---|---|---|
-| 设备信息查询 | 待 `device.info` 草案评审采纳 | RPC over `AXTP-USB-HID` |
-| AP 信息查询 | 待 `network.softAp` 或相关草案评审采纳 | RPC over `AXTP-USB-HID` |
-| AP 设置 | `network.ap` 草案，评审后采纳 | RPC over `AXTP-USB-HID` |
-| Wi-Fi 设置写入 | `network.wifi` 草案，评审后采纳 | RPC over `AXTP-USB-HID` |
-| 固件更新 | `firmware.update` 草案评审后采纳，控制面 RPC + STREAM | Standard Framed HID |
-| audio/video | 业务域建流草案评审后采纳，数据面 STREAM | Standard Framed HID |
-
-HID audio/video 的关键点：
-
-```text
-RPC <adopted media/open method>
-  request: profile = media.video 或 media.audio, transportProfile = AXTP-USB-HID
-  response: streamId, negotiated chunk/frame size, runtime 参数
-
-STREAM
-  streamId:uint32
-  seqId:uint32
-  cursor:uint64
-  data(N)
-
-RPC/Event
-  <adopted media stream events>
-```
-
-不要新增 `PayloadType=VIDEO` 或 `PayloadType=AUDIO`。视频和音频是 stream profile 和建流上下文，不是顶层 payload。
-
-## 9. VM33 Pro 新版本协议适配
-
-策略：老协议继续保留，新协议逐步适配。
-
-优先筛选：
-
-| 业务 | 建议 |
+Runtime repositories should point `AXTP_SPEC_PATH` at this repository or at a
+released spec artifact. Source checkouts use `docs/conformance/`; release
+artifacts may expose the same content as top-level `conformance/` for
+compatibility.
+
+## 5. Work From Business Need To Protocol PR
+
+1. Put raw product context, user goals, field feedback, or UI sketches in
+   `docs/business/<requirement>.md`.
+2. If the input is a scenario or workflow, create a flow plan in
+   `docs/flows/<scenario>.md` using `docs/dev/skills/10-plan-protocol-flow/`.
+3. Create or update an RFC draft in
+   `docs/protocol/<domain>/<domain.feature>.md`.
+4. Review naming, schema, method, event, error, capability, profile, and legacy
+   evidence. Do not move unresolved `[REVIEW-*]` facts into YAML.
+5. Adopt confirmed facts into `registry/` or `registry/domains/**`.
+6. Regenerate protocol outputs and validate.
+7. Runtime repositories consume the released spec tag or explicit commit through
+   their own generators and lock files.
+
+## 6. Use Legacy Material
+
+Legacy material is consolidated under `docs/legacy-migration/`:
+
+| Path | Purpose |
 |---|---|
-| 时间同步策略 | 查 `docs/protocol/system/system.time.md`，确认是否复用或补草案 |
-| 篮球进球事件通知 | 新建或更新合适 domain.feature 草案，明确 event name、payload、触发条件 |
-| 设备升级 | 先评审/采纳 `firmware.update` 或 VM33 Pro 专属新增草案，再生成实现 |
-| 设备信息查询 | 先评审/采纳 `device.info` 或 VM33 Pro 专属新增草案，再生成实现 |
+| `evidence/` | Original legacy documents and spreadsheets. |
+| `classification/` | Domain-feature intake generated from legacy evidence. |
+| `plans/` | Human migration plans and migration matrix. |
+| `generated/` | Generated migration candidates and adapter planning outputs. |
+| `planning/` | Legacy compatibility planning references. |
 
-VM33 迁移流程：
-
-```text
-读取旧 VM33 协议材料
-  -> 分类到 domain.feature
-  -> 判断复用/修改/新增 docs/protocol 草案
-  -> 标记旧协议字段和待确认项
-  -> 评审
-  -> 只把确认过的内容采纳进 registry/domains
-```
-
-注意：
-
-- 旧协议继续保留，先通过 adapter 或双栈策略兼容。
-- 没有旧 command/status/payload 证据的映射不能写进 `registry/legacy/legacy_mapping.yaml`；没有已采纳映射时不创建空文件。
-- VM33 的配置型接口不要继续堆成万能 `Config.Get/Set`，应拆到明确的 domain.feature。
-
-## 10. UXPlay 控制方案
-
-需求：
-
-- 设置投屏密码。
-- 控制窗口大小。
-- 控制窗口显示状态。
-
-建议先做草案，不直接写 registry：
-
-| 能力 | 候选归属 | 评审重点 |
-|---|---|---|
-| 设置投屏密码 | `auth` / `signage` / `system` 需确认 | 权限、生命周期、是否可读取、错误码 |
-| 控制窗口大小 | `output.layout` 或 `video.layout` | 坐标系、屏幕编号、比例、边界、持久化 |
-| 控制显示状态 | `display.output` / `output.layout` | show/hide、窗口状态 event、冲突处理 |
-
-草案模板应包含：
-
-```text
-domain boundary
-target scenario
-candidate capability
-candidate methods
-candidate events
-candidate schemas
-candidate errors
-legacy mapping or open questions
-adoption checklist
-```
-
-## 11. NearHub Launcher 与后台交互通用化
-
-目标：把 Launcher 与后台交互逻辑从项目私有命令整理为通用协议能力。
-
-建议步骤：
-
-1. 读取 `docs/legacy-protocols/NearHub-Launcher设备管理命令.md` 和相关数字标牌文档。
-2. 按 domain.feature 分类命令。
-3. 已有能力复用当前草案或 registry，例如 device、network、firmware、signage、system。
-4. 新能力写入 `docs/protocol/<domain>/<domain.feature>.md`。
-5. 评审后采纳到 YAML。
-6. 生成协议文档和工具 JSON。
-
-不要把 Launcher 作为新 domain，除非协议治理确认它是独立能力域。多数情况下 Launcher 是应用/产品形态，具体能力应落到 device、system、signage、network、firmware 等 domain。
-
-## 12. Rooms 当前策略
-
-Rooms 暂时不改当前协议方案。
-
-现阶段只做：
-
-- 保留旧协议运行。
-- 记录 Rooms 协议与 AXTP 的差异。
-- 后续业务窗口明确后再决定是否迁移。
-
-不要为了统一而强行改动 Rooms 当前上线协议。
-
-## 13. 从业务需求到 PR 的完整例子
-
-例子：新增“设置投屏密码”。
-
-### Step 1: 建业务分支
+Regenerate classification intake:
 
 ```bash
-git checkout -b business/uxplay-password
+python3 tooling/legacy_classification/classify_legacy_protocols.py
 ```
 
-### Step 2: 搜索已有草案
+Regenerate migration candidates:
 
 ```bash
-rg -n "password|passcode|投屏|uxplay|auth|permission" docs/protocol registry docs/specs
+python3 tooling/migration/generate_legacy_migration_outputs.py
 ```
 
-### Step 3: 决定复用、修改或新增
+Legacy evidence does not become protocol fact until it is reviewed and adopted
+into YAML.
 
-- 如果 `auth.token` 或 `auth.permission` 已覆盖，复用或补充草案。
-- 如果 `signage` 更贴近投屏场景，在 `signage` 下补草案。
-- 如果 domain 边界不清楚，先在草案中标 `[REVIEW-ASK]`。
+## 7. Release A Spec Artifact
 
-### Step 4: 写草案
+Check the release docs:
 
-路径示例：
-
-```text
-docs/protocol/auth/auth.screenCastPassword.md
+```bash
+sed -n '1,120p' docs/release/README.md
 ```
 
-草案中只写候选内容：
+Build a local spec artifact for the current version:
 
-```text
-candidate method: auth.setScreenCastPassword
-candidate request schema: AuthSetScreenCastPasswordRequest
-candidate response schema: CommonEmptyResponse
-candidate errors: PERMISSION_DENIED, RPC_PARAM_INVALID, NOT_SUPPORTED
-candidate event: auth.screenCastPasswordChanged
+```bash
+scripts/build-spec-artifact.sh "$(scripts/print-spec-version.sh)"
 ```
 
-新 ID 写 `TBD after adoption`，不要在草案阶段随便分配正式 ID。
+The release artifact includes specs, registry facts, conformance cases, legacy
+migration material, and `CHANGELOG.md`.
 
-### Step 5: 评审
+## 8. Runtime Repositories
 
-邀请：
+Runtime, SDK, CLI, mock server, and language-specific API design are maintained
+outside this repository:
 
-- UXPlay/上位机负责人。
-- 设备端/固件负责人。
-- 测试负责人。
-- 架构/协议维护者。
+- `https://github.com/Mostorm-Labs/axtp-c-runtime`
+- `https://github.com/Mostorm-Labs/axtp-cpp-runtime`
+- `https://github.com/Mostorm-Labs/axtp-flutter-runtime`
+- `https://github.com/Mostorm-Labs/axtp-ts-runtime`
+- `https://github.com/Mostorm-Labs/axtp-python-runtime`
+- `https://github.com/Mostorm-Labs/axtp-mock-server`
 
-评审确认：
+Do not add language-specific runtime design back into `docs/dev/`.
 
-- 密码是否可读。
-- 是否需要权限。
-- 是否需要 event。
-- 密码长度和字符集。
-- 错误码。
-- 是否有旧协议映射。
+## 9. Commit Checks
 
-### Step 6: 采纳
-
-评审通过后：
-
-```text
-Use docs/dev/skills/30-adopt-protocol-draft/SKILL.md
-docs/specs/08-13 reverse confirmation, plus 14 when profiles/MVP change
-docs/protocol/auth/auth.screenCastPassword.md formal adoption note
-registry/domains/<domain>/domain.yaml
-```
-
-采纳 skill 会先确认草案没有 unresolved `[REVIEW-ASK]`、`[REVIEW-FIX]` 或 `[REVIEW-BLOCKER]`，再根据 specs 和现有 YAML 分配正式 ID、`bitOffset` 和 schema fieldId。
-
-### Step 7: 生成
-
-采纳完成后：
-
-```text
-Use docs/dev/skills/50-generate-axtp-protocol/SKILL.md
-pnpm --dir generators generate
-pnpm --dir generators validate:protocol
-```
-
-### Step 8: 验证和 PR
+For docs-only changes:
 
 ```bash
 pnpm --dir generators build
@@ -714,86 +172,7 @@ pnpm --dir generators validate:protocol
 git diff --check
 ```
 
-PR 描述要说明：
-
-- 新增哪个 domain.feature。
-- 新增哪些 method/event/schema/error/capability。
-- 哪些是 generated 产物。
-- 哪些旧协议映射已确认，哪些仍是 open question。
-
-## 14. 修改时的安全规则
-
-### 14.1 不要手写 generated
-
-如果你想改：
-
-```text
-docs/generated/protocol.md
-```
-
-正确做法是回到：
-
-```text
-docs/protocol/**
-docs/specs/**
-registry/**/*.yaml
-registry/domains/**/*.yaml
-generators/src/**
-```
-
-然后重新生成。
-
-### 14.2 不要把业务塞进 Header
-
-错误方向：
-
-```text
-PayloadType = VIDEO
-PayloadType = FIRMWARE_UPDATE
-Header.field = firmwareType
-Header.field = windowMode
-```
-
-正确方向：
-
-```text
-PayloadType = RPC
-methodId = video.xxx / firmware.xxx / output.xxx
-
-PayloadType = STREAM
-streamId = RPC 建流返回的 streamId
-```
-
-### 14.3 不要让旧协议污染 core
-
-Legacy adapter 可以在 core 外把旧协议转换成 AXTP：
-
-```text
-Legacy Protocol
-  -> Legacy Adapter
-  -> AXTP RPC / Event / STREAM
-  -> AXTP Core / Business
-```
-
-但不要在 `AxtpCore` 里写 AXDP、VM33、Rooms、Launcher 的私有分支。
-
-### 14.4 不要跳过评审直接写 registry
-
-新业务先草案，后采纳。只有核心常量、已确认 MVP/Core 事实、公共 schema 或明确迁移映射才直接进入对应 registry 文件。
-
-## 15. 提交前检查清单
-
-文档-only：
-
-```bash
-pnpm --dir generators build
-pnpm --dir generators test
-pnpm --dir generators validate:sources
-pnpm --dir generators validate:protocol
-git diff --check
-```
-
-协议事实变更：
+For protocol fact changes:
 
 ```bash
 pnpm --dir generators build
@@ -801,15 +180,6 @@ pnpm --dir generators test
 pnpm --dir generators validate:sources
 pnpm --dir generators generate
 pnpm --dir generators validate:protocol
+scripts/validate-conformance.sh
 git diff --check
 ```
-
-C++ runtime 变更在 `axtp-cpp-runtime` 仓库内检查，例如：
-
-```bash
-cmake -S core -B build/core
-cmake --build build/core
-ctest --test-dir build/core --output-on-failure
-```
-
-按实际改动范围补充 SDK、axtpctl 或 transport 测试。

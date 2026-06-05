@@ -104,7 +104,7 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 
 ## 协议采纳/生成优先级
 
-本表用于安排后续从草案到 YAML、再到 generated 产物的顺序。统计依据为 `docs/legacy-classification/legacy-protocol-classification.csv` 和 `docs/legacy-classification/README.md`；当前 `docs/generated/protocol.md` 只有 `audio.algorithm` 已生成，其余业务域大多仍是草案状态。
+本表用于安排后续从草案到 YAML、再到 generated 产物的顺序。统计依据为 `docs/legacy-migration/classification/legacy-protocol-classification.csv` 和 `docs/legacy-migration/classification/README.md`；当前 `docs/generated/protocol.md` 只有 `audio.algorithm` 已生成，其余业务域大多仍是草案状态。
 
 | 优先级 | 生成批次 | Legacy 覆盖 | 当前状态 | 建议动作 |
 |---|---|---:|---|---|

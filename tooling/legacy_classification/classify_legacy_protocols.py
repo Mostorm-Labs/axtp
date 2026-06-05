@@ -17,10 +17,10 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-LEGACY_DIR = ROOT / "docs" / "legacy-protocols"
+LEGACY_DIR = ROOT / "docs" / "legacy-migration" / "evidence"
 PROTOCOL_DIR = ROOT / "docs" / "protocol"
 SPECS_DIR = ROOT / "docs" / "specs"
-OUT_DIR = ROOT / "docs" / "legacy-classification"
+OUT_DIR = ROOT / "docs" / "legacy-migration" / "classification"
 
 METHOD_SPEC = "docs/specs/10-AXTP-Methods-Registry-Spec.md"
 EVENT_SPEC = "docs/specs/11-AXTP-Events-Registry-Spec.md"
@@ -146,8 +146,6 @@ def load_symbol_sources() -> tuple[dict[str, set[str]], set[str], set[str]]:
     event_pat = re.compile(r'"event"\s*:\s*"([a-z][a-z0-9]*\.[A-Za-z][A-Za-z0-9]*)"')
 
     for path in sorted(PROTOCOL_DIR.rglob("*.md")):
-        if "legacy-classification" in path.parts:
-            continue
         rel = source_rel(path)
         text = path.read_text(encoding="utf-8", errors="ignore")
         for token in token_pat.findall(text):
@@ -1463,7 +1461,7 @@ CSV 明细：`{csv_path.relative_to(ROOT)}`
 - `Config / State / Mode / Scan / Connection` 默认不是 feature；它们进入 method、event 或 schema 字段。
 - `stream` 只承担公共流控和数据面；文件、固件、视频、音频、日志流归各自业务域。
 - 泛 `ConfigJson` 或缺少具体 payload/Name 的条目标为 `adapter_only` 或 `needs_split`，不能直接进入正式 capability。
-- 本清单不修改 `docs/migration/`、`registry/`、`protocol/axtp.protocol.yaml` 或 generated artifacts。
+- 本清单不修改 `docs/legacy-migration/plans/`、`registry/`、`protocol/axtp.protocol.yaml` 或 generated artifacts。
 
 ## 按 Source 查看
 

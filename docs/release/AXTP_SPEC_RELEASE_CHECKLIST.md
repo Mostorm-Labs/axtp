@@ -9,8 +9,8 @@ Use this checklist before creating an AXTP Spec tag and GitHub Release.
 3. Confirm schema source files and domain YAML schema definitions are updated.
 4. Confirm generated protocol references, tooling JSON, test vectors, and runtime generated headers are refreshed when source facts changed.
 5. Confirm conformance or test-vector material is updated for new or changed protocol behavior.
-6. Confirm `docs/migration/` legacy mapping and migration notes are updated when legacy behavior changes.
-7. Confirm `CHANGELOG.md` records the release under `spec/vX.Y.Z`.
+6. Confirm `docs/legacy-migration/plans/` legacy mapping and migration notes are updated when legacy behavior changes.
+7. Confirm `docs/release/CHANGELOG.md` records the release under `spec/vX.Y.Z`.
 8. Confirm `README.md` identifies AXTP Spec versioning and runtime dependency rules.
 9. Confirm compatibility notes clearly state runtime impact.
 10. Confirm `git diff --check` passes.
@@ -39,7 +39,7 @@ The GitHub Release body should include:
 - Migration changes
 - Compatibility notes
 - Runtime impact
-- Links to `CHANGELOG.md` and relevant generated protocol docs
+- Links to `docs/release/CHANGELOG.md` and relevant generated protocol docs
 
 ## Runtime Automation
 

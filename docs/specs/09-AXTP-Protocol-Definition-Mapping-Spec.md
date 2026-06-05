@@ -66,7 +66,7 @@ registry/domains/**/*.yaml
 
 ```text
 docs/protocol/<domain>/<domain.feature>.md
-docs/legacy-classification/**
+docs/legacy-migration/classification/**
 ```
 
 这些文件可以用于生成或整理协议草案，但采纳前不得视为当前协议合同。
@@ -96,7 +96,7 @@ Protocol Definition 与 Core Specs 的职责边界如下：
 | STREAM Header / resume | 06 |
 | 旧协议兼容映射 | 07 与 `registry/legacy/legacy_mapping.yaml` |
 | 业务协议方案草案 | `docs/protocol/<domain>/<domain.feature>.md` |
-| 完整 Capability Model | `docs/archive/future/AXTP-Capability-Model-v2.md` |
+| 完整 Capability Model | `docs/architecture/AXTP-Capability-Model-v2.md` |
 | method/event/error/type/profile entry 元模型 | 09-14 |
 | 具体业务 method/event/type/error/profile | `registry/` 与 `registry/domains/` YAML |
 
@@ -135,7 +135,7 @@ profiles: []
 ```text
 方案输入段：
   docs/protocol/<domain>/<domain.feature>.md
-  docs/legacy-classification/**
+  docs/legacy-migration/classification/**
   docs/specs/08-13 反向确认规则
         ↓
 协议草案更新与人工确认

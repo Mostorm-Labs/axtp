@@ -68,7 +68,7 @@ Each GitHub Release should summarize:
 - Compatibility notes
 - Runtime impact
 
-Release notes should link to `CHANGELOG.md` and mention the exact tag and commit.
+Release notes should link to `docs/release/CHANGELOG.md` and mention the exact tag and commit.
 
 ## Compatibility With Existing AXTP Version Fields
 

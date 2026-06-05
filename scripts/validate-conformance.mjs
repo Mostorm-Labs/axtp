@@ -7,7 +7,7 @@ const root = path.resolve(process.argv[2] ?? process.cwd());
 const requireFromGenerators = createRequire(path.join(root, "generators", "package.json"));
 const YAML = requireFromGenerators("yaml");
 
-const conformanceDir = path.join(root, "conformance");
+const conformanceDir = path.join(root, "docs", "conformance");
 const manifestPath = path.join(conformanceDir, "manifest.yaml");
 const caseSchemaPath = path.join(conformanceDir, "schemas", "conformance-case.schema.json");
 const resultSchemaPath = path.join(conformanceDir, "schemas", "conformance-result.schema.json");

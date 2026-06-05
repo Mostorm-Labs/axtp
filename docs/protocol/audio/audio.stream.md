@@ -655,7 +655,7 @@ JSON 诊断表示示例：
 | 来源 | 旧协议条目 | 候选映射 | 状态 |
 |---|---|---|---|
 | `stream.hidMedia` | 历史 HID media draft | 视频迁到 `video.stream`，音频实时媒体迁到 `audio.stream`，公共流控留在 `stream.flowControl`。 | `[REVIEW-DRAFT]` |
-| AXDP / Rooms / VM33 / Signage | 待从 `docs/legacy-classification/` 筛选音频流、音频播放、投屏音频相关条目 | `audio.stream`、`audio.recording` 或 `audio.playback`，按业务语义区分。 | `[REVIEW-ASK]` |
+| AXDP / Rooms / VM33 / Signage | 待从 `docs/legacy-migration/classification/` 筛选音频流、音频播放、投屏音频相关条目 | `audio.stream`、`audio.recording` 或 `audio.playback`，按业务语义区分。 | `[REVIEW-ASK]` |
 | NA20/NT10 私有投屏 | NT10 到 NA20 的无线媒体协议未提供 | 不映射为 AXTP wire；NA20 到 Host 的 USB HID 媒体桥使用 `audio.stream`。 | `[REVIEW-ASK]` |
 
 ## 15. Registry 草案输入

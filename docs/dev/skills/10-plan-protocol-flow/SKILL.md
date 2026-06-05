@@ -46,8 +46,8 @@ protocol/axtp.protocol.yaml
 registry/**/*.yaml
 registry/domains/**/*.yaml
 docs/protocol/**
-docs/legacy-classification/** when legacy evidence is relevant
-docs/migration/** when migration strategy is relevant
+docs/legacy-migration/classification/** when legacy evidence is relevant
+docs/legacy-migration/plans/** when migration strategy is relevant
 ```
 
 Search with requirement keywords and likely English equivalents. For "算法参数调整", search at least:

@@ -9,8 +9,8 @@
 3. 确认 schema 源文件和 domain YAML 中的 schema 定义已经更新。
 4. 如果源事实发生变化，确认 generated protocol references、tooling JSON、test vectors 和 runtime generated headers 已刷新。
 5. 确认 conformance 或 test-vector 材料覆盖新增或变更的协议行为。
-6. 如果 legacy 行为变化，确认 `docs/migration/` 中 legacy 映射和迁移说明已经更新。
-7. 确认 `CHANGELOG.md` 已在 `spec/vX.Y.Z` 下记录本次发布。
+6. 如果 legacy 行为变化，确认 `docs/legacy-migration/plans/` 中 legacy 映射和迁移说明已经更新。
+7. 确认 `docs/release/CHANGELOG.md` 已在 `spec/vX.Y.Z` 下记录本次发布。
 8. 确认 `README.md` 已说明 AXTP Spec 版本管理和 runtime 依赖规则。
 9. 确认 compatibility notes 明确说明 runtime impact。
 10. 确认 `git diff --check` 通过。
@@ -39,7 +39,7 @@ GitHub Release body 应包含：
 - Migration changes
 - Compatibility notes
 - Runtime impact
-- `CHANGELOG.md` 和相关 generated protocol docs 链接
+- `docs/release/CHANGELOG.md` 和相关 generated protocol docs 链接
 
 ## Runtime 自动化
 

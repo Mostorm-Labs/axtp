@@ -256,7 +256,7 @@ Capability 字段建议：
 
 ## 10. Legacy 待映射
 
-`docs/legacy-classification/output.md` 已将多条 Rooms / VM33 输出布局类旧接口分类到 `output.layout`，但当前清单缺少稳定 payload 字段映射和状态码映射，采纳前不得直接写入 registry legacy mapping。
+`docs/legacy-migration/classification/output.md` 已将多条 Rooms / VM33 输出布局类旧接口分类到 `output.layout`，但当前清单缺少稳定 payload 字段映射和状态码映射，采纳前不得直接写入 registry legacy mapping。
 
 | 来源 | 旧协议条目 | 候选映射 | 状态 | 说明 |
 |---|---|---|---|---|

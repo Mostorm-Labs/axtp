@@ -12,7 +12,7 @@ Publish an immutable AXTP Spec release tag from the AXTP repository. This is the
 - Only release tags with format `spec/vMAJOR.MINOR.PATCH`.
 - Do not create runtime package releases.
 - Do not make runtimes depend on `main`.
-- Do not change protocol facts during release except for explicit release metadata such as `CHANGELOG.md`.
+- Do not change protocol facts during release except for explicit release metadata such as `docs/release/CHANGELOG.md`.
 - Do not tag a dirty repository unless the only dirty changes are release metadata prepared in this workflow and they are committed before tagging.
 - Do not push a tag if validation fails, if the tag already exists, or if the changelog entry is still placeholder-only.
 
@@ -26,7 +26,7 @@ Read as needed:
 docs/release/AXTP_SPEC_VERSIONING.md
 docs/release/AXTP_SPEC_RELEASE_CHECKLIST.md
 docs/release/AXTP_RUNTIME_SPEC_LOCK.md
-CHANGELOG.md
+docs/release/CHANGELOG.md
 README.md
 ```
 
@@ -58,14 +58,14 @@ Run:
 ```bash
 git status --short
 git tag --list 'spec/v*' --sort=-v:refname | head -20
-bash scripts/print-spec-version.sh
+bash scripts/print-spec-version.sh --verbose
 ```
 
 If non-release files are dirty, stop and report them. If the requested tag already exists locally or remotely, stop.
 
 ### 3. Prepare CHANGELOG And Release Notes
 
-Ensure `CHANGELOG.md` has a section:
+Ensure `docs/release/CHANGELOG.md` has a section:
 
 ```markdown
 ## spec/vX.Y.Z
@@ -116,10 +116,10 @@ If `generate` changes generated outputs, inspect them. Commit intentional genera
 
 ### 5. Commit Release Metadata If Needed
 
-If `CHANGELOG.md` or other release docs changed during this workflow, stage and commit them before creating the tag:
+If `docs/release/CHANGELOG.md` or other release docs changed during this workflow, stage and commit them before creating the tag:
 
 ```bash
-git add CHANGELOG.md README.md docs/release scripts/print-spec-version.sh
+git add README.md docs/release scripts/print-spec-version.sh
 git commit -m "Prepare AXTP Spec vX.Y.Z release"
 ```
 
@@ -137,7 +137,7 @@ git push origin spec/vX.Y.Z
 After pushing, run:
 
 ```bash
-bash scripts/print-spec-version.sh
+bash scripts/print-spec-version.sh --verbose
 ```
 
 ### 7. Create GitHub Release When Available
@@ -150,7 +150,7 @@ gh release create spec/vX.Y.Z \
   --notes-file <release-notes-file>
 ```
 
-Use the `CHANGELOG.md` target section as release notes. If `gh` is unavailable or unauthenticated, report the exact command for the user to run; do not fake a GitHub Release.
+Use the `docs/release/CHANGELOG.md` target section as release notes. If `gh` is unavailable or unauthenticated, report the exact command for the user to run; do not fake a GitHub Release.
 
 ## Final Report
 

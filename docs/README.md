@@ -1,45 +1,56 @@
 # AXTP Docs
 
-`docs/` 里既有正式规范，也有草案、生成物、工程说明和历史材料。读文档时先判断它属于哪一类；不要把草案或归档材料当成当前实现合同。
+`docs/` is the active documentation workspace for AXTP protocol governance. It
+contains business inputs, flow plans, RFC drafts, architecture guidance,
+generated references, legacy migration material, conformance cases, and release
+management docs.
 
-## 读者路径
+Do not treat drafts, flow plans, or legacy migration material as implementation
+contracts. Current implementation facts come from YAML and generated outputs.
 
-| 目标 | 阅读顺序 |
+## Reader Paths
+
+| Goal | Reading Order |
 |---|---|
-| 先看懂 AXTP 是什么 | `specs/00-AXTP-Overview.md` -> `specs/README.md` |
-| 查当前实现合同 | `generated/protocol.md` 或 `generated/protocol.json` |
-| 整理原始业务需求 | `business/README.md` -> 对应 `business/<requirement>.md` |
-| 从业务场景梳理协议交互 | `business/README.md` -> `dev/skills/10-plan-protocol-flow/SKILL.md` -> `flows/README.md` -> 对应 `flows/<scenario>.md` -> `protocol/README.md` |
-| 新增业务协议 | `business/README.md` -> `protocol/README.md` -> `protocol/<domain>/<domain.feature>.md` -> 对应 `dev/skills/**` |
-| 使用工具、SDK、runtime | `guides/how-to-use.md` -> `dev/AXTP_CPP_RUNTIME_PATTERNS.md` / `dev/AXTP_CORE_API_DESIGN.md` / `dev/AXTP_SDK_API_DESIGN.md` |
-| 追溯旧协议迁移 | `legacy-protocols/`、`migration/`、`legacy-classification/` |
+| Understand AXTP | `specs/00-AXTP-Overview.md` -> `specs/README.md` |
+| Check the current contract | `generated/protocol.md` or `generated/protocol.json` |
+| Start from a product requirement | `business/README.md` -> `business/<requirement>.md` |
+| Plan an interaction flow | `business/README.md` -> `dev/skills/10-plan-protocol-flow/SKILL.md` -> `flows/README.md` |
+| Draft or review protocol changes | `protocol/README.md` -> `protocol/<domain>/<domain.feature>.md` -> `dev/skills/**` |
+| Run generator and maintainer workflows | `guides/how-to-use.md` -> `dev/skills/README.md` -> `../generators/README.md` |
+| Review shared architecture | `architecture/README.md` |
+| Trace legacy migration | `legacy-migration/README.md` |
+| Validate runtime behavior | `conformance/README.md` |
+| Prepare a release | `release/README.md` |
 
-## 文档分区
+## Documentation Areas
 
-| 分组 | 路径 | 谁读 | 什么时候读 | 手写 |
+| Group | Path | Audience | Purpose | Hand Written |
 |---|---|---|---|---:|
-| Active specs | `docs/specs/` | 架构、协议维护者、runtime/SDK 研发 | 理解正式规则、wire format、命名治理、Generator 合同 | 是 |
-| Business requirements | `docs/business/` | 产品、架构、业务研发、测试、协议维护者 | 保存最原始的业务背景、用户目标、约束和开放问题 | 是 |
-| Flow plans | `docs/flows/` | 产品、架构、App/固件/后台、测试 | Stage 10 `plan-protocol-flow` 输出；从业务 story、UI 原型或端到端交互梳理协议步骤和缺口 | 是 |
-| Draft intake | `docs/protocol/` | 产品、架构、协议维护者、业务研发、测试 | 新业务起草、评审和采纳前确认 | 是 |
-| Generated reference | `docs/generated/` | 研发、测试、工具、SDK | 实现和验收当前协议 | 否 |
-| Guides | `docs/guides/` | 所有人 | 查命令、跑 Generator、用 CLI/SDK/runtime、看完整例子 | 是 |
-| Dev docs | `docs/dev/` | runtime/SDK/tool 研发、Codex/Claude 等自动化代理 | 工程设计、代码规范、协议 workflow skill | 是 |
-| Demo docs | `docs/demo/` | 研发、测试、评审 | 仍有阅读价值的 active 示例场景和端到端验证思路 | 是 |
-| Migration workspace | `docs/migration/` | 协议维护者、legacy 适配研发 | 旧协议迁移工作区；不是最终事实源 | 部分 |
-| Legacy classification | `docs/legacy-classification/` | 协议维护者、legacy 适配研发 | 旧协议材料到候选 AXTP domain.feature 的分类 intake | 由脚本刷新 |
-| Legacy evidence | `docs/legacy-protocols/` | 协议维护者、legacy 适配研发 | AXDP、VM33、Rooms、NearHub 等原始输入资料 | 是 |
-| Archive | `docs/archive/` | 架构、维护者 | 追溯旧草稿、历史 demo、source 迁移材料和未来草案 | 否，除非归档新材料 |
+| Active specs | `docs/specs/` | Protocol maintainers, runtime/tool authors | Formal protocol rules, wire format, governance, and generator contract | Yes |
+| Business requirements | `docs/business/` | Product, architecture, engineering, test | PRDs, user goals, constraints, and open questions | Yes |
+| Flow plans | `docs/flows/` | Product, architecture, app, firmware, backend, test | Sequence diagrams and scenario-level protocol coverage/gaps | Yes |
+| Protocol RFCs | `docs/protocol/` | Protocol maintainers and reviewers | Drafts and review records before registry adoption | Yes |
+| Architecture | `docs/architecture/` | Architecture, protocol maintainers, runtime authors | Cross-language protocol design principles | Yes |
+| Generated reference | `docs/generated/` | Engineering, test, SDK/tool authors | Current generated protocol reference | No |
+| Guides | `docs/guides/` | Maintainers and integrators | Repo usage, generator commands, workflow examples | Yes |
+| Dev docs | `docs/dev/` | Protocol maintainers and automation agents | Maintainer workflows and protocol lifecycle skills only | Yes |
+| Legacy migration | `docs/legacy-migration/` | Protocol maintainers and legacy adapter authors | Evidence, classification, plans, and generated migration candidates | Partial |
+| Conformance | `docs/conformance/` | Runtime/tool authors and test | Cross-runtime behavior cases, profiles, fixtures, and schemas | Yes |
+| Release | `docs/release/` | Maintainers and release automation | Changelog, versioning, release checklist, runtime update contract | Yes |
 
-## 权威边界
+## Authority Boundary
 
 ```text
-docs/business/**                         原始业务需求概要，不是协议合同
-docs/flows/**                            场景级协议交互方案，不是协议合同
-docs/protocol/**                         草案与评审输入
-registry/**/*.yaml + registry/domains/** 手写机器事实源
-protocol/axtp.protocol.yaml              Generator 输出的 Protocol IR
-docs/generated/**                        Generator 输出的人读/机器读参考
+docs/business/**                         Original business input, not a protocol contract
+docs/flows/**                            Scenario-level interaction plan, not a protocol contract
+docs/protocol/**                         RFC / draft and review input
+registry/**/*.yaml + registry/domains/** Hand-written machine facts
+protocol/axtp.protocol.yaml              Generated Protocol IR
+docs/generated/**                        Generated human/machine reference
 ```
 
-当前正式 specs 编号为 `00-19`。`08` 是 domain-feature 命名治理入口；`09-14` 是 registry、schema/capability、profile/MVP 治理入口。实现事实以 YAML 和 generated 产物为准；如果 specs 表格与 YAML/generated 冲突，应回修 specs，不维护第二套 active 事实源。
+The active specs are numbered `00-19`. Specs `08-14` govern taxonomy, mapping,
+registry, schema/capability, profile, and MVP rules. If a spec table conflicts
+with YAML or generated output, fix the source rule and regenerate instead of
+maintaining a second active fact source.
