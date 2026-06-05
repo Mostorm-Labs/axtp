@@ -1,6 +1,8 @@
 .DS_Store
 generators/node_modules/
 generators/dist/
+runtimes/**/node_modules/
+runtimes/**/dist/
 runtimes/**/.dart_tool/
 build/
 runtimes/**/build/

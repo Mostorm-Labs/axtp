@@ -11,6 +11,8 @@ import { emitProtocolJson } from "./protocolJson.js";
 import { emitProtocolMarkdown } from "./protocolMarkdown.js";
 import { emitTestVectors } from "./testVectors.js";
 import { emitTestVectorFiles } from "./testVectors.js";
+import { emitTs } from "./ts.js";
+import { emitTsFiles } from "./ts.js";
 import type { SpecModel } from "../models.js";
 import type { ProtocolModel } from "../protocolModel.js";
 
@@ -20,7 +22,8 @@ export async function emitAll(spec: SpecModel, outDir: string): Promise<void> {
     emitDart(spec, outDir),
     emitJson(spec, outDir),
     emitMarkdown(spec, outDir),
-    emitTestVectors(spec, outDir)
+    emitTestVectors(spec, outDir),
+    emitTs(spec, outDir)
   ]);
 }
 
@@ -46,6 +49,7 @@ export async function emitRepositoryRegistryArtifacts(spec: SpecModel, repoRoot:
     emitJsonFiles(spec, path.join(repoRoot, "tooling", "mcp")),
     emitCppFiles(spec, path.join(repoRoot, "runtimes", "cpp", "core", "include", "generated")),
     emitDartFiles(spec, path.join(repoRoot, "runtimes", "flutter", "lib", "src", "generated")),
+    emitTsFiles(spec, path.join(repoRoot, "runtimes", "ts", "src", "generated")),
     emitTestVectorFiles(spec, path.join(repoRoot, "tooling", "test-vectors"))
   ]);
 }
