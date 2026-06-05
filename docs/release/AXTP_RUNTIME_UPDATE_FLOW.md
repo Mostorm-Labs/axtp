@@ -30,18 +30,38 @@ Early releases use a safe manual workflow:
 
 ## Mode B: Repository Dispatch
 
-Later automation can use repository dispatch:
+Current automation uses repository dispatch:
 
 1. AXTP maintainers publish `spec/vX.Y.Z`.
 2. The main repo `notify-runtimes` workflow sends `repository_dispatch` events
-   to runtime repositories.
+   to runtime repositories using the `RUNTIME_DISPATCH_TOKEN` secret.
 3. Runtime repositories run the same upgrade workflow automatically.
 4. The workflow opens PRs.
 5. Maintainers still review and merge PRs manually.
 
-The initial main-repo notification workflow is intentionally dry-run only. It
-prints the repositories and payload it would notify, but does not call the
-GitHub API.
+Manual workflow dispatch can still run in `dry_run` mode to print the
+repositories and payload without calling the GitHub API.
+
+The dispatch payload includes:
+
+- `spec_tag`
+- `spec_version`
+- `spec_repository`
+- `spec_commit`
+
+## Version Contract
+
+Runtime repositories keep three versions separate:
+
+- AXTP Spec Version from the main repository tag, for example `spec/v0.3.0`.
+- Runtime Version from the runtime repository, for example `v0.3.1`.
+- Generated Artifact Version from `generated/axtp_generated_manifest.json`.
+
+Runtime repositories use runtime tags `vX.Y.Z`; they must not tag runtime
+releases as `spec/vX.Y.Z`.
+
+AXTP Spec updates create runtime upgrade PRs. Runtime GitHub Releases are
+created only when maintainers tag a runtime repository with `vX.Y.Z`.
 
 ## Runtime Repositories
 

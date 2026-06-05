@@ -51,8 +51,9 @@ After the release:
 4. Notify `axtp-ts-runtime` maintainers to update `AXTP_SPEC.lock.yaml` and package metadata.
 5. Notify `axtp-python-runtime` maintainers to update `AXTP_SPEC.lock.yaml`.
 6. Notify `axtp-mock-server` maintainers to update `AXTP_SPEC.lock.yaml`.
-6. Ask runtime and mock maintainers to record the tag, version, commit hash, compatibility range, and update date.
-7. Do not ask runtimes to depend on `main`; every runtime dependency must point to a tag or commit.
+6. Confirm the `notify-runtimes` workflow dispatched `axtp-spec-released` to all real runtime/mock repositories.
+7. Ask runtime and mock maintainers to review generated manifests and release only from runtime `vX.Y.Z` tags.
+8. Do not ask runtimes to depend on `main`; every runtime dependency must point to a tag or commit.
 
 ## Non-Goals
 

@@ -11,33 +11,73 @@ on:
         description: AXTP Spec version, for example 0.3.0
         required: true
         type: string
+      dry_run:
+        description: Print dispatch payloads without calling the GitHub API
+        required: true
+        default: false
+        type: boolean
+  release:
+    types: [published]
+
+permissions:
+  contents: read
 
 jobs:
-  dry-run:
+  notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Validate inputs
+      - name: Dispatch runtime upgrade workflows
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_SPEC_TAG: ${{ github.event.inputs.spec_tag || '' }}
+          DISPATCH_SPEC_VERSION: ${{ github.event.inputs.spec_version || '' }}
+          DISPATCH_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
+          RUNTIME_DISPATCH_TOKEN: ${{ secrets.RUNTIME_DISPATCH_TOKEN }}
         run: |
           set -euo pipefail
-          if [[ ! "${{ inputs.spec_tag }}" =~ ^spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+
+          spec_tag="$DISPATCH_SPEC_TAG"
+          spec_version="$DISPATCH_SPEC_VERSION"
+          dry_run="$DISPATCH_DRY_RUN"
+
+          if [[ "$EVENT_NAME" == "release" ]]; then
+            spec_tag="$RELEASE_TAG"
+            spec_version="${spec_tag#spec/v}"
+            dry_run="false"
+          fi
+
+          if [[ ! "$spec_tag" =~ ^spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            if [[ "$EVENT_NAME" == "release" ]]; then
+              echo "Release tag $spec_tag is not an AXTP Spec tag; skipping runtime notifications."
+              exit 0
+            fi
             echo "spec_tag must match spec/vMAJOR.MINOR.PATCH" >&2
             exit 2
           fi
-          if [[ ! "${{ inputs.spec_version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+
+          if [[ ! "$spec_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "spec_version must match MAJOR.MINOR.PATCH" >&2
             exit 2
           fi
-          expected="spec/v${{ inputs.spec_version }}"
-          if [[ "${{ inputs.spec_tag }}" != "$expected" ]]; then
+
+          expected="spec/v$spec_version"
+          if [[ "$spec_tag" != "$expected" ]]; then
             echo "spec_tag must equal spec/v<spec_version>; expected $expected" >&2
             exit 2
           fi
 
-      - name: Print dry-run notifications
-        shell: bash
-        run: |
-          set -euo pipefail
+          spec_repository="https://github.com/Mostorm-Labs/axtp"
+          spec_commit="$(git ls-remote "$spec_repository.git" "refs/tags/$spec_tag^{}" | awk 'NR == 1 { print $1 }')"
+          if [[ -z "$spec_commit" ]]; then
+            spec_commit="$(git ls-remote "$spec_repository.git" "refs/tags/$spec_tag" | awk 'NR == 1 { print $1 }')"
+          fi
+          if [[ -z "$spec_commit" ]]; then
+            echo "Could not resolve $spec_tag from $spec_repository" >&2
+            exit 1
+          fi
+
           repositories=(
             "Mostorm-Labs/axtp-c-runtime"
             "Mostorm-Labs/axtp-cpp-runtime"
@@ -47,10 +87,29 @@ jobs:
             "Mostorm-Labs/axtp-mock-server"
           )
 
-          echo "Dry run only. No GitHub API calls will be made."
+          payload="$(jq -n \
+            --arg spec_tag "$spec_tag" \
+            --arg spec_version "$spec_version" \
+            --arg spec_repository "$spec_repository" \
+            --arg spec_commit "$spec_commit" \
+            '{event_type: "axtp-spec-released", client_payload: {spec_tag: $spec_tag, spec_version: $spec_version, spec_repository: $spec_repository, spec_commit: $spec_commit}}')"
+
           for repository in "${repositories[@]}"; do
-            echo "Would notify $repository with:"
-            echo "  event_type: axtp-spec-released"
-            echo "  spec_tag: ${{ inputs.spec_tag }}"
-            echo "  spec_version: ${{ inputs.spec_version }}"
+            if [[ "$dry_run" == "true" ]]; then
+              echo "Dry run: would dispatch to $repository"
+              echo "$payload"
+              continue
+            fi
+            if [[ -z "${RUNTIME_DISPATCH_TOKEN:-}" ]]; then
+              echo "Missing RUNTIME_DISPATCH_TOKEN secret for repository_dispatch." >&2
+              exit 1
+            fi
+            echo "Dispatching axtp-spec-released to $repository"
+            curl -fsS \
+              -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $RUNTIME_DISPATCH_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/$repository/dispatches" \
+              -d "$payload"
           done
