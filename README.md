@@ -1,6 +1,6 @@
 # AXTP
 
-AXTP（Auditoryworks Transport Protocol）是一套面向设备控制、事件通知和连续数据流的传输无关协议框架。本仓库维护 AXTP 的规范、协议事实源、Generator、生成产物、C++ runtime/SDK 和调试工具。
+AXTP（Auditoryworks Transport Protocol）是一套面向设备控制、事件通知和连续数据流的传输无关协议框架。本仓库维护 AXTP 的规范、协议事实源、Generator、生成产物、C++/Flutter runtime、SDK 和调试工具。
 
 AXTP 的核心约定是：业务方案先进入草案，评审采纳后写入 YAML 事实源，再由 Generator 生成所有机器消费产物。不要手写生成文件。
 
@@ -23,6 +23,7 @@ AXTP 的核心约定是：业务方案先进入草案，评审采纳后写入 YA
 | 新增或修改业务协议 | [docs/protocol/README.md](docs/protocol/README.md) -> 对应 `docs/dev/skills/**` |
 | 运行 Generator 或 CLI/SDK/runtime | [docs/guides/how-to-use.md](docs/guides/how-to-use.md) |
 | C++ runtime/SDK 接入 | [docs/dev/AXTP_CPP_RUNTIME_PATTERNS.md](docs/dev/AXTP_CPP_RUNTIME_PATTERNS.md)、[docs/dev/AXTP_CORE_API_DESIGN.md](docs/dev/AXTP_CORE_API_DESIGN.md) 和 [docs/dev/AXTP_SDK_API_DESIGN.md](docs/dev/AXTP_SDK_API_DESIGN.md) |
+| Flutter runtime 接入 | [docs/dev/AXTP_FLUTTER_RUNTIME_PATTERNS.md](docs/dev/AXTP_FLUTTER_RUNTIME_PATTERNS.md) 和 [runtimes/flutter/README.md](runtimes/flutter/README.md) |
 | 研发启动会材料 | [docs/dev/AXTP_RD_KICKOFF_GUIDE.md](docs/dev/AXTP_RD_KICKOFF_GUIDE.md) |
 
 ## Repository Layout
@@ -40,6 +41,7 @@ AXTP 的核心约定是：业务方案先进入草案，评审采纳后写入 YA
 | `runtimes/cpp/core/` | C++ protocol core/runtime，`include/generated/` 除外 | 部分 |
 | `runtimes/cpp/sdk/` | C++ 应用层 SDK | 部分 |
 | `runtimes/cpp/tools/axtpctl/` | AXTP CLI 调试工具 | 是 |
+| `runtimes/flutter/` | Flutter/Dart runtime、dynamic client、mock transport 和 generated registry | 部分 |
 
 `docs/protocol/` 和根目录 `protocol/` 名字相近，但角色不同：前者是草案目录，后者当前只包含生成后的 `protocol/axtp.protocol.yaml`。
 
