@@ -11,11 +11,9 @@ contents:
   conformance: true
   migration: true
 
-compatibility:
-  wire: "{{WIRE_COMPATIBILITY}}"
-  registry: "{{REGISTRY_COMPATIBILITY}}"
-  schema: "{{SCHEMA_COMPATIBILITY}}"
-  runtime_action: "{{RUNTIME_ACTION}}"
+runtime_update:
+  target_runtime_version: "{{VERSION}}"
+  dispatch_event: "axtp_spec_released"
 
 notes:
   summary: ""

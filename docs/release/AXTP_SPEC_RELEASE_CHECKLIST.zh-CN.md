@@ -51,8 +51,8 @@ GitHub Release body 应包含：
 4. 通知 `axtp-ts-runtime` 维护者更新 `AXTP_SPEC.lock.yaml` 和 package metadata。
 5. 通知 `axtp-python-runtime` 维护者更新 `AXTP_SPEC.lock.yaml`。
 6. 通知 `axtp-mock-server` 维护者更新 `AXTP_SPEC.lock.yaml`。
-6. 确认 `notify-runtimes` workflow 已向所有真实 runtime/mock 仓库发送 `axtp-spec-released`。
-7. 要求 runtime 和 mock 维护者检查 generated manifest，并且只从 runtime `vX.Y.Z` tag 发布 runtime release。
+6. 确认 `spec-release-dispatch` workflow 已向所有真实 runtime/mock 仓库发送 `axtp_spec_released`。
+7. 确认 runtime 和 mock 仓库的自动升级 PR 通过检查后合并，并创建对应的 `vX.Y.Z` tag / GitHub Release。
 8. 不要要求 runtime 依赖 `main`；每个 runtime 依赖都必须指向 tag 或 commit。
 
 ## 非目标

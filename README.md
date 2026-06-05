@@ -158,6 +158,25 @@ git diff --check
 --config.verify-deps-before-run=false
 ```
 
+## Runtime Automation
+
+When AXTP Spec tag `spec/vX.Y.Z` is pushed, this repository builds the spec
+artifact, creates or updates the AXTP Spec GitHub Release, and dispatches an
+upgrade event to:
+
+- `axtp-c-runtime`
+- `axtp-cpp-runtime`
+- `axtp-flutter-runtime`
+- `axtp-python-runtime`
+- `axtp-ts-runtime`
+- `axtp-mock-server`
+
+Each runtime/tool repository upgrades to the same version `X.Y.Z`, opens an
+automated PR, auto-merges it after checks pass, tags `vX.Y.Z`, and creates a
+GitHub Release. The axtp repository must configure
+`AXTP_RUNTIME_DISPATCH_TOKEN` with permission to send `repository_dispatch`
+events to the runtime/tool repositories.
+
 ## Source Boundaries
 
 可以手动修改：

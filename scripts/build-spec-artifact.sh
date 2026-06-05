@@ -66,10 +66,6 @@ sed \
   -e "s|{{VERSION}}|$version|g" \
   -e "s|{{COMMIT}}|$commit|g" \
   -e "s|{{DATE}}|$released_at|g" \
-  -e "s|{{WIRE_COMPATIBILITY}}|review|g" \
-  -e "s|{{REGISTRY_COMPATIBILITY}}|review|g" \
-  -e "s|{{SCHEMA_COMPATIBILITY}}|review|g" \
-  -e "s|{{RUNTIME_ACTION}}|open runtime upgrade PRs|g" \
   "$template" > "$artifact_dir/manifest.yaml"
 echo "[OK] wrote manifest.yaml"
 

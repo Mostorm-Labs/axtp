@@ -14,10 +14,8 @@ on:
       dry_run:
         description: Print dispatch payloads without calling the GitHub API
         required: true
-        default: false
+        default: true
         type: boolean
-  release:
-    types: [published]
 
 permissions:
   contents: read
@@ -33,8 +31,7 @@ jobs:
           DISPATCH_SPEC_TAG: ${{ github.event.inputs.spec_tag || '' }}
           DISPATCH_SPEC_VERSION: ${{ github.event.inputs.spec_version || '' }}
           DISPATCH_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-          RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
-          RUNTIME_DISPATCH_TOKEN: ${{ secrets.RUNTIME_DISPATCH_TOKEN }}
+          AXTP_RUNTIME_DISPATCH_TOKEN: ${{ secrets.AXTP_RUNTIME_DISPATCH_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -42,17 +39,7 @@ jobs:
           spec_version="$DISPATCH_SPEC_VERSION"
           dry_run="$DISPATCH_DRY_RUN"
 
-          if [[ "$EVENT_NAME" == "release" ]]; then
-            spec_tag="$RELEASE_TAG"
-            spec_version="${spec_tag#spec/v}"
-            dry_run="false"
-          fi
-
           if [[ ! "$spec_tag" =~ ^spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            if [[ "$EVENT_NAME" == "release" ]]; then
-              echo "Release tag $spec_tag is not an AXTP Spec tag; skipping runtime notifications."
-              exit 0
-            fi
             echo "spec_tag must match spec/vMAJOR.MINOR.PATCH" >&2
             exit 2
           fi
@@ -92,7 +79,7 @@ jobs:
             --arg spec_version "$spec_version" \
             --arg spec_repository "$spec_repository" \
             --arg spec_commit "$spec_commit" \
-            '{event_type: "axtp-spec-released", client_payload: {spec_tag: $spec_tag, spec_version: $spec_version, spec_repository: $spec_repository, spec_commit: $spec_commit}}')"
+            '{event_type: "axtp_spec_released", client_payload: {spec_tag: $spec_tag, spec_version: $spec_version, spec_repository: $spec_repository, spec_commit: $spec_commit}}')"
 
           for repository in "${repositories[@]}"; do
             if [[ "$dry_run" == "true" ]]; then
@@ -100,15 +87,15 @@ jobs:
               echo "$payload"
               continue
             fi
-            if [[ -z "${RUNTIME_DISPATCH_TOKEN:-}" ]]; then
-              echo "Missing RUNTIME_DISPATCH_TOKEN secret for repository_dispatch." >&2
+            if [[ -z "${AXTP_RUNTIME_DISPATCH_TOKEN:-}" ]]; then
+              echo "Missing AXTP_RUNTIME_DISPATCH_TOKEN secret for repository_dispatch." >&2
               exit 1
             fi
-            echo "Dispatching axtp-spec-released to $repository"
+            echo "Dispatching axtp_spec_released to $repository"
             curl -fsS \
               -X POST \
               -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer $RUNTIME_DISPATCH_TOKEN" \
+              -H "Authorization: Bearer $AXTP_RUNTIME_DISPATCH_TOKEN" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "https://api.github.com/repos/$repository/dispatches" \
               -d "$payload"
