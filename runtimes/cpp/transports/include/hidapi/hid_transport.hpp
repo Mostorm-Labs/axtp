@@ -38,7 +38,7 @@ public:
     void bind(IByteSink& sink) override;
     void open() override;
     void close() override;
-    void poll();
+    void poll() override;
     void sendBytes(const Byte* data, std::size_t size) override;
     TransportProfile profile() const override;
 

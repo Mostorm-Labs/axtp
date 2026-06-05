@@ -26,6 +26,16 @@ target_link_libraries(axtpctl
         axtp_transport_websocket_boost
 )
 
+add_executable(axtp_hid_audio_device_demo
+    src/hid_audio_device_demo.cpp
+)
+
+target_link_libraries(axtp_hid_audio_device_demo
+    PRIVATE
+        axtp_sdk
+        axtp_transport_hidapi
+)
+
 enable_testing()
 
 add_test(NAME axtpctl_help COMMAND axtpctl --help)
@@ -53,6 +63,25 @@ add_test(NAME axtpctl_custom_registry_json
 add_test(NAME axtpctl_inspect_frame
     COMMAND axtpctl inspect frame --hex 415801020000000000000001a950
 )
+
+add_executable(hid_local_backend_test
+    tests/hid_local_backend_test.cpp
+)
+target_link_libraries(hid_local_backend_test PRIVATE axtp_transport_hidapi)
+add_test(NAME hid_local_backend_test COMMAND hid_local_backend_test)
+
+add_executable(hid_audio_demo_e2e_test
+    tests/hid_audio_demo_e2e_test.cpp
+)
+target_include_directories(hid_audio_demo_e2e_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(hid_audio_demo_e2e_test
+    PRIVATE
+        axtp_sdk
+        axtp_transport_hidapi
+)
+add_test(NAME hid_audio_demo_e2e_test COMMAND hid_audio_demo_e2e_test)
 
 add_test(NAME axtpctl_unknown_method
     COMMAND axtpctl -c unknown.method

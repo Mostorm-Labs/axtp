@@ -39,7 +39,7 @@ public:
         _open = false;
     }
 
-    void poll() {
+    void poll() override {
         if (!_open) {
             return;
         }

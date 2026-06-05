@@ -4,7 +4,7 @@
 
 | 文档 | 说明 |
 |---|---|
-| 暂无 | 当前没有可直接作为现行 generated contract 执行的 active demo。 |
+| [hid-json-audio-demo.md](hid-json-audio-demo.md) | C++ HID 形态本机双端 demo：设备端 audio server + 上位机 `axtpctl` JSON client。 |
 
 新增 demo 必须满足以下条件：
 

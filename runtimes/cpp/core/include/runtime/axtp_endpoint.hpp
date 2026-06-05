@@ -30,6 +30,9 @@ public:
     }
 
     void poll(std::size_t maxTasks = 8) {
+        if (_transport != nullptr) {
+            _transport->poll();
+        }
         drainCoreEvents();
         _broker.poll(maxTasks);
         drainBrokerResults();

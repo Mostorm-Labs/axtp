@@ -15,6 +15,7 @@
 #include "axtp.hpp"
 #include "method_registry_json.hpp"
 #include "testing/mock_transport.hpp"
+#include "hidapi/hid_local_backend.hpp"
 #include "hidapi/hid_transport.hpp"
 #include "tcp_boost/tcp_transport.hpp"
 #include "websocket_boost/websocket_transport.hpp"
@@ -58,13 +59,13 @@ void printUsage() {
               << "  -c, --command <method>       Call an AXTP method by name\n"
               << "  -j, --json <json>            JSON params for the method call\n"
               << "  -f, --json-file <path>       Read JSON params from file\n"
-              << "  -t, --transport <kind>       Select transport: hid, tcp, websocket, mock\n"
+              << "  -t, --transport <kind>       Select transport: hid, hid-sim, tcp, websocket, mock\n"
               << "  -o, --output <format>        Output format: pretty, json\n"
               << "      --host <host>            TCP host\n"
               << "      --port <port>            TCP or WebSocket port\n"
               << "      --vid <hex>              HID vendor id\n"
               << "      --pid <hex>              HID product id\n"
-              << "      --path <device-path>     Device path placeholder for HID tools\n"
+              << "      --path <device-path>     HID serial/path or hid-sim socket path\n"
               << "      --endpoint <value>       Transport endpoint value\n"
               << "      --wire <mode>            Wire mode: framed-binary, websocket-json-rpc\n"
               << "      --encoding <format>      RPC encoding: json, tlv, raw\n"
@@ -86,6 +87,8 @@ void printUsage() {
               << "  axtpctl -c audio.getAlgorithmCapabilities\n"
               << "  axtpctl -c audio.setAlgorithmConfig --json "
                  "'{\"noiseSuppression\":{\"enabled\":true,\"level\":3}}'\n"
+              << "  axtpctl -t hid-sim --path /tmp/axtp-hid-audio.sock "
+                 "-c audio.getAlgorithmConfig --json '{}'\n"
               << "  axtpctl -t hid --vid 0x1234 --pid 0x5678 -c audio.getAlgorithmConfig\n"
               << "  axtpctl -t tcp --host 127.0.0.1 --port 9000 -c audio.getAlgorithmConfig -o json\n";
 }
@@ -493,6 +496,16 @@ bool attachTransport(const CliOptions& options, axtp::sdk::AxtpClient* client) {
         endpoint.productId = static_cast<std::uint16_t>(options.pid.value_or(0));
         endpoint.serialNumber = options.path;
         client->attachTransport(std::make_unique<axtp::HidTransport>(std::move(endpoint)));
+        return client->isConnected();
+    }
+    if (options.transport == "hid-sim" || options.transport == "hidsim") {
+        const auto path =
+            !options.path.empty()
+                ? options.path
+                : (!options.endpoint.empty() ? options.endpoint : "/tmp/axtp-hid-audio.sock");
+        axtp::HidTransportOptions endpoint;
+        client->attachTransport(std::make_unique<axtp::HidTransport>(
+            std::move(endpoint), axtp::LocalHidBackend::client(path)));
         return client->isConnected();
     }
 
