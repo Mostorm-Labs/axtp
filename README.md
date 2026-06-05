@@ -1,82 +1,61 @@
 # AXTP
 
-AXTP（Auditoryworks Transport Protocol）是一套面向设备控制、事件通知和连续数据流的传输无关协议框架。本仓库维护 AXTP 的规范、协议事实源、主库文档 Generator 和生成产物。Runtime、SDK、mock server、调试工具及各 runtime generator 维护在独立仓库中。
+AXTP（Auditoryworks Transport Protocol）是一套面向设备控制、事件通知和连续数据流的传输无关协议框架。本仓库是 AXTP Spec、协议事实源、主库 Generator 和生成产物的维护仓库。Runtime、SDK、mock server 和调试工具维护在独立仓库中。
 
-AXTP 的核心约定是：业务方案先进入草案，评审采纳后写入 YAML 事实源，再由 Generator 生成所有机器消费产物。不要手写生成文件。
+核心约定：
 
 ```text
 业务需求 / 旧协议材料
   -> docs/protocol/<domain>/<domain.feature>.md
-  -> 评审采纳 + docs/specs/08-13 反向确认（涉及 profile/MVP 时同时确认 14）
+  -> 人工评审
   -> registry/**/*.yaml + registry/domains/**/*.yaml
   -> protocol/axtp.protocol.yaml
-  -> docs/generated/* + tooling/*
+  -> docs/generated/*
 ```
+
+不要手写 generated 产物。生成结果不符合预期时，应回到草案、specs、YAML 事实源或 Generator 逻辑修正，再重新生成。
 
 ## Start Here
 
-| 读者目标 | 最短路径 |
+| 目标 | 入口 |
 |---|---|
-| 第一次读仓库 | 先读 [docs/README.md](docs/README.md)，再读 [docs/specs/00-AXTP-Overview.md](docs/specs/00-AXTP-Overview.md) |
-| 理解协议怎么在线上传 | [docs/specs/README.md](docs/specs/README.md) -> 00 / 02 / 03 / 04 / 05 / 06 |
-| 查当前可实现协议 | [docs/generated/protocol.md](docs/generated/protocol.md) 和 [docs/generated/protocol.json](docs/generated/protocol.json) |
-| 新增或修改业务协议 | [docs/protocol/README.md](docs/protocol/README.md) -> 对应 `docs/dev/skills/**` |
-| 运行主库 Generator | [docs/guides/how-to-use.md](docs/guides/how-to-use.md) |
-| 查看 Spec 发布与 runtime 依赖规则 | [docs/release/README.md](docs/release/README.md) |
-| Runtime 仓库 | [Runtime Repositories](#runtime-repositories) |
-| C++ runtime/SDK 接入 | [axtp-cpp-runtime](https://github.com/Mostorm-Labs/axtp-cpp-runtime) |
-| Flutter runtime 接入 | [axtp-flutter-runtime](https://github.com/Mostorm-Labs/axtp-flutter-runtime) |
+| 第一次读仓库 | [docs/README.md](docs/README.md)，再读 [docs/specs/00-AXTP-Overview.md](docs/specs/00-AXTP-Overview.md) |
+| 理解协议分层和传输 | [docs/specs/README.md](docs/specs/README.md) |
+| 查当前已采纳协议 | [docs/generated/protocol.md](docs/generated/protocol.md) 或 [docs/generated/protocol.json](docs/generated/protocol.json) |
+| 新增、修订或采纳业务协议 | [docs/protocol/README.md](docs/protocol/README.md) |
+| 查看协议采纳/生成优先级 | [docs/protocol/README.md#协议采纳生成优先级](docs/protocol/README.md#协议采纳生成优先级) |
+| 追溯 legacy 分类和迁移 | [docs/legacy-classification/README.md](docs/legacy-classification/README.md) 和 [docs/migration/README.md](docs/migration/README.md) |
+| 运行主库 Generator | [docs/guides/how-to-use.md](docs/guides/how-to-use.md) 和 [generators/README.md](generators/README.md) |
+| 查看发布和 runtime 依赖规则 | [docs/release/README.md](docs/release/README.md) |
+| 查看 runtime 仓库 | [runtimes/README.md](runtimes/README.md) |
+| C++ runtime/SDK 接入 | [docs/dev/AXTP_CPP_RUNTIME_PATTERNS.md](docs/dev/AXTP_CPP_RUNTIME_PATTERNS.md) |
+| Flutter runtime 接入 | [docs/dev/AXTP_FLUTTER_RUNTIME_PATTERNS.md](docs/dev/AXTP_FLUTTER_RUNTIME_PATTERNS.md) |
 | 研发启动会材料 | [docs/dev/AXTP_RD_KICKOFF_GUIDE.md](docs/dev/AXTP_RD_KICKOFF_GUIDE.md) |
 
 ## Repository Layout
 
-| 路径 | 角色 | 手动维护 |
+| 路径 | 角色 | 手写 |
 |---|---|---:|
-| `docs/specs/` | 正式规范和治理规则：wire format、transport、registry、类型系统、Generator 规则 | 是 |
-| `docs/protocol/` | 业务协议草案与评审输入；不是 Generator 机器输入 | 是 |
-| `registry/` | Core/MVP/共享/legacy 已采纳机器事实源 | 是 |
-| `registry/domains/` | 已采纳业务域机器事实源，新增普通业务默认落点 | 是 |
+| `docs/specs/` | 正式规范和治理规则 | 是 |
+| `docs/business/` | 原始业务背景、用户目标和开放问题 | 是 |
+| `docs/flows/` | 业务场景到协议交互的桥接方案 | 是 |
+| `docs/protocol/` | 业务协议草案、评审输入和采纳前记录 | 是 |
+| `docs/legacy-classification/` | legacy 材料到候选 `domain.feature` 的分类 intake | 由脚本刷新 |
+| `docs/migration/` | legacy 迁移工作区和适配方案 | 部分 |
+| `registry/` | Core、共享 schema、错误码、capability/profile 事实源 | 是 |
+| `registry/domains/` | 已采纳业务域机器事实源 | 是 |
 | `protocol/axtp.protocol.yaml` | Generator 聚合输出的 Protocol IR | 否 |
-| `docs/generated/` | Generator 输出的人读协议参考和 JSON | 否 |
-| `tooling/mcp/`、`tooling/test-vectors/` | Generator 输出的工具 JSON 和测试向量 | 否 |
-| `generators/` | 主库 Generator 源码，只生成主库文档和工具产物 | 是 |
+| `docs/generated/` | Generator 输出的人读/机器读协议参考 | 否 |
+| `generators/` | 主库 Generator 源码 | 是 |
+| `tooling/` | legacy/migration 脚本、MCP JSON、测试向量等工具材料 | 部分 |
+| `docs/release/` | Spec 发布、runtime spec lock 和升级流程 | 是 |
 | `runtimes/README.md` | 独立 runtime 仓库索引 | 是 |
 
-`docs/protocol/` 和根目录 `protocol/` 名字相近，但角色不同：前者是草案目录，后者当前只包含生成后的 `protocol/axtp.protocol.yaml`。
-
-## Versioning
-
-AXTP Spec is versioned by Git tags using:
-
-```text
-spec/vMAJOR.MINOR.PATCH
-```
-
-AXTP Spec versions and runtime package versions are separate. Runtime implementations should declare which AXTP Spec version they implement using `AXTP_SPEC.lock.yaml` or package metadata.
-
-Do not depend on the `main` branch for reproducible runtime builds. Use a released `spec/vX.Y.Z` tag or an explicit commit. See [docs/release/README.md](docs/release/README.md) for English and Chinese release docs.
-
-## Runtime Repositories
-
-AXTP runtime implementations are maintained in dedicated repositories:
-
-- [`axtp-c-runtime`](https://github.com/Mostorm-Labs/axtp-c-runtime)
-- [`axtp-cpp-runtime`](https://github.com/Mostorm-Labs/axtp-cpp-runtime)
-- [`axtp-flutter-runtime`](https://github.com/Mostorm-Labs/axtp-flutter-runtime)
-- [`axtp-ts-runtime`](https://github.com/Mostorm-Labs/axtp-ts-runtime)
-- [`axtp-python-runtime`](https://github.com/Mostorm-Labs/axtp-python-runtime)
-- [`axtp-mock-server`](https://github.com/Mostorm-Labs/axtp-mock-server)
-
-This repository is the AXTP Spec source of truth. Runtime repositories must
-declare the AXTP Spec version they implement via `AXTP_SPEC.lock.yaml`.
-
-Do not treat runtime repositories as protocol sources. Protocol documents,
-registries, schemas, domain specs, flow specs, and conformance cases are
-maintained here.
+`docs/protocol/` 是草案目录；根目录 `protocol/` 只保存生成后的 `protocol/axtp.protocol.yaml`。二者名字相近，但不能互相替代。
 
 ## Protocol Model
 
-AXTP 分为五层：Transport 负责连接和字节传输，Frame 负责边界、长度、分片和 CRC，Payload 只分发 CONTROL/RPC/STREAM，Registry 定义 method/event/error/schema/capability/profile，Business 实现真实设备业务逻辑。
+AXTP 分为五层：
 
 ```text
 Business   device / display / firmware / network / stream / ...
@@ -93,22 +72,20 @@ Transport  USB HID / TCP / WebSocket / future low-bandwidth paths
 | `AXTP-WS-JSON` | WebSocket JSON message | RPC JSON only |
 | `AXTP-WS-CLOUD-REVERSE` | WebSocket JSON message | RPC JSON only |
 
-业务类型不要进入 Frame Header 或顶层 PayloadType。比如固件更新、音视频、日志和文件块应通过 RPC 建立业务语义，再用 STREAM 承载连续数据。
+业务类型不要进入 Frame Header 或顶层 PayloadType。固件更新、音视频、日志和文件块等场景应通过业务 RPC 建立语义，再用 STREAM 承载连续数据。
 
-## Protocol Lifecycle
+## Protocol Workflow
 
-当前仓库按六个阶段维护协议；完整 skill 索引见 [docs/dev/skills/README.md](docs/dev/skills/README.md)：
+仓库按阶段维护协议，详细流程见 [docs/protocol/README.md](docs/protocol/README.md) 和 [docs/dev/skills/README.md](docs/dev/skills/README.md)。
 
-| 阶段 | Skill / 入口 | 输入 | 输出 |
-|---|---|---|---|
-| 路由 | [axtp-protocol-workflow](docs/dev/skills/00-axtp-protocol-workflow/SKILL.md) | 不确定处于哪个阶段的需求 | 明确应该起草、采纳、修订、生成还是实现 |
-| Stage 10 流程 | [plan-protocol-flow](docs/dev/skills/10-plan-protocol-flow/SKILL.md) | 业务场景、用户 story、UI 原型、端到端交互 | `docs/flows/<scenario>.md`，列出协议步骤、已有覆盖和缺口；协议缺口再转 20/40 |
-| 起草 | [draft-business-protocol](docs/dev/skills/20-draft-business-protocol/SKILL.md) | 产品需求、架构草图、旧协议线索 | `docs/protocol/<domain>/<domain.feature>.md` |
-| 采纳 | [adopt-protocol-draft](docs/dev/skills/30-adopt-protocol-draft/SKILL.md) | 已评审确认的草案 | `docs/specs/08-13` 对齐记录；涉及 profile/MVP 时同步 14；写入 `registry/**/*.yaml` / `registry/domains/**/*.yaml` |
-| 修订 | [amend-adopted-protocol](docs/dev/skills/40-amend-adopted-protocol/SKILL.md) | 已采纳或已生成协议的语义变更 | amendment 记录 + 更新后的草案/specs/YAML + generated 产物 |
-| 生成 | [generate-axtp-protocol](docs/dev/skills/50-generate-axtp-protocol/SKILL.md) | 已更新的 YAML 事实源 | Protocol IR、generated docs、tooling JSON、test vectors |
-
-`docs/specs/**` 是协议规则和治理依据，`docs/flows/**` 是业务场景到协议交互的桥接文档，`docs/protocol/**` 是草案、评审和修订记录，`registry/**/*.yaml` 与 `registry/domains/**/*.yaml` 才是 Generator 的机器输入。仓库不要求研发照着 Markdown 手工填写生成产物；场景到协议清单由 Stage 10 `plan-protocol-flow` 梳理，草案到 YAML 的采纳动作由 `adopt-protocol-draft` 固化流程，已采纳协议的语义修正由 `amend-adopted-protocol` 管理，YAML 到产物的动作由 `generate-axtp-protocol` 完成。
+| 阶段 | 主要输入 | 主要输出 |
+|---|---|---|
+| Flow plan | 业务场景、用户 story、UI 原型、端到端交互 | `docs/flows/<scenario>.md` |
+| Draft | 产品需求、架构草图、legacy 线索 | `docs/protocol/<domain>/<domain.feature>.md` |
+| Adopt | 已评审确认的草案 | `registry/**/*.yaml`、`registry/domains/**/*.yaml` |
+| Generate | 已更新的 YAML 事实源 | `protocol/axtp.protocol.yaml`、`docs/generated/*` |
+| Amend | 已采纳或已生成协议的语义变更 | 修订后的草案、YAML 和 generated 产物 |
+| Release | 已验证的 Spec 产物 | `spec/vX.Y.Z` tag 和 release artifact |
 
 ## Quick Start
 
@@ -132,18 +109,10 @@ pnpm --dir generators generate
 pnpm --dir generators validate:protocol
 ```
 
-运行主库 Generator 测试：
+运行 Generator 测试：
 
 ```bash
 pnpm --dir generators test
-```
-
-Runtime 仓库有各自的 `generators/`，用于生成各自 runtime/server 产物。运行时将 `AXTP_SPEC_PATH` 指向本仓库：
-
-```bash
-export AXTP_SPEC_PATH=/path/to/axtp
-cd /path/to/mostormlabs/axtp-ts-runtime
-pnpm --dir generators generate:runtime
 ```
 
 提交前建议检查：
@@ -152,79 +121,23 @@ pnpm --dir generators generate:runtime
 git diff --check
 ```
 
-如果本机 `pnpm` 因依赖构建审批阻塞脚本，可临时加上：
+## Source Rules
 
-```bash
---config.verify-deps-before-run=false
+- 当前实现合同以 `registry/**/*.yaml`、`registry/domains/**/*.yaml` 和刷新后的 `docs/generated/*` 为准。
+- `docs/protocol/**` 是草案和评审输入；未采纳前不能当作实现合同。
+- `protocol/axtp.protocol.yaml`、`docs/generated/**`、`docs/migration/generated/**`、`tooling/mcp/*.generated.json`、`tooling/test-vectors/**`、`generators/src/__snapshots__/**` 是生成产物或快照，不要手写。
+- 新业务必须先按 08 taxonomy 确认 `domain.feature`，再进入草案、采纳和生成流程。
+- 有 `[REVIEW-ASK]`、`[REVIEW-FIX]` 或 `[REVIEW-BLOCKER]` 的事实不得进入 YAML。
+- Runtime 和 SDK 必须通过 `AXTP_SPEC.lock.yaml` 或包元数据声明所实现的 AXTP Spec 版本。
+
+## Versioning And Runtime
+
+AXTP Spec 使用 Git tag 版本：
+
+```text
+spec/vMAJOR.MINOR.PATCH
 ```
 
-## Runtime Automation
+Spec 版本和 runtime 包版本相互独立。不要依赖 `main` 分支做可复现 runtime 构建；使用已发布的 `spec/vX.Y.Z` tag 或明确 commit。发布、runtime spec lock 和自动升级流程见 [docs/release/README.md](docs/release/README.md)。
 
-When AXTP Spec tag `spec/vX.Y.Z` is pushed, this repository builds the spec
-artifact, creates or updates the AXTP Spec GitHub Release, and dispatches an
-upgrade event to:
-
-- `axtp-c-runtime`
-- `axtp-cpp-runtime`
-- `axtp-flutter-runtime`
-- `axtp-python-runtime`
-- `axtp-ts-runtime`
-- `axtp-mock-server`
-
-Each runtime/tool repository upgrades to the same version `X.Y.Z`, opens an
-automated PR, auto-merges it after checks pass, tags `vX.Y.Z`, and creates a
-GitHub Release. The axtp repository must configure
-`AXTP_RUNTIME_DISPATCH_TOKEN` with permission to send `repository_dispatch`
-events to the runtime/tool repositories.
-
-Runtime/tool repositories should configure `AXTP_RUNTIME_AUTOMATION_TOKEN` when
-automation-created PRs must trigger downstream `pull_request` checks. Local
-`build/` and `dist/` directories are ignored scratch outputs; release workflows
-rebuild the Spec artifact from source instead of relying on checked-in archives.
-
-## Source Boundaries
-
-可以手动修改：
-
-- `docs/specs/**`
-- `docs/protocol/**`
-- `docs/guides/**`
-- `docs/dev/**`
-- `registry/**/*.yaml`
-- `registry/domains/**/*.yaml`
-- `generators/src/**`
-
-不要手动修改：
-
-- `protocol/axtp.protocol.yaml`
-- `docs/generated/**`
-- `tooling/mcp/*.generated.json`
-- `tooling/test-vectors/**`
-- `generators/src/__snapshots__/**`
-
-生成结果不符合预期时，应回到草案、specs、YAML 事实源或 Generator 逻辑修正，再重新生成。
-
-## Current Snapshot
-
-当前生成协议包含：
-
-| 类型 | 数量 / 内容 |
-|---|---|
-| Methods | 4 |
-| Events | 1 |
-| Errors | 154 |
-| Profiles | `AXTP-MVP`、`AXTP-MVP-HID` |
-| Transports | `AXTP-USB-HID`、`AXTP-TCP`、`AXTP-WS-JSON`、`AXTP-WS-CLOUD-REVERSE` |
-
-以 [docs/generated/protocol.md](docs/generated/protocol.md) 和 [docs/generated/protocol.json](docs/generated/protocol.json) 作为研发、测试和工具集成的当前协议参考。
-
-## Development Notes
-
-- 新业务先进入 `docs/protocol/<domain>/<domain.feature>.md` 草案，不直接写 generated 产物。
-- 评审完成后再采纳到 YAML；有 `[REVIEW-ASK]`、`[REVIEW-FIX]` 或 `[REVIEW-BLOCKER]` 的事实不得进入 YAML。
-- 新增或修改 YAML 后必须运行 Generator，让协议文档、工具 JSON 和测试向量保持一致。
-- Runtime 实现和 SDK 接入方式维护在各独立 runtime 仓库中，并通过 `AXTP_SPEC.lock.yaml` 绑定本仓库的 spec tag / commit。
-
-## TODO List
-- 各种业务协议完整
-- 设备发现协议整合
+Runtime 仓库索引见 [runtimes/README.md](runtimes/README.md)。本仓库只维护协议源、规范、生成器和主库生成产物，不把 runtime 仓库当作协议事实源。
