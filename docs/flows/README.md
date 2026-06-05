@@ -45,3 +45,4 @@ docs/business/<requirement>.md 或业务场景 / UI 原型 / 用户 story
 ## Active Flow Plans
 
 - [Audio Algorithm Level Control](audio-algorithm-level-control.md)：App UI 中的音频算法强度滑条和恢复默认流程，复用 `audio.algorithm`。
+- [Cast RX/TX Pairing](cast-rxtx-paring.md)：NA20 接收端 AP 信息写入 NT10 发射端 Wi-Fi STA 配置的自动配对流程，依赖 `network.ap` / `network.wifi` 草案细化。
