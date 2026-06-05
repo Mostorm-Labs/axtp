@@ -1,6 +1,6 @@
 ---
 name: draft-business-protocol
-description: Stage 20 drafting skill for AXTP business protocol proposals. Use when rough product, architecture, legacy, or flow-gap requirements need a docs/protocol domain-feature draft, including method/event/schema/error/capability/profile candidates, stream or OTA flows, or protocol classification. Writes docs/protocol drafts only by default and must not write registry YAML or generated artifacts.
+description: Stage 20 drafting skill for AXTP business protocol proposals. Use when rough product, architecture, legacy, or flow-gap requirements need a docs/protocol domain-feature draft, including method/event/schema/error/capability/profile candidates, JSON examples, stream or OTA flows, or protocol classification. Writes docs/protocol drafts only by default and must not write registry YAML or generated artifacts.
 ---
 
 # Draft Business Protocol
@@ -13,6 +13,8 @@ Stage 20. Create or update an AXTP business protocol draft in `docs/protocol/<do
 - Do not edit `registry/**`, `registry/domains/**`, `protocol/axtp.protocol.yaml`, `docs/generated/**`, `tooling/mcp/**`, `tooling/test-vectors/**`, or runtime generated files.
 - Do not assign final numeric IDs unless they already exist in YAML/specs; use `TBD after adoption` for new methodId/eventId/errorCode/fieldId values.
 - Do not introduce new PayloadType, Frame Header business fields, WebSocket STREAM support, or runtime Header Profile negotiation.
+- JSON examples must be embedded in the `docs/protocol/**` Markdown draft by default; do not create generated JSON artifacts unless the user explicitly asks.
+- JSON examples must follow `docs/specs/05-AXTP-RPC-Session-Spec.md` and `docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md`: use the `sid` / `op` / `d` envelope, `op=7` for Request, `op=8` for RequestResponse, `op=6` for Event, numeric `status.code`, and required `status.ok`.
 - Always leave `[REVIEW-*]` markers for human review. Unconfirmed facts must be `[REVIEW-ASK]`, `[REVIEW-DRAFT]`, `[REVIEW-FIX]`, or `[REVIEW-BLOCKER]`.
 
 ## Required Workflow
@@ -93,6 +95,7 @@ Use `apply_patch` for manual edits. A draft must include:
 - candidate methods with request/response schema names
 - candidate events
 - candidate schemas and important fields
+- JSON examples for key method requests/responses/events
 - candidate errors
 - stream/profile notes if relevant
 - legacy mapping candidates or `[REVIEW-ASK]`
@@ -102,6 +105,21 @@ Use `apply_patch` for manual edits. A draft must include:
 
 Prefer concise tables. Use `TBD after adoption` for numeric IDs.
 
+When creating a new draft or materially updating an existing draft, include or refresh a `JSON 示例` section:
+
+- Cover the main happy-path request/response pairs for the feature.
+- Include representative event payload examples when events are proposed.
+- Include at least one important edge or failure example when the scenario depends on error handling.
+- Keep examples consistent with candidate schema names and fields, but do not imply final methodId/eventId/fieldId values.
+- Use full JSON RPC envelope examples unless explicitly labeling a snippet as a `d-block` fragment.
+- Request examples must use `op: 7` and `d.id`, `d.method`, and optional `d.params`.
+- Response examples must use `op: 8`, echo `d.id`, include `d.status.ok`, and use numeric `d.status.code`; use `0` for success.
+- Event examples must use `op: 6`, `d.event`, numeric `d.intent`, and optional `d.data`; do not include request `id` in events.
+- Do not use string error names in `status.code`. Use adopted numeric ErrorCode values from specs/YAML/generated. If a draft-only candidate error lacks a numeric code, either use the nearest adopted common numeric code in the JSON example and put the candidate name in `status.details.candidateError`, or state that the final code is `TBD after adoption` in prose outside JSON.
+- Use placeholders for secrets, credentials, tokens, keys, personal data, serial numbers, MAC addresses, and IP addresses when exact values are not confirmed.
+- Mark unconfirmed example fields or behavior in nearby prose with `[REVIEW-ASK]`.
+- For existing drafts, refresh examples for methods/events that were added or changed; if the draft has no examples yet, add examples for the feature's primary workflow.
+
 ### 5. Final Response
 
 Return:
@@ -109,6 +127,7 @@ Return:
 - decision: reuse, modify, or create
 - draft file path
 - what was added or changed
+- JSON examples added or refreshed
 - key review questions / `[REVIEW-*]` blockers
 - confirmation that no registry/generated/protocol files were modified
 - next step: after human review, use `docs/dev/skills/30-adopt-protocol-draft/SKILL.md`

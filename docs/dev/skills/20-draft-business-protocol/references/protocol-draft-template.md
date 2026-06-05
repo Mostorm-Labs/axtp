@@ -69,6 +69,81 @@ Use this structure when creating `docs/protocol/<domain>/<domain.feature>.md`. R
 |---|---|---:|---|---|
 | `<field>` | `<type>` | yes | <description> | [REVIEW-DRAFT] |
 
+## JSON 示例
+
+示例用于评审 request/response/event 语义，不是 generated 事实源。JSON 示例必须遵循 05《AXTP RPC Session Spec》的 `sid` / `op` / `d` envelope。敏感字段必须使用占位符，未确认字段在正文中标记 `[REVIEW-ASK]`。
+
+### `<domain>.<action>` request
+
+~~~json
+{
+  "sid": "<sid>",
+  "op": 7,
+  "d": {
+    "id": 1,
+    "method": "<domain>.<action>",
+    "params": {
+      "<field>": "<value>"
+    }
+  }
+}
+~~~
+
+### `<domain>.<action>` response
+
+~~~json
+{
+  "sid": "<sid>",
+  "op": 8,
+  "d": {
+    "id": 1,
+    "status": {
+      "ok": true,
+      "code": 0
+    },
+    "result": {
+      "<field>": "<value>"
+    }
+  }
+}
+~~~
+
+### `<domain>.<stateChanged>` event
+
+~~~json
+{
+  "sid": "<sid>",
+  "op": 6,
+  "d": {
+    "event": "<domain>.<stateChanged>",
+    "intent": 1,
+    "data": {
+      "<field>": "<value>"
+    }
+  }
+}
+~~~
+
+### failure response
+
+~~~json
+{
+  "sid": "<sid>",
+  "op": 8,
+  "d": {
+    "id": 1,
+    "status": {
+      "ok": false,
+      "code": 10,
+      "msg": "Invalid argument.",
+      "details": {
+        "candidateError": "<DOMAIN_FEATURE_ERROR>"
+      }
+    }
+  }
+}
+~~~
+
 ## 候选 Errors
 
 | Error | 类别 | 说明 | Review |
