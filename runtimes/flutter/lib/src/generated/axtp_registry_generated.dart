@@ -334,8 +334,7 @@ enum CapabilityId {
 }
 
 class MethodDescriptor {
-  const MethodDescriptor(
-      this.id, this.name, this.domain, this.requestSchema, this.responseSchema);
+  const MethodDescriptor(this.id, this.name, this.domain, this.requestSchema, this.responseSchema);
 
   final int id;
   final String name;
@@ -363,8 +362,7 @@ class ErrorDescriptor {
 }
 
 class CapabilityDescriptor {
-  const CapabilityDescriptor(
-      this.id, this.name, this.domain, this.type, this.schema);
+  const CapabilityDescriptor(this.id, this.name, this.domain, this.type, this.schema);
 
   final int id;
   final String name;
@@ -374,23 +372,14 @@ class CapabilityDescriptor {
 }
 
 const kMethodRegistry = <MethodDescriptor>[
-  MethodDescriptor(0x0901, "audio.getAlgorithmConfig", "audio",
-      "AudioGetAlgorithmConfigRequest", "AudioAlgorithmConfig"),
-  MethodDescriptor(0x0902, "audio.setAlgorithmConfig", "audio",
-      "AudioSetAlgorithmConfigRequest", "AudioSetAlgorithmConfigResponse"),
-  MethodDescriptor(
-      0x090D,
-      "audio.getAlgorithmCapabilities",
-      "audio",
-      "AudioGetAlgorithmCapabilitiesRequest",
-      "AudioGetAlgorithmCapabilitiesResponse"),
-  MethodDescriptor(0x090E, "audio.resetAlgorithmConfig", "audio",
-      "AudioResetAlgorithmConfigRequest", "AudioSetAlgorithmConfigResponse")
+  MethodDescriptor(0x0901, "audio.getAlgorithmConfig", "audio", "AudioGetAlgorithmConfigRequest", "AudioAlgorithmConfig"),
+  MethodDescriptor(0x0902, "audio.setAlgorithmConfig", "audio", "AudioSetAlgorithmConfigRequest", "AudioSetAlgorithmConfigResponse"),
+  MethodDescriptor(0x090D, "audio.getAlgorithmCapabilities", "audio", "AudioGetAlgorithmCapabilitiesRequest", "AudioGetAlgorithmCapabilitiesResponse"),
+  MethodDescriptor(0x090E, "audio.resetAlgorithmConfig", "audio", "AudioResetAlgorithmConfigRequest", "AudioSetAlgorithmConfigResponse")
 ];
 
 const kEventRegistry = <EventDescriptor>[
-  EventDescriptor(0x0901, "audio.algorithmConfigChanged", "audio",
-      "AudioAlgorithmConfigChangedEvent")
+  EventDescriptor(0x0901, "audio.algorithmConfigChanged", "audio", "AudioAlgorithmConfigChangedEvent")
 ];
 
 const kErrorRegistry = <ErrorDescriptor>[
@@ -426,12 +415,10 @@ const kErrorRegistry = <ErrorDescriptor>[
   ErrorDescriptor(0x001E, "TRANSPORT_DISCONNECTED", "frame", true),
   ErrorDescriptor(0x0021, "CONTROL_OPCODE_INVALID", "control", false),
   ErrorDescriptor(0x0022, "CONTROL_PAYLOAD_INVALID", "control", false),
-  ErrorDescriptor(
-      0x0023, "RESERVED_CONTROL_BODY_ENCODING_UNSUPPORTED", "control", false),
+  ErrorDescriptor(0x0023, "RESERVED_CONTROL_BODY_ENCODING_UNSUPPORTED", "control", false),
   ErrorDescriptor(0x0024, "CONTROL_OPEN_REQUIRED", "control", false),
   ErrorDescriptor(0x0025, "CONTROL_OPEN_REJECTED", "control", false),
-  ErrorDescriptor(
-      0x0026, "RESERVED_CONTROL_PROFILE_UNSUPPORTED", "control", false),
+  ErrorDescriptor(0x0026, "RESERVED_CONTROL_PROFILE_UNSUPPORTED", "control", false),
   ErrorDescriptor(0x0027, "CONTROL_NEGOTIATION_FAILED", "control", false),
   ErrorDescriptor(0x0028, "CONTROL_SESSION_INVALID", "control", false),
   ErrorDescriptor(0x0029, "CONTROL_SESSION_EXPIRED", "control", false),
@@ -469,8 +456,7 @@ const kErrorRegistry = <ErrorDescriptor>[
   ErrorDescriptor(0x0203, "CAPABILITY_METHOD_UNSUPPORTED", "capability", false),
   ErrorDescriptor(0x0204, "CAPABILITY_EVENT_UNSUPPORTED", "capability", false),
   ErrorDescriptor(0x0205, "CAPABILITY_STREAM_UNSUPPORTED", "capability", false),
-  ErrorDescriptor(
-      0x0206, "CAPABILITY_ENCODING_UNSUPPORTED", "capability", false),
+  ErrorDescriptor(0x0206, "CAPABILITY_ENCODING_UNSUPPORTED", "capability", false),
   ErrorDescriptor(0x0207, "CAPABILITY_NEGOTIATION_FAILED", "capability", false),
   ErrorDescriptor(0x0208, "CAPABILITY_LIMIT_EXCEEDED", "capability", false),
   ErrorDescriptor(0x0401, "FW_IMAGE_INVALID", "firmware", false),
@@ -554,15 +540,11 @@ const kErrorRegistry = <ErrorDescriptor>[
 ];
 
 const kCapabilityRegistry = <CapabilityDescriptor>[
-  CapabilityDescriptor(
-      0x0001, "protocol.payload.control", "protocol", "bool", ""),
+  CapabilityDescriptor(0x0001, "protocol.payload.control", "protocol", "bool", ""),
   CapabilityDescriptor(0x0002, "protocol.payload.rpc", "protocol", "bool", ""),
-  CapabilityDescriptor(
-      0x0003, "protocol.payload.stream", "protocol", "bool", ""),
-  CapabilityDescriptor(
-      0x0009, "protocol.reservedRequestIdWidth", "protocol", "reserved", ""),
-  CapabilityDescriptor(
-      0x0901, "audio.algorithm", "audio", "object", "AudioAlgorithmCapability")
+  CapabilityDescriptor(0x0003, "protocol.payload.stream", "protocol", "bool", ""),
+  CapabilityDescriptor(0x0009, "protocol.reservedRequestIdWidth", "protocol", "reserved", ""),
+  CapabilityDescriptor(0x0901, "audio.algorithm", "audio", "object", "AudioAlgorithmCapability")
 ];
 
 class RegistryLookup {
@@ -651,6 +633,8 @@ class MethodRegistry {
 
   List<MethodRegistryEntry> entries() {
     final ids = _idToName.keys.toList()..sort();
-    return [for (final id in ids) MethodRegistryEntry(id, _idToName[id]!)];
+    return [
+      for (final id in ids) MethodRegistryEntry(id, _idToName[id]!)
+    ];
   }
 }

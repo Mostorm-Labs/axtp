@@ -22,6 +22,7 @@ AXTP 的核心约定是：业务方案先进入草案，评审采纳后写入 YA
 | 查当前可实现协议 | [docs/generated/protocol.md](docs/generated/protocol.md) 和 [docs/generated/protocol.json](docs/generated/protocol.json) |
 | 新增或修改业务协议 | [docs/protocol/README.md](docs/protocol/README.md) -> 对应 `docs/dev/skills/**` |
 | 运行 Generator 或 CLI/SDK/runtime | [docs/guides/how-to-use.md](docs/guides/how-to-use.md) |
+| 查看 Spec 发布与 runtime 依赖规则 | [docs/release/README.md](docs/release/README.md) |
 | C++ runtime/SDK 接入 | [docs/dev/AXTP_CPP_RUNTIME_PATTERNS.md](docs/dev/AXTP_CPP_RUNTIME_PATTERNS.md)、[docs/dev/AXTP_CORE_API_DESIGN.md](docs/dev/AXTP_CORE_API_DESIGN.md) 和 [docs/dev/AXTP_SDK_API_DESIGN.md](docs/dev/AXTP_SDK_API_DESIGN.md) |
 | Flutter runtime 接入 | [docs/dev/AXTP_FLUTTER_RUNTIME_PATTERNS.md](docs/dev/AXTP_FLUTTER_RUNTIME_PATTERNS.md) 和 [runtimes/flutter/README.md](runtimes/flutter/README.md) |
 | 研发启动会材料 | [docs/dev/AXTP_RD_KICKOFF_GUIDE.md](docs/dev/AXTP_RD_KICKOFF_GUIDE.md) |
@@ -44,6 +45,18 @@ AXTP 的核心约定是：业务方案先进入草案，评审采纳后写入 YA
 | `runtimes/flutter/` | Flutter/Dart runtime、dynamic client、mock transport 和 generated registry | 部分 |
 
 `docs/protocol/` 和根目录 `protocol/` 名字相近，但角色不同：前者是草案目录，后者当前只包含生成后的 `protocol/axtp.protocol.yaml`。
+
+## Versioning
+
+AXTP Spec is versioned by Git tags using:
+
+```text
+spec/vMAJOR.MINOR.PATCH
+```
+
+AXTP Spec versions and runtime package versions are separate. Runtime implementations should declare which AXTP Spec version they implement using `AXTP_SPEC.lock.yaml` or package metadata.
+
+Do not depend on the `main` branch for reproducible runtime builds. Use a released `spec/vX.Y.Z` tag or an explicit commit. See [docs/release/README.md](docs/release/README.md) for English and Chinese release docs.
 
 ## Protocol Model
 
