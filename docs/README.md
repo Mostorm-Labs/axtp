@@ -14,6 +14,7 @@ contracts. Current implementation facts come from YAML and generated outputs.
 |---|---|
 | Understand AXTP | `specs/README.md` -> `specs/1-core/01-Overview.md` |
 | Check the current contract | `generated/protocol.md` or `generated/protocol.json` |
+| Quick runtime integration | `guides/quickstart.md` -> `generated/protocol.md` -> `conformance/README.md` |
 | Start from a product requirement | `business/README.md` -> `business/<requirement>.md` |
 | Plan an interaction flow | `business/README.md` -> `dev/skills/10-plan-protocol-flow/SKILL.md` -> `flows/README.md` |
 | Draft or review protocol changes | `protocol/README.md` -> `protocol/<domain>/<domain.feature>.md` -> `dev/skills/**` |

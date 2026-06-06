@@ -96,7 +96,7 @@ Protocol Definition 与 Core Specs 的职责边界如下：
 | STREAM Header / resume | `1-core/07` |
 | 旧协议兼容映射 | `4-tooling/03` 与 `registry/legacy/legacy_mapping.yaml` |
 | 业务协议方案草案 | `docs/protocol/<domain>/<domain.feature>.md` |
-| 完整 Capability Model | `docs/architecture/AXTP-Capability-Model-v2.md` |
+| 完整 Capability Model | 不作为当前 v1 主库输入；如需重启，先进入 `docs/protocol/` RFC |
 | method/event/error/type/profile entry 元模型 | Registry/Profile specs |
 | 具体业务 method/event/type/error/profile | `registry/` 与 `registry/domains/` YAML |
 

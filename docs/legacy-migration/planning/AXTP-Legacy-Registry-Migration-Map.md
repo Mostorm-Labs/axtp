@@ -13,7 +13,7 @@
 | Affects Hello / Identify / RPC | `05` |
 | Affects STREAM header / resume | `06` |
 | Concrete business method/event/type | `registry/**/*.yaml`, `registry/domains/**/*.yaml`, or `docs/source/AXTP-Protocol-Full-Reference.md` |
-| Complete Capability Model | `docs/source/AXTP-Capability-Model-v2.md` |
+| Complete Capability Model | Not carried forward as a current v1 input; restart through `docs/protocol/` RFC if needed |
 | Registry entry meta model | `Registry/Capability Types specs` meta specs |
 | Legacy compatibility reference | `docs/source/AXTP-Legacy-Compatibility-Reference.md` |
 
@@ -51,7 +51,7 @@
 | Source | Disposition |
 |---|---|
 | v1 `capability.supportedMethods` | `12` and Source YAML |
-| Complete capability tree and query methods | `docs/source/AXTP-Capability-Model-v2.md` |
+| Complete capability tree and query methods | Not carried forward as a current v1 input; restart through `docs/protocol/` RFC if needed |
 | Business capability registries | Protocol source only; not v1 Core |
 | MVP payload/frame/control/RPC/stream decisions | Migrated to `02/03/04/05/06` |
 | MVP method/event/error/profile facts | `registry/**/*.yaml` and `registry/domains/**/*.yaml` |
