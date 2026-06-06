@@ -62,8 +62,8 @@
 
 | Need | Coverage state | AXTP protocol | Evidence | Next action |
 |---|---|---|---|---|
-| 上位机与 NA20 建立 USB HID 会话 | Adopted/generated core | `AXTP-USB-HID`, `PayloadType = RPC/STREAM` | `docs/generated/protocol.md`, `docs/specs/06-AXTP-Stream-Spec.md` | 可按 AXTP core 实现。 |
-| 通过 USB HID 承载连续音视频数据 | Adopted/generated core | STREAM 16B header: `streamId`, `seqId`, `cursor` | `docs/generated/protocol.md`, `docs/specs/06-AXTP-Stream-Spec.md` | 可作为数据面基础。 |
+| 上位机与 NA20 建立 USB HID 会话 | Adopted/generated core | `AXTP-USB-HID`, `PayloadType = RPC/STREAM` | `docs/generated/protocol.md`, `docs/specs/1-core/07-Stream-Data-Plane.md` | 可按 AXTP core 实现。 |
+| 通过 USB HID 承载连续音视频数据 | Adopted/generated core | STREAM 16B header: `streamId`, `seqId`, `cursor` | `docs/generated/protocol.md`, `docs/specs/1-core/07-Stream-Data-Plane.md` | 可作为数据面基础。 |
 | 查询 NA20 是否有投屏输入源和媒体桥能力 | Drafted only | `video.stream` source `wireless_cast`, optional `video.*StreamSource` proxy control | `docs/business/device-streaming.md`, `docs/protocol/video/video.stream.md` | 不新增独立 `cast.streaming`；通过 video/audio state 聚合投屏会话。 |
 | 打开 H.264 视频到上位机 | Drafted only | `video.getStreamCapabilities`, `video.openStream`, `video.closeStream`, `video.streamStateChanged` | `docs/protocol/video/video.stream.md` | 转 Stage 20 采纳 `video.stream` 或按本场景补齐 source/sync 字段。 |
 | 视频数据分片、帧边界、关键帧和丢包重同步 | Drafted only | `VideoChunkHeaderV1`, `video.requestKeyFrame`, `media.video` profile | `docs/protocol/video/video.stream.md` | H.264 已确认 Annex-B，SPS/PPS 随关键帧；采纳时固化。 |
@@ -165,8 +165,8 @@ sequenceDiagram
 | Method/Event/Profile | Purpose in this flow | Source |
 |---|---|---|
 | `AXTP-USB-HID` | 上位机通过 USB HID 与 NA20 建立 AXTP Standard Framed 会话。 | `docs/generated/protocol.md` |
-| `PayloadType = STREAM` | 承载视频和音频连续数据。 | `docs/generated/protocol.md`, `docs/specs/06-AXTP-Stream-Spec.md` |
-| STREAM 16B header | 每个媒体 chunk 使用 `streamId`, `seqId`, `cursor`。 | `docs/specs/06-AXTP-Stream-Spec.md` |
+| `PayloadType = STREAM` | 承载视频和音频连续数据。 | `docs/generated/protocol.md`, `docs/specs/1-core/07-Stream-Data-Plane.md` |
+| STREAM 16B header | 每个媒体 chunk 使用 `streamId`, `seqId`, `cursor`。 | `docs/specs/1-core/07-Stream-Data-Plane.md` |
 | STREAM error codes | `STREAM_NOT_FOUND`, `STREAM_TIMEOUT`, `STREAM_PAYLOAD_INVALID`, `STREAM_CHUNK_MISSING`, `STREAM_CLOSED` 等错误可复用。 | `docs/generated/protocol.md` |
 
 ### 7.2 Draft Dependencies

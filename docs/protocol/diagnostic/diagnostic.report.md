@@ -14,7 +14,7 @@ Capability ID：`diagnostic.report`
 
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
-| `[REVIEW-DRAFT]` | `diagnostic.report` capability | 本文是按 08 taxonomy 创建的单 feature 治理草案。 | 人工确认业务语义、schema 和 legacyRefs 后进入 `registry/domains/diagnostic/domain.yaml`。 |
+| `[REVIEW-DRAFT]` | `diagnostic.report` capability | 本文是按 Naming and Taxonomy spec 创建的单 feature 治理草案。 | 人工确认业务语义、schema 和 legacyRefs 后进入 `registry/domains/diagnostic/domain.yaml`。 |
 | `[REVIEW-ASK]` | legacy 映射 | legacy 映射需从 `docs/legacy-migration/classification/` 中按 `target_capability` 筛选后人工确认。 | 落 registry 前补充确定的旧协议命令、字段路径和覆盖状态。 |
 
 ---
@@ -52,7 +52,7 @@ Capability ID：`diagnostic.report`
 | method | `diagnostic.getReportExportState` | 查询 `diagnostic.report` 导出状态。 |
 | event | `diagnostic.reportExportStateChanged` | `diagnostic.report` 导出状态变化。 |
 
-候选名称用于评审和 registry 草案输入。采纳时必须按 08 的配置型、状态型、动作型、流型或导出型模板复核。
+候选名称用于评审和 registry 草案输入。采纳时必须按 Naming and Taxonomy spec 的配置型、状态型、动作型、流型或导出型模板复核。
 
 ---
 

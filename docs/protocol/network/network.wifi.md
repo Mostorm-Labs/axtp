@@ -15,7 +15,7 @@ Capability ID：`network.wifi`
 | 标记 | 对象 | 结论 | 后续动作 |
 |---|---|---|---|
 | `[REVIEW-DRAFT]` | `network.wifi` capability | 本文将 v0.2 的 Wi-Fi 完整模型收敛为配对和基础 STA 控制所需的角色层协议。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-OK]` | domain.feature 粒度 | Wi-Fi STA 是 `network` 域下合适的能力块；profile、config、state、scan 不单独提升为 feature。 | 采纳前按 08 再次复核 method/event 命名。 |
+| `[REVIEW-OK]` | domain.feature 粒度 | Wi-Fi STA 是 `network` 域下合适的能力块；profile、config、state、scan 不单独提升为 feature。 | 采纳前按 Naming and Taxonomy spec 再次复核 method/event 命名。 |
 | `[REVIEW-DRAFT]` | 事件分层 | `network.wifiStateChanged` 只表达 Wi-Fi STA 扫描、认证、关联和断开；接口链路归 `network.interface`，IP/DHCP 归 `network.ip`。 | 采纳前与 interface/ip/ap 草案一起确认。 |
 | `[REVIEW-ASK]` | 配对写入语义 | 当前尚未确认 NT10 写入 profile 后是否默认持久化、是否立即连接、是否自动重连。 | 采纳前确认 `persist`、`autoConnect` 和 `connectAfterSave` 策略。 |
 | `[REVIEW-ASK]` | 凭据形态 | 当前尚未确认 NT10 接收 NA20 AP 凭据时使用明文 passphrase、pairing token 还是 opaque reference。 | 采纳前确认 `NetworkCredential` 语义。 |
@@ -23,7 +23,7 @@ Capability ID：`network.wifi`
 
 ## 1. 文档定位
 
-本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/08-13`，涉及 profile/MVP 时同步确认 `docs/specs/14`，再写入 `registry/domains/network/domain.yaml`，并由 `generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`，涉及 profile/MVP 时同步确认 `docs/specs/2-registry/05-Profiles-Registry.md`，再写入 `registry/domains/network/domain.yaml`，并由 `generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
 
 当前 generated 协议没有 adopted `network.wifi` 方法、事件或 schema；本文所有 methodId、eventId、errorCode、fieldId 均为 `TBD after adoption`。
 

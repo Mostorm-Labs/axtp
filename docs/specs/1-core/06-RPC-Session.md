@@ -1,4 +1,4 @@
-# 05《AXTP RPC Session Spec》
+# 1-core/06《AXTP RPC Session Spec》
 
 > Status: AXTP v1 Core Freeze Candidate
 > Spec Version: 1.0.0-rc1
@@ -8,8 +8,8 @@
 版本：v1.0.0-rc1
 状态：AXTP v1 Core Freeze Candidate
 适用范围：RPC Payload 结构、op+d Envelope、sid、JSON/BINARY 编码、MethodId/EventId、Hello/Identify/Request/Response/Event/Batch
-前置文档：01《AXTP Protocol Framework》、02《AXTP Frame and Payload Spec》、04《AXTP Control Session Spec》
-后续文档：06《AXTP Stream Spec》、Registry 文档
+前置文档：`docs/specs/1-core/02-Protocol-Framework.md`、`docs/specs/1-core/03-Frame-and-Payload.md`、`docs/specs/1-core/05-Control-Session.md`
+后续文档：`docs/specs/1-core/07-Stream-Data-Plane.md`、Registry 文档
 
 ---
 
@@ -534,7 +534,7 @@ Application 层（RPC，所有模式）：
     → Request / Event / Reidentify
 ```
 
-Hello 由 AXTP Logical Server 发送——即拥有并暴露 methods/events/streams 的一端。在本地设备场景中，Physical Server 与 Logical Server 是同一端（设备）。在云端反连场景中，设备是 Physical Client 但仍是 Logical Server，因此仍由设备发 Hello（详见 03《Transport Profiles》§3.0）。
+Hello 由 AXTP Logical Server 发送——即拥有并暴露 methods/events/streams 的一端。在本地设备场景中，Physical Server 与 Logical Server 是同一端（设备）。在云端反连场景中，设备是 Physical Client 但仍是 Logical Server，因此仍由设备发 Hello（详见 `docs/specs/1-core/04-Transport-Profiles.md`§3.0）。
 
 | OBS-WebSocket | AXTP 对应 | 说明 |
 | --- | --- | --- |
@@ -573,7 +573,7 @@ Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [Bitmask: N B (Little-Endian)]
 
 | 字段 | 长度 | 说明 |
 | --- | --- | --- |
-| `DomainId` | 1B | 事件所属域 ID（与 EventId 高字节对齐，见 11《AXTP Events Registry Spec》） |
+| `DomainId` | 1B | 事件所属域 ID（与 EventId 高字节对齐，见 `docs/specs/2-registry/03-Events-Registry.md`） |
 | `MaskLen` | 1B | Bitmask 字节数 N（1-32），高水位截断：只发到最高有效字节 |
 | `Bitmask` | N B | 该域的事件订阅掩码，Little-Endian，Bit 0 对应 bitOffset=0 |
 
@@ -661,7 +661,7 @@ MessagePack 和 CBOR 保留为后续扩展，不属于 AXTP v1 Core 必选实现
 
 ## 19. Binary RPC 编码
 
-Binary 模式面向 Standard Framed 设备，使用统一 11B 固定二进制头承载 op+d 语义。AXTP v1 Core 不再区分 RPC Standard/Compact Payload；Compact 低带宽降级见 18《AXTP Low-Bandwidth Degradation》。
+Binary 模式面向 Standard Framed 设备，使用统一 11B 固定二进制头承载 op+d 语义。AXTP v1 Core 不再区分 RPC Standard/Compact Payload；Compact 低带宽降级见 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`。
 
 ### 19.1 Binary Payload（11B 固定头）
 
@@ -729,9 +729,9 @@ Binary RESPONSE 中 `statusCode` 与 JSON `status.code` 对应，不再维护独
 
 ## 20. TLV Body 编码
 
-TLV 基本结构：`type(1B) + length(1B) + value(N)`，扩展长度格式见 16《AXTP TLV Schema Encoding》。
+TLV 基本结构：`type(1B) + length(1B) + value(N)`，扩展长度格式见 `docs/specs/3-codec/03-TLV-Encoding.md`。
 
-TLV 字段 ID 由 Method Registry 的 schema 定义，不在 RPC 协议中硬编码。fieldId 范围分配见 17《AXTP Schema Field Numbering》。
+TLV 字段 ID 由 Method Registry 的 schema 定义，不在 RPC 协议中硬编码。fieldId 范围分配见 `docs/specs/3-codec/04-Schema-Numbering.md`。
 
 示例（简单 uint8 字段）：
 
@@ -1015,12 +1015,12 @@ MessagePack / CBOR
 
 | 文档 | 关系 |
 | --- | --- |
-| 02《AXTP Frame and Payload Spec》 | Frame Header、PayloadType、Fragment、CRC |
-| 04《AXTP Control Session Spec》 | CONTROL 建立 Session，不承载业务方法 |
-| 06《AXTP Stream Spec》 | STREAM 数据面，RPC 只负责控制面 |
-| 15《AXTP Type System》 | wire 类型定义（uint8/string/bitmap/array/object） |
-| 16《AXTP TLV Schema Encoding》 | body 字段 TLV 编码格式、扩展长度、canonical encoding |
-| 17《AXTP Schema Field Numbering》 | schema-local fieldId 分配、废弃规则 |
+| `docs/specs/1-core/03-Frame-and-Payload.md` | Frame Header、PayloadType、Fragment、CRC |
+| `docs/specs/1-core/05-Control-Session.md` | CONTROL 建立 Session，不承载业务方法 |
+| `docs/specs/1-core/07-Stream-Data-Plane.md` | STREAM 数据面，RPC 只负责控制面 |
+| `docs/specs/3-codec/01-Type-System.md` | wire 类型定义（uint8/string/bitmap/array/object） |
+| `docs/specs/3-codec/03-TLV-Encoding.md` | body 字段 TLV 编码格式、扩展长度、canonical encoding |
+| `docs/specs/3-codec/04-Schema-Numbering.md` | schema-local fieldId 分配、废弃规则 |
 | MethodId/EventId/ErrorCode/Capability 注册表 | 业务语义单一事实源 |
 | 老协议适配规范 | CmdValue/legacy payload 到 RPC 的映射 |
 | Generator v1 实现规范 | 从 registry 生成 C++ 和 Markdown |

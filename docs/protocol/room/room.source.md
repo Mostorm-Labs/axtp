@@ -14,7 +14,7 @@ Capability ID：`room.source`
 
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
-| `[REVIEW-DRAFT]` | `room.source` capability | 本文是按 08 taxonomy 创建的单 feature 治理草案。 | 人工确认业务语义、schema 和 legacyRefs 后进入 `registry/domains/room/domain.yaml`。 |
+| `[REVIEW-DRAFT]` | `room.source` capability | 本文是按 Naming and Taxonomy spec 创建的单 feature 治理草案。 | 人工确认业务语义、schema 和 legacyRefs 后进入 `registry/domains/room/domain.yaml`。 |
 | `[REVIEW-ASK]` | legacy 映射 | legacy 映射需从 `docs/legacy-migration/classification/` 中按 `target_capability` 筛选后人工确认。 | 落 registry 前补充确定的旧协议命令、字段路径和覆盖状态。 |
 
 ---
@@ -53,7 +53,7 @@ Capability ID：`room.source`
 | method | `room.resetSourceConfig` | 恢复 `room.source` 默认配置。 |
 | event | `room.sourceConfigChanged` | `room.source` 配置变化。 |
 
-候选名称用于评审和 registry 草案输入。采纳时必须按 08 的配置型、状态型、动作型、流型或导出型模板复核。
+候选名称用于评审和 registry 草案输入。采纳时必须按 Naming and Taxonomy spec 的配置型、状态型、动作型、流型或导出型模板复核。
 
 ---
 

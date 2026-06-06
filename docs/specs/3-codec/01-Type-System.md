@@ -1,4 +1,4 @@
-# 15《AXTP Type System 基础类型规范》
+# 3-codec/01《AXTP Type System 基础类型规范》
 
 版本：v1.0  
 状态：MVP 实现规范  

@@ -14,7 +14,7 @@ Capability ID：`device.identity`
 
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
-| `[REVIEW-DRAFT]` | `device.identity` capability | 本文是按 08 taxonomy 创建的单 feature 治理草案。 | 人工确认业务语义、schema 和 legacyRefs 后进入 `registry/domains/device/domain.yaml`。 |
+| `[REVIEW-DRAFT]` | `device.identity` capability | 本文是按 Naming and Taxonomy spec 创建的单 feature 治理草案。 | 人工确认业务语义、schema 和 legacyRefs 后进入 `registry/domains/device/domain.yaml`。 |
 | `[REVIEW-ASK]` | legacy 映射 | legacy 映射需从 `docs/legacy-migration/classification/` 中按 `target_capability` 筛选后人工确认。 | 落 registry 前补充确定的旧协议命令、字段路径和覆盖状态。 |
 
 ---
@@ -53,7 +53,7 @@ Capability ID：`device.identity`
 | method | `device.resetIdentityConfig` | 恢复 `device.identity` 默认配置。 |
 | event | `device.identityConfigChanged` | `device.identity` 配置变化。 |
 
-候选名称用于评审和 registry 草案输入。采纳时必须按 08 的配置型、状态型、动作型、流型或导出型模板复核。
+候选名称用于评审和 registry 草案输入。采纳时必须按 Naming and Taxonomy spec 的配置型、状态型、动作型、流型或导出型模板复核。
 
 ---
 

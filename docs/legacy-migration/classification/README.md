@@ -1,6 +1,6 @@
 # Legacy Protocol Domain-Feature Classification
 
-本目录是 AXDP / VM33 / Rooms / Signage legacy intake 的逐条分类结果，不是 AXTP registry 事实源。分类依据为 `docs/specs/08-AXTP-Capability-Naming-and-Feature-Taxonomy.md`、`docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md`，并对照 `docs/protocol` 下已成型的业务协议文档。
+本目录是 AXDP / VM33 / Rooms / Signage legacy intake 的逐条分类结果，不是 AXTP registry 事实源。分类依据为 `docs/specs/2-registry/01-Naming-and-Taxonomy.md`、`docs/specs/4-tooling/01-YAML-Mapping.md`，并对照 `docs/protocol` 下已成型的业务协议文档。
 
 生成脚本：`tooling/legacy_classification/classify_legacy_protocols.py`
 
@@ -9,7 +9,7 @@ CSV 明细：`docs/legacy-migration/classification/legacy-protocol-classificatio
 ## 字段说明
 
 - `legacy_command_name` / `legacy_class` / `legacy_method` / `legacy_event` / `legacy_config_name` 分开展示旧协议原始字段。
-- `target_domain` / `target_feature` / `target_capability` 表示按 08 taxonomy 归类后的能力块。
+- `target_domain` / `target_feature` / `target_capability` 表示按 Naming and Taxonomy spec 归类后的能力块。
 - `target_axtp_method` / `target_axtp_event` 表示建议落到的 AXTP method/event；没有正式协议文档的条目会标明 taxonomy/spec candidate。
 - `target_protocol_doc` 优先指向 `docs/protocol` 中已有设计文档；为空表示该 domain.feature 还需要补业务协议文档或 domain YAML。
 

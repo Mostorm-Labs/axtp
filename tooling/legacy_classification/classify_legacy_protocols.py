@@ -22,8 +22,8 @@ PROTOCOL_DIR = ROOT / "docs" / "protocol"
 SPECS_DIR = ROOT / "docs" / "specs"
 OUT_DIR = ROOT / "docs" / "legacy-migration" / "classification"
 
-METHOD_SPEC = "docs/specs/10-AXTP-Methods-Registry-Spec.md"
-EVENT_SPEC = "docs/specs/11-AXTP-Events-Registry-Spec.md"
+METHOD_SPEC = "docs/specs/2-registry/02-Methods-Registry.md"
+EVENT_SPEC = "docs/specs/2-registry/03-Events-Registry.md"
 
 
 def source_rel(path: Path) -> str:
@@ -155,7 +155,7 @@ def load_symbol_sources() -> tuple[dict[str, set[str]], set[str], set[str]]:
         for token in event_pat.findall(text):
             events.add(token)
 
-    for spec, store in [(SPECS_DIR / "10-AXTP-Methods-Registry-Spec.md", methods), (SPECS_DIR / "11-AXTP-Events-Registry-Spec.md", events)]:
+    for spec, store in [(SPECS_DIR / "2-registry/02-Methods-Registry.md", methods), (SPECS_DIR / "2-registry/03-Events-Registry.md", events)]:
         if not spec.exists():
             continue
         rel = source_rel(spec)
@@ -163,9 +163,9 @@ def load_symbol_sources() -> tuple[dict[str, set[str]], set[str], set[str]]:
         for token in token_pat.findall(text):
             token_sources[token].add(rel)
         for token in token_pat.findall(text):
-            if spec.name.startswith("10-"):
+            if spec.name == "02-Methods-Registry.md":
                 store.add(token)
-            elif spec.name.startswith("11-"):
+            elif spec.name == "03-Events-Registry.md":
                 store.add(token)
     return token_sources, methods, events
 
@@ -201,7 +201,7 @@ def classify(raw_name: str, context: str = "", source_protocol: str = "") -> tup
             "adapter_only",
             "needs_split",
             "medium",
-            "老协议为泛 Config JSON；08/09 要求按具体 payload 再拆 domain.feature。",
+            "老协议为泛 Config JSON；Naming/YAML mapping specs 要求按具体 payload 再拆 domain.feature。",
             "补充 JSON schema 或 Config Name 后再拆成正式能力。",
         )
     if ":" not in name and re.match(r"^config\.(set|setmulti|multiset|get|getmulti|multiget|restore|restoremulti|subscribe|unsubscribe)\b", name.lower()):
@@ -536,7 +536,7 @@ def target_basis(method: str, event: str, protocol_doc: str, capability: str) ->
         return f"matched event registry ({EVENT_SPEC})"
     if capability.startswith("vendor."):
         return "adapter-only / needs split before registry"
-    return "08 taxonomy candidate; docs/protocol document not created yet"
+    return "Naming and Taxonomy spec candidate; docs/protocol document not created yet"
 
 
 def contains_any(blob: str, *parts: str) -> bool:
@@ -1442,7 +1442,7 @@ def write_markdown(entries: list[Entry], csv_path: Path) -> Path:
 
     text = f"""# Legacy Protocol Domain-Feature Classification
 
-本目录是 AXDP / VM33 / Rooms / Signage legacy intake 的逐条分类结果，不是 AXTP registry 事实源。分类依据为 `docs/specs/08-AXTP-Capability-Naming-and-Feature-Taxonomy.md`、`docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md`，并对照 `docs/protocol` 下已成型的业务协议文档。
+本目录是 AXDP / VM33 / Rooms / Signage legacy intake 的逐条分类结果，不是 AXTP registry 事实源。分类依据为 `docs/specs/2-registry/01-Naming-and-Taxonomy.md`、`docs/specs/4-tooling/01-YAML-Mapping.md`，并对照 `docs/protocol` 下已成型的业务协议文档。
 
 生成脚本：`tooling/legacy_classification/classify_legacy_protocols.py`
 
@@ -1451,7 +1451,7 @@ CSV 明细：`{csv_path.relative_to(ROOT)}`
 ## 字段说明
 
 - `legacy_command_name` / `legacy_class` / `legacy_method` / `legacy_event` / `legacy_config_name` 分开展示旧协议原始字段。
-- `target_domain` / `target_feature` / `target_capability` 表示按 08 taxonomy 归类后的能力块。
+- `target_domain` / `target_feature` / `target_capability` 表示按 Naming and Taxonomy spec 归类后的能力块。
 - `target_axtp_method` / `target_axtp_event` 表示建议落到的 AXTP method/event；没有正式协议文档的条目会标明 taxonomy/spec candidate。
 - `target_protocol_doc` 优先指向 `docs/protocol` 中已有设计文档；为空表示该 domain.feature 还需要补业务协议文档或 domain YAML。
 

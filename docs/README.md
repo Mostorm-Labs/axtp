@@ -12,7 +12,7 @@ contracts. Current implementation facts come from YAML and generated outputs.
 
 | Goal | Reading Order |
 |---|---|
-| Understand AXTP | `specs/00-AXTP-Overview.md` -> `specs/README.md` |
+| Understand AXTP | `specs/README.md` -> `specs/1-core/01-Overview.md` |
 | Check the current contract | `generated/protocol.md` or `generated/protocol.json` |
 | Start from a product requirement | `business/README.md` -> `business/<requirement>.md` |
 | Plan an interaction flow | `business/README.md` -> `dev/skills/10-plan-protocol-flow/SKILL.md` -> `flows/README.md` |
@@ -50,7 +50,8 @@ protocol/axtp.protocol.yaml              Generated Protocol IR
 docs/generated/**                        Generated human/machine reference
 ```
 
-The active specs are numbered `00-19`. Specs `08-14` govern taxonomy, mapping,
-registry, schema/capability, profile, and MVP rules. If a spec table conflicts
-with YAML or generated output, fix the source rule and regenerate instead of
-maintaining a second active fact source.
+The active specs are grouped under `1-core/` through `4-tooling/`. Registry,
+Profile, and Capability Types specs govern taxonomy, mapping, registry,
+schema/capability, profile, and MVP rules. If a spec table conflicts with YAML
+or generated output, fix the source rule and regenerate instead of maintaining
+a second active fact source.

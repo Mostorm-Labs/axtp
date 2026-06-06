@@ -5,12 +5,12 @@
 
 ## 1. Purpose
 
-This file collects legacy compatibility material that should not live in v1 Core specs or 08-13 meta specs.
+This file collects legacy compatibility material that should not live in v1 Core specs or Registry/Capability Types specs meta specs.
 
 Normative migration rules live in:
 
 ```text
-docs/specs/07-AXTP-Compatibility-and-Versioning.md
+docs/specs/4-tooling/03-Versioning.md
 ```
 
 Original legacy registry documents are retained at:

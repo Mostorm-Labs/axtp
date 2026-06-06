@@ -1,4 +1,4 @@
-# 14《AXTP Profiles Registry Spec》
+# 2-registry/05《AXTP Profiles Registry Spec》
 
 > Status: AXTP v1 Protocol Definition Meta Spec
 > Spec Version: 1.0.0-rc1
@@ -87,9 +87,9 @@ profiles:
 3. Profile 使用 `frameProfile` 时，必须与每个 `transportProfiles[].frameProfile` 一致。
 4. Profile 使用 `frameProfiles` 时，必须覆盖每个 `transportProfiles[].frameProfile`，且不得引入未被 transportProfiles 使用的 Frame Profile。
 5. AXTP v1 不允许在同一 session 内切换 Frame Profile。
-6. 当前 v1 Core profile 不得引用 `COMPACT_FRAME` 或 `AXTP-HID-64`；低带宽降级 profile 必须进入 18《AXTP Low-Bandwidth Degradation》。
+6. 当前 v1 Core profile 不得引用 `COMPACT_FRAME` 或 `AXTP-HID-64`；低带宽降级 profile 必须进入 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`。
 7. WebSocket Unframed JSON profile 不得要求 STREAM 或 CONTROL。
-8. Profile 的具体内容进入 `registry/` 或 `registry/domains/` YAML；新增 Profile 不应修改 09-14 registry 元规范。
+8. Profile 的具体内容进入 `registry/` 或 `registry/domains/` YAML；新增 Profile 不应修改 Registry/Profile specs registry 元规范。
 
 ---
 
@@ -122,7 +122,7 @@ Transport Profile（例如 `AXTP-WS-JSON`、`AXTP-WS-CLOUD-REVERSE`）属于 `tr
 
 ## Registry 表格与 YAML 的关系
 
-09-14 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
+Registry/Profile specs 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
 
 如果 Markdown 表格与 YAML/generated 发生冲突，以 YAML/generated 作为实现事实源，并应回修本规范表格；不得维护第二套 active 事实源。
 
@@ -219,7 +219,7 @@ Standard Profile 是 AXTP v1 Core 的正式二进制帧路径，适用于 AXTP-U
 
 #### 4.2 低带宽降级
 
-Compact / HID-64 / BLE / UART 不作为当前 MVP 必选实现，进入 18《AXTP Low-Bandwidth Degradation》。
+Compact / HID-64 / BLE / UART 不作为当前 MVP 必选实现，进入 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`。
 
 ---
 
@@ -351,7 +351,7 @@ Compact / HID-64 / BLE / UART 不作为当前 MVP 必选实现，进入 18《AXT
 
 本节应与 `registry/capability/mvp_profile.yaml` 保持一致；如存在差异，以 YAML/generated 为当前实现事实源，并应回修本表。当前 AXTP-MVP / AXTP-MVP-HID 不强制任何业务 event。
 
-`bitOffset` 为该事件在其 Domain 内的掩码位偏移，用于 `eventMasks` 域级订阅（见 09《AXTP Protocol Definition Mapping Spec》§23）。
+`bitOffset` 为该事件在其 Domain 内的掩码位偏移，用于 `eventMasks` 域级订阅（见 `docs/specs/4-tooling/01-YAML-Mapping.md`§23）。
 
 | eventId | eventName | Domain | domainId | bitOffset | Status | 说明 |
 | ---: | --- | --- | ---: | ---: | --- | --- |
@@ -361,7 +361,7 @@ Compact / HID-64 / BLE / UART 不作为当前 MVP 必选实现，进入 18《AXT
 
 ### 9. MVP ErrorCode Registry
 
-本节应与 `registry/error/error_code.yaml` 及 `registry/domains/<domain>/domain.yaml` 保持一致；如存在差异，以 YAML/generated 为当前实现事实源，并应回修本表。更完整的错误码规划见 12《AXTP Errors Registry Spec》，未进入 YAML 的错误名不得作为当前实现的 wire 合同。
+本节应与 `registry/error/error_code.yaml` 及 `registry/domains/<domain>/domain.yaml` 保持一致；如存在差异，以 YAML/generated 为当前实现事实源，并应回修本表。更完整的错误码规划见 `docs/specs/2-registry/04-Errors-Registry.md`，未进入 YAML 的错误名不得作为当前实现的 wire 合同。
 
 | errorCode | Name | Layer | Retryable | 说明 |
 |---:| --- |---| --- |---|
@@ -394,7 +394,7 @@ Compact / HID-64 / BLE / UART 不作为当前 MVP 必选实现，进入 18《AXT
 
 本节应与 `registry/capability/capability_registry.yaml` 和 `registry/domains/**` 保持一致；如存在差异，以 YAML/generated 为当前实现事实源，并应回修本表。Profile 不使用 `requiredCapabilities` 字段，capability 只作为 registry 事实和业务方法关联。
 
-`bitOffset` 为该 capability 在其 Domain 内的掩码位偏移，用于 `capabilityMasks` 域级响应（见 09《AXTP Protocol Definition Mapping Spec》§23）。
+`bitOffset` 为该 capability 在其 Domain 内的掩码位偏移，用于 `capabilityMasks` 域级响应（见 `docs/specs/4-tooling/01-YAML-Mapping.md`§23）。
 
 | capabilityId | capabilityName | domainId | bitOffset | Type | Status |
 | ---: | --- | ---: | ---: | --- | --- |

@@ -1,4 +1,4 @@
-# 01《AXTP Protocol Framework》
+# 1-core/02《AXTP Protocol Framework》
 
 > Status: AXTP v1 Core Freeze Candidate
 > Spec Version: 1.0.0-rc1
@@ -8,7 +8,7 @@
 版本：v1.0.0-rc1
 状态：AXTP v1 Core Freeze Candidate
 适用范围：AXTP v1 Core 分层、职责边界、生产路径与文档索引
-后续文档：02《AXTP Frame and Payload Spec》、03《AXTP Transport Profiles》、04《AXTP Control Session Spec》、05《AXTP RPC Session Spec》、06《AXTP Stream Spec》、07《AXTP Compatibility and Versioning》、18《AXTP Low-Bandwidth Degradation》
+后续文档：`docs/specs/1-core/03-Frame-and-Payload.md`、`docs/specs/1-core/04-Transport-Profiles.md`、`docs/specs/1-core/05-Control-Session.md`、`docs/specs/1-core/06-RPC-Session.md`、`docs/specs/1-core/07-Stream-Data-Plane.md`、`docs/specs/4-tooling/03-Versioning.md`、`docs/specs/1-core/08-Low-Bandwidth-Degradation.md`
 
 ---
 
@@ -83,7 +83,7 @@ Transport Profile 决定是否使用 Frame Header。同一个 AXTP Session 内 F
 | AXTP-WS-JSON | none |
 | AXTP-WS-CLOUD-REVERSE | none |
 
-Compact / HID-64 / BLE / UART 迁移到 18《AXTP Low-Bandwidth Degradation》，不作为当前 v1 Core 主线。
+Compact / HID-64 / BLE / UART 迁移到 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`，不作为当前 v1 Core 主线。
 
 ---
 
@@ -97,7 +97,7 @@ AXTP v1 Core 只定义三类顶层 PayloadType：
 | RPC | Hello / Identify / Request / Response / Event 等结构化业务控制面 |
 | STREAM | 固件更新、文件、日志、音视频、传感器等长生命周期数据面 |
 
-具体 wire format 见 02《AXTP Frame and Payload Spec》。
+具体 wire format 见 `docs/specs/1-core/03-Frame-and-Payload.md`。
 
 ---
 
@@ -128,10 +128,10 @@ v1 Core 保留 `capability` 域，但不内置默认业务能力发现 method。
 
 | 文档 | 内容 |
 |---|---|
-| 02《AXTP Frame and Payload Spec》 | Standard Header、PayloadType、CRC、分片 |
-| 03《AXTP Transport Profiles》 | USB HID / TCP / WebSocket JSON / Cloud Reverse 连接形态 |
-| 04《AXTP Control Session Spec》 | OPEN / ACCEPT / READY / ACK / NACK / HEARTBEAT / CLOSE |
-| 05《AXTP RPC Session Spec》 | Hello / Identify / Identified / Binary RPC / methodId / eventId |
-| 06《AXTP Stream Spec》 | 16B STREAM Header、streamId / seq / cursor、resume / retransmit / flow control |
-| 07《AXTP Compatibility and Versioning》 | v1 freeze rules、reserved 规则、ID 不复用、Legacy migration |
-| 18《AXTP Low-Bandwidth Degradation》 | Compact / HID-64 / BLE / UART 降级路径 |
+| `docs/specs/1-core/03-Frame-and-Payload.md` | Standard Header、PayloadType、CRC、分片 |
+| `docs/specs/1-core/04-Transport-Profiles.md` | USB HID / TCP / WebSocket JSON / Cloud Reverse 连接形态 |
+| `docs/specs/1-core/05-Control-Session.md` | OPEN / ACCEPT / READY / ACK / NACK / HEARTBEAT / CLOSE |
+| `docs/specs/1-core/06-RPC-Session.md` | Hello / Identify / Identified / Binary RPC / methodId / eventId |
+| `docs/specs/1-core/07-Stream-Data-Plane.md` | 16B STREAM Header、streamId / seq / cursor、resume / retransmit / flow control |
+| `docs/specs/4-tooling/03-Versioning.md` | v1 freeze rules、reserved 规则、ID 不复用、Legacy migration |
+| `docs/specs/1-core/08-Low-Bandwidth-Degradation.md` | Compact / HID-64 / BLE / UART 降级路径 |

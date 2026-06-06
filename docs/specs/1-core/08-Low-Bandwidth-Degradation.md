@@ -1,4 +1,4 @@
-# 18《AXTP Low-Bandwidth Degradation》
+# 1-core/08《AXTP Low-Bandwidth Degradation》
 
 > Status: AXTP v1 Supplemental Specification
 > Spec Version: 0.2.0

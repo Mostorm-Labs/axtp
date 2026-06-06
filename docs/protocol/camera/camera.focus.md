@@ -140,7 +140,7 @@ video.framing
 | `camera.stopFocus` | candidate | 否 | 停止自动对焦、连续对焦、扫描或手动 jog。 |
 | `camera.getFocusState` | specs draft `0x0707` | 是 | 查询当前对焦状态。 |
 
-说明：`docs/specs/10-AXTP-Methods-Registry-Spec.md` 已列出 `camera.getFocusState` 和 `camera.triggerAutoFocus`。当前 source registry YAML 尚未落地 `camera.*`，因此本文其他方法暂不分配 methodId。
+说明：`docs/specs/2-registry/02-Methods-Registry.md` 已列出 `camera.getFocusState` 和 `camera.triggerAutoFocus`。当前 source registry YAML 尚未落地 `camera.*`，因此本文其他方法暂不分配 methodId。
 
 ### 4.2 事件
 

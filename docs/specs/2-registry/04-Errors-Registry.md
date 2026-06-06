@@ -1,4 +1,4 @@
-# 12《AXTP Errors Registry Spec》
+# 2-registry/04《AXTP Errors Registry Spec》
 
 > Status: AXTP v1 Protocol Definition Meta Spec
 > Spec Version: 1.0.0-rc1
@@ -87,7 +87,7 @@ errors:
 | `0x0300-0x03FF` | system | 系统级错误 |
 | `0x0400-0x04FF` | firmware | 固件更新错误 |
 | `0x0500-0x05FF` | stream | STREAM session、seq、resume、CRC |
-| `0x0600-0x15FF` | business domains | 其他业务域错误，按 09《AXTP Protocol Definition Mapping Spec》§9 的 Domain Registry 高字节分段 |
+| `0x0600-0x15FF` | business domains | 其他业务域错误，按 `docs/specs/4-tooling/01-YAML-Mapping.md`§9 的 Domain Registry 高字节分段 |
 | `0x7000-0x7EFF` | vendor | 厂商扩展 |
 | `0x7F00-0x7FFF` | legacy | Legacy Adapter |
 
@@ -115,13 +115,13 @@ Legacy Adapter 必须把旧状态码映射到 `errors[].code`，映射表作为 
 3. stable errorCode 不得复用。
 4. reserved code 不得用于新错误。
 5. deprecated error 仍应生成 enum，便于旧客户端兼容。
-6. 新增错误通常不应修改 09-14 registry 规范表，只修改 `registry/` 或 `registry/domains/` YAML。
+6. 新增错误通常不应修改 Registry/Profile specs registry 规范表，只修改 `registry/` 或 `registry/domains/` YAML。
 
 
 
 ## Registry 表格与 YAML 的关系
 
-09-14 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
+Registry/Profile specs 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
 
 如果 Markdown 表格与 YAML/generated 发生冲突，以 YAML/generated 作为实现事实源，并应回修本规范表格；不得维护第二套 active 事实源。
 

@@ -25,25 +25,25 @@ Work from the repository root containing `docs/specs`, `docs/protocol`, and `reg
 
 ```text
 docs/protocol/README.md
-docs/specs/08-AXTP-Capability-Naming-and-Feature-Taxonomy.md
-docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md
-docs/specs/10-AXTP-Methods-Registry-Spec.md
-docs/specs/11-AXTP-Events-Registry-Spec.md
-docs/specs/12-AXTP-Errors-Registry-Spec.md
-docs/specs/13-AXTP-Types-and-Capability-Spec.md
-docs/specs/14-AXTP-Profiles-Registry-Spec.md
-docs/specs/19-AXTP-Generator-v1实现规范.md
+docs/specs/2-registry/01-Naming-and-Taxonomy.md
+docs/specs/4-tooling/01-YAML-Mapping.md
+docs/specs/2-registry/02-Methods-Registry.md
+docs/specs/2-registry/03-Events-Registry.md
+docs/specs/2-registry/04-Errors-Registry.md
+docs/specs/3-codec/02-Capability-Types.md
+docs/specs/2-registry/05-Profiles-Registry.md
+docs/specs/4-tooling/02-Generator-V1.md
 ```
 
 For stream, firmware.update, transport-sensitive, HID media, or low-bandwidth work, also read:
 
 ```text
-docs/specs/02-AXTP-Frame-and-Payload-Spec.md
-docs/specs/03-AXTP-Transport-Profiles.md
-docs/specs/04-AXTP-Control-Session-Spec.md
-docs/specs/05-AXTP-RPC-Session-Spec.md
-docs/specs/06-AXTP-Stream-Spec.md
-docs/specs/18-AXTP-Low-Bandwidth-Degradation.md
+docs/specs/1-core/03-Frame-and-Payload.md
+docs/specs/1-core/04-Transport-Profiles.md
+docs/specs/1-core/05-Control-Session.md
+docs/specs/1-core/06-RPC-Session.md
+docs/specs/1-core/07-Stream-Data-Plane.md
+docs/specs/1-core/08-Low-Bandwidth-Degradation.md
 ```
 
 Search `docs/protocol/**`, `registry/**`, and `registry/domains/**` for the requirement keywords and likely English equivalents.

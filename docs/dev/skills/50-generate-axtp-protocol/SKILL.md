@@ -10,7 +10,7 @@ Stage 50. Run the deterministic AXTP generation stage after `adopt-protocol-draf
 ## Boundaries
 
 - Input is `registry/**/*.yaml` and `registry/domains/**/*.yaml`.
-- Specs 08-14 are governance context, not the machine input for generation.
+- Registry/Profile/Capability Types specs are governance context, not the machine input for generation.
 - Do not infer new protocol facts from `docs/protocol/**` or `docs/specs/**` during generation.
 - Do not hand-edit generated outputs.
 - If validation fails because source YAML or Generator logic is wrong, stop and report the source issue unless the user asked you to fix it.
@@ -20,7 +20,7 @@ Stage 50. Run the deterministic AXTP generation stage after `adopt-protocol-draf
 Read only what is needed:
 
 ```text
-docs/specs/19-AXTP-Generator-v1实现规范.md
+docs/specs/4-tooling/02-Generator-V1.md
 registry/**/*.yaml
 registry/domains/**/*.yaml
 generators/package.json
@@ -29,13 +29,13 @@ generators/package.json
 If validation errors mention wire facts, also read the relevant specs:
 
 ```text
-docs/specs/02-AXTP-Frame-and-Payload-Spec.md
-docs/specs/04-AXTP-Control-Session-Spec.md
-docs/specs/05-AXTP-RPC-Session-Spec.md
-docs/specs/06-AXTP-Stream-Spec.md
-docs/specs/08-AXTP-Capability-Naming-and-Feature-Taxonomy.md
-docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md
-docs/specs/13-AXTP-Types-and-Capability-Spec.md
+docs/specs/1-core/03-Frame-and-Payload.md
+docs/specs/1-core/05-Control-Session.md
+docs/specs/1-core/06-RPC-Session.md
+docs/specs/1-core/07-Stream-Data-Plane.md
+docs/specs/2-registry/01-Naming-and-Taxonomy.md
+docs/specs/4-tooling/01-YAML-Mapping.md
+docs/specs/3-codec/02-Capability-Types.md
 ```
 
 ## Workflow

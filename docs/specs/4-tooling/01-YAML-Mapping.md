@@ -1,4 +1,4 @@
-# 09《AXTP Protocol Definition Mapping Spec》
+# 4-tooling/01《AXTP Protocol Definition Mapping Spec》
 
 > Status: AXTP v1 Protocol Definition Meta Spec
 > Spec Version: 1.0.0-rc1
@@ -12,12 +12,12 @@
 
 ## 0. 速读：Protocol Definition 怎么改
 
-09-14 描述的是 registry 元模型和当前编号规划，真正的实现事实源在 YAML。`docs/protocol/<domain>/<domain.feature>.md` 是协议方案输入和草案评审区；草案确认后，必须反向确认 08-13 的命名、ID、method/event/error/schema/capability 规则，再固化到 YAML。`protocol/axtp.protocol.yaml`、`docs/generated/*` 是生成产物，不得手写。
+Registry/Profile specs 描述的是 registry 元模型和当前编号规划，真正的实现事实源在 YAML。`docs/protocol/<domain>/<domain.feature>.md` 是协议方案输入和草案评审区；草案确认后，必须反向确认 Registry/Capability Types specs 的命名、ID、method/event/error/schema/capability 规则，再固化到 YAML。`protocol/axtp.protocol.yaml`、`docs/generated/*` 是生成产物，不得手写。
 
 ```text
 docs/protocol/<domain>/<domain.feature>.md
         -> protocol draft review / confirmation
-        -> reverse-confirm docs/specs/08-13
+        -> reverse-confirm Registry and Capability Types specs
         -> registry/**/*.yaml
 registry/**/*.yaml
 registry/domains/**/*.yaml
@@ -33,17 +33,17 @@ registry/domains/**/*.yaml
 | 新增普通业务 method/event/type/error/profile | `registry/domains/<domain>/domain.yaml` | 默认路径，避免污染 core registry |
 | 晋升为 Core/MVP 或跨 domain 共享 | 对应 `registry/` 核心 YAML | 迁移后删除 domain 里的重复条目 |
 | 新增或调整旧协议映射 | `registry/legacy/legacy_mapping.yaml` | 长期迁移事实进入机器源 |
-| 调整 wire format | 02 / 04 / 05 / 06 | 不在 registry 文档里重定义 header |
+| 调整 wire format | `1-core/03` / `1-core/05` / `1-core/06` / `1-core/07` | 不在 registry 文档里重定义 header |
 | 修改生成产物 | 运行 Generator | 不手写 `protocol/` 或 `docs/generated/` |
 
-禁止事项：从 `docs/protocol` 直接生成最终协议、跳过 08-13 反向确认、新增业务 PayloadType、把 video/audio/ota/file 放进 Frame Header、同一事实在 core 和 domain YAML 双写、复用 stable ID。
+禁止事项：从 `docs/protocol` 直接生成最终协议、跳过 Registry/Capability Types specs 反向确认、新增业务 PayloadType、把 video/audio/ota/file 放进 Frame Header、同一事实在 core 和 domain YAML 双写、复用 stable ID。
 
 Codex 交互应拆成两个 skill 阶段：
 
 | 阶段 | Skill 职责 | 允许修改 | 输出 |
 |---|---|---|---|
 | 协议草案阶段 | 根据产品/架构师的大白话或文档，遍历 `docs/protocol/<domain>/<domain.feature>.md`，判断是否已有协议可复用、需要优化旧草案，或需要新增 domain.feature 草案 | `docs/protocol/**` 草案与待确认问题 | 可评审的协议草案，带候选 method/event/schema/error/capability/profile 和 `[REVIEW-*]` 标记 |
-| 协议采纳阶段 | 在内部评审确认后，将草案反向确认到 08-13，补齐正式规范表和 registry YAML，再运行 Generator | `docs/specs/08-13`、`registry/**`、`registry/domains/**` | `protocol/axtp.protocol.yaml`、`docs/generated/*`、runtime/tooling 生成物 |
+| 协议采纳阶段 | 在内部评审确认后，将草案反向确认到 Registry/Capability Types specs，补齐正式规范表和 registry YAML，再运行 Generator | `docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`、`registry/**`、`registry/domains/**` | `protocol/axtp.protocol.yaml`、`docs/generated/*`、runtime/tooling 生成物 |
 
 草案阶段必须输出三类结论：已有协议可直接复用、现有草案需要优化、新建 domain.feature 草案。采纳阶段必须只处理已确认事实；带 `[REVIEW-ASK]` 或 `[REVIEW-BLOCKER]` 的内容不得进入 YAML。
 
@@ -53,7 +53,7 @@ Codex 交互应拆成两个 skill 阶段：
 
 ## 1. 文档定位
 
-本文档定义 AXTP Protocol Definition 的元模型和三段式生成链路。08 文档定义 domain-feature 命名治理；09-14 文档在该治理下同时定义 Protocol Definition 元模型与当前正式 registry 规划表。`docs/protocol/<domain>/<domain.feature>.md` 提供业务协议方案输入；方案更新并确认后，必须反向确认 08-13 是否需要同步修订，稳定实现事实再进入 registry YAML。
+本文档定义 AXTP Protocol Definition 的元模型和三段式生成链路。`2-registry/01-Naming-and-Taxonomy.md` 定义 domain-feature 命名治理；Registry/Profile specs 文档在该治理下同时定义 Protocol Definition 元模型与当前正式 registry 规划表。`docs/protocol/<domain>/<domain.feature>.md` 提供业务协议方案输入；方案更新并确认后，必须反向确认 Registry/Capability Types specs 是否需要同步修订，稳定实现事实再进入 registry YAML。
 
 具体协议内容必须进入机器事实源：
 
@@ -89,15 +89,15 @@ Protocol Definition 与 Core Specs 的职责边界如下：
 
 | 内容类型 | 归属 |
 |---|---|
-| 二进制线格式、Header、Payload 固定头 | 02 / 04 / 05 / 06 |
-| Transport/Profile 固定绑定 | 03 |
-| OPEN / ACCEPT / READY | 04 |
-| Hello / Identify / RPC / EVENT | 05 |
-| STREAM Header / resume | 06 |
-| 旧协议兼容映射 | 07 与 `registry/legacy/legacy_mapping.yaml` |
+| 二进制线格式、Header、Payload 固定头 | `1-core/03` / `1-core/05` / `1-core/06` / `1-core/07` |
+| Transport/Profile 固定绑定 | `1-core/04` |
+| OPEN / ACCEPT / READY | `1-core/05` |
+| Hello / Identify / RPC / EVENT | `1-core/06` |
+| STREAM Header / resume | `1-core/07` |
+| 旧协议兼容映射 | `4-tooling/03` 与 `registry/legacy/legacy_mapping.yaml` |
 | 业务协议方案草案 | `docs/protocol/<domain>/<domain.feature>.md` |
 | 完整 Capability Model | `docs/architecture/AXTP-Capability-Model-v2.md` |
-| method/event/error/type/profile entry 元模型 | 09-14 |
+| method/event/error/type/profile entry 元模型 | Registry/Profile specs |
 | 具体业务 method/event/type/error/profile | `registry/` 与 `registry/domains/` YAML |
 
 ---
@@ -126,7 +126,7 @@ profiles: []
 
 `protocol.specVersion` 与 `protocol.registryVersion` 必须分离。Core wire format 修改使用 `specVersion`；method/event/type/error/profile 增量使用 `registryVersion`。
 
-09-14 不得重新定义 wire header 字段；具体 registry 表格必须与 registry YAML/generated 保持一致。
+Registry/Profile specs 不得重新定义 wire header 字段；具体 registry 表格必须与 registry YAML/generated 保持一致。
 
 ---
 
@@ -136,7 +136,7 @@ profiles: []
 方案输入段：
   docs/protocol/<domain>/<domain.feature>.md
   docs/legacy-migration/classification/**
-  docs/specs/08-13 反向确认规则
+  Registry and Capability Types specs 反向确认规则
         ↓
 协议草案更新与人工确认
         ↓
@@ -151,9 +151,9 @@ docs/generated/protocol.md + protocol.json + SDK/bitmap/test-vector
 ```
 
 - `docs/protocol/<domain>/<domain.feature>.md` 是协议方案输入；所有符合该路径的 feature 草案都要纳入方案审查清单。
-- 协议草案确认后必须反向确认 08-13：08 检查 domain.feature 命名，09 检查 ID/Domain/生成链路，10-13 检查 method/event/error/schema/capability 是否需要进入规划表或规则。
+- 协议草案确认后必须反向确认 Registry/Capability Types specs：08 检查 domain.feature 命名，09 检查 ID/Domain/生成链路，Methods/Events/Errors Registry and Capability Types specs 检查 method/event/error/schema/capability 是否需要进入规划表或规则。
 - Codex 的“添加业务协议”skill 只负责方案搜索、归类和草案补全；“协议采纳”skill 才能在评审通过后写 specs/YAML 并触发生成。
-- 反向确认不是把草案全文复制到 specs；只把会改变正式规范、编号规划、元模型约束或 registry 规则的内容同步到 08-13。
+- 反向确认不是把草案全文复制到 specs；只把会改变正式规范、编号规划、元模型约束或 registry 规则的内容同步到 Registry/Capability Types specs。
 - `registry/` 保存核心常量、公共 schema、MVP 已采纳条目和 legacy 映射。
 - `registry/domains/` 保存新增业务域的扩展 YAML，是新增业务的默认入口。
 - 新增业务事实不得同时写入 core registry 与 domain YAML；domain 业务晋升为 MVP/Core 时，必须迁移而不是复制。
@@ -259,8 +259,8 @@ axtpc emit conformance
 
 ## 7. 稳定性规则
 
-1. 08 是命名治理规范；09-14 是 Normative Registry 规范，包含元模型和正式规划表。
-2. 新增业务 method/event/error/profile 默认先进入 `registry/` 或 `registry/domains/` YAML；如涉及正式编号规划或 MVP 契约变化，必须同步修订 09-14。
+1. 08 是命名治理规范；Registry/Profile specs 是 Normative Registry 规范，包含元模型和正式规划表。
+2. 新增业务 method/event/error/profile 默认先进入 `registry/` 或 `registry/domains/` YAML；如涉及正式编号规划或 MVP 契约变化，必须同步修订 Registry/Profile specs。
 3. `protocol/axtp.protocol.yaml` 与 generated 目录下文件不得手写修改。
 4. CI 必须验证 ID 唯一性、引用完整性、schema 完整性、bitmap 一致性和 stable ID 不复用。
 
@@ -268,7 +268,7 @@ axtpc emit conformance
 
 ## Registry 表格与 YAML 的关系
 
-09-14 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
+Registry/Profile specs 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
 
 如果 Markdown 表格与 YAML/generated 发生冲突，以 YAML/generated 作为实现事实源，并应回修本规范表格；不得维护第二套 active 事实源。
 
@@ -419,7 +419,7 @@ legacy:
 
 ### 6. 命名规范
 
-AXTP 业务能力命名采用 `domain / domain.feature / domain.method` 三层模型。完整 feature 分类与方法/事件模板见 08《AXTP Capability Naming and Feature Taxonomy》。
+AXTP 业务能力命名采用 `domain / domain.feature / domain.method` 三层模型。完整 feature 分类与方法/事件模板见 `docs/specs/2-registry/01-Naming-and-Taxonomy.md`。
 
 #### 6.1 Domain 命名
 
@@ -807,8 +807,8 @@ Schema 规则：
 - 同一 Schema 内 `fieldId` 不得重复
 - `fieldId` 不得复用已废弃字段编号
 - 所有字段类型必须来自 Type System
-- TLV 编码规则遵循 06《AXTP TLV Schema 编码规范》
-- 字段编号规则遵循 07《AXTP Schema 字段编号规范》
+- TLV 编码规则遵循 `docs/specs/3-codec/03-TLV-Encoding.md`
+- 字段编号规则遵循 `docs/specs/3-codec/04-Schema-Numbering.md`
 
 ---
 

@@ -1,4 +1,4 @@
-# 06《AXTP Stream Spec》
+# 1-core/07《AXTP Stream Data Plane》
 
 > Status: AXTP v1 Core Freeze Candidate
 > Spec Version: 1.0.0-rc1
@@ -8,7 +8,7 @@
 版本：v1.0.0-rc1
 状态：AXTP v1 Core Freeze Candidate
 适用范围：`PayloadType = STREAM` 的 Payload 结构、Stream Context、可靠性模型、断点续传、多路复用
-前置文档：01《AXTP Protocol Framework》、02《AXTP Frame and Payload Spec》、04《AXTP Control Session Spec》、05《AXTP RPC Session Spec》
+前置文档：`docs/specs/1-core/02-Protocol-Framework.md`、`docs/specs/1-core/03-Frame-and-Payload.md`、`docs/specs/1-core/05-Control-Session.md`、`docs/specs/1-core/06-RPC-Session.md`
 
 ---
 
@@ -342,7 +342,7 @@ ackMode 在 RPC 建流阶段确定（初始模式）；CONTROL WINDOW_UPDATE 在
 - 业务校验方法调用时不需要重复传 `verifyValue`，设备从 Stream Context 中读取
 - 校验失败时设备返回 `FW_VERIFY_FAILED` 错误码，不得应用固件
 
-建议：AXTP-USB-HID 或 AXTP-TCP 使用 Standard Frame CRC16 + sliding_window 或 stop_and_wait ACK + `verifyType=sha256`。HID-64/BLE/UART 等低带宽降级路径见 18《AXTP Low-Bandwidth Degradation》。
+建议：AXTP-USB-HID 或 AXTP-TCP 使用 Standard Frame CRC16 + sliding_window 或 stop_and_wait ACK + `verifyType=sha256`。HID-64/BLE/UART 等低带宽降级路径见 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`。
 
 ---
 
@@ -372,7 +372,7 @@ Transport reconnect
 
 ## 12. 低带宽传输 MTU 前置检查
 
-低带宽传输不属于 AXTP v1 Core 必选实现。若后续在 HID-64/BLE/UART 上启用 STREAM，必须先证明扣除外层 frame header 和 STREAM Header 后仍有业务数据空间。完整策略见 18《AXTP Low-Bandwidth Degradation》。
+低带宽传输不属于 AXTP v1 Core 必选实现。若后续在 HID-64/BLE/UART 上启用 STREAM，必须先证明扣除外层 frame header 和 STREAM Header 后仍有业务数据空间。完整策略见 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`。
 
 | 示例链路 | 前置要求 | 说明 |
 | --- | --- | --- |

@@ -15,7 +15,7 @@ Capability ID：`network.ip`
 | 标记 | 对象 | 结论 | 后续动作 |
 |---|---|---|---|
 | `[REVIEW-DRAFT]` | `network.ip` capability | 本文将 v0.2 的完整三层网络模型收敛为 DHCP/static 的最小可采纳协议。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-OK]` | domain.feature 粒度 | IP/DHCP/DNS/默认网关属于 `network` 域下同一地址配置能力块。 | 采纳前按 08 再次复核 method/event 命名。 |
+| `[REVIEW-OK]` | domain.feature 粒度 | IP/DHCP/DNS/默认网关属于 `network` 域下同一地址配置能力块。 | 采纳前按 Naming and Taxonomy spec 再次复核 method/event 命名。 |
 | `[REVIEW-DRAFT]` | 事件分层 | `network.ipConfigChanged` 只表达地址配置或有效地址变化；Wi-Fi/AP/interface 状态由各自 feature 事件表达。 | 采纳前与 interface/Wi-Fi/AP 草案一起确认。 |
 | `[REVIEW-ASK]` | AP 子网边界 | AP 本端地址可由 `network.ip` 表达；AP DHCP Server 地址池是否归 `network.ap` 仍需确认。 | 采纳前确认 AP 子网写入入口。 |
 | `[REVIEW-ASK]` | IPv6 支持范围 | 当前草案保留 IPv6 family，但 MVP 是否支持 IPv6 待确认。 | 采纳前确认 IPv6 是 MVP 还是 optional。 |
@@ -23,7 +23,7 @@ Capability ID：`network.ip`
 
 ## 1. 文档定位
 
-本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/08-13`，涉及 profile/MVP 时同步确认 `docs/specs/14`，再写入 `registry/domains/network/domain.yaml`，并由 `generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`，涉及 profile/MVP 时同步确认 `docs/specs/2-registry/05-Profiles-Registry.md`，再写入 `registry/domains/network/domain.yaml`，并由 `generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
 
 当前 generated 协议没有 adopted `network.ip` 方法、事件或 schema；本文所有 methodId、eventId、errorCode、fieldId 均为 `TBD after adoption`。
 

@@ -14,8 +14,8 @@ Capability ID：`output.layout`
 
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
-| `[REVIEW-DRAFT]` | `output.layout` capability | 08/09/10/11/13 已有 output 域和 layout 能力规划，当前缺少 `docs/protocol/output/output.layout.md` 草案。 | 产品/架构/研发确认业务语义、schema 和 legacyRefs 后进入采纳 workflow。 |
-| `[REVIEW-OK]` | domain-feature | 输出画面布局归 `output.layout`；它描述输出端画布布局，不替代 `video.layout`、`room.layout` 或 `display.output`。 | 采纳时反向确认 08/09 的边界说明是否需要补充。 |
+| `[REVIEW-DRAFT]` | `output.layout` capability | Registry/Capability Types specs 已有 output 域和 layout 能力规划，当前缺少 `docs/protocol/output/output.layout.md` 草案。 | 产品/架构/研发确认业务语义、schema 和 legacyRefs 后进入采纳 workflow。 |
+| `[REVIEW-OK]` | domain-feature | 输出画面布局归 `output.layout`；它描述输出端画布布局，不替代 `video.layout`、`room.layout` 或 `display.output`。 | 采纳时反向确认 Naming/YAML mapping specs 的边界说明是否需要补充。 |
 | `[REVIEW-DRAFT]` | `output.getLayoutConfig` / `output.setLayoutConfig` / `output.layoutChanged` | 10/11 已规划对应 method/event 名称和 ID 范围，但 YAML 尚未采纳。 | 采纳时写入 `registry/domains/output/domain.yaml`，并重新生成。 |
 | `[REVIEW-ASK]` | legacy 映射 | Rooms / VM33 中有多条输出布局、幕墙和输出模式相关旧接口已分类到 `output.layout`，但 payload 字段和状态映射仍需确认。 | 落 registry 前补齐确定的旧协议命令、字段路径、状态码和覆盖范围。 |
 
@@ -23,7 +23,7 @@ Capability ID：`output.layout`
 
 ## 1. 文档定位
 
-本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/08-13`，再写入 `registry/domains/output/domain.yaml` 或相关 registry YAML，并由 Generator 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`，再写入 `registry/domains/output/domain.yaml` 或相关 registry YAML，并由 Generator 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
 
 当前实现程度：
 
@@ -106,7 +106,7 @@ Capability 字段建议：
 | `output.setLayoutConfig` | `0x0B06` | `OutputLayoutSetParams` | `OutputLayoutSetResult` | 设置输出端布局配置，可选择立即应用或暂存。 | `[REVIEW-DRAFT]` |
 | `output.getLayoutCapabilities` | TBD after adoption | `OutputLayoutCapabilitiesParams` | `OutputLayoutCapabilities` | 查询布局能力范围；10 当前未规划该 method，采纳时需决定是否新增，或由 capability 查询统一覆盖。 | `[REVIEW-ASK]` |
 
-候选名称用于评审和 registry 草案输入。采纳时必须按 08 的配置型、状态型、动作型、流型或导出型模板复核。
+候选名称用于评审和 registry 草案输入。采纳时必须按 Naming and Taxonomy spec 的配置型、状态型、动作型、流型或导出型模板复核。
 
 ---
 

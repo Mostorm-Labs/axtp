@@ -15,7 +15,7 @@ Capability ID：`network.ap`
 | 标记 | 对象 | 结论 | 后续动作 |
 |---|---|---|---|
 | `[REVIEW-DRAFT]` | `network.ap` capability | 本文将 v0.2 的 AP 完整模型收敛为配对和基础热点控制所需的角色层协议。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-OK]` | domain.feature 粒度 | AP/SoftAP/Hotspot 是 `network` 域下合适的能力块；不把 `Config`、`State`、`Credential` 提升为 feature。 | 采纳前按 08 再次复核 method/event 命名。 |
+| `[REVIEW-OK]` | domain.feature 粒度 | AP/SoftAP/Hotspot 是 `network` 域下合适的能力块；不把 `Config`、`State`、`Credential` 提升为 feature。 | 采纳前按 Naming and Taxonomy spec 再次复核 method/event 命名。 |
 | `[REVIEW-DRAFT]` | 事件分层 | `network.apStateChanged` 只表达 AP 服务角色状态；接口链路变化归 `network.interface`，本端 IP 变化归 `network.ip`。 | 采纳前与 interface/ip/wifi 草案一起确认。 |
 | `[REVIEW-ASK]` | AP 凭据导出策略 | 当前尚未确认 NA20 是否允许读取明文密码，或必须使用一次性 token / opaque credential。 | 采纳前确认 `NetworkCredential` 语义和安全边界。 |
 | `[REVIEW-ASK]` | AP 客户端列表 | 客户端列表对配对验收有价值，但不是 AP 启停和配置 MVP 的必要条件。 | 若作为验收条件，采纳 optional `network.getApClients`。 |
@@ -23,7 +23,7 @@ Capability ID：`network.ap`
 
 ## 1. 文档定位
 
-本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/08-13`，涉及 profile/MVP 时同步确认 `docs/specs/14`，再写入 `registry/domains/network/domain.yaml`，并由 `generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`，涉及 profile/MVP 时同步确认 `docs/specs/2-registry/05-Profiles-Registry.md`，再写入 `registry/domains/network/domain.yaml`，并由 `generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
 
 当前 generated 协议没有 adopted `network.ap` 方法、事件或 schema；本文所有 methodId、eventId、errorCode、fieldId 均为 `TBD after adoption`。
 

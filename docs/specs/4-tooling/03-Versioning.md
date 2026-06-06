@@ -1,4 +1,4 @@
-# 07《AXTP Compatibility and Versioning》
+# 4-tooling/03《AXTP Compatibility and Versioning》
 
 > Status: AXTP v1 Core Freeze Candidate
 > Spec Version: 1.0.0-rc1
@@ -81,7 +81,7 @@
 - 新增 Stream Profile（不修改 STREAM Header 结构）
 - 新增 rpcEncoding 类型
 - 新增 Transport Profile（不修改既有 Transport Profile 的 wire format）
-- 新增低带宽 Frame Profile（进入 18《AXTP Low-Bandwidth Degradation》，不修改 v1 Core Standard Frame）
+- 新增低带宽 Frame Profile（进入 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`，不修改 v1 Core Standard Frame）
 ```
 
 ### 0.4 ID 不复用规则
@@ -123,7 +123,7 @@
 ### 0.8 Protocol Definition 与生成产物
 
 ```text
-- 08 是 domain-feature 命名治理入口；09-14 文档是 Protocol Definition 与 registry 规范组，定义 registry/domain YAML 到 protocol/axtp.protocol.yaml 的映射约束
+- 08 是 domain-feature 命名治理入口；Registry/Profile specs 文档是 Protocol Definition 与 registry 规范组，定义 registry/domain YAML 到 protocol/axtp.protocol.yaml 的映射约束
 - registry/**/*.yaml 与 registry/domains/**/*.yaml 是具体业务内容的机器事实源
 - protocol/axtp.protocol.yaml 是由 axtpc 聚合生成的 Protocol IR，不得手写修改
 - generated/ 目录下的产物由 axtpc 生成，不得手写修改
@@ -339,7 +339,7 @@ void dispatchFrame(const uint8_t* buf, size_t len) {
 
 **低带宽降级判定（HID-64/BLE/UART）：**
 
-Compact/HID-64/BLE/UART 不属于 AXTP v1 Core 必选路径。若后续启用低带宽降级，嗅探规则必须在对应降级 profile 中定义，并遵守 18《AXTP Low-Bandwidth Degradation》的边界：不得改变 PayloadType、CONTROL/RPC/STREAM Payload Header 或 STREAM 16B Header。
+Compact/HID-64/BLE/UART 不属于 AXTP v1 Core 必选路径。若后续启用低带宽降级，嗅探规则必须在对应降级 profile 中定义，并遵守 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`的边界：不得改变 PayloadType、CONTROL/RPC/STREAM Payload Header 或 STREAM 16B Header。
 
 **原则**：嗅探逻辑必须是无状态的 O(1) 判定，不得引入缓冲区等待。判定失败即走 Legacy 路径，不得丢弃数据。
 
@@ -1583,18 +1583,18 @@ AXTP 请求 -> 旧请求
 
 | 文档 | 关系 |
 | --- |---|
-| `02-AXTP-Frame-and-Payload-Spec.md` | 定义 Frame / PayloadType / Profile |
-| `04-AXTP-Control-Session-Spec.md` | 定义 OPEN / ACK / NACK / RESUME |
-| `05-AXTP-RPC-Session-Spec.md` | 定义 RPC request/response/event 映射 |
-| `06-AXTP-Stream-Spec.md` | 定义 firmware.update / file.transfer / log / media 数据面 |
-| `15-AXTP-Type-System.md` | 定义基础类型 |
-| `16-AXTP-TLV-Schema-Encoding.md` | 定义 TLV body 映射 |
-| `17-AXTP-Schema-Field-Numbering.md` | 定义 schema-local fieldId 规则 |
-| `09-AXTP-Protocol-Definition-Mapping-Spec.md` | 定义 Protocol Definition 映射规则 |
-| `10-AXTP-Methods-Registry-Spec.md` | 定义 methods 元模型与 methodId 约束 |
-| `12-AXTP-Errors-Registry-Spec.md` | 定义 errors 元模型与错误码映射 |
-| `13-AXTP-Types-and-Capability-Spec.md` | 定义 types 元模型与 v1 capability 范围 |
-| `14-AXTP-Profiles-Registry-Spec.md` | 定义 profiles 元模型与实现范围 |
+| `docs/specs/1-core/03-Frame-and-Payload.md` | 定义 Frame / PayloadType / Profile |
+| `docs/specs/1-core/05-Control-Session.md` | 定义 OPEN / ACK / NACK / RESUME |
+| `docs/specs/1-core/06-RPC-Session.md` | 定义 RPC request/response/event 映射 |
+| `docs/specs/1-core/07-Stream-Data-Plane.md` | 定义 firmware.update / file.transfer / log / media 数据面 |
+| `docs/specs/3-codec/01-Type-System.md` | 定义基础类型 |
+| `docs/specs/3-codec/03-TLV-Encoding.md` | 定义 TLV body 映射 |
+| `docs/specs/3-codec/04-Schema-Numbering.md` | 定义 schema-local fieldId 规则 |
+| `docs/specs/4-tooling/01-YAML-Mapping.md` | 定义 Protocol Definition 映射规则 |
+| `docs/specs/2-registry/02-Methods-Registry.md` | 定义 methods 元模型与 methodId 约束 |
+| `docs/specs/2-registry/04-Errors-Registry.md` | 定义 errors 元模型与错误码映射 |
+| `docs/specs/3-codec/02-Capability-Types.md` | 定义 types 元模型与 v1 capability 范围 |
+| `docs/specs/2-registry/05-Profiles-Registry.md` | 定义 profiles 元模型与实现范围 |
 | `registry/legacy/legacy_mapping.yaml` | 保存已采纳的旧协议到 AXTP method/error 映射 |
 
 ---

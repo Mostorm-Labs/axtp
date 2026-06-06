@@ -1,4 +1,4 @@
-# 08《AXTP Capability Naming and Feature Taxonomy》
+# 2-registry/01《AXTP Capability Naming and Feature Taxonomy》
 
 > Status: AXTP v1/v2 Capability Governance
 > Spec Version: 0.1.0
@@ -12,7 +12,7 @@
 
 ## 0. 速读：命名治理只管“归属和粒度”
 
-08 用来回答：一个业务能力应该放在哪个 domain、feature 该多粗、method/event 应该叫什么。它不分配 methodId / eventId / errorCode / capabilityId，具体编号和机器事实仍由 09-14 与 registry YAML 负责。
+08 用来回答：一个业务能力应该放在哪个 domain、feature 该多粗、method/event 应该叫什么。它不分配 methodId / eventId / errorCode / capabilityId，具体编号和机器事实仍由 Registry/Profile specs 与 registry YAML 负责。
 
 命名决策顺序：
 
@@ -23,7 +23,7 @@
 4. 最后进入 registry：普通业务事实默认写入 registry/domains/<domain>/domain.yaml。
 ```
 
-`docs/protocol/<domain>/<domain.feature>.md` 中的每个协议方案草案，都必须先按本文件反向确认 domain、feature 粒度、method/event 命名模板和 stream 边界；确认通过后才能进入 09-13 的 ID、schema 和 registry 固化流程。
+`docs/protocol/<domain>/<domain.feature>.md` 中的每个协议方案草案，都必须先按本文件反向确认 domain、feature 粒度、method/event 命名模板和 stream 边界；确认通过后才能进入 YAML mapping and Registry/Capability Types specs 的 ID、schema 和 registry 固化流程。
 
 关键边界：
 

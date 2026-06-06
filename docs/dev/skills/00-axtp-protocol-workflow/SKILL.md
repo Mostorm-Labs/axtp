@@ -16,8 +16,8 @@ Classify the request before editing anything:
 | Business scenario, user story, UI prototype, or end-to-end interaction needs protocol mapping | Use `docs/dev/skills/10-plan-protocol-flow/SKILL.md` | `docs/flows/**` only |
 | Rough product/architecture/business requirement | Use `docs/dev/skills/20-draft-business-protocol/SKILL.md` | `docs/protocol/**` only |
 | Existing `docs/protocol/<domain>/<domain.feature>.md` draft needs review or refinement | Use `draft-business-protocol` | `docs/protocol/**` only |
-| Reviewed draft should become formal protocol | Use `docs/dev/skills/30-adopt-protocol-draft/SKILL.md` | `docs/protocol/**`, `docs/specs/08-14` as needed, `registry/**`, `registry/domains/**` |
-| Already-adopted/generated protocol needs semantic correction, field removal, deprecation, rename, or extension | Use `docs/dev/skills/40-amend-adopted-protocol/SKILL.md` | `docs/protocol/**`, `docs/specs/08-14` as needed, `registry/**`, `registry/domains/**`, generated artifacts via Generator |
+| Reviewed draft should become formal protocol | Use `docs/dev/skills/30-adopt-protocol-draft/SKILL.md` | `docs/protocol/**`, `docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md` as needed, `registry/**`, `registry/domains/**` |
+| Already-adopted/generated protocol needs semantic correction, field removal, deprecation, rename, or extension | Use `docs/dev/skills/40-amend-adopted-protocol/SKILL.md` | `docs/protocol/**`, `docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md` as needed, `registry/**`, `registry/domains/**`, generated artifacts via Generator |
 | YAML facts are ready and artifacts need refresh | Use `docs/dev/skills/50-generate-axtp-protocol/SKILL.md` | generated artifacts only, unless validation exposes a source bug |
 | Governance-confirmed registry maintenance without a draft | Use this skill directly only for narrow, non-design maintenance | Scoped YAML and then `generate-axtp-protocol` |
 | Runtime/SDK/tool implementation after protocol adoption | Use generated docs, tooling JSON, test vectors, and the relevant runtime repository | runtime/SDK/tool repository only |
@@ -35,14 +35,14 @@ draft-business-protocol
   rough requirement -> docs/protocol/<domain>/<domain.feature>.md
 
 adopt-protocol-draft
-  reviewed draft -> specs 08-13 alignment, plus 14 when profiles/MVP change
+  reviewed draft -> Registry/Capability Types specs alignment, plus Profiles Registry when profiles/MVP change
                  -> formalized docs/protocol proposal
                  -> registry/**/*.yaml + registry/domains/**/*.yaml
 
 amend-adopted-protocol
   adopted/generated protocol change
                  -> amendment note in docs/protocol proposal
-                 -> specs 08-13/14 alignment if needed
+                 -> Registry/Capability Types/Profiles specs alignment if needed
                  -> patched registry/**/*.yaml + registry/domains/**/*.yaml
                  -> generated artifacts refreshed by Generator
 

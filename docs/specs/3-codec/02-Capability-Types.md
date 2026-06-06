@@ -1,4 +1,4 @@
-# 13《AXTP Types and Capability Spec》
+# 3-codec/02《AXTP Types and Capability Spec》
 
 > Status: AXTP v1 Protocol Definition Meta Spec
 > Spec Version: 1.0.0-rc1
@@ -18,7 +18,7 @@ Schema 描述 RPC/TLV/Capability 对象的字段结构；Capability 描述设备
 
 ```text
 1. 从 docs/protocol/<domain>/<domain.feature>.md 收集候选 schema、capability 和字段。
-2. 先按 08 判断 domain.feature 粒度。
+2. 先按 Naming and Taxonomy spec 判断 domain.feature 粒度。
 3. 确认协议草案后，反向确认本文件中的 schema fieldId、capabilityId、capability 关系和规划表是否需要更新。
 4. 普通业务 schema/capability 写入 registry/domains/<domain>/domain.yaml。
 5. 跨 domain 公共 schema 或 Core/MVP capability 才写入 registry/schema/ 或 registry/capability/。
@@ -181,7 +181,7 @@ v2 Capability Model 可以引用 `schemas:`，但不得改变 v1 method/event/er
 
 ## Registry 表格与 YAML 的关系
 
-09-14 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
+Registry/Profile specs 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
 
 如果 Markdown 表格与 YAML/generated 发生冲突，以 YAML/generated 作为实现事实源，并应回修本规范表格；不得维护第二套 active 事实源。
 
@@ -229,7 +229,7 @@ Capability 是对设备能力、协议能力、传输能力和业务功能的声
 
 ### 3. CapabilityId 编号规划
 
-CapabilityId 使用 `uint16`，按 09《AXTP Protocol Definition Mapping Spec》§9 的 Domain Registry 高字节分段：
+CapabilityId 使用 `uint16`，按 `docs/specs/4-tooling/01-YAML-Mapping.md`§9 的 Domain Registry 高字节分段：
 
 ```text
 0x0000-0x00FF  协议 / 通用能力

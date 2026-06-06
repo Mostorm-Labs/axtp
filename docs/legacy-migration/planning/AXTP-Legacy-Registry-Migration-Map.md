@@ -1,7 +1,7 @@
 # AXTP Legacy Registry Migration Map
 
 > Status: Migration Working Source
-> Scope: Disposition map for legacy 08-13 registry documents
+> Scope: Disposition map for legacy Registry/Capability Types specs registry documents
 
 ## 1. Rule Set
 
@@ -14,7 +14,7 @@
 | Affects STREAM header / resume | `06` |
 | Concrete business method/event/type | `registry/**/*.yaml`, `registry/domains/**/*.yaml`, or `docs/source/AXTP-Protocol-Full-Reference.md` |
 | Complete Capability Model | `docs/source/AXTP-Capability-Model-v2.md` |
-| Registry entry meta model | `08-13` meta specs |
+| Registry entry meta model | `Registry/Capability Types specs` meta specs |
 | Legacy compatibility reference | `docs/source/AXTP-Legacy-Compatibility-Reference.md` |
 
 ## 2. Legacy 08 Disposition
@@ -28,7 +28,7 @@
 | Control Opcode | Migrated to `04` |
 | RPC Encoding / RPC Operation | Migrated to `05` |
 | Stream Profile boundary | Migrated to `06` |
-| Domain / method / event / error / type allocation rules | Kept in `09-13` meta specs |
+| Domain / method / event / error / type allocation rules | Kept in `YAML mapping and Registry/Capability Types specs` meta specs |
 | Legacy Mapping / Vendor Extension | Migrated to `07` and `docs/source/AXTP-Legacy-Compatibility-Reference.md` |
 | Domain-Scoped Mask | Split into `05` eventMasks and `12` supportedMethods bitmap |
 

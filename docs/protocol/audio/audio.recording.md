@@ -18,7 +18,7 @@ Capability ID：`audio.recording`
 
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
-| `[REVIEW-OK]` | `audio.recording` capability | 录制业务控制面归 `audio`，数据面归 `stream`，文件结果归 `file`，符合 08/09 taxonomy。 | 可作为 `registry/domains/audio/domain.yaml` 草案输入。 |
+| `[REVIEW-OK]` | `audio.recording` capability | 录制业务控制面归 `audio`，数据面归 `stream`，文件结果归 `file`，符合 Naming/YAML mapping specs taxonomy。 | 可作为 `registry/domains/audio/domain.yaml` 草案输入。 |
 | `[REVIEW-OK]` | `audio.startRecording` / `audio.stopRecording` / `audio.cancelRecording` / `audio.getRecordingState` | 业务域创建、关闭和查询业务流，不使用常规 `stream.open`。 | 进入 registry 时按本文 schema 拆分 request/response。 |
 | `[REVIEW-OK]` | `audio.recordingStateChanged` / `audio.recordingProgressReported` | 状态变化和周期进度归业务域，公共 stream 层只承载数据面和可选流控。 | 进入 registry 时分配或复用 eventId。 |
 | `[REVIEW-FIX]` | 文件模式与 `file` 域方法 | 当前 `docs/protocol/file/file.transfer.md` 仍是 blocker，本文不把 `file.getInfo` / `file.download` / `file.delete` 写成已定稿合同。 | file 域重写后同步文件查询、下载、删除方法名和 `fileRef` schema。 |

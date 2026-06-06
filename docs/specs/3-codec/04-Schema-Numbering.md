@@ -1,9 +1,9 @@
-# 17《AXTP Schema 字段编号规范》
+# 3-codec/04《AXTP Schema 字段编号规范》
 
 版本：v1.0
 状态：MVP 字段编号规范
 适用范围：AXTP TLV Schema、Control TLV、RPC Body Schema、Stream Profile Context Schema、Registry YAML
-前置文档：15《AXTP Type System 基础类型规范》、16《AXTP TLV Schema 编码规范》
+前置文档：`docs/specs/3-codec/01-Type-System.md`、`docs/specs/3-codec/03-TLV-Encoding.md`
 
 ---
 
@@ -283,7 +283,7 @@ fields:
 
 ## 15. 各 Schema 类型的字段编号策略
 
-**Control TLV**：使用 04《AXTP Control Session Spec》定义的 control schema-local 字段编号。
+**Control TLV**：使用 `docs/specs/1-core/05-Control-Session.md`定义的 control schema-local 字段编号。
 
 **RPC Params/Result**：当前 schema 内从 `0x01` 开始分配，scope=method。
 

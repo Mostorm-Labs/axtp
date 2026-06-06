@@ -1,4 +1,4 @@
-# 04《AXTP Control Session Spec》
+# 1-core/05《AXTP Control Session Spec》
 
 > Status: AXTP v1 Core Freeze Candidate
 > Spec Version: 1.0.0-rc1
@@ -8,8 +8,8 @@
 版本：v1.0.0-rc1
 状态：AXTP v1 Core Freeze Candidate
 适用范围：`PayloadType = CONTROL` 的 Payload 结构、Opcode、TLV 字段、会话建连、心跳、ACK/NACK、恢复、关闭、流控
-前置文档：01《AXTP Protocol Framework》、02《AXTP Frame and Payload Spec》、03《AXTP Transport Profiles》
-后续文档：05《AXTP RPC Session Spec》、06《AXTP Stream Spec》
+前置文档：`docs/specs/1-core/02-Protocol-Framework.md`、`docs/specs/1-core/03-Frame-and-Payload.md`、`docs/specs/1-core/04-Transport-Profiles.md`
+后续文档：`docs/specs/1-core/06-RPC-Session.md`、`docs/specs/1-core/07-Stream-Data-Plane.md`
 
 ---
 
@@ -150,7 +150,7 @@ Opcode 分配范围：
 
 ## 4. Control StatusCode
 
-Control `statusCode` 直接使用 12《AXTP Errors Registry Spec》，不维护独立 Control 局部状态码。`0x0000 = SUCCESS` 表示成功；非 0 表示失败或异常状态，具体含义必须来自 ErrorCode Registry。
+Control `statusCode` 直接使用 `docs/specs/2-registry/04-Errors-Registry.md`，不维护独立 Control 局部状态码。`0x0000 = SUCCESS` 表示成功；非 0 表示失败或异常状态，具体含义必须来自 ErrorCode Registry。
 
 MVP Control 至少需要识别以下错误码：
 
@@ -331,7 +331,7 @@ ANY_STATE → (SESSION_RESET, P1) → LINK_CONNECTED or DISCONNECTED
 
 OPEN / ACCEPT 协商协议运行时参数，不协商业务能力，也不协商 Header Profile。Frame Profile 由 Transport Profile 固定决定。业务能力不由 CONTROL 层发现；客户端应使用当前产品 generated registry，并通过已采纳业务方法或标准 RPC 错误完成运行时门禁。
 
-OPEN 由当前 Transport Profile 的 Physical Client 发送；ACCEPT 由 Physical Server 返回。OPEN/ACCEPT 只建立 AXTP Link Session，不决定哪一端是 Logical Server（见 03《Transport Profiles》§3.0）。
+OPEN 由当前 Transport Profile 的 Physical Client 发送；ACCEPT 由 Physical Server 返回。OPEN/ACCEPT 只建立 AXTP Link Session，不决定哪一端是 Logical Server（见 `docs/specs/1-core/04-Transport-Profiles.md`§3.0）。
 
 ### 10.1 OPEN 请求字段
 
@@ -550,6 +550,6 @@ reasonCode / messageId / frameIndex / targetType / selectedRpcEncoding
 
 | 文档 | 关系 |
 |---|---|
-| 05《AXTP RPC Session Spec》 | CONTROL 建立 Session 后，RPC 才能承载业务命令 |
-| 06《AXTP Stream Spec》 | STREAM 由 RPC 打开，CONTROL ACK/NACK/WINDOW_UPDATE 负责传输确认和流控 |
+| `docs/specs/1-core/06-RPC-Session.md` | CONTROL 建立 Session 后，RPC 才能承载业务命令 |
+| `docs/specs/1-core/07-Stream-Data-Plane.md` | STREAM 由 RPC 打开，CONTROL ACK/NACK/WINDOW_UPDATE 负责传输确认和流控 |
 | Registry | CONTROL 不进入 Method Registry，业务命令通过 RPC 查询 capability |

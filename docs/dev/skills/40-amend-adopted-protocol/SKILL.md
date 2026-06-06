@@ -25,22 +25,22 @@ Read only what is needed, but include enough evidence to avoid guessing:
 ```text
 docs/protocol/README.md
 docs/protocol/<domain>/<domain.feature>.md
-docs/specs/08-AXTP-Capability-Naming-and-Feature-Taxonomy.md
-docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md
-docs/specs/10-AXTP-Methods-Registry-Spec.md
-docs/specs/11-AXTP-Events-Registry-Spec.md
-docs/specs/12-AXTP-Errors-Registry-Spec.md
-docs/specs/13-AXTP-Types-and-Capability-Spec.md
-docs/specs/14-AXTP-Profiles-Registry-Spec.md
-docs/specs/17-AXTP-Schema-Field-Numbering.md
-docs/specs/19-AXTP-Generator-v1实现规范.md
+docs/specs/2-registry/01-Naming-and-Taxonomy.md
+docs/specs/4-tooling/01-YAML-Mapping.md
+docs/specs/2-registry/02-Methods-Registry.md
+docs/specs/2-registry/03-Events-Registry.md
+docs/specs/2-registry/04-Errors-Registry.md
+docs/specs/3-codec/02-Capability-Types.md
+docs/specs/2-registry/05-Profiles-Registry.md
+docs/specs/3-codec/04-Schema-Numbering.md
+docs/specs/4-tooling/02-Generator-V1.md
 registry/**/*.yaml
 registry/domains/**/*.yaml
 protocol/axtp.protocol.yaml
 docs/generated/protocol.md
 ```
 
-For stream, firmware.update, transport-sensitive, or low-bandwidth changes, also read specs 02-06 and 18.
+For stream, firmware.update, transport-sensitive, or low-bandwidth changes, also read Core wire/session specs.
 
 ## Workflow
 
@@ -97,7 +97,7 @@ Patch `docs/protocol/<domain>/<domain.feature>.md` first:
 - Keep unresolved or deferred facts as `[REVIEW-ASK]`; do not move them to YAML.
 - Preserve useful adoption history.
 
-### 5. Update Specs 08-13/14 Only Where Needed
+### 5. Update Registry/Capability Types/Profiles specs Only Where Needed
 
 Specs are governance, not the machine source. Update only when the amendment changes:
 

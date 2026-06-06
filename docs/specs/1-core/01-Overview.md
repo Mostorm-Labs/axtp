@@ -1,4 +1,4 @@
-# 00《AXTP Overview》
+# 1-core/01《AXTP Overview》
 
 版本：v2.0
 状态：Normative
@@ -19,7 +19,7 @@ Standard Framed 有 Frame Header，先做 CONTROL OPEN / ACCEPT，再进入 RPC 
 
 WebSocket Unframed JSON 没有 Frame Header，也没有 CONTROL、STREAM、CRC16、Binary RPC 11B Header。WebSocket 建好后直接发送 JSON RPC Envelope。
 
-Compact / HID-64 / BLE / UART 是低带宽降级路径，见 18《AXTP Low-Bandwidth Degradation》。
+Compact / HID-64 / BLE / UART 是低带宽降级路径，见 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`。
 
 ---
 
@@ -75,7 +75,7 @@ STREAM Payload      16B fixed header + data，仅 Standard Framed 使用
 
 v1 不做运行时 Header 协商。Frame 形态由 Transport Profile 固定决定：Standard Framed 固定使用 Standard Frame；WebSocket Unframed JSON 固定不使用 Frame Header。
 
-Standard Frame 使用 Magic 字节 `AX`（`0x41 0x58`）。完整 Header 布局见 02《AXTP Frame and Payload Spec》。
+Standard Frame 使用 Magic 字节 `AX`（`0x41 0x58`）。完整 Header 布局见 `docs/specs/1-core/03-Frame-and-Payload.md`。
 
 ---
 
@@ -136,7 +136,7 @@ Method/Event Bitmap
 
 治理规则：
 
-- 新增业务 method / event / error / profile 默认只修改 `registry/domains/<domain>/domain.yaml`；命名归属遵循 08，通常不修改 09-14 registry 规范表
+- 新增业务 method / event / error / profile 默认只修改 `registry/domains/<domain>/domain.yaml`；命名归属遵循 08，通常不修改 Registry/Profile specs registry 规范表
 - 只有 Core/MVP 晋升、公共 schema、核心常量或 legacy 映射才修改对应 `registry/` 核心文件；不得两边重复定义同一协议事实
 - `protocol/axtp.protocol.yaml` 为生成产物，不得手写修改
 - stable 的 methodId / eventId / errorCode 不得复用

@@ -45,7 +45,7 @@ Capability ID：`firmware.update`
 
 Stage 20 决策：Modify existing draft。当前实现程度为 Drafted only；`registry/**`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**` 尚未采纳 `firmware.update` 业务方法、事件和 schema。
 
-当前 generated contract 不包含固件更新业务方法；旧 MVP 名称 `firmware.begin` / `firmware.end` / `firmware.verify` / `firmware.apply` 只作为迁移输入和命名对照。本文采用 08/10/14 规范中评审后的明确命名：
+当前 generated contract 不包含固件更新业务方法；旧 MVP 名称 `firmware.begin` / `firmware.end` / `firmware.verify` / `firmware.apply` 只作为迁移输入和命名对照。本文采用 Naming/Methods/Profiles specs 规范中评审后的明确命名：
 
 | 本文推荐方法 | 旧 MVP / legacy 对照名 | 兼容说明 |
 |---|---|---|

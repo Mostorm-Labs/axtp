@@ -1,11 +1,11 @@
 ---
 name: adopt-protocol-draft
-description: Stage 30 adoption skill for reviewed AXTP docs/protocol domain-feature drafts. Use when an already-reviewed protocol draft should be approved, formalized, adopted, activated, landed, or converted into specs 08-13 alignment, spec 14 alignment when profiles/MVP change, and registry/domain YAML facts. Fixes the draft as the formal accepted proposal but does not manually edit generated artifacts.
+description: Stage 30 adoption skill for reviewed AXTP docs/protocol domain-feature drafts. Use when an already-reviewed protocol draft should be approved, formalized, adopted, activated, landed, or converted into Registry/Capability Types specs alignment, Profiles Registry alignment when profiles/MVP change, and registry/domain YAML facts. Fixes the draft as the formal accepted proposal but does not manually edit generated artifacts.
 ---
 
 # Adopt Protocol Draft
 
-Stage 30. Convert a reviewed AXTP protocol draft into formal protocol facts after `draft-business-protocol`: align the accepted proposal with `docs/specs/08-13`, also `docs/specs/14` when profiles/MVP contracts change, freeze the draft as the formal proposal, and write the confirmed facts into YAML.
+Stage 30. Convert a reviewed AXTP protocol draft into formal protocol facts after `draft-business-protocol`: align the accepted proposal with `docs/specs/2-registry/**` and `docs/specs/3-codec/02-Capability-Types.md`, also `docs/specs/2-registry/05-Profiles-Registry.md` when profiles/MVP contracts change, freeze the draft as the formal proposal, and write the confirmed facts into YAML.
 
 ## Hard Boundaries
 
@@ -26,22 +26,22 @@ Read enough local evidence to avoid guessing:
 ```text
 docs/protocol/README.md
 docs/protocol/<domain>/<domain.feature>.md
-docs/specs/08-AXTP-Capability-Naming-and-Feature-Taxonomy.md
-docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md
-docs/specs/10-AXTP-Methods-Registry-Spec.md
-docs/specs/11-AXTP-Events-Registry-Spec.md
-docs/specs/12-AXTP-Errors-Registry-Spec.md
-docs/specs/13-AXTP-Types-and-Capability-Spec.md
-docs/specs/14-AXTP-Profiles-Registry-Spec.md
-docs/specs/17-AXTP-Schema-Field-Numbering.md
-docs/specs/19-AXTP-Generator-v1实现规范.md
+docs/specs/2-registry/01-Naming-and-Taxonomy.md
+docs/specs/4-tooling/01-YAML-Mapping.md
+docs/specs/2-registry/02-Methods-Registry.md
+docs/specs/2-registry/03-Events-Registry.md
+docs/specs/2-registry/04-Errors-Registry.md
+docs/specs/3-codec/02-Capability-Types.md
+docs/specs/2-registry/05-Profiles-Registry.md
+docs/specs/3-codec/04-Schema-Numbering.md
+docs/specs/4-tooling/02-Generator-V1.md
 registry/**/*.yaml
 registry/domains/**/*.yaml
 docs/generated/protocol.md
 protocol/axtp.protocol.yaml
 ```
 
-For stream, firmware.update, transport-sensitive, or low-bandwidth features, also read specs 02-06 and 18. For legacy adoption, read cited legacy evidence under `docs/legacy-migration/evidence/**`, `docs/legacy-migration/plans/**`, or `registry/legacy/legacy_mapping.yaml` if it already exists.
+For stream, firmware.update, transport-sensitive, or low-bandwidth features, also read Core wire/session specs. For legacy adoption, read cited legacy evidence under `docs/legacy-migration/evidence/**`, `docs/legacy-migration/plans/**`, or `registry/legacy/legacy_mapping.yaml` if it already exists.
 
 ## Workflow
 
@@ -72,20 +72,20 @@ Extract only confirmed facts:
 - concrete legacy mappings
 - open questions that must remain out of specs/YAML
 
-### 3. Align Specs 08-13/14
+### 3. Align Registry/Capability Types/Profiles specs
 
 Reverse-confirm the accepted proposal into specs where needed:
 
 | Spec | Confirm or update |
 |---|---|
-| 08 | domain.feature naming, method/event naming templates, feature taxonomy |
-| 09 | domain placement, ID range, DomainId, bitOffset, mapping to Protocol Definition |
-| 10 | method registry rules or accepted method table references if the local spec pattern requires it |
-| 11 | event registry rules or accepted event table references if needed |
-| 12 | error code rules and domain-specific error placement |
-| 13 | schema/type/capability rules and capability placement |
+| `2-registry/01-Naming-and-Taxonomy.md` | domain.feature naming, method/event naming templates, feature taxonomy |
+| `4-tooling/01-YAML-Mapping.md` | domain placement, ID range, DomainId, bitOffset, mapping to Protocol Definition |
+| `2-registry/02-Methods-Registry.md` | method registry rules or accepted method table references if the local spec pattern requires it |
+| `2-registry/03-Events-Registry.md` | event registry rules or accepted event table references if needed |
+| `2-registry/04-Errors-Registry.md` | error code rules and domain-specific error placement |
+| `3-codec/02-Capability-Types.md` | schema/type/capability rules and capability placement |
 
-Use spec 14 as well if the proposal changes profile membership, MVP requirements, or profile registry semantics.
+Use `2-registry/05-Profiles-Registry.md` as well if the proposal changes profile membership, MVP requirements, or profile registry semantics.
 
 Do not turn specs into the machine fact source. Specs are governance and normative explanation; YAML remains the machine input.
 
@@ -118,7 +118,7 @@ Compute from specs and existing YAML:
 
 - Method IDs must be globally unique and in the correct domain range.
 - Event IDs must be globally unique and in the correct domain range.
-- Capability IDs and DomainId/Domain-Scoped Mask rules must follow specs 09 and 13.
+- Capability IDs and DomainId/Domain-Scoped Mask rules must follow YAML Mapping and Capability Types specs.
 - `bitOffset` must be unique within the domain and should remain contiguous unless existing YAML intentionally reserves gaps.
 - New schema field IDs start from `0x01` in accepted field order unless explicitly specified.
 - Existing schema field IDs must be preserved; append with the next safe ID.
@@ -128,7 +128,7 @@ Never reuse deprecated or stable values for different semantics.
 
 ### 7. Edit YAML Sources
 
-Use `apply_patch`. Keep edits scoped to specs 08-13, spec 14 when applicable, the adopted draft, and chosen YAML sources.
+Use `apply_patch`. Keep edits scoped to Registry/Capability Types specs, Profiles Registry when applicable, the adopted draft, and chosen YAML sources.
 
 Rules:
 
@@ -165,7 +165,7 @@ Do not manually edit generated outputs in this skill. The next step is `generate
 Report:
 
 - Draft adopted and eligibility decision.
-- Specs 08-13/14 files changed, if any.
+- Registry/Capability Types/Profiles specs files changed, if any.
 - Draft file changes and adoption marker.
 - YAML source files changed.
 - Assigned IDs, `bitOffset`, and schema field IDs.

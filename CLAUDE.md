@@ -128,7 +128,7 @@ The numbered skill directory index is `docs/dev/skills/README.md`; directory num
 |---|---|---|
 | Stage 10: business scenario, user story, UI prototype, or interaction flow needs protocol mapping | `docs/dev/skills/10-plan-protocol-flow/SKILL.md` | `docs/flows/**` |
 | Rough product/business requirement | `docs/dev/skills/20-draft-business-protocol/SKILL.md` | `docs/protocol/**` |
-| Reviewed draft should become formal protocol | `docs/dev/skills/30-adopt-protocol-draft/SKILL.md` | adopted draft, specs 08-14 as needed, registry YAML |
+| Reviewed draft should become formal protocol | `docs/dev/skills/30-adopt-protocol-draft/SKILL.md` | adopted draft, Registry/Profile/Capability Types specs as needed, registry YAML |
 | Already-adopted/generated fact needs semantic change | `docs/dev/skills/40-amend-adopted-protocol/SKILL.md` | adopted proposal, specs/YAML, generated only via Generator |
 | YAML facts are ready and outputs need refresh | `docs/dev/skills/50-generate-axtp-protocol/SKILL.md` | generated outputs via Generator |
 | Runtime/SDK/tool implementation | normal code workflow | non-generated runtime/SDK/tool code |
@@ -189,10 +189,10 @@ Commit source YAML and generated artifacts together so they stay in sync.
 
 | Doc | Content |
 |---|---|
-| `docs/specs/02-AXTP-Frame-and-Payload-Spec.md` | Wire format rules |
-| `docs/specs/05-AXTP-RPC-Session-Spec.md` | RPC session lifecycle |
-| `docs/specs/06-AXTP-Stream-Spec.md` | STREAM data plane and 16B stream header |
-| `docs/specs/08-AXTP-Capability-Naming-and-Feature-Taxonomy.md` | Domain-feature and method/event naming governance |
-| `docs/specs/09-AXTP-Protocol-Definition-Mapping-Spec.md` | Source YAML → IR → artifact mapping rules |
-| `docs/specs/19-AXTP-Generator-v1实现规范.md` | Generator implementation spec and governance |
+| `docs/specs/1-core/03-Frame-and-Payload.md` | Wire format rules |
+| `docs/specs/1-core/06-RPC-Session.md` | RPC session lifecycle |
+| `docs/specs/1-core/07-Stream-Data-Plane.md` | STREAM data plane and 16B stream header |
+| `docs/specs/2-registry/01-Naming-and-Taxonomy.md` | Domain-feature and method/event naming governance |
+| `docs/specs/4-tooling/01-YAML-Mapping.md` | Source YAML → IR → artifact mapping rules |
+| `docs/specs/4-tooling/02-Generator-V1.md` | Generator implementation spec and governance |
 | `docs/generated/protocol.md` | Human-readable full protocol reference (generated) |

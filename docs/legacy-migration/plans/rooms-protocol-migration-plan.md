@@ -3,7 +3,7 @@
 > Status: migration design
 > Scope: Rooms WebSocket JSON compatibility profile and embedded parser freeze
 > Source evidence: `docs/legacy-migration/evidence/Rooms协议文档.md`
-> AXTP alignment: `docs/specs/03-AXTP-Transport-Profiles.md`, `docs/specs/05-AXTP-RPC-Session-Spec.md`
+> AXTP alignment: `docs/specs/1-core/04-Transport-Profiles.md`, `docs/specs/1-core/06-RPC-Session.md`
 
 本文定义 Rooms 协议迁移到 AXTP 体系下的落地方案。结论是：Rooms 既有业务 method 和 params 作为兼容 profile 固定下来，不在本轮改名、拆字段或写入 AXTP registry；本轮只统一 session/Hello 方向和 status envelope，并冻结嵌入式协议解析代码的边界。
 

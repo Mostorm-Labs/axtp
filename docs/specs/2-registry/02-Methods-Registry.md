@@ -1,4 +1,4 @@
-# 10《AXTP Methods Registry Spec》
+# 2-registry/02《AXTP Methods Registry Spec》
 
 > Status: AXTP v1 Protocol Definition Meta Spec
 > Spec Version: 1.0.0-rc1
@@ -18,7 +18,7 @@ Method 是 RPC 控制面的业务入口。线上 JSON 使用 method name，Binar
 
 ```text
 1. 从 docs/protocol/<domain>/<domain.feature>.md 收集候选 method。
-2. 按 08 判断 domain.feature 和 method 命名。
+2. 按 Naming and Taxonomy spec 判断 domain.feature 和 method 命名。
 3. 确认协议草案后，反向确认本文件中的 methodId、bitOffset、schema 绑定和规划表是否需要更新。
 4. 在 registry/domains/<domain>/domain.yaml 增加 method。
 5. 分配 domain 内稳定 bitOffset，用于 generated registry、测试向量和可选能力发现方法。
@@ -132,7 +132,7 @@ AXTP v1 Core 不强制内置业务能力发现 method。当前产品可调用方
 
 ## Registry 表格与 YAML 的关系
 
-09-14 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
+Registry/Profile specs 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
 
 如果 Markdown 表格与 YAML/generated 发生冲突，以 YAML/generated 作为实现事实源，并应回修本规范表格；不得维护第二套 active 事实源。
 
@@ -186,7 +186,7 @@ EVENT:
 - `methodId` 使用 `uint16`，线上编码 Little-Endian
 - 同一 Registry 中 `methodId` 不得重复，`methodName` 不得重复
 - 进入 `stable` 状态后不得改变语义；语义变化时新增方法（如 `audio.setAlgorithmConfigV2`），不修改旧方法
-- 方法名格式：`domain.verbFeatureNoun`，feature 归属遵循 08《AXTP Capability Naming and Feature Taxonomy》
+- 方法名格式：`domain.verbFeatureNoun`，feature 归属遵循 `docs/specs/2-registry/01-Naming-and-Taxonomy.md`
 - 推荐动词：`get / set / list / open / close / start / stop / begin / end / verify / apply / abort / resume / subscribe / unsubscribe`
 - 配置、状态、动作、流、导出必须使用不同模板；`stream.*` 不定义常规业务建流方法
 
@@ -631,7 +631,7 @@ priority: P0
 | AXDP_HID | `0xA0001` | AlphaUpgradeInfo | `firmware.getUpdateCapabilities` | 未采纳 | 待 firmware.update 草案采纳后才可登记 |
 | AXDP_HID | `0xB0042` | BetaBrightnessSet | `display.setBrightness` | 未采纳 | 待 display 草案采纳后才可登记 |
 
-未批准或缺少具体 CmdValue 的旧协议命令不得写入本表；应先按 08 的 domain-feature 规则完成分类，再在 `registry/legacy/legacy_mapping.yaml` 中登记确定的映射。
+未批准或缺少具体 CmdValue 的旧协议命令不得写入本表；应先按 Naming and Taxonomy spec 的 domain-feature 规则完成分类，再在 `registry/legacy/legacy_mapping.yaml` 中登记确定的映射。
 
 ---
 

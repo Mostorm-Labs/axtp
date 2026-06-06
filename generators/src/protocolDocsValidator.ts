@@ -30,7 +30,7 @@ function assertYamlStreamHeader(model: ProtocolModel): void {
   ];
   const fields = model.stream.header.fields;
   if (model.stream.header.size !== 16 || fields.length !== expected.length) {
-    fail("protocol/axtp.protocol.yaml", "stream.header", "YAML stream.header must match the 16B STREAM header defined in 06-AXTP-Stream-Spec.md");
+    fail("protocol/axtp.protocol.yaml", "stream.header", "YAML stream.header must match the 16B STREAM header defined in docs/specs/1-core/07-Stream-Data-Plane.md");
   }
   for (const forbidden of ["seq", "position", "chunkLength", "flags"]) {
     if (fields.some((field) => field.name === forbidden)) {
@@ -70,22 +70,22 @@ function assertYamlCapability(model: ProtocolModel): void {
 export async function loadProtocolDocs(specRoot: string): Promise<ProtocolDocsText> {
   const docsRoot = path.join(specRoot, "docs", "specs");
   const [streamSpec, controlSpec, typesSpec] = await Promise.all([
-    readFile(path.join(docsRoot, "06-AXTP-Stream-Spec.md"), "utf8"),
-    readFile(path.join(docsRoot, "04-AXTP-Control-Session-Spec.md"), "utf8"),
-    readFile(path.join(docsRoot, "13-AXTP-Types-and-Capability-Spec.md"), "utf8")
+    readFile(path.join(docsRoot, "1-core", "07-Stream-Data-Plane.md"), "utf8"),
+    readFile(path.join(docsRoot, "1-core", "05-Control-Session.md"), "utf8"),
+    readFile(path.join(docsRoot, "3-codec", "02-Capability-Types.md"), "utf8")
   ]);
   return { streamSpec, controlSpec, typesSpec };
 }
 
 export function validateProtocolDocsConsistency(model: ProtocolModel, docs: ProtocolDocsText): string[] {
-  requirePattern(docs.streamSpec, /STREAM Header[^\n]*16B|16B STREAM Header/, "docs/specs/06-AXTP-Stream-Spec.md", "STREAM Header", "stream spec must define a 16B STREAM Header");
-  requirePattern(docs.streamSpec, /streamId:uint32/, "docs/specs/06-AXTP-Stream-Spec.md", "STREAM Header", "stream spec must define streamId:uint32");
-  requirePattern(docs.streamSpec, /seqId:uint32/, "docs/specs/06-AXTP-Stream-Spec.md", "STREAM Header", "stream spec must define seqId:uint32");
-  requirePattern(docs.streamSpec, /cursor:uint64/, "docs/specs/06-AXTP-Stream-Spec.md", "STREAM Header", "stream spec must define cursor:uint64");
+  requirePattern(docs.streamSpec, /STREAM Header[^\n]*16B|16B STREAM Header/, "docs/specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define a 16B STREAM Header");
+  requirePattern(docs.streamSpec, /streamId:uint32/, "docs/specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define streamId:uint32");
+  requirePattern(docs.streamSpec, /seqId:uint32/, "docs/specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define seqId:uint32");
+  requirePattern(docs.streamSpec, /cursor:uint64/, "docs/specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define cursor:uint64");
 
-  requirePattern(docs.controlSpec, /OPEN[\s\S]*ACCEPT/, "docs/specs/04-AXTP-Control-Session-Spec.md", "OPEN/ACCEPT", "control spec must define OPEN and ACCEPT");
-  requirePattern(docs.controlSpec, /READY[\s\S]{0,80}可选/, "docs/specs/04-AXTP-Control-Session-Spec.md", "READY", "control spec must define READY as optional");
-  requirePattern(docs.controlSpec, /默认握手只要求 OPEN \/ ACCEPT/, "docs/specs/04-AXTP-Control-Session-Spec.md", "READY", "control spec must state that default handshake only requires OPEN / ACCEPT");
+  requirePattern(docs.controlSpec, /OPEN[\s\S]*ACCEPT/, "docs/specs/1-core/05-Control-Session.md", "OPEN/ACCEPT", "control spec must define OPEN and ACCEPT");
+  requirePattern(docs.controlSpec, /READY[\s\S]{0,80}可选/, "docs/specs/1-core/05-Control-Session.md", "READY", "control spec must define READY as optional");
+  requirePattern(docs.controlSpec, /默认握手只要求 OPEN \/ ACCEPT/, "docs/specs/1-core/05-Control-Session.md", "READY", "control spec must state that default handshake only requires OPEN / ACCEPT");
 
   assertYamlStreamHeader(model);
   assertYamlControl(model);

@@ -8,7 +8,7 @@ Capability ID：`audio.stream`
 
 适用范围：设备通过 AXTP `PayloadType = STREAM` 向 Host 输出实时音频媒体流，包括投屏音频透传、实时监听、低延迟播放前音频桥接和 HID media 迁移。
 
-依赖文档：`docs/specs/06-AXTP-Stream-Spec.md`、`docs/protocol/stream/stream.flowControl.md`、`docs/protocol/audio/audio.recording.md`、`docs/flows/device-streaming-audio-video.md`
+依赖文档：`docs/specs/1-core/07-Stream-Data-Plane.md`、`docs/protocol/stream/stream.flowControl.md`、`docs/protocol/audio/audio.recording.md`、`docs/flows/device-streaming-audio-video.md`
 
 ---
 
@@ -17,15 +17,15 @@ Capability ID：`audio.stream`
 | 标记 | 对象 | 结论 | 后续动作 |
 |---|---|---|---|
 | `[REVIEW-DRAFT]` | `audio.stream` capability | 本文根据 NA20/NT10 投屏 flow 创建，用于实时音频媒体流，不复用 `audio.recording` 表达投屏播放音频。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-OK]` | domain.feature 粒度 | `audio.stream` 是音频域下的业务流能力；`stream` 域只提供公共数据面和可选流控。 | 采纳前按 08/09 再次复核 method/event 命名。 |
-| `[REVIEW-DRAFT]` | `media.audio` profile | 推荐正式 profile 名称为 `media.audio`，保留 `realtime_audio` 作为 preset / legacy alias。 | 采纳时同步 `docs/specs/14` 和 stream profile registry。 |
+| `[REVIEW-OK]` | domain.feature 粒度 | `audio.stream` 是音频域下的业务流能力；`stream` 域只提供公共数据面和可选流控。 | 采纳前按 Naming/YAML mapping specs 再次复核 method/event 命名。 |
+| `[REVIEW-DRAFT]` | `media.audio` profile | 推荐正式 profile 名称为 `media.audio`，保留 `realtime_audio` 作为 preset / legacy alias。 | 采纳时同步 `docs/specs/2-registry/05-Profiles-Registry.md` 和 stream profile registry。 |
 | `[REVIEW-OK]` | AAC vs PCM | NA20 到上位机的投屏音频采用 AAC 透传；NA20/NT10 MVP 不要求 NA20 解码 PCM 后输出。PCM 仅保留为其他实时音频场景或未来产品确认的扩展。 | 采纳前确认 AAC `transportFormat` 是 `adts`、`latm`、`raw` 之一还是都支持。 |
 | `[REVIEW-DRAFT]` | A/V 同步时钟 | 音视频同步同时使用 NT10 源媒体时间戳和 NA20 接收时钟；`cursor/timestampUs` 默认绑定 NT10 源媒体时钟，NA20 接收时钟用于 jitter/诊断。 | 采纳前固定 `clockDomain`、`receiverClockDomain`、`timestampBaseUs` 语义。 |
 | `[REVIEW-ASK]` | legacy 映射 | `stream.hidMedia`、AXDP / Rooms / VM33 旧音频流条目尚未字段级确认。 | 落 registry 前补齐 legacyRefs 或明确 adapter-only。 |
 
 ## 1. 文档定位
 
-本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/08-13`，涉及 profile/MVP 时同步确认 `docs/specs/14`，再写入 `registry/domains/audio/domain.yaml` 或相关 registry YAML，并由 `generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`，涉及 profile/MVP 时同步确认 `docs/specs/2-registry/05-Profiles-Registry.md`，再写入 `registry/domains/audio/domain.yaml` 或相关 registry YAML，并由 `generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
 
 当前 generated 协议没有 adopted `audio.stream` 方法、事件、schema 或 profile；本文所有 methodId、eventId、capabilityId、profileId 和 schema fieldId 均为 `TBD after adoption`。
 
@@ -64,7 +64,7 @@ Host player 负责“解码、jitter buffer、A/V sync 和播放”。
 | 新增/修改/复用 | Create new draft | `audio.recording` 可参考实时 PCM 数据面，但其业务语义是录制；投屏音频转发需要独立 `audio.stream`。 |
 | 控制面 | `audio.openStream` / `audio.closeStream` / `audio.getStreamState` | 业务域创建和关闭业务流，不定义常规 `stream.open`。 |
 | 数据面 | STREAM created by RPC | 连续音频 chunk 走 `PayloadType = STREAM`，STREAM header 保持 16B。 |
-| Profile | `media.audio` + preset `realtime_audio` | 与 `docs/specs/06-AXTP-Stream-Spec.md` 中 `media.audio` 对齐，同时兼容现有 flowControl 草案中的 `realtime_audio`。 |
+| Profile | `media.audio` + preset `realtime_audio` | 与 `docs/specs/1-core/07-Stream-Data-Plane.md` 中 `media.audio` 对齐，同时兼容现有 flowControl 草案中的 `realtime_audio`。 |
 | WebSocket | RPC-only | WebSocket Unframed JSON 不承载 STREAM。 |
 | 音频格式 | NA20/NT10 投屏路径使用 AAC 透传 | NA20 默认透传 NT10 AAC；Host 不支持 AAC 时，应提示不支持或走后续产品确认的扩展，不默认要求 NA20 PCM 输出。 |
 

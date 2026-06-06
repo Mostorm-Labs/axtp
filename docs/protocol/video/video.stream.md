@@ -3,7 +3,7 @@
 状态：Protocol Review Draft
 归属域：`video.stream`
 适用范围：通过 AXTP `PayloadType = STREAM` 承载的设备视频预览、编码视频输出、MJPEG/Raw 调试流和 legacy 视频流迁移。
-依赖文档：`docs/specs/06-AXTP-Stream-Spec.md`、`docs/protocol/stream/stream.flowControl.md`、`docs/protocol/video/video.ndi.md`、`docs/protocol/video/video.framing.md`
+依赖文档：`docs/specs/1-core/07-Stream-Data-Plane.md`、`docs/protocol/stream/stream.flowControl.md`、`docs/protocol/video/video.ndi.md`、`docs/protocol/video/video.framing.md`
 
 本文是 `docs/protocol` 评审输入，不是最终生成事实源。采纳后需要优先同步到 `registry/domains/video/domain.yaml`；只有被治理为 Core/shared 时，才按需创建或更新 shared method/event/capability/schema/profile registry，并运行 generator。
 
@@ -1274,7 +1274,7 @@ streamId=102 source=main_camera stream=sub  codec=mjpeg width=1280 height=720  f
 | `TBD after adoption` | `firstReceiveTimestampUs` | uint64 | 否 | NA20 收到首个视频 chunk 的接收时钟时间戳。 |
 | `TBD after adoption` | `firstPtsUs` | uint64 | 否 | 首个视频帧 PTS；如无法在 open response 时确定，可在 state event 中返回。 |
 
-其他 request/response/event schema 可按正文 JSON 字段进入 YAML；field ID 必须按 `docs/specs/17-AXTP-Schema-Field-Numbering.md` 做唯一性检查。
+其他 request/response/event schema 可按正文 JSON 字段进入 YAML；field ID 必须按 `docs/specs/3-codec/04-Schema-Numbering.md` 做唯一性检查。
 
 ## 20. Legacy 映射建议
 
