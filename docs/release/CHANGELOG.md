@@ -2,6 +2,51 @@
 
 This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATCH` tags.
 
+## spec/v0.0.4
+
+Spec repository purification, documentation workflow, and Phase 1 STREAM data-plane alignment release.
+
+### Protocol
+
+- Reorganizes the main repository as a protocol-first spec repository with root runtime leftovers removed and runtime source/docs moved out of the AXTP spec tree.
+- Groups the formal `docs/specs/` corpus into core, registry, codec, and tooling sections to make the protocol reading path easier to follow.
+- Aligns Phase 1 CONTROL scope to `OPEN / ACCEPT`, `HEARTBEAT / HEARTBEAT_ACK`, and `CLOSE / CLOSE_ACK`; ACK/NACK remains reserved for future reliable-transfer profiles.
+- Aligns Standard Framed transports to support CONTROL, RPC, and Phase 1 STREAM data packets for adopted audio/video media stream profiles.
+- Clarifies RPC encoding order and semantics: `JSON`, `CBOR`, `MSGPACK`, and `JSON_BINARY`; `bodyEncoding` applies only to `JSON_BINARY` with `NONE`, `TLV8`, and `TLV16`.
+- Adds and refines onboarding docs including `KICKOFF.md`, `ROADMAP.md`, core protocol flow, quickstart, and runtime MVP/conformance guidance.
+
+### Registry
+
+- Updates protocol metadata, transport capability declarations, control opcode status, RPC encoding facts, body encoding facts, and `protocol.payload.stream` capability status to match the Phase 1 decisions.
+- Refreshes `protocol/axtp.protocol.yaml`, generated protocol references, generator snapshots, and MCP/tooling registry outputs from the YAML source facts.
+- Keeps adopted business methods limited to the current generated `audio.algorithm` surface while documenting that video/audio stream business methods must be adopted before becoming a published runtime contract.
+
+### Schemas
+
+- No breaking schema shape changes are introduced for adopted business methods.
+- Refreshes generated schema references and snapshots as part of the source-to-generated validation pipeline.
+- Clarifies `sid`, `requestId`, `rpcEncoding`, `bodyEncoding`, and STREAM header typing in the core specs and generated references.
+
+### Conformance
+
+- Moves conformance into the `docs/conformance/**` documentation hierarchy and keeps release artifacts compatible by packaging conformance at the artifact root.
+- Updates conformance manifest and framed-binary/stream profiles so Standard Framed runtime MVP covers CONTROL open/heartbeat/close, RPC request matching, and media STREAM open/data/close semantics.
+- Revises STREAM conformance cases to model media stream lifecycle through business-domain methods such as `video.openStream` / `video.closeStream` instead of requiring generic `stream.open` / `stream.close`.
+- Keeps ACK/NACK strict retransmission outside Phase 1 conformance requirements.
+
+### Migration
+
+- Consolidates legacy evidence, classification, plans, generated outputs, and planning docs under `docs/legacy-migration/**`.
+- Updates legacy classification and migration tooling paths to the new docs layout.
+- Preserves legacy migration guidance while keeping legacy adapters outside the AXTP Core wire contract.
+
+### Runtime Impact
+
+- Standard Framed runtimes should treat STREAM as a Phase 1 P0 data-plane requirement for adopted audio/video media stream profiles.
+- WebSocket JSON remains RPC-only and does not carry CONTROL or STREAM payloads.
+- Runtime conformance scripts should prefer `$AXTP_SPEC_PATH/docs/conformance` and may retain `$AXTP_SPEC_PATH/conformance` fallback for release artifact compatibility.
+- Runtime and SDK teams should continue to bind to a fixed `spec/v0.0.4` tag or commit through their spec lock metadata; no runtime package release is part of this Spec release.
+
 ## spec/v0.0.3
 
 Conformance foundation release for AXTP Spec and runtime/tool repositories.
