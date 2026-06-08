@@ -1,5 +1,13 @@
 # AXTP Kickoff：为什么改、怎么用、如何推进
 
+## 本次会议目的
+
+这次 kickoff 主要解决三件事：
+
+1. 向大家宣导新的协议规范治理办法，让产品、研发、测试、runtime、SDK 和架构评审后续使用统一的业务流程语言协作，减少重复沟通和口径偏差，提升产研协作效率和产品开发进度。
+2. 让大家直观看到 Codex 在协议梳理、文档重整、代码生成、校验和研发流程优化中的能效，推动团队把 AI 纳入现有工作流，让日常开发、评审和交付更高效。
+3. 推进后续真实产品落地：NA20 与大屏联动、VM33 Pro 与 NearStream 交互优化，都要基于 AXTP 的新规范、新流程和新验收方式持续推进。
+
 这份文档用四个问题讲清楚 AXTP 改版方案：
 
 ```text
@@ -101,9 +109,13 @@ runtime 从哪里实现？
 
 ### 2.2 AXTP 是什么
 
-顺着上面的映照关系再看定义，AXTP 是一套传输无关的设备通信协议标准。它不绑定某一种 runtime，也不把业务类型塞进 frame header。
+AXTP 可以先用一句话理解：
 
-如果先从线上数据看，AXTP 的协议框架会更直观。以设备侧常用的 Standard Framed 路径为例，一帧数据不是“某个业务命令”，而是：
+```text
+AXTP 是一套传输无关的设备通信协议标准，用 CONTROL 建链路，用 RPC 做业务控制，用 STREAM 传连续数据。
+```
+
+设备侧常用的 Standard Framed 路径长这样：
 
 ```text
 Standard Framed wire format
@@ -121,43 +133,20 @@ Standard Framed wire format
                       +-- Type=STREAM  -> streamId + seqId + cursor + data
 ```
 
-这张图要表达的重点是：Frame Header 只负责把字节流切成可校验、可分片、可分发的 AXTP Frame；业务语义不写在 Header 里，而是由 PayloadType 分发给 CONTROL、RPC 或 STREAM，再由 registry 定义具体 method、event、schema。
+这张图只讲一个重点：Frame Header 不承载业务语义，只负责封包、长度、分片和校验；真正的业务由 PayloadType 分发到 CONTROL / RPC / STREAM，再由 registry 定义 method、event、schema。
 
-WebSocket JSON 这类轻量路径则不需要 Standard Frame Header：
+WebSocket JSON 这类轻量路径可以跳过 Frame Header，直接复用同一套 RPC envelope：
 
 ```text
 WebSocket message payload = JSON { "sid": "...", "op": N, "d": { ... } }
 ```
 
-也就是说，AXTP 的核心不是强迫所有链路都长成同一种物理包，而是让不同链路共享同一套 RPC 语义、业务能力和事实源。
+所以 AXTP 要统一的不是“物理包长什么样”，而是四件事：
 
-再从工程职责看，它同时包含五层：
-
-```text
-Business Layer    device / display / firmware / network / stream / ...
-Registry Layer    method / event / error / schema / capability / profile
-Payload Layer     CONTROL / RPC / STREAM
-Frame Layer       Standard Frame Header / length / fragment / CRC
-Transport Layer   USB HID / TCP / WebSocket / BLE / UART / mock
-```
-
-| 层级 | 职责 | 对应解决的问题 |
-|---|---|---|
-| Transport | 只负责 HID、TCP、WebSocket、BLE、UART 等链路承载 | 解决“每种传输一套语义”的问题。 |
-| Frame | 处理 magic、version、length、fragment、CRC | 解决二进制链路封包不统一的问题。 |
-| Payload | 区分 CONTROL、RPC、STREAM | 解决控制、业务、数据流混杂的问题。 |
-| Registry | 定义 method、event、error、schema、capability、profile | 解决协议事实分散和无法生成的问题。 |
-| Business | 实现真实设备能力 | 解决旧命令表无法表达稳定能力边界的问题。 |
-
-这五层的关系可以这样理解：
-
-```text
-Transport 解决“怎么送到”
-Frame 解决“怎么切包和校验”
-Payload 解决“这包属于哪类通道”
-Registry 解决“这包里的业务合同是什么”
-Business 解决“设备实际做什么”
-```
+- 不同传输共享同一套 RPC 语义。
+- 控制面、业务控制面和数据面分开。
+- method / event / error / schema 只以 registry 为事实源。
+- generator、runtime、mock server 和 conformance 都围绕同一份事实源工作。
 
 ### 2.3 三类 Payload 如何分工
 
@@ -256,132 +245,54 @@ spec tag
 
 ## 3. 各个角色怎么用这个东西？
 
-### 3.1 产品 / 业务
-
-产品和业务同学不需要直接写 YAML，也不应该直接要求“加一个字段”。更好的输入是：
+一句话分工：
 
 ```text
-用户要完成什么任务？
-设备应该暴露什么能力？
-哪些状态需要主动通知？
-哪些异常需要恢复？
-哪些旧协议行为必须兼容？
-这个能力属于 P0、P1 还是 P2？
+产品讲清楚要解决什么问题；
+协议维护者把需求变成可评审、可生成的协议事实；
+runtime / SDK / mock server 按 generated 合同实现；
+测试按 conformance 验收；
+发布按 spec tag 和 runtime spec lock 管版本。
 ```
 
-主要入口：
+### 3.1 阶段和角色分工
 
-| 目标 | 路径 |
+| 阶段 | 产品 / 业务 | 协议维护者 / 架构 | Runtime / SDK / Mock | 测试 / Conformance | 产物 |
+|---|---|---|---|---|---|
+| 1. 提需求 | 说明用户任务、设备能力、异常、优先级和旧协议证据。 | 判断是否需要 flow 或 protocol draft。 | 提供实现限制，例如 MTU、内存、链路方向。 | 提供验收视角和历史问题。 | `docs/business/`、`docs/legacy-migration/evidence/` |
+| 2. 画流程 | 确认端到端场景是否符合产品预期。 | 写 `docs/flows/`，标出已覆盖和缺口。 | 确认链路、时序、状态机是否能实现。 | 确认可测点、超时、失败路径。 | `docs/flows/<scenario>.md` |
+| 3. 写草案 | 确认业务字段、状态、事件和兼容要求。 | 写 `docs/protocol/<domain>/<feature>.md` 并组织评审。 | 评估字段、编码、错误码和资源成本。 | 提前提出 conformance case 方向。 | RFC / Draft |
+| 4. 采纳事实 | 确认 P0/P1 范围。 | 写入 `registry/` 和 `registry/domains/`，不手写 generated。 | 准备按 generated 合同实现。 | 准备按 generated 合同验收。 | YAML 事实源 |
+| 5. 生成验证 | 查看 generated 文档是否符合预期。 | 运行 generator、validate、conformance 源校验。 | 消费 `protocol/axtp.protocol.yaml` 和 `docs/generated/protocol.json`。 | 更新或执行 `docs/conformance/**`。 | `protocol/`、`docs/generated/`、conformance |
+| 6. 发布接入 | 决定产品批次和交付窗口。 | 发布 spec tag / artifact。 | 更新 `AXTP_SPEC.lock.yaml` 并实现 runtime。 | 按 runtime 声明 level 验收。 | spec tag、runtime spec lock |
+
+### 3.2 流程图
+
+```mermaid
+flowchart TD
+    A["产品需求 / 用户 story / 旧协议证据"] --> B["docs/business 或 docs/flows"]
+    B --> C["docs/protocol RFC 草案"]
+    C --> D{"评审通过?"}
+    D -->|"否"| C
+    D -->|"是"| E["registry / registry/domains 事实源"]
+    E --> F["generator"]
+    F --> G["protocol/axtp.protocol.yaml<br/>docs/generated/*"]
+    G --> H["runtime / SDK / mock server 实现"]
+    G --> I["docs/conformance/** 验收"]
+    H --> I
+    I --> J{"验收通过?"}
+    J -->|"否"| K["回到草案、YAML 或 runtime 修正"]
+    K --> C
+    J -->|"是"| L["spec tag / release artifact / runtime spec lock"]
+```
+
+### 3.3 三条底线
+
+| 底线 | 原因 |
 |---|---|
-| 写业务需求 | `docs/business/` |
-| 描述端到端交互 | `docs/flows/` |
-| 提供旧协议证据 | `docs/legacy-migration/evidence/` |
-
-### 3.2 协议维护者 / 架构
-
-协议维护者负责把自然语言需求推进到协议生命周期中：
-
-```text
-需求 / story / legacy evidence
-  -> flow
-  -> protocol draft
-  -> review
-  -> registry adoption
-  -> generate
-  -> validate
-```
-
-主要入口：
-
-| 目标 | 文档 / 路径 |
-|---|---|
-| 判断当前请求属于哪个阶段 | `docs/guides/how-to-use.md` |
-| 查看 lifecycle skills | `docs/dev/skills/README.md` |
-| 起草 RFC | `docs/protocol/` |
-| 采纳事实 | `registry/`、`registry/domains/` |
-| 生成输出 | `protocol/axtp.protocol.yaml`、`docs/generated/` |
-
-底线：
-
-```text
-不绕过 docs/protocol/ 直接写 registry。
-不从未评审草案生成 runtime 合同。
-不手写 generated artifacts。
-不复用已稳定的 methodId / eventId / fieldId / errorCode。
-```
-
-### 3.3 Runtime / SDK / mock server
-
-runtime 和 SDK 团队只消费已经采纳的协议事实：
-
-```text
-AXTP_SPEC.lock.yaml
-protocol/axtp.protocol.yaml
-docs/generated/protocol.json
-docs/conformance/**
-```
-
-第一周最小目标：
-
-| runtime 类型 | MVP |
-|---|---|
-| WebSocket JSON | Hello / Identify / Identified + Request / Response / Event |
-| Standard Framed | Frame parser + CRC + CONTROL OPEN/ACCEPT + HEARTBEAT + CLOSE + RPC session |
-| mock server | generated method、标准错误、event smoke |
-| 固件 / MCU | OPEN / ACCEPT、HEARTBEAT、CLOSE、基础 RPC |
-
-主要入口：
-
-| 目标 | 文档 |
-|---|---|
-| 最快跑通业务 RPC | `docs/guides/quickstart.md` |
-| 理解核心握手、sid、requestId | `docs/guides/core-protocol-flow.md` |
-| 实现 runtime MVP | `docs/guides/runtime-mvp-conformance.md` |
-
-### 3.4 测试 / conformance
-
-测试团队不从草案写用例，不从旧 Word 文档猜字段。测试输入来自：
-
-```text
-runtime 声明的 spec tag / commit
-docs/generated/protocol.json
-docs/conformance/manifest.yaml
-docs/conformance/cases/**
-runtime 声明的 profile / level
-```
-
-测试要判断的不只是“通过 / 不通过”，还要归类失败：
-
-| 失败类型 | 归属 |
-|---|---|
-| runtime 行为不符合 generated / conformance | runtime 缺陷 |
-| case 与当前 Phase 1 裁决冲突 | 主库 conformance 缺陷 |
-| generated 与 registry 不一致 | 主库 Generator / source 缺陷 |
-| runtime 声明支持但未实现 | runtime profile 声明缺陷 |
-| spec path、版本、环境不对 | 测试环境问题 |
-
-主要入口：
-
-```text
-docs/guides/testing-conformance-quickstart.md
-docs/conformance/README.md
-```
-
-### 3.5 发布 / 项目管理
-
-发布和项目管理关注三件事：
-
-1. 当前 runtime 绑定哪个 spec tag / commit。
-2. 当前产品要交付哪些 P0/P1/P2 能力。
-3. release gate 是否基于 conformance 和 runtime 声明能力，而不是基于口头承诺。
-
-主要入口：
-
-```text
-docs/release/
-AXTP_SPEC.lock.yaml
-scripts/build-spec-artifact.sh
-```
+| 不绕过 `docs/protocol/` 直接写 `registry/` | 草案要先被业务、研发、测试和架构看懂并确认。 |
+| 不手写 `docs/generated/` 或 `protocol/axtp.protocol.yaml` | generated 只能从 YAML 事实源生成。 |
+| runtime 不按草案发布合同 | runtime 只能绑定明确 spec tag / commit 和 generated protocol。 |
 
 ## 4. 后续如何推进？Roadmap 如何？
 
@@ -397,31 +308,18 @@ AXTP 后续不追求一次性把所有协议域写全。正确节奏是：
 最后完善工具链、conformance 和 release 质量。
 ```
 
-### 4.2 阶段路线
+### 4.2 阶段与版本路线
 
-| 阶段 | 目标 | 核心交付 | 验收 |
-|---|---|---|---|
-| Phase 1 | 核心协议冻结 | Hello / Identify / OPEN / ACCEPT / HEARTBEAT / CLOSE / sid / requestId / event / error / RPC encoding | JSON 与 Standard Framed 两条链路都能解释。 |
-| Phase 2 | Core Runtime MVP | Frame、Session、Request、Event、Error、Capability、Transport 抽象 | client / server 完成最小通信闭环。 |
-| Phase 3 | NA20 首个落地 | pairing、OTA、stream、flow-control、server endpoint、`axtpctl` | 上位机能发现、配对、拉流、收事件、触发升级流程。 |
-| Phase 4 | 老协议迁移策略 | AXDP 重建，Rooms / Signage / uxplay 平移，VM33 HTTP + AXTP hybrid | 老业务可通过 AXTP 统一入口访问，迁移路径清楚。 |
-| Phase 5 | 能力域评审节奏 | `device.*`、`system.*`、framing、camera、diagnostic、room/signage 分批评审 | 每个 capability 有 schema、示例、错误码、legacy 映射和测试。 |
-| Phase 6 | 发现与工具链 | `axtp.discovery`、`axtpctl`、mock server、probe、inspector、replay | 研发能发现设备、连接设备、调试协议、回放问题。 |
-| Phase 7 | Conformance 与发布质量 | core conformance、业务 conformance、runtime 互通矩阵、release artifact | 多端 runtime 行为一致，发布可验证。 |
-| v1.0 | 稳定协议基础设施 | 稳定 wire protocol、registry、runtime 接口、工具链、迁移体系 | 新设备接入、老协议迁移、新 capability 新增都有标准流程。 |
+| 阶段 | 推荐版本 | 目标 | 核心交付 | 验收 |
+|---|---|---|---|---|
+| Phase 1 | v0.1 | 协议核心可跑 | Hello / Identify、OPEN / ACCEPT、HEARTBEAT、CLOSE、Request / Response / Event / Error、sid / requestId、RPC encoding、mock server、client demo。 | WebSocket JSON 与 Standard Framed 两条链路都能解释并跑通最小 RPC。 |
+| Phase 2 | v0.2 | 首个真实业务闭环 | NA20 server endpoint、pairing、video/audio stream RPC 控制面 + STREAM 数据面、flow-control event、基础 conformance。 | 上位机能发现、配对、拉流、收事件，并通过基础 runtime/conformance 验收。 |
+| Phase 3 | v0.3 | 设备控制能力完善 | `device.*`、`system.*`、framing、focus / zoom / ptz、camera image / exposure / whiteBalance / calibration。 | 常见设备控制能力有 schema、示例、错误码、legacy 映射和测试入口。 |
+| Phase 4 | v0.4 | 老协议迁移适配 | AXDP 重建，Rooms / Signage / uxplay 平移，VM33 HTTP + AXTP hybrid，migration docs，legacy mapping。 | 老业务可通过 AXTP 统一入口访问，迁移路径清楚。 |
+| Phase 5 | v0.5 | 工具链与多端 runtime | `axtpctl`、`axtp-probe`、`axtp-mock-server`、`axtp-conformance`、多语言 runtime 基础一致。 | 研发能发现设备、连接设备、调试协议、回放问题，多端 runtime 行为一致。 |
+| Phase 6 | v1.0 | 稳定协议基础设施 | 稳定 wire protocol、registry、runtime 接口、工具链、release artifact、完整 conformance suite。 | 新设备接入、老协议迁移、新 capability 新增都有标准流程和可验证交付物。 |
 
-### 4.3 推荐版本路线
-
-| 版本 | 目标 | 重点交付 |
-|---|---|---|
-| v0.1 | 协议核心可跑 | Hello / Identify / OPEN / ACCEPT、HEARTBEAT、CLOSE、Request / Response / Event / Error、sid / requestId、mock server、client demo。 |
-| v0.2 | NA20 首个业务闭环 | NA20 server endpoint、pairing、video/audio stream RPC 控制面 + STREAM 数据面、flow-control event、基础 conformance。 |
-| v0.3 | 设备控制能力完善 | `device.*`、`system.*`、framing、focus / zoom / ptz、camera image / exposure / whiteBalance / calibration。 |
-| v0.4 | 老协议迁移适配 | Rooms Adapter、Signage Adapter、uxplay Adapter、VM33 hybrid、AXDP migration docs、legacy mapping。 |
-| v0.5 | 工具链与多端 runtime | `axtpctl`、`axtp-probe`、`axtp-mock-server`、`axtp-conformance`、多语言 runtime 基础一致。 |
-| v1.0 | 稳定协议库 | 稳定 core API、wire protocol、capability registry、error code、runtime 接口、完整 conformance suite。 |
-
-### 4.4 近期 P0 / P1 / P2
+### 4.3 近期 P0 / P1 / P2
 
 | 优先级 | 做什么 | 为什么 |
 |---|---|---|
@@ -434,7 +332,7 @@ AXTP 后续不追求一次性把所有协议域写全。正确节奏是：
 | P2 | 固件 / 文件 / 日志类 STREAM profile、ACK/NACK、RESUME、低带宽、强认证 / 加密 | 等固件升级、弱链路、客户安全需求明确后推进。 |
 | P2 | Rooms / Signage / uxplay / VM33 深度迁移 | 先 adapter 接入，再逐步标准化 capability。 |
 
-### 4.5 会后行动清单
+### 4.4 会后行动清单
 
 | 团队 | 下一步 |
 |---|---|
