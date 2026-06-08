@@ -34,14 +34,14 @@ pnpm lint             # tsc --noEmit type check
 pnpm vitest run src/validator.test.ts
 
 # Validation
-pnpm validate:sources  # validate registry/ + domains/ + Protocol IR consistency (run this before committing)
-pnpm validate:protocol # validate protocol/axtp.protocol.yaml against spec docs
+pnpm validate:sources   # validate registry/ + domains/ + Protocol IR consistency (run before committing)
+pnpm validate:protocol  # validate protocol/axtp.protocol.yaml against spec docs
 
 # Generation
-pnpm generate          # full pipeline: build Protocol IR + all artifacts
-pnpm build:protocol    # only write protocol/axtp.protocol.yaml
-pnpm emit:protocol     # only write docs/generated/protocol.md + protocol.json (requires IR to exist)
-pnpm generate:registry # only write registry docs, C++ headers, tooling JSON, test vectors
+pnpm generate           # full pipeline: build Protocol IR + all artifacts
+pnpm build:protocol     # only write protocol/axtp.protocol.yaml
+pnpm emit:protocol      # only write docs/generated/protocol.md + protocol.json (requires IR to exist)
+pnpm generate:registry  # only write registry docs, C++ headers, tooling JSON, test vectors
 ```
 
 Shorthand from repo root (no `cd` needed):
@@ -76,7 +76,7 @@ Key generator source files in `generators/src/`:
 | `protocolBuilder.ts` | Aggregates Source Model → Protocol IR |
 | `protocolValidator.ts` | Validates Protocol IR structure and wire facts |
 | `protocolDocsValidator.ts` | Cross-checks IR against spec docs |
-| `emitters/` | One file per output target (protocolMarkdown, protocolJson, markdown, json, cpp, testVectors) |
+| `emitters/` | One file per output target: `protocolMarkdown`, `protocolJson`, `markdown`, `json`, `cpp`, `dart`, `ts`, `testVectors` |
 
 ## Protocol Architecture
 
@@ -108,29 +108,31 @@ Byte order: Little-Endian for all multi-byte integers.
 ```text
 registry/
 ├── core/          # protocol_meta, payload_type, control_opcode, rpc_encoding, stream_profile
-├── method/        # adopted method entries
-├── event/         # adopted event entries
 ├── error/         # error codes
 ├── capability/    # capability registry + MVP profile
 ├── schema/        # shared TLV type definitions
 ├── legacy/        # old-protocol → AXTP method mappings
-└── domains/       # per-domain YAML (network/, stream/, …)
-    └── <domain>/domain.yaml
+└── domains/       # per-domain YAML — all business methods, events, and types live here
+    └── audio/domain.yaml   # only domain with a populated domain.yaml so far
 ```
+
+All business methods, events, capabilities, and types for a domain live in `registry/domains/<domain>/domain.yaml`. Many domains have draft proposals in `docs/protocol/` but have not yet been adopted into `registry/domains/`. Treat any domain directory under `docs/protocol/` as a draft stage unless a corresponding `registry/domains/<domain>/domain.yaml` exists.
 
 ## Protocol Lifecycle
 
-Classify protocol work before editing:
+Classify protocol work before editing.
 
-The numbered skill directory index is `docs/dev/skills/README.md`; directory numbers are for browsing order, while each `SKILL.md` keeps its semantic `name`.
+The numbered skill directory index is `docs/dev/skills/README.md`; directory numbers are for browsing order, while each `SKILL.md` keeps its semantic `name`. When the correct stage is unclear, start with Stage 00.
 
 | Request state | Correct path | Allowed edits |
-|---|---|---|
+| --- | --- | --- |
+| Unclear which lifecycle stage applies | `docs/dev/skills/00-axtp-protocol-workflow/SKILL.md` | — |
 | Stage 10: business scenario, user story, UI prototype, or interaction flow needs protocol mapping | `docs/dev/skills/10-plan-protocol-flow/SKILL.md` | `docs/flows/**` |
 | Rough product/business requirement | `docs/dev/skills/20-draft-business-protocol/SKILL.md` | `docs/protocol/**` |
 | Reviewed draft should become formal protocol | `docs/dev/skills/30-adopt-protocol-draft/SKILL.md` | adopted draft, Registry/Profile/Capability Types specs as needed, registry YAML |
 | Already-adopted/generated fact needs semantic change | `docs/dev/skills/40-amend-adopted-protocol/SKILL.md` | adopted proposal, specs/YAML, generated only via Generator |
 | YAML facts are ready and outputs need refresh | `docs/dev/skills/50-generate-axtp-protocol/SKILL.md` | generated outputs via Generator |
+| Ready for a versioned release | `docs/dev/skills/60-release-axtp-spec/SKILL.md` | release artifacts, Git tag |
 | Runtime/SDK/tool implementation | normal code workflow | non-generated runtime/SDK/tool code |
 
 Direct registry edits are exceptional. Use core `registry/` files only for core constants, shared schemas, MVP/Core adopted entries, profile governance, and accepted legacy mappings. New ordinary business facts default to `registry/domains/<domain>/domain.yaml` after adoption.
@@ -166,13 +168,32 @@ types:
         required: true
 ```
 
-See `registry/domains/network/domain.yaml` and `registry/domains/stream/domain.yaml` for real examples.
+See `registry/domains/audio/domain.yaml` for a complete real-world domain example.
 
 **New public schema** → `registry/schema/*.yaml`  
 **New error code** → `registry/error/error_code.yaml` or domain YAML  
 **New capability** → `registry/capability/capability_registry.yaml` or domain YAML  
 **New spec doc** → `docs/specs/NN-AXTP-<Title>.md` (follow existing numbering)  
 **Core constants** (transport, payload type, control opcode) → `registry/core/*.yaml`
+
+## Conformance
+
+Runtime conformance cases live in `docs/conformance/`:
+
+```text
+docs/conformance/
+├── manifest.yaml       # conformance levels and required cases per level
+├── profiles/           # per-profile expectations (core, framed-binary, websocket-jsonrpc, stream)
+├── cases/
+│   ├── handshake/      # OPEN/ACCEPT, HEARTBEAT, CLOSE
+│   ├── rpc/            # request/response, requestId matching, errors
+│   ├── capability/     # capability queries, method binding
+│   └── stream/         # stream lifecycle
+├── fixtures/           # device image definitions for testing
+└── schemas/            # JSON Schema for case validation
+```
+
+These are the source of truth for runtime implementation correctness. New domain adoptions (Stage 30) should include at least one conformance case for each method.
 
 ## Pre-Commit Workflow
 
@@ -188,7 +209,7 @@ Commit source YAML and generated artifacts together so they stay in sync.
 ## Key Spec Documents
 
 | Doc | Content |
-|---|---|
+| --- | --- |
 | `docs/specs/1-core/03-Frame-and-Payload.md` | Wire format rules |
 | `docs/specs/1-core/06-RPC-Session.md` | RPC session lifecycle |
 | `docs/specs/1-core/07-Stream-Data-Plane.md` | STREAM data plane and 16B stream header |
