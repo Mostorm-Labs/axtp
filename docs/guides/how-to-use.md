@@ -1,8 +1,20 @@
 # 如何使用 AXTP
 
-使用这个仓库时，优先用自然语言描述你想完成的协议工作。AXTP 已经围绕 lifecycle skills、generated artifacts 和 CI checks 建立了完整流水线，所以好的请求应该描述“想达成什么协议结果”，而不是从“改哪个文件、跑哪个命令”开始。
+## 你的角色是什么？
 
-如果你是 runtime、SDK、mock server 或应用侧研发，只想先把协议接通，请先看 [研发接入 Quickstart](quickstart.md)。如果你需要实现 Phase 1 的核心握手、鉴权和会话流程，请看 [核心协议流程指南](core-protocol-flow.md)。本文档更偏“如何使用主库工作流”。
+| 你的角色 | 直接看 |
+| --- | --- |
+| 协议维护者（写草案、采纳、生成、修订） | 继续读本文档 |
+| Runtime / SDK 实现者 | [研发接入 Quickstart](quickstart.md) |
+| 测试 / Conformance 验收 | [Conformance 测试入门](testing-conformance-quickstart.md) |
+| 产品 / 架构（了解协议当前状态） | [Domain 状态矩阵](../protocol/README.md) |
+| 首次接触 AXTP | [docs/README.md](../README.md) |
+
+本文档是**协议维护者的操作主页**。它回答”我现在要干什么、从哪里开始”。
+
+---
+
+使用这个仓库时，优先用自然语言描述你想完成的协议工作。AXTP 已经围绕 lifecycle skills、generated artifacts 和 CI checks 建立了完整流水线，所以好的请求应该描述”想达成什么协议结果”，而不是从”改哪个文件、跑哪个命令”开始。
 
 这份指南说明一个自然语言需求如何贯穿仓库工作流：
 
@@ -65,7 +77,7 @@ flowchart TD
 读这张图时抓住四条线：
 
 | 线索 | 含义 |
-|---|---|
+| --- | --- |
 | 自然语言输入线 | 需求可以来自 UI、用户 story、旧协议或架构想法；第一步不是写 YAML，而是让 workflow 判断阶段。 |
 | 草案评审线 | `docs/flows/` 和 `docs/protocol/` 是评审空间，保留 `[REVIEW-*]` 是正常状态，不能把未确认事实推进 registry。 |
 | 事实采纳线 | 只有 `adopt-protocol-draft` 或 `amend-adopted-protocol` 能把确认后的协议事实写入 `registry/` 和 `registry/domains/`。 |
@@ -76,7 +88,7 @@ flowchart TD
 AXTP 仓库里有三类材料：
 
 | 类型 | 路径 | 含义 |
-|---|---|---|
+| --- | --- | --- |
 | 评审输入 | `docs/business/`、`docs/flows/`、`docs/protocol/`、`docs/legacy-migration/` | 用于讨论、规划和评审，但还不是 runtime 合同。 |
 | 事实源 | `docs/specs/`、`registry/`、`registry/domains/` | 定义当前协议的人读规则和机器可读事实。 |
 | 生成合同 | `protocol/axtp.protocol.yaml`、`docs/generated/`、`tooling/test-vectors/`、Generator snapshots | 供工具、测试、release artifacts 和 runtime 仓库消费的输出。 |
@@ -136,7 +148,7 @@ AXTP 仓库里有三类材料：
 生命周期 skills：
 
 | 阶段 | Skill | 什么时候使用 | 典型输出 |
-|---:|---|---|---|
+| ---: | --- | --- | --- |
 | 00 | `axtp-protocol-workflow` | 不确定请求是规划、起草、采纳、修订、生成还是发布。 | 明确 workflow 和下一步动作。 |
 | 10 | `plan-protocol-flow` | 有场景、UI flow、用户 story 或端到端交互。 | `docs/flows/<scenario>.md`，包含消息序列、覆盖情况和协议缺口。 |
 | 20 | `draft-business-protocol` | 有粗略业务需求、legacy 线索或缺失协议行为。 | `docs/protocol/<domain>/<domain.feature>.md` RFC 草案。 |
@@ -244,7 +256,7 @@ release 路径会构建 spec artifact，将版本标记为 `spec/vMAJOR.MINOR.PA
 CI 是安全网，不是起点。
 
 | 自动化 | 保护什么 |
-|---|---|
+| --- | --- |
 | `validate-conformance.yml` | 在 pull request 和 push 到 `main` 时构建 Generator，并验证 `docs/conformance/**`。 |
 | `spec-release-dispatch.yml` | 对 `spec/v*` tag 构建 release artifact，并派发 runtime upgrade events。 |
 | `notify-runtimes.yml` | 手动为某个 spec tag 派发 runtime upgrade 通知。 |
@@ -262,17 +274,6 @@ git diff --check
 ```
 
 如果只是文档变更，通常 `git diff --check` 加上针对性的链接 / 路径检查就足够；但如果文档影响 generated facts、conformance、release artifacts 或 workflow scripts，就应该跑完整链路。
-
-## 不同角色该读什么
-
-| 角色 | 先读 | 再读 |
-|---|---|---|
-| 产品 / 架构 | `docs/business/`、`docs/flows/` | `docs/protocol/README.md` |
-| 协议维护者 | `docs/dev/skills/README.md` | `docs/specs/README.md`、`registry/` |
-| Runtime 实现者 | `docs/generated/protocol.md` | `protocol/axtp.protocol.yaml`、`docs/conformance/README.md` |
-| 测试 / conformance 负责人 | `docs/guides/testing-conformance-quickstart.md` | `docs/conformance/README.md`、generated references |
-| 发布负责人 | `docs/release/README.md` | `.github/workflows/`、`scripts/build-spec-artifact.sh` |
-| Legacy 迁移负责人 | `docs/legacy-migration/README.md` | `tooling/legacy_classification/`、`tooling/migration/` |
 
 ## 守则
 

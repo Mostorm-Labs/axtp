@@ -104,6 +104,9 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 
 ## Domain 状态矩阵
 
+> 最后更新：2026-06-09（每次 domain 状态变更后手动更新此日期）
+> 验证方式：`registry/domains/` 下有 `domain.yaml` 的 domain 为已 generated；其余为草案状态。
+
 本表用于让研发、测试和产品快速判断每个 domain 当前走到哪里。`Generated` 统计当前 generated protocol 中已经落地的方法和事件数量；`video` / `audio` 的 P0 stream 优先级表示要同时采纳 RPC 建流/关流控制面和 STREAM 数据面字段约束。
 
 | Domain | Drafts | Review | Generated | Priority | Next Step |

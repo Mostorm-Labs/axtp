@@ -59,6 +59,8 @@ export AXTP_SPEC_PATH=/Users/qing/Desktop/sources/gitee/axtp
 
 适合 App、Web、Node、Python、mock server、云端控制面。
 
+> 字段完整规范（sid 格式、eventMasks 编码、rpcVersion 协商、认证挑战）见 [docs/specs/1-core/06-RPC-Session.md](../specs/1-core/06-RPC-Session.md)。
+
 | 检查项 | 通过标准 |
 |---|---|
 | 连接建立 | WebSocket open 后，Logical Server 先发送 Hello。 |
@@ -75,6 +77,8 @@ export AXTP_SPEC_PATH=/Users/qing/Desktop/sources/gitee/axtp
 ## 4. Standard Framed MVP Checklist
 
 适合 TCP、USB HID、需要二进制 Frame Header 或 STREAM 数据面的设备链路。
+
+> Frame Header 和 CRC 规范见 [docs/specs/1-core/03-Frame-and-Payload.md](../specs/1-core/03-Frame-and-Payload.md)，CONTROL 会话见 [docs/specs/1-core/05-Control-Session.md](../specs/1-core/05-Control-Session.md)，STREAM 数据面见 [docs/specs/1-core/07-Stream-Data-Plane.md](../specs/1-core/07-Stream-Data-Plane.md)。
 
 | 检查项 | 通过标准 |
 |---|---|
@@ -94,55 +98,15 @@ export AXTP_SPEC_PATH=/Users/qing/Desktop/sources/gitee/axtp
 | STREAM close | 通过 RPC 关闭 stream context，释放 `streamId`。 |
 | Conformance | 至少通过 `core` 和 `framed-binary` level。 |
 
-## 5. Conformance Quickstart
+## 5. Conformance 接入
 
-主库先验证 conformance 源文件：
+Conformance 运行方式、level 选择和 case 清单见 [docs/conformance/README.md](../conformance/README.md)。
 
-```bash
-pnpm --dir generators install --frozen-lockfile
-pnpm --dir generators build
-scripts/validate-conformance.sh
-```
-
-runtime 仓库接入时，先让测试脚本找到 spec：
+runtime 仓库接入时先设置：
 
 ```bash
 export AXTP_SPEC_PATH=/path/to/axtp-spec-or-release-artifact
 ```
-
-runtime 脚本应兼容两个路径：
-
-```text
-$AXTP_SPEC_PATH/docs/conformance
-$AXTP_SPEC_PATH/conformance
-```
-
-第一个路径用于 spec 源码 checkout，第二个路径用于 release artifact 兼容。
-
-选择要声明的 level：
-
-| runtime 类型 | 最小 level | 之后可加 |
-|---|---|---|
-| WebSocket JSON | `core`、`websocket-jsonrpc` | `capability`、`event` |
-| Standard Framed | `core`、`framed-binary` | `capability`、`event` |
-| mock server | `core`、`websocket-jsonrpc` | `capability`、`event` |
-| 固件 / MCU | `core`、`framed-binary` | `stream` 或低带宽 profile |
-
-当前 `framed-binary` 最小握手用例应覆盖：
-
-```text
-handshake.open_accept
-handshake.heartbeat
-handshake.close
-rpc.request_id_match
-stream.stream_open
-stream.stream_data
-stream.stream_close
-```
-
-其中 `stream.stream_open` / `stream.stream_close` 验收的是 P0 媒体流业务域建流，不是常规 `stream.open` / `stream.close`。测试 fixture 以 `video.openStream` / `video.closeStream` 表示最小媒体流入口；发布前，产品使用的 video/audio 方法必须先进入 `registry/` 和 generated protocol。
-
-如果某个 case 属于 runtime 尚未声明的 profile，不要在实现里偷偷跳过；应调整 runtime 声明的 level，或者等对应能力实现后再声明支持。若 case 与 Phase 1 裁决冲突，应先修正主库 conformance case 和 manifest，再要求 runtime 通过。
 
 ## 6. 失败时先看哪里
 
