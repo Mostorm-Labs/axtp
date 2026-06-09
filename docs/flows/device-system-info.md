@@ -33,8 +33,8 @@
 | Child devices tab | 有主从或级联设备时，需要查看一级子设备、按需查看子设备详情、必要时查看完整树。 | 不应让 `device.getInfo` 默认返回所有子设备；需要 `device.childDevice` / topology 相关方法。 |
 | System status panel | 展示 CPU、内存、温度、电源/电池/供电、健康状态、在线状态。 | 已确认拆为 `system.state`、`system.power`、`system.health` 三个控制范围；旧 `device.power` / `device.state` 草案已迁移。 |
 | Lifecycle controls | 用户触发关机、立即重启、计划重启、计划关机、断开设备电源。 | 立即重启、计划重启、立即关机和计划关机归 `system.lifecycle`；断开设备电源为软件发起的 `powerOff`，归 `system.power` 动作候选，不是外部 PDU/继电器断电。 |
-| Runtime state reset | 用户触发重置设备状态，让 MCU、runtime service 或控制器从异常状态恢复。 | 属于 `system.state` 的动作型方法候选 `system.resetState`；不是恢复出厂、恢复默认配置或重新初始化设备。 |
-| Device reset | 用户触发设备软重置为出厂设置状态。 | 属于 `system.reset` 的动作型方法候选 `system.resetDevice(mode=factory_settings)`；与 MCU/runtime 状态恢复分开。 |
+| Runtime state recovery | 用户触发重置设备状态，让 MCU、runtime service 或控制器从异常状态恢复。 | 属于 `system.state` 的动作型方法候选 `system.recoverRuntimeState`；不是恢复出厂、恢复默认配置或重新初始化设备。 |
+| Device restore | 用户触发设备恢复默认配置或恢复出厂设置。 | 属于 `system.reset` 的动作型方法候选 `system.restoreDefaultSettings` / `system.restoreFactorySettings`；与 MCU/runtime 状态恢复分开。 |
 | State change monitor | 状态变化后 UI 自动刷新。 | 需要 system runtime state changed event；若事件未采纳，首版可轮询。 |
 | UI prototype image | `[REVIEW-ASK]` 本轮未提供 UI 图；字段显示顺序、危险操作确认弹窗和权限提示需产品/UI 确认。 | 不新增协议，只影响 App 呈现。 |
 
@@ -47,8 +47,8 @@
 - `software.components` 表示 Launcher、Signage、Cast Receiver 等软件组件；`runtime` 表示当前 AXTP runtime 和 host app。
 - 运行时状态建议收敛到 `system`，并拆成 `system.state`、`system.power`、`system.health`：`device` 专注身份、产品和拓扑。
 - 关机、立即重启、计划重启和计划关机属于 system lifecycle control；断开设备电源是软件关机方式实现的 `powerOff`，归 system power control。
-- 重置设备状态用于从 MCU、runtime service 或控制器异常状态中恢复，归 `system.state` 的 runtime state action；恢复默认/恢复出厂属于 reset/initialization 边界，不能混在 `device.info` 或 `system.state`。
-- 重置设备为出厂设置状态属于 `system.reset` 的设备级 soft reset，需要危险操作确认、可查询状态和清除/保留范围确认。
+- 重置设备状态用于从 MCU、runtime service 或控制器异常状态中恢复，归 `system.state` 的 `recoverRuntimeState` action；恢复默认/恢复出厂属于 `system.reset` 边界，不能混在 `device.info` 或 `system.state`。
+- 重置设备为出厂设置状态属于 `system.reset` 的 `restoreFactorySettings`，恢复默认配置属于 `system.restoreDefaultSettings`；二者都需要危险操作确认、可查询 reset status 和清除/保留范围确认。
 
 ## 3. Assumptions And Non-Goals
 
@@ -62,8 +62,8 @@
 | Assumption | “断开设备的电源”定义为 `powerOff`：由软件发起的关机下电流程，不是 suspend，也不是外部 PDU/继电器硬断电。 | `[REVIEW-OK]` |
 | Assumption | 计划重启是 lifecycle schedule，使用 `system.getLifecycleSchedules` / `system.setRebootSchedule` / `system.cancelLifecycleSchedule`；不放入 `system.power` 的电源计划。 | `[REVIEW-OK]` |
 | Assumption | 计划关机是 lifecycle schedule，使用 `system.getLifecycleSchedules` / `system.setShutdownSchedule` / `system.cancelLifecycleSchedule`；与 `system.power` 的硬件/固件级 power schedule 分开建模。 | `[REVIEW-DRAFT]` |
-| Assumption | 重置设备状态是运行时恢复动作，使用 `system.resetState`；不代表恢复默认配置、恢复出厂或首次初始化。 | `[REVIEW-DRAFT]` |
-| Assumption | 重置设备为出厂设置状态是设备级 soft reset，使用 `system.resetDevice(mode=factory_settings)`；默认应保留硬件身份字段，具体清除范围需确认。 | `[REVIEW-DRAFT]` |
+| Assumption | 重置设备状态是运行时恢复动作，使用 `system.recoverRuntimeState`；不代表恢复默认配置、恢复出厂或首次初始化。 | `[REVIEW-DRAFT]` |
+| Assumption | 重置设备为出厂设置状态是设备级 factory settings restore，使用 `system.restoreFactorySettings`；默认应保留硬件身份字段，具体清除范围需确认。 | `[REVIEW-DRAFT]` |
 | Assumption | 旧 `device.power` 线索仅作为 legacy mapping 背景，电源状态和控制进入 `system.power`。 | `[REVIEW-DRAFT]` |
 | Non-goal | 本 flow 不是最终协议事实源；协议细节进入 `docs/protocol/**` 草案，registry YAML、Protocol IR 和 generated 文件不在本阶段修改。 | `[REVIEW-OK]` |
 | Non-goal | 不设计 network、storage、audio、firmware 等非 device/system 业务细节。 | `[REVIEW-OK]` |
@@ -83,14 +83,14 @@
 | 查询完整设备拓扑 | Missing / optional draft extension | Candidate `device.getTopology` | pasted reference text 2 | P1/P2 转 Stage 20；不作为 P0 代替 `getChildren`。 |
 | 子设备状态变化通知 | Drafted only / naming gap | `device.childDeviceStateChanged` candidate | `docs/legacy-migration/classification/device.md`, `docs/protocol/device/device.childDevice.md` | 转 Stage 20 明确 child attached/detached/online/health event。 |
 | 获取 CPU、内存、在线、uptime 等通用运行状态 | Drafted only / confirmed system split | `system.state`; migrated from old `device.state` direction | user confirmation, `docs/protocol/system/system.state.md` | Stage 20 已新增 `system.state`，承载通用 runtime state，不承载 power/health 细节。 |
-| 重置设备运行状态以恢复异常 | Drafted only / new scenario | `system.state`; candidate `system.resetState` | `docs/business/device-system-info.md`, `docs/protocol/system/system.state.md` | Stage 20 已为 MCU/runtime/controller 状态恢复定义动作、scope、权限、状态事件和错误。 |
+| 重置设备运行状态以恢复异常 | Drafted only / new scenario | `system.state`; candidate `system.recoverRuntimeState` | `docs/business/device-system-info.md`, `docs/protocol/system/system.state.md` | Stage 20 已为 MCU/runtime/controller 状态恢复定义动作、scope、权限、状态事件和错误。 |
 | 获取电源、电池、供电状态和执行 power off | Drafted only / confirmed system split | `system.power`; migrated from old `device.power` direction | user confirmation, `docs/protocol/system/system.power.md` | Stage 20 已新增 `system.power`，承载 power state、power schedule、software `powerOff`。 |
 | 获取温度、健康状态、告警摘要 | Drafted only / confirmed system split | `system.health` | user confirmation, `docs/protocol/system/system.health.md` | Stage 20 已新增 `system.health`，承载 health、temperature、warnings、degraded/fault 状态。 |
 | 监听运行时状态变化 | Drafted only / split events | `system.stateChanged`, `system.powerStateChanged`, `system.healthChanged` | user confirmation, `docs/protocol/system/**` | Stage 20 已设计轮询和事件策略、字段变化粒度和节流。 |
 | 关机、立即重启、计划重启和计划关机控制 | Drafted only / updated method set | `system.lifecycle`; candidates `system.reboot`, `system.shutdown`, `system.getLifecycleSchedules`, `system.setRebootSchedule`, `system.setShutdownSchedule`, `system.cancelLifecycleSchedule` | `docs/protocol/system/system.lifecycle.md`, `docs/legacy-migration/classification/system.md` | Stage 20 已补 lifecycle action methods、计划任务 get/set/cancel、危险操作确认语义、计划语义、状态事件和错误。 |
 | 断开设备电源 | Drafted only / confirmed power action | `system.power`; candidate `system.powerOff` | user confirmation, `docs/protocol/system/system.power.md` | Stage 20 已定义软件发起的 power off 行为；不是 suspend，也不是外部 PDU/继电器硬断电。 |
-| 设备软重置为出厂设置状态 | Drafted only / new scenario | `system.reset`; candidate `system.resetDevice(mode=factory_settings)` | `docs/business/device-system-info.md`, `docs/protocol/system/system.reset.md` | Stage 20 已补设备级 soft reset、能力查询、状态查询、状态事件和危险操作确认。 |
-| 首次初始化/初始化向导 | Drafted only / semantic split | `system.initialization` | `docs/protocol/system/system.initialization.md` | 不混入 factory settings soft reset；初始化向导另走 `system.initialization`。 |
+| 设备恢复默认配置或出厂设置 | Drafted only / new scenario | `system.reset`; candidates `system.restoreDefaultSettings`, `system.restoreFactorySettings` | `docs/business/device-system-info.md`, `docs/protocol/system/system.reset.md` | Stage 20 已补设备级 restore、能力查询、status 查询、status 事件和危险操作确认。 |
+| 首次初始化/初始化向导 | Drafted only / semantic split | `system.initialization` | `docs/protocol/system/system.initialization.md` | 不混入 factory settings soft restore；初始化向导另走 `system.initialization`。 |
 | 系统时间 | Drafted only | `system.time` | `docs/protocol/system/system.time.md` | 本 flow 仅作为 system 示例，不展开；时间配置另走专门 flow/draft。 |
 
 ## 5. End-To-End Sequence
@@ -152,22 +152,22 @@ sequenceDiagram
         Device-->>App: system.lifecycleStateChanged (draft candidate)
     end
 
-    opt User resets runtime state
+    opt User recovers runtime state
         User->>App: Reset abnormal runtime/device state
-        App->>Device: system.resetState (draft candidate)
-        Device->>System: Reset selected runtime, MCU, controller or service state
-        System-->>Device: Reset accepted or completed
-        Device-->>App: Reset state result
+        App->>Device: system.recoverRuntimeState (draft candidate)
+        Device->>System: Recover selected runtime, MCU, controller or service state
+        System-->>Device: Recovery accepted or completed
+        Device-->>App: Runtime recovery result
         Device-->>App: system.stateChanged (draft candidate)
     end
 
-    opt User resets device to factory settings
-        User->>App: Soft reset device to factory settings
-        App->>Device: system.getResetCapabilities / system.resetDevice (draft candidates)
-        Device->>System: Validate confirmation and start factory settings reset
-        System-->>Device: Reset accepted, disconnect/reboot expected
-        Device-->>App: Reset device result
-        Device-->>App: system.resetStateChanged (draft candidate)
+    opt User restores device to factory settings
+        User->>App: Restore device to factory settings
+        App->>Device: system.getResetCapabilities / system.restoreFactorySettings (draft candidates)
+        Device->>System: Validate confirmation and start factory settings restore
+        System-->>Device: Restore accepted, disconnect/reboot expected
+        Device-->>App: Factory restore result
+        Device-->>App: system.resetStatusChanged (draft candidate)
     end
 ```
 
@@ -194,10 +194,10 @@ sequenceDiagram
 | 17 | User / App / Device | 取消计划任务。 | Draft `system.cancelLifecycleSchedule` candidate | 需要 scheduleId/type/reason/expectedVersion；用于取消计划重启或计划关机。 | 设备取消计划并返回新的 schedule 集合版本。 | 找不到计划返回 `NOT_FOUND`；版本冲突需重新读取 schedule。 |
 | 18 | User / App / Device | 执行关机。 | Draft `system.shutdown` candidate | 软件发起的 graceful shutdown，不等同于 power off。 | 设备进入 shutting_down，连接可能断开。 | 权限不足或 busy 时返回 typed error。 |
 | 19 | User / App / Device | 执行断开设备电源。 | Draft `system.powerOff` candidate under `system.power` | 已确认语义：通过软件关机方式实现的 power off；不是 suspend，也不是外部 PDU/继电器断电。 | 设备进入 powering_off / powered_off，连接断开。 | 不支持软件 power off 时返回 `NOT_SUPPORTED`；不走外部硬件协议。 |
-| 20 | User / App / Device | 重置设备运行状态。 | Draft `system.resetState` candidate under `system.state` | 需要 scope、reason、可选 componentId/confirmation token；用于 MCU、runtime service 或控制器异常状态恢复。 | 设备接受或完成状态重置，随后通过 `system.stateChanged` 校准。 | 不支持该 scope 返回 `NOT_SUPPORTED`；危险/忙状态返回 typed error。 |
-| 21 | User / App / Device | 设备软重置为出厂设置状态。 | Draft `system.getResetCapabilities`, `system.resetDevice`, `system.getResetState` candidates under `system.reset` | 需要 mode=`factory_settings`、scope/preserve、reason、confirmation token；属于危险操作。 | 设备接受 reset，返回 actionId、reset state、disconnectExpected/rebootExpected。 | 权限不足、确认缺失、scope 不支持或系统忙时返回 typed error。 |
-| 22 | User / App / Device | 监听 lifecycle / power / state / reset 状态。 | Draft `system.lifecycleStateChanged`, `system.powerStateChanged`, `system.stateChanged`, `system.resetStateChanged` candidates | 上报 reboot_scheduled、shutdown_scheduled、rebooting、shutting_down、powering_off、state reset completed、factory reset progress、ready 等状态。 | UI 显示过渡状态并等待重连或刷新。 | 断开后 App 进入重连流程。 |
-| 23 | App / Device | 设备重连后刷新状态。 | Draft `device.getInfo`, `system.getState`, `system.getPowerState`, `system.getHealth`, `system.getResetState` | 重新读取主设备和 split system runtime；如 reset 后连接凭据变化，进入重新配网/绑定流程。 | 确认设备已恢复 ready 或 reset completed。 | 超时提示人工检查。 |
+| 20 | User / App / Device | 恢复设备运行时异常状态。 | Draft `system.recoverRuntimeState` candidate under `system.state` | 需要 scope、reason、可选 componentId/confirmation token；用于 MCU、runtime service 或控制器异常状态恢复。 | 设备接受或完成状态恢复，随后通过 `system.stateChanged` 校准。 | 不支持该 scope 返回 `NOT_SUPPORTED`；危险/忙状态返回 typed error。 |
+| 21 | User / App / Device | 设备恢复默认配置或出厂设置。 | Draft `system.getResetCapabilities`, `system.restoreDefaultSettings`, `system.restoreFactorySettings`, `system.getResetStatus` candidates under `system.reset` | 需要 scope/preserve、reason、confirmation token；恢复出厂属于危险操作。 | 设备接受 restore，返回 actionId、reset status、disconnectExpected/rebootExpected。 | 权限不足、确认缺失、scope 不支持或系统忙时返回 typed error。 |
+| 22 | User / App / Device | 监听 lifecycle / power / state / reset 状态。 | Draft `system.lifecycleStateChanged`, `system.powerStateChanged`, `system.stateChanged`, `system.resetStatusChanged` candidates | 上报 reboot_scheduled、shutdown_scheduled、rebooting、shutting_down、powering_off、runtime recovery completed、factory restore progress、ready 等状态。 | UI 显示过渡状态并等待重连或刷新。 | 断开后 App 进入重连流程。 |
+| 23 | App / Device | 设备重连后刷新状态。 | Draft `device.getInfo`, `system.getState`, `system.getPowerState`, `system.getHealth`, `system.getResetStatus` | 重新读取主设备和 split system runtime；如 restore 后连接凭据变化，进入重新配网/绑定流程。 | 确认设备已恢复 ready 或 restore completed。 | 超时提示人工检查。 |
 
 ## 7. Protocol Details
 
@@ -224,8 +224,8 @@ sequenceDiagram
 | system 运行时状态需要拆分 | `system.state`, `system.power`, `system.health` | `system.getState`, `system.getPowerState`, `system.getHealth` and changed events | `draft-business-protocol` | `[REVIEW-OK]` 三个 capability 分别表达通用运行指标、电源控制/状态、健康/温度/告警。 |
 | power 当前在 device draft，但已确认归 system | `system.power` | `system.getPowerState`, `system.powerStateChanged`, `system.powerOff`, power schedule methods | `draft-business-protocol` | `[REVIEW-OK]` 迁移或废弃 `device.power` 草案，电源状态和 power off 进入 `system.power`。 |
 | CPU/内存等通用运行时状态没有 system 草案 | `system.state` | `SystemRuntimeState`, `system.getState`, `system.stateChanged` | `draft-business-protocol` | `[REVIEW-ASK]` 哪些通用运行指标是 P0，哪些是诊断/telemetry 扩展？ |
-| 重置设备状态缺动作型方法 | `system.state` | `system.resetState`, `ResetSystemStateParams`, `ResetSystemStateResult` | `draft-business-protocol` | `[REVIEW-ASK]` reset scope 是否只覆盖 runtime service / MCU / controller，是否允许 child device 或 componentId？ |
-| 设备软重置/恢复出厂缺动作型方法 | `system.reset` | `system.getResetCapabilities`, `system.getResetState`, `system.resetDevice`, `system.resetStateChanged` | `draft-business-protocol` | `[REVIEW-ASK]` factory settings reset 会清除哪些配置/数据，哪些身份和绑定字段必须保留？ |
+| 重置设备状态缺动作型方法 | `system.state` | `system.recoverRuntimeState`, `RecoverRuntimeStateParams`, `RecoverRuntimeStateResult` | `draft-business-protocol` | `[REVIEW-ASK]` recovery scope 是否只覆盖 runtime service / MCU / controller，是否允许 child device 或 componentId？ |
+| 设备恢复默认/恢复出厂缺动作型方法 | `system.reset` | `system.getResetCapabilities`, `system.getResetStatus`, `system.restoreDefaultSettings`, `system.restoreFactorySettings`, `system.resetStatusChanged` | `draft-business-protocol` | `[REVIEW-ASK]` factory settings restore 会清除哪些配置/数据，哪些身份和绑定字段必须保留？ |
 | 温度、健康和告警状态没有 system 草案 | `system.health` | `system.getHealth`, `system.healthChanged` | `draft-business-protocol` | `[REVIEW-ASK]` 温度是否属于 health P0？告警和故障枚举如何定义？ |
 | 关机/立即重启/计划重启/计划关机控制缺动作型方法 | `system.lifecycle` | `system.reboot`, `system.shutdown`, `system.getLifecycleSchedules`, `system.setRebootSchedule`, `system.setShutdownSchedule`, `system.cancelLifecycleSchedule`, lifecycle event | `draft-business-protocol` | `[REVIEW-ASK]` lifecycle schedule 的一次性/周期性计划、取消和覆盖策略如何定义？ |
 | 断开设备电源需要软件 power off 方法 | `system.power` | `system.powerOff`, `system.powerStateChanged` | `draft-business-protocol` | `[REVIEW-OK]` power off 是通过软件关机方式实现，不是 suspend 或外部 PDU/继电器断电。 |
@@ -330,7 +330,8 @@ Rules:
 {
   "uptimeSeconds": 3600,
   "online": true,
-  "stateResetSupported": true,
+  "runtimeRecoverySupported": true,
+  "recoverableScopes": ["runtime", "mcu", "controller"],
   "cpu": {
     "usagePercent": 42.5
   },
@@ -341,7 +342,7 @@ Rules:
 }
 ```
 
-`system.resetState` should answer "recover this runtime state":
+`system.recoverRuntimeState` should answer "recover this runtime state":
 
 ```json
 {
@@ -352,15 +353,26 @@ Rules:
 }
 ```
 
-`system.resetDevice` should answer "soft reset this device":
+`system.restoreDefaultSettings` should answer "restore default settings":
 
 ```json
 {
-  "mode": "factory_settings",
+  "scopes": ["settings"],
+  "preserve": ["identity", "network"],
+  "reason": "restore_defaults",
+  "rebootAfterRestore": false,
+  "confirmationToken": "TOKEN-REDACTED"
+}
+```
+
+`system.restoreFactorySettings` should answer "restore this device to factory settings through software":
+
+```json
+{
   "scopes": ["settings", "user_data"],
   "preserve": ["identity"],
   "reason": "device_reassignment",
-  "rebootAfterReset": true,
+  "rebootAfterRestore": true,
   "confirmationToken": "TOKEN-REDACTED"
 }
 ```
@@ -391,7 +403,7 @@ Rules:
 }
 ```
 
-These system shapes are candidates only. They record the confirmed direction that runtime state is split into `system.state`, `system.power`, and `system.health`, with power off represented as software-initiated `system.powerOff`. Runtime state reset is modeled as `system.resetState`; factory settings soft reset is modeled as `system.resetDevice` under `system.reset`; initialization wizard remains in `system.initialization`.
+These system shapes are candidates only. They record the confirmed direction that runtime state is split into `system.state`, `system.power`, and `system.health`, with power off represented as software-initiated `system.powerOff`. Runtime state recovery is modeled as `system.recoverRuntimeState`; default settings restore and factory settings soft restore are modeled as `system.restoreDefaultSettings` / `system.restoreFactorySettings` under `system.reset`; initialization wizard remains in `system.initialization`.
 
 ## 8. Test Fixtures
 
@@ -415,8 +427,8 @@ These system shapes are candidates only. They record the confirmed direction tha
 | `system-cancel-lifecycle-schedule-flow` | Cancel schedule removes a configured reboot/shutdown schedule and returns the new schedule version. |
 | `system-shutdown-flow` | Shutdown action requires permission and returns lifecycle transition. |
 | `system-poweroff-flow` | Power off is software-initiated shutdown/power-off, not suspend and not external PDU/relay hard cut. |
-| `system-reset-state-flow` | Reset state action targets a supported runtime/MCU/controller scope and emits or is followed by refreshed system state. |
-| `system-reset-device-factory-flow` | Factory settings soft reset requires reset capability, confirmation token, explicit preserve/scope policy and reset state/reconnect handling. |
+| `system-runtime-recovery-flow` | Runtime recovery targets a supported runtime/MCU/controller scope and emits or is followed by refreshed system state. |
+| `system-restore-factory-settings-flow` | Factory settings soft restore requires reset capability, confirmation token, explicit preserve/scope policy and reset status/reconnect handling. |
 | `unsupported-draft-method` | Before adoption/generated refresh, App does not call draft-only methods as stable contracts. |
 
 ## 9. Acceptance Gates
@@ -426,11 +438,12 @@ These system shapes are candidates only. They record the confirmed direction tha
 - Child devices and topology are queried through separate methods and have capability gates.
 - Runtime state is not mixed into device identity/product information.
 - Runtime state is split into `system.state`, `system.power`, and `system.health` before adoption.
-- Runtime state reset is explicitly modeled as `system.resetState`, not as factory reset or default configuration reset.
-- Device factory settings soft reset is explicitly modeled as `system.resetDevice(mode=factory_settings)`, not as `system.resetState`.
+- Runtime state recovery is explicitly modeled as `system.recoverRuntimeState`, not as factory settings restore or default configuration restore.
+- Device default settings restore is explicitly modeled as `system.restoreDefaultSettings`, not as `system.recoverRuntimeState`.
+- Device factory settings soft restore is explicitly modeled as `system.restoreFactorySettings`, not as `system.recoverRuntimeState`.
 - `system.powerOff` is software-initiated power off; it is not suspend or external PDU/relay hard power cut.
 - Lifecycle and power controls have explicit permissions, confirmation strategy, schedule semantics, transition state and reconnect behavior; 计划重启和计划关机都必须有可查询/可取消的策略结论。
-- Reset controls have explicit capability query, confirmation strategy, preserve/scope semantics, reset state/progress and reconnect behavior.
+- Reset controls have explicit capability query, confirmation strategy, preserve/scope semantics, reset status/progress and reconnect behavior.
 - All draft-only and missing gaps have Stage 20 follow-up before registry/YAML/generated work.
 
 ## 10. Open Questions
@@ -444,6 +457,6 @@ These system shapes are candidates only. They record the confirmed direction tha
 - `[REVIEW-ASK]` legacy 中原归 `device.power` 的字段是否全部迁移到 `system.power`，还是有部分属于 telemetry/sensor？
 - `[REVIEW-ASK]` lifecycle schedule 是否支持多个计划并存、周期性计划、覆盖已有计划、取消计划和统一查询？
 - `[REVIEW-ASK]` `system.shutdown` 与 `system.powerOff` 在状态机和事件上如何区分？
-- `[REVIEW-ASK]` `system.resetState` 的 scope 首批有哪些？是否支持 `mcu`、`runtime`、`controller`、`service` 和 `componentId`？
-- `[REVIEW-ASK]` `system.resetDevice(mode=factory_settings)` 会清除哪些配置/数据？`deviceId`、SN、license、绑定关系和网络配置是否保留？
-- `[REVIEW-ASK]` factory settings soft reset 后是否必须重启，是否会清除 AXTP 连接凭据并触发重新配网/绑定？
+- `[REVIEW-ASK]` `system.recoverRuntimeState` 的 scope 首批有哪些？是否支持 `mcu`、`runtime`、`controller`、`service` 和 `componentId`？
+- `[REVIEW-ASK]` `system.restoreFactorySettings` 会清除哪些配置/数据？`deviceId`、SN、license、绑定关系和网络配置是否保留？
+- `[REVIEW-ASK]` factory settings restore 后是否必须重启，是否会清除 AXTP 连接凭据并触发重新配网/绑定？

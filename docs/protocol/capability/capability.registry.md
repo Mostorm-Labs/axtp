@@ -224,7 +224,7 @@ Capability ID：`capability.registry`
                 "available": true
               },
               {
-                "name": "system.resetState",
+                "name": "system.recoverRuntimeState",
                 "available": true
               }
             ],
@@ -288,18 +288,23 @@ Capability ID：`capability.registry`
                 "available": true
               },
               {
-                "name": "system.getResetState",
+                "name": "system.getResetStatus",
                 "available": true
               },
               {
-                "name": "system.resetDevice",
+                "name": "system.restoreDefaultSettings",
+                "available": true,
+                "permission": "system.reset"
+              },
+              {
+                "name": "system.restoreFactorySettings",
                 "available": true,
                 "permission": "system.reset"
               }
             ],
             "events": [
               {
-                "name": "system.resetStateChanged",
+                "name": "system.resetStatusChanged",
                 "available": true,
                 "subscribed": true
               }
