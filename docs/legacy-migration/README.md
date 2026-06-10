@@ -2,6 +2,8 @@
 
 `docs/legacy-migration/` 集中保存旧协议证据、分类输出、迁移计划和 generated 迁移候选。这里是迁移工作区，不是 AXTP 当前协议事实源。
 
+> 按 AXDP、Rooms、VM33、Signage、uxplay/cast 追踪迁移状态，请看 [Migration Dashboard](MIGRATION_DASHBOARD.md)。
+
 稳定 AXTP 事实仍来自：
 
 ```text

@@ -1,3 +1,13 @@
+---
+status: draft
+contract: false
+generated: false
+domain: system
+feature: system.lifecycle
+registry: ""
+lastReviewed: 2026-06-10
+---
+
 # AXTP system.lifecycle 协议草案
 
 版本：v0.8

@@ -1,3 +1,13 @@
+---
+status: draft
+contract: false
+generated: false
+domain: video
+feature: video.stream
+registry: ""
+lastReviewed: 2026-06-10
+---
+
 # AXTP Video Stream 协议草案
 
 状态：Protocol Review Draft

@@ -1,3 +1,13 @@
+---
+status: generated
+contract: true
+generated: true
+domain: audio
+feature: audio.algorithm
+registry: registry/domains/audio/domain.yaml
+lastReviewed: 2026-06-04
+---
+
 # AXTP 音频算法配置协议方案
 
 版本：v0.3

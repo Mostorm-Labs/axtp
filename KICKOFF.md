@@ -1,5 +1,7 @@
 # AXTP Kickoff：为什么改、怎么用、如何推进
 
+This is onboarding / presentation material for R&D kickoff. It is not a protocol contract.
+
 ## 本次会议目的
 
 这次 kickoff 主要解决三件事：

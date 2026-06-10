@@ -1,10 +1,17 @@
 # AXTP Protocol Draft Intake
 
+> docs/protocol/** contains draft protocol proposals. It is not the runtime implementation contract.
+
 `docs/protocol/` 是业务协议方案输入与评审区，不是最终协议事实源。
 
 这里的文档用于沉淀产品/架构师提出的业务流程、候选 method/event/schema/error/capability/profile、旧协议线索和评审结论。只有被评审采纳、反向确认到 `docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`（涉及 profile/MVP 时同步确认 `docs/specs/2-registry/05-Profiles-Registry.md`），并写入 `registry/` 或 `registry/domains/<domain>/domain.yaml` 的内容，才进入正式生成路径。
 
 注意：`docs/protocol/` 是草案目录；根目录 `protocol/axtp.protocol.yaml` 是 Generator 输出的 Protocol IR。二者名字相近，但不能互相替代。
+
+```text
+docs/protocol/ = human-written protocol drafts
+protocol/      = generated Protocol IR
+```
 
 ## 权威边界
 
@@ -14,6 +21,36 @@
 | `registry/**/*.yaml`、`registry/domains/**/*.yaml` | 已采纳机器事实源 | 是，Generator 输入 |
 | `protocol/axtp.protocol.yaml` | 聚合后的 Protocol IR | 是，但只读，不手写 |
 | `docs/generated/protocol.md` / `.json` | 研发、测试、工具消费的当前协议参考 | 是，Generator 输出 |
+
+## 草案 Frontmatter
+
+后续所有 `docs/protocol/<domain>/<domain.feature>.md` 草案都应在文件头部补充以下 frontmatter，方便 review、迁移、生成状态和合同边界自动化检查：
+
+```yaml
+---
+status: draft | review-ok | generated | deprecated
+contract: false | true
+generated: false | true
+domain: <domain>
+feature: <domain.feature>
+registry: <optional registry path>
+lastReviewed: YYYY-MM-DD
+---
+```
+
+字段含义：
+
+| 字段 | 含义 |
+|---|---|
+| `status` | 草案当前生命周期状态；`generated` 只在 registry 存在且 generated 已通过时使用。 |
+| `contract` | 是否可作为 runtime 实现合同；draft/review-ok 通常为 `false`。 |
+| `generated` | 当前内容是否已进入 generated 输出。 |
+| `domain` | 所属 domain。 |
+| `feature` | 所属 `domain.feature`。 |
+| `registry` | 已采纳时指向对应 registry YAML；未采纳可为空字符串。 |
+| `lastReviewed` | 最近一次人工确认状态的日期。 |
+
+判断 `generated` 时不要猜：以 `registry/domains/<domain>/domain.yaml`、相关 registry YAML 和 `docs/generated/protocol.md` 为准。无法确认时使用 `status: draft`、`contract: false`、`generated: false`。
 
 ## 生成路径
 

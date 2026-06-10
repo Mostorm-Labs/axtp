@@ -2,6 +2,7 @@
 
 AXTP conformance 用例维护在 `docs/conformance/` 下，是 runtime、SDK、mock server 和工具仓库共享的行为验收输入。runtime 不应重新定义这些用例，而应加载本目录，并根据自己声明的 support level 执行匹配 case。
 
+> Runtime 支持等级、profile 声明和 `AXTP_CONFORMANCE.yaml` 示例见 [Conformance Levels](CONFORMANCE_LEVELS.md)。
 > Runtime 实现清单和常见排障见 [Runtime MVP Checklist](../guides/runtime-mvp-conformance.md)。
 
 ## 目录结构

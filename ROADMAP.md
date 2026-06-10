@@ -1,5 +1,8 @@
 # AXTP Roadmap
 
+This roadmap is planning material, not a runtime implementation contract.
+Runtime implementations must follow released artifacts, protocol/axtp.protocol.yaml, docs/generated/**, docs/specs/** and docs/conformance/**.
+
 AXTP 的目标不是“继续写更多协议文档”，而是把协议库建设成一套业务能真正接入、迁移、验证、发布的工程体系。
 
 ## 当前进度与强约束

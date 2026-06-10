@@ -7,6 +7,7 @@
 如果只想先看懂 AXTP 怎么连、线上怎么传，按下面顺序读：
 
 ```text
+00          Glossary：全局统一术语表，先统一 CONTROL / RPC / STREAM / Session 等词义
 1-core/01  总览：AXTP 分成哪几层，有哪两条连接路径
 1-core/03  Wire format：有 Frame Header 时，Header + Payload + CRC 怎么排
 1-core/04  Transport：不同连接方式下，谁先发 OPEN / Hello / Identify
@@ -28,6 +29,7 @@
 
 | 分组 | 文档 | 角色 |
 |---|---|---|
+| Glossary | `00-Glossary.md` | 全局统一术语表 |
 | Core | `1-core/01-Overview.md` | 协议总览 |
 | Core | `1-core/02-Protocol-Framework.md` | 协议框架 |
 | Core | `1-core/03-Frame-and-Payload.md` | Frame/Payload wire format |
@@ -53,9 +55,9 @@
 
 | 读者 | 推荐路径 |
 |---|---|
-| 新读者 / 实现者 | Core 分组：`1-core/01` -> `1-core/03` -> `1-core/04` -> `1-core/05` -> `1-core/06` -> `1-core/07` |
-| 协议维护者 | Registry 分组 + `3-codec/02-Capability-Types.md` + Tooling 分组 |
-| 低带宽或 HID/BLE 降级评审 | 先读 `1-core/08-Low-Bandwidth-Degradation.md`，再回到 Core wire/session 文档对齐边界 |
+| 新读者 / 实现者 | `00-Glossary.md` -> Core 分组：`1-core/01` -> `1-core/03` -> `1-core/04` -> `1-core/05` -> `1-core/06` -> `1-core/07` |
+| 协议维护者 | `00-Glossary.md` -> Registry 分组 + `3-codec/02-Capability-Types.md` + Tooling 分组 |
+| 低带宽或 HID/BLE 降级评审 | `00-Glossary.md` -> `1-core/08-Low-Bandwidth-Degradation.md`，再回到 Core wire/session 文档对齐边界 |
 
 ## 权威边界
 
