@@ -164,7 +164,7 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 
 ## Domain 状态矩阵
 
-> 最后更新：2026-06-09（每次 domain 状态变更后手动更新此日期）
+> 最后更新：2026-06-10（每次 domain 状态变更后手动更新此日期）
 > 更新规则：新增、删除、采纳、废弃 domain 草案或 registry domain 后，必须同步本矩阵的 Drafts、Review、Generated 和 Next Step。
 > 验证方式：只有 `registry/domains/<domain>/domain.yaml` 存在，并且 `pnpm --dir generators validate:sources` / `validate:protocol` 通过，才算 generated/adopted；其余为草案状态。
 
@@ -176,7 +176,7 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 | auth | 3 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | camera | 7 | ASK | 0 | P3/P4 | 补产品/设备/legacy 确认。 |
 | capability | 1 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
-| device | 5 | ASK | 0 | P1 | 补产品/设备/legacy 确认，优先进入采纳批次。 |
+| device | 7 | ASK | 0 | P1 | 补产品/设备/legacy 确认，优先进入采纳批次。 |
 | diagnostic | 10 | ASK | 0 | P5 | 补产品/设备/legacy 确认。 |
 | display | 6 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | file | 2 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
@@ -187,7 +187,7 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 | output | 1 | ASK | 0 | P2b | 补产品/设备/legacy 确认。 |
 | privacy | 3 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | room | 5 | ASK | 0 | P7 | 补产品/设备/legacy 确认。 |
-| signage | 5 | ASK | 0 | P7 | 补产品/设备/legacy 确认。 |
+| signage | 2 | ASK | 0 | P7 | 补产品/设备/legacy 确认。`signage.media`/`signage.osd`/`signage.schedule` 已合并到其他域。 |
 | storage | 6 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | stream | 2 | ASK | 0 | P0 data-plane plumbing | Phase 1 需要通用 STREAM open/data/close 语义支撑 audio/video；具体业务参数仍由 audio/video profile 定义。 |
 | system | 6 | ASK | 0 | P1 | 补产品/设备/legacy 确认，优先进入采纳批次。 |
@@ -206,7 +206,7 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 | P4 | [`camera.image`](camera/camera.image.md)、[`camera.exposure`](camera/camera.exposure.md)、[`camera.calibration`](camera/camera.calibration.md)、[`camera.whiteBalance`](camera/camera.whiteBalance.md) | 12 条直接归类；VM33 Camera 配置另有 whiteBalance 字段线索 | 草案已存在，未进入 generated；`camera.image` 有低置信度拆分问题 | 先补 VM33 Camera 配置字段，再采纳 image/exposure/calibration；whiteBalance 当前分类 CSV 没有直接命中，建议随 camera 配置批次保留，但放在本批次后段确认。 |
 | P5 | `diagnostic.*` 产测：[`diagnostic.networkTest`](diagnostic/diagnostic.networkTest.md)、[`diagnostic.manufacturing`](diagnostic/diagnostic.manufacturing.md)、[`diagnostic.selfTest`](diagnostic/diagnostic.selfTest.md)、[`diagnostic.audioTest`](diagnostic/diagnostic.audioTest.md)、[`diagnostic.inputTest`](diagnostic/diagnostic.inputTest.md)、[`diagnostic.storageTest`](diagnostic/diagnostic.storageTest.md)、[`diagnostic.videoTest`](diagnostic/diagnostic.videoTest.md)、[`diagnostic.kvmTest`](diagnostic/diagnostic.kvmTest.md) | 33 条，覆盖 AXDP / Rooms / VM33 | 草案已存在，未进入 generated | 面向工厂和维修闭环，建议在用户侧 camera / video 基础能力之后生成；如果产线接入排期更早，可把 `diagnostic.manufacturing` 与 `diagnostic.networkTest` 提前成 P3b。 |
 | P6 | AXTP core / `axtpctl` | 不属于 legacy business 分类；core 已在 `registry/core/**`、`registry/schema/**`、`registry/error/**` 和 generated 中存在 | Core 已生成；`axtpctl` 属于工具/SDK 跟随项 | 不作为普通业务草案插队。每完成一批业务生成后，再让 `axtpctl` 命令、测试向量和 runtime 示例跟随 generated 事实更新。 |
-| P7 | `room.*` / `signage.*`：[`room.source`](room/room.source.md)、[`room.layout`](room/room.layout.md)、[`room.schedule`](room/room.schedule.md)、[`room.participant`](room/room.participant.md)、[`signage.playlist`](signage/signage.playlist.md)、[`signage.schedule`](signage/signage.schedule.md)、[`signage.osd`](signage/signage.osd.md)、[`signage.media`](signage/signage.media.md) | 28 条，主要来自 Rooms / Signage / VM33 | 草案已存在，未进入 generated | 放后面生成。它们更偏产品场景和应用层编排；若 Rooms 业务先启动，可单独把 `room.source` 提前，因为它有 11 条 legacy 命中。 |
+| P7 | `room.*` / `signage.*` / `device.binding` / `device.appearance`：[`room.source`](room/room.source.md)、[`room.layout`](room/room.layout.md)、[`room.schedule`](room/room.schedule.md)、[`room.participant`](room/room.participant.md)、[`signage.playlist`](signage/signage.playlist.md)、[`signage.playback`](signage/signage.playback.md)、[`device.binding`](device/device.binding.md)、[`device.appearance`](device/device.appearance.md) | 28 条，主要来自 Rooms / Signage / VM33 | 草案已存在，未进入 generated | 放后面生成。它们更偏产品场景和应用层编排；若 Rooms 业务先启动，可单独把 `room.source` 提前，因为它有 11 条 legacy 命中。`signage.media`、`signage.osd`、`signage.schedule` 已分别合并到 `signage.playlist`、`device.appearance`、`system.lifecycle`。 |
 
 ### 旁路高覆盖候选
 
