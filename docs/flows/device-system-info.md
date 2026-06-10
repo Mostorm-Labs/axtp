@@ -119,12 +119,12 @@ Flow 文档不负责：
 | Need | Coverage state | AXTP protocol | Evidence | Next action |
 |---|---|---|---|---|
 | 建立设备管理会话 | generated | AXTP session, RPC, supported connection profiles | `docs/generated/protocol.md`, `protocol/axtp.protocol.yaml` | 可按 AXTP Core 实现连接和 RPC envelope。 |
-| 加载当前正式方法表 | generated / local-only | Generated registry | `docs/generated/protocol.md` | App/Host 使用当前 generated registry 做正式方法门禁。 |
+| 加载当前正式方法表 | generated | Generated registry | `docs/generated/protocol.md` | App/Host 使用当前 generated registry 做正式方法门禁；执行动作是本地 lookup。 |
 | 运行时能力发现 | draft | `capability.registry` | `docs/protocol/capability/capability.registry.md` | 进入 Stage 20/30 review；明确 supported methods/events/capabilities 查询。 |
 | 获取当前主设备信息 | draft | `device.info`; `device.getInfo` | `docs/protocol/device/device.info.md` | 草案已覆盖主设备只读信息；后续 adoption/generate/conformance。 |
 | 查询一级子设备摘要 | draft | `device.childDevice`; `device.getChildren` | `docs/protocol/device/device.childDevice.md` | 草案已覆盖；确认分页、深度、权限和 child id 稳定性。 |
 | 查询指定子设备详情 | draft | `device.childDevice`; `device.getChildInfo` | `docs/protocol/device/device.childDevice.md` | 草案已覆盖；补 legacy 字段映射。 |
-| 查询完整设备拓扑 | missing / draft extension | Candidate `device.getTopology` | current flow, child-device references | P1/P2 决定是否起草；不作为 P0 代替 `getChildren`。 |
+| 查询完整设备拓扑 | missing | Candidate `device.getTopology` | current flow, child-device references | P1/P2 决定是否起草；不作为 P0 代替 `getChildren`。 |
 | 子设备状态变化通知 | draft | child device changed event candidate | `docs/protocol/device/device.childDevice.md` | 确认事件命名和 payload 是 online/attached 还是完整拓扑变化。 |
 | 获取 CPU、内存、在线、uptime 等通用运行状态 | draft | `system.state`; `system.getState` | `docs/protocol/system/system.state.md` | 草案已覆盖；确认 P0 sections 和采样/节流策略。 |
 | 重置设备运行状态以恢复异常 | draft | `system.state`; `system.recoverRuntimeState` | `docs/protocol/system/system.state.md` | 草案已覆盖；确认 scope / componentId / 权限。 |
@@ -220,7 +220,7 @@ sequenceDiagram
 | Step | Actor | Action | Capability / precondition | Protocol call/event | Payload fields | Result / state change | Coverage | Error / fallback |
 |---:|---|---|---|---|---|---|---|---|
 | 1 | App / Device | 建立 AXTP session。 | Transport profile 和 RPC 支持。 | AXTP session/RPC handshake | session fields | RPC 可用。 | generated | 握手失败显示连接错误。 |
-| 2 | App | 加载正式方法表并做门禁。 | generated registry 可用。 | local generated registry lookup | method/event/capability names | App 知道哪些是正式 generated，哪些仍是 draft。 | generated / local-only | draft-only 方法不得作为稳定实现合同。 |
+| 2 | App | 加载正式方法表并做门禁。 | generated registry 可用。 | local generated registry lookup | method/event/capability names | App 知道哪些是正式 generated，哪些仍是 draft。 | generated | draft-only 方法不得作为稳定实现合同；lookup 本身是本地行为。 |
 | 3 | App / Device | 查询运行时能力。 | device 支持 capability registry 草案或产品 profile。 | `capability.registry` query | domains, features, methods, events | App 确认 device/system capabilities。 | draft | 能力查询未采纳前，用产品 profile / 固件版本门禁。 |
 | 4 | App / Device | 读取主设备信息。 | `device.info` supported。 | `device.getInfo` | includeCapabilitySummary, sections | 返回 identity/product/hardware/os/software/runtime/capability summary。 | draft | 读取失败时页面显示无法识别设备；不把软件名写入 `product.model`。 |
 | 5 | App | 渲染设备信息。 | `device.getInfo` result。 | local-only | display fields | 用户看到“这是谁”。 | local-only | 本地展示策略不进入协议。 |
