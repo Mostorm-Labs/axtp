@@ -1,701 +1,99 @@
-# 2-registry/02《AXTP Methods Registry Spec》
+# 2-registry/02《AXTP Method Registry 规范》
 
-> Status: AXTP v1 Protocol Definition Meta Spec
-> Spec Version: 1.0.0-rc1
-> Scope: `methods:` entries, methodId allocation, request/response generation
+> 状态： AXTP v1 规范性 registry 规范
+> 范围：`methods:` 条目、methodId 分配、request/response schema 绑定和 method 准入规则
+> 权威边界：当前已采纳 method 事实来自 registry YAML、Protocol IR 和 generated artifacts。
 
-版本：v1.0.0-rc1
-状态：Protocol Definition 元规范
-适用范围：`registry/method/` 与 `registry/domains/<domain>/domain.yaml` 中 method 源条目的字段、约束和生成规则
+## 文档目的
 
----
+本文档定义 AXTP method registry 的准入、命名、编号、稳定性和生成规则。Method 是 RPC 层的业务调用入口；线上 JSON 使用 method name，二进制 RPC 使用 `methodId:uint16`，二者 MUST 指向同一 registry 事实。
 
-## 0. 速读：新增 Method 怎么做
+## 范围
 
-Method 是 RPC 控制面的业务入口。线上 JSON 使用 method name，Binary 使用 `methodId:uint16`；二者必须指向同一 registry 事实。
+本文档覆盖 `registry/domains/<domain>/domain.yaml` 与 core method registry 中 `methods:` 条目的要求，包括 method name、methodId、bitOffset、request schema、response schema、error、event 和 capability 引用规则。本文档不维护完整 MethodId 大表；历史和候选规划表保存在非规范附录：[appendix/method-candidates.md](appendix/method-candidates.md)。Runtime MUST NOT 从该 appendix 实现协议。
 
-新增 method 的默认流程：
+## 规范规则
 
-```text
-1. 从 docs/protocol/<domain>/<domain.feature>.md 收集候选 method。
-2. 按 Naming and Taxonomy spec 判断 domain.feature 和 method 命名。
-3. 确认协议草案后，反向确认本文件中的 methodId、bitOffset、schema 绑定和规划表是否需要更新。
-4. 在 registry/domains/<domain>/domain.yaml 增加 method。
-5. 分配 domain 内稳定 bitOffset，用于 generated registry、测试向量和可选能力发现方法。
-6. 绑定 requestSchema / responseSchema / errors / events。
-7. 需要晋升 Core/MVP 时，再迁入 registry/method/method_registry.yaml。
-8. 重新生成 protocol IR 和 generated docs。
-```
+1. Method MUST 通过 `PayloadType=RPC` 承载；methodId MUST NOT 出现在 Frame Header、CONTROL payload 或 STREAM payload header 中。
+2. Method name MUST 全局唯一，并采用 `domain.actionObject` 形式；name 前缀 MUST 与条目的 `domain` 一致。
+3. `methodId` MUST 是全局唯一的 `uint16`。stable methodId MUST NOT 改变语义或复用。
+4. `bitOffset` MUST 在同一 `domain` 内唯一，并用于 domain-scoped method bitmap 或 generated metadata。stable bitOffset MUST NOT 复用。
+5. 每个 method MUST 绑定 request schema 和 response schema；空请求或空响应 MUST 使用已注册的 empty schema 约定，不得省略 schema 关系。
+6. 每个 method MUST 声明可能返回的 errors，且每个 error MUST 能解析到 error registry。
+7. 如果 method 成功后可能触发事件，events 引用 MUST 指向已注册 event。
+8. Method MAY 关联 capability，但 capability 只描述设备能力或可用性，不改变 methodId 或 RPC wire format。
+9. 新增业务 method 默认进入 `registry/domains/<domain>/domain.yaml`。只有 Core/shared 采纳后才进入核心 method registry；同一 method 不得在 domain YAML 与 core registry 重复定义。
+10. 连续数据 MUST 通过 STREAM 承载；method 只能用于协商、控制、查询、开始/停止或返回有限大小结果。
 
-| 决策点 | 默认选择 | 例外 |
-|---|---|---|
-| 写入位置 | domain YAML | Core/shared 采纳后写入 `registry/method/` |
-| ID 稳定性 | stable methodId 不复用 | draft 可按治理流程调整 |
-| 能力发现 | 已采纳业务方法显式查询，或由 App 使用 generated registry | 完整 Capability Model 留到后续草案 |
-| 数据面 | method 只建流或控制 | 连续数据必须走 STREAM |
+## Registry / Schema / Tooling 模型
 
-不要为了业务类型新增 PayloadType；methodId 出现在 RPC Payload，不出现在 Frame Header。
-
----
-
-## 1. 文档定位
-
-本文档定义 method registry 的元模型、MethodId 分段和正式 MethodId 规划表。稳定 method 内容必须写入 `registry/method/` 或 `registry/domains/<domain>/domain.yaml`；`protocol/axtp.protocol.yaml` 中的 `methods:` 由 Generator 聚合生成。
-
-新增业务 method 默认写入 `registry/domains/<domain>/domain.yaml`。`registry/method/method_registry.yaml` 只承载 Core/shared 已采纳 method；业务 method 晋升为 Core/shared 时必须迁移并删除 domain 中的原条目，不得两边重复定义。
-
----
-
-## 2. methods 条目结构
+最小 method 条目模型：
 
 ```yaml
 methods:
-  - name: audio.getAlgorithmConfig
-    id: 0x0901
-    bitOffset: 0
+  - id: 0x0901
+    name: audio.getAlgorithmConfig
     domain: audio
-    since: 1.0.0
     status: stable
-    requestSchema: Empty
-    responseSchema: AudioAlgorithmConfig
+    bitOffset: 1
+    since: 1.0.0
+    request_schema: AudioGetAlgorithmConfigRequest
+    response_schema: AudioAlgorithmConfig
     errors:
       - SUCCESS
       - NOT_SUPPORTED
       - INVALID_ARGUMENT
-    capabilities:
-      - audio.algorithm
 ```
 
----
+| 字段 | 要求 | 说明 |
+|---|---|---|
+| `id` | MUST | `uint16` methodId，二进制 RPC 使用 |
+| `name` | MUST | JSON/RPC method name，全局唯一 |
+| `domain` | MUST | 业务 domain，必须与 name 前缀一致 |
+| `status` | MUST | 生命周期状态 |
+| `bitOffset` | 已采纳 bitmap 中 SHOULD/MUST | domain 内 method bitmap 位号；采用 bitmap 能力发现时为 MUST |
+| `since` | MUST | 首次进入 registry 的 spec/registry 版本 |
+| `request_schema` | MUST | 请求 schema 引用 |
+| `response_schema` | MUST | 响应 schema 引用 |
+| `errors` | MUST | 可能返回的 error name 列表 |
+| `events` | MAY | 调用后可能触发的 event name 列表 |
+| `capabilities` | MAY | 关联的 `domain.feature` capability |
+| `legacy` | MAY | legacy 映射元数据，不参与 wire format |
 
-## 3. 字段定义
+## 校验规则
 
-| 字段 | 必填 | 说明 |
-|---|---:|---|
-| `name` | 是 | JSON-RPC method name，必须为 `domain.action` |
-| `id` | 是 | uint16，Binary-RPC methodId，wire 上使用 |
-| `bitOffset` | 是 | uint8，该 method 在所属 domain 的稳定 bit 位置，domain 内从 0 开始，domain 内唯一；用于 generated registry、测试向量和可选能力发现方法 |
-| `domain` | 是 | 所属业务域，必须与 name 前缀一致 |
-| `description` | 是 | 方法说明 |
-| `since` | 是 | 首次引入版本 |
-| `status` | 是 | `draft / experimental / stable / deprecated / reserved` |
-| `requestSchema` | 是 | 必须引用已注册 schema 名称，空请求使用 `Empty` |
-| `responseSchema` | 是 | 必须引用已注册 schema 名称，空响应使用 `Empty` |
-| `errors` | 是 | 可能存在的错误码，必须引用 `errors` 中存在的 error name |
-| `events` | 否 | 调用后可能触发的事件，必须引用 `events` 中存在的 event name |
-| `capabilities` | 否 | 关联能力，v1 仅用于文档 |
-| `legacy` | 否 | 旧协议映射，不参与 wire format |
+Generator MUST 至少校验：
 
----
+1. `id` 在所有 method 中唯一，并处于允许的 methodId 范围；
+2. `name` 全局唯一，且 `domain` 与 name 前缀一致；
+3. 同一 domain 内 `bitOffset` 唯一；
+4. `request_schema`、`response_schema`、`errors[]`、`events[]`、`capabilities[]` 引用存在；
+5. stable/deprecated/reserved methodId 没有被新条目复用；
+6. method 所属 domain/feature 已通过 naming taxonomy review；
+7. Protocol IR 与 generated docs 中的 method facts 与 source YAML 一致。
 
-## 4. 约束
+## 兼容规则
 
-1. `methodId` 在所有 methods 中必须唯一。
-2. `bitOffset` 在同一 `domain` 内必须唯一，从 0 开始连续分配，stable 后不得复用。
-3. `name` 在所有 methods 中必须唯一。
-4. `name` 必须采用 `domain.action`，不得使用空格、驼峰 domain 或协议层保留词。
-5. `methodId` stable 后不得复用；废弃只能标记 `deprecated`。
-6. `requestSchema` / `responseSchema` 必须存在。
-7. `errors[]` 必须存在于 `errors:`。
-8. methodId 和 bitOffset 范围由 Protocol Plan 分配；具体业务分配只写入 `registry/` 或 `registry/domains/` YAML。
-9. 若某个已采纳能力发现方法使用 method bitmap，bitmap 必须按 domain 分段，每个 domain 内第 N bit 对应该 domain 下 `bitOffset=N` 的 method。
-10. methodId 的高字节定义 method DomainId；任何 method bitmap 的 Domain Block 必须使用该高字节。
-11. 业务域必须来自已治理的 domain 词表；`output`、`room`、`signage` 是正式业务域，分别用于输出源/接口/路由/布局、会议室/协作空间业务、数字标牌业务。
+- 新增 method 通常是兼容变更；修改 stable methodId、name、request/response schema 含义或错误语义通常是 breaking change。
+- 废弃 method MUST 保留 id 和 generated enum，状态标记为 `deprecated`，不得把 id 分配给新 method。
+- 旧协议映射只能作为 adapter 元数据或迁移输入；runtime 的 AXTP 实现合同以 registry YAML、Protocol IR 和 generated artifacts 为准。
+- 可选 method bitmap 的第 N bit MUST 对应该 domain 内 `bitOffset=N` 的 method。
 
----
+## 实现要求
 
-## 5. 生成规则
+- Runtime MUST 使用绑定版本的 generated registry 或 Protocol IR 解析 methodId/name，不得维护手写第二套 method 表。
+- Runtime 遇到未知 methodId/name SHOULD 返回已注册的 method-not-found 或 not-supported 错误，而不是猜测业务语义。
+- SDK SHOULD 从 generated artifacts 生成强类型 request/response API。
+- Conformance tests SHOULD 覆盖 method id/name 映射、schema validation、错误返回和关联事件。
 
-`axtpc` 必须从源 YAML 聚合出的 `methods:` 生成：
+## 示例
 
 ```text
-generated/protocol.md Methods Reference
-generated/schema method request/response schema
-generated/cpp method enum          // methodId 值
-generated/cpp method bitmap enum   // bitOffset 值
-generated/ts method enum
-generated/bitmap method bitmap layout
-generated/conformance method validation cases
+audio.getAlgorithmConfig     -> RPC request/response
+video.openStream             -> RPC 协商 streamId，后续数据走 STREAM
+file.readChunk               -> 不推荐；大块连续数据应走 STREAM
 ```
 
-bitmap layout 规则：若 adopted capability method 返回 method bitmap，第 N bit（从 LSB 起）置 1 表示 `bitOffset=N` 的 method 当前可用。
+## 非目标 / 未来
 
----
-
-## 6. v1 Capability 关系
-
-AXTP v1 Core 不强制内置业务能力发现 method。当前产品可调用方法以 generated registry 为基础；运行时能力查询必须由已采纳业务协议显式定义。
-
-完整 Capability Model 不得作为 v1 methods 的前置条件。
-
-
-
-## Registry 表格与 YAML 的关系
-
-Registry/Profile specs 文档同时承担 registry 元模型规范和当前正式 registry 规划表职责。Markdown 表格用于规范审查、编号规划和实现契约；稳定实现事实必须同步进入 `registry/**/*.yaml` 或 `registry/domains/**/*.yaml`，生成物以 `docs/generated/*` 和 `protocol/axtp.protocol.yaml` 为准。
-
-如果 Markdown 表格与 YAML/generated 发生冲突，以 YAML/generated 作为实现事实源，并应回修本规范表格；不得维护第二套 active 事实源。
-
-
-## 正式 MethodId 注册表
-
-版本：v1.1
-状态：MethodId 注册表与当前生成集合（精简版）
-适用范围：AXTP RPC MethodId 分配、Domain 分段、已采纳方法集合、老协议适配
-
----
-### 1. MethodId 的位置
-
-`methodId` 只出现在：
-
-```text
-PayloadType = RPC
-rpcOp = REQUEST / RESPONSE
-```
-
-典型二进制 RPC 结构：
-
-```text
-AXTP Frame Header
-  payloadType = RPC
-
-RPC Payload
-  rpcEncoding = JSON / CBOR / MSGPACK / JSON_BINARY
-  rpcOp       = REQUEST / RESPONSE / EVENT / BATCH
-  requestId
-  methodOrEventId
-  statusCode
-  bodyEncoding
-  body
-```
-
-其中：
-
-```text
-REQUEST / RESPONSE:
-  methodOrEventId = methodId
-
-EVENT:
-  methodOrEventId = eventId
-```
-
----
-
-### 2. MethodId 基本规则
-
-- `methodId` 使用 `uint16`，线上编码 Little-Endian
-- 同一 Registry 中 `methodId` 不得重复，`methodName` 不得重复
-- 进入 `stable` 状态后不得改变语义；语义变化时新增方法（如 `audio.setAlgorithmConfigV2`），不修改旧方法
-- 方法名格式：`domain.verbFeatureNoun`，feature 归属遵循 `docs/specs/2-registry/01-Naming-and-Taxonomy.md`
-- 推荐动词：`get / set / list / open / close / start / stop / begin / end / verify / apply / abort / resume / subscribe / unsubscribe`
-- 配置、状态、动作、流、导出必须使用不同模板；`stream.*` 不定义常规业务建流方法
-
----
-
-### 3. MethodId Domain 分段
-
-| 范围 | Domain | 说明 | MVP |
-|---:|---|---|---:|
-| `0x0000-0x00FF` | reserved | 保留 | 否 |
-| `0x0100-0x01FF` | `device.*` | 设备基础信息与生命周期 | 是 |
-| `0x0200-0x02FF` | `capability.*` | 能力查询与能力协商 | 是 |
-| `0x0300-0x03FF` | `system.*` | 系统控制：重启、时间、重置、功耗 | 是 |
-| `0x0400-0x04FF` | `firmware.*` | 固件更新 / 固件升级控制面 | 是 |
-| `0x0500-0x05FF` | `stream.*` | STREAM 控制面 | 是 |
-| `0x0600-0x06FF` | `display.*` | 显示控制：亮度、分辨率、旋转、布局、输入源 | 是 |
-| `0x0700-0x07FF` | `camera.*` | 摄像头：变焦、追踪、镜像、帧率、图像参数 | 可选 |
-| `0x0800-0x08FF` | `video.*` | 视频编码与输出控制 | 可选 |
-| `0x0900-0x09FF` | `audio.*` | 音频控制 | 可选 |
-| `0x0A00-0x0AFF` | `input.*` | 输入、KVM、HID Raw 控制 | P1 |
-| `0x0B00-0x0BFF` | `output.*` | 输出源、输出路由与输出布局 | P2 |
-| `0x0C00-0x0CFF` | `room.*` | 会议室 / 协作空间业务 | P2 |
-| `0x0D00-0x0DFF` | `signage.*` | 数字标牌业务 | P2 |
-| `0x0E00-0x0EFF` | `network.*` | 网络配置 | P2 |
-| `0x0F00-0x0FFF` | `storage.*` | 存储管理 | P2 |
-| `0x1000-0x10FF` | `file.*` | 文件传输控制面 | P1 |
-| `0x1100-0x11FF` | `log.*` | 日志控制面 | P1 |
-| `0x1200-0x12FF` | `diagnostic.*` | 诊断、产测、链路测试 | P1 |
-| `0x1300-0x13FF` | `sensor.*` | 传感器控制 | P2 |
-| `0x1400-0x14FF` | `auth.*` | 认证与访问控制 | P2 |
-| `0x1500-0x15FF` | `privacy.*` | 隐私遮挡与隐私状态 | P2 |
-| `0x7000-0x7FFF` | `vendor.*` | 厂商私有方法 | 按需 |
-| `0x8000-0xFFFF` | reserved | 保留，不用于 MethodId/EventId | 否 |
-
----
-
-### 4. Method 条目字段
-
-```yaml
-id: 0x0902
-name: audio.setAlgorithmConfig
-kind: method
-status: stable
-domain: audio
-description: Partially update audio algorithm configuration.
-rpc:
-  request: true
-  response: true
-  event: false
-  supportedEncodings:
-    - JSON
-    - JSON_BINARY
-  supportedBodyEncodings:
-    - TLV8
-schema:
-  params: AudioSetAlgorithmConfigRequest
-  result: AudioSetAlgorithmConfigResponse
-errors:
-  - SUCCESS
-  - INVALID_ARGUMENT
-  - NOT_SUPPORTED
-  - BUSY
-events:
-  - audio.algorithmConfigChanged
-capability:
-  required:
-    - audio.algorithm
-legacy:
-  cmdValue: null
-  source: null
-  payloadMapping: null
-version:
-  since: 1.0.0
-  deprecated: null
-mvp: true
-priority: P0
-```
-
-| 字段 | 必填 | 说明 |
-|---|---:|---|
-| `id` | 是 | `uint16` 方法编号 |
-| `name` | 是 | 方法名 |
-| `kind` | 是 | 固定为 `method` |
-| `status` | 是 | `draft / mvp / stable / deprecated / reserved` |
-| `domain` | 是 | 所属业务域 |
-| `description` | 是 | 方法说明 |
-| `rpc.supportedEncodings` | 是 | 支持的 RPC body 编码 |
-| `schema.params` | 是 | 请求参数 Schema（registry YAML 中对应 `requestSchema`） |
-| `schema.result` | 是 | 响应结果 Schema（registry YAML 中对应 `responseSchema`） |
-| `errors` | 是 | 可能返回的错误码 |
-| `events` | 否 | 可能触发的事件 |
-| `capability.required` | 否 | 调用前需要满足的能力 |
-| `legacy` | 否 | 老协议映射 |
-| `mvp` | 是 | 是否属于 MVP |
-| `priority` | 是 | `P0 / P1 / P2` |
-
----
-
-### 5. 当前生成方法集合
-
-当前生成方法表以 `registry/domains/<domain>/domain.yaml` 和按需存在的 `registry/method/method_registry.yaml` 为事实源。当前业务方法只包含已采纳的 `audio.algorithm`；其他方法即使出现在规划表或草案中，也不得视为当前实现合同。
-
-| methodId | methodName | Domain | 优先级 | 说明 |
-|---:|---|---|---|---|
-| `0x090D` | `audio.getAlgorithmCapabilities` | audio | P0 | 查询音频算法字段、范围、默认值和更新策略 |
-| `0x0901` | `audio.getAlgorithmConfig` | audio | P0 | 查询当前音频算法配置 |
-| `0x0902` | `audio.setAlgorithmConfig` | audio | P0 | 部分更新音频算法配置 |
-| `0x090E` | `audio.resetAlgorithmConfig` | audio | P0 | 恢复全部、指定算法或指定字段默认值 |
-
-说明：事件本身使用 EventId，通过 `rpcOp = EVENT` 承载。事件订阅集合由 RPC `IDENTIFY / REIDENTIFY` 的 `eventMasks` 字段声明和更新。无业务即无协议；未采纳草案不得进入本表或 generated 产物。
-
----
-
-### 6. 完整 MethodId 规划表
-
-以下表格是正式 MethodId 规划表，用于保留编号空间和约束可采纳能力；当前实现状态以 `registry/domains/<domain>/domain.yaml`、按需存在的 `registry/method/method_registry.yaml` 及生成产物为准。
-
-#### 6.1 device.*
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0101` | `device.getInfo` | draft | 否 | 待 `device.info` 草案采纳后才可生成 |
-| `0x0102` | `device.getIdentity` | draft | 否 | 获取设备身份字段 |
-| `0x0103` | `device.getState` | draft | 否 | 获取设备状态 |
-| `0x0104` | `device.getInventory` | draft | 否 | 获取设备库存/子模块信息 |
-| `0x0105` | `device.setIndicatorConfig` | draft | 否 | 设置指示灯/蜂鸣提示配置 |
-| `0x0106` | `device.getIndicatorConfig` | draft | 否 | 获取指示灯/蜂鸣提示配置 |
-| `0x0107` | `device.getPowerState` | draft | 否 | 获取电源状态 |
-| `0x0108` | `device.setPowerConfig` | draft | 否 | 设置设备电源配置 |
-| `0x0109` | `device.getChildDeviceState` | draft | 否 | 获取子设备状态 |
-
-#### 6.2 capability.*
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0201` | `capability.getSupportedMethods` | draft | 否 | 如需全局能力发现，必须先完成 capability 草案采纳 |
-| `0x0202` | `capability.getRegistry` | draft | 否 | 获取完整能力注册表摘要 |
-| `0x0203` | `capability.getDomainRegistry` | draft | 否 | 获取指定 domain 的能力摘要 |
-| `0x0204` | `capability.hasMethod` | draft | 否 | 查询是否支持某方法 |
-| `0x0205` | `capability.getLimits` | draft | 否 | 获取传输与资源限制 |
-| `0x0206` | `capability.negotiate` | draft | 否 | 业务能力协商 |
-
-协议能力优先通过 CONTROL OPEN / ACCEPT 协商；业务能力通过已采纳业务查询方法或后续采纳的 `capability.*` RPC 查询。
-
-#### 6.3 system.*
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0301` | `system.reboot` | draft | 否 | 重启设备 |
-| `0x0302` | `system.getTimeConfig` | draft | 否 | 获取系统时间与时区配置 |
-| `0x0303` | `system.setTimeConfig` | draft | 否 | 设置系统时间与时区配置 |
-| `0x0304` | `system.reset` | draft | 否 | 执行系统级重置 |
-| `0x0305` | `system.getLifecycleState` | draft | 否 | 获取生命周期状态 |
-| `0x0306` | `system.startInitialization` | draft | 否 | 启动初始化流程 |
-| `0x0307` | `system.getLicenseState` | draft | 否 | 获取系统级 license 状态 |
-
-#### 6.4 firmware.*
-
-固件升级候选方案采用 RPC 控制面 + STREAM 固件更新数据面；正式方法必须等待 `firmware.update` 草案采纳。
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0401` | `firmware.getUpdateCapabilities` | draft | 否 | 获取固件更新能力 |
-| `0x0402` | `firmware.beginUpdate` | draft | 否 | 开始固件更新 |
-| `0x0403` | `firmware.commitUpdateBatch` | draft | 否 | 提交固件更新数据批次 |
-| `0x0404` | `firmware.verifyUpdatePackage` | draft | 否 | 校验固件更新包 |
-| `0x0405` | `firmware.installUpdate` | draft | 否 | 安装固件更新 |
-| `0x0406` | `firmware.cancelUpdate` | draft | 否 | 取消固件更新 |
-| `0x0407` | `firmware.rollbackUpdate` | draft | 否 | 回滚固件更新 |
-| `0x0408` | `firmware.getUpdateState` | draft | 否 | 获取固件更新状态 |
-| `0x0409` | `firmware.getUpdateTransferState` | draft | 否 | 获取固件更新传输状态 |
-| `0x040A` | `firmware.confirmUpdate` | draft | 否 | 确认固件更新结果 |
-
-#### 6.5 stream.*
-
-`stream.*` 只定义公共流控和数据面运行时能力，不按文件、固件、媒体、日志等业务类型建流。
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0501` | `stream.getFlowControlState` | draft | 否 | 获取公共流控状态 |
-| `0x0502` | `stream.updateWindow` | draft | 否 | 更新流控窗口 |
-| `0x0503` | `stream.pause` | draft | 否 | 暂停指定 streamId 的数据面 |
-| `0x0504` | `stream.resume` | draft | 否 | 恢复指定 streamId 的数据面 |
-| `0x0505` | `stream.getStats` | draft | 否 | 获取 STREAM 统计 |
-
-#### 6.6 display.*
-
-`display.*` 只保留显示设备自身能力；输出源、路由和布局归 `output.*`。
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0601` | `display.getBrightness` | draft | 否 | 待 display 草案采纳后才可生成 |
-| `0x0602` | `display.setBrightness` | draft | 否 | 待 display 草案采纳后才可生成 |
-| `0x0603` | `display.getBrightnessCapabilities` | draft | 否 | 获取亮度范围、步进和模式能力 |
-| `0x0604` | `display.getBrightnessConfig` | draft | 否 | 获取亮度配置 |
-| `0x0605` | `display.setBrightnessConfig` | draft | 否 | 设置亮度配置 |
-| `0x0606` | `display.resetBrightnessConfig` | draft | 否 | 重置亮度配置 |
-| `0x0607` | `display.getPowerState` | draft | 否 | 获取显示电源状态 |
-| `0x0608` | `display.setPowerConfig` | draft | 否 | 设置显示电源配置 |
-
-#### 6.7 camera.*
-
-`camera.*` 定义摄像头控制面。视频帧数据由业务域建流方法创建并通过 STREAM 承载。
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0701` | `camera.getImageConfig` | draft | 否 | 获取图像参数配置 |
-| `0x0702` | `camera.setImageConfig` | draft | 否 | 设置图像参数配置 |
-| `0x0703` | `camera.getExposureConfig` | draft | 否 | 获取曝光配置 |
-| `0x0704` | `camera.setExposureConfig` | draft | 否 | 设置曝光配置 |
-| `0x0705` | `camera.getWhiteBalanceConfig` | draft | 否 | 获取白平衡配置 |
-| `0x0706` | `camera.setWhiteBalanceConfig` | draft | 否 | 设置白平衡配置 |
-| `0x0707` | `camera.getFocusState` | draft | 否 | 获取对焦状态 |
-| `0x0708` | `camera.triggerAutoFocus` | draft | 否 | 触发自动对焦 |
-| `0x0709` | `camera.getZoomState` | draft | 否 | 获取变焦状态 |
-| `0x070A` | `camera.setZoomConfig` | draft | 否 | 设置变焦配置 |
-| `0x070B` | `camera.getPtzState` | draft | 否 | 获取 PTZ 状态 |
-| `0x070C` | `camera.setPtzConfig` | draft | 否 | 设置 PTZ 配置 |
-
-#### 6.8 video.*
-
-`video.*` 定义视频 framing、编码、叠加、场景和视频业务流。codec 是参数或 schema 字段，不作为 feature。
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0801` | `video.getFramingConfig` | draft | 否 | 获取取景/构图配置 |
-| `0x0802` | `video.setFramingConfig` | draft | 否 | 设置取景/构图配置 |
-| `0x0803` | `video.getEncoderConfig` | draft | 否 | 获取编码配置 |
-| `0x0804` | `video.setEncoderConfig` | draft | 否 | 设置编码配置 |
-| `0x0805` | `video.getOutputTransformConfig` | draft | 否 | 获取输出变换配置 |
-| `0x0806` | `video.setOutputTransformConfig` | draft | 否 | 设置输出变换配置 |
-| `0x0807` | `video.getLayoutConfig` | draft | 否 | 获取视频布局配置 |
-| `0x0808` | `video.setLayoutConfig` | draft | 否 | 设置视频布局配置 |
-| `0x0809` | `video.getSceneConfig` | draft | 否 | 获取视频场景配置 |
-| `0x080A` | `video.setSceneConfig` | draft | 否 | 设置视频场景配置 |
-| `0x080B` | `video.openStream` | draft | 否 | 创建视频业务流 |
-| `0x080C` | `video.closeStream` | draft | 否 | 关闭视频业务流 |
-| `0x080D` | `video.getStreamState` | draft | 否 | 获取视频流状态 |
-| `0x080E` | `video.getRtspConfig` | draft | 否 | 获取 RTSP 服务配置 |
-| `0x080F` | `video.setRtspConfig` | draft | 否 | 设置 RTSP 服务配置 |
-| `0x0810` | `video.getNdiConfig` | draft | 否 | 获取 NDI 服务配置 |
-| `0x0811` | `video.setNdiConfig` | draft | 否 | 设置 NDI 服务配置 |
-
-#### 6.9 audio.*
-
-`audio.*` 定义音频算法、EQ、音量、路由、录制和播放。音频业务流由 audio 域创建。
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0901` | `audio.getAlgorithmConfig` | stable | 否 | 获取音频算法配置 |
-| `0x0902` | `audio.setAlgorithmConfig` | stable | 否 | 设置音频算法配置 |
-| `0x0903` | `audio.getEqConfig` | draft | 否 | 获取 EQ 配置 |
-| `0x0904` | `audio.setEqConfig` | draft | 否 | 设置 EQ 配置 |
-| `0x0905` | `audio.getVolumeState` | draft | 否 | 获取音量状态 |
-| `0x0906` | `audio.setVolumeConfig` | draft | 否 | 设置音量配置 |
-| `0x0907` | `audio.getRoutingConfig` | draft | 否 | 获取音频路由配置 |
-| `0x0908` | `audio.setRoutingConfig` | draft | 否 | 设置音频路由配置 |
-| `0x0909` | `audio.openRecordingStream` | draft | 否 | 创建音频录制流 |
-| `0x090A` | `audio.closeRecordingStream` | draft | 否 | 关闭音频录制流 |
-| `0x090B` | `audio.getPlaybackState` | draft | 否 | 获取播放状态 |
-| `0x090C` | `audio.setPlaybackConfig` | draft | 否 | 设置播放配置 |
-| `0x090D` | `audio.getAlgorithmCapabilities` | stable | 否 | 获取音频算法参数能力 |
-| `0x090E` | `audio.resetAlgorithmConfig` | stable | 否 | 重置音频算法配置 |
-
-#### 6.10 input.*
-
-高频输入数据走 STREAM；低频输入控制走 RPC。
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0A01` | `input.getKeyConfig` | draft | 否 | 获取按键配置 |
-| `0x0A02` | `input.setKeyConfig` | draft | 否 | 设置按键配置 |
-| `0x0A03` | `input.getHidConfig` | draft | 否 | 获取 HID 配置 |
-| `0x0A04` | `input.setHidConfig` | draft | 否 | 设置 HID 配置 |
-| `0x0A05` | `input.getSourceState` | draft | 否 | 获取输入源状态 |
-| `0x0A06` | `input.setSourceConfig` | draft | 否 | 设置输入源配置 |
-| `0x0A07` | `input.openKvm` | draft | 否 | 开启 KVM |
-| `0x0A08` | `input.closeKvm` | draft | 否 | 关闭 KVM |
-| `0x0A09` | `input.getGpioState` | draft | 否 | 获取 GPIO 状态 |
-| `0x0A0A` | `input.setGpioConfig` | draft | 否 | 设置 GPIO 配置 |
-
-#### 6.11 output.*
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0B01` | `output.getSourceConfig` | draft | 否 | 获取输出源配置 |
-| `0x0B02` | `output.setSourceConfig` | draft | 否 | 设置输出源配置 |
-| `0x0B03` | `output.getRoutingConfig` | draft | 否 | 获取输出路由配置 |
-| `0x0B04` | `output.setRoutingConfig` | draft | 否 | 设置输出路由配置 |
-| `0x0B05` | `output.getLayoutConfig` | draft | 否 | 获取输出布局配置 |
-| `0x0B06` | `output.setLayoutConfig` | draft | 否 | 设置输出布局配置 |
-
-#### 6.12 room.*
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0C01` | `room.getInfo` | draft | 否 | 获取会议室信息 |
-| `0x0C02` | `room.getScheduleConfig` | draft | 否 | 获取日程配置 |
-| `0x0C03` | `room.setScheduleConfig` | draft | 否 | 设置日程配置 |
-| `0x0C04` | `room.getSourceConfig` | draft | 否 | 获取会议室输入源配置 |
-| `0x0C05` | `room.setSourceConfig` | draft | 否 | 设置会议室输入源配置 |
-| `0x0C06` | `room.getLayoutConfig` | draft | 否 | 获取会议室布局配置 |
-| `0x0C07` | `room.setLayoutConfig` | draft | 否 | 设置会议室布局配置 |
-| `0x0C08` | `room.getParticipantState` | draft | 否 | 获取参会者状态 |
-
-#### 6.13 signage.*
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0D01` | `signage.listMedia` | draft | 否 | 列出标牌媒体 |
-| `0x0D02` | `signage.getPlaylistConfig` | draft | 否 | 获取播放列表配置 |
-| `0x0D03` | `signage.setPlaylistConfig` | draft | 否 | 设置播放列表配置 |
-| `0x0D04` | `signage.getScheduleConfig` | draft | 否 | 获取播放计划配置 |
-| `0x0D05` | `signage.setScheduleConfig` | draft | 否 | 设置播放计划配置 |
-| `0x0D06` | `signage.getPlaybackState` | draft | 否 | 获取播放状态 |
-| `0x0D07` | `signage.startPlayback` | draft | 否 | 开始播放 |
-| `0x0D08` | `signage.stopPlayback` | draft | 否 | 停止播放 |
-| `0x0D09` | `signage.getOsdConfig` | draft | 否 | 获取 OSD 配置 |
-| `0x0D0A` | `signage.setOsdConfig` | draft | 否 | 设置 OSD 配置 |
-
-#### 6.14 network.*
-
-`network.*` 覆盖接口、IP、Wi-Fi、AP、Bluetooth 与服务端点发现；RTSP/NDI/Dante 等服务配置归各自业务域。
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0E01` | `network.getInterfaceState` | draft | 否 | 获取网络接口状态 |
-| `0x0E02` | `network.getIpConfig` | draft | 否 | 获取 IP 配置 |
-| `0x0E03` | `network.setIpConfig` | draft | 否 | 设置 IP 配置 |
-| `0x0E04` | `network.getWifiConfig` | draft | 否 | 获取 Wi-Fi 配置 |
-| `0x0E05` | `network.setWifiConfig` | draft | 否 | 设置 Wi-Fi 配置 |
-| `0x0E06` | `network.scanWifi` | draft | 否 | 扫描 Wi-Fi |
-| `0x0E07` | `network.connectWifi` | draft | 否 | 连接 Wi-Fi |
-| `0x0E08` | `network.disconnectWifi` | draft | 否 | 断开 Wi-Fi |
-| `0x0E09` | `network.getWifiState` | draft | 否 | 获取 Wi-Fi 状态 |
-| `0x0E0A` | `network.getApConfig` | draft | 否 | 获取 AP 配置 |
-| `0x0E0B` | `network.setApConfig` | draft | 否 | 设置 AP 配置 |
-| `0x0E0C` | `network.startAp` | draft | 否 | 启动 AP |
-| `0x0E0D` | `network.stopAp` | draft | 否 | 停止 AP |
-| `0x0E0E` | `network.getApState` | draft | 否 | 获取 AP 状态 |
-| `0x0E0F` | `network.getServiceEndpointState` | draft | 否 | 获取服务端点状态 |
-
-#### 6.15 storage.*
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x0F01` | `storage.getSdCardState` | draft | 否 | 获取 SD 卡状态 |
-| `0x0F02` | `storage.formatSdCard` | draft | 否 | 格式化 SD 卡 |
-| `0x0F03` | `storage.getDiskState` | draft | 否 | 获取磁盘状态 |
-| `0x0F04` | `storage.getVolumeState` | draft | 否 | 获取卷状态 |
-| `0x0F05` | `storage.listMedia` | draft | 否 | 列出媒体资源 |
-| `0x0F06` | `storage.listRecordings` | draft | 否 | 列出录制资源 |
-| `0x0F07` | `storage.rebuildIndex` | draft | 否 | 重建存储索引 |
-
-#### 6.16 file.*
-
-文件数据块必须走 STREAM；文件业务流由 `file.*` 方法创建。
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x1001` | `file.beginTransfer` | draft | 否 | 开始文件传输 |
-| `0x1002` | `file.endTransfer` | draft | 否 | 结束文件传输 |
-| `0x1003` | `file.cancelTransfer` | draft | 否 | 取消文件传输 |
-| `0x1004` | `file.resumeTransfer` | draft | 否 | 恢复文件传输 |
-| `0x1005` | `file.getTransferState` | draft | 否 | 获取文件传输状态 |
-| `0x1006` | `file.listStorage` | draft | 否 | 列出文件存储位置 |
-| `0x1007` | `file.getStorageState` | draft | 否 | 获取文件存储状态 |
-
-#### 6.17 log.*
-
-实时日志流归 `log.stream`，日志导出任务归 `log.export`。
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x1101` | `log.openStream` | draft | 否 | 创建实时日志流 |
-| `0x1102` | `log.closeStream` | draft | 否 | 关闭实时日志流 |
-| `0x1103` | `log.getStreamState` | draft | 否 | 获取实时日志流状态 |
-| `0x1104` | `log.createExport` | draft | 否 | 创建日志导出任务 |
-| `0x1105` | `log.getExportState` | draft | 否 | 获取日志导出状态 |
-| `0x1106` | `log.cancelExport` | draft | 否 | 取消日志导出 |
-| `0x1107` | `log.listFiles` | draft | 否 | 列出日志文件 |
-| `0x1108` | `log.deleteFile` | draft | 否 | 删除日志文件 |
-
-#### 6.18 diagnostic.*
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x1201` | `diagnostic.runSelfTest` | draft | 否 | 执行设备自检 |
-| `0x1202` | `diagnostic.runNetworkTest` | draft | 否 | 执行网络测试 |
-| `0x1203` | `diagnostic.runAudioTest` | draft | 否 | 执行音频测试 |
-| `0x1204` | `diagnostic.runVideoTest` | draft | 否 | 执行视频测试 |
-| `0x1205` | `diagnostic.runStorageTest` | draft | 否 | 执行存储测试 |
-| `0x1206` | `diagnostic.runInputTest` | draft | 否 | 执行输入测试 |
-| `0x1207` | `diagnostic.startCalibration` | draft | 否 | 启动校准流程 |
-| `0x1208` | `diagnostic.createReportExport` | draft | 否 | 创建诊断报告导出任务 |
-| `0x1209` | `diagnostic.getReportExportState` | draft | 否 | 获取诊断报告导出状态 |
-
-#### 6.19 sensor.*
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x1301` | `sensor.getInfo` | draft | 否 | 获取传感器信息 |
-| `0x1302` | `sensor.getState` | draft | 否 | 获取传感器状态 |
-| `0x1303` | `sensor.openSampleStream` | draft | 否 | 打开采样流 |
-| `0x1304` | `sensor.closeSampleStream` | draft | 否 | 关闭采样流 |
-
-#### 6.20 auth.*
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x1401` | `auth.createSession` | draft | 否 | 创建认证会话 |
-| `0x1402` | `auth.closeSession` | draft | 否 | 关闭认证会话 |
-| `0x1403` | `auth.refreshToken` | draft | 否 | 刷新访问令牌 |
-| `0x1404` | `auth.getPermissionState` | draft | 否 | 查询权限状态 |
-
-#### 6.21 privacy.*
-
-隐私遮挡属于通用业务域；具体云台、镜头盖、麦克风静音联动可以在 `camera.*`、`audio.*` 或 `vendor.*` 中扩展。
-
-| methodId | methodName | 状态 | MVP | 说明 |
-|---:|---|---|---:|---|
-| `0x1501` | `privacy.getCoverState` | draft | 否 | 获取隐私盖状态 |
-| `0x1502` | `privacy.setCoverConfig` | draft | 否 | 设置隐私盖配置 |
-| `0x1503` | `privacy.getModeConfig` | draft | 否 | 获取隐私模式配置 |
-| `0x1504` | `privacy.setModeConfig` | draft | 否 | 设置隐私模式配置 |
-| `0x1505` | `privacy.getState` | draft | 否 | 获取隐私状态 |
-
----
-
-### 7. 老协议适配 MethodId intake
-
-老协议适配不要求保持原始 `CmdValue` 数值，但必须保留原有业务语义。映射必须记录在 `registry/legacy/legacy_mapping.yaml` 中。
-
-如果老协议 `CmdValue` 超过 `uint16`，不应直接作为 `methodId` 使用，应映射为 AXTP 新 methodId，并在 `legacy.cmdValue` 中记录原值。
-
-当前没有 `registry/legacy/legacy_mapping.yaml`，表示没有已采纳 legacy method mapping。下表只作为 intake 示例和历史分类线索，不参与 generated 协议：
-
-| 老协议来源 | legacy CmdValue | 旧命令语义 | 候选 AXTP method | 采纳状态 | 说明 |
-|---|---:|---|---|---|---|
-| AXDP_HID | `0xB0002` | BetaDeviceInfo | `device.getInfo` | 未采纳 | 待 device 草案采纳后才可登记 |
-| AXDP_HID | `0xC0021` | CommonSetVideoMode | `video.setFramingConfig` | 未采纳 | 待 video.framing 草案采纳后才可登记 |
-| AXDP_HID | `0xA0001` | AlphaUpgradeInfo | `firmware.getUpdateCapabilities` | 未采纳 | 待 firmware.update 草案采纳后才可登记 |
-| AXDP_HID | `0xB0042` | BetaBrightnessSet | `display.setBrightness` | 未采纳 | 待 display 草案采纳后才可登记 |
-
-未批准或缺少具体 CmdValue 的旧协议命令不得写入本表；应先按 Naming and Taxonomy spec 的 domain-feature 规则完成分类，再在 `registry/legacy/legacy_mapping.yaml` 中登记确定的映射。
-
----
-
-### 8. Method 与 Schema 的关系
-
-每个 Method 必须引用 `Params Schema` 和 `Result Schema`。即使没有参数或返回数据，也必须显式声明 `EmptyParams` / `EmptyResult`。
-
----
-
-### 9. Method 与 ErrorCode 的关系
-
-每个 Method 必须声明可能返回的错误码。当前 adopted 业务方法至少应覆盖通用成功、参数、支持性和运行态错误：
-
-```text
-SUCCESS / INVALID_ARGUMENT / RPC_METHOD_NOT_SUPPORTED / BUSY / INTERNAL_ERROR
-```
-
-固件升级类方法还应包含：
-
-```text
-FW_IMAGE_INVALID / FW_VERIFY_FAILED / FW_VERSION_UNSUPPORTED
-FW_STORAGE_NOT_ENOUGH / FW_ROLLBACK_FAILED
-```
-
-Stream 类方法还应包含：
-
-```text
-STREAM_NOT_FOUND / STREAM_WINDOW_FULL / STREAM_TIMEOUT
-```
-
----
-
-### 10. Method 与 Capability 的关系
-
-Method 是否可调用，应结合 Capability Registry 判断。调用流程：
-
-```text
-1. App 加载当前产品 generated registry，确认目标 method 已生成。
-2. 如业务协议提供运行时 capability/config 查询，先调用该查询方法。
-3. 检查相关 capability 是否满足。
-4. 发送 RPC Request。
-5. 若设备不支持，返回 RPC_METHOD_NOT_SUPPORTED、NOT_SUPPORTED 或对应业务错误。
-```
-
-Method 的 `capability.required` 必须引用 `domain.feature` 能力块。例如当前 `audio.getAlgorithmConfig`、`audio.setAlgorithmConfig`、`audio.resetAlgorithmConfig` 均归属 `audio.algorithm`。
-
----
-
-### 11. Method 与 Event 的关系
-
-如果 Method 会触发事件，应在条目中声明（如 `audio.setAlgorithmConfig` 触发 `audio.algorithmConfigChanged`）。事件本身不使用 MethodId，而使用 EventId，通过 `rpcOp = EVENT` 承载。
-
----
-
-### 12. Generator v1 校验规则
-
-Generator 必须执行以下校验：
-
-```text
-methodId 不重复 / methodName 不重复 / methodId 范围与 domain 匹配
-status 合法 / mvp 条目必须 priority = P0 或 P1
-params schema 必须存在 / result schema 必须存在
-errorCode 必须存在 / event 引用必须存在 / capability 引用必须存在
-legacy mapping 的 axtpMethodId 必须存在
-```
-
-校验失败时，应停止生成。
+本文档不列出完整 MethodId 规划表。历史 planning/current 表已移至 [appendix/method-candidates.md](appendix/method-candidates.md)，仅用于审计和迁移参考。正式实现 MUST 以 `registry/**/*.yaml`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**` 为准。

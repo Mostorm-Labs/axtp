@@ -1,80 +1,163 @@
-# 1-core/08《AXTP Low-Bandwidth Degradation》
+# 1-core/08《AXTP 低带宽降级规范》
 
-> Status: AXTP v1 Supplemental Specification
-> Spec Version: 0.2.0
-> Scope: Compact / HID-64 / BLE / UART degradation guidance
+> 状态： 补充性 / profile 特定规范
+> 规范版本： 0.2.0
+> 变更策略： 在被稳定 transport profile 采纳前保持实验状态
+> 本文的规范范围：显式选择低带宽 profile 时的约束。
+> 本文不定义：v1 Core Standard Frame、默认 TCP/USB-HID 行为、WebSocket JSON 行为、新 PayloadType 值、CONTROL/RPC/STREAM payload 语义或 registry 业务 API。
+> Runtime 实现状态：可选/未来能力；v1 Core runtime conformance 不要求实现。
 
 版本：0.2.0
-状态：Supplemental Specification
-适用范围：低带宽或小 MTU 链路的后续降级设计
+状态：补充规范
+适用范围：HID-64、BLE、UART 或小 MTU 链路的降级 profile 设计
 
 ---
 
-## 0. 速读：降级只换外层，不换协议语义
+## 文档目的
 
-18 描述的是低带宽或小 MTU 场景的后续降级路径，不是 v1 Core 必选路径。降级 profile 可以改变外层 frame header、MTU、分片和确认策略，但不能改变 CONTROL / RPC / STREAM 的 Payload 语义。
+本文定义低带宽、小 MTU 或资源受限 transport 如何在独立 profile 中降级承载 AXTP。降级只允许改变外层承载策略，例如 outer frame header、MTU、fragmentation、retry policy；不得改变 AXTP CONTROL / RPC / STREAM 的 Payload 语义。
 
 ```text
-允许变化： outer frame header / MTU / fragmentation / retry policy
-不得变化： PayloadType / CONTROL 5B / RPC Binary 15B / STREAM 16B / methodId / eventId / errorCode
+MAY change:     outer frame header / MTU / fragmentation / retry policy
+MUST NOT change: PayloadType / CONTROL 5B / RPC Binary 15B / STREAM 16B
+                 methodId / eventId / errorCode / business registry
 ```
 
-选择降级路径前先判断：
+## 范围
 
-| 场景 | 推荐 |
+本文覆盖：
+
+- HID-64 / BLE / UART / small-MTU profile 选择；
+- Compact Frame 候选结构；
+- frame size 与 fragmentation 约束；
+- 低带宽 encoding 约束；
+- fallback 与兼容性要求。
+
+本文不覆盖：
+
+- Standard Framed Binary 12B Header；
+- WebSocket Unframed JSON；
+- 具体业务 method/event/schema；
+- 低带宽 profile 的 stable registry 条目；
+- generated conformance case。
+
+## v1 必需实现
+
+AXTP v1 Core 不要求实现任何低带宽降级 profile。
+
+v1 Core 必需路径仍然是：
+
+| 路径 | 必需行为 |
 |---|---|
-| USB HID 高速或 TCP | 继续使用 Standard Framed |
-| WebSocket JSON 集成 | 继续使用 WebSocket Unframed JSON，RPC-only |
-| BLE/UART/HID-64 小 MTU | 使用独立 low-bandwidth profile，不在同一 session 中切换 |
-| 需要视频/固件更新/文件连续数据 | 优先使用 Standard Framed；降级必须证明 MTU 和窗口策略可行 |
+| Standard Framed Binary | `AXTP-USB-HID` / `AXTP-TCP` 使用 Standard Frame |
+| WebSocket Unframed JSON | `AXTP-WS-JSON` / `AXTP-WS-CLOUD-REVERSE` 只使用 JSON RPC envelope |
 
----
+runtime 即使不实现 Compact Frame、HID-64、BLE 或 UART 降级，也 MAY 完全符合 v1 Core。
 
-## 1. 定位
+## v1 可选 / Profile 特定
 
-AXTP v1 Core 当前只要求两条正式路径：
+低带宽 profile MAY 在 AXTP session 启动前被选择并引入：
 
-- Standard Framed：`AXTP-USB-HID`、`AXTP-TCP`
-- WebSocket Unframed JSON：`AXTP-WS-JSON`、`AXTP-WS-CLOUD-REVERSE`
+| Transport/profile family | 状态 | 约束 |
+|---|---|---|
+| HID-64 | Optional/Future | MUST 计算 report size 和 STREAM 16B header 开销 |
+| BLE GATT | Optional/Future | MUST 协商 MTU；默认 ATT MTU 通常太小，不适合 STREAM |
+| UART | Optional/Future | MUST 提供显式 frame boundary，例如 COBS/SLIP/length-prefix |
+| Compact Frame | Experimental/Future | MUST 由独立 profile/entrypoint 选择 |
 
-Compact / HID-64 / BLE / UART 不作为 v1 Core 必选实现。它们是低带宽、低内存或历史兼容场景的降级路径，应在后续版本或设备专项 profile 中启用。
+选择点 MAY 包括：
 
----
-
-## 2. 降级原则
-
-低带宽降级只能改变外层承载策略，不改变协议语义：
-
-| 不得改变 | 原因 |
+| Transport | 选择点 |
 |---|---|
-| PayloadType 三分类 | CONTROL / RPC / STREAM 是一级 parser 边界 |
-| MethodId / EventId / ErrorCode | Registry 必须跨传输稳定 |
-| CONTROL Payload Header | OPEN / ACCEPT 语义必须一致；ACK / NACK 作为后续可靠传输预留语义保持一致 |
-| Binary RPC Header | Request / Response / Event 二进制语义必须一致 |
-| STREAM Header | `streamId:uint32` / `seqId:uint32` / `cursor:uint64` 固定 16B |
-| Method/capability bitmap 格式 | 若后续已采纳能力发现方法返回 bitmap，必须继续从 `methods[].bitOffset` 或 `capabilities[].bitOffset` 派生 |
+| USB HID | 独立 interface、report descriptor、endpoint 或 device descriptor |
+| BLE GATT | 独立 service UUID / characteristic set / profile UUID |
+| UART | 独立 port configuration、startup adapter 或 out-of-band configuration |
+| TCP | 独立 port、ALPN、URL path 或 connection discovery |
+| WebSocket | SHOULD 继续使用 Unframed JSON 或明确声明的 binary subprotocol |
 
-允许改变：
+## 保留 / 未来
 
-- 外层 frame header
-- 单帧 MTU
-- 分片策略
-- ACK/NACK 粒度
-- retry / timeout 参数
-- 是否启用 stop-and-wait 或 sliding-window
+以下内容 MUST 保持为 future/profile-specific：
 
----
+- stable Compact Frame registry 条目；
+- Compact CRC8 polynomial 和 test vector；
+- HID-64/BLE/UART conformance manifest；
+- 低带宽 stop-and-wait 或 sliding-window reliability 要求；
+- runtime 在 Standard Frame 与 Compact Frame 之间切换；
+- 将 Compact Frame 变成 v1 Core 默认行为。
 
-## 3. Compact Frame 降级格式
+低带宽 profile MUST NOT 反向修改 [`03-Frame-and-Payload.md`](03-Frame-and-Payload.md)。
 
-Compact Frame 的目标是极小 MTU 或 MCU 内存受限场景。推荐仅在下列条件满足时启用：
+## 规范规则
 
-- 链路天然有 packet 边界，或传输适配层提供 COBS / SLIP / length-prefix framing
-- 单连接点对点，不需要 SourceId / DestinationId 路由
-- 设备不能承受 Standard Header + CRC16 的开销
-- profile 明确声明自己是 low-bandwidth degradation，不冒充 v1 Core transport
+- 低带宽 profile MUST 在 AXTP session 启动前选定。
+- runtime MUST NOT 在同一个 AXTP Session 内切换 Frame Profile。
+- OPEN / ACCEPT MUST NOT 将既有 Standard connection 转换成 Compact connection。
+- 低带宽 profile MUST 保留 PayloadType 值：CONTROL=`0x01`、RPC=`0x02`、STREAM=`0x03`。
+- 低带宽 profile MUST 保留 CONTROL 5B Payload Header。
+- 低带宽 profile MUST 保留 JSON_BINARY 15B fixed header。
+- 低带宽 profile MUST 保留 STREAM 16B Header。
+- 低带宽 profile MUST 保留 MethodId、EventId、ErrorCode、schema、capability 和 profile registry 语义。
+- 低带宽 profile MUST NOT 创建重复业务 API。
+- 如果超过 encoded Compact 限制，runtime MUST 让 encoding 失败或 fallback 到兼容 profile；MUST NOT 截断值。
 
-Compact Frame 使用 4B Header + 1B CRC8 的降级格式。它只属于降级 profile 的 wire format，不进入 AXTP v1 Core。
+## 状态机 / 生命周期
+
+Profile 选择生命周期：
+
+```text
+选择 low-bandwidth Transport/Profile entrypoint
+  -> 解析被选择的 outer L1 profile，例如 COMPACT_FRAME
+  -> CONTROL OPEN
+  -> CONTROL ACCEPT or rejection
+  -> RPC Hello / Identify / Identified
+  -> APP_READY
+```
+
+Fallback 生命周期：
+
+```text
+尝试 low-bandwidth profile
+  -> peer/profile 不支持
+  -> 安全关闭或拒绝 connection
+  -> 可用时 fallback 到 Standard Framed 或 WebSocket Unframed JSON
+```
+
+兼容规则：
+
+```text
+旧 v1 Core runtime 只需要 Standard Framed 和 WebSocket JSON。
+Compact 或 BLE/UART profiles 使用独立 entrypoints，MUST NOT 出现在同一个 wire stream 内。
+```
+
+## 校验规则
+
+低带宽 encoder 发送前 MUST 校验 profile 限制：
+
+- payload length 符合所选 outer frame profile；
+- message id 符合所选 wire width；
+- frame index 和 frame count 符合所选 wire width；
+- 扣除 outer header 和 L2 payload header 后剩余 data capacity 为正；
+- STREAM data capacity 计算了 16B STREAM Header；
+- CONTROL/RPC/STREAM payload header 保持不变；
+- 所选 profile 标记 stable 前已定义 CRC/checksum configuration。
+
+Compact Frame 候选校验：
+
+| 字段 | 限制 |
+|---|---:|
+| `PayloadLength` | `<= 0xFF` |
+| `MessageId` | Compact wire 上 `<= 0xFF` |
+| `frameIndex` | `<= 14` |
+| `frameCount` | `1..15` |
+
+如果超过任何限制，runtime MUST 让 encoding 失败或选择其他 profile。Runtime MUST NOT 回绕或截断这些值。
+
+## Runtime 实现要求
+
+### Compact Frame 候选
+
+Compact Frame 是实验性/未来低带宽候选方案：
 
 ```text
 Offset 0: VT(1)
@@ -85,15 +168,15 @@ Offset 4: Payload starts
 Footer:   CRC8(1)
 ```
 
-| 字段 | 长度 | 说明 |
+| 字段 | 长度 | 规则 |
 |---|---:|---|
-| `VT` | 1B | 高 4 bit 为 Compact Header Version，低 4 bit 为 PayloadType |
-| `PayloadLength` | 1B | Payload 字节数，不含 Compact Header 和 CRC8，最大 255 |
-| `MessageId` | 1B | 逻辑 Message ID，wire 范围 0-255 |
-| `FrameInfo` | 1B | 高 4 bit 为 frameIndex，低 4 bit 为 frameCount |
+| `VT` | 1B | 高 4 bit = Compact Header Version；低 4 bit = PayloadType |
+| `PayloadLength` | 1B | Payload 字节数，不包含 Compact Header 和 CRC8 |
+| `MessageId` | 1B | Compact wire 的 message id |
+| `FrameInfo` | 1B | 高 4 bit = frameIndex；低 4 bit = frameCount |
 | `CRC8` | 1B | 覆盖 Compact Header(4B) + Payload |
 
-推荐编码：
+推荐候选编码：
 
 ```text
 VT.version = 1
@@ -102,161 +185,56 @@ FrameInfo.frameIndex = 0..14
 FrameInfo.frameCount = 1..15
 ```
 
-Compact Header 不携带：
-
-- Magic
-- SourceId
-- DestinationId
-- uint16 MessageId
-- uint8 FrameIndex + uint8 FrameCount 的完整宽度
-
-因此 Compact 只能用于点对点、低并发、短消息或强约束 profile。实现层内部仍可使用统一的 `messageId:uint16` 抽象，但编码到 Compact wire 前必须校验 `messageId <= 0xFF`、`payloadLength <= 0xFF`、`frameIndex <= 14`、`frameCount <= 15`。超出时必须返回编码失败或回退到 Standard Framed transport，不得截断。
-
-Compact Frame 只替换外层 L1 Frame Header，不改变 L2 Payload：
+Compact Frame 只替换外层 L1 Frame Header：
 
 | PayloadType | Compact 下的 Payload |
 |---|---|
-| CONTROL | 仍然是 04 定义的 5B Control Payload Header + TLV body |
-| RPC | 仍然是 05 定义的 JSON envelope 或 15B Binary RPC Header + body |
-| STREAM | 仍然是 06 定义的 16B STREAM Header + data |
+| CONTROL | 相同 5B Control Payload Header + TLV body |
+| RPC | 相同 JSON envelope 或 15B JSON_BINARY Header + body |
+| STREAM | 相同 16B STREAM Header + data |
 
-HID-64 示例：
+Compact profile 标记为 stable 前，MUST 明确 CRC8 polynomial、init value 和 test vectors。
+
+### HID-64 / BLE / UART 容量
+
+实现 SHOULD 显式计算可用 data capacity：
 
 ```text
-ReportId: 1B，可选
+usablePayload = transportPacketSize
+  - transportSpecificOverhead
+  - lowBandwidthFrameHeader
+  - checksumFooter
+  - payloadSpecificHeader
+```
+
+对于 STREAM，`payloadSpecificHeader` 包含 16B STREAM Header。
+
+## 示例
+
+HID-64 容量示例：
+
+```text
+ReportId: 1B, optional
 Compact Header: 4B
 CRC8 Footer: 1B
-可用 Frame Payload: 58B（64B report 且含 1B ReportId 时）
-可用 STREAM data: 42B（58B - 16B STREAM Header）
+Frame Payload capacity: 58B  // 64B report with 1B ReportId
+STREAM data capacity: 42B    // 58B - 16B STREAM Header
 ```
 
-CRC8 的具体多项式、初值和 test vector 必须在启用 Compact profile 前进入 registry YAML 与 generator snapshot；启用前不得把 Compact 标记为 stable。
+决策指引：
 
----
-
-## 4. 协商阶段与版本升级
-
-AXTP v1 Core 的原则保持不变：OPEN / ACCEPT 不协商 Header Profile。同一个 AXTP Session 内也不得切换 Frame Profile。
-
-### 4.1 在哪里选择 Compact
-
-Compact 必须通过独立 Transport Profile 或连接入口选择，而不是在已建立的 Standard Session 中临时切换：
-
-| 场景 | 推荐选择点 |
+| 场景 | 建议 |
 |---|---|
-| USB HID | 独立 interface、report descriptor、endpoint 或设备描述符声明 |
-| BLE GATT | 独立 service UUID / characteristic set / profile UUID |
-| UART | 独立端口配置、启动字节流适配层或 out-of-band 配置 |
-| TCP | 独立端口、ALPN、URL path 或连接前 discovery |
-| WebSocket | 不推荐 Compact；低带宽时继续使用 Unframed JSON 或 Standard Framed binary 子协议 |
+| USB HID high-speed 或 TCP | 使用 Standard Framed |
+| Browser/cloud RPC | 使用 WebSocket Unframed JSON |
+| BLE/UART/HID-64 small MTU | 仅在需要时使用独立低带宽 profile |
+| video/firmware/file 连续数据 | 优先使用 Standard Framed，除非低带宽 profile 能证明容量/可靠性足够 |
 
-一旦选择了低带宽 Transport Profile，后续流程仍然是：
+## 非目标
 
-```text
-Transport Profile selected
-    ↓
-Parse selected L1 Frame Profile: COMPACT_FRAME
-    ↓
-CONTROL OPEN
-    ↓
-CONTROL ACCEPT
-    ↓
-RPC Hello / Identify / Identified
-    ↓
-APP_READY
-```
-
-OPEN / ACCEPT 在该阶段只协商运行时参数，例如：
-
-- `protocolVersion`
-- `maxFrameSize`
-- `maxPayloadSize`
-- `mtu`
-- `supportedPayloadTypes`
-- `supportedRpcEncodings`
-- `ackMode`
-- `windowSize`
-- `resumeToken`
-
-它们不得把一个 Standard connection 改成 Compact connection，也不得把 Compact connection 改成 Standard connection。
-
-### 4.2 如何兼容老版本
-
-低带宽升级必须遵守“先发现、再连接、失败可回退”的策略：
-
-| Peer 能力 | 行为 |
-|---|---|
-| 双方都支持 Compact Transport Profile | 可以使用 Compact 入口建连，再按 OPEN / ACCEPT 协商运行参数 |
-| Client 支持 Compact，Server 不支持 | Client 必须回退到 Standard Framed 或 WebSocket Unframed JSON |
-| Server 支持 Compact，Client 不支持 | Server 必须继续提供 v1 Core 的 Standard Framed 或 WebSocket Unframed JSON 入口 |
-| Compact Header Version 不支持 | 接收端返回 `FRAME_VERSION_UNSUPPORTED`（可安全返回时）或关闭连接；发起端回退 |
-| PayloadType / rpcEncoding 无交集 | 使用 `CONTROL_NEGOTIATION_FAILED`，发起端可调整参数重试 |
-
-旧 v1 Core 实现只需要识别 Standard Framed 与 WebSocket Unframed JSON；它们不会因为不知道 Compact 而破坏兼容性，因为 Compact 使用独立入口，不会混入同一个 wire stream。
-
-### 4.3 版本号边界
-
-Compact 有两个版本边界：
-
-| 版本对象 | 含义 | 何时升级 |
-|---|---|---|
-| Compact Header Version | Compact L1 Header 的解析规则 | Compact Header 字段布局、CRC 规则、PayloadLength 语义变化 |
-| `protocolVersion` | AXTP Control/RPC/STREAM 语义版本 | Control/RPC/STREAM 固定头发生不兼容变化 |
-
-新增 method/event/error/type/capability、增加 Control TLV、增加 Stream Profile 或调整 registry 内容，不需要升级 Compact Header Version。
-
-### 4.4 迁移路径
-
-建议分三步推进：
-
-| 阶段 | 内容 | 兼容要求 |
-|---|---|---|
-| P0 / v1 Core | 只实现 Standard Framed + WebSocket Unframed JSON | 当前规范与生成文档主线 |
-| P1 / Experimental | 增加 `COMPACT_FRAME_EXPERIMENTAL` 与一个低带宽 Transport Profile | 必须提供 Standard 回退；默认关闭 |
-| P2 / Stable Profile | 注册稳定 Compact Transport/Profile、CRC8 test vector、conformance cases | 仍不得改变 CONTROL/RPC/STREAM Payload Header |
-
-在 P1/P2 中，Generator 应生成：
-
-- compact frame constants
-- compact encode/decode test vectors
-- Compact MessageId / PayloadLength overflow test
-- Compact CRC8 error test
-- low-bandwidth profile conformance manifest
-
----
-
-## 5. HID-64 / BLE / UART 建议
-
-| 链路 | 建议定位 | 注意事项 |
-|---|---|---|
-| HID-64 | 低带宽 HID 降级 | chunk 必须扣除 STREAM 16B Header 后再计算 |
-| BLE GATT | 低功耗降级 | 必须先协商 MTU，默认 ATT MTU 过小不适合 STREAM |
-| UART | 字节流降级 | 必须额外提供帧边界，不能裸跑无 Magic Compact |
-
-如果业务需要音视频或固件更新等 STREAM 能力，应优先使用 `AXTP-USB-HID` 或 `AXTP-TCP` 的 Standard Framed 路径。
-
----
-
-## 6. 与当前 Registry 的关系
-
-低带宽 profile 不应新增一套业务 API。它必须复用当前 registry/domain 中已经定义的：
-
-- methods
-- events
-- errors
-- schemas
-- stream profiles
-- capabilities
-
-新增 low-bandwidth transport/profile 时，应只新增 transport/profile 元数据和必要的 capability，不应复制业务 method/event。
-
-建议新增的机器事实源位置：
-
-| 内容 | 建议位置 |
-|---|---|
-| Compact Frame Profile 元数据 | `registry/core/protocol_meta.yaml` |
-| 低带宽 Transport Profile | `registry/core/protocol_meta.yaml` |
-| 低带宽 Profile / Capability | `registry/capability/` 或 `registry/domains/<domain>/domain.yaml` |
-| Compact CRC8 / overflow test vector | `tooling/test-vectors/` 由 Generator 生成 |
-
-这些事实源进入 registry 前，`docs/generated/protocol.md` 不应把 Compact 展示为当前可用主线能力。
+- 本文不使 Compact Frame 成为 stable。
+- 本文不要求 v1 Core 实现 HID-64、BLE 或 UART。
+- 本文不修改 Standard Framed Binary。
+- 本文不新增 PayloadType 值。
+- 本文不定义新的业务 method、event、error、schema、capability 或 stream profile。
+- 本文不定义 generated artifact 或 conformance manifest。

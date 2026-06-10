@@ -1,12 +1,12 @@
-# 00《AXTP Glossary》
+# 00《AXTP 术语表》
 
-> Status: AXTP v1 Core Freeze Candidate
-> Spec Version: 1.0.0-rc1
-> Change Policy: Clarification-only before v1.0.0
-> Scope: Shared terminology / domain language / cross-runtime alignment
+> 状态：AXTP v1 Core 冻结候选
+> 规范版本： 1.0.0-rc1
+> 变更策略： v1.0.0 前仅允许澄清性修改
+> 范围：共享术语、领域语言和跨 runtime 对齐
 
 版本：v1.0.0-rc1
-状态：AXTP v1 Core Freeze Candidate
+状态：AXTP v1 Core 冻结候选
 适用范围：AXTP 全仓库术语、跨语言 runtime 沟通、规范文档第一次引用专有名词时的链接目标
 后续文档：`docs/specs/1-core/01-Overview.md`、`docs/specs/1-core/02-Protocol-Framework.md`、`docs/specs/1-core/03-Frame-and-Payload.md`
 
@@ -21,12 +21,12 @@
 引用示例：
 
 ```markdown
-PayloadType -> ../00-Glossary.md#payloadtype
-RPC Session -> ../00-Glossary.md#rpc-session
-Domain -> ../00-Glossary.md#domain
+PayloadType -> ../0-principles/01-Glossary.md#payloadtype
+RPC Session -> ../0-principles/01-Glossary.md#rpc-session
+Domain -> ../0-principles/01-Glossary.md#domain
 ```
 
-从 `docs/specs/1-core/**` 等子目录引用本文时，使用 `../00-Glossary.md#anchor`；从 `docs/specs/README.md` 同目录引用时，使用 `00-Glossary.md#anchor`。
+从 `docs/specs/1-core/**` 等子目录引用本文时，使用 `../0-principles/01-Glossary.md#anchor`；从 `docs/specs/README.md` 同目录引用时，使用 `0-principles/01-Glossary.md#anchor`。
 
 ---
 
@@ -101,7 +101,7 @@ Frame Header 不承载业务类型。`VIDEO`、`FIRMWARE_UPDATE`、`FILE` 等不
 
 **Payload** 是 Frame Header 后面的 L2 数据块。它由 `PayloadType` 决定交给哪个 parser：
 
-| PayloadType | Parser |
+| PayloadType | 解析器 |
 |---|---|
 | CONTROL | ControlParser |
 | RPC | RpcParser |

@@ -1,441 +1,89 @@
-# 3-codec/03《AXTP TLV Schema 编码规范》
+# 3-codec/03《AXTP TLV 编码规范》
 
-版本：v1.0
-状态：MVP 编码规范
-适用范围：AXTP Control Body、RPC Binary Body、Stream Profile 建流上下文、Registry Schema
-前置文档：`docs/specs/3-codec/01-Type-System.md`
+> 状态： AXTP v1 规范性 codec 规范
+> 范围：TLV field envelope、基础类型/object/array 编码、unknown field 处理、canonical encoding 和 parser error
+> 权威边界：本文只定义 TLV 编码；不定义业务 schema 内容、methodId、eventId 或 capabilityId。
 
----
+## 文档目的
 
-## 0. 速读：TLV 编码长什么样
+本文档定义 AXTP TLV schema encoding。TLV 在线上只传 `fieldId`、`length` 和 `value`；字段名、类型、required/default 规则来自 registry schema。
 
-TLV 在线上只传 fieldId、length 和 value；字段名、类型、required/default 规则来自 schema。
+## 范围
 
-```text
-Basic TLV:          fieldId(1) + length(1) + value(N)
-Extended Length:    fieldId(1) + FF + extendedLength(2, LE) + value(N)
-```
+本文档覆盖 Basic TLV、Extended Length TLV、Empty Value、基础类型值编码、array/object 编码、optional/default、unknown field、canonical encoding 和解析错误。业务 method、event、capability schema 的字段语义由 registry YAML 和 generated docs 定义。
 
-常见例子：
+## 规范规则
 
-```text
-01 01 50
-# fieldId=0x01, length=1, value=0x50(uint8 80)
+1. Basic TLV MUST 使用 `fieldId:uint8 + length:uint8 + value:bytes[length]`。
+2. 当 `length=0xFF` 时，后续 MUST 是 `extendedLength:uint16` Little-Endian，再跟随 `value:bytes[extendedLength]`。
+3. `fieldId=0x00` MUST NOT 用作普通字段。`fieldId=0xFF` 在 Basic TLV 中保留给 extended length marker，不得作为普通字段。
+4. 多字节数值 MUST 使用 Little-Endian。
+5. 单个 TLV value 超过 `uint16` extended length 能表达的大小时 MUST 使用 STREAM 或业务分块，不得塞入单个 TLV 字段。
+6. scalar 字段默认 strict mode；重复出现 SHOULD 报 duplicate field，除非 schema 明确声明 repeated array 或 legacy duplicate policy。
+7. 接收端遇到未知 fieldId 时，若 length 合法且不越界，MUST 跳过，不得因未知 optional field 失败。
+8. Required 字段缺失 MUST 作为 schema validation failure。
+9. Canonical encoding SHOULD 按 fieldId 升序输出字段；解析器 MUST NOT 依赖字段顺序。
 
-02 02 2C 01
-# fieldId=0x02, length=2, value=0x012C(uint16 300, Little-Endian)
+## Registry / Schema / Tooling 模型
 
-10 FF 2C 01 <300 bytes>
-# fieldId=0x10, extended length=300
-```
-
-对象就是多个 TLV 字段顺序排列：
+TLV envelope：
 
 ```text
-ExampleLevelConfig:
-  level:uint8=3             -> 01 01 03
-  applyDelayMs:uint16=300   -> 02 02 2C 01
-
-encoded body:
-  01 01 03 02 02 2C 01
+Basic TLV:       fieldId(1) + length(1) + value(N)
+Extended TLV:    fieldId(1) + FF + extendedLength(2, LE) + value(N)
 ```
 
-数组在 MVP 中推荐用 repeated TLV：
+常用 value 编码：
+
+| 类型 | TLV value |
+|---|---|
+| `uint8/int8/bool` | 1B |
+| `uint16/int16` | 2B Little-Endian |
+| `uint32/int32` | 4B Little-Endian |
+| `uint64/int64` | 8B Little-Endian |
+| `enum8/enum16` | 1B 或 2B Little-Endian |
+| `bitmap8/16/32/64` | 固定宽度 Little-Endian |
+| `string` | UTF-8 字节 |
+| `bytes` | 原始 bytes |
+| `object` | 嵌套 TLV sequence |
+| `array` | 按 schema 声明使用 repeated TLV 或 packed array |
+
+## 校验规则
+
+Parser/codec MUST 校验：
+
+1. TLV header 不越界；
+2. extended length 不越界；
+3. value length 与 declared type 固定宽度匹配；
+4. bool、UTF-8、enum、range、array 元素宽度合法；
+5. required 字段存在；
+6. duplicate field 符合 schema policy；
+7. nested object depth 和 total decoded size 在实现限制内。
+
+## 兼容规则
+
+- 新增 optional TLV field 通常兼容，因为旧解析器会跳过 unknown field。
+- 改变 stable fieldId 或 type 通常不兼容。
+- deprecated 字段仍应可解析；新实现 SHOULD 不再发送。
+- Canonical encoding 改变不应改变语义；测试向量 SHOULD 使用 canonical order。
+
+## 实现要求
+
+- Runtime MUST 对 CONTROL/RPC TLV body 执行长度边界检查，防止越界读取和内存放大。
+- Runtime SHOULD 针对最大 TLV body size、最大 nested depth、最大 repeated count 设置实现限制。
+- Generator SHOULD 从 schema 生成 TLV encoder/decoder 和 validation cases。
+- SDK MAY 使用 JSON 作为应用层结构，但与 TLV 的转换 MUST 遵守 schema。
+
+## 示例
 
 ```text
-supportedIds = [0x0101, 0x0201]
-  01 02 01 01
-  01 02 01 02
+01 01 50        # fieldId=0x01, length=1, uint8 value=80
+02 02 2C 01     # fieldId=0x02, length=2, uint16 value=300
+10 FF 2C 01 ... # fieldId=0x10, extendedLength=300
 ```
 
-已采纳业务 method 的 RPC Binary body 会被放在 Binary RPC 15B Header 之后：
+对象是多个 TLV 字段的串联；array 可用同一 fieldId 重复出现表示 repeated elements。
 
-```text
-Frame Header(payloadType=RPC)
-  + RPC Binary Header(15B, bodyEncoding=TLV8)
-  + TLV body(method params)
-  + CRC16
-```
+## 非目标 / 未来
 
----
-
-## 1. 文档目的
-
-本文档定义 AXTP 协议中的 TLV Schema 编码规范，用于：
-
-- CONTROL body
-- RPC Binary body
-- STREAM 建流上下文（RPC 阶段）
-- Capability 描述、Error detail
-
-TLV 不是新的 PayloadType，而是 Payload 内部的字段编码方式：
-
-```text
-payloadType = CONTROL, bodyEncoding = TLV
-payloadType = RPC, rpcEncoding = JSON_BINARY, bodyEncoding = TLV8
-```
-
-具体业务字段由注册表文档定义，本文档只定义编码规则。
-
----
-
-## 2. TLV 基本编码格式
-
-### 2.1 Basic TLV
-
-MVP 默认使用 1B Type + 1B Length：
-
-```text
-+---------+---------+-----------------+
- | Type    | Length  | Value           |
- | uint8   | uint8   | bytes[Length]   |
-+---------+---------+-----------------+
-```
-
-示例：`01 01 50` → fieldId=0x01, length=1, value=0x50（uint8=80）
-
-### 2.2 Extended Length TLV
-
-当 `Length = 0xFF` 时，后续 2B 为扩展长度 `extendedLength:uint16`（Little-Endian）：
-
-```text
-+---------+---------+------------------------+----------------------+
- | Type    | 0xFF    | ExtendedLength:uint16  | Value                |
-+---------+---------+------------------------+----------------------+
-```
-
-示例：`01 FF 2C 01 <300 bytes>` → fieldId=0x01, extendedLength=300
-
- | 编码形式 | 最大 Value 长度 |
- |---|---|
- | Basic TLV（1B Length） | 254B（0xFF 为扩展标志） |
- | Extended Length TLV | 65535B |
-
-超过 65535B 的数据必须通过 `PayloadType = STREAM` 传输，不得通过单个 TLV 字段承载。
-
-### 2.3 Empty Value
-
-允许 `Length = 0`，适用于 presence flag、空字符串、空 bytes、空数组。bool 类型不建议使用空 Value，应明确编码为 `00`（false）或 `01`（true）。
-
----
-
-## 3. TLV 字段编号规则
-
- | 范围 | 用途 |
- |---:|---|
- | `0x00` | 禁止使用 |
- | `0x01-0xFE` | 当前 schema 的本地字段编号，推荐从 `0x01` 连续分配 |
- | `0xFF` | 扩展长度标志，禁止作为普通字段使用 |
-
-同一 schema 内 fieldId 不得重复；不同 schema 之间可复用。AXTP 不设置跨 schema 的公共固定字段，`timestamp / reasonCode / errorCode / message` 等字段如需出现，也必须在各自 schema 内按普通字段编号声明。废弃字段不得立即复用，应标记 `deprecated: true`。
-
----
-
-## 4. 基础类型编码
-
-所有多字节整数使用 Little-Endian（见 05《Type System》）。
-
- | 类型 | Length | 编码 |
- |---|---:|---|
- | `uint8/int8/bool` | 1B | 原始字节 |
- | `uint16/int16` | 2B | Little-Endian |
- | `uint32/int32` | 4B | Little-Endian |
- | `uint64/int64` | 8B | Little-Endian |
- | `enum uint8` | 1B | 原始字节 |
- | `enum uint16` | 2B | Little-Endian |
- | `bitmap8/16/32` | 1/2/4B | Little-Endian |
- | `string` | N | UTF-8，无 NUL 终止符 |
- | `bytes` | N | 原始字节 |
- | `fixed_bytes` | 固定 N | 必须等于 schema length |
-
-bool 接收端遇到非 `00/01` 值时报 `RPC_PARAM_INVALID`。string 非法 UTF-8 报 `RPC_BODY_DECODE_FAILED` 或 `RPC_PARAM_INVALID`，由接收端按“解码失败/字段值非法”语义选择。
-
----
-
-## 5. 数组编码
-
-### 5.1 Repeated TLV（MVP 推荐）
-
-同一 fieldId 重复出现表示数组元素：
-
-```text
-10 02 01 01   // supportedMethod = 0x0101
-10 02 02 01   // supportedMethod = 0x0102
-10 02 03 01   // supportedMethod = 0x0103
-```
-
-Schema 声明：`encoding: repeated`
-
-### 5.2 Packed Array
-
-多个固定宽度元素放在一个 TLV Value 中：
-
-```text
-10 06 01 01 02 01 03 01  // uint16[3] = {0x0101, 0x0102, 0x0103}
-```
-
-Schema 声明：`encoding: packed`。Packed Array 要求所有元素为固定长度类型。
-
-### 5.3 Array of Object
-
-对象数组使用 nested TLV，同一 fieldId 重复出现，每次 Value 为一段完整 TLV 序列。
-
----
-
-## 6. 对象编码
-
-外层 TLV 的 Value 是一段完整的 TLV 序列：
-
-```text
-30 0B
-  01 02 80 07   // width = 1920
-  02 02 38 04   // height = 1080
-  03 01 1E      // fps = 30
-```
-
-MVP 建议最大嵌套深度 4，超过时报 `RPC_BODY_DECODE_FAILED`。
-
-字段顺序默认不敏感，但 Generator 生成测试向量时应按 fieldId 升序排列（Canonical Encoding）。
-
----
-
-## 7. Optional / Required / Default
-
-- `required: true`：字段缺失时报 `ERR_REQUIRED_FIELD_MISSING`
-- `required: false`：字段缺失时不报错，使用 `default` 值（若有）
-- `default`：线上省略该字段时接收方视为 default 值；重新序列化时可省略
-- MVP 不定义 null 类型，需要"清空字段"时使用业务语义字段
-
----
-
-## 8. 重复字段处理
-
- | schema 类型 | 重复字段处理 |
- |---|---|
- | scalar（strict mode） | 报 `ERR_DUPLICATE_FIELD` |
- | `repeated: true` | 追加为数组元素 |
- | legacy schema（`duplicatePolicy: last_wins`） | 后者覆盖前者 |
-
-CONTROL Payload 和 RPC params/result/event data 默认 strict mode。
-
----
-
-## 9. Unknown Field 处理
-
-接收端遇到未知 fieldId：必须跳过，不得失败（前提是 Length 合法且不越界）。高层 SDK 可选择保留未知字段，MCU MVP 可只跳过。
-
----
-
-## 10. Schema 描述格式
-
-Generator v1 使用 YAML 描述 TLV schema：
-
-```yaml
-schemas:
-  ExampleLevelConfig:
-    encoding: tlv
-    fields:
-      - fieldId: 0x01
-        name: level
-        type: uint8
-        required: true
-        min: 0
-        max: 3
-
-      - fieldId: 0x02
-        name: applyDelayMs
-        type: uint16
-        required: false
-        default: 0
-```
-
-对应 TLV：`01 01 03  02 02 00 00`
-
----
-
-## 11. Schema 字段属性
-
- | 属性 | 必选 | 说明 |
- |---|---|---|
- | `fieldId` | 是 | TLV Type |
- | `name` | 是 | 字段名 |
- | `type` | 是 | AXTP Type System 类型 |
- | `required` | 是 | 是否必填 |
- | `encoding` | 否 | enum/array/object 的具体编码方式 |
- | `min` / `max` | 否 | 数值范围 |
- | `length` | 否 | fixed_bytes 长度 |
- | `maxLength` | 否 | string/bytes 最大长度 |
- | `items` | 否 | array 元素定义 |
- | `fields` | 否 | object 子字段 |
- | `enum` | 否 | enum 引用 |
- | `default` | 否 | 默认值 |
- | `deprecated` | 否 | 是否废弃 |
- | `reserved` | 否 | 是否保留 |
- | `description` | 否 | 字段说明 |
-
----
-
-## 12. 类型校验规则
-
- | 类型 | Length 要求 |
- |---|---|
- | `uint8/int8/bool` | 必须为 1 |
- | `uint16/int16` | 必须为 2 |
- | `uint32/int32` | 必须为 4 |
- | `uint64/int64` | 必须为 8 |
- | `enum uint8/bitmap8` | 必须为 1 |
- | `enum uint16/bitmap16` | 必须为 2 |
- | `bitmap32` | 必须为 4 |
- | `string` | 0 到 maxLength |
- | `bytes` | 0 到 maxLength |
- | `fixed_bytes` | 必须等于 schema length |
- | `object` | 必须是合法 TLV sequence |
- | `array packed` | 必须是 item size 的整数倍 |
-
-Range 校验：值超出 `min/max` 时报 `RPC_PARAM_OUT_OF_RANGE`。Required 校验在所有字段解析完成后进行（允许字段乱序），缺少必填字段时报 `RPC_PARAM_MISSING`。
-
----
-
-## 13. TLV 解析错误映射
-
-TLV 不单独分配 `0x03xx` 私有错误码；解析失败统一映射到 `docs/specs/2-registry/04-Errors-Registry.md`的 RPC 内部错误码。
-
- | ErrorCode | 名称 | 适用场景 |
- |---:|---|---|
- | `0x0035` | `RPC_BODY_DECODE_FAILED` | TLV 截断、长度非法、未知 schema、嵌套过深、非法 UTF-8 等无法完成解码的错误 |
- | `0x003A` | `RPC_PARAM_MISSING` | 必填字段缺失 |
- | `0x003B` | `RPC_PARAM_INVALID` | 字段重复、类型不匹配、bool 值非法、编码不支持等字段语义错误 |
- | `0x003C` | `RPC_PARAM_OUT_OF_RANGE` | 字段值超出 schema 的 `min/max` 或枚举范围 |
-
----
-
-## 14. Canonical Encoding 规范
-
-用于测试向量、签名、hash 和 Generator 输出：
-
-1. 字段按 fieldId 升序排列
-2. scalar 字段不得重复
-3. array repeated 按原数组顺序排列
-4. 使用最短 Length 表达，Value 不携带多余 padding
-
-Decoder 不强制要求输入是 canonical；Generator 生成测试向量时必须使用 canonical。
-
----
-
-## 15. TLV 与 JSON 的映射
-
- | JSON | TLV |
- |---|---|
- | object key | schema.name |
- | number | schema type |
- | boolean | bool |
- | string | UTF-8 string |
- | array | repeated 或 packed |
- | object | nested TLV |
- | null | v1 不支持 |
-
-示例：`{"value": 80, "autoMode": false}` → `01 01 50  02 01 00`
-
----
-
-## 16. 与 RPC Binary 的关系
-
-RPC Parser 先读取 rpcEncoding。若 rpcEncoding=JSON_BINARY，则解析 15B JSON_BINARY Header：rpcEncoding/rpcOp/sid/requestId/methodOrEventId/statusCode/bodyEncoding，剩余 Payload 按 bodyEncoding 交给 TLV8/TLV16 Parser；业务层根据 sid、methodOrEventId + schema 解释字段含义。JSON/CBOR/MSGPACK 不使用 JSON_BINARY Header，也不携带 bodyEncoding/bodyLen。
-
----
-
-## 17. 与 Control Payload 的关系
-
-Control Parser 先解析 5B 固定头 `opcode/controlId/statusCode`。Control body 固定为 TLV 编码，不在线上携带 `bodyEncoding` 或 `bodyLen`；body 长度由外层 Frame `payloadLength - 5` 得出，再根据 opcode 选择对应 Control TLV schema。
-
-示例 OPEN body：`02 01 01` (protocolVersion=1) `04 02 F7 00` (maxFrameSize=247) `06 02 F7 00` (mtu=247)。v1 不在 OPEN/ACCEPT 中协商 headerProfile。
-
----
-
-## 18. 与 Stream Context 的关系
-
-STREAM packet 不携带 metadata。业务上下文在 RPC 建流请求/响应中使用 TLV，绑定到返回的 `streamId`。Stream data 本身为 raw bytes，不进入 TLV。
-
----
-
-## 19. 老协议适配规则
-
-- 老 CmdValue → AXTP methodId
-- 老 Payload 固定字段 → TLV fieldId（按字段顺序分配 0x01 起）
-- 短期无法拆解的旧命令可先用 `fieldId=0x7F, name=legacyPayload, type=bytes` 透传，但不应成为长期设计
-
----
-
-## 20. 完整编码示例：业务建流 params
-
-```yaml
-schemas:
-  ExampleTransferBeginParams:
-    encoding: tlv
-    fields:
-      - fieldId: 0x01
-        name: objectType
-        type: enum
-        enum: TransferObjectType
-        encoding: uint8
-        required: true
-      - fieldId: 0x02
-        name: objectSize
-        type: uint32
-        required: true
-      - fieldId: 0x03
-        name: verifyValue
-        type: fixed_bytes
-        length: 32
-        required: true
-      - fieldId: 0x04
-        name: chunkSize
-        type: uint16
-        required: false
-        default: 512
-```
-
-TLV Body：
-
-```text
-01 01 01
-02 04 00 00 10 00
-03 20 <32 bytes sha256>
-04 02 00 02
-```
-
-含义：objectType=FIRMWARE, objectSize=1048576, verifyValue=32B, chunkSize=512。该示例只说明 TLV 编码，不声明当前 generated method。
-
----
-
-## 21. MVP 必须支持的 TLV 能力
-
-必须：Basic TLV、uint8/uint16/uint32、bool、enum uint8、bitmap8/bitmap16、string、bytes、required/optional/default、unknown field skip、canonical encode
-
-建议：Extended Length TLV、uint64、fixed_bytes、packed array、repeated array、nested object
-
-可暂缓：深层嵌套对象、critical field、schema reflection、动态类型、压缩/加密 TLV
-
----
-
-## 22. 兼容性与版本演进
-
-兼容变更：新增 optional 字段、新增 enum 值、新增 bitmap bit、增加 maxLength 上限
-
-不兼容变更：修改已有 fieldId 的类型或语义、删除 required 字段、将 optional 改为 required、修改 enum 已有值含义、修改数组编码方式、修改字节序
-
-字段废弃时标记 `deprecated: true`，不得复用 fieldId。
-
----
-
-## 23. 安全与健壮性要求
-
-TLV Parser 必须防御：
-
-- 所有长度读取前检查剩余字节
-- extendedLength 检查溢出
-- offset + length 不得溢出
-- 嵌套深度有限制
-- string/bytes/array 有最大长度限制
-- unknown field 可跳过但不能越界
-- decoder 不应动态分配不受控内存
+本文档不定义业务 schema、大型业务建流示例、legacy adapter payload 映射或新的 PayloadType。可靠分片、压缩、加密和超过 `uint16` length 的对象传输应通过 STREAM/profile-specific 机制处理。

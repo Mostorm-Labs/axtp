@@ -1,20 +1,24 @@
-# 1-core/07《AXTP Stream Data Plane》
+# 1-core/07《AXTP STREAM 数据面规范》
 
-> Status: AXTP v1 Core Freeze Candidate
-> Spec Version: 1.0.0-rc1
-> Change Policy: Clarification-only before v1.0.0
-> Scope: Core wire format / state machine / compatibility rules
+> 状态： 规范性 runtime 实现规范
+> 规范版本： 1.0.0-rc1
+> 变更策略： v1.0.0 前仅允许澄清性修改
+> 本文的规范范围：`PayloadType=STREAM` payload 结构、16B STREAM Header、streamId/seqId/cursor 语义、Stream Context 查找和基础数据面 parser 行为。
+> 本文不定义：建立 stream 的业务 method、firmware/file/log schema、CONTROL ACK/NACK 协议、可靠重传、resume 协议、codec metadata 或业务 payload 格式。
+> Runtime 实现状态：支持 STREAM 的 Standard Framed runtime 必需实现；可靠性、resume、高级流控和低带宽 STREAM 属于可选/未来或 profile 特定能力。
 
 版本：v1.0.0-rc1
-状态：AXTP v1 Core Freeze Candidate
-适用范围：`PayloadType = STREAM` 的 Payload 结构、Stream Context、可靠性模型、断点续传、多路复用
-前置文档：`docs/specs/1-core/02-Protocol-Framework.md`、`docs/specs/1-core/03-Frame-and-Payload.md`、`docs/specs/1-core/05-Control-Session.md`、`docs/specs/1-core/06-RPC-Session.md`
+状态：AXTP v1 Core 冻结候选
+适用范围：`PayloadType = STREAM` 的 Payload 结构、Stream Context、基础顺序检测、多路复用与 profile 边界
+前置文档：[`02-Protocol-Framework.md`](02-Protocol-Framework.md)、[`03-Frame-and-Payload.md`](03-Frame-and-Payload.md)、[`05-Control-Session.md`](05-Control-Session.md)、[`06-RPC-Session.md`](06-RPC-Session.md)
 
 ---
 
-## 0. 速读：STREAM 是固定 16B Header + data
+## 文档目的
 
-STREAM 只存在于 Standard Framed 路径，用来传连续数据。WebSocket Unframed JSON 是 RPC-only，不承载 STREAM。
+STREAM 是 AXTP 的连续数据面。它只传输已经建立的 stream 的数据块，不声明业务类型、不协商 codec、不携带固件/文件/日志元数据。
+
+STREAM 在线形态：
 
 ```text
 Standard Frame Header(payloadType=STREAM)
@@ -22,67 +26,33 @@ Standard Frame Header(payloadType=STREAM)
   + CRC16(2)
 ```
 
-STREAM Header 固定 16B，不携带业务类型、codec、fileType、固件更新参数或视频参数。这些信息由 RPC 控制面建流时确定，并绑定到 `streamId`。
+业务语义来自本地 Stream Context。Stream Context 通常由已采纳 RPC method 建立；CONTROL CLOSE 或 transport loss 会关闭所属 session 的 stream 资源。
 
-```mermaid
-sequenceDiagram
-    participant Client as Logical Client
-    participant Server as Logical Server
+## 范围
 
-    Client->>Server: RPC open/begin method
-    Server-->>Client: RPC response(streamId, profile, cursorUnit, limits)
-    Server->>Client: STREAM frame(streamId, seqId, cursor, media data)
-    Client->>Server: RPC close/control method when the business stream ends
-```
+本文覆盖：
 
-三层 ID 不要混用：
+- 16B STREAM Header；
+- `streamId`、`seqId`、`cursor` 语义；
+- STREAM payload 透传边界；
+- Stream Context 生命周期和资源回收；
+- Frame 分片与 Stream 分块边界；
+- 基础 parser 校验；
+- optional/future reliability、resume、flow-control 边界。
 
-| 字段 | 所在层 | 作用 |
-|---|---|---|
-| `messageId` | Frame Header | Frame 分片与重组 |
-| `streamId` | STREAM Header | 已由 RPC 建流绑定的逻辑流 |
-| `seqId` | STREAM Header | stream 内数据包顺序 |
-| `cursor` | STREAM Header | 时间戳、字节偏移或采样序号，含义由 Stream Context 决定 |
+本文不覆盖：
 
----
+- 具体 `stream.open` 或 domain-specific open/close method；
+- 业务 profile schema；
+- firmware/file/log transfer 业务规则；
+- CONTROL ACK/NACK 详细重传规则；
+- legacy RawStream 映射。
 
-## 1. 设计目标
+## v1 必需实现
 
-AXTP STREAM 提供极简、固定的数据面。Phase 1 MVP 必须先承载 audio/video 媒体流；固件更新数据块、文件块、实时日志、KVM/HID Raw、传感器采样等 profile 可以后续增量采纳。
+STREAM 只存在于 Standard Framed profile。WebSocket Unframed JSON 是 RPC-only，MUST NOT 承载 STREAM。
 
-核心原则：
-- STREAM Header 固定 16B，不携带任何业务类型字段
-- 业务类型、编码、可靠性等通过 RPC 控制面协商，绑定到 `streamId`
-- ACK/NACK/WINDOW_UPDATE 仅作为后续可靠传输和流控扩展预留；Phase 1 audio/video 默认不依赖严格重传
-- L1 Frame 分片与 L2 Stream 业务分块严格分离
-
----
-
-## 2. 协议分层
-
-```text
-Transport
-  ↓
-AXTP Frame Header (L1): payloadType=STREAM, payloadLength=16+dataLen, messageId/fragment/CRC
-  ↓
-STREAM Payload Header (L2): streamId / seqId / cursor
-  ↓
-Stream Data: opaque bytes
-```
-
-| 层级 | 负责 | 不负责 |
-| --- |---| --- |
-| Frame Header (L1) | 帧边界、长度、分片、CRC | 业务类型、视频参数、固件更新参数 |
-| Stream Header (L2) | 流通道、顺序、位置/时间游标 | streamProfile、codec、fileType |
-| Stream Data | 真实业务数据 | 通用协议解析 |
-
----
-
-## 3. STREAM Header
-
-AXTP v1 只有一种 STREAM Header：固定 16B STREAM Header，适用于 Standard Framed 传输（AXTP-USB-HID / AXTP-TCP）。WebSocket Unframed JSON 是 RPC-only 通道，不承载 STREAM。
-
-### 3.1 STREAM Header（16B）
+STREAM Header 固定为 16B：
 
 ```text
 +------------------+
@@ -95,347 +65,202 @@ AXTP v1 只有一种 STREAM Header：固定 16B STREAM Header，适用于 Standa
 | data...          |  N
 ```
 
-| 字段 | 类型 | 长度 | 说明 |
-| --- |---:|---:| --- |
-| `streamId` | uint32 | 4B | 流通道 ID，由 RPC 控制面分配 |
-| `seqId` | uint32 | 4B | stream 内数据包序号，从 0 开始，uint32 自然回绕 |
-| `cursor` | uint64 | 8B | 通用游标，含义由 Stream Context 的 cursorUnit 决定 |
+| 字段 | 类型 | 长度 | 规则 |
+|---|---|---:|---|
+| `streamId` | uint32 | 4B | stream setup 期间分配的 stream channel id |
+| `seqId` | uint32 | 4B | stream 内 packet 序号；从 0 开始并自然回绕 |
+| `cursor` | uint64 | 8B | 通用位置/时间 cursor；含义来自 Stream Context |
+| `data` | bytes | N | 不透明业务 payload |
 
-所有字段 Little-Endian。`payloadLength = 16 + dataLength`。
+所有多字节字段 MUST 使用 Little-Endian。`Frame.payloadLength` MUST 等于 `16 + dataLength`。
 
-### 3.2 cursor 含义
+`streamId` 范围：
 
-| 场景 | cursorUnit | cursor 含义 |
-| --- |---| --- |
-| 视频/音频/日志/HID | `timestampUs` | 时间戳（微秒） |
-| 固件更新/文件 | `byteOffset` | 字节偏移 |
-| 传感器/音频 | `sampleIndex` | 采样序号 |
-
-禁止在 STREAM Header 中新增 `offset`、`timestamp`、`chunkIndex` 等重复字段。
-
-### 3.3 streamId 规则
-
-| 范围 | 说明 |
-| --- |---|
-| `0x00000000` | 保留，不得使用 |
+| 范围 | 含义 |
+|---|---|
+| `0x00000000` | 保留；MUST NOT 使用 |
 | `0x00000001-0x7FFFFFFF` | 标准动态 streamId |
-| `0x80000000-0xEFFFFFFF` | 预留扩展 |
+| `0x80000000-0xEFFFFFFF` | 扩展保留 |
 | `0xF0000000-0xFFFFFFFF` | Vendor/Debug 保留 |
 
-streamId 始终由接收数据的一方（流的 Owner）分配，在 RPC Response 或 Event 中返回。发送方不得自行指定 streamId。
+基础 runtime MUST 实现：
 
----
+- 解析 16B STREAM Header；
+- 拒绝 `streamId = 0`；
+- 通过 `streamId` 查找 Stream Context；
+- 将 `data` 作为不透明 bytes 交给 profile handler；
+- 检测 duplicate/missing/out-of-order `seqId`；
+- 解析 `cursor`，但不假设其业务含义；
+- 区分 Frame fragmentation 与 Stream data chunk；
+- 所属 session 关闭时清理 stream 资源。
 
-## 4. Stream Context
+## v1 可选 / Profile 特定
 
-Stream Context 是通过 RPC 创建的流描述对象，**是接收端/发送端的本地运行时状态，不出现在 STREAM 帧 Header 中**。由 RPC 建流 Response 填充，绑定到 `streamId`。
+以下内容属于 profile 特定：
 
-字段分为两类：
+| 能力 | 状态 | 规则 |
+|---|---|---|
+| 具体 stream open/close method | 业务/profile 特定 | MUST 来自已采纳 RPC method 或产品 profile |
+| cursor unit | Profile-specific | `timestampUs`、`byteOffset`、`sampleIndex` 或其他 profile-defined unit |
+| `maxDataSize` / chunk size | Profile-specific | 通常由 RPC stream setup 协商 |
+| media best-effort delivery | Profile-specific | MAY 使用 `ackMode=none` |
+| firmware/file reliable delivery | Future/profile-specific | 采纳后 MAY 使用 stop-and-wait 或 sliding-window |
+| concurrent streams | 基于 streamId 隔离的必需基础支持；scheduling/QoS 可选 | Runtime SHOULD 按 streamId 隔离状态 |
 
-**Wire 字段**（出现在 STREAM 帧 Header 中）：`streamId`、`seqId`、`cursor`
+Cursor 示例：
 
-**本地字段**（仅存在于 Stream Context，不在 wire 上传输）：
+| 场景 | cursorUnit | cursor 含义 |
+|---|---|---|
+| media/log/HID | `timestampUs` | 微秒时间戳 |
+| firmware/file | `byteOffset` | 字节偏移 |
+| sensor/audio | `sampleIndex` | 采样序号 |
 
-```yaml
-streamId: 0x00000021
-profile: firmware.update
-direction: upload
-reliability: reliable
-ackMode: stop_and_wait
-cursorUnit: byteOffset
-chunkSize: 512
-totalSize: 1048576
-verifyType: md5
-verifyValue: "d41d8cd98f00b204e9800998ecf8427e"
-```
+这些 cursor unit 是 profile metadata。它们 MUST NOT 向 STREAM Header 添加字段。
 
-STREAM 数据包只携带 `streamId/seqId/cursor/data`，StreamParser 固定解析 16B Header，然后按 streamId 查表投递数据。
+## 保留 / 未来
 
-### 4.1 Stream Context 生命周期
+以下内容属于 RESERVED/FUTURE，MUST NOT 作为 v1 基础 STREAM conformance 的必需项：
+
+- 用于 stream chunk 的 CONTROL ACK/NACK；
+- stop-and-wait、sliding-window 或 selective-repeat retransmission；
+- CONTROL WINDOW_UPDATE 流控；
+- 基于 RESUME / RESUME_ACK 的 stream recovery；
+- object-level firmware/file 校验流程；
+- HID-64/BLE/UART 上的 low-bandwidth STREAM；
+- 向 16B STREAM Header 添加 codec、fileType、firmware version、offset、timestamp、flags 或 domain 字段。
+
+Reliable transfer 和 resume MAY 由未来 profile-specific spec 添加，但它们 MUST 保持 16B STREAM Header 不变。
+
+## 规范规则
+
+- STREAM 在 Standard Framed profile 中 MUST 使用 `PayloadType=STREAM`。
+- Stream Context 存在前 MUST NOT 发送 STREAM。
+- 数据传输前，Stream Context MUST 由已采纳 RPC method 或 profile-specific control flow 建立。
+- CONTROL CLOSE、transport loss 或 session teardown MUST 释放该 session 的 stream 资源。
+- STREAM Header MUST 保持为 `streamId:uint32 + seqId:uint32 + cursor:uint64`。
+- STREAM Header MUST NOT 承载 business type、codec、fileType、firmware parameter、profileId、domain、event 或 capability data。
+- 通用 StreamParser MUST 将 STREAM `data` 视为不透明数据。
+- Receiver MUST 完成 L1 Frame reassembly 后再解析 STREAM Header。
+- `messageId`、`streamId`、`seqId` 和 RPC `requestId` MUST NOT 混用。
+- stream profile metadata MAY 出现在 Protocol Definition 或 RPC response 中，但 MUST NOT 写入 STREAM Header。
+
+## 状态机 / 生命周期
+
+基础 Stream Context 生命周期：
 
 ```text
-CREATED → OPENING → OPEN → ACTIVE → DRAINING → CLOSED
+CREATED
+  -> OPENING
+  -> OPEN
+  -> ACTIVE
+  -> DRAINING
+  -> CLOSED
 ```
 
-发送端必须在收到建流 RPC Response（进入 OPEN 状态）后才能发送 STREAM 数据。
-
-接收端非法状态处理：
-
-| 接收端状态 | 收到消息 | 处理 |
-| --- | --- | --- |
-| `OPENING` | STREAM 数据包 | Phase 1 可缓冲最多 4 包或直接丢弃并上报本地计数；后续可靠 profile 可发送 NACK |
-| `DRAINING` | 新 STREAM 数据包 | 丢弃，必要时通过业务事件暴露 `STREAM_CLOSED` / `STREAM_NOT_OPEN` |
-| `CLOSED` | 任何 STREAM 数据包 | 丢弃，释放相关缓存 |
-| 任意 | streamId 不存在 | 丢弃并记录 `STREAM_NOT_FOUND`；后续可靠 profile 可发送 NACK |
-
-### 4.1.1 streamId 资源回收规则
-
-streamId 绑定了设备端的内存/Flash 句柄，必须有明确的回收机制，防止内存泄漏：
-
-**超时回收**：任何处于 OPEN/ACTIVE 状态的 Stream，如果在 `streamIdleTimeoutMs`（推荐 30000ms）内没有收到任何 STREAM 数据包，设备必须：
-
-1. 将 Stream Context 状态置为 CLOSED
-2. 释放绑定的内存/Flash 句柄
-3. 发送 `RPC Event stream.error`，携带 `streamId` 和 `reason=STREAM_TIMEOUT`
-
-**Session 关闭时的批量回收**：当底层链路断开（CONTROL CLOSE、TCP 断开、BLE 断连）时，设备必须销毁该 Session 下所有 streamId 资源：
+典型启动流程：
 
 ```text
-Session 关闭触发 → 遍历 Session.streamContexts → 逐一 CLOSE → 释放资源
+已采纳 RPC open/begin method
+  -> RPC response 返回 streamId 和 Stream Context metadata
+  -> sender 使用该 streamId 发送 STREAM frames
+  -> 已采纳 RPC close/stop/end method，或 CONTROL/session close
+  -> runtime 释放 Stream Context
 ```
 
-不得等待超时，必须立即同步回收。
+状态处理：
 
-**推荐资源限制参数**：
+| Receiver 状态 | 收到的 STREAM | 必需处理 |
+|---|---|---|
+| `OPENING` | data 提前到达 | MAY 有界缓存少量数据，或丢弃并本地计数 |
+| `OPEN` / `ACTIVE` | 有效 data | 交给 profile handler |
+| `DRAINING` | 新 data | 丢弃；MAY 通过已采纳业务机制暴露本地 diagnostic/event |
+| `CLOSED` | 任意 data | 丢弃并释放相关 buffer |
+| 任意 | unknown streamId | 丢弃并记录 `STREAM_NOT_FOUND`；未来 reliable profile MAY NACK |
 
-| 参数 | 推荐值 | 说明 |
-| --- | --- | --- |
-| `maxOpenStreams` | 2 | 同时 OPEN/ACTIVE 的最大 Stream 数 |
-| `streamIdleTimeoutMs` | 30000 | 无数据超时后强制关闭 |
-| `streamOpeningTimeoutMs` | 5000 | OPENING 状态等待 RPC Response 超时 |
+资源清理：
 
-### 4.2 建流方式
+- session 关闭时，Runtime MUST 关闭该 session 的所有 Stream Context。
+- Runtime SHOULD 执行 `streamIdleTimeoutMs` 并关闭不活跃 stream。
+- Runtime SHOULD 限制 `maxOpenStreams`、`maxDataSize` 和 per-stream buffering。
 
-**方式 A：通用 stream.open（P1 候选）**（适用于日志、传感器、厂商私有流；必须先完成 stream 草案采纳）
+推荐默认值：
 
-```json
-{
-  "method": "stream.open",
-  "params": {
-    "profile": "log.realtime",
-    "direction": "download",
-    "reliability": "best_effort",
-    "cursorUnit": "timestampUs"
-  }
-}
-```
-响应返回 `{ "streamId": 17, "maxDataSize": 1024, "ackMode": "none" }`。
+| 参数 | 推荐值 |
+|---|---:|
+| `maxOpenStreams` | 2 |
+| `streamIdleTimeoutMs` | 30000 |
+| `streamOpeningTimeoutMs` | 5000 |
 
-**方式 B：领域方法隐式建流**（Phase 1 audio/video MVP 采用；具体 method 必须来自已采纳业务草案或产品确认的 P0 草案）
+## 校验规则
 
-视频示例：
+StreamParser MUST 校验：
 
-```json
-{
-  "method": "video.openStream",
-  "params": {
-    "source": "main_camera",
-    "stream": "main",
-    "codec": "h264",
-    "streamProfile": "media.video",
-    "preferredChunkSize": 65536
-  }
-}
-```
+- `Frame.payloadLength >= 16`;
+- payload bytes 包含完整 16B STREAM Header；
+- `streamId != 0`;
+- streamId 映射到已存在的 Stream Context；
+- data length 不超过 Stream Context/profile 限制；
+- `seqId` duplicate/missing/out-of-order 行为按 profile 处理；
+- `cursor` 按 uint64 Little-Endian 解析，且只由 Stream Context/profile 解释；
+- STREAM parsing 前已经完成 L1 Frame CRC 和 reassembly。
 
-响应返回 `{ "streamId": 101, "streamProfile": "media.video", "cursorUnit": "timestampUs", "ackMode": "none", "maxDataSize": 65536 }`。
+基础错误处理：
 
-音频示例：
+| 错误 | 必需基础处理 |
+|---|---|
+| `payloadLength < 16` | 丢弃；记录 `STREAM_PAYLOAD_INVALID` |
+| `streamId = 0` | 丢弃；记录 `STREAM_ID_INVALID` |
+| unknown streamId | 丢弃；记录 `STREAM_NOT_FOUND` |
+| duplicate `seqId` | 丢弃或幂等处理 |
+| missing `seqId` | 记录丢失；base best-effort profile 继续 |
+| data 超过 `maxDataSize` | 丢弃并 MAY 关闭 stream |
 
-```json
-{
-  "method": "audio.startRecording",
-  "params": {
-    "source": "mic_processed",
-    "deliveryMode": "stream",
-    "format": "pcm",
-    "sampleRate": 48000,
-    "channels": 2,
-    "chunkDurationMs": 20
-  }
-}
-```
+未来 reliable profile MAY 将这些条件转换为 CONTROL NACK 或 profile-specific recovery。
 
-响应返回 `{ "recordingId": "rec-001", "streamId": 102, "streamProfile": "media.audio", "cursorUnit": "sampleIndex", "ackMode": "none" }`。
+## Runtime 实现要求
 
-固件或文件示例：
+Parser 流程：
 
-```json
-{
-  "method": "<domain>.beginTransfer",
-  "params": {
-    "objectType": "firmware",
-    "totalSize": 1048576,
-    "verifyType": "md5",
-    "verifyValue": "d41d8cd98f00b204e9800998ecf8427e",
-    "preferredChunkSize": 512
-  }
-}
-```
-响应返回 `{ "streamId": 33, "profile": "firmware.update", "chunkSize": 512, "ackMode": "stop_and_wait", "cursorUnit": "byteOffset" }`。
-
----
-
-## 5. Stream Profile Registry
-
-Stream Profile 是可建流协议档案，不是 STREAM Payload Header 字段。具体 profile 事实进入 `protocol/axtp.protocol.yaml` 的 `profiles:` 或后续 stream profile 定义；本文只规定 Stream Header 与 Stream Context 的 wire 边界。
-
-| Profile | cursorUnit | 默认可靠性 | 状态 |
-| --- |---| --- |---|
-| `media.video` | `timestampUs` | `best_effort` | Phase 1 P0，随 `video.stream` 采纳进入 registry |
-| `media.audio` | `timestampUs`/`sampleIndex` | `best_effort` | Phase 1 P0，随 `audio.recording` / `audio.stream` 采纳进入 registry |
-| `firmware.update` | `byteOffset` | `reliable` | draft，待 `firmware.update` 草案采纳 |
-| `file.transfer` | `byteOffset` | `reliable` | draft |
-| `log.realtime` | `timestampUs` | `best_effort` | draft |
-| `control.hid_raw` | `timestampUs` | `reliable`/`best_effort` | draft |
-| `sensor.sample` | `timestampUs`/`sampleIndex` | `best_effort` | draft |
-
-`profileId` 可作为 Protocol Definition 或 RPC 建流结果中的元数据出现，但不得写入 16B STREAM Header。新增 stream profile 不得修改 STREAM Header 结构。
-
----
-
-## 6. 可靠性模型
-
-### 6.1 ackMode
-
-> **注意**：Stream Context 的 `ackMode` 是 Stream 层流控策略，与 CONTROL OPEN 协商的 Frame 层 `ackMode`（NONE/FRAME_ACK/MESSAGE_ACK/STREAM_CHUNK_ACK）是两套独立的概念，不得混淆。Frame 层 ackMode 控制 AXTP Frame 的确认粒度；Stream 层 ackMode 控制 Stream 数据块的流控模式。
-
-| ackMode | 说明 | 适用场景 |
-| --- |---| --- |
-| `none` | 不确认 | 视频、音频、实时传感器 |
-| `batch` | 批量确认 | 日志、弱可靠流 |
-| `stop_and_wait` | 每包确认 | HID/BLE 固件更新 MVP |
-| `sliding_window` | 滑动窗口 | WebSocket/TCP/USB Bulk 固件更新 |
-| `selective_repeat` | 选择性重传 | 高带宽文件传输 |
-
-ackMode 在 RPC 建流阶段确定（初始模式）；CONTROL WINDOW_UPDATE 在运行时动态调整窗口（背压）。`stop_and_wait` 等价于 `windowSize=1` 的 `sliding_window`。
-
-Phase 1 audio/video media stream 的默认策略是 `ackMode=none`：接收端用 `seqId` 发现丢包、重复或乱序，用播放器/解码器容错、丢帧统计和 `video.requestKeyFrame` 等业务方法恢复体验；不要求 runtime 实现 CONTROL ACK/NACK。
-
-### 6.2 ACK（CONTROL，P1/Future）
-
-| 字段 | 类型 | 说明 |
-| --- |---| --- |
-| `targetType` | enum | `STREAM_CHUNK` |
-| `streamId` | uint32 | 被确认的流 |
-| `ackSeqId` | uint32 | 已确认的最大连续 seqId |
-| `ackCursor` | uint64 | 已确认的位置 |
-| `windowSize` | uint16 | 可选，剩余窗口 |
-
-### 6.3 NACK（CONTROL，P1/Future）
-
-| 字段 | 类型 | 说明 |
-| --- |---| --- |
-| `targetType` | enum | `STREAM_CHUNK` |
-| `streamId` | uint32 | 目标流 |
-| `baseSeqId` | uint32 | 缺失范围起点 |
-| `missingRanges` | bytes | 缺失 seqId 范围 |
-| `reasonCode` | uint16 | 失败原因 |
-
-**CONTROL NACK vs stream.error 事件：**
-- Phase 1 audio/video：传输层问题先丢弃、计数、上报 stats，必要时由业务方法请求关键帧或重开流。
-- 后续可靠 profile：CRC 错误、seqId 不连续、streamId 不存在等传输层问题可触发 CONTROL NACK。
-- 业务层问题：固件更新 sha256 不匹配、视频帧解码失败、业务处理超时等通过 RPC 事件或业务错误触发熔断。
-
----
-
-## 7. Frame 分片与 Stream 分块
-
-| 概念 | 层级 | 说明 |
-| --- |---| --- |
-| Frame 分片 | L1 | 一个 STREAM Packet 超过 MTU，被拆成多个 Frame |
-| Stream 业务分块 | L2 | 固件按 512B 分成多个 STREAM Packet |
-
-接收端必须先完成 L1 Frame 重组，再解析 STREAM Header。
-
-建议：任何已采纳的固件更新/File 类业务都应在建流时根据 MTU 协商 chunkSize，避免频繁触发 Frame 分片。
-
----
-
-## 8. 各业务场景映射
-
-| 业务 | 控制面 RPC | streamId 来源 | seqId | cursor |
-| --- |---| --- |---| --- |
-| 视频 | Phase 1 P0，`video.openStream` / `video.closeStream` | 建流 response | chunkIndex | timestampUs |
-| 音频 | Phase 1 P0，`audio.startRecording` / `audio.stopRecording` 或后续 `audio.openStream` | 建流 response | packetIndex | timestampUs/sampleIndex |
-| 固件更新 | 待 `firmware.update` 草案采纳 | 建流 response | chunkIndex | byteOffset |
-| 文件传输 | 待 `file.transfer` 草案采纳 | 建流 response | chunkIndex | byteOffset |
-| 日志 | 待日志流草案采纳 | 建流 response | packetIndex | timestampUs |
-| HID/KVM | 待输入/KVM 草案采纳 | 建流 response | reportIndex | timestampUs |
-| 传感器 | 待传感器流草案采纳 | 建流 response | sampleIndex | timestampUs/sampleIndex |
-
-业务对象信息不应写入 STREAM Header。固件更新类业务的 imageType/totalSize/sha256/chunkCrc32 等信息必须由已采纳 RPC 建流方法或 Stream Context 协商。
-
----
-
-## 9. 完整性与校验
-
-- Frame CRC（L1）：发现单帧传输错误，覆盖 Frame Header + Payload
-- 对象级校验（业务层）：固件更新/File 类业务通过已采纳建流方法的 `verifyType` + `verifyValue` 字段声明，传输完成后由已采纳校验/完成方法触发端到端校验
-- Chunk 级校验（可选）：通过 CONTROL ACK/NACK 携带 crc，或在 Profile 数据尾部追加 crc32
-
-### 9.1 verifyType / verifyValue 规范
-
-`verifyType` 和 `verifyValue` 是通用校验字段，适用于所有需要端到端完整性保证的 Stream Profile（固件更新、文件传输等）。
-
-| `verifyType` | `verifyValue` 格式 | 说明 |
-| --- | --- | --- |
-| `md5` | 32 位小写十六进制字符串 | 计算整个传输对象；生产固件更新推荐 sha256 |
-| `sha256` | 64 位小写十六进制字符串 | 安全性更高，推荐用于生产固件更新 |
-| `crc32` | 8 位小写十六进制字符串 | 轻量校验，适合资源受限设备 |
-| `none` | 空字符串或省略 | 不做端到端校验（不推荐用于固件更新） |
-
-规则：
-
-- `verifyType` 和 `verifyValue` 在已采纳建流方法的 params 中声明
-- `verifyValue` 是整个传输对象（完整固件镜像或完整文件）的校验值，不是单个 chunk 的校验值
-- 业务校验方法调用时不需要重复传 `verifyValue`，设备从 Stream Context 中读取
-- 校验失败时设备返回 `FW_VERIFY_FAILED` 错误码，不得应用固件
-
-建议：AXTP-USB-HID 或 AXTP-TCP 使用 Standard Frame CRC16 + sliding_window 或 stop_and_wait ACK + `verifyType=sha256`。HID-64/BLE/UART 等低带宽降级路径见 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`。
-
----
-
-## 10. 断点续传
-
-接收端保存：`streamId`, `profile`, `lastSeqId`, `lastCursor`, `objectId`, `verifyValue`, `resumeToken`。
-
-恢复流程：
 ```text
-Transport reconnect
-  → CONTROL RESUME(sessionId, resumeToken)
-  → CONTROL RESUME_ACK
-  → RPC 已采纳业务 resume 方法
-  → Response 返回新 streamId 和 nextCursor
-  → 发送端从 nextCursor 继续 STREAM
+parse AXTP Frame Header
+  -> if payloadType != STREAM: dispatch other parser
+  -> ensure payloadLength >= 16
+  -> read streamId / seqId / cursor
+  -> data = payload[16:]
+  -> lookup Stream Context by streamId
+  -> validate seqId/cursor/data size according to profile
+  -> dispatch opaque data to profile handler
 ```
 
-建议：断线后允许重新分配 streamId，业务对象通过 transferId/objectId/resumeToken 识别。
+Frame fragmentation 与 Stream chunking：
 
----
+| 概念 | 层级 | 规则 |
+|---|---|---|
+| Frame fragmentation | L1 Frame | STREAM parsing 前先 reassemble |
+| Stream chunk | L2 STREAM | 一个带 streamId/seqId/cursor/data 的 STREAM payload |
 
-## 11. 多路复用
+Runtime MUST 保持这些层级分离。
 
-同一 Session 内允许多个并发 stream（如 video + audio + log + firmware.update）。优先级通过 Stream Context 表达，不写入 STREAM Header。
+完整性边界：
 
----
+- Frame CRC 校验单个 AXTP frame。
+- md5/sha256/crc32 等 object-level verification 属于已采纳业务/profile method。
+- Chunk-level CRC 或 retransmission 属于可选/未来 reliable profile。
 
-## 12. 低带宽传输 MTU 前置检查
+## 示例
 
-低带宽传输不属于 AXTP v1 Core 必选实现。若后续在 HID-64/BLE/UART 上启用 STREAM，必须先证明扣除外层 frame header 和 STREAM Header 后仍有业务数据空间。完整策略见 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`。
-
-| 示例链路 | 前置要求 | 说明 |
-| --- | --- | --- |
-| HID-64 | 必须计算扣除 STREAM 16B 后的数据空间 | 仅作为降级路径 |
-| BLE GATT | 必须协商 MTU | 默认 ATT MTU 过小，不适合 STREAM |
-| UART | 必须有额外帧边界 | 不得裸跑无 Magic compact 字节流 |
-
----
-
-## 13. 编码示例
-
-### 13.1 STREAM Packet（最小）
+最小 STREAM packet payload：
 
 ```text
 streamId=1, seqId=0, cursor=0, data=AA BB CC DD
 
-01 00 00 00              // streamId (uint32)
-00 00 00 00              // seqId (uint32)
-00 00 00 00 00 00 00 00  // cursor (uint64)
-AA BB CC DD              // data
+01 00 00 00              // streamId
+00 00 00 00              // seqId
+00 00 00 00 00 00 00 00  // cursor
+AA BB CC DD              // opaque data
 ```
 
-### 13.2 STREAM Packet（对象传输第 2 个 chunk）
+对象传输 chunk 示例：
 
 ```text
 streamId=33, seqId=1, cursor=512, data=object[512..1023]
@@ -443,74 +268,25 @@ streamId=33, seqId=1, cursor=512, data=object[512..1023]
 21 00 00 00              // streamId=33
 01 00 00 00              // seqId=1
 00 02 00 00 00 00 00 00  // cursor=512
-[512 bytes object data]
+[512 bytes opaque data]
 ```
 
----
+ID 边界：
 
-## 14. Parser 实现要求
+| 字段 | 层级 | 用途 |
+|---|---|---|
+| `messageId` | Frame | fragment/reassembly/debug |
+| `requestId` | RPC | Request/Response 匹配 |
+| `streamId` | STREAM | Stream context 查找 |
+| `seqId` | STREAM | stream 内 packet 顺序 |
+| `cursor` | STREAM | 根据 stream context 表达位置/时间 |
 
-解析流程：
-```text
-parse AXTP Frame Header
-  → if payloadType != STREAM: dispatch other parser
-  → ensure payloadLength >= 16
-  → read streamId(4B) / seqId(4B) / cursor(8B)
-  → data = payload[16:]
-  → validate seqId / cursor / window
-  → dispatch data to profile handler
-```
+## 非目标
 
-错误处理：
+- 本文不定义通用 `stream.open` 或任何具体 domain open/close method。
+- 本文不定义 firmware update、file transfer、log streaming、KVM/HID、sensor、audio 或 video 业务 schema。
+- 本文不要求 reliable retransmission 或 resume 作为 v1 基础行为。
+- 本文不定义 legacy RawStream 映射。
+- 本文不为 codec、business type、file type、timestamp、offset、checksum 或 flags 向 STREAM Header 添加字段。
 
-| 错误 | 处理 |
-| --- | --- |
-| `payloadLength < headerSize` | 丢弃；记录 `STREAM_PAYLOAD_INVALID`；后续可靠 profile 可 NACK |
-| `streamId = 0` | 丢弃；记录 `STREAM_ID_INVALID`；后续可靠 profile 可 NACK |
-| 未找到 Stream Context | 丢弃；记录 `STREAM_NOT_FOUND` |
-| seqId 重复 | 幂等处理或丢弃 |
-| seqId 缺失 | Phase 1 audio/video 记录丢包并继续；后续可靠 profile 可 NACK |
-| data 超过 maxDataSize | 丢弃；记录 `STREAM_PAYLOAD_INVALID`；必要时关闭 stream |
-
----
-
-## 15. 旧协议映射
-
-| 旧字段 | 新位置 |
-| --- |---|
-| `streamType` | RPC Stream Context `profile` |
-| `timestamp` | STREAM Header `cursor`（cursorUnit=timestampUs） |
-| `flags` | Stream Context / data profile |
-| `dataLength` | Frame Header `payloadLength - 16` |
-| 旧固件更新 `offset` | STREAM Header `cursor`（cursorUnit=byteOffset） |
-| 旧固件更新 `totalLength` | 已采纳固件更新建流参数的 `totalSize` |
-| 旧固件更新 `chunkCrc32` | profile trailer 或 CONTROL ACK/NACK |
-| Log `level`/`moduleId` | log profile / log data |
-
----
-
-## 16. MVP 实现范围
-
-| 能力 | 是否必须 |
-| --- |---|
-| `PayloadType = STREAM` | 必须 |
-| 16B STREAM Header | 必须 |
-| streamId 查表 | 必须 |
-| seqId 顺序检测 | 必须 |
-| cursor 解析 | 必须 |
-| audio/video media stream profile | 必须 |
-| 具体业务 profile 的 stop-and-wait | P1/Future，由已采纳业务/传输 profile 决定 |
-| CONTROL ACK/NACK | P1/Future |
-| Frame 分片重组后再解析 STREAM | 必须 |
-| Legacy RawStream 映射 | 建议 |
-| Sliding Window | P1 |
-| 基础多路复用（不同 streamId 独立） | 必须 |
-| 高级多路复用调度 / QoS | P1 |
-| Media Stream | 必须 |
-| Sensor Stream | P2 |
-
----
-
-## 17. 版本与兼容策略
-
-AXTP v1 STREAM Header 固定为 16B，不存在多 Profile 协商。新增业务流类型只扩展 Stream Profile Registry，不改 Header 结构。
+非规范说明：`streamType`、`timestamp`、`flags`、`dataLength`、旧 firmware `offset` 或 chunk CRC 等 legacy stream 字段，应通过 RPC Stream Context、profile metadata、payload data 或 legacy migration adapter 映射，而不是修改 16B STREAM Header。

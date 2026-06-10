@@ -1,23 +1,47 @@
-# 1-core/04《AXTP Transport Profiles》
+# 1-core/04《AXTP Transport Profile 规范》
 
-> Status: AXTP v1 Core Freeze Candidate
-> Spec Version: 1.0.0-rc1
-> Scope: v1 Core transport profiles / connection roles / startup flow
+> 状态： 规范性 runtime 实现规范
+> 规范版本： 1.0.0-rc1
+> 变更策略： v1.0.0 前仅允许澄清性修改
+> 本文的规范范围：AXTP 如何运行在不同 transport profile 上，以及启动方向、物理/逻辑角色、framed/unframed 生产路径。
+> 本文不定义：Standard Frame 字段、CONTROL opcode/TLV 字段、RPC op 字段、STREAM Header 字段、registry 条目或业务 method。
+> Runtime 实现状态：支持对应生产 profile 时必需实现；低带宽 profile 属于可选/未来能力。
 
 版本：v1.0.0-rc1
-状态：AXTP v1 Core Freeze Candidate
+状态：AXTP v1 Core 冻结候选
 适用范围：AXTP 当前正式连接形态
-前置文档：`docs/specs/1-core/02-Protocol-Framework.md`、`docs/specs/1-core/03-Frame-and-Payload.md`
-后续文档：`docs/specs/1-core/05-Control-Session.md`、`docs/specs/1-core/06-RPC-Session.md`、`docs/specs/1-core/07-Stream-Data-Plane.md`、`docs/specs/1-core/08-Low-Bandwidth-Degradation.md`
+前置文档：[`02-Protocol-Framework.md`](02-Protocol-Framework.md)、[`03-Frame-and-Payload.md`](03-Frame-and-Payload.md)
+后续文档：[`05-Control-Session.md`](05-Control-Session.md)、[`06-RPC-Session.md`](06-RPC-Session.md)、[`07-Stream-Data-Plane.md`](07-Stream-Data-Plane.md)、[`08-Low-Bandwidth-Degradation.md`](08-Low-Bandwidth-Degradation.md)
 
 ---
 
-## 1. 架构裁决
+## 文档目的
 
-AXTP v1 Core 收敛为两类正式路径：
+本文定义 AXTP runtime 如何选择和执行 transport profile。它只描述 transport 如何承载 AXTP，不重复 frame 字段、RPC 字段或 STREAM 字段定义。
+
+## 范围
+
+本文覆盖：
+
+- Standard Framed Binary 与 WebSocket Unframed JSON 两条生产路径；
+- USB HID、TCP、WebSocket JSON、Cloud Reverse 的角色和启动流程；
+- Physical Client/Server 与 Logical Client/Server 的区别；
+- HID-64、BLE、UART 等低带宽 profile 的边界。
+
+本文不覆盖：
+
+- 12B Standard Frame Header 的字段布局；
+- 5B CONTROL Payload Header；
+- RPC `sid/op/d` 字段规则；
+- STREAM 16B Header；
+- Compact Frame 的完整 wire format。
+
+## v1 必需实现
+
+AXTP v1 Core 定义两条生产路径：
 
 ```text
-Standard Framed
+Standard Framed Binary
   Transport: AXTP-USB-HID / AXTP-TCP
   Frame:     STANDARD_FRAME
   Payload:   CONTROL / RPC / STREAM
@@ -30,42 +54,100 @@ WebSocket Unframed JSON
   RPC:       JSON
 ```
 
-Compact / HID-64 / BLE / UART 是低带宽降级路径，不作为 v1 Core 必选实现。降级路径不得改变 MethodId、EventId、PayloadType、CONTROL/RPC/STREAM payload header 或 STREAM 16B Header。
+当前 transport profile：
 
----
-
-## 2. 当前 Transport Profiles
-
-| Transport Profile | 模式 | Frame Profile | RPC Encoding | CONTROL | STREAM | 典型用途 |
+| Transport Profile | 路径 | Frame Profile | RPC Encoding | CONTROL | STREAM | 典型用途 |
 |---|---|---|---|---:|---:|---|
-| `AXTP-USB-HID` | Standard Framed | `STANDARD_FRAME` | JSON / CBOR / MSGPACK / JSON_BINARY | 是 | 是 | USB HID 高速/大 report 设备 |
-| `AXTP-TCP` | Standard Framed | `STANDARD_FRAME` | JSON / CBOR / MSGPACK / JSON_BINARY | 是 | 是 | PC / App 与设备直连 |
-| `AXTP-WS-JSON` | WebSocket Unframed JSON | none | JSON | 否 | 否 | 浏览器、云端、轻量 RPC 集成 |
-| `AXTP-WS-CLOUD-REVERSE` | WebSocket Unframed JSON | none | JSON | 否 | 否 | 设备主动连接云端 |
+| `AXTP-USB-HID` | Standard Framed Binary | `STANDARD_FRAME` | JSON / CBOR / MSGPACK / JSON_BINARY | 是 | 是 | USB HID High Speed 或大 report 设备 |
+| `AXTP-TCP` | Standard Framed Binary | `STANDARD_FRAME` | JSON / CBOR / MSGPACK / JSON_BINARY | 是 | 是 | PC/App 到设备的直接连接 |
+| `AXTP-WS-JSON` | WebSocket Unframed JSON | 无 | JSON | 否 | 否 | Browser、cloud、轻量 RPC |
+| `AXTP-WS-CLOUD-REVERSE` | WebSocket Unframed JSON | 无 | JSON | 否 | 否 | 设备主动连接 cloud |
 
-`AXTP-WS-JSON` 和 `AXTP-WS-CLOUD-REVERSE` 是正式 RPC-only 通道，不再被描述为 Debug-only。它们不承载正式 STREAM 数据；音视频媒体流必须使用 Standard Framed 的 STREAM 数据面，并通过 `video.*` / `audio.*` 的 RPC 方法打开和关闭。
+Runtime MUST NOT 在同一个 transport connection 内混用 Standard Framed Binary 和 WebSocket Unframed JSON。
 
----
+## v1 可选 / Profile 特定
 
-## 3. 角色模型
+Profile 特定行为：
 
-AXTP 区分物理连接角色和逻辑服务角色：
-
-| 角色 | 含义 | 负责动作 |
+| Profile family | 状态 | 说明 |
 |---|---|---|
-| Physical Client | 底层连接发起方 | 建立 transport 连接；Standard Framed 中发送 CONTROL OPEN |
-| Physical Server | 底层监听/接收方 | 接收连接；Standard Framed 中返回 CONTROL ACCEPT |
-| Logical Client | AXTP 调用方 / 控制方 | 发送 Identify，发起 Request，订阅 Event |
-| Logical Server | AXTP 能力提供方 | 发送 Hello，校验 Identify，提供 Methods / Events / Streams |
+| `AXTP-USB-HID` | 支持 USB HID 时必需 | 在产品 profile 选择的 HID report/bulk carrier 上使用 Standard Frame。 |
+| `AXTP-TCP` | 支持 TCP 时必需 | 在 byte stream 上使用 Standard Frame；parser SHOULD 通过 Magic `AX` 重新同步。 |
+| `AXTP-WS-JSON` | 支持 WebSocket JSON 时必需 | 直接使用 JSON RPC envelope；仅 RPC。 |
+| `AXTP-WS-CLOUD-REVERSE` | 支持 cloud reverse 时必需 | 设备是 Physical Client，但仍保持 Logical Server。 |
+| HID-64 / BLE / UART | Optional/Future | profile-specific 低带宽降级；见 [`08-Low-Bandwidth-Degradation.md`](08-Low-Bandwidth-Degradation.md)。 |
 
-核心规则：
+WebSocket Unframed JSON 是生产可用的 RPC-only 路径，不是仅用于调试的路径。它 MUST NOT 承载 CONTROL、STREAM、CRC16、Standard Frame Header 或 JSON_BINARY RPC fixed header。
+
+## 保留 / 未来
+
+以下内容属于 RESERVED/FUTURE，MUST NOT 成为 v1 Core runtime conformance 的必需项：
+
+- 将 Compact Frame 作为默认 transport；
+- 将 HID-64 / BLE / UART 作为必需 profile；
+- runtime 在 Standard Frame 与 Compact Frame 之间切换；
+- WebSocket Unframed JSON 承载 STREAM payload；
+- WebSocket Unframed JSON 上的 CONTROL ACK/NACK/RESUME。
+
+低带宽 profile 只有在作为独立 transport/profile 被选择时，MAY 改变外层 frame header、MTU、fragmentation 和 retry policy。它们 MUST NOT 改变 MethodId、EventId、ErrorCode、PayloadType、CONTROL/RPC/STREAM payload header 或 STREAM 16B Header。
+
+## 规范规则
+
+- Transport Profile MUST 在 AXTP session 启动前选定。
+- Transport Profile MUST 决定是否存在 frame header。
+- Standard Framed profile MUST 在 RPC Hello / Identify / Identified 前运行 CONTROL OPEN / ACCEPT。
+- WebSocket Unframed JSON profile MUST 在 WebSocket connection 建立后以 RPC Hello / Identify / Identified 启动。
+- WebSocket Unframed JSON MUST 是 RPC-only。
+- Hello MUST 由 Logical Server 发送，不一定由 Physical Server 发送。
+- 在 Standard Framed profile 中，CONTROL OPEN 遵循物理连接方向。
+- cloud reverse 模式下设备 MAY 是 Physical Client；如果它是 Logical Server，则仍然 MUST 发送 Hello。
+- transport 实现 MUST NOT 仅根据 transport profile 推断业务 capability；业务 capability 由 registry/RPC 表达。
+
+## 状态机 / 生命周期
+
+### Standard Framed Binary
 
 ```text
-OPEN follows the physical connection direction.
-Hello follows the logical service direction.
+Transport connected
+  -> Physical Client 发送 CONTROL OPEN
+  -> Physical Server 发送 CONTROL ACCEPT 或失败 ACCEPT
+  -> FRAMING_READY
+  -> Logical Server sends RPC Hello
+  -> Logical Client sends RPC Identify
+  -> Logical Server sends RPC Identified
+  -> APP_READY
 ```
 
-即：Standard Framed 中，OPEN 顺着物理连接方向；所有模式中，Hello 都由 Logical Server 发送。
+### WebSocket Unframed JSON
+
+```text
+WebSocket connected
+  -> Logical Server 发送 RPC Hello
+  -> Logical Client 发送 RPC Identify
+  -> Logical Server 发送 RPC Identified
+  -> APP_READY
+```
+
+### Cloud Reverse
+
+```text
+Device 连接到 Cloud WebSocket endpoint
+  -> Device 是 Physical Client
+  -> Cloud 是 Physical Server
+  -> Device 仍然是 Logical Server
+  -> Device 发送 RPC Hello
+```
+
+角色模型：
+
+| 角色 | 含义 | 职责 |
+|---|---|---|
+| Physical Client | transport connection 发起方 | 连接 transport；在 Standard Framed 中发送 CONTROL OPEN |
+| Physical Server | transport 监听/接受方 | 接受连接；在 Standard Framed 中返回 CONTROL ACCEPT |
+| Logical Client | AXTP 调用方/控制方 | 发送 Identify、Request、Reidentify；接收 Event |
+| Logical Server | AXTP capability 提供方 | 发送 Hello、校验 Identify、提供 methods/events/streams |
+
+默认角色映射：
 
 | Transport Profile | Physical Client | Physical Server | Logical Client | Logical Server | Hello 发送方 |
 |---|---|---|---|---|---|
@@ -74,114 +156,58 @@ Hello follows the logical service direction.
 | `AXTP-WS-JSON` | App / Cloud | Device / Gateway | App / Cloud | Device | Device |
 | `AXTP-WS-CLOUD-REVERSE` | Device | Cloud | Cloud | Device | Device |
 
-云端反连场景中，设备是 Physical Client，但仍是 Logical Server。因此 WebSocket 建立后仍由设备发送 Hello。
+## 校验规则
 
----
+Runtime MUST 校验：
 
-## 4. Standard Framed 启动流程
+- 所选 Transport Profile 被本地 runtime 和 connection entrypoint 同时支持；
+- Standard Framed profile 在解析 CONTROL/RPC/STREAM 前收到有效 Standard Frame；
+- WebSocket JSON message 在进入 RPC session 处理前是有效 JSON RPC envelope；
+- WebSocket Unframed JSON message 不包含 Standard Frame bytes；
+- Standard Framed 启动时先收到 CONTROL OPEN，再处理 RPC/STREAM payload；
+- WebSocket Unframed JSON 不接收 CONTROL 或 STREAM payload；
+- 逻辑角色方向被一致应用，尤其是 cloud reverse。
 
-适用于 `AXTP-USB-HID` 和 `AXTP-TCP`：
+## Runtime 实现要求
 
-```mermaid
-sequenceDiagram
-    participant PC as Physical Client
-    participant PS as Physical Server
-    participant LC as Logical Client
-    participant LS as Logical Server
+- 实现 `AXTP-USB-HID` 或 `AXTP-TCP` 的 runtime MUST 实现 Standard Frame parsing 和 CONTROL/RPC startup。
+- 实现 `AXTP-WS-JSON` 或 `AXTP-WS-CLOUD-REVERSE` 的 runtime MUST 实现 RPC JSON envelope startup，且 MUST NOT 要求 CONTROL。
+- Standard Framed runtime SHOULD 支持 RPC JSON 用于诊断，并 MAY 根据 profile negotiation 支持 JSON_BINARY 高吞吐路径。
+- WebSocket JSON runtime MUST 等待 Server Hello 后再发送 Identify。
+- Runtime code SHOULD 将物理 transport role 与逻辑 AXTP role 作为独立状态变量维护。
+- 低带宽 runtime MUST 声明独立 profile/entrypoint，且 MUST NOT 静默把 Standard Framed connection 解释为 Compact。
 
-    Note over PC,PS: Transport connected
-    PC->>PS: CONTROL OPEN
-    PS-->>PC: CONTROL ACCEPT
-    Note over PC,PS: FRAMING_READY
-    LS-->>LC: RPC Hello
-    LC->>LS: RPC Identify
-    LS-->>LC: RPC Identified
-    Note over LC,LS: APP_READY
-    LC->>LS: RPC adopted business request
-    LC->>LS: RPC Request
-    LS-->>LC: RPC Response / Event
+## 示例
+
+Standard Framed 启动：
+
+```text
+PC -> PS: CONTROL OPEN
+PS -> PC: CONTROL ACCEPT
+LS -> LC: RPC Hello
+LC -> LS: RPC Identify
+LS -> LC: RPC Identified
 ```
 
-Standard Framed 支持：
+WebSocket JSON 启动：
 
-- `PayloadType = CONTROL / RPC / STREAM`
-- `rpcEncoding = JSON / CBOR / MSGPACK / JSON_BINARY`
-- `rpcEncoding = JSON`，用于调试、诊断或实现便利场景
-- `rpcEncoding = JSON_BINARY` 时使用 15B 固定二进制 envelope，bodyEncoding 推荐 TLV8
-- STREAM 16B Header：`streamId:uint32`、`seqId:uint32`、`cursor:uint64`，P0 用于 audio/video 媒体流
-
----
-
-## 5. WebSocket Unframed JSON 启动流程
-
-适用于 `AXTP-WS-JSON`：
-
-```mermaid
-sequenceDiagram
-    participant LC as Logical Client
-    participant LS as Logical Server
-
-    Note over LC,LS: WebSocket connected
-    LS-->>LC: Hello (op=0)
-    LC->>LS: Identify (op=2)
-    LS-->>LC: Identified (op=3)
-    Note over LC,LS: APP_READY
-    LC->>LS: Request adopted business method (op=7)
-    LC->>LS: Request over JSON {sid, op, d}
-    LS-->>LC: Response / Event over JSON {sid, op, d}
+```text
+LS -> LC: { "sid": "", "op": 0, "d": { "axtpVersion": "1.0.0-rc1", "rpcVersion": 1 } }
+LC -> LS: { "sid": "", "op": 2, "d": { "rpcVersion": 1 } }
+LS -> LC: { "sid": "12345678", "op": 3, "d": { "negotiatedRpcVersion": 1 } }
 ```
 
-WebSocket Unframed JSON 不使用：
+Cloud reverse 角色提醒：
 
-- Standard Frame Header
-- CONTROL OPEN / ACCEPT / HEARTBEAT / CLOSE，以及后续 ACK / NACK
-- STREAM Payload
-- CRC16
-- JSON_BINARY RPC 15B Header
-
-WebSocket 断开即代表该 unframed RPC session 断开。恢复策略由应用层重新连接、重新 Identify、重新查询能力完成。
-
----
-
-## 6. Cloud Reverse 启动流程
-
-适用于 `AXTP-WS-CLOUD-REVERSE`：
-
-```mermaid
-sequenceDiagram
-    participant Device as Device (Physical Client, Logical Server)
-    participant Cloud as Cloud (Physical Server, Logical Client)
-
-    Device->>Cloud: WebSocket connect
-    Device-->>Cloud: Hello (op=0)
-    Cloud->>Device: Identify (op=2)
-    Device-->>Cloud: Identified (op=3)
-    Note over Device,Cloud: APP_READY
-    Cloud->>Device: Request adopted business method (op=7)
-    Cloud->>Device: Business Request
-    Device-->>Cloud: Response / Event
+```text
+Device 向 Cloud 打开 WebSocket。
+Device 仍然发送 Hello，因为 Device 是 Logical Server。
 ```
 
-这个场景中角色发生反转：
+## 非目标
 
-| 维度 | Device | Cloud |
-|---|---|---|
-| Physical role | Physical Client | Physical Server |
-| Logical role | Logical Server | Logical Client |
-| Hello | 发送 | 接收 |
-| Request | 接收并执行 | 发起 |
-| Event | 发送 | 接收 |
-
-Cloud 不因为自己是 WebSocket Physical Server 就发送 Hello。Hello 永远由 Logical Server 发送。
-
----
-
-## 7. 低带宽降级边界
-
-Compact/HID-64/BLE/UART 迁移到 `docs/specs/1-core/08-Low-Bandwidth-Degradation.md`。这些链路可以作为后续版本或特殊低带宽场景使用，但不得改变当前 Registry 与 Payload 层语义：
-
-- MethodId / EventId / ErrorCode 不变
-- PayloadType 仍只有 CONTROL / RPC / STREAM
-- Binary RPC Header 仍为 15B，并携带 `sid:uint32`
-- STREAM Header 仍为 16B
-- stream profile 通过 RPC 建流绑定到 streamId，不进入 STREAM Header
+- 本文不定义任何 frame 字段布局。
+- 本文不定义 CONTROL OPEN/ACCEPT TLV 字段。
+- 本文不定义启动顺序之外的 RPC op 字段行为。
+- 本文不定义业务 method 可用性。
+- 本文不把 BLE/UART/HID-64 作为 v1 Core 必需行为。
