@@ -101,11 +101,35 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 - `[REVIEW-ASK]`：需要产品、设备实现或 legacy 行为确认后才能写入 `legacyRefs` 或 YAML。
 - `[REVIEW-BLOCKER]`：当前文档定位会误导新协议生成，必须先重写或拆分。
 
+草案文件的 review 表格应放在文档前部，并尽量说明“当前判断”和“进入 registry 前需要做什么”。采纳阶段不得把 `[REVIEW-ASK]`、`[REVIEW-FIX]` 或 `[REVIEW-BLOCKER]` 项直接写入正式 YAML。
+
+## 状态说明
+
+| 状态 | 含义 | 可作为 runtime 合同 |
+|---|---|---:|
+| `business-input` | 仍在 `docs/business/**`，只是需求、背景或开放问题。 | 否 |
+| `flow-planned` | 已有 `docs/flows/**` 场景流程，识别了已有覆盖和协议缺口。 | 否 |
+| `draft` | 已有 `docs/protocol/<domain>/<domain.feature>.md` 草案，但还有 DRAFT/ASK/FIX 项。 | 否 |
+| `review-ok` | 草案关键事实已通过人工 review，可进入采纳流程。 | 否，需先写入 YAML 并生成 |
+| `generated` | `registry/domains/<domain>/domain.yaml` 或相关 registry YAML 已存在，并且 Generator / validation 通过。 | 是 |
+| `deprecated` | 已采纳事实被标记废弃，保留兼容但不建议新实现使用。 | 只按 deprecation 规则使用 |
+
+草案版本、review 状态和 spec tag 不是同一个概念。草案可以多次修订但不形成 runtime 可绑定版本；runtime 只能绑定 `spec/vMAJOR.MINOR.PATCH` tag、明确 commit 或 release artifact。
+
+## 草案临时 ID
+
+草案文档可以为了 mock/testing 联调临时使用 `0xF000-0xFEFF` 范围的 methodId、eventId 或 errorCode 占位，但必须满足：
+
+- 只用于草案、mock server、demo 或本地联调。
+- 不得写入正式 `registry/**` 或 `registry/domains/**`。
+- 采纳时必须按 Domain Registry 高字节和对应 specs 重新分配正式 ID。
+- generated 产物中不得出现 `0xF000-0xFEFF` 的正式业务 ID。
 
 ## Domain 状态矩阵
 
 > 最后更新：2026-06-09（每次 domain 状态变更后手动更新此日期）
-> 验证方式：`registry/domains/` 下有 `domain.yaml` 的 domain 为已 generated；其余为草案状态。
+> 更新规则：新增、删除、采纳、废弃 domain 草案或 registry domain 后，必须同步本矩阵的 Drafts、Review、Generated 和 Next Step。
+> 验证方式：只有 `registry/domains/<domain>/domain.yaml` 存在，并且 `pnpm --dir generators validate:sources` / `validate:protocol` 通过，才算 generated/adopted；其余为草案状态。
 
 本表用于让研发、测试和产品快速判断每个 domain 当前走到哪里。`Generated` 统计当前 generated protocol 中已经落地的方法和事件数量；`video` / `audio` 的 P0 stream 优先级表示要同时采纳 RPC 建流/关流控制面和 STREAM 数据面字段约束。
 
@@ -129,7 +153,7 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 | signage | 5 | ASK | 0 | P7 | 补产品/设备/legacy 确认。 |
 | storage | 6 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | stream | 2 | ASK | 0 | P0 data-plane plumbing | Phase 1 需要通用 STREAM open/data/close 语义支撑 audio/video；具体业务参数仍由 audio/video profile 定义。 |
-| system | 8 | ASK | 0 | P1 | 补产品/设备/legacy 确认，优先进入采纳批次。 |
+| system | 6 | ASK | 0 | P1 | 补产品/设备/legacy 确认，优先进入采纳批次。 |
 | video | 12 | ASK | 0 | P0 stream | 先补 video stream RPC 控制面和 STREAM 数据面确认；这是 P0 媒体流主线。 |
 
 ## 协议采纳/生成优先级

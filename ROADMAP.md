@@ -2,6 +2,19 @@
 
 AXTP 的目标不是“继续写更多协议文档”，而是把协议库建设成一套业务能真正接入、迁移、验证、发布的工程体系。
 
+## 当前进度与强约束
+
+当前 generated/adopted 状态以 [Domain 状态矩阵](docs/protocol/README.md#domain-状态矩阵) 为准。只有 `registry/domains/<domain>/domain.yaml` 存在，并且 Generator validation 通过，才算进入 runtime 可依赖的 generated 合同；其余 `docs/protocol/**` 内容仍是草案或评审输入。
+
+Roadmap milestone（如 `v0.1`、`v0.2`、`v1.0`）只表示规划阶段和功能完成度；runtime 可绑定的是 [Spec tag](docs/release/README.md#版本号体系)（如 `spec/v0.0.4`）、明确 commit 或 release artifact。
+
+本文末尾的“当前规则”是硬约束，阅读路线前先记住：
+
+- 不从未采纳草案实现 runtime。
+- 不手写 generated artifacts。
+- 不绕过 `docs/protocol/` 直接把新业务语义写入 `registry/`。
+- runtime 仓库必须绑定明确的 AXTP Spec tag 或 commit。
+
 主迭代路径：
 
 ```text

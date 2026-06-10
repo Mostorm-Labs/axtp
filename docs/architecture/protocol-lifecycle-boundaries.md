@@ -1,6 +1,8 @@
-# AXTP 协议生命周期与边界
+# AXTP 连接建立边界与会话状态机
 
-本文解释 AXTP Phase 1 的核心边界，帮助 runtime、SDK、测试和协议维护者用同一套语言理解仓库。
+本文解释 AXTP Phase 1 的连接状态机边界：Standard Framed 下的 CONTROL OPEN / ACCEPT，随后进入 RPC Hello / Identify / Identified，最终到达 `APP_READY`。
+
+如果要了解“业务需求 -> 草案 -> 采纳 -> registry -> generated”的文档生命周期，请看 [docs/dev/skills/README.md](../dev/skills/README.md) 或 [docs/guides/how-to-use.md](../guides/how-to-use.md)。本文只讨论连接建立、会话 ID 和 CONTROL / RPC / STREAM 的运行时边界。
 
 ## 1. 两个 session 不要混用
 

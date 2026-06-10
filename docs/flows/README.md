@@ -44,10 +44,12 @@ docs/business/<requirement>.md 或业务场景 / UI 原型 / 用户 story
 
 ## Active Flow Plans
 
-- [Audio Algorithm Level Control](audio-algorithm-level-control.md)：App UI 中的音频算法强度滑条和恢复默认流程，复用 `audio.algorithm`。
-- [Cast Receiver UxPlay](cast-reciever-uxplay.md)：Launcher 集成 AirPlay/UxPlay 接收端的外部 AXTP 控制口、runtime/backend 状态、投屏会话、PIN、窗口和音频控制流程。
-- [Cast RX/TX Pairing](cast-rxtx-paring.md)：NA20 接收端 AP 信息写入 NT10 发射端 Wi-Fi STA 配置的自动配对流程，依赖 `network.ap` / `network.wifi` 草案细化。
-- [Device Firmware Update](device-firmware-update.md)：PC 上位机通过 `firmware.update` 为直连设备执行单 `.bin` / 多 `.bin` 固件升级的流程，依赖 `firmware.update` / `firmware.info` 草案采纳。
-- [Device Information And System Runtime State](device-system-info.md)：连接设备后读取主设备信息、按需发现子设备/拓扑，并通过 system 管理 CPU、内存、在线等运行时状态事件和关机/重启控制。
-- [NearHub Launcher Digital Signage Device Management](signage-device-management.md)：将两份 NearHub Launcher 设备管理 legacy 文档整理为数字标牌设备上线、配置、升级、绑定、内容同步和日志导出的标准 AXTP 交互流程。
-- [NA20/NT10 Device Streaming Audio And Video](device-streaming-audio-video.md)：NA20 接收 NT10 H.264/AAC 投屏流后，经 USB HID/AXTP STREAM 转发给上位机播放的音频和视频交互流程。
+| Flow 名称 | 文件 | 状态 | Next action |
+|---|---|---|---|
+| Audio Algorithm Level Control | [audio-algorithm-level-control.md](audio-algorithm-level-control.md) | 已完成 / 复用 adopted | 使用 generated `audio.algorithm`；后续语义变化走 amendment。 |
+| Cast Receiver UxPlay | [cast-reciever-uxplay.md](cast-reciever-uxplay.md) | 已进入 protocol draft | 继续确认投屏会话、PIN、窗口和音频控制对应的 protocol drafts。 |
+| Cast RX/TX Pairing | [cast-rxtx-paring.md](cast-rxtx-paring.md) | 已进入 protocol draft | 采纳或修订 `network.ap` / `network.wifi` 草案。 |
+| Device Firmware Update | [device-firmware-update.md](device-firmware-update.md) | 已进入 protocol draft | 采纳 `firmware.update` / `firmware.info`，并确认 STREAM P0 边界。 |
+| Device Information And System Runtime State | [device-system-info.md](device-system-info.md) | 已进入 protocol draft | 采纳 `device.info`、`device.childDevice` 和 `system.*` 草案。 |
+| NearHub Launcher Digital Signage Device Management | [signage-device-management.md](signage-device-management.md) | 已进入 protocol draft | 继续确认 signage、network、firmware、log 等 legacy 映射。 |
+| NA20/NT10 Device Streaming Audio And Video | [device-streaming-audio-video.md](device-streaming-audio-video.md) | 已进入 protocol draft | 采纳 `video.stream` / `audio.stream` 和媒体 STREAM profile。 |

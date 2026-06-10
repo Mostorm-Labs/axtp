@@ -1,51 +1,22 @@
-# Runtime MVP 与 Conformance 接入指南
+# Runtime MVP Checklist 与排障
 
-这份文档给 runtime、SDK、mock server 和测试同学一个第一周可执行清单：先实现 AXTP Phase 1 最小闭环，再接入 `docs/conformance/**` 做验收。
+这份文档给 runtime、SDK 和 mock server 实现者一份 Phase 1 最小实现清单。Conformance level 选择、case 清单、运行命令和失败分类见 [docs/conformance/README.md](../conformance/README.md)。
 
-如果你只是想最快跑通业务 RPC，先看 [quickstart.md](quickstart.md)。如果你要实现 CONTROL、RPC session、sid、requestId、心跳和关闭，请同时看 [core-protocol-flow.md](core-protocol-flow.md)。
+如果只是最快跑通业务 RPC，先看 [quickstart.md](quickstart.md)。如果要实现 CONTROL、RPC session、`sid`、`requestId`、心跳和关闭，请同时看 [core-protocol-flow.md](core-protocol-flow.md)。
 
-## 1. Phase 1 MVP 范围
+Hello / Identify / Identified 的字段完整规范见 [RPC Session Spec](../specs/1-core/06-RPC-Session.md)，本文件不重复维护字段规则。
 
-Phase 1 的目标不是一次做完所有高级能力，而是先把 runtime 的共同地基打牢。
-
-| 能力 | WebSocket JSON runtime | Standard Framed runtime |
-|---|---:|---:|
-| 读取 `protocol/axtp.protocol.yaml` 或 `docs/generated/protocol.json` | 是 | 是 |
-| RPC Hello / Identify / Identified | 是 | 是 |
-| RPC Request / RequestResponse / Event | 是 | 是 |
-| `sid` 固定 8 位 hex string / binary `uint32` | 是 | 是 |
-| `requestId` 匹配未完成请求 | 是 | 是 |
-| 标准错误响应形状 | 是 | 是 |
-| Standard Frame Header / CRC16 | 否 | 是 |
-| CONTROL OPEN / ACCEPT | 否 | 是 |
-| CONTROL HEARTBEAT / HEARTBEAT_ACK | 否 | 是 |
-| CONTROL CLOSE / CLOSE_ACK | 否 | 是 |
-| STREAM open / data / close | 否 | 是，P0 用于 audio/video 媒体流 |
-
-Phase 1 暂不实现：
-
-```text
-ACK/NACK 重传
-RESUME / SESSION_RESET
-PING/PONG RTT 测量
-STREAM 固件 / 文件 / 日志 profile
-链路加密
-固件 / 文件 / 日志类 STREAM profile
-```
-
-默认鉴权策略是 `AXTP-AUTH-NONE`。只有产品或客户明确要求密码门禁时，才启用 OBS-style challenge-response。
-
-## 2. Runtime 需要消费什么
+## Runtime 需要消费什么
 
 不要在 runtime 仓库重新定义协议事实。最小输入包如下：
 
 | 输入 | 路径 | 用途 |
 |---|---|---|
-| Spec lock | `AXTP_SPEC.lock.yaml` | 记录 runtime 绑定的 spec tag / commit |
-| Protocol IR | `protocol/axtp.protocol.yaml` | generator、runtime、mock server 的机器合同 |
-| Generated JSON | `docs/generated/protocol.json` | SDK、测试和自动化工具读取 |
-| Generated Markdown | `docs/generated/protocol.md` | 联调和人工检查 |
-| Conformance | `docs/conformance/**` | 行为一致性验收 |
+| Spec lock | `AXTP_SPEC.lock.yaml` | 记录 runtime 绑定的 spec tag / commit。 |
+| Protocol IR | `protocol/axtp.protocol.yaml` | generator、runtime、mock server 的机器合同。 |
+| Generated JSON | `docs/generated/protocol.json` | SDK、测试和自动化工具读取。 |
+| Generated Markdown | `docs/generated/protocol.md` | 联调和人工检查。 |
+| Conformance | `docs/conformance/**` | 行为一致性验收。 |
 
 开发期可以让 runtime 指向本地 spec checkout：
 
@@ -55,73 +26,61 @@ export AXTP_SPEC_PATH=/Users/qing/Desktop/sources/gitee/axtp
 
 发布期必须指向明确的 spec tag、commit 或 release artifact，不能依赖浮动 `main`。
 
-## 3. WebSocket JSON MVP Checklist
+## WebSocket JSON MVP Checklist
 
-适合 App、Web、Node、Python、mock server、云端控制面。
-
-> 字段完整规范（sid 格式、eventMasks 编码、rpcVersion 协商、认证挑战）见 [docs/specs/1-core/06-RPC-Session.md](../specs/1-core/06-RPC-Session.md)。
+适合 App、Web、Node、Python、mock server 和云端控制面。
 
 | 检查项 | 通过标准 |
 |---|---|
 | 连接建立 | WebSocket open 后，Logical Server 先发送 Hello。 |
-| Hello | `sid=""`，`op=0`，携带 `axtpVersion` 和 `rpcVersion`。默认不携带认证字段。 |
-| Identify | Logical Client 发送 `sid=""`、`op=2`、`rpcVersion`，可选 `eventMasks`。 |
-| Identified | Logical Server 返回 `op=3` 和 8 位 hex `sid`。 |
+| Session gate | Logical Client 收到 Hello 后才发送 Identify；成功收到 Identified 后才发业务 Request。 |
+| `sid` | 新建 session 使用 `sid=""`；APP_READY 后使用 Identified 返回的 8 位 hex `sid`。 |
 | Request | `op=7`，`d.id` 在同一 session 内未完成前不得复用。 |
 | Response | `op=8`，`d.id` 必须匹配请求；成功带 `status.ok=true`。 |
 | Error | 失败带 `status.ok=false`、稳定错误码，不携带成功 `result`。 |
 | Event | `op=6`，事件名必须来自 generated protocol。 |
 | Generated | 只调用 `docs/generated/protocol.json` 中已存在 method/event。 |
-| Conformance | 至少通过 `core` 和 `websocket-jsonrpc` level。 |
+| Conformance | 至少声明并通过 `core` 和 `websocket-jsonrpc` level。 |
 
-## 4. Standard Framed MVP Checklist
+## Standard Framed MVP Checklist
 
 适合 TCP、USB HID、需要二进制 Frame Header 或 STREAM 数据面的设备链路。
 
-> Frame Header 和 CRC 规范见 [docs/specs/1-core/03-Frame-and-Payload.md](../specs/1-core/03-Frame-and-Payload.md)，CONTROL 会话见 [docs/specs/1-core/05-Control-Session.md](../specs/1-core/05-Control-Session.md)，STREAM 数据面见 [docs/specs/1-core/07-Stream-Data-Plane.md](../specs/1-core/07-Stream-Data-Plane.md)。
+> Frame Header 和 CRC 规范见 [Frame and Payload Spec](../specs/1-core/03-Frame-and-Payload.md)，CONTROL 会话见 [Control Session Spec](../specs/1-core/05-Control-Session.md)，STREAM 数据面见 [Stream Data Plane Spec](../specs/1-core/07-Stream-Data-Plane.md)。
 
 | 检查项 | 通过标准 |
 |---|---|
-| Header parser | 校验 `AX` magic、version、payloadType、payloadLength、fragment 字段。 |
+| Header parser | 校验 `AX` magic、version、`PayloadType`、payloadLength、fragment 字段。 |
 | CRC16 | CRC 覆盖 Header + Payload，不覆盖 CRC 自身；多字节整数 little-endian。 |
-| Payload dispatch | `payloadType=CONTROL` 进 ControlParser，`RPC` 进 RpcParser，`STREAM` 进 StreamParser。 |
+| Payload dispatch | `PayloadType=CONTROL` 进 ControlParser，`RPC` 进 RpcParser，`STREAM` 进 StreamParser。 |
 | CONTROL OPEN | 只允许 Physical Client 在 `LINK_CONNECTED` 发送。 |
 | CONTROL ACCEPT | `controlId` 匹配 OPEN；成功后进入 `FRAMING_READY`。 |
-| `ackMode` | Phase 1 默认 `NONE`，不实现 ACK/NACK 重传。 |
+| `ackMode` | Phase 1 默认 `NONE`，不实现 ACK/NACK strict retransmission。 |
 | `sessionId` | ACCEPT 可选；可保存到连接上下文，但不得用于业务路由。 |
 | HEARTBEAT | 双向可发；对端必须用相同 `controlId` 返回 HEARTBEAT_ACK。 |
 | Heartbeat timeout | 连续 3 次未收到 HEARTBEAT_ACK 后关闭 transport 并清理上下文。 |
 | CLOSE | 任意一端可发；对端返回相同 `controlId` 的 CLOSE_ACK 后关闭 transport。 |
 | RPC session | CONTROL 成功后，继续执行 Hello / Identify / Identified。 |
-| STREAM open | 通过 RPC 建流方法创建 stream context，返回非 0 `streamId`。 |
+| STREAM open | 通过业务 RPC 建立 Stream Context，返回非 0 `streamId`。 |
 | STREAM data | 解析 16B STREAM Header：`streamId:uint32`、`seqId:uint32`、`cursor:uint64`，并把 data 交给对应 audio/video profile。 |
-| STREAM close | 通过 RPC 关闭 stream context，释放 `streamId`。 |
-| Conformance | 至少通过 `core` 和 `framed-binary` level。 |
+| STREAM close | 通过业务 RPC 关闭 Stream Context，释放 `streamId`。 |
+| Conformance | 至少声明并通过 `core` 和 `framed-binary` level。 |
 
-## 5. Conformance 接入
-
-Conformance 运行方式、level 选择和 case 清单见 [docs/conformance/README.md](../conformance/README.md)。
-
-runtime 仓库接入时先设置：
-
-```bash
-export AXTP_SPEC_PATH=/path/to/axtp-spec-or-release-artifact
-```
-
-## 6. 失败时先看哪里
+## 失败时先看哪里
 
 | 失败现象 | 优先检查 |
 |---|---|
 | Hello 后不能进入 session | Logical Server / Logical Client 方向是否反了。 |
-| requestId 对不上 | Response 是否复用了请求的 `d.id`，并且未完成请求没有复用 id。 |
-| sid 被拒绝 | JSON sid 是否固定 8 位 hex string；新建 session 是否使用 `sid=""`。 |
+| Identify 被拒绝 | 是否等待 Hello；`rpcVersion` 是否存在且兼容；认证字段是否符合 Hello 要求。 |
+| `requestId` 对不上 | Response 是否复用了请求的 `d.id`，并且未完成请求没有复用 id。 |
+| `sid` 被拒绝 | JSON `sid` 是否固定 8 位 hex string；新建 session 是否使用 `sid=""`。 |
 | Framed CRC 失败 | CRC 是否覆盖 Header + Payload；payloadLength 是否只算 Payload。 |
 | OPEN 后不能发 RPC | ACCEPT 是否成功，状态是否进入 `FRAMING_READY`。 |
 | 心跳误判断线 | 是否用相同 `controlId` 返回 HEARTBEAT_ACK；超时计数是否在收到 HEARTBEAT_ACK 后清零。 |
 | CLOSE 后还有业务请求 | 收到 CLOSE 后是否停止接受新 Request，并进入关闭流程。 |
 | method not found | runtime 是否只加载当前 spec 的 generated protocol，而不是旧常量。 |
 
-## 7. 完成定义
+## 完成定义
 
 Phase 1 runtime 可以认为达到 MVP，当它满足：
 

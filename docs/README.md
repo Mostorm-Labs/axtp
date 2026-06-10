@@ -4,6 +4,18 @@
 
 不要把业务输入、流程文档、协议草案或 legacy 迁移材料直接当实现合同。当前实现事实来自 `registry/**/*.yaml`、`registry/domains/**/*.yaml`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**`。
 
+## 你是谁？先读哪里
+
+| 你的角色 | 第一步读 |
+|---|---|
+| 首次了解 AXTP | [../README.md](../README.md) -> 本文档 |
+| Runtime / SDK 实现者 | [guides/quickstart.md](guides/quickstart.md) |
+| 测试 / Conformance | [conformance/README.md](conformance/README.md) |
+| 协议维护者 | [guides/how-to-use.md](guides/how-to-use.md) |
+| 产品 / 架构 | [protocol/README.md](protocol/README.md) |
+| Legacy 迁移负责人 | [legacy-migration/README.md](legacy-migration/README.md) |
+| 发布负责人 | [release/README.md](release/README.md) |
+
 ## 阅读路径
 
 | 目标 | 推荐阅读顺序 |
@@ -19,6 +31,17 @@
 | 追踪 legacy 迁移 | `legacy-migration/README.md` |
 | 验收 runtime 行为 | `conformance/README.md` |
 | 准备发版 | `release/README.md` |
+
+## 合同等级
+
+| 等级 | 路径 | 含义 | 实现者是否可直接依赖 |
+|---|---|---|---:|
+| 评审输入 | `business/`、`flows/`、`protocol/` | 业务需求、交互流程、RFC / 草案和评审记录 | 否 |
+| 迁移输入 | `legacy-migration/` | 旧协议证据、分类、计划和 generated 迁移候选 | 否 |
+| 人工规范 | `specs/` | wire、session、registry、codec、tooling、versioning 的正式规则 | 是，需与 YAML/generated 对齐 |
+| 机器事实源 | `../registry/**/*.yaml`、`../registry/domains/**/*.yaml` | 已采纳 method/event/schema/error/capability/profile 事实 | 是 |
+| Generated 实现合同 | `../protocol/axtp.protocol.yaml`、`generated/**` | Generator 输出的 Protocol IR、人读/机读协议参考 | 是 |
+| Runtime 验收输入 | `conformance/**` | runtime 和工具仓库共享的行为用例、profiles、fixtures、schemas | 是 |
 
 ## 文档分区
 
@@ -50,3 +73,17 @@ docs/conformance/**                      Runtime 行为验收输入
 ```
 
 如果 specs 表格与 YAML 或 generated 输出冲突，应修正事实源或规范规则后重新生成，不要维护第二套活跃事实。
+
+## 不要手写修改
+
+以下文件或目录是生成合同或 generated 辅助产物，不应手写修改：
+
+| 路径 | 正确修改方式 |
+|---|---|
+| `generated/**` | 修改 specs / registry YAML / Generator 后重新生成。 |
+| `../protocol/axtp.protocol.yaml` | 从 `../registry/**` 和 `../registry/domains/**` 运行 Generator 生成。 |
+| `../tooling/mcp/*.generated.json` | 由 Generator 刷新。 |
+| `../tooling/test-vectors/**` | 由 Generator 或测试向量工具刷新。 |
+| `../generators/src/__snapshots__/**` | 由 Generator 测试更新；不要为了“修文档”手写。 |
+
+如果 generated 结果不符合预期，应回到源头：草案、正式规范、registry YAML 或 Generator 逻辑。

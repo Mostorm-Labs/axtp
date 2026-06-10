@@ -7,7 +7,7 @@
 
 版本：v1.0.0-rc1
 状态：AXTP v1 Core Freeze Candidate
-适用范围：RPC Payload 结构、op+d Envelope、sid、JSON/CBOR/MSGPACK/JSON_BINARY 编码、MethodId/EventId、Hello/Identify/Request/Response/Event/Batch
+适用范围：RPC Payload 结构、op+d Envelope、sid、JSON/CBOR/MSGPACK/JSON_BINARY 编码、MethodId/EventId、Hello/Identify/Request/Response/Event/Batch、`axtpVersion` 兼容校验、RPC Session 鉴权
 前置文档：`docs/specs/1-core/02-Protocol-Framework.md`、`docs/specs/1-core/03-Frame-and-Payload.md`、`docs/specs/1-core/05-Control-Session.md`
 后续文档：`docs/specs/1-core/07-Stream-Data-Plane.md`、Registry 文档
 
@@ -94,7 +94,7 @@ JSON、CBOR、MessagePack 都使用完整的 sid+op+d 语义结构。JSON_BINARY
 
 所有 JSON 消息使用统一三字段 Envelope：
 
-```json
+```text
 { "sid": "12345678", "op": 6, "d": { ... } }
 ```
 
@@ -110,12 +110,30 @@ JSON、CBOR、MessagePack 都使用完整的 sid+op+d 语义结构。JSON_BINARY
 
 32-bit 对 AXTP v1 的业务 session 是足够的，因为 `sid` 不是全局唯一 ID，而是由单个 Logical Server 在当前可恢复业务 session 集合内分配的局部 ID。即使一个设备、mock server 或网关同时维护数万级活跃 session，`uint32` 仍有足够空间；实现只需要保证当前活跃 session 不冲突。跨设备、跨云、跨租户的全局唯一性应由 `deviceId / endpointId / tenantId / connectionId + sid` 组合表达，不应把全局身份塞进 `sid`。
 
+Phase 1 固定采用以下裁决：
+
+| 项 | 裁决 |
+|---|---|
+| 规范类型 | `uint32` |
+| 保留值 | `0`，表示尚未分配业务 session |
+| JSON / CBOR / MSGPACK 表达 | 固定 8 位十六进制字符串，例如 `"12345678"` |
+| JSON_BINARY 表达 | `uint32` Little-Endian，例如 `78 56 34 12` |
+| 分配方 | Logical Server 在 Identified 阶段分配 |
+| 作用域 | 单个 Logical Server 的当前活跃/可恢复业务 session 集合 |
+
 | 编码 | 表达方式 | 示例 |
 |---|---|---|
 | JSON RPC | 固定 8 位 hex string | `"12345678"` |
 | JSON_BINARY RPC | uint32 Little-Endian | `78 56 34 12` |
 
 JSON 选择 string 是为了延续 OBS-style `sid/op/d` envelope、避免 JSON number 解析差异，并为网关日志和调试提供稳定文本格式。该 string 必须是 8 个十六进制字符，发送方必须使用 uppercase canonical form，接收方可以兼容 lowercase。不得使用 `0x12345678`、`"s-001"`、UUID、负数、浮点数、可变长 UTF-8 token 或带业务前缀的字符串。
+
+| 表达 | 结论 | 原因 |
+|---|---|---|
+| `"12345678"` | 推荐 | 固定 8 位，和 Binary `0x12345678` 一眼对应。 |
+| `"305419896"` | 不推荐 | 是同一个数的十进制表达，但不如 hex 方便和二进制对照。 |
+| `"0x12345678"` | 不推荐 | 多两个字符，parser 还要处理前缀。 |
+| `"s-001"` / UUID / 任意 ASCII | 不允许 | 会把固定 32-bit ID 变成可变长 token，JSON_BINARY RPC Header 无法保持简单固定。 |
 
 不推荐用任意 UTF-8 / ASCII 文本表达 `sid`。如果把 `sid` 定义成可变长文本 token，JSON_BINARY RPC Header 就无法保持固定宽度，runtime 也必须额外处理编码、长度、大小写和字符集问题。Phase 1 的目标是让 JSON/CBOR/MSGPACK 和 JSON_BINARY 可以直接互转，因此 `sid` 保持 `uint32`，对象编码只采用它的固定宽度 hex 文本表示。
 
@@ -141,7 +159,7 @@ op 数值与老协议对齐，生命周期 op 保留为独立 op。
 | `2` | `Identify` | Client→Server | 客户端身份、版本、认证、订阅意图；可携带旧 `sid` 恢复 session |
 | `3` | `Identified` | Server→Client | 确认就绪，分配并返回 `sid` |
 | `4` | `Reidentify` | Client→Server | 修改订阅或会话参数，不重新认证 |
-| `5` | `Subscribe` | — | **Reserved**，保留编号与老协议对齐，当前不使用（订阅通过 Identify/Reidentify 的 `eventSubscriptions` 字段完成） |
+| `5` | `Subscribe` | — | **Reserved**，保留编号与老协议对齐，当前不使用（订阅通过 Identify/Reidentify 的 `eventMasks` 字段完成） |
 | `6` | `Event` | Server→Client | 低频状态事件推送 |
 | `7` | `Request` | Client→Server | 发起 RPC 调用 |
 | `8` | `RequestResponse` | Server→Client | 返回 RPC 结果 |
@@ -160,18 +178,34 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
 
 ## 5. Hello（op=0）
 
-服务端在 WebSocket/TCP 连接建立后立即发送，无需客户端请求。
+服务端在 WebSocket/TCP 连接建立后立即发送，无需客户端请求。Hello 是 RPC Session 的兼容性入口：Logical Server 在这里声明其实现的 AXTP 规范版本、RPC 协议版本，以及当前连接是否要求认证。
+
+Phase 1 默认无认证，Hello 不携带 `authentication`：
 
 ```json
 {
   "sid": "",
   "op": 0,
   "d": {
-    "axtpVersion": "1.0.0",
+    "axtpVersion": "1.0.0-rc1",
+    "rpcVersion": 1
+  }
+}
+```
+
+需要密码门禁时，Hello 携带认证挑战：
+
+```json
+{
+  "sid": "",
+  "op": 0,
+  "d": {
+    "axtpVersion": "1.0.0-rc1",
     "rpcVersion": 1,
     "authentication": {
-      "challenge": "...",
-      "salt": "..."
+      "scheme": "AXTP-AUTH-OBS-SHA256",
+      "challenge": "<base64-random-16-to-32-bytes>",
+      "salt": "<base64-random-or-device-salt>"
     }
   }
 }
@@ -179,11 +213,57 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `axtpVersion` | string | 是 | 服务端协议版本 |
+| `axtpVersion` | string | 是 | 服务端实现的 AXTP 规范版本号，使用当前 spec 的 SemVer 字符串，例如 `1.0.0-rc1`；不得使用 runtime 包版本、固件版本或 Git tag 前缀 `spec/v` |
 | `rpcVersion` | uint32 | 是 | RPC 协议版本，当前为 1 |
 | `authentication` | object | 否 | 认证挑战，不需要认证时省略 |
+| `authentication.scheme` | string | 条件 | 认证方案名；当前定义 `AXTP-AUTH-OBS-SHA256`，默认无认证时省略整个 `authentication` |
+| `authentication.challenge` | string | 条件 | Base64 编码的服务端随机挑战 |
+| `authentication.salt` | string | 条件 | Base64 编码的 salt，可为随机 salt 或设备级 salt |
 
 `sid` 填 `""`，此时 session 尚未建立。
+
+### 5.1 `axtpVersion` 兼容校验
+
+`axtpVersion` 表达 AXTP 规范版本号，用于 runtime 在进入 APP_READY 之前做兼容性校验。它与以下版本概念不同：
+
+| 字段/版本 | 表达对象 | 是否用于 RPC Session 兼容校验 |
+|---|---|---:|
+| `axtpVersion` | AXTP Spec 规范版本，例如 `1.0.0-rc1` | 是 |
+| `rpcVersion` | RPC envelope/op 语义版本，当前为 `1` | 是 |
+| Frame Header `Version` | Standard Frame Header 解析版本 | 只用于 Standard Framed parser |
+| Registry / generated protocol 版本 | method/event/error/schema/capability 事实集合 | 用于业务能力和代码生成，不替代 session 兼容校验 |
+| Runtime package / firmware / app 版本 | 具体实现或产品版本 | 否 |
+
+版本字符串使用 SemVer 语义，发布 tag `spec/vMAJOR.MINOR.PATCH` 在线上 Hello 中去掉 `spec/v` 前缀，例如 tag `spec/v1.0.0` 对应 `axtpVersion: "1.0.0"`。预发布版本可以使用 SemVer prerelease 后缀，例如 `1.0.0-rc1`。
+
+Logical Client 必须在发送 Identify 前校验 `axtpVersion`：
+
+| 服务端 `axtpVersion` | 建议处理 |
+|---|---|
+| 无法解析、缺失或不是 SemVer | 视为不兼容，不进入 Identify。 |
+| `MAJOR` 不同 | 视为不兼容，不进入 Identify；若已经发送 Identify，服务端可拒绝并关闭连接。 |
+| `MAJOR` 相同，`MINOR/PATCH` 更新 | 可以继续握手；客户端只调用自己已知 registry / capability 中的 method，未知字段按扩展规则忽略。 |
+| prerelease 标识不同 | 默认按不兼容处理；产品可以在自身 runtime 中显式声明兼容的 prerelease 范围。 |
+
+`axtpVersion` 不因为新增 methodId/eventId、可选 schema 字段或 registry 元数据变化而单独升级 RPC envelope。此类变化由 Registry/Generator 版本和能力声明处理。只有 AXTP 规范发布版本变化时，Hello 中的 `axtpVersion` 才随之变化。
+
+### 5.2 Hello 认证挑战
+
+AXTP RPC Session 定义两个 Phase 1 认证选择：
+
+| 方案 | Hello | Identify | 适用场景 |
+|---|---|---|---|
+| `AXTP-AUTH-NONE` | 不携带 `authentication` | 不携带 `authentication` | 设备直连、本地控制、内网、产线、mock server、可信环境。 |
+| `AXTP-AUTH-OBS-SHA256` | 携带 `scheme/challenge/salt` | 携带 challenge response 字符串 | 明确需要密码门禁的产品或部署环境。 |
+
+默认方案是 `AXTP-AUTH-NONE`。OBS-style challenge-response 只证明客户端知道 shared secret，不加密后续 RPC / STREAM 内容；需要链路保密时应使用 TLS、受信任传输或后续单独安全方案。
+
+使用 `AXTP-AUTH-OBS-SHA256` 时，服务端必须满足：
+
+- `challenge` 每次连接重新生成。
+- `challenge` 有效期建议不超过 30 秒。
+- 同一个 `challenge` 只能成功使用一次。
+- 认证失败后不得进入 `APP_READY`。
 
 ---
 
@@ -197,8 +277,7 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
   "op": 2,
   "d": {
     "rpcVersion": 1,
-    "authentication": "...",
-    "eventMasks": "850101",
+    "eventMasks": "090101",
     "resumeSid": "12345678"
   }
 }
@@ -207,13 +286,59 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `rpcVersion` | uint32 | 是 | 客户端期望的 RPC 版本 |
-| `authentication` | string | 条件 | Hello 要求认证时必填，HMAC 响应 |
+| `authentication` | string | 条件 | Hello 要求认证时必填；默认无认证时必须省略 |
 | `eventMasks` | string | 否 | 域级事件订阅掩码，Hex 字符串编码，格式见 §16；省略或空字符串表示不订阅任何事件 |
 | `resumeSid` | string | 否 | 断线重连时携带旧 `sid`，请求恢复 session |
 
 > **兼容说明**：旧字段 `eventSubscriptions: uint32` 已废弃，新实现必须使用 `eventMasks`。MVP 阶段设备可忽略 `eventMasks` 并默认推送核心事件（全量广播模式），P1 阶段再实现按掩码过滤。
 
 新连接时 `sid` 填 `""`；断线重连时 `sid` 填 `""` 但 `d.resumeSid` 携带旧 session ID。
+
+Identify 字段行为以本节为唯一权威来源：
+
+| 场景 | Server 处理 |
+|---|---|
+| 缺失 `rpcVersion` | 必须拒绝进入 `APP_READY`，不得发送成功 `Identified`；建议返回 `NOT_SUPPORTED` 或关闭 session。 |
+| `rpcVersion` 与 Hello / Server 支持范围不兼容 | 必须拒绝进入 `APP_READY`；建议返回 `NOT_SUPPORTED`。 |
+| `eventMasks` 省略 | 表示不订阅任何事件；MVP 全量广播模式可忽略该字段。 |
+| `eventMasks` 为 `""` | 与省略等价，表示不订阅任何事件。 |
+| `eventMasks` 为非空字符串 | 必须按 §16.1 的 Domain Block 格式解析。 |
+| `eventMasks` 格式非法 | 不得静默当作有效订阅；Server 可拒绝 Identify/Reidentify 并返回 `INVALID_ARGUMENT`，或按产品策略忽略订阅并返回明确错误/诊断。 |
+
+### 6.1 Identify 认证响应
+
+当 Hello 不携带 `authentication` 时，Identify 也不得携带 `authentication`。当 Hello 的 `authentication.scheme` 为 `AXTP-AUTH-OBS-SHA256` 时，客户端按以下方式计算响应：
+
+```text
+secret = Base64(SHA256(password + salt))
+authentication = Base64(SHA256(secret + challenge))
+```
+
+其中 `password` 是产品或部署环境配置的 shared secret，`salt` 和 `challenge` 来自 Hello。客户端不得发送明文密码。
+
+示例：
+
+```text
+password       = "axtp-demo-secret"
+salt           = "c2FsdC1leGFtcGxlLTEyMzQ1Ng=="
+challenge      = "Y2hhbGxlbmdlLWV4YW1wbGUtMTIzNDU2"
+secret         = "eWGqr/2kdAa2XVb+zhCtSc21Ikm29Gu38hZW+tU5Gb4="
+authentication = "uGXkKQgJcTinrNiAyxTCj0TVXUq4c5iyRiQRL6nKnPU="
+```
+
+对应 Identify：
+
+```json
+{
+  "sid": "",
+  "op": 2,
+  "d": {
+    "rpcVersion": 1,
+    "authentication": "uGXkKQgJcTinrNiAyxTCj0TVXUq4c5iyRiQRL6nKnPU=",
+    "eventMasks": "090101"
+  }
+}
+```
 
 ---
 
@@ -236,6 +361,15 @@ MVP 必须实现：`Hello / Identify / Identified / Event / Request / RequestRes
 | `negotiatedRpcVersion` | uint32 | 是 | 协商后的 RPC 版本 |
 
 客户端收到 Identified 后提取 `sid`，后续所有消息必须携带此 `sid`。
+
+如果版本校验、认证或权限检查失败，服务端不得发送 Identified，也不得进入 APP_READY。可返回错误后关闭 session，或直接关闭 transport。错误映射使用既有 ErrorCode，不在 RPC Session 中新增局部错误码：
+
+| 场景 | 建议 ErrorCode |
+|---|---|
+| `axtpVersion` 或 `rpcVersion` 不兼容 | `NOT_SUPPORTED` |
+| Hello 要求认证，但 Identify 未带认证字段 | `SEC_AUTH_REQUIRED` |
+| 认证串计算错误、challenge 过期或 challenge 重放 | `SEC_AUTH_FAILED` |
+| 客户端版本、角色或策略不满足当前 method/session 权限 | `SEC_PERMISSION_DENIED` |
 
 ---
 
@@ -584,6 +718,8 @@ APP_READY 后，v1 Core 不强制任何业务 method。客户端以当前产品 
 
 事件订阅使用**域级二进制掩码（Domain-Scoped Event Mask）**，而非旧的 `eventSubscriptions: uint32` 全局位图。
 
+`eventMasks` 是 Identify / Reidentify 中的可选字段。字段省略或传空字符串 `""` 都表示不订阅任何事件；非空字符串必须是偶数长度 Hex，并按下面的 Domain Block 结构解析。实现不得把任意文本、十进制数字、JSON array 或旧 `eventSubscriptions` 全局位图当作有效 `eventMasks`。
+
 **格式**：`eventMasks` 是一个 Hex 字符串，由一个或多个 Domain Block 拼接而成：
 
 ```text
@@ -882,7 +1018,7 @@ body: TLV8 encoded AudioAlgorithmConfig, field layout comes from generated schem
 ```text
 [连接建立]
 Server → Client:
-  { "sid": "", "op": 0, "d": { "axtpVersion": "1.0.0", "rpcVersion": 1 } }
+  { "sid": "", "op": 0, "d": { "axtpVersion": "1.0.0-rc1", "rpcVersion": 1 } }
 
 Client → Server:
   { "sid": "", "op": 2, "d": { "rpcVersion": 1, "eventMasks": "090101" } }
@@ -978,6 +1114,9 @@ RPC Parser 必须满足：
 - requestId 必须原样返回，RequestResponse 必须匹配已有 pending request
 - Event 不得被当作 RequestResponse 处理
 - Identified 前收到 Request 必须返回 `status.ok=false, status.code=SESSION_NOT_READY`，不得处理业务请求
+- Identify 前必须完成 `axtpVersion` / `rpcVersion` 兼容校验；不兼容时不得进入 APP_READY
+- Hello 要求认证时，Identify 必须携带合法认证响应；认证失败不得分配 `sid`
+- APP_READY 后收到格式非法、空字符串、非 8 位 hex 或 `0` 的 RPC `sid` 必须拒绝
 - 所有整数解析必须显式处理字节序，不允许直接 reinterpret_cast 网络字节流为 C++ struct
 
 ---
@@ -990,6 +1129,8 @@ RPC Parser 必须满足：
 rpcEncoding = JSON；Standard Framed 优先同时实现 JSON_BINARY
 op = Hello(0) / Identify(2) / Identified(3) / Event(6) / Request(7) / RequestResponse(8)
 sid+op+d Envelope（JSON，sid 为 8 位 hex string）
+axtpVersion SemVer 校验（Hello d.axtpVersion）
+AXTP-AUTH-NONE 默认无认证路径
 JSON_BINARY Header（15B，sid 为 uint32）
 JSON_BINARY TLV8 body encode/decode
 uint16 methodId / eventId
@@ -1029,6 +1170,25 @@ MessagePack / CBOR
 
 ## 27. 版本与兼容策略
 
+AXTP RPC Session 同时涉及多个版本层级，必须分开处理：
+
+| 版本层级 | 载体 | 何时变化 | 兼容处理 |
+|---|---|---|---|
+| AXTP Spec 版本 | Hello `d.axtpVersion` | AXTP 规范发布版本变化 | 用于进入 Identify 前的 SemVer 兼容校验。 |
+| RPC envelope 版本 | Hello/Identify `rpcVersion`、Identified `negotiatedRpcVersion` | op/d 语义、RPC envelope 或 session 状态机发生不兼容变化 | 当前为 `1`；不兼容时拒绝 Identify。 |
+| Frame Header 版本 | Standard Frame Header `Version` | Frame Header 字段布局或解析规则变化 | 由 Frame parser / CONTROL 处理，不等同于 `axtpVersion`。 |
+| Registry / generated 版本 | registry YAML、generated protocol metadata | method/event/error/schema/capability 事实变化 | 不改变 RPC envelope；通过 generator、capability 和业务错误处理。 |
+| Runtime / firmware / app 版本 | 产品或实现自有字段 | 实现发布变化 | 不得写入 `axtpVersion`。 |
+
+Hello 中的 `axtpVersion` 必须体现 AXTP 规范版本号。对于正式 release tag `spec/vMAJOR.MINOR.PATCH`，线上值使用 `MAJOR.MINOR.PATCH`；对于 Core Freeze Candidate 或预发布规范，可以使用 `MAJOR.MINOR.PATCH-prerelease`，例如 `1.0.0-rc1`。
+
+`axtpVersion` 的 SemVer 规则：
+
+- `MAJOR` 表示不兼容边界；不同 major 默认不兼容。
+- `MINOR` 表示向后兼容能力新增；同 major 下旧客户端可以继续使用已知能力。
+- `PATCH` 表示非破坏性修正；不应改变 wire compatibility。
+- prerelease 默认按精确版本处理，除非 runtime 明确声明兼容范围。
+
 新增 methodId/eventId 不需要修改 RPC 协议版本，只需更新 Registry 和 Generator 输出。
 
 新增可选 body 字段不需要修改方法版本，旧设备可忽略未知 TLV 字段。
@@ -1036,6 +1196,8 @@ MessagePack / CBOR
 修改已有字段语义属于破坏性变更，必须新增 method version 或新增 methodId。
 
 废弃字段不得立即复用 fieldId，应标记 `deprecated: true`。
+
+新增认证方案不得复用 `AXTP-AUTH-OBS-SHA256` 的字段语义。若未来增加 token、证书、签名或加密协商，应通过新的 `authentication.scheme` 和明确的安全文档扩展，旧客户端看到未知 scheme 必须拒绝 Identify 或按无能力处理。
 
 ---
 
