@@ -134,7 +134,7 @@ sequenceDiagram
 | CONTROL | 只有 Standard Framed 有 OPEN / ACCEPT；ACCEPT 后才能发 RPC 和 STREAM。 |
 | 建流 | 用业务 RPC 创建 Stream Context，P0 优先是 `video.openStream` 和 `audio.startRecording(deliveryMode=stream)`。 |
 | `streamId` | 建流响应必须返回非 0 `streamId`，后续 STREAM data 只靠它投递。 |
-| STREAM Header | 固定 16B：`streamId:uint32`、`seqId:uint32`、`cursor:uint64`，全部 little-endian。 |
+| STREAM Header | 固定 16B：`streamId:uint32`、`seqId:uint32`、`cursor:uint64`，全部 Big-Endian / network byte order。 |
 | 音视频可靠性 | Phase 1 默认 `ackMode=none`，用丢包统计、关键帧请求、背压和解码容错处理。 |
 | 关流 | 正常结束走业务 RPC；链路断开或心跳超时，runtime 立即释放所有 Stream Context。 |
 
@@ -427,10 +427,10 @@ Header 字段：
 | 1 | Magic[1] | `0x58` | ASCII `X` |
 | 2 | Version | `0x01` | Standard Header v1 |
 | 3 | PayloadType | `0x02` | RPC |
-| 4-5 | PayloadLength | `0x0051` little-endian | Payload 字节数，示例为 1 字节 rpcEncoding + 80 字节 JSON |
+| 4-5 | PayloadLength | `0x0051` Big-Endian | Payload 字节数，示例为 1 字节 rpcEncoding + 80 字节 JSON |
 | 6 | SourceId | `0x01` | 发送方逻辑节点 |
 | 7 | DestinationId | `0x02` | 接收方逻辑节点 |
-| 8-9 | MessageId | `0x0001` little-endian | Frame message id |
+| 8-9 | MessageId | `0x0001` Big-Endian | Frame message id |
 | 10 | FrameIndex | `0x00` | 未分片时为 0 |
 | 11 | FrameCount | `0x01` | 未分片时为 1 |
 
@@ -444,23 +444,23 @@ Header 字段：
 
 ```text
 Header:
-41 58 01 02 51 00 01 02 01 00 00 01
+41 58 01 02 00 51 01 02 00 01 00 01
 
 Payload:
 01
 7b 22 73 69 64 22 3a 22 31 32 33 34 35 36 37 38 22 2c 22 6f 70 22 3a 37 2c 22 64 22 3a 7b 22 69 64 22 3a 31 2c 22 6d 65 74 68 6f 64 22 3a 22 61 75 64 69 6f 2e 67 65 74 41 6c 67 6f 72 69 74 68 6d 43 61 70 61 62 69 6c 69 74 69 65 73 22 7d 7d
 
-CRC16-CCITT-FALSE little-endian:
-f5 55
+CRC16-CCITT-FALSE Big-Endian / network byte order:
+37 d6
 
 Full packet:
-41 58 01 02 51 00 01 02 01 00 00 01 01 7b 22 73 69 64 22 3a 22 31 32 33 34 35 36 37 38 22 2c 22 6f 70 22 3a 37 2c 22 64 22 3a 7b 22 69 64 22 3a 31 2c 22 6d 65 74 68 6f 64 22 3a 22 61 75 64 69 6f 2e 67 65 74 41 6c 67 6f 72 69 74 68 6d 43 61 70 61 62 69 6c 69 74 69 65 73 22 7d 7d f5 55
+41 58 01 02 00 51 01 02 00 01 00 01 01 7b 22 73 69 64 22 3a 22 31 32 33 34 35 36 37 38 22 2c 22 6f 70 22 3a 37 2c 22 64 22 3a 7b 22 69 64 22 3a 31 2c 22 6d 65 74 68 6f 64 22 3a 22 61 75 64 69 6f 2e 67 65 74 41 6c 67 6f 72 69 74 68 6d 43 61 70 61 62 69 6c 69 74 69 65 73 22 7d 7d 37 d6
 ```
 
 说明：
 
 - CRC 覆盖 Header + Payload，不覆盖 CRC 自身。
-- 多字节整数使用 little-endian。
+- 多字节整数使用 Big-Endian / network byte order。
 - RPC Payload 第一个字节是 `rpcEncoding=JSON(0x01)`；后面才是 UTF-8 JSON envelope。
 - Standard Framed 传输在 RPC 前还需要 CONTROL OPEN / ACCEPT；上面的 packet 只展示 RPC frame 内容。
 - 如果要传音视频媒体数据，Phase 1 使用 Standard Framed STREAM 数据面；固件、文件、日志等 profile 后续增量采纳。
@@ -477,21 +477,21 @@ streamId(4B) + seqId(4B) + cursor(8B) + media data(N)
 
 ```text
 Header:
-41 58 01 03 17 00 02 01 06 00 00 01
+41 58 01 03 00 17 02 01 00 06 00 01
 
 STREAM Payload:
-65 00 00 00              # streamId=101
-01 00 00 00              # seqId=1
-40 42 0f 00 00 00 00 00  # cursor=1000000us
+00 00 00 65              # streamId=101
+00 00 00 01              # seqId=1
+00 00 00 00 00 0f 42 40  # cursor=1000000us
 00 00 00 01 65 88 84     # H.264 sample data
 
-CRC16 little-endian:
-bb f5
+CRC16 Big-Endian / network byte order:
+b5 07
 
 Full packet:
-41 58 01 03 17 00 02 01 06 00 00 01
-65 00 00 00 01 00 00 00 40 42 0f 00 00 00 00 00
-00 00 00 01 65 88 84 bb f5
+41 58 01 03 00 17 02 01 00 06 00 01
+00 00 00 65 00 00 00 01 00 00 00 00 00 0f 42 40
+00 00 00 01 65 88 84 b5 07
 ```
 
 音频示例：`48000Hz / 2ch / s16le / 20ms` 的 PCM chunk 是 3840 bytes，所以一个音频 STREAM frame 的 payload 形状是：

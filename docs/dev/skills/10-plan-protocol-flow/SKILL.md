@@ -83,13 +83,23 @@ For each step, decide whether it is:
 
 Use these states:
 
-| State | Meaning | Next action |
+| Coverage | Meaning | Next action |
 |---|---|---|
-| Adopted/generated | YAML/generated already define the method/event/schema | Reference `docs/generated/protocol.md` and use exact names |
-| Partially adopted | Some facts exist, but the scenario needs a semantic extension or missing field | Route to `amend-adopted-protocol` |
-| Drafted only | `docs/protocol/**` has a candidate but YAML/generated do not | Route to `draft-business-protocol` after review |
-| Missing | No suitable draft or adopted fact exists | Propose candidate `domain.feature` and route to `draft-business-protocol` |
-| Non-protocol | UI-only, local validation, business policy, or implementation detail | Keep out of protocol work |
+| generated | `docs/generated/**` or protocol IR already define the method/event/schema/capability | Reference generated docs and use exact names |
+| adopted | Registry YAML already defines the fact, but generated output is not the direct evidence in this flow | Reference registry path and verify generated status |
+| draft | `docs/protocol/**` has a candidate but YAML/generated do not | Route to `draft-business-protocol` after review |
+| missing | No suitable draft or adopted/generated fact exists | Propose candidate `domain.feature` and route to `draft-business-protocol` |
+| local-only | App/UI/runtime local behavior with no AXTP call | Keep as implementation/UI behavior |
+| non-protocol | Product policy, manual operation, business rule, or documentation-only concern | Keep out of protocol work |
+
+At the story level, summarize overall protocol coverage as:
+
+| Summary | Meaning |
+|---|---|
+| complete | All protocol-relevant steps are generated/adopted and no gaps remain |
+| partial | Some steps are covered, but at least one draft/missing/amendment gap remains |
+| missing | The flow is protocol-relevant but has no adequate AXTP coverage |
+| non-protocol | The flow does not require AXTP protocol work |
 
 For the algorithm parameter example, prefer the adopted `audio.algorithm` path when it covers the UI:
 
@@ -99,7 +109,7 @@ For the algorithm parameter example, prefer the adopted `audio.algorithm` path w
 - `audio.resetAlgorithmConfig`
 - `audio.algorithmConfigChanged`
 
-If the UI needs fields or algorithms not present in generated/YAML, classify that as `Partially adopted` and route to `amend-adopted-protocol`.
+If the UI needs fields or algorithms not present in generated/YAML, mark the affected step as `generated` or `adopted` evidence with an explicit amendment gap, and route that gap to `amend-adopted-protocol`.
 
 ### 5. Write The Flow Plan
 
@@ -112,19 +122,38 @@ docs/flows/<scenario-slug>.md
 Use `references/flow-plan-template.md` as the structure. A flow plan must include:
 
 - title and status
+- `0. 速读结论` with flow goal, overall protocol coverage, involved `domain.feature`, adopted/generated facts, gaps, legacy/STREAM flags, and next action
 - source inputs and UI/prototype observations
+- device/system state observations when state, lifecycle, readiness, reset, pairing, connection, or fallback behavior matters
 - actors and system boundaries
 - business story summary
 - assumptions and non-goals
 - protocol coverage summary
 - end-to-end sequence diagram
-- step-by-step interaction table
+- step-by-step interaction table with actor, action, capability/precondition, protocol call/event, payload fields, result/state change, coverage, and error/fallback
+- state changes and events table before protocol details
 - protocol call/event details
 - gaps and routed follow-up skill
-- test fixtures and acceptance criteria
-- review questions
+- test/conformance notes using Given/When/Then and protocol evidence
+- open questions as a table with impact, owner, status, and next action
 
-Keep flow docs scenario-oriented. Do not duplicate full protocol schemas; link to `docs/generated/protocol.md` for adopted facts and `docs/protocol/**` for drafts.
+Keep flow docs scenario-oriented. Do not duplicate full protocol schemas; link to `docs/generated/protocol.md` for generated facts, registry YAML for adopted facts, and `docs/protocol/**` for drafts.
+
+Flow docs are a business interaction and coverage-routing artifact. They should:
+
+- describe business scenarios and interaction steps
+- judge each step's protocol coverage
+- identify protocol gaps
+- route gaps to candidate `domain.feature`
+
+Flow docs must not:
+
+- define complete method/event/schema/capability contracts
+- assign methodId/eventId/errorCode/fieldId values
+- act as runtime implementation contracts
+- replace `docs/protocol/<domain>/<feature>.md`
+
+Complete method/event/schema/capability definitions must be written in `docs/protocol/<domain>/<feature>.md`.
 
 ### 6. Route Follow-Up Work
 

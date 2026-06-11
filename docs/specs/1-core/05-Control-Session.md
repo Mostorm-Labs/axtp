@@ -56,8 +56,8 @@ Standard Frame Header(payloadType=CONTROL)
 | 字段 | 偏移 | 长度 | 类型 | 规则 |
 |---|---:|---:|---|---|
 | `opcode` | 0 | 1B | uint8 | CONTROL 操作 |
-| `controlId` | 1 | 2B | uint16 | Request/response 关联 id，Little-Endian |
-| `statusCode` | 3 | 2B | uint16 | `0x0000 = SUCCESS`；非零值使用 ErrorCode Registry |
+| `controlId` | 1 | 2B | uint16 | Request/response 关联 id，Big-Endian / network byte order |
+| `statusCode` | 3 | 2B | uint16 | `0x0000 = SUCCESS`；非零值使用 ErrorCode Registry；Big-Endian / network byte order |
 | `body` | 5 | N | bytes | TLV body；长度为 `Frame.payloadLength - 5` |
 
 如果 body 为空，`Frame.payloadLength` MUST 等于 5。

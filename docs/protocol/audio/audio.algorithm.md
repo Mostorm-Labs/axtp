@@ -4,376 +4,554 @@ contract: true
 generated: true
 domain: audio
 feature: audio.algorithm
-registry: registry/domains/audio/domain.yaml
-lastReviewed: 2026-06-04
+registry: ../../../registry/domains/audio/domain.yaml
+lastReviewed: 2026-06-10
 ---
 
-# AXTP 音频算法配置协议方案
+# audio.algorithm
 
-版本：v0.3
+## 0. 速读结论
 
-归属域：`audio`
+| 项目 | 内容 |
+|---|---|
+| 这个能力做什么 | 管理运行时音频算法的能力发现、配置查询、配置更新、默认值恢复和配置变化通知。 |
+| 当前状态 | generated |
+| 是否可直接实现 | 是，但实现合同以 registry / generated 为准；本文是可读说明和修订输入。 |
+| 主要交互 | RPC + EVENT |
+| 是否使用 STREAM | 否 |
+| Registry readiness | ready |
+| Conformance | needed |
+| 主要未决问题 | legacy 默认值读写、算法授权、AI 线程控制和 DOA/beam 实时结果归属仍需确认。 |
 
-Capability ID：`audio.algorithm`
+## 1. 功能说明
 
-适用范围：运行时音频算法配置、能力查询、配置重置、配置变化通知，以及 legacy AXDP 音频算法命令到新 `domain.feature` 协议的语义映射。
+`audio.algorithm` 用于管理设备运行时音频算法的能力发现、配置查询、配置更新、默认值恢复和配置变化通知。
 
----
+本文是已采纳 feature 的可读说明。runtime 实现合同以 [registry/domains/audio/domain.yaml](../../../registry/domains/audio/domain.yaml)、[method registry](../../generated/method_registry.generated.md)、[event registry](../../generated/event_registry.generated.md) 和 [capability registry](../../generated/capability_registry.generated.md) 为准；本文不重新分配 methodId、eventId、capabilityId 或 fieldId。
 
-## 协议审核标记（人工复核）
+## 2. 能力边界
 
-| 标记 | 条目 | 审核结论 | 后续动作 |
+| 类型 | 内容 |
+|---|---|
+| 包含 | 噪声抑制、回声消除、自动增益控制、波束成形、去混响、语音活动检测、DOA 配置、啸叫抑制等算法配置。 |
+| 包含 | 算法对象的 `enabled`、level、时间、角度、增益、报告周期等运行时参数。 |
+| 包含 | 部分更新、原子更新、恢复默认值、配置变化事件，以及设备声明的字段范围、默认值、单位和是否需要重启音频链路。 |
+| 不包含 | EQ preset、EQ bands、tone/filter 配置，归 `audio.eq`。 |
+| 不包含 | 用户可感知的 master/output volume、mute，归 `audio.volume`；mixer bus/channel gain 归后续 `audio.mixer`。 |
+| 不包含 | 输入、输出、source、routing、playback、recording、STREAM 媒体数据。 |
+| 不包含 | 算法授权、AI 算法线程暂停/恢复、DOA/beam 实时结果上报、产测诊断命令；这些只能作为 legacy adapter 或后续 feature 评审。 |
+| 数据面 | 不定义 STREAM payload；所有操作都是 RPC method/event。 |
+
+## 3. 方法 Methods
+
+已生成 method 以 registry/generated 为准。本 feature 采用复杂 schema 模式：method 下只写 schema 名称、字段定义位置和交互语义，完整字段表集中在第 6 章维护。
+
+### 3.0 方法速览
+
+| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
+|---|---|---|---|---|---|---|
+| `audio.getAlgorithmCapabilities` | query | 查询支持的算法对象、字段描述、默认值、范围、单位和更新策略。 | `AudioGetAlgorithmCapabilitiesRequest` | `AudioGetAlgorithmCapabilitiesResponse` | 否 | generated |
+| `audio.getAlgorithmConfig` | query | 查询当前生效的算法配置。 | `AudioGetAlgorithmConfigRequest` | `AudioAlgorithmConfig` | 否 | generated |
+| `audio.setAlgorithmConfig` | command | 部分更新一个或多个算法对象。 | `AudioSetAlgorithmConfigRequest` | `AudioSetAlgorithmConfigResponse` | 是，配置实际变化后触发 `audio.algorithmConfigChanged`。 | generated |
+| `audio.resetAlgorithmConfig` | action | 将全部、部分算法对象或部分字段恢复到声明的默认值。 | `AudioResetAlgorithmConfigRequest` | `AudioSetAlgorithmConfigResponse` | 是，配置实际变化后触发 `audio.algorithmConfigChanged`。 | generated |
+
+### 3.1 `audio.getAlgorithmCapabilities`
+
+**用途**：查询设备支持哪些算法对象，以及每个字段的类型、范围、默认值、单位和是否需要重启音频链路。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | query |
+| Params Schema | `AudioGetAlgorithmCapabilitiesRequest` |
+| Result Schema | `AudioGetAlgorithmCapabilitiesResponse` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回能力快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INTERNAL_ERROR` |
+
+#### 3.1.1 请求参数 Params：`AudioGetAlgorithmCapabilitiesRequest`
+
+| 字段定义 | 内容 |
+|---|---|
+| 字段表 | 见 6.2「查询类请求」。 |
+| 备注 | `items` 省略表示查询全部支持的算法对象。 |
+
+#### 3.1.2 返回结果 Result：`AudioGetAlgorithmCapabilitiesResponse`
+
+| 字段定义 | 内容 |
+|---|---|
+| 顶层字段表 | 见 6.2「能力查询结果」。 |
+| 嵌套 capability 字段 | 见 6.3「Capability Schemas」。 |
+
+#### 3.1.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
-| `[REVIEW-OK]` | `audio.algorithm` capability | `audio.algorithm` 是稳定能力块；`algorithmConfig` 只作为 method/event/schema noun，不作为 capability ID。 | 可作为 `registry/domains/audio/domain.yaml` 草案输入。 |
-| `[REVIEW-OK]` | 方法与事件 | `audio.getAlgorithmCapabilities` / `audio.getAlgorithmConfig` / `audio.setAlgorithmConfig` / `audio.resetAlgorithmConfig` / `audio.algorithmConfigChanged` 符合配置型 feature 模板。 | 进入 registry 时按 specs/registry 分配或复用 methodId/eventId。 |
-| `[REVIEW-OK]` | 配置结构 | 本文采用“算法对象按字段展开”的模型，不使用 `algorithm + config` 元模型。 | schema 可按本文对象结构落入 domain YAML。 |
-| `[REVIEW-OK]` | 错误与原子更新 | 已明确参数校验、原子更新、pending restart、错误码映射和事件触发规则。 | registry 草案应同步声明错误码引用和 `updatePolicy`。 |
-| `[REVIEW-ASK]` | AXDP `CommonGetAlgAuthContent` / `CommonSetAlgAuthContent` | 授权内容更像 license、auth、vendor 或产测资料，不应默认归入 `audio.algorithm`。 | 人工确认真实语义；若是算法授权写入，应迁到 `auth.license`、`vendor.license` 或 `diagnostic.manufacturing`。 |
-| `[REVIEW-ASK]` | AXDP `CommonGetDefault*Level` / `CommonSetDefault*Level` | 旧命令名表示“默认值读写”，不完全等同于 `resetAlgorithmConfig`。 | 确认旧协议是读取出厂默认、写入默认 profile，还是执行 reset；确认后再写 `legacyRefs`。 |
-| `[REVIEW-ASK]` | AXDP `CommonPauseAiAlgThrd` / `CommonContinueAiAlgThrd` / `CommonAudioBeamReport` | 这些命令可能是算法运行态控制或 beam/DOA 结果上报，不一定是普通配置写入。 | 人工确认后决定归 `audio.algorithm` 下的状态/动作扩展、`audio.beam` 或 diagnostic。 |
+| 无 | query method 不应因查询触发配置变化事件。 | none | 无需处理。 |
 
----
+#### 3.1.4 错误
 
-## 采纳状态
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持 `audio.algorithm` 或不支持指定 selector。 | 返回 unsupported feature 或 selector。 |
+| `INVALID_ARGUMENT` | `items` 中包含非法算法对象名。 | 返回具体非法 item。 |
+| `INTERNAL_ERROR` | 读取能力描述失败。 | 返回内部错误摘要。 |
 
-状态：`adopted`
+### 3.2 `audio.getAlgorithmConfig`
 
-采纳日期：2026-06-03
+**用途**：查询当前生效的算法配置。
 
-采纳范围：仅采纳上表 `[REVIEW-OK]` 覆盖的 `audio.algorithm` capability、4 个配置型 method、1 个配置变化 event、算法对象展开配置模型、错误引用和原子更新规则。
+| 项 | 内容 |
+|---|---|
+| 调用类型 | query |
+| Params Schema | `AudioGetAlgorithmConfigRequest` |
+| Result Schema | `AudioAlgorithmConfig` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前配置快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INTERNAL_ERROR` |
 
-事实源：`registry/domains/audio/domain.yaml`
+#### 3.2.1 请求参数 Params：`AudioGetAlgorithmConfigRequest`
 
-本次未采纳：所有 `[REVIEW-ASK]` legacy/授权/默认值读写/算法线程/beam report 条目仍为人工待确认问题，不进入 `legacyRefs` 或 YAML。未来新增未采纳事实应先更新本文草案并完成评审，再执行 `adopt-protocol-draft`；已采纳事实的语义修正、字段删除或废弃应执行 `amend-adopted-protocol`。
+| 字段定义 | 内容 |
+|---|---|
+| 字段表 | 见 6.2「查询类请求」。 |
+| 备注 | `items` 省略表示查询全部支持的算法对象；响应可只包含被选择或被设备支持的算法对象。 |
 
----
+#### 3.2.2 返回结果 Result：`AudioAlgorithmConfig`
 
-## 修订记录
+| 字段定义 | 内容 |
+|---|---|
+| 总结构 | 见 6.4「Config 总结构：`AudioAlgorithmConfig`」。 |
+| 各算法对象字段 | 见 6.5「各算法对象配置字段」。 |
 
-| 日期 | 修订 | 理由 | 兼容策略 | YAML 目标 |
+#### 3.2.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发配置变化事件。 | none | 无需处理。 |
+
+#### 3.2.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持 `audio.algorithm` 或不支持指定算法对象。 | 返回 unsupported feature 或 item。 |
+| `INVALID_ARGUMENT` | selector 结构或对象名非法。 | 返回具体字段路径。 |
+| `INTERNAL_ERROR` | 读取当前配置失败。 | 返回内部错误摘要。 |
+
+### 3.3 `audio.setAlgorithmConfig`
+
+**用途**：部分更新一个或多个算法对象。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | command |
+| Params Schema | `AudioSetAlgorithmConfigRequest` |
+| Result Schema | `AudioSetAlgorithmConfigResponse` |
+| 是否触发事件 | 是，配置实际变化后触发 `audio.algorithmConfigChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复设置相同配置应成功，可不重复触发事件。可能返回 `pending_restart` 表示等待音频链路重启。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `INTERNAL_ERROR` |
+
+#### 3.3.1 请求参数 Params：`AudioSetAlgorithmConfigRequest`
+
+| 字段定义 | 内容 |
+|---|---|
+| 字段表 | 见 6.2「更新请求：`AudioSetAlgorithmConfigRequest`」。 |
+| 配置对象 | 见 6.4 和 6.5。 |
+| 备注 | 请求必须符合 `updatePolicy`；如果校验失败，不应部分应用失败请求。 |
+
+#### 3.3.2 返回结果 Result：`AudioSetAlgorithmConfigResponse`
+
+| 字段定义 | 内容 |
+|---|---|
+| 字段表 | 见 6.2「更新 / reset 结果：`AudioSetAlgorithmConfigResponse`」。 |
+| 配置对象 | `config` 字段使用 `AudioAlgorithmConfig`，见 6.4 和 6.5。 |
+
+#### 3.3.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `audio.algorithmConfigChanged` | 配置实际发生变化。 | `AudioAlgorithmConfigChangedEvent` | 可用变化片段更新 UI；如需完整算法配置，调用 `audio.getAlgorithmConfig` 校准。 |
+
+#### 3.3.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持某个算法对象或字段。 | 返回 unsupported object/field。 |
+| `INVALID_ARGUMENT` | 请求结构、对象名、字段名或 enum 值非法。 | 返回具体字段路径。 |
+| `OUT_OF_RANGE` | 数字字段超出 capability 声明范围或 step。 | 返回合法范围。 |
+| `INVALID_STATE` | 当前音频模式禁止修改算法配置。 | 返回当前状态摘要。 |
+| `BUSY` | DSP 或音频 pipeline 正忙。 | 建议客户端稍后重试。 |
+| `PERMISSION_DENIED` | 调用方没有权限。 | 返回权限错误。 |
+| `INTERNAL_ERROR` | 应用配置失败。 | 返回内部错误摘要。 |
+
+### 3.4 `audio.resetAlgorithmConfig`
+
+**用途**：将全部、部分算法对象或部分字段恢复到 capability 声明的默认值。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `AudioResetAlgorithmConfigRequest` |
+| Result Schema | `AudioSetAlgorithmConfigResponse` |
+| 是否触发事件 | 是，配置实际变化后触发 `audio.algorithmConfigChanged`。 |
+| 幂等性 / 异步性 | 幂等；重复 reset 已经是默认值的字段应成功，可不重复触发事件。可能返回 `pending_restart`。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `INTERNAL_ERROR` |
+
+#### 3.4.1 请求参数 Params：`AudioResetAlgorithmConfigRequest`
+
+| 字段定义 | 内容 |
+|---|---|
+| 字段表 | 见 6.2「恢复默认请求：`AudioResetAlgorithmConfigRequest`」。 |
+| selector 写法 | 支持 `"all"`、算法对象名数组、或 `{ algorithm: [field] }`，详见 6.2 的 `items` 写法表。 |
+| 备注 | reset 是恢复当前运行时配置，不表示写入新的设备默认 profile。 |
+
+#### 3.4.2 返回结果 Result：`AudioSetAlgorithmConfigResponse`
+
+| 字段定义 | 内容 |
+|---|---|
+| 字段表 | 见 6.2「更新 / reset 结果：`AudioSetAlgorithmConfigResponse`」。 |
+| 配置对象 | `config` 字段使用 `AudioAlgorithmConfig`，见 6.4 和 6.5。 |
+
+#### 3.4.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `audio.algorithmConfigChanged` | reset 后配置实际发生变化。 | `AudioAlgorithmConfigChangedEvent` | 可用变化片段更新 UI；如需完整算法配置，调用 `audio.getAlgorithmConfig` 校准。 |
+
+#### 3.4.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持 reset 指定算法对象或字段。 | 返回 unsupported object/field。 |
+| `INVALID_ARGUMENT` | `items` 写法非法、对象名非法或字段名非法。 | 返回具体字段路径。 |
+| `OUT_OF_RANGE` | 默认值或恢复结果无法落在当前 capability 范围内。 | 返回设备内部范围冲突。 |
+| `INVALID_STATE` | 当前音频模式禁止 reset。 | 返回当前状态摘要。 |
+| `BUSY` | DSP 或音频 pipeline 正忙。 | 建议客户端稍后重试。 |
+| `PERMISSION_DENIED` | 调用方没有权限。 | 返回权限错误。 |
+| `INTERNAL_ERROR` | 恢复默认值失败。 | 返回内部错误摘要。 |
+
+## 4. 事件 Events
+
+### 4.0 事件速览
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|
-| 2026-06-04 | 删除各算法配置对象和能力描述对象中的 `mode` 字段；补完整 `audio.getAlgorithmCapabilities` 全量返回示例。 | 当前业务只需要 `level` 及各算法明确数值/布尔参数，暂不需要按模式枚举配置算法。 | 已采纳 draft 事实修订；删除 draft-only 字段，不复用被删除 fieldId，保留 method/event/capability ID、`bitOffset` 和其他字段 ID。 | `registry/domains/audio/domain.yaml` |
+| `audio.algorithmConfigChanged` | `set`/`reset` 成功改变配置；profile change；restore config；factory reset；device policy 改变配置。 | `AudioAlgorithmConfigChangedEvent` | 可用变化片段更新 UI；如需完整算法配置，调用 `audio.getAlgorithmConfig` 校准。失败请求不得触发该事件。 | generated |
 
----
+### 4.1 `audio.algorithmConfigChanged`
 
-## 1. 文档定位
+**触发条件**：
 
-`audio.algorithm` 定义设备运行时音频算法的配置面。它回答：
+- `audio.setAlgorithmConfig` 成功改变一个或多个算法字段。
+- `audio.resetAlgorithmConfig` 成功恢复一个或多个算法字段。
+- profile change、restore config、factory reset 或 device policy 改变算法配置。
 
-1. 设备支持哪些音频算法。
-2. 每个算法支持哪些参数、类型、范围、默认值和枚举值。
-3. 当前生效配置是什么。
-4. 如何以部分更新方式修改配置。
-5. 如何恢复默认配置。
-6. 配置变化时如何通知客户端。
+#### Payload：`AudioAlgorithmConfigChangedEvent`
 
-本方案是业务协议方案和人工评审输入。采纳后，稳定事实必须写入 `registry/domains/audio/domain.yaml` 或对应 registry YAML，并由 Generator 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。本文不直接分配 numeric methodId、eventId 或 fieldId；数值以 registry/generated 为准。
+本 feature 采用复杂 schema 模式，完整 Payload 字段表集中在 6.2「事件 Payload：`AudioAlgorithmConfigChangedEvent`」。
 
----
+| 字段定义 | 内容 |
+|---|---|
+| Payload Schema | `AudioAlgorithmConfigChangedEvent` |
+| 字段表 | 见 6.2「事件 Payload：`AudioAlgorithmConfigChangedEvent`」。 |
+| 配置对象 | `config` 字段使用 `AudioAlgorithmConfig`，见 6.4 和 6.5。 |
 
-## 2. 域边界
+#### 客户端处理建议
 
-`audio.algorithm` 负责运行时音频算法参数配置：
+| 场景 | 建议 |
+|---|---|
+| payload 是完整配置 | 可直接更新 UI 或本地缓存。 |
+| payload 是变化片段 | 按 `changedFields` 局部更新；如需完整配置，调用 `audio.getAlgorithmConfig` 校准。 |
+| event 丢失或重连 | 重连后主动调用 `audio.getAlgorithmConfig`。 |
+| 请求失败 | 失败请求不得触发 `audio.algorithmConfigChanged`。 |
+
+## 5. Capability
+
+Capability name: `audio.algorithm`。
+
+| 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 说明 |
+|---|---|---:|---|---|
+| `configSchemaVersion` | string | no | max length 16 | 设备暴露的算法配置 schema 版本标签。 |
+| `updatePolicy` | `AudioAlgorithmUpdatePolicy` | yes | see schema | set/reset 的更新策略。 |
+| `supportedAlgorithms` | bytes；JSON 视图为 `string[]` | no | max length 64 | 支持的算法对象名紧凑列表。 |
+
+### 支持的算法对象
+
+| 对象 | 说明 | 常用字段 |
+|---|---|---|
+| `noiseSuppression` | 背景噪声抑制。 | `enabled`, `level` |
+| `echoCancellation` | 声学回声消除。 | `enabled`, `tailLengthMs`, `nlpLevel` |
+| `autoGainControl` | DSP 链路内自动增益控制。 | `enabled`, `targetLevelDb`, `maxGainDb`, `attackTimeMs`, `releaseTimeMs` |
+| `beamforming` | 波束方向和波束宽度配置。 | `enabled`, `lookDirectionDeg`, `beamWidthDeg` |
+| `dereverberation` | 混响抑制。 | `enabled`, `level` |
+| `voiceActivityDetection` | 语音活动检测。 | `enabled`, `sensitivity`, `hangoverMs` |
+| `directionOfArrival` | DOA 配置，不包含实时结果事件。 | `enabled`, `reportingEnabled`, `reportIntervalMs`, `smoothingMs` |
+| `howlingSuppression` | 啸叫反馈抑制。 | `enabled`, `level` |
+
+## 6. 字段 / Schemas
+
+这一节按“读者实际怎么理解协议”来排版：先看整体层级，再看请求/响应，再看 capability，最后看每个算法对象的配置字段。本 feature 采用复杂 schema 模式：第 3/4 章只引用 schema，本章集中维护完整字段表。
+
+### 6.1 Schema 层级速览
+
+`audio.algorithm` 有两类核心数据：
+
+| 层级 | 用在哪里 | 作用 |
+|---|---|---|
+| capability descriptor | `audio.getAlgorithmCapabilities` result | 告诉客户端设备支持哪些算法、每个字段的范围、默认值、单位和重启要求。 |
+| runtime config | `audio.getAlgorithmConfig` result、`audio.setAlgorithmConfig` params、event payload | 表示当前生效配置，或要修改/已变化的配置。 |
+
+结构关系如下：
 
 ```text
-noiseSuppression
-echoCancellation
-autoGainControl
-beamforming
-dereverberation
-voiceActivityDetection
-directionOfArrival
-howlingSuppression
+AudioGetAlgorithmCapabilitiesResponse
+  capability: "audio.algorithm"
+  updatePolicy: AudioAlgorithmUpdatePolicy
+  algorithms: AudioAlgorithmCapabilities
+    noiseSuppression: AudioNoiseSuppressionCapabilities
+    echoCancellation: AudioEchoCancellationCapabilities
+    autoGainControl: AudioAutoGainControlCapabilities
+    ...
+
+AudioAlgorithmConfig
+  noiseSuppression: AudioNoiseSuppressionConfig
+  echoCancellation: AudioEchoCancellationConfig
+  autoGainControl: AudioAutoGainControlConfig
+  beamforming: AudioBeamformingConfig
+  dereverberation: AudioDereverberationConfig
+  voiceActivityDetection: AudioVoiceActivityDetectionConfig
+  directionOfArrival: AudioDirectionOfArrivalConfig
+  howlingSuppression: AudioHowlingSuppressionConfig
 ```
 
-不属于 `audio.algorithm` 的内容：
+阅读规则：
 
-| 内容 | 归属建议 | 说明 |
+- `Capabilities` 结尾的 schema 描述“设备能做什么”。
+- `Config` 结尾的 schema 描述“现在是什么配置”或“要改成什么配置”。
+- `AudioAlgorithmPropertyCapability` 是字段级说明，例如 `level` 的 min/max/step/default。
+- JSON 视图中，registry 里标为 `bytes` 但描述为 JSON selector/list 的字段，按数组、字符串或对象展示。
+
+### 6.2 请求与响应 Schemas
+
+#### 查询类请求
+
+`AudioGetAlgorithmCapabilitiesRequest` 和 `AudioGetAlgorithmConfigRequest` 都使用同一个 selector 语义。
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `items` | bytes；JSON 视图为 `string[]` | no | `AudioAlgorithmConfig` 中的算法对象名 | omitted | 选择要查询的算法对象；省略表示查询全部支持对象。 |
+
+#### 能力查询结果：`AudioGetAlgorithmCapabilitiesResponse`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `capability` | string | yes | fixed `audio.algorithm` | none | capability 名称。 |
+| `updatePolicy` | `AudioAlgorithmUpdatePolicy` | yes | see 6.3 | none | set/reset 的部分更新、多算法更新和原子性策略。 |
+| `algorithms` | `AudioAlgorithmCapabilities` | yes | see 6.3 | none | 按算法对象名组织的 capability descriptor。 |
+
+#### 更新请求：`AudioSetAlgorithmConfigRequest`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `config` | `AudioAlgorithmConfig` | yes | see 6.5 | none | 要更新的算法对象和字段；省略的对象或字段保持不变。 |
+
+#### 恢复默认请求：`AudioResetAlgorithmConfigRequest`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `items` | bytes；JSON 视图为 string / array / object | yes | `"all"`、算法对象名数组、或 `{ algorithm: [field] }` | none | 指定恢复全部、部分算法对象或部分字段。 |
+
+`items` 的三种写法：
+
+| 写法 | 示例 | 含义 |
 |---|---|---|
-| EQ、均衡器、preset/band 配置 | `audio.eq` | EQ 是独立 feature。 |
-| 音量、静音、增益状态 | `audio.volume` | AGC 算法配置不等同于用户音量。 |
-| 音频路由、输入源、输出源 | `audio.routing` / `audio.input` / `audio.output` | 路由不放入算法配置。 |
-| 音频录制、播放业务流 | `audio.recording` / `audio.playback` | 业务流由 audio 相关 feature 创建，数据面走 stream/file。 |
-| 算法 license、授权内容、工厂标定 | `auth.license` / `vendor.license` / `diagnostic.manufacturing` | 不作为普通运行时配置。 |
-| 产测校准、BQB、工厂测试 | `diagnostic.*` | 不进入用户可配置算法 feature。 |
-| beam/DOA 实时结果上报 | `audio.beam` 或后续独立 event | `algorithmConfigChanged` 只表示配置变化，不表示算法计算结果。 |
+| string | `"all"` | 恢复全部支持的算法配置。 |
+| array | `["noiseSuppression", "echoCancellation"]` | 恢复这些算法对象的全部字段。 |
+| object | `{ "noiseSuppression": ["level"] }` | 只恢复指定字段。 |
 
----
+#### 更新 / reset 结果：`AudioSetAlgorithmConfigResponse`
 
-## 3. 命名规则
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `applyState` | enum | yes | `applied`, `pending_restart` | none | 变更是否已经生效，或等待音频链路重启。 |
+| `requiresAudioRestart` | bool | yes | `true`, `false` | none | 本次变更是否需要重启音频链路或重建 pipeline。 |
+| `config` | `AudioAlgorithmConfig` | yes | see 6.5 | none | 本次操作影响的最终生效配置；通常只返回受影响对象。 |
 
-算法对象名必须使用 lowerCamelCase，不使用缩写作为协议字段：
+#### 事件 Payload：`AudioAlgorithmConfigChangedEvent`
 
-| 字段名 | 常见缩写 | 说明 |
-|---|---|---|
-| `noiseSuppression` | NS / ANS | 噪声抑制 |
-| `echoCancellation` | AEC | 回声消除 |
-| `autoGainControl` | AGC | 自动增益控制 |
-| `beamforming` | BF | 波束形成 |
-| `dereverberation` | DR | 去混响 |
-| `voiceActivityDetection` | VAD | 人声活动检测 |
-| `directionOfArrival` | DOA | 声源方向估计 |
-| `howlingSuppression` | AHS / FBS | 啸叫抑制 |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `reason` | enum | yes | `user_request`, `reset_to_default`, `factory_reset`, `profile_changed`, `device_policy`, `restore_config`, `unknown` | none | 配置变化原因。 |
+| `applyState` | enum | yes | `applied`, `pending_restart` | none | 变更应用状态。 |
+| `requiresAudioRestart` | bool | yes | `true`, `false` | none | 是否需要重启音频链路。 |
+| `config` | `AudioAlgorithmConfig` | yes | see 6.5 | none | 已改变或受影响的配置值。 |
+| `changedFields` | bytes；JSON 视图为 `string[]` | no | field path 数组 | omitted | 变化字段路径，例如 `noiseSuppression.level`。 |
 
-禁止使用：
+### 6.3 Capability Schemas
 
-```text
-noise_suppression
-noise-suppression
-NS
-AEC
-AGC
-BF
-```
+#### `AudioAlgorithmCapability`
 
-枚举值使用 snake_case，例如 `fixed_direction`、`user_request`、`pending_restart`。
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `configSchemaVersion` | string | no | max length 16 | omitted | 设备暴露的算法配置 schema 版本标签。 |
+| `updatePolicy` | `AudioAlgorithmUpdatePolicy` | yes | see below | none | set/reset 的更新策略。 |
+| `supportedAlgorithms` | bytes；JSON 视图为 `string[]` | no | max length 64 | omitted | 支持的算法对象名紧凑列表。 |
 
----
+#### `AudioAlgorithmUpdatePolicy`
 
-## 4. 核心接口
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `partialUpdateSupported` | bool | yes | `true`, `false` | none | 是否允许只发送要修改的字段。 |
+| `multiAlgorithmUpdateSupported` | bool | yes | `true`, `false` | none | 一个请求是否允许更新多个算法对象。 |
+| `atomicUpdateSupported` | bool | yes | `true`, `false` | none | set/reset 是否按原子操作应用。 |
 
-| 类型 | 名称 | 说明 |
-|---|---|---|
-| capability | `audio.algorithm` | 音频算法配置能力块。 |
-| method | `audio.getAlgorithmCapabilities` | 查询算法参数能力、默认值、范围和更新策略。 |
-| method | `audio.getAlgorithmConfig` | 查询当前生效算法配置。 |
-| method | `audio.setAlgorithmConfig` | 部分更新一个或多个算法配置。 |
-| method | `audio.resetAlgorithmConfig` | 将全部、指定算法或指定字段恢复默认值。 |
-| event | `audio.algorithmConfigChanged` | 音频算法配置变化通知。 |
+#### `AudioAlgorithmPropertyCapability`
 
-`audio.getAlgorithmCapabilities` 是 audio 域内的细粒度能力查询；全局 `capability.getAll` 只负责发现设备是否支持 `audio.algorithm` 能力块，以及该能力块暴露哪些 methods/events。二者不互相替代。
+每一个可配置字段都可以用这个结构描述范围、默认值、单位和重启要求。
 
----
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `type` | enum | yes | `boolean`, `enum`, `uint8`, `uint16`, `uint32`, `int32`, `float`, `string`, `object`, `array` | none | 属性类型。 |
+| `defaultBool` | bool | no | `true`, `false` | omitted | boolean 默认值。 |
+| `defaultEnum` | string | no | max length 32 | omitted | enum 默认值。 |
+| `defaultInt32` | int32 | no | int32 | omitted | 整数类默认值。 |
+| `min` | int32 | no | inclusive min | omitted | 数字最小值。 |
+| `max` | int32 | no | inclusive max | omitted | 数字最大值。 |
+| `step` | int32 | no | positive integer | omitted | 数字步进。 |
+| `values` | bytes；JSON 视图为 `string[]` | no | max length 128 | omitted | enum 可选值。 |
+| `unit` | string | no | `ms`, `dB`, `degree` 等 | omitted | 单位。 |
+| `requiresAudioRestart` | bool | no | `true`, `false` | omitted | 修改该字段是否需要重启音频链路。 |
 
-## 5. 配置模型
+#### `AudioAlgorithmCapabilities`
 
-本协议采用算法对象直接展开的配置模型：
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `noiseSuppression` | `AudioNoiseSuppressionCapabilities` | no | see object capability | omitted | 噪声抑制能力。 |
+| `echoCancellation` | `AudioEchoCancellationCapabilities` | no | see object capability | omitted | 回声消除能力。 |
+| `autoGainControl` | `AudioAutoGainControlCapabilities` | no | see object capability | omitted | 自动增益控制能力。 |
+| `beamforming` | `AudioBeamformingCapabilities` | no | see object capability | omitted | 波束成形能力。 |
+| `dereverberation` | `AudioDereverberationCapabilities` | no | see object capability | omitted | 去混响能力。 |
+| `voiceActivityDetection` | `AudioVoiceActivityDetectionCapabilities` | no | see object capability | omitted | VAD 能力。 |
+| `directionOfArrival` | `AudioDirectionOfArrivalCapabilities` | no | see object capability | omitted | DOA 配置能力。 |
+| `howlingSuppression` | `AudioHowlingSuppressionCapabilities` | no | see object capability | omitted | 啸叫抑制能力。 |
 
-```json
-{
-  "noiseSuppression": {
-    "enabled": true,
-    "level": 2
-  },
-  "echoCancellation": {
-    "enabled": true,
-    "tailLengthMs": 128
-  }
-}
-```
+每个算法对象的 capability schema 都遵循相同模式：
 
-不采用下面的元模型：
+| 字段名 | 类型 | 必填 | 说明 |
+|---|---|---:|---|
+| `supported` | bool | yes | 是否支持该算法对象。 |
+| `displayName` | string | no | UI 可读名称。 |
+| 具体配置字段名 | `AudioAlgorithmPropertyCapability` | no | 对应配置字段的范围、默认值、单位和重启要求。 |
 
-```json
-{
-  "algorithm": "noise_suppression",
-  "config": {
-    "enabled": true,
-    "level": 2
-  }
-}
-```
+### 6.4 Config 总结构：`AudioAlgorithmConfig`
 
-规则：
+`AudioAlgorithmConfig` 是一个按算法对象分组的对象。get response 可以返回完整配置；set request 可以只带要修改的对象和字段。
 
-1. 顶层 key 是算法对象名。
-2. 每个算法对象内部只包含该算法的配置字段。
-3. `enabled` 表示该算法是否启用。
-4. `state` 只用于生命周期或运行状态，不用于表达开关。
-5. `status` 不用于表示配置值；RPC 成功或失败由 response status/error 表达。
-6. `getAlgorithmConfig` 返回当前最终生效值，不返回能力范围。
-7. 默认值、范围、枚举和是否需要音频链路重启由 `getAlgorithmCapabilities` 返回。
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `noiseSuppression` | `AudioNoiseSuppressionConfig` | no | see 6.5 | omitted | 噪声抑制配置。 |
+| `echoCancellation` | `AudioEchoCancellationConfig` | no | see 6.5 | omitted | 回声消除配置。 |
+| `autoGainControl` | `AudioAutoGainControlConfig` | no | see 6.5 | omitted | 自动增益控制配置。 |
+| `beamforming` | `AudioBeamformingConfig` | no | see 6.5 | omitted | 波束成形配置。 |
+| `dereverberation` | `AudioDereverberationConfig` | no | see 6.5 | omitted | 去混响配置。 |
+| `voiceActivityDetection` | `AudioVoiceActivityDetectionConfig` | no | see 6.5 | omitted | 语音活动检测配置。 |
+| `directionOfArrival` | `AudioDirectionOfArrivalConfig` | no | see 6.5 | omitted | DOA 配置。 |
+| `howlingSuppression` | `AudioHowlingSuppressionConfig` | no | see 6.5 | omitted | 啸叫抑制配置。 |
 
----
+### 6.5 各算法对象配置字段
 
-## 6. 参数基线
+#### `noiseSuppression`
 
-以下字段是第一版 schema 基线。设备可以通过 `audio.getAlgorithmCapabilities` 声明某个算法或字段不支持；客户端必须以 capabilities 为准。
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `enabled` | bool | no | `true`, `false` | capability declared | 是否启用噪声抑制。 |
+| `level` | uint8 | no | 0..3 | capability declared | 噪声抑制强度。 |
 
-### 6.1 noiseSuppression
+#### `echoCancellation`
 
-```json
-{
-  "noiseSuppression": {
-    "enabled": true,
-    "level": 2
-  }
-}
-```
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `enabled` | bool | no | `true`, `false` | capability declared | 是否启用回声消除。 |
+| `tailLengthMs` | uint32 | no | 64..512 ms | capability declared | 回声尾长；修改可能需要重启音频链路。 |
+| `nlpLevel` | uint8 | no | 0..3 | capability declared | Non-linear processing 强度。 |
 
-| 字段 | 类型 | 建议范围/枚举 | 说明 |
-|---|---|---|---|
-| `enabled` | boolean | `true / false` | 是否启用噪声抑制。 |
-| `level` | uint8 | `0..3` | 抑制强度。 |
+#### `autoGainControl`
 
-### 6.2 echoCancellation
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `enabled` | bool | no | `true`, `false` | capability declared | 是否启用 AGC。 |
+| `targetLevelDb` | int32 | no | -36..-6 dB | capability declared | 目标输出电平。 |
+| `maxGainDb` | uint8 | no | 0..36 dB | capability declared | 最大增益。 |
+| `attackTimeMs` | uint32 | no | 1..1000 ms | capability declared | 增益 attack 时间。 |
+| `releaseTimeMs` | uint32 | no | 10..5000 ms | capability declared | 增益 release 时间。 |
 
-```json
-{
-  "echoCancellation": {
-    "enabled": true,
-    "tailLengthMs": 128,
-    "nlpLevel": 2
-  }
-}
-```
+#### `beamforming`
 
-| 字段 | 类型 | 建议范围/枚举 | 说明 |
-|---|---|---|---|
-| `enabled` | boolean | `true / false` | 是否启用回声消除。 |
-| `tailLengthMs` | uint32 | `64..512` ms | 回声尾长；修改可能需要重启音频链路。 |
-| `nlpLevel` | uint8 | `0..3` | 非线性处理强度。 |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `enabled` | bool | no | `true`, `false` | capability declared | 是否启用波束成形。 |
+| `lookDirectionDeg` | int32 | no | -180..180 degree | capability declared | 固定波束朝向角度。 |
+| `beamWidthDeg` | uint32 | no | 10..180 degree | capability declared | 波束宽度。 |
 
-### 6.3 autoGainControl
+#### `dereverberation`
 
-```json
-{
-  "autoGainControl": {
-    "enabled": true,
-    "targetLevelDb": -18,
-    "maxGainDb": 24,
-    "attackTimeMs": 10,
-    "releaseTimeMs": 200
-  }
-}
-```
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `enabled` | bool | no | `true`, `false` | capability declared | 是否启用去混响。 |
+| `level` | uint8 | no | 0..3 | capability declared | 去混响强度。 |
 
-| 字段 | 类型 | 建议范围/枚举 | 说明 |
-|---|---|---|---|
-| `enabled` | boolean | `true / false` | 是否启用 AGC。 |
-| `targetLevelDb` | int32 | `-36..-6` dB | 目标输出电平。 |
-| `maxGainDb` | uint8 | `0..36` dB | 最大增益。 |
-| `attackTimeMs` | uint32 | `1..1000` ms | 增益上升响应时间。 |
-| `releaseTimeMs` | uint32 | `10..5000` ms | 增益释放时间。 |
+#### `voiceActivityDetection`
 
-### 6.4 beamforming
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `enabled` | bool | no | `true`, `false` | capability declared | 是否启用 VAD。 |
+| `sensitivity` | uint8 | no | 0..3 | capability declared | 检测灵敏度。 |
+| `hangoverMs` | uint32 | no | 0..2000 ms | capability declared | 语音结束 hangover 时间。 |
 
-```json
-{
-  "beamforming": {
-    "enabled": true,
-    "lookDirectionDeg": 0,
-    "beamWidthDeg": 60
-  }
-}
-```
+#### `directionOfArrival`
 
-| 字段 | 类型 | 建议范围/枚举 | 说明 |
-|---|---|---|---|
-| `enabled` | boolean | `true / false` | 是否启用波束形成。 |
-| `lookDirectionDeg` | int32 | `-180..180` degree | 固定波束指向。 |
-| `beamWidthDeg` | uint32 | `10..180` degree | 波束宽度。 |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `enabled` | bool | no | `true`, `false` | capability declared | 是否启用 DOA 估计。 |
+| `reportingEnabled` | bool | no | `true`, `false` | capability declared | 是否启用 DOA/beam 结果报告配置；本 feature 不定义报告事件 payload。 |
+| `reportIntervalMs` | uint32 | no | 20..5000 ms | capability declared | 结果报告周期。 |
+| `smoothingMs` | uint32 | no | 0..5000 ms | capability declared | 平滑窗口。 |
 
-### 6.5 dereverberation
+#### `howlingSuppression`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `enabled` | bool | no | `true`, `false` | capability declared | 是否启用啸叫抑制。 |
+| `level` | uint8 | no | 0..3 | capability declared | 啸叫抑制强度。 |
+
+## 7. JSON 示例
+
+示例只展示 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。`audio.algorithm` 的正式字段以 registry/generated 为准。
+
+### 7.1 查询能力：客户端准备渲染算法设置页
+
+客户端想知道设备支持哪些算法、每个字段怎么渲染 UI、哪些值越界。请求省略 `items` 时，表示查询全部支持对象。
 
 ```json
 {
-  "dereverberation": {
-    "enabled": true,
-    "level": 2
-  }
-}
-```
-
-| 字段 | 类型 | 建议范围/枚举 | 说明 |
-|---|---|---|---|
-| `enabled` | boolean | `true / false` | 是否启用去混响。 |
-| `level` | uint8 | `0..3` | 去混响强度。 |
-
-### 6.6 voiceActivityDetection
-
-```json
-{
-  "voiceActivityDetection": {
-    "enabled": true,
-    "sensitivity": 2,
-    "hangoverMs": 200
-  }
-}
-```
-
-| 字段 | 类型 | 建议范围/枚举 | 说明 |
-|---|---|---|---|
-| `enabled` | boolean | `true / false` | 是否启用人声活动检测。 |
-| `sensitivity` | uint8 | `0..3` | 检测灵敏度。 |
-| `hangoverMs` | uint32 | `0..2000` ms | 语音结束后的保持时间。 |
-
-### 6.7 directionOfArrival
-
-```json
-{
-  "directionOfArrival": {
-    "enabled": true,
-    "reportingEnabled": true,
-    "reportIntervalMs": 100,
-    "smoothingMs": 300
-  }
-}
-```
-
-| 字段 | 类型 | 建议范围/枚举 | 说明 |
-|---|---|---|---|
-| `enabled` | boolean | `true / false` | 是否启用声源方向估计。 |
-| `reportingEnabled` | boolean | `true / false` | 是否允许上报 DOA/beam 结果。 |
-| `reportIntervalMs` | uint32 | `20..5000` ms | 结果上报间隔。 |
-| `smoothingMs` | uint32 | `0..5000` ms | 平滑窗口。 |
-
-`directionOfArrival` 只配置 DOA 算法。DOA 角度、beam 命中、说话人方向等运行结果不放入 `audio.algorithmConfigChanged`，应由后续 `audio.beamInfoReported`、`audio.beamDirectionChanged` 或其他独立事件承载。
-
-### 6.8 howlingSuppression
-
-```json
-{
-  "howlingSuppression": {
-    "enabled": true,
-    "level": 2
-  }
-}
-```
-
-| 字段 | 类型 | 建议范围/枚举 | 说明 |
-|---|---|---|---|
-| `enabled` | boolean | `true / false` | 是否启用啸叫抑制。 |
-| `level` | uint8 | `0..3` | 抑制强度。 |
-
----
-
-## 7. audio.getAlgorithmCapabilities
-
-### 7.1 用途
-
-`audio.getAlgorithmCapabilities` 查询设备支持的算法、参数能力、默认值、范围、枚举值和更新策略。
-
-### 7.2 请求
-
-查询全部：
-
-```json
-{
+  "id": 1,
   "method": "audio.getAlgorithmCapabilities",
   "params": {}
 }
 ```
 
-查询指定算法：
+下面的响应展示了三类典型字段：
+
+- `enabled` 是 boolean 开关。
+- `level` 是 0..3 的强度档位。
+- `tailLengthMs` 是带单位和重启要求的时间参数。
 
 ```json
 {
-  "method": "audio.getAlgorithmCapabilities",
-  "params": {
-    "items": ["noiseSuppression", "echoCancellation"]
-  }
-}
-```
-
-`items` 不传表示查询全部。`items` 中出现未知算法对象时，设备必须返回 `INVALID_ARGUMENT`。
-
-### 7.3 返回
-
-下面示例展示一台全量支持 `audio.algorithm` 的设备返回结构；实际设备可以只返回自身支持的算法和字段。
-
-```json
-{
+  "id": 1,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
   "result": {
     "capability": "audio.algorithm",
     "updatePolicy": {
@@ -384,232 +562,65 @@ BF
     "algorithms": {
       "noiseSuppression": {
         "supported": true,
-        "displayName": "Noise Suppression",
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "defaultValue": true
-          },
-          "level": {
-            "type": "uint8",
-            "defaultValue": 2,
-            "range": {
-              "min": 0,
-              "max": 3,
-              "step": 1
-            }
-          }
+        "displayName": "Noise suppression",
+        "enabled": {
+          "type": "boolean",
+          "defaultBool": true
+        },
+        "level": {
+          "type": "uint8",
+          "defaultInt32": 2,
+          "min": 0,
+          "max": 3,
+          "step": 1
         }
       },
       "echoCancellation": {
         "supported": true,
-        "displayName": "Echo Cancellation",
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "defaultValue": true
-          },
-          "tailLengthMs": {
-            "type": "uint32",
-            "unit": "ms",
-            "defaultValue": 128,
-            "range": {
-              "min": 64,
-              "max": 512,
-              "step": 32
-            },
-            "requiresAudioRestart": true
-          },
-          "nlpLevel": {
-            "type": "uint8",
-            "defaultValue": 2,
-            "range": {
-              "min": 0,
-              "max": 3,
-              "step": 1
-            }
-          }
+        "displayName": "Echo cancellation",
+        "enabled": {
+          "type": "boolean",
+          "defaultBool": true
+        },
+        "tailLengthMs": {
+          "type": "uint32",
+          "defaultInt32": 128,
+          "min": 64,
+          "max": 512,
+          "step": 1,
+          "unit": "ms",
+          "requiresAudioRestart": true
+        },
+        "nlpLevel": {
+          "type": "uint8",
+          "defaultInt32": 2,
+          "min": 0,
+          "max": 3,
+          "step": 1
         }
       },
       "autoGainControl": {
         "supported": true,
-        "displayName": "Auto Gain Control",
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "defaultValue": true
-          },
-          "targetLevelDb": {
-            "type": "int32",
-            "unit": "dB",
-            "defaultValue": -18,
-            "range": {
-              "min": -36,
-              "max": -6,
-              "step": 1
-            }
-          },
-          "maxGainDb": {
-            "type": "uint8",
-            "unit": "dB",
-            "defaultValue": 24,
-            "range": {
-              "min": 0,
-              "max": 36,
-              "step": 1
-            }
-          },
-          "attackTimeMs": {
-            "type": "uint32",
-            "unit": "ms",
-            "defaultValue": 10,
-            "range": {
-              "min": 1,
-              "max": 1000,
-              "step": 1
-            }
-          },
-          "releaseTimeMs": {
-            "type": "uint32",
-            "unit": "ms",
-            "defaultValue": 200,
-            "range": {
-              "min": 10,
-              "max": 5000,
-              "step": 10
-            }
-          }
-        }
-      },
-      "beamforming": {
-        "supported": true,
-        "displayName": "Beamforming",
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "defaultValue": true
-          },
-          "lookDirectionDeg": {
-            "type": "int32",
-            "unit": "degree",
-            "defaultValue": 0,
-            "range": {
-              "min": -180,
-              "max": 180,
-              "step": 1
-            }
-          },
-          "beamWidthDeg": {
-            "type": "uint32",
-            "unit": "degree",
-            "defaultValue": 60,
-            "range": {
-              "min": 10,
-              "max": 180,
-              "step": 1
-            }
-          }
-        }
-      },
-      "dereverberation": {
-        "supported": true,
-        "displayName": "Dereverberation",
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "defaultValue": true
-          },
-          "level": {
-            "type": "uint8",
-            "defaultValue": 2,
-            "range": {
-              "min": 0,
-              "max": 3,
-              "step": 1
-            }
-          }
-        }
-      },
-      "voiceActivityDetection": {
-        "supported": true,
-        "displayName": "Voice Activity Detection",
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "defaultValue": true
-          },
-          "sensitivity": {
-            "type": "uint8",
-            "defaultValue": 2,
-            "range": {
-              "min": 0,
-              "max": 3,
-              "step": 1
-            }
-          },
-          "hangoverMs": {
-            "type": "uint32",
-            "unit": "ms",
-            "defaultValue": 200,
-            "range": {
-              "min": 0,
-              "max": 2000,
-              "step": 10
-            }
-          }
-        }
-      },
-      "directionOfArrival": {
-        "supported": true,
-        "displayName": "Direction of Arrival",
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "defaultValue": true
-          },
-          "reportingEnabled": {
-            "type": "boolean",
-            "defaultValue": true
-          },
-          "reportIntervalMs": {
-            "type": "uint32",
-            "unit": "ms",
-            "defaultValue": 100,
-            "range": {
-              "min": 20,
-              "max": 5000,
-              "step": 20
-            }
-          },
-          "smoothingMs": {
-            "type": "uint32",
-            "unit": "ms",
-            "defaultValue": 300,
-            "range": {
-              "min": 0,
-              "max": 5000,
-              "step": 10
-            }
-          }
-        }
-      },
-      "howlingSuppression": {
-        "supported": true,
-        "displayName": "Howling Suppression",
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "defaultValue": true
-          },
-          "level": {
-            "type": "uint8",
-            "defaultValue": 2,
-            "range": {
-              "min": 0,
-              "max": 3,
-              "step": 1
-            }
-          }
+        "displayName": "Auto gain control",
+        "enabled": {
+          "type": "boolean",
+          "defaultBool": true
+        },
+        "targetLevelDb": {
+          "type": "int32",
+          "defaultInt32": -18,
+          "min": -36,
+          "max": -6,
+          "step": 1,
+          "unit": "dB"
+        },
+        "maxGainDb": {
+          "type": "uint8",
+          "defaultInt32": 24,
+          "min": 0,
+          "max": 36,
+          "step": 1,
+          "unit": "dB"
         }
       }
     }
@@ -617,156 +628,110 @@ BF
 }
 ```
 
-### 7.4 字段定义
+读法：客户端可以根据 `algorithms.noiseSuppression.level.min/max/step` 渲染 0..3 的 slider，也可以根据 `echoCancellation.tailLengthMs.requiresAudioRestart` 在 UI 上提示“修改后需要重启音频链路”。
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| `capability` | string | 固定为 `audio.algorithm`。 |
-| `updatePolicy.partialUpdateSupported` | boolean | 是否支持只传入要修改的字段。 |
-| `updatePolicy.multiAlgorithmUpdateSupported` | boolean | 是否支持一次请求修改多个算法对象。 |
-| `updatePolicy.atomicUpdateSupported` | boolean | 是否保证一次 set/reset 要么全部生效，要么全部不生效。 |
-| `algorithms.<name>.supported` | boolean | 设备是否支持该算法对象。 |
-| `algorithms.<name>.displayName` | string | UI 可读名称。 |
-| `algorithms.<name>.properties` | object | 参数能力表。 |
-| `type` | enum | `boolean / enum / uint8 / uint16 / uint32 / int32 / float / string / object / array`。 |
-| `defaultValue` | any | 默认值。 |
-| `range` | object | 数值范围，包含 `min / max / step`。 |
-| `values` | array | enum 可选值。 |
-| `unit` | string | 单位，例如 `ms / dB / degree`。 |
-| `requiresAudioRestart` | boolean | 修改该字段后是否需要重启音频链路或重建音频 pipeline。 |
+### 7.2 查询当前配置：完整配置响应示例
 
----
-
-## 8. audio.getAlgorithmConfig
-
-### 8.1 用途
-
-`audio.getAlgorithmConfig` 查询当前最终生效的算法配置。
-
-### 8.2 请求
-
-查询全部：
+客户端要展示当前算法页时，调用 `audio.getAlgorithmConfig`。下面示例故意展示完整 `AudioAlgorithmConfig` 形状，方便看清每个算法对象在 JSON 中的层级。
 
 ```json
 {
+  "id": 2,
   "method": "audio.getAlgorithmConfig",
   "params": {}
 }
 ```
 
-查询指定算法：
-
 ```json
 {
-  "method": "audio.getAlgorithmConfig",
-  "params": {
-    "items": ["noiseSuppression", "autoGainControl"]
-  }
-}
-```
-
-### 8.3 返回
-
-```json
-{
+  "id": 2,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
   "result": {
     "noiseSuppression": {
       "enabled": true,
       "level": 2
     },
+    "echoCancellation": {
+      "enabled": true,
+      "tailLengthMs": 128,
+      "nlpLevel": 2
+    },
     "autoGainControl": {
       "enabled": true,
       "targetLevelDb": -18,
       "maxGainDb": 24,
-      "attackTimeMs": 10,
-      "releaseTimeMs": 200
+      "attackTimeMs": 20,
+      "releaseTimeMs": 500
+    },
+    "beamforming": {
+      "enabled": true,
+      "lookDirectionDeg": 0,
+      "beamWidthDeg": 60
+    },
+    "dereverberation": {
+      "enabled": true,
+      "level": 1
+    },
+    "voiceActivityDetection": {
+      "enabled": true,
+      "sensitivity": 2,
+      "hangoverMs": 300
+    },
+    "directionOfArrival": {
+      "enabled": true,
+      "reportingEnabled": true,
+      "reportIntervalMs": 200,
+      "smoothingMs": 500
+    },
+    "howlingSuppression": {
+      "enabled": false,
+      "level": 1
     }
   }
 }
 ```
 
-规则：
+读法：`result` 本身就是 `AudioAlgorithmConfig`。如果某个设备不支持 `howlingSuppression`，它可以不返回该对象；如果请求带了 `items`，响应也可以只返回被选中的对象。
 
-1. 返回当前最终生效值。
-2. 不支持的算法不应出现在 config 返回中；是否支持由 `getAlgorithmCapabilities` 表达。
-3. 不返回默认值、范围和枚举；这些内容由 `getAlgorithmCapabilities` 表达。
-4. 指定 `items` 时只返回请求的支持项。
-5. 指定未知算法对象时返回 `INVALID_ARGUMENT`。
+### 7.3 部分更新：只改降噪和回声消除
 
----
-
-## 9. audio.setAlgorithmConfig
-
-### 9.1 用途
-
-`audio.setAlgorithmConfig` 部分更新一个或多个算法对象的配置。只传入需要修改的字段；未传入字段保持当前值。
-
-### 9.2 请求
-
-设置单个算法：
+客户端只想把降噪调到 3，并把回声尾长改为 256ms。没有出现在请求里的算法对象和字段保持不变。
 
 ```json
 {
+  "id": 3,
   "method": "audio.setAlgorithmConfig",
   "params": {
-    "noiseSuppression": {
-      "enabled": true,
-      "level": 3
-    }
-  }
-}
-```
-
-一次设置多个算法：
-
-```json
-{
-  "method": "audio.setAlgorithmConfig",
-  "params": {
-    "noiseSuppression": {
-      "enabled": true,
-      "level": 3
-    },
-    "echoCancellation": {
-      "enabled": true,
-      "tailLengthMs": 256
-    },
-    "autoGainControl": {
-      "enabled": true,
-      "targetLevelDb": -18,
-      "maxGainDb": 24
-    }
-  }
-}
-```
-
-### 9.3 返回
-
-成功后返回本次涉及算法的最终生效值：
-
-```json
-{
-  "result": {
-    "applyState": "applied",
-    "requiresAudioRestart": false,
     "config": {
       "noiseSuppression": {
-        "enabled": true,
         "level": 3
+      },
+      "echoCancellation": {
+        "tailLengthMs": 256
       }
     }
   }
 }
 ```
 
-如果修改项需要重启音频链路后完全生效：
-
 ```json
 {
+  "id": 3,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
   "result": {
     "applyState": "pending_restart",
     "requiresAudioRestart": true,
     "config": {
+      "noiseSuppression": {
+        "enabled": true,
+        "level": 3
+      },
       "echoCancellation": {
         "enabled": true,
         "tailLengthMs": 256,
@@ -777,75 +742,32 @@ BF
 }
 ```
 
-`applyState` 枚举：
+读法：`noiseSuppression.level` 可以立即生效，但 `echoCancellation.tailLengthMs` 可能需要重启音频链路，所以响应是 `pending_restart`。`config` 返回本次受影响对象的最终状态，而不是只回显请求字段。
 
-| 值 | 说明 |
-|---|---|
-| `applied` | 已立即生效。 |
-| `pending_restart` | 配置已保存，需重启音频链路或重建 pipeline 后完全生效。 |
+### 7.4 恢复默认值：只恢复部分字段
 
-### 9.4 更新规则
-
-1. 设备必须根据 `getAlgorithmCapabilities` 声明的类型、范围、枚举和支持状态校验入参。
-2. 不支持的算法对象返回 `NOT_SUPPORTED`。
-3. 不支持的字段返回 `INVALID_ARGUMENT`。
-4. 数值越界返回 `OUT_OF_RANGE`。
-5. 参数组合冲突返回 `INVALID_STATE` 或 `INVALID_ARGUMENT`，并在 `data` 中说明冲突字段。
-6. 一次请求必须按原子更新处理。校验失败时不得修改任何字段，也不得发送 `audio.algorithmConfigChanged`。
-7. 如果设备不能保证多算法原子更新，应在 capabilities 中声明 `multiAlgorithmUpdateSupported=false` 或 `atomicUpdateSupported=false`；客户端不得发送多算法更新。
-8. set 成功后必须返回最终配置值，不得只返回 accepted。
-9. set 成功后必须发送一次 `audio.algorithmConfigChanged`，事件内容应只包含实际变化的字段或变化后的相关算法对象。
-
----
-
-## 10. audio.resetAlgorithmConfig
-
-### 10.1 用途
-
-`audio.resetAlgorithmConfig` 将配置恢复为 `getAlgorithmCapabilities` 中声明的 `defaultValue`。它是执行 reset，不是读取或写入“默认 profile”。
-
-### 10.2 请求
-
-重置全部算法：
+客户端只想把降噪强度和回声消除强度恢复默认，不想关闭算法。
 
 ```json
 {
-  "method": "audio.resetAlgorithmConfig",
-  "params": {
-    "items": "all"
-  }
-}
-```
-
-重置指定算法：
-
-```json
-{
-  "method": "audio.resetAlgorithmConfig",
-  "params": {
-    "items": ["noiseSuppression", "echoCancellation"]
-  }
-}
-```
-
-重置指定算法的部分字段：
-
-```json
-{
+  "id": 4,
   "method": "audio.resetAlgorithmConfig",
   "params": {
     "items": {
       "noiseSuppression": ["level"],
-      "autoGainControl": ["targetLevelDb", "maxGainDb"]
+      "echoCancellation": ["nlpLevel"]
     }
   }
 }
 ```
 
-### 10.3 返回
-
 ```json
 {
+  "id": 4,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
   "result": {
     "applyState": "applied",
     "requiresAudioRestart": false,
@@ -853,77 +775,35 @@ BF
       "noiseSuppression": {
         "enabled": true,
         "level": 2
+      },
+      "echoCancellation": {
+        "enabled": true,
+        "nlpLevel": 2
       }
     }
   }
 }
 ```
 
-规则：
+读法：reset 的目标是 capability 中声明的默认值。它恢复当前运行时配置，不表示写入新的设备默认 profile。
 
-1. reset 后返回重置项的最终生效值。
-2. 默认值来自 `audio.getAlgorithmCapabilities` 中的 `defaultValue`。
-3. reset 同样遵守 set 的校验、原子更新和 `pending_restart` 规则。
-4. `items` 未传时不应默认重置全部；客户端必须显式传 `"all"`、数组或字段映射，避免误操作。
-5. 旧协议中“默认值读写”命令不得自动等同于 reset，必须经人工确认后映射。
+### 7.5 配置变化事件：一次更新触发一个事件
 
----
-
-## 11. audio.algorithmConfigChanged
-
-### 11.1 触发条件
-
-以下情况必须发送 `audio.algorithmConfigChanged`：
-
-1. `audio.setAlgorithmConfig` 成功并导致配置变化。
-2. `audio.resetAlgorithmConfig` 成功并导致配置变化。
-3. profile 切换、恢复配置、factory reset 或设备策略导致算法配置变化。
-
-以下情况不发送该事件：
-
-1. set/reset 请求校验失败。
-2. set/reset 请求成功但配置值没有实际变化。
-3. DOA/beam 实时结果上报。
-4. 音频链路运行状态变化但配置未变。
-
-### 11.2 事件格式
+当 set/reset 成功改变配置后，设备发送 `audio.algorithmConfigChanged`。如果一次操作改了多个字段，建议用一个事件合并上报。
 
 ```json
 {
   "event": "audio.algorithmConfigChanged",
-  "params": {
-    "reason": "user_request",
-    "applyState": "applied",
-    "requiresAudioRestart": false,
-    "config": {
-      "noiseSuppression": {
-        "enabled": true,
-        "level": 3
-      }
-    },
-    "changedFields": [
-      "noiseSuppression.level"
-    ]
-  }
-}
-```
-
-一次变化多个算法：
-
-```json
-{
-  "event": "audio.algorithmConfigChanged",
-  "params": {
+  "intent": 1,
+  "data": {
     "reason": "user_request",
     "applyState": "pending_restart",
     "requiresAudioRestart": true,
     "config": {
       "noiseSuppression": {
-        "enabled": true,
         "level": 3
       },
       "echoCancellation": {
-        "enabled": true,
         "tailLengthMs": 256
       }
     },
@@ -935,44 +815,36 @@ BF
 }
 ```
 
-### 11.3 reason 枚举
+读法：事件中的 `config` 是变化片段，不一定是完整配置。客户端如果需要完整状态，可以再调用 `audio.getAlgorithmConfig`。
 
-| 值 | 说明 |
-|---|---|
-| `user_request` | 用户或客户端调用 set/reset。 |
-| `reset_to_default` | reset 恢复默认值。 |
-| `factory_reset` | 设备恢复出厂导致配置变化。 |
-| `profile_changed` | profile 或场景模式切换导致配置变化。 |
-| `device_policy` | 设备内部策略调整配置。 |
-| `restore_config` | 导入或恢复配置。 |
-| `unknown` | 未知原因。 |
+### 7.6 失败响应：字段值越界
 
----
-
-## 12. 错误处理
-
-错误码必须引用正式 ErrorCode registry。本文只描述 `audio.algorithm` 的推荐映射，不新增局部错误名。
-
-| 错误码 | 场景 | retryable |
-|---|---|---:|
-| `NOT_SUPPORTED` | 设备不支持 `audio.algorithm`、指定算法对象或当前模式下不支持该算法。 | 否 |
-| `INVALID_ARGUMENT` | 参数类型错误、未知字段、未知算法对象、非法枚举、非法字段组合。 | 否 |
-| `OUT_OF_RANGE` | 数值超出 capabilities 声明的范围。 | 否 |
-| `INVALID_STATE` | 当前音频链路状态不允许修改，例如录制中禁止修改 AEC tail length。 | 否 |
-| `BUSY` | 音频链路繁忙，可稍后重试。 | 是 |
-| `PERMISSION_DENIED` | 当前会话权限不足。 | 否 |
-| `INTERNAL_ERROR` | 设备内部应用配置失败。 | 否 |
-
-错误示例：
+客户端把 `noiseSuppression.level` 设置为 5，但 capability 声明范围是 0..3。
 
 ```json
 {
-  "error": {
-    "code": "OUT_OF_RANGE",
-    "message": "noiseSuppression.level out of range",
-    "data": {
+  "id": 5,
+  "method": "audio.setAlgorithmConfig",
+  "params": {
+    "config": {
+      "noiseSuppression": {
+        "level": 5
+      }
+    }
+  }
+}
+```
+
+```json
+{
+  "id": 5,
+  "status": {
+    "ok": false,
+    "code": 11,
+    "msg": "Value is outside the supported range.",
+    "details": {
       "field": "noiseSuppression.level",
-      "value": 5,
+      "actual": 5,
       "min": 0,
       "max": 3
     }
@@ -980,109 +852,61 @@ BF
 }
 ```
 
-`requiresAudioRestart` 不应作为错误返回。配置可保存但需重启音频链路时，应成功返回 `applyState=pending_restart`。
+读法：失败请求不得部分应用，也不得触发 `audio.algorithmConfigChanged`。
 
----
+## 8. 错误
 
-## 13. Legacy AXDP 映射审查
+本 feature 复用 generated ErrorCode，不新增 feature-specific errorCode。
 
-以下表格用于人工审查旧 AXDP 命令与新 `audio.algorithm` 的关联。标记为“待确认”的条目不得直接写入稳定 `legacyRefs`。
+| 错误 | 适用场景 | 说明 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持 `audio.algorithm`、某个算法对象或某个字段。 | 也可用于当前设备能力不支持的 selector。 |
+| `INVALID_ARGUMENT` | selector、算法对象名、字段名、enum 值或请求结构非法。 | 请求结构错误时不应应用任何配置。 |
+| `OUT_OF_RANGE` | 数字值超出 generated range 或 step。 | 例如 `noiseSuppression.level > 3`。 |
+| `INVALID_STATE` | 当前模式禁止修改。 | 例如音频链路处于不可配置状态。 |
+| `BUSY` | DSP 或音频 pipeline 正忙。 | 客户端可稍后重试。 |
+| `PERMISSION_DENIED` | 调用方没有权限。 | 由 runtime/session 权限决定。 |
+| `INTERNAL_ERROR` | 读取或应用配置失败。 | 设备内部错误。 |
 
-| AXDP 命令 | 旧 ID | 新方法候选 | 审查结论 |
+## 9. Legacy 映射
+
+Legacy 映射只是迁移证据，不是 runtime 合同。旧命令别名不得创造新的正式 AXTP method，也不得扩大 `audio.algorithm` 已生成语义。
+
+| legacy 项 | 候选映射 | 状态 | 说明 |
 |---|---|---|---|
-| `CommonGetNoiseSuppressionLevel` | `0xC004E / 0x004E -> 0x00CE` | `audio.getAlgorithmConfig` | 可映射到 `noiseSuppression.level`。 |
-| `CommonSetNoiseSuppressionLevel` | `0xC004F / 0x004F -> 0x00CF` | `audio.setAlgorithmConfig` | 可映射到 `noiseSuppression.level`。 |
-| `CommonGetReverberationSuppressionLevel` | `0xC0051 / 0x0051 -> 0x00D1` | `audio.getAlgorithmConfig` | 可映射到 `dereverberation.level` 或 `reverberationSuppression.level`，字段名需人工确认。 |
-| `CommonSetReverberationSuppressionLevel` | `0xC0052 / 0x0052 -> 0x00D2` | `audio.setAlgorithmConfig` | 可映射到 `dereverberation.level` 或 `reverberationSuppression.level`，字段名需人工确认。 |
-| `CommonGetEchoCancellationLevel` | `0xC0053 / 0x0053 -> 0x00D3` | `audio.getAlgorithmConfig` | 可映射到 `echoCancellation.nlpLevel`，字段需确认。 |
-| `CommonSetEchoCancellationLevel` | `0xC0054 / 0x0054 -> 0x00D4` | `audio.setAlgorithmConfig` | 可映射到 `echoCancellation.nlpLevel`，字段需确认。 |
-| `CommonResetAudioAlgorithmParams` | `0xC0060 / 0x0060 -> 0x00E0` | `audio.resetAlgorithmConfig` | 可映射为 reset 全部或指定算法，需确认 payload 是否带范围。 |
-| `CommonSetAlgoEnable` | `0xC006B / 0x006B -> 0x00EB` | `audio.setAlgorithmConfig` | 可映射到一个或多个算法的 `enabled`，需确认旧 bitmask/枚举含义。 |
-| `CommonGetAlgoEnable` | `0xC006C / 0x006C -> 0x00EC` | `audio.getAlgorithmConfig` | 可映射到 `enabled` 字段集合，需确认返回结构。 |
-| `CommonGetDereverationAlgParam` | `0xC0149 / 0x0149 -> 0x01C9` | `audio.getAlgorithmConfig` | 可映射到 `dereverberation` 对象。 |
-| `CommonSetDereverationAlgParam` | `0xC014A / 0x014A -> 0x01CA` | `audio.setAlgorithmConfig` | 可映射到 `dereverberation` 对象。 |
-| `CommonGetDefaultNoiseSuppressionLevel` | `0xC0057 / 0x0057 -> 0x00D7` | 待确认 | 若只是读取默认值，应由 `getAlgorithmCapabilities.defaultValue` 覆盖；若写默认 profile，需要另行确认归属。 |
-| `CommonSetDefaultNoiseSuppressionLevel` | `0xC0058 / 0x0058 -> 0x00D8` | 待确认 | 不应自动映射为 reset；需确认旧协议是否修改默认 profile。 |
-| `CommonGetDefaultReverberationSuppressionLevel` | `0xC0059 / 0x0059 -> 0x00D9` | 待确认 | 同默认值读写规则。 |
-| `CommonSetDefaultReverberationSuppressionLevel` | `0xC005A / 0x005A -> 0x00DA` | 待确认 | 同默认值读写规则。 |
-| `CommonGetDefaultEchoCancellationLevel` | `0xC005B / 0x005B -> 0x00DB` | 待确认 | 同默认值读写规则。 |
-| `CommonSetDefaultEchoCancellationLevel` | `0xC005C / 0x005C -> 0x00DC` | 待确认 | 同默认值读写规则。 |
-| `CommonGetAlgAuthContent` | `0xC0044 / 0x0044 -> 0x00C4` | 待确认 | 授权内容不应默认归 `audio.algorithm`。 |
-| `CommonSetAlgAuthContent` | `0xC0045 / 0x0045 -> 0x00C5` | 待确认 | 授权内容不应默认归 `audio.algorithm`。 |
-| `CommonPauseAiAlgThrd` | `0xC0117 / 0x0117 -> 0x0197` | 待确认 | 可能是算法线程运行态控制，不一定是配置。 |
-| `CommonContinueAiAlgThrd` | `0xC0118 / 0x0118 -> 0x0198` | 待确认 | 可能是算法线程运行态控制，不一定是配置。 |
-| `CommonAudioBeamReport` | `0xC0201 / 0x0201 -> 0x0281` | 待确认 | 可能是 beam/DOA 上报开关或结果上报，不应直接放入 `algorithmConfigChanged`。 |
+| 降噪、回声消除、混响抑制、AGC level/mode 类命令 | `audio.getAlgorithmConfig` / `audio.setAlgorithmConfig` | candidate | 需要 adapter 把旧字段转成对应算法对象字段。 |
+| 默认算法参数读取类命令 | `audio.getAlgorithmCapabilities` 的默认值或 `audio.getAlgorithmConfig` | unresolved | 旧协议“读默认值”和“读当前值”的语义需要确认。 |
+| 默认算法参数写入类命令 | adapter-only / future default-profile feature | adapter-only | 写入默认 profile 不等同于 `resetAlgorithmConfig`。 |
+| Beam map、DOA、speaker highlight 配置 | `beamforming` 或 `directionOfArrival` 配置字段 | candidate | 只映射配置；实时方向/说话人结果不在本 feature 内。 |
+| 算法授权命令 | adapter-only / future license feature | adapter-only | 授权不是算法配置。 |
+| AI 算法线程暂停/恢复 | adapter-only / future runtime action | adapter-only | 暂停线程不是普通配置字段。 |
+| DOA/beam 实时报告 | adapter-only / future event feature | adapter-only | 当前 generated event 只报告配置变化。 |
 
-Rooms 和 VM33 中的 beam map、speaker highlight、AGC 参数等条目可作为后续映射输入，但由于 Rooms 已在设备中使用、VM33 原通道为 HTTP，本文仅定义新 AXTP 目标协议，不重写旧协议 envelope。
+## 10. Registry / Conformance 状态
 
----
+| 项 | 状态 | 说明 |
+|---|---|---|
+| registry | generated | [registry/domains/audio/domain.yaml](../../../registry/domains/audio/domain.yaml) 已包含 methods、event、types、capability。 |
+| generated | true | [method registry](../../generated/method_registry.generated.md)、[event registry](../../generated/event_registry.generated.md)、[capability registry](../../generated/capability_registry.generated.md) 已生成。 |
+| conformance | partial / to expand | 需要补齐 selector、range、atomic update、event payload 等专项 case。 |
+| registry readiness | ready / generated | 后续变更只能走 amendment，不应在 Markdown 中直接改语义。 |
 
-## 14. Registry 草案输入
+## 11. 测试要点
 
-本文已采纳，domain YAML 包含以下事实：
-
-```yaml
-capabilities:
-  - id: 0x0901
-    name: audio.algorithm
-    domain: audio
-    status: draft
-    since: 1.0.0
-    description: Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification.
-    type: object
-    schema: AudioAlgorithmCapability
-```
-
-关联 method/event 由各 method/event 条目的 `capabilities: [audio.algorithm]` 建立。
-
-method/event/capability numeric ID 以 registry 为准。当前 specs 中已规划：
-
-| 对象 | 规划状态 |
+| 类型 | 要点 |
 |---|---|
-| `audio.algorithm` | 见 `docs/specs/3-codec/02-Capability-Types.md`。 |
-| `audio.getAlgorithmCapabilities` / `audio.getAlgorithmConfig` / `audio.setAlgorithmConfig` / `audio.resetAlgorithmConfig` | 见 `docs/specs/2-registry/02-Methods-Registry.md`。 |
-| `audio.algorithmConfigChanged` | 见 `docs/specs/2-registry/03-Events-Registry.md`。 |
+| happy path | 查询能力、查询配置、更新单个算法、更新多个算法、恢复默认值。 |
+| error path | 不支持的算法对象、未知字段、非法 enum、无权限、BUSY。 |
+| boundary case | 每个数字字段的 min/max/out-of-range；`items` 省略、数组、map、`all`。 |
+| capability discovery | `audio.algorithm` capability 绑定 4 个 generated methods 和 `audio.algorithmConfigChanged` event。 |
+| event | set/reset 成功后发 `audio.algorithmConfigChanged`；失败请求不发事件；多字段原子变更建议合并事件。 |
+| compatibility | runtime 应绑定 registry/generated 或明确 spec tag/commit，不依赖本文 prose 作为唯一事实源。 |
 
----
+## 12. 待确认问题
 
-## 15. Binary-RPC / TLV 映射建议
-
-JSON-RPC 中必须使用 lowerCamelCase 算法对象名。Binary-RPC/TLV 可以为算法对象和参数分配数字 ID，但数字 ID 不暴露到 JSON 协议。
-
-建议算法 ID：
-
-| algorithmId | 算法对象 |
-|---:|---|
-| `0x01` | `noiseSuppression` |
-| `0x02` | `echoCancellation` |
-| `0x03` | `autoGainControl` |
-| `0x04` | `beamforming` |
-| `0x05` | `dereverberation` |
-| `0x06` | `voiceActivityDetection` |
-| `0x07` | `directionOfArrival` |
-| `0x08` | `howlingSuppression` |
-
-TLV schema 生成时应保持以下语义：
-
-1. JSON 字段名和 TLV fieldId 一一对应。
-2. enum 的数值由 schema/registry 固化，不由业务代码临时定义。
-3. 未知 fieldId 必须按 schema 兼容规则处理。
-4. legacy adapter 可以把 AXDP commandId 映射到新 method 和字段路径，但不得把旧 commandId 作为新协议字段。
-
----
-
-## 16. 验收标准
-
-本文进入 registry 草案前必须满足：
-
-1. capability 使用 `audio.algorithm`，不使用 `audio.algorithmConfig`。
-2. 方法只使用 `audio.getAlgorithmCapabilities`、`audio.getAlgorithmConfig`、`audio.setAlgorithmConfig`、`audio.resetAlgorithmConfig`。
-3. 事件只使用 `audio.algorithmConfigChanged` 表示配置变化。
-4. 配置结构按算法对象展开，不使用 `algorithm + config` 元模型。
-5. 至少覆盖 8 个算法对象：`noiseSuppression`、`echoCancellation`、`autoGainControl`、`beamforming`、`dereverberation`、`voiceActivityDetection`、`directionOfArrival`、`howlingSuppression`。
-6. set/reset 支持部分更新，并明确原子更新策略。
-7. set/reset 成功后返回最终生效值。
-8. 需要重启音频链路时返回 `applyState=pending_restart`，不作为错误。
-9. DOA/beam 结果不上报到 `audio.algorithmConfigChanged`。
-10. AXDP 授权、默认值写入、算法线程控制、beam report 等疑点经人工确认后再写入稳定 `legacyRefs`。
-11. 采纳后同步更新 `registry/domains/audio/domain.yaml`、method registry、event registry、capability registry 和 generated artifacts。
+| 问题 | 影响 | 当前建议 | 状态 |
+|---|---|---|---|
+| legacy 默认算法参数读取是读当前值、默认值还是出厂 profile？ | legacy / schema | 读当前值映射 `getAlgorithmConfig`；读默认值映射 capability 默认值；写默认 profile 暂不进入本 feature。 | open |
+| 算法授权内容是否属于 `audio.algorithm`？ | domain boundary | 不属于普通算法配置，倾向 auth/vendor/license 或 diagnostic。 | open |
+| AI 算法线程暂停/恢复是否映射为配置？ | domain boundary / runtime action | 不映射为普通 config；后续按 runtime action 或 diagnostic 评审。 | open |
+| DOA/beam 实时结果是否进入 `audio.algorithmConfigChanged`？ | event / conformance | 不进入；当前 event 只表示配置变化，实时结果另起 feature。 | decided |

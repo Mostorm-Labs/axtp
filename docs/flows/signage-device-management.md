@@ -253,7 +253,7 @@ sequenceDiagram
 | Launcher 外观/面板配置 | `software.config` v0.1（target: `"launcher"`） | `software.getConfig` / `software.setConfig` / `software.resetConfig` / `software.configChanged` | `draft-business-protocol` | `[REVIEW-RESOLVED]` 旧草案 `device.appearance` 已删除；外观配置实为 Launcher 软件配置，迁入 `software.config` 统一管理。 |
 | 软件更新策略 | `software.updatePolicy` v0.1（target: `"launcher"`） | `software.getUpdatePolicy` / `software.setUpdatePolicy` / `software.resetUpdatePolicy` / `software.updatePolicyChanged` | `draft-business-protocol` | `[REVIEW-RESOLVED]` 旧草案 `firmware.updatePolicy` 已回退为骨架；更新策略迁入 `software.updatePolicy`，通过 target 区分组件。 |
 
-## 8. Test Fixtures
+### 8.3 Legacy Mapping Checklist
 
 | Fixture | Expected result |
 |---|---|

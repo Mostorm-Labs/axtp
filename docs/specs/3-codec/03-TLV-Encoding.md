@@ -15,9 +15,9 @@
 ## 规范规则
 
 1. Basic TLV MUST 使用 `fieldId:uint8 + length:uint8 + value:bytes[length]`。
-2. 当 `length=0xFF` 时，后续 MUST 是 `extendedLength:uint16` Little-Endian，再跟随 `value:bytes[extendedLength]`。
+2. 当 `length=0xFF` 时，后续 MUST 是 `extendedLength:uint16` Big-Endian / network byte order，再跟随 `value:bytes[extendedLength]`。
 3. `fieldId=0x00` MUST NOT 用作普通字段。`fieldId=0xFF` 在 Basic TLV 中保留给 extended length marker，不得作为普通字段。
-4. 多字节数值 MUST 使用 Little-Endian。
+4. 多字节数值 MUST 使用 Big-Endian，即 network byte order。
 5. 单个 TLV value 超过 `uint16` extended length 能表达的大小时 MUST 使用 STREAM 或业务分块，不得塞入单个 TLV 字段。
 6. scalar 字段默认 strict mode；重复出现 SHOULD 报 duplicate field，除非 schema 明确声明 repeated array 或 legacy duplicate policy。
 7. 接收端遇到未知 fieldId 时，若 length 合法且不越界，MUST 跳过，不得因未知 optional field 失败。
@@ -30,7 +30,7 @@ TLV envelope：
 
 ```text
 Basic TLV:       fieldId(1) + length(1) + value(N)
-Extended TLV:    fieldId(1) + FF + extendedLength(2, LE) + value(N)
+Extended TLV:    fieldId(1) + FF + extendedLength(2, BE) + value(N)
 ```
 
 常用 value 编码：
@@ -38,11 +38,11 @@ Extended TLV:    fieldId(1) + FF + extendedLength(2, LE) + value(N)
 | 类型 | TLV value |
 |---|---|
 | `uint8/int8/bool` | 1B |
-| `uint16/int16` | 2B Little-Endian |
-| `uint32/int32` | 4B Little-Endian |
-| `uint64/int64` | 8B Little-Endian |
-| `enum8/enum16` | 1B 或 2B Little-Endian |
-| `bitmap8/16/32/64` | 固定宽度 Little-Endian |
+| `uint16/int16` | 2B Big-Endian / network byte order |
+| `uint32/int32` | 4B Big-Endian / network byte order |
+| `uint64/int64` | 8B Big-Endian / network byte order |
+| `enum8/enum16` | 1B 或 2B Big-Endian / network byte order |
+| `bitmap8/16/32/64` | 固定宽度 Big-Endian / network byte order |
 | `string` | UTF-8 字节 |
 | `bytes` | 原始 bytes |
 | `object` | 嵌套 TLV sequence |
@@ -78,8 +78,8 @@ Parser/codec MUST 校验：
 
 ```text
 01 01 50        # fieldId=0x01, length=1, uint8 value=80
-02 02 2C 01     # fieldId=0x02, length=2, uint16 value=300
-10 FF 2C 01 ... # fieldId=0x10, extendedLength=300
+02 02 01 2C     # fieldId=0x02, length=2, uint16 value=300
+10 FF 01 2C ... # fieldId=0x10, extendedLength=300
 ```
 
 对象是多个 TLV 字段的串联；array 可用同一 fieldId 重复出现表示 repeated elements。

@@ -51,7 +51,7 @@ export AXTP_SPEC_PATH=/Users/qing/Desktop/sources/gitee/axtp
 | 检查项 | 通过标准 |
 |---|---|
 | Header parser | 校验 `AX` magic、version、`PayloadType`、payloadLength、fragment 字段。 |
-| CRC16 | CRC 覆盖 Header + Payload，不覆盖 CRC 自身；多字节整数 little-endian。 |
+| CRC16 | CRC 覆盖 Header + Payload，不覆盖 CRC 自身；多字节整数使用 Big-Endian / network byte order。 |
 | Payload dispatch | `PayloadType=CONTROL` 进 ControlParser，`RPC` 进 RpcParser，`STREAM` 进 StreamParser。 |
 | CONTROL OPEN | 只允许 Physical Client 在 `LINK_CONNECTED` 发送。 |
 | CONTROL ACCEPT | `controlId` 匹配 OPEN；成功后进入 `FRAMING_READY`。 |

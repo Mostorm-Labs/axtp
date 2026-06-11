@@ -128,7 +128,7 @@ AXTP v1 Core 不强制生成全局 supported-methods 查询方法。如果后续
 该 Binary 响应使用域级二进制掩码链（Domain Mask Packets Chain）：
 
 ```text
-Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [MethodBitmask: N B (Little-Endian)]
+Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [MethodBitmask: N B (Big-Endian / network byte order)]
 ```
 
 完整 `capability.getRegistry` 响应属于 v2/P1 Capability Model，不作为 v1 Core 必选项。
@@ -140,7 +140,7 @@ Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [MethodBitmask: N B (Little-Endi
 **格式**：
 
 ```text
-Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [Bitmask: N B (Little-Endian)]
+Domain Block = [DomainId: 1B] + [MaskLen: 1B] + [Bitmask: N B (Big-Endian / network byte order)]
 ```
 
 - `DomainId`：与 MethodId 高字节对齐（如 `display.*` 的 DomainId = `0x06`）

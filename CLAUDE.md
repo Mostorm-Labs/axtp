@@ -101,7 +101,7 @@ Compact / HID-64 / BLE / UART behavior is low-bandwidth degradation or future pr
 
 Three ID namespaces that must not be confused: `MessageId` (Frame) ≠ `requestId` (RPC) ≠ `streamId` (Stream).
 
-Byte order: Little-Endian for all multi-byte integers.
+Byte order: Big-Endian (network byte order) for all AXTP multi-byte integers.
 
 ## Registry Structure
 

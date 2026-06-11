@@ -14,7 +14,7 @@
 
 ## 规范规则
 
-1. AXTP v1 多字节整数 MUST 使用 Little-Endian。
+1. AXTP v1 多字节整数 MUST 使用 Big-Endian，即 network byte order。
 2. `uint8`、`uint16`、`uint32`、`uint64` 和 `int8`、`int16`、`int32`、`int64` MUST 使用固定宽度二进制表示。
 3. `bool` MUST 以 `0x00=false`、`0x01=true` 发送；接收端遇到其他值 SHOULD 作为 validation error 处理。
 4. `string` MUST 使用 UTF-8，不使用 NUL 终止符；长度由外层 encoding 表达。
@@ -33,8 +33,8 @@
 | 类型 | JSON 表达 | TLV/二进制表达 | 说明 |
 |---|---|---|---|
 | `bool` | boolean | 1B | `0x00` 或 `0x01` |
-| `uint8/16/32/64` | number or string for large values | fixed width LE | 无符号整数 |
-| `int8/16/32/64` | number or string for large values | fixed width LE | 有符号补码整数 |
+| `uint8/16/32/64` | number or string for large values | fixed width BE / network byte order | 无符号整数 |
+| `int8/16/32/64` | number or string for large values | fixed width BE / network byte order | 有符号补码整数 |
 | `string` | string | UTF-8 bytes | 外层长度控制 |
 | `bytes` | base64/hex/profile-specific | raw bytes | 不解释字节 |
 | `enum` | string or numeric value | enum8/enum16 | registry 定义取值 |
@@ -90,7 +90,7 @@ schemas:
         default: 0
 ```
 
-`level=80` 的 uint8 值在线上为 `50`，`applyDelayMs=300` 的 uint16 Little-Endian 值为 `2C 01`。
+`level=80` 的 uint8 值在线上为 `50`，`applyDelayMs=300` 的 uint16 Big-Endian / network byte order 值为 `01 2C`。
 
 ## 非目标 / 未来
 

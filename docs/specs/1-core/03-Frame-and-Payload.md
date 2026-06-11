@@ -70,7 +70,7 @@ Footer:    CRC16(2)，位于 Payload 末尾
 | `FrameCount` | 11 | 1B | uint8 | 分片总数；未分片 message 使用 1 |
 | `CRC16` | Footer | 2B | uint16 | 覆盖 Header(12B) + Payload 的 CRC16-CCITT-FALSE |
 
-所有多字节整数 MUST 使用 Little-Endian 编码。
+所有多字节整数 MUST 使用 Big-Endian，即 network byte order 编码。
 
 PayloadType registry：
 
@@ -179,10 +179,10 @@ CRC 失败时，Phase 1 runtime MAY 丢弃该 frame 并记录错误。如果 run
 41 58                // Magic "AX"
 01                   // Version
 02                   // PayloadType = RPC
-05 00                // PayloadLength = 5
+00 05                // PayloadLength = 5
 01                   // SourceId
 02                   // DestinationId
-2A 00                // MessageId = 42
+00 2A                // MessageId = 42
 00                   // FrameIndex = 0
 01                   // FrameCount = 1
 ... 5 payload bytes ...

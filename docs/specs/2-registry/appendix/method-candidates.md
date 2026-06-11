@@ -53,7 +53,7 @@ EVENT:
 
 ### 2. MethodId 基本规则
 
-- `methodId` 使用 `uint16`，线上编码 Little-Endian
+- `methodId` 使用 `uint16`，线上编码为 Big-Endian / network byte order
 - 同一 Registry 中 `methodId` 不得重复，`methodName` 不得重复
 - 进入 `stable` 状态后不得改变语义；语义变化时新增方法（如 `audio.setAlgorithmConfigV2`），不修改旧方法
 - 方法名格式：`domain.verbFeatureNoun`，feature 归属遵循 `docs/specs/2-registry/01-Naming-and-Taxonomy.md`

@@ -1,163 +1,311 @@
-# AXTP system.state 协议草案
-
-版本：v0.5
-
-归属域：`system`
-
-Capability ID：`system.state`
-
-适用范围：当前设备 OS / runtime 的通用运行状态读取、低频状态变化通知，以及用于异常恢复的运行时状态恢复动作，包括在线状态、uptime、CPU、内存、负载、进程/runtime 摘要和 MCU/controller/service 状态恢复。
-
+---
+status: review-ok
+contract: false
+generated: false
+domain: system
+feature: system.state
+registry:
+lastReviewed: 2026-06-10
 ---
 
-## 协议审核标记（人工复核）
+# system.state
 
-| 标记 | 条目 | 审核结论 | 后续动作 |
-|---|---|---|---|
-| `[REVIEW-OK]` | domain.feature | `system.state` 回答“这台机器现在怎么运行”，属于 system 运行时状态层。 | 可作为 `registry/domains/system/domain.yaml` 草案输入。 |
-| `[REVIEW-OK]` | 与 device 的边界 | 原 `device.state` 中 CPU/内存/在线等运行时状态迁移到 `system.state`。 | 采纳时不要重新创建独立 `device.state` 草案或 capability。 |
-| `[REVIEW-OK]` | 与 lifecycle / health 判定的边界 | 关机、重启和计划任务归 `system.lifecycle`；健康、告警和 fault 不再作为独立 capability，由业务端基于 `system.stateChanged` 自行判定。 | 不再保留独立 system power 或 system health 草案。 |
-| `[REVIEW-OK]` | `recoverRuntimeState` 语义 | 重置设备状态若指 MCU、runtime service 或控制器异常恢复，命名为 `system.recoverRuntimeState`；不是恢复默认配置、恢复出厂或初始化。 | 采纳前确认 scope、权限和是否允许 child/component target。 |
-| `[REVIEW-ASK]` | P0 字段 | CPU、内存、uptime、online、load、process/runtime summary 的 P0 范围需确认。 | 采纳前确定字段基线和采样/节流策略。 |
-| `[REVIEW-ASK]` | legacy 映射 | `device.state` legacy 分类中泛设备状态需要重新拆到 `system.state` 或其他 telemetry/sensor capability；不再映射到 `system.health`。 | 采纳前补 legacyRefs。 |
+## 0. 速读结论
 
----
+| 项目 | 内容 |
+|---|---|
+| 这个能力做什么 | 读取系统运行状态、上报低频状态变化，并触发运行时异常恢复。 |
+| 当前状态 | review-ok |
+| 是否可直接实现 | 否。本文是 protocol draft；正式实现以 registry / generated 为准。 |
+| 主要交互 | RPC + EVENT |
+| 是否使用 STREAM | 否 |
+| Registry readiness | candidate |
+| Conformance | needed |
+| 主要未决问题 | P0 状态字段、事件节流策略、runtime recovery scope 和断连语义仍需确认。 |
 
-## 1. 文档定位
+## 1. 功能说明
 
-本文是 `docs/flows/device-system-info.md` 的 Stage 20 协议草案输入，不是最终协议事实源。采纳后，稳定事实必须写入 `registry/domains/system/domain.yaml` 或相关 registry YAML，再由 Generator 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+`system.state` 用于读取当前设备 OS / runtime 的通用运行状态，接收低频状态变化通知，并在设备处于异常运行态时触发运行时状态恢复动作。
 
-当前 generated 协议没有 adopted `system.state` 方法；本文中的方法名和字段均为草案候选，数值 ID 使用 `TBD after adoption`。
+本文是 `docs/protocol` 下的评审草案，不是 runtime 实现合同。当前 generated 协议没有 adopted `system.state` 方法或事件；本文中的 method、event、schema 和字段均为候选，正式 ID 和 fieldId 必须在 registry 采纳时分配。
 
-## 2. 业务需求
+## 2. 能力边界
+
+| 类型 | 内容 |
+|---|---|
+| 包含 | `online`、`uptimeSeconds`、`bootId`、CPU、内存、load、runtime/process 摘要、采样时间。 |
+| 包含 | 低频状态变化通知 `system.stateChanged`，用于让业务端刷新状态并自行判断健康、告警或故障。 |
+| 包含 | `system.recoverRuntimeState`，用于恢复 MCU、runtime service、controller 或 service 等运行时异常状态。 |
+| 不包含 | 设备身份、产品、硬件静态信息；这些归 `device.info`。 |
+| 不包含 | 关机、重启、计划关机/重启；这些归 `system.lifecycle`。 |
+| 不包含 | 恢复默认配置、恢复出厂设置、首次初始化；这些归 `system.reset` / `system.initialization`。 |
+| 不包含 | 独立 `system.health`、warning、fault capability；健康和告警判定由业务端基于 `system.stateChanged` 自行实现。 |
+| 不包含 | 电池、电源遥测、高频传感器流、诊断统计流；这些应进入更具体的 telemetry / diagnostic / sensor feature。 |
+| 数据面 | 不使用 STREAM；所有操作都是 RPC method/event。 |
+
+## 3. 方法
+
+方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。
+
+| method | 调用类型 | 说明 | params | result | 错误 | 状态 |
+|---|---|---|---|---|---|---|
+| `system.getState` | query | 查询当前通用运行状态快照。 | `GetSystemStateParams` | `SystemState` | `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`, `INTERNAL_ERROR` | review-ok |
+| `system.recoverRuntimeState` | action / async-action | 恢复指定 scope 的运行时状态，用于从 MCU、runtime、controller、service 等异常状态中恢复。 | `RecoverRuntimeStateParams` | `RecoverRuntimeStateResult` | `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `UNAVAILABLE`, `INTERNAL_ERROR` | draft |
+
+### `system.getState`
 
 | 项 | 内容 |
 |---|---|
-| 需求来源 | `docs/flows/device-system-info.md`、设备系统状态面板需求、重置设备状态恢复异常的新增场景、legacy `device.state` 迁移方向。 |
-| 目标用户 | App / PC host / cloud console / monitoring service。 |
-| 目标行为 | 读取设备当前通用运行状态，在低频状态变化时同步 UI，并允许上位机对支持的 runtime / MCU / controller / service 状态执行恢复。 |
-| 当前实现程度 | Drafted only；此前冲突的 `device.state` 草案已迁移并删除。 |
+| 说明 | 查询当前设备运行状态快照，供 UI、监控和业务端状态判定使用。 |
+| 调用类型 | query |
+| params | `GetSystemStateParams` |
+| result | `SystemState` |
+| 错误 | 通用 RPC / system 错误；候选业务错误见错误表。 |
+| 备注 | `sections` 控制返回段；高频遥测不应塞进 `system.getState` 的默认返回。 |
 
-## 3. Domain 边界
+#### Params 字段
 
-| 项 | 决策 |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `sections` | string[] | no | `cpu`, `memory`, `load`, `runtime`, `recovery`, `all` candidate | default P0 sections | 指定要返回的状态段。省略时返回 P0 段，首批 P0 范围仍需确认。 |
+| `includeRecoveryCapabilities` | boolean | no | `true`, `false` | `false` | 是否返回 `runtimeRecoverySupported` 和 `recoverableScopes`。 |
+
+#### Result 字段
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `online` | boolean | yes | `true`, `false` | none | 系统是否处于可服务状态。 |
+| `uptimeSeconds` | uint64 | no | `0..uint64 max` | omitted | 自上次启动以来的运行秒数。 |
+| `bootId` | string | no | boot-cycle id | omitted | 启动周期 ID，用于识别重启。 |
+| `stateVersion` | string | no | opaque version | omitted | 运行时状态版本，用于恢复前的乐观校验。 |
+| `runtimeRecoverySupported` | boolean | no | `true`, `false` | omitted | 是否支持 `system.recoverRuntimeState`。 |
+| `recoverableScopes` | string[] | no | scope array | omitted | 支持的状态恢复 scope。 |
+| `cpu` | `SystemCpuState` | no | see schema | omitted | CPU 使用摘要。 |
+| `memory` | `SystemMemoryState` | no | see schema | omitted | 内存使用摘要。 |
+| `load` | `SystemLoadState` | no | see schema | omitted | 系统负载摘要；不适用平台可省略。 |
+| `runtime` | `SystemRuntimeSummary` | no | see schema | omitted | AXTP host/runtime 运行摘要。 |
+| `sampledAt` | string timestamp | no | RFC 3339 timestamp | omitted | 状态采样时间。 |
+
+### `system.recoverRuntimeState`
+
+| 项 | 内容 |
 |---|---|
-| Domain | `system` |
-| Feature | `system.state` |
-| Capability | `system.state` |
-| 负责 | `online`、`uptimeSeconds`、CPU、内存、load、runtime/process 摘要、低频 `system.stateChanged` 状态变化事件，以及 runtime/MCU/controller/service 状态恢复动作。 |
-| 不属于本文 | 设备身份属于 `device.info`；关机/重启/计划任务属于 `system.lifecycle`；恢复默认配置/恢复出厂属于 `system.reset` / `system.initialization`；健康/告警/fault 等判定不作为协议 capability，由业务端基于状态事件自行实现；电池/供电遥测和高频传感器流不走本 event。 |
+| 说明 | 对指定运行时 scope 执行异常状态恢复。 |
+| 调用类型 | action / async-action |
+| params | `RecoverRuntimeStateParams` |
+| result | `RecoverRuntimeStateResult` |
+| 错误 | 不支持 scope、权限不足、当前 lifecycle/reset 动作冲突、资源忙、状态版本不匹配、内部恢复失败。 |
+| 备注 | 这是运行时异常恢复，不是恢复默认配置、恢复出厂、重新初始化、重启或关机。恢复成功或异步完成后，应通过 `system.stateChanged` 或后续 `system.getState` 校准状态。 |
 
-## 4. 候选 Capability
+#### Params 字段
 
-| Capability | 状态 | 说明 |
-|---|---|---|
-| `system.state` | draft | 通用运行时状态读取、低频变化通知和运行时状态恢复动作；不标准化健康/告警/fault 判定。 |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `scope` | string enum | yes | `runtime`, `mcu`, `controller`, `service`, `all` candidate | none | 要恢复的运行时范围；首批 scope 仍需确认。 |
+| `componentId` | string | no | component id | omitted | 具体组件或控制器 ID，例如 `main-controller`。是否允许指向 child device 仍需确认。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的原因，例如 `recover_from_abnormal_state`。 |
+| `force` | boolean | no | `true`, `false` | `false` | 是否请求强制恢复；平台可以拒绝。 |
+| `confirmationToken` | string | no | opaque token | omitted | 危险操作确认 token。 |
+| `expectedStateVersion` | string | no | `SystemState.stateVersion` | omitted | 可选乐观锁，避免基于过期状态执行恢复。 |
 
-## 5. 候选 Methods
+#### Result 字段
 
-| Method | Params Schema | Result Schema | 说明 | Review |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受恢复请求。 |
+| `actionId` | string | no | opaque action id | omitted | 恢复动作 ID，用于日志或后续关联。 |
+| `recoveredScopes` | string[] | no | scope array | omitted | 实际执行或计划执行恢复的 scope。 |
+| `state` | `SystemState` | no | see schema | omitted | 恢复后的状态快照；异步完成时可省略。 |
+| `disconnectExpected` | boolean | no | `true`, `false` | `false` | 是否预期 AXTP 连接断开。 |
+| `estimatedDelaySeconds` | uint32 | no | `0..uint32 max` | omitted | 预估完成时间。 |
+
+## 4. 事件
+
+| event | 触发条件 | payload | 客户端处理建议 | 状态 |
 |---|---|---|---|---|
-| `system.getState` | `GetSystemStateParams` | `SystemState` | 查询通用运行状态快照。 | `[REVIEW-OK]` |
-| `system.recoverRuntimeState` | `RecoverRuntimeStateParams` | `RecoverRuntimeStateResult` | 恢复指定 scope 的运行时状态，用于从异常状态中恢复。 | `[REVIEW-DRAFT]` |
+| `system.stateChanged` | online 变化、uptime reset、CPU/内存摘要跨阈值、runtime 状态变化、runtime recovery 请求或完成。 | `SystemStateChangedEvent` | 可用变化片段更新 UI；事件缺字段、丢失或状态不完整时，调用 `system.getState` 校准。 | draft |
 
-## 6. 候选 Events
+### Event payload 字段
 
-| Event | Schema | 触发时机 | Review |
-|---|---|---|---|
-| `system.stateChanged` | `SystemStateChangedEvent` | online、uptime reset、CPU/内存摘要跨阈值、runtime 状态变化或 runtime recovery 完成。 | `[REVIEW-DRAFT]` |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `changedFields` | string[] | yes | field path array | none | 变化字段路径，例如 `cpu.usagePercent`、`runtime.state`。 |
+| `state` | `SystemState` | no | see schema | omitted | 变化后的状态快照或部分快照。 |
+| `reason` | string enum | no | `poll_threshold`, `boot`, `runtime_restart`, `service_change`, `runtime_recovery_requested`, `runtime_recovery_completed`, `state_recovered`, `unknown` candidate | omitted | 状态变化原因。 |
 
-## 7. 候选 Schemas
+## 5. Capability
 
-### `GetSystemStateParams`
+Capability name: `system.state`。
 
-| Field | Type | Required | 说明 | Review |
+| 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 说明 |
 |---|---|---:|---|---|
-| `sections` | string[] | no | 可选返回段，例如 `cpu` / `memory` / `runtime`；默认返回 P0 段。 | `[REVIEW-DRAFT]` |
-| `includeRecoveryCapabilities` | boolean | no | 是否返回可恢复 scope 摘要；默认 `false`。 | `[REVIEW-DRAFT]` |
+| `capability` | string | yes | fixed `system.state` | capability 名称。 |
+| `supportedSections` | string[] | no | `cpu`, `memory`, `load`, `runtime`, `recovery`, `all` candidate | `system.getState` 支持的状态段。 |
+| `supportsStateChangedEvent` | boolean | no | `true`, `false` | 是否支持 `system.stateChanged`。 |
+| `stateChangedPolicy` | `SystemStateChangedPolicy` | no | see schema | 状态变化事件的节流、阈值或采样策略摘要。 |
+| `runtimeRecoverySupported` | boolean | no | `true`, `false` | 是否支持 `system.recoverRuntimeState`。 |
+| `recoverableScopes` | string[] | no | `runtime`, `mcu`, `controller`, `service`, `all` candidate | 支持恢复的 scope。 |
 
-### `SystemState`
+## 6. 字段 / Schemas
 
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `online` | boolean | yes | 系统是否处于可服务状态。 | `[REVIEW-OK]` |
-| `uptimeSeconds` | uint64 | no | 自上次启动以来的运行秒数。 | `[REVIEW-DRAFT]` |
-| `bootId` | string | no | 启动周期 ID，用于识别重启。 | `[REVIEW-DRAFT]` |
-| `stateVersion` | string | no | 运行时状态版本，用于恢复前的乐观校验。 | `[REVIEW-DRAFT]` |
-| `runtimeRecoverySupported` | boolean | no | 是否支持 `system.recoverRuntimeState`。 | `[REVIEW-DRAFT]` |
-| `recoverableScopes` | string[] | no | 支持的状态恢复 scope，例如 `runtime` / `mcu` / `controller` / `service`。 | `[REVIEW-ASK]` |
-| `cpu` | `SystemCpuState` | no | CPU 使用摘要。 | `[REVIEW-DRAFT]` |
-| `memory` | `SystemMemoryState` | no | 内存使用摘要。 | `[REVIEW-DRAFT]` |
-| `load` | `SystemLoadState` | no | 系统负载摘要。 | `[REVIEW-ASK]` |
-| `runtime` | `SystemRuntimeSummary` | no | AXTP host/runtime 运行摘要。 | `[REVIEW-DRAFT]` |
-| `sampledAt` | string timestamp | no | 采样时间。 | `[REVIEW-DRAFT]` |
+### 6.1 Schema 层级速览
 
-### `SystemCpuState`
+`system.state` 有三类核心数据：状态快照、状态变化事件、运行时恢复动作。
 
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `usagePercent` | float | no | 总 CPU 使用率。 | `[REVIEW-DRAFT]` |
-| `cores` | uint16 | no | CPU 核心数。 | `[REVIEW-DRAFT]` |
+| 层级 | 用在哪里 | 作用 |
+|---|---|---|
+| state snapshot | `system.getState` result、event payload、recover result | 描述当前通用运行状态。 |
+| recovery action | `system.recoverRuntimeState` params/result | 描述要恢复哪个运行时 scope，以及设备是否接受/完成。 |
+| event payload | `system.stateChanged` | 描述哪些状态字段变化，以及变化原因。 |
 
-### `SystemMemoryState`
+```text
+SystemState
+  online
+  uptimeSeconds / bootId / stateVersion
+  cpu: SystemCpuState
+  memory: SystemMemoryState
+  load: SystemLoadState
+  runtime: SystemRuntimeSummary
+  runtimeRecoverySupported / recoverableScopes
 
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `usedBytes` | uint64 | no | 已使用内存。 | `[REVIEW-DRAFT]` |
-| `totalBytes` | uint64 | no | 总内存。 | `[REVIEW-DRAFT]` |
-| `availableBytes` | uint64 | no | 可用内存。 | `[REVIEW-DRAFT]` |
+RecoverRuntimeStateParams
+  scope / componentId / reason / force / confirmationToken / expectedStateVersion
 
-### `SystemLoadState`
+SystemStateChangedEvent
+  changedFields
+  reason
+  state: SystemState
+```
 
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `load1m` | float | no | 1 分钟 load average；不适用平台可省略。 | `[REVIEW-ASK]` |
-| `load5m` | float | no | 5 分钟 load average。 | `[REVIEW-ASK]` |
-| `load15m` | float | no | 15 分钟 load average。 | `[REVIEW-ASK]` |
+阅读规则：
 
-### `SystemRuntimeSummary`
+- `SystemState` 是可返回完整快照，也可在 event 中作为变化片段。
+- `sections` 只影响返回哪些段，不改变字段语义。
+- `system.stateChanged` 不做健康等级判断；业务端根据状态和阈值自行判断。
+- `recoverRuntimeState` 是动作型 method，但仍属于 `system.state`，因为它恢复的是运行时状态，不是设备配置或出厂基线。
 
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `state` | string enum | no | `running` / `starting` / `stopping` / `error` / `unknown`。 | `[REVIEW-ASK]` |
-| `processId` | uint32 | no | host 进程 ID；仅本地诊断使用。 | `[REVIEW-DRAFT]` |
-| `restartCount` | uint32 | no | runtime 重启次数。 | `[REVIEW-DRAFT]` |
+### 6.2 请求与响应 Schemas
 
-### `RecoverRuntimeStateParams`
+#### `GetSystemStateParams`
 
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `scope` | string enum | yes | 要恢复的运行时范围，候选：`runtime` / `mcu` / `controller` / `service` / `all`。 | `[REVIEW-ASK]` |
-| `componentId` | string | no | 具体组件或控制器 ID；例如 `main-controller`。 | `[REVIEW-DRAFT]` |
-| `reason` | string | no | 调用方给出的原因，例如 `recover_from_abnormal_state`。 | `[REVIEW-DRAFT]` |
-| `force` | boolean | no | 是否请求强制恢复；平台可拒绝。 | `[REVIEW-ASK]` |
-| `confirmationToken` | string | no | 危险操作确认 token。 | `[REVIEW-ASK]` |
-| `expectedStateVersion` | string | no | 可选乐观锁，避免基于过期状态执行恢复。 | `[REVIEW-DRAFT]` |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `sections` | string[] | no | `cpu`, `memory`, `load`, `runtime`, `recovery`, `all` candidate | default P0 sections | 可选返回段；P0 默认字段仍需确认。 |
+| `includeRecoveryCapabilities` | boolean | no | `true`, `false` | `false` | 是否返回状态恢复能力摘要。 |
 
-### `RecoverRuntimeStateResult`
+#### `RecoverRuntimeStateParams`
 
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `accepted` | boolean | yes | 是否接受运行时状态恢复请求。 | `[REVIEW-OK]` |
-| `actionId` | string | no | 动作 ID。 | `[REVIEW-DRAFT]` |
-| `recoveredScopes` | string[] | no | 实际执行或计划执行恢复的 scope。 | `[REVIEW-DRAFT]` |
-| `state` | `SystemState` | no | 恢复后的状态快照；如果需要异步完成可省略。 | `[REVIEW-DRAFT]` |
-| `disconnectExpected` | boolean | no | 是否预期连接断开；默认 `false`。 | `[REVIEW-DRAFT]` |
-| `estimatedDelaySeconds` | uint32 | no | 预估完成时间。 | `[REVIEW-DRAFT]` |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `scope` | string enum | yes | `runtime`, `mcu`, `controller`, `service`, `all` candidate | none | 要恢复的运行时范围。 |
+| `componentId` | string | no | component id | omitted | 具体组件或控制器 ID。 |
+| `reason` | string | no | reason string | omitted | 调用方给出的恢复原因。 |
+| `force` | boolean | no | `true`, `false` | `false` | 是否请求强制恢复。 |
+| `confirmationToken` | string | no | opaque token | omitted | 危险操作确认 token。 |
+| `expectedStateVersion` | string | no | state version | omitted | 乐观锁，避免基于过期状态执行恢复。 |
 
-### `SystemStateChangedEvent`
+#### `RecoverRuntimeStateResult`
 
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `changedFields` | string[] | yes | 变化字段路径。 | `[REVIEW-DRAFT]` |
-| `state` | `SystemState` | no | 变化后的状态快照或部分快照。 | `[REVIEW-DRAFT]` |
-| `reason` | string enum | no | `poll_threshold` / `boot` / `runtime_restart` / `service_change` / `runtime_recovery_requested` / `runtime_recovery_completed` / `state_recovered`。 | `[REVIEW-ASK]` |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 是否接受恢复请求。 |
+| `actionId` | string | no | opaque action id | omitted | 恢复动作 ID。 |
+| `recoveredScopes` | string[] | no | scope array | omitted | 实际执行或计划执行的恢复 scope。 |
+| `state` | `SystemState` | no | see 6.4 | omitted | 恢复后的状态快照或片段。 |
+| `disconnectExpected` | boolean | no | `true`, `false` | `false` | 是否预期 AXTP 连接断开。 |
+| `estimatedDelaySeconds` | uint32 | no | `0..uint32 max` | omitted | 预估完成时间。 |
 
-## 8. JSON 示例
+#### `SystemStateChangedEvent`
 
-示例只写 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `changedFields` | string[] | yes | field path array | none | 变化字段路径。 |
+| `state` | `SystemState` | no | see 6.4 | omitted | 变化后的状态快照或部分快照。 |
+| `reason` | string enum | no | `poll_threshold`, `boot`, `runtime_restart`, `service_change`, `runtime_recovery_requested`, `runtime_recovery_completed`, `state_recovered`, `unknown` candidate | omitted | 变化原因。 |
 
-### `system.getState` request
+### 6.3 Capability Schemas
+
+#### `SystemStateCapability`
+
+这是 `system.state` 的 capability 描述候选；正式形态由 registry 采纳时确定。
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `capability` | string | yes | fixed `system.state` | none | capability 名称。 |
+| `supportedSections` | string[] | no | section array | omitted | 支持的 `system.getState.sections`。 |
+| `supportsStateChangedEvent` | boolean | no | `true`, `false` | omitted | 是否支持 `system.stateChanged`。 |
+| `stateChangedPolicy` | `SystemStateChangedPolicy` | no | see below | omitted | event 节流/阈值策略摘要。 |
+| `runtimeRecoverySupported` | boolean | no | `true`, `false` | omitted | 是否支持运行时状态恢复。 |
+| `recoverableScopes` | string[] | no | scope array | omitted | 支持的恢复 scope。 |
+
+#### `SystemStateChangedPolicy`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `mode` | string enum | no | `threshold`, `debounced`, `sampled`, `manual`, `unknown` candidate | omitted | 事件触发策略摘要。 |
+| `minIntervalMs` | uint32 | no | `0..uint32 max` | omitted | 事件最小间隔。 |
+| `includedSections` | string[] | no | section array | omitted | 事件可能包含的状态段。 |
+
+### 6.4 Config / State 总结构
+
+#### `SystemState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `online` | boolean | yes | `true`, `false` | none | 系统是否处于可服务状态。 |
+| `uptimeSeconds` | uint64 | no | `0..uint64 max` | omitted | 自上次启动以来的运行秒数。 |
+| `bootId` | string | no | boot-cycle id | omitted | 启动周期 ID。 |
+| `stateVersion` | string | no | opaque version | omitted | 状态版本。 |
+| `runtimeRecoverySupported` | boolean | no | `true`, `false` | omitted | 是否支持运行时状态恢复。 |
+| `recoverableScopes` | string[] | no | scope array | omitted | 支持的恢复 scope。 |
+| `cpu` | `SystemCpuState` | no | see 6.5 | omitted | CPU 摘要。 |
+| `memory` | `SystemMemoryState` | no | see 6.5 | omitted | 内存摘要。 |
+| `load` | `SystemLoadState` | no | see 6.5 | omitted | 系统负载摘要。 |
+| `runtime` | `SystemRuntimeSummary` | no | see 6.5 | omitted | runtime 摘要。 |
+| `sampledAt` | string timestamp | no | RFC 3339 timestamp | omitted | 采样时间。 |
+
+### 6.5 各对象字段
+
+#### `SystemCpuState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `usagePercent` | float | no | 0..100 | omitted | 总 CPU 使用率。 |
+| `cores` | uint16 | no | `1..uint16 max` | omitted | CPU 核心数。 |
+
+#### `SystemMemoryState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `usedBytes` | uint64 | no | `0..uint64 max` | omitted | 已使用内存。 |
+| `totalBytes` | uint64 | no | `0..uint64 max` | omitted | 总内存。 |
+| `availableBytes` | uint64 | no | `0..uint64 max` | omitted | 可用内存。 |
+
+#### `SystemLoadState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `load1m` | float | no | `0..float max` | omitted | 1 分钟 load average；不适用平台可省略。 |
+| `load5m` | float | no | `0..float max` | omitted | 5 分钟 load average。 |
+| `load15m` | float | no | `0..float max` | omitted | 15 分钟 load average。 |
+
+#### `SystemRuntimeSummary`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `state` | string enum | no | `running`, `starting`, `stopping`, `error`, `unknown` candidate | omitted | AXTP host/runtime 状态。 |
+| `processId` | uint32 | no | `0..uint32 max` | omitted | host 进程 ID；仅本地诊断使用。 |
+| `restartCount` | uint32 | no | `0..uint32 max` | omitted | runtime 重启次数。 |
+
+## 7. JSON 示例
+
+示例只展示 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。字段和 ID 在采纳前均为草案。
+
+### 7.1 场景：系统状态面板读取 CPU、内存和 runtime 状态
+
+App 打开系统状态面板时，读取 P0 状态段，并请求带上运行时恢复能力摘要。
+
+#### request
 
 ```json
 {
@@ -170,7 +318,7 @@ Capability ID：`system.state`
 }
 ```
 
-### `system.getState` response
+#### response
 
 ```json
 {
@@ -204,7 +352,13 @@ Capability ID：`system.state`
 }
 ```
 
-### `system.recoverRuntimeState` request
+读法：`online` 表示系统是否可服务；`stateVersion` 可用于后续恢复动作的乐观校验；`runtimeRecoverySupported` 和 `recoverableScopes` 只在请求包含恢复能力摘要时需要返回。
+
+### 7.2 场景：恢复 MCU 异常状态
+
+用户或上位机发现 MCU 状态异常，但不想重启整机，也不想恢复默认/出厂配置，只请求恢复 `mcu` scope。
+
+#### request
 
 ```json
 {
@@ -220,7 +374,7 @@ Capability ID：`system.state`
 }
 ```
 
-### `system.recoverRuntimeState` response
+#### response
 
 ```json
 {
@@ -247,7 +401,11 @@ Capability ID：`system.state`
 }
 ```
 
-### `system.stateChanged` event
+读法：`accepted=true` 表示设备接受恢复动作。响应中的 `state` 可以是恢复后的部分快照；如果恢复异步完成，设备可以先省略 `state`，随后通过 `system.stateChanged` 或客户端轮询 `system.getState` 校准。
+
+### 7.3 场景：CPU 使用率跨阈值触发状态变化事件
+
+设备检测到 CPU 使用率跨过产品定义阈值后，上报低频状态变化。业务端接收事件后自行判断是否显示健康、告警或故障。
 
 ```json
 {
@@ -266,7 +424,11 @@ Capability ID：`system.state`
 }
 ```
 
-### `system.stateChanged` runtime recovery completed event
+读法：event payload 可以是变化片段，不一定是完整 `SystemState`。客户端如果需要完整状态，应调用 `system.getState` 校准。
+
+### 7.4 场景：运行时状态恢复完成事件
+
+`system.recoverRuntimeState` 异步完成后，设备用 `system.stateChanged` 报告 runtime 状态恢复。
 
 ```json
 {
@@ -287,11 +449,15 @@ Capability ID：`system.state`
 }
 ```
 
-### failure response
+读法：这个事件只表达运行时状态恢复完成，不表示设备重启、关机、恢复默认设置或恢复出厂设置。
+
+### 7.5 场景：状态服务暂不可用
+
+设备状态服务尚未准备好或临时不可用时，返回通用错误码；候选业务错误名放在 `details.candidateError` 中。
 
 ```json
 {
-  "id": 20,
+  "id": 22,
   "status": {
     "ok": false,
     "code": 15,
@@ -303,82 +469,61 @@ Capability ID：`system.state`
 }
 ```
 
-## 9. 候选 Errors
+读法：失败响应不改变设备状态，也不应触发 `system.stateChanged`。客户端可以稍后重试或等待连接 / lifecycle 状态稳定。
 
-| Error | 类别 | 说明 | Review |
+## 8. 错误
+
+| 错误 | 适用场景 | 说明 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持 `system.state`、某个 `sections` 值或某个 recovery scope。 | 可映射候选 `SYSTEM_STATE_SECTION_NOT_SUPPORTED` / `SYSTEM_STATE_RECOVERY_NOT_SUPPORTED`。 |
+| `INVALID_ARGUMENT` | 请求结构非法、scope 非法、componentId 格式非法、stateVersion 不可用。 | 可映射候选 `SYSTEM_STATE_RECOVERY_INVALID_SCOPE`。 |
+| `INVALID_STATE` | 当前 lifecycle/reset/initialization 状态不允许恢复运行时状态。 | 例如正在关机、重启、恢复出厂。 |
+| `BUSY` | 状态恢复正在执行，或相关资源繁忙。 | 可映射候选 `SYSTEM_STATE_RECOVERY_BUSY`。 |
+| `PERMISSION_DENIED` | 调用方无权读取状态或执行恢复动作。 | 可映射候选 `SYSTEM_STATE_RECOVERY_PERMISSION_DENIED`。 |
+| `UNAVAILABLE` | 系统状态服务暂不可用。 | 可映射候选 `SYSTEM_STATE_UNAVAILABLE`。 |
+| `INTERNAL_ERROR` | 状态读取或恢复执行失败。 | 设备内部错误。 |
+| `SYSTEM_STATE_UNAVAILABLE` | 候选业务错误：系统状态服务暂不可用。 | `[REVIEW-DRAFT]`；采纳前确认是否需要 feature-specific errorCode。 |
+| `SYSTEM_STATE_RECOVERY_NOT_SUPPORTED` | 候选业务错误：恢复 scope 不支持。 | `[REVIEW-DRAFT]`。 |
+| `SYSTEM_STATE_RECOVERY_BUSY` | 候选业务错误：恢复动作冲突或资源忙。 | `[REVIEW-DRAFT]`。 |
+
+## 9. Legacy 映射
+
+Legacy 映射是迁移证据，不是 runtime 合同。旧 `device.state` 分类中的泛设备状态应按字段拆分，不再映射到独立 `system.health`。
+
+| legacy 项 | 候选映射 | 状态 | 说明 |
 |---|---|---|---|
-| `SYSTEM_STATE_UNAVAILABLE` | system | 系统状态服务暂不可用；JSON 示例使用通用 `UNAVAILABLE`。 | `[REVIEW-DRAFT]` |
-| `SYSTEM_STATE_SECTION_NOT_SUPPORTED` | system | 请求了设备不支持的 section；JSON 示例可使用 `NOT_SUPPORTED`。 | `[REVIEW-DRAFT]` |
-| `SYSTEM_STATE_RECOVERY_NOT_SUPPORTED` | system | 当前设备或 scope 不支持运行时状态恢复；JSON 示例可使用 `NOT_SUPPORTED`。 | `[REVIEW-DRAFT]` |
-| `SYSTEM_STATE_RECOVERY_PERMISSION_DENIED` | system | 无权执行运行时状态恢复；JSON 示例可使用 `PERMISSION_DENIED`。 | `[REVIEW-DRAFT]` |
-| `SYSTEM_STATE_RECOVERY_BUSY` | system | 状态恢复正在执行，或 lifecycle 动作进行中；JSON 示例可使用 `BUSY`。 | `[REVIEW-DRAFT]` |
-| `SYSTEM_STATE_RECOVERY_INVALID_SCOPE` | system | 请求的 scope 或 componentId 非法；JSON 示例可使用 `INVALID_ARGUMENT`。 | `[REVIEW-DRAFT]` |
+| AXDP / Rooms / VM33 `CommonGetTipsStatus`、`CheckLineStatus`、`DeviceStatus.Get` 等 | `system.getState` / `system.stateChanged` 或未来 telemetry/sensor capability | `[REVIEW-ASK]` | 需按字段拆到 runtime state、业务端判定或其他遥测能力。 |
+| Signage `OnTelemetryReport` 中 CPU/内存类字段 | `system.stateChanged` | `[REVIEW-ASK]` | 高频遥测字段集合未确认；高频字段可能不进入本 event。 |
+| MCU / controller 状态恢复旧命令或 SDK 行为 | `system.recoverRuntimeState` | `[REVIEW-ASK]` | 需确认是否已有 legacy 命令、scope、权限和结果码。 |
+| 旧健康/告警/fault 状态 | business-side judgment over `system.stateChanged` | `[REVIEW-OK]` | 不创建独立 `system.health` capability。 |
 
-## 10. Legacy 待映射
+## 10. Registry / Conformance 状态
 
-| 来源 | 旧协议条目 | 候选映射 | 状态 | 说明 |
-|---|---|---|---|---|
-| AXDP / Rooms / VM33 | `CommonGetTipsStatus`、`CheckLineStatus`、`DeviceStatus.Get` 等 | `system.getState` / `system.stateChanged` 或未来 telemetry/sensor capability | `[REVIEW-ASK]` | 原分类为 `device.state`，需按字段拆到 runtime state、业务端判定或其他遥测能力。 |
-| Signage | `OnTelemetryReport` 中 CPU/内存类字段 | `system.stateChanged` | `[REVIEW-ASK]` | 遥测字段集合未确认；高频字段可能不进入 event。 |
-| MCU / controller 状态恢复 | 待确认旧命令或 SDK 行为 | `system.recoverRuntimeState` | `[REVIEW-ASK]` | 需求来自上位机指定恢复异常状态；需确认是否已有 legacy 命令、scope 和结果码。 |
+| 项 | 状态 | 说明 |
+|---|---|---|
+| registry | not generated | 当前未写入 `registry/domains/system/domain.yaml`。 |
+| generated | false | `docs/generated/**` 未生成 `system.getState`、`system.recoverRuntimeState` 或 `system.stateChanged`。 |
+| protocol draft | review-ok | domain 边界、方法、事件、schema、错误、legacy mapping 和 JSON 示例已可进入 registry review。 |
+| registry readiness | partial / candidate | 仍需确认 P0 字段、section 策略、recovery scope、event 节流、fieldId、methodId/eventId、错误码。 |
+| conformance | missing | 采纳后需要新增 `system.state` 专项 cases。 |
 
-## 11. Registry 草案输入
+## 11. 测试要点
 
-```yaml
-capabilities:
-  - id: system.state
-    name: system.state capability
-    status: draft
-    methods:
-      - system.getState
-      - system.recoverRuntimeState
-    events:
-      - system.stateChanged
+| 类型 | 要点 |
+|---|---|
+| happy path | `system.getState` 返回 online、uptime、CPU、memory、runtime；`system.recoverRuntimeState` 接受支持的 scope。 |
+| event path | CPU/内存阈值、runtime 状态变化、recovery completed 触发 `system.stateChanged`。 |
+| boundary case | `sections` 省略、未知 section、不适用平台省略 `load`、optional `runtime` 缺失、`stateVersion` 过期。 |
+| recovery case | 不支持 scope、componentId 非法、无确认 token、当前 lifecycle/reset 冲突、恢复动作 busy。 |
+| compatibility | 原 `device.state` 运行时字段迁移到 `system.state`；健康/告警/fault 由业务端自行判定。 |
+| no-event-on-failure | `system.getState` 或 `recoverRuntimeState` 失败时不应触发误导性的 state changed event。 |
 
-methods:
-  - name: system.getState
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    requestSchema: GetSystemStateParams
-    responseSchema: SystemState
-    capabilities:
-      - system.state
-  - name: system.recoverRuntimeState
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    requestSchema: RecoverRuntimeStateParams
-    responseSchema: RecoverRuntimeStateResult
-    capabilities:
-      - system.state
+## 12. 待确认问题
 
-events:
-  - name: system.stateChanged
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    eventSchema: SystemStateChangedEvent
-    capabilities:
-      - system.state
-```
-
-## 12. 采纳检查清单
-
-- [ ] 08 已确认 `system.state` 可作为本 flow 的 capability 块。
-- [ ] 10 已确认 `system.getState` 的 schema 和 section 策略。
-- [ ] 10 已确认 `system.recoverRuntimeState` 的 scope、权限、确认 token 和异步完成语义。
-- [ ] 11 已确认 `system.stateChanged` 的节流、阈值和 eventMasks bitOffset。
-- [ ] 12 已确认错误码复用或新增策略。
-- [ ] 13 已确认 fieldId 和跨平台可选字段表达。
-- [ ] legacy `device.state` 线索已拆分到 `system.state`、业务端判定或未来 telemetry/sensor capability，不再映射到 `system.health`。
-
-## 13. 待确认问题
-
-1. CPU、内存、online、uptime、load、runtime summary 中哪些是 P0？
-2. `stateChanged` 是否只在阈值跨越时发送，还是任意采样变化都发送？
-3. Windows、Android、Linux、RTOS 对 `load` 和 `processId` 的支持差异如何表达？
-4. `bootId` 是否需要稳定到重启周期，还是只用 `uptimeSeconds` 足够？
-5. `system.recoverRuntimeState` 首批 scope 是否包含 `mcu`、`runtime`、`controller`、`service` 和 `all`？
-6. `componentId` 是否允许指向 child device，还是只允许当前 endpoint 内部组件？
-7. 状态恢复是否可能导致 AXTP 连接断开，若断开是否需要 lifecycle event 配合？
+| 问题 | 影响 | 当前建议 | 状态 |
+|---|---|---|---|
+| CPU、内存、online、uptime、load、runtime summary 中哪些是 P0？ | schema / conformance | `online` 为必填，CPU/内存/runtime 作为首批推荐段；`load` 可选。 | open |
+| `system.stateChanged` 是阈值跨越触发，还是任意采样变化都触发？ | event / conformance | 采用阈值或节流策略，避免高频遥测污染业务事件。 | open |
+| `system.recoverRuntimeState` 首批 scope 是否包含 `mcu`、`runtime`、`controller`、`service` 和 `all`？ | registry / product behavior | 首批采用 `runtime`、`mcu`、`controller`，`service` 和 `all` 作为候选。 | open |
+| `componentId` 是否允许指向 child device？ | schema / legacy | 默认只指向当前 endpoint 内部组件；child device recovery 另行评审。 | open |
+| 状态恢复是否可能导致 AXTP 连接断开？ | lifecycle / conformance | 用 `disconnectExpected` 明示，断连场景配合 lifecycle/reconnect 流程。 | open |
