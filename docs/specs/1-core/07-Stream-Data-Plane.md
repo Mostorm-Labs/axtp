@@ -72,7 +72,7 @@ STREAM Header 固定为 16B：
 | `cursor` | uint64 | 8B | 通用位置/时间 cursor；含义来自 Stream Context |
 | `data` | bytes | N | 不透明业务 payload |
 
-所有多字节字段 MUST 使用 Little-Endian。`Frame.payloadLength` MUST 等于 `16 + dataLength`。
+所有多字节字段 MUST 使用 Big-Endian，即 network byte order。`Frame.payloadLength` MUST 等于 `16 + dataLength`。
 
 `streamId` 范围：
 
@@ -201,7 +201,7 @@ StreamParser MUST 校验：
 - streamId 映射到已存在的 Stream Context；
 - data length 不超过 Stream Context/profile 限制；
 - `seqId` duplicate/missing/out-of-order 行为按 profile 处理；
-- `cursor` 按 uint64 Little-Endian 解析，且只由 Stream Context/profile 解释；
+- `cursor` 按 uint64 Big-Endian / network byte order 解析，且只由 Stream Context/profile 解释；
 - STREAM parsing 前已经完成 L1 Frame CRC 和 reassembly。
 
 基础错误处理：
@@ -254,7 +254,7 @@ Runtime MUST 保持这些层级分离。
 ```text
 streamId=1, seqId=0, cursor=0, data=AA BB CC DD
 
-01 00 00 00              // streamId
+00 00 00 01              // streamId
 00 00 00 00              // seqId
 00 00 00 00 00 00 00 00  // cursor
 AA BB CC DD              // opaque data
@@ -265,9 +265,9 @@ AA BB CC DD              // opaque data
 ```text
 streamId=33, seqId=1, cursor=512, data=object[512..1023]
 
-21 00 00 00              // streamId=33
-01 00 00 00              // seqId=1
-00 02 00 00 00 00 00 00  // cursor=512
+00 00 00 21              // streamId=33
+00 00 00 01              // seqId=1
+00 00 00 00 00 00 02 00  // cursor=512
 [512 bytes opaque data]
 ```
 

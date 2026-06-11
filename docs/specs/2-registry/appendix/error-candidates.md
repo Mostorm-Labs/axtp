@@ -31,7 +31,7 @@
 - ErrorCode 只表达机器可判断的错误类别；详细错误信息通过 RPC `status.msg / status.details`、Control `errorDetail`、厂商 `vendorErrorCode / vendorErrorMessage`、legacyStatus、traceId 等字段携带
 - `0x0000 = SUCCESS`，所有 Response / ACK 成功时必须使用该值
 - Control、RPC、Stream、Capability、Firmware Update、File 等错误统一进入 ErrorCode Registry，不各自定义局部状态码
-- ErrorCode 使用 `uint16`，字节序 Little-Endian
+- ErrorCode 使用 `uint16`，字节序为 Big-Endian / network byte order
 
 ---
 

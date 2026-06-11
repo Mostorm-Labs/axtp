@@ -235,7 +235,7 @@ Host player 负责“解码、jitter buffer、A/V sync 和播放”。
 
 ### 8.8 `AudioChunkHeaderV1`
 
-每个 `media.audio` STREAM data 建议以 `AudioChunkHeaderV1` 开头，然后承载 AAC access unit / ADTS frame / LATM/raw AAC data。PCM chunk 仅适用于非 NA20/NT10 MVP 的其他实时音频 source 或未来扩展。字段 ID 在二进制 payload envelope 内不是 TLV fieldId；采纳时仍需明确 wire endian 和 headerLength。
+每个 `media.audio` STREAM data 建议以 `AudioChunkHeaderV1` 开头，然后承载 AAC access unit / ADTS frame / LATM/raw AAC data。PCM chunk 仅适用于非 NA20/NT10 MVP 的其他实时音频 source 或未来扩展。字段 ID 在二进制 payload envelope 内不是 TLV fieldId；采纳时应沿用 AXTP Big-Endian / network byte order，并明确 headerLength。
 
 ```text
 +------------------------+
@@ -743,7 +743,7 @@ profiles:
 - [ ] 13 已确认 schema fieldId、capabilityId、supportedMethods。
 - [ ] 14 已确认 `media.audio` profile 与 `realtime_audio` alias。
 - [ ] NA20/NT10 投屏 MVP 已确认 AAC 透传，不要求 NA20 PCM fallback。
-- [ ] `AudioChunkHeaderV1` wire 结构、endianness、headerLength 和 flags 已确认。
+- [ ] `AudioChunkHeaderV1` wire 结构、Big-Endian / network byte order、headerLength 和 flags 已确认。
 - [ ] YAML 写入后 Generator 能完整生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
 
 ## 17. 待确认问题

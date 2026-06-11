@@ -720,7 +720,7 @@ Review：
 | video data...    | N
 ```
 
-所有字段 Little-Endian。`payloadLength = 16 + videoPayloadLength`。
+所有 AXTP 公共 STREAM header 字段使用 Big-Endian / network byte order。`payloadLength = 16 + videoPayloadLength`。
 
 公共 header 中不得新增 `payloadType`、`codec`、`timestamp`、`frameId`、`offset`、`keyFrame` 等业务字段。视频业务元数据必须放入 video payload envelope，或通过 `video.openStream` 返回的 Stream Context 绑定。
 
@@ -745,7 +745,7 @@ Review：
 | data bytes...          | N
 ```
 
-所有字段 Little-Endian。`dataLength` 必须等于当前 STREAM payload 中 `VideoChunkHeaderV1` 后的剩余字节数。
+`VideoChunkHeaderV1` 内所有多字节字段使用 Big-Endian / network byte order。`dataLength` 必须等于当前 STREAM payload 中 `VideoChunkHeaderV1` 后的剩余字节数。
 
 `flags` 定义：
 
