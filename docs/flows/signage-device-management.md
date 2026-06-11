@@ -73,15 +73,15 @@
 | 建立 AXTP session | Adopted/generated core | AXTP session, `AXTP-WS-CLOUD-REVERSE` | `docs/generated/protocol.md` | 可按 Core 实现连接和 RPC envelope。 |
 | 设备在线和心跳 | Adopted/generated core | Core transport heartbeat | `docs/generated/protocol.md` | 直接使用 Core heartbeat。 |
 | 设备基础信息查询 | Drafted only | `device.info` | `docs/protocol/device/device.info.md` | 转 Stage 20 对齐字段：model/devName/version 等；CPU/内存/IP/MAC 拆分到 system/network。 |
-| 修改设备名 | Missing | 无对应 AXTP 草案 | legacy `SetDeviceName` | 转 Stage 20 新建设备名设置草案。 |
+| 修改设备名 | Drafted only | `software.config`（target: `"launcher"`） | `docs/protocol/software/software.config.md` v0.1（含 `displayName` 字段） | 转 Stage 20 补 `displayName` 归属审查（`software.config` 写入 vs `device.info` 只读）。 |
 | 网络信息查询 | Drafted only | `network.interface` + `network.ip` + `network.wifi` | `docs/protocol/network/*.md` | 转 Stage 20 分解旧数组聚合响应。 |
-| 注册码获取 | Missing | `device.enrollment` | 旧草案 `device.binding` 已删除 | 转 Stage 20 新建 `device.enrollment` 草案，补注册码过期刷新逻辑和 Device→Server 方向。 |
-| 注册状态查询/设置 | Missing | `device.enrollment` | 旧草案 `device.binding` 已删除 | 转 Stage 20 新建 `device.enrollment` 草案，补 enrolled 状态 schema 和 Server→Device 方向。 |
+| 注册码获取 | Drafted only | `device.enrollment` | `docs/protocol/device/device.enrollment.md` v0.1 | 转 Stage 20 补 `device.getPairingCode` 方向确认和 pairing code TTL conformance。 |
+| 注册状态查询/设置 | Drafted only | `device.enrollment` | `docs/protocol/device/device.enrollment.md` v0.1 | 转 Stage 20 补 enrollment state 枚举首批值和 legacy 字段映射。 |
 | 播放列表全量同步 | Drafted only | `signage.playlist` | `docs/protocol/signage/signage.playlist.md` | 转 Stage 20 补 playlists/items/settings schema 和全量替换语义。 |
 | 播放列表查询 | Drafted only | `signage.playlist` | `docs/protocol/signage/signage.playlist.md` | 转 Stage 20 保持 set/get 结构一致。 |
 | 播放项 URL 刷新 | Drafted only | `signage.playlist` | `docs/protocol/signage/signage.playlist.md` | URL refresh method 归属 signage.playlist；转 Stage 20 补 `url`/`urls` 二选一 schema。 |
-| 外观/面板配置 | Missing | `software.config`（target: `"launcher"`） | 旧草案 `device.appearance` 已删除 | 转 Stage 20 新建 `software.config` 草案，target: `"launcher"` 管理 panelLayout/autoHidePanel/autoHideDelay。 |
-| 软件更新策略 | Missing | `software.updatePolicy`（target: `"launcher"`） | 旧草案 `firmware.updatePolicy` 已回退为骨架 | 转 Stage 20 新建 `software.updatePolicy` 草案，target: `"launcher"` 管理 updateMode/schedule/channel/conditions。 |
+| 外观/面板配置 | Drafted only | `software.config`（target: `"launcher"`） | `docs/protocol/software/software.config.md` v0.1 | 转 Stage 20 补 target 枚举确认和 `displayName` 归属审查。 |
+| 软件更新策略 | Drafted only | `software.updatePolicy`（target: `"launcher"`） | `docs/protocol/software/software.updatePolicy.md` v0.1 | 转 Stage 20 补 `updateMode` 枚举首批值和跨日 window 语义确认。 |
 | 重启关机计划 | Drafted only | `system.lifecycle` | `docs/protocol/system/system.lifecycle.md` | system.lifecycle v0.8 已覆盖 reboot/shutdown schedule；转 Stage 20 补 legacy 字段映射。 |
 
 ## 5. End-To-End Sequence
@@ -107,13 +107,13 @@ sequenceDiagram
         Device-->>Cloud: model, devName, version, cpuUsage, memoryUsage, ip, mac
         Cloud->>Device: GetNetworkInfo (draft network.*)
         Device-->>Cloud: Wi-Fi / Ethernet 接口状态
-        Cloud->>Device: GetEnrollmentStatus (missing device.enrollment)
-        Device-->>Cloud: { enrolled: true/false }
+        Cloud->>Device: GetEnrollmentState (draft device.enrollment)
+        Device-->>Cloud: { state: "enrolled" / "unmanaged" }
         Cloud->>Device: GetPlaylistConfig (draft signage.playlist)
         Device-->>Cloud: 当前播放列表
-        Cloud->>Device: software.getConfig(target: "launcher") (missing software.config)
-        Device-->>Cloud: panelLayout, autoHidePanel, autoHideDelay
-        Cloud->>Device: software.getUpdatePolicy(target: "launcher") (missing software.updatePolicy)
+        Cloud->>Device: software.getConfig(target: "launcher") (draft software.config)
+        Device-->>Cloud: displayName, panelLayout, autoHidePanel, autoHideDelay
+        Cloud->>Device: software.getUpdatePolicy(target: "launcher") (draft software.updatePolicy)
         Device-->>Cloud: updateMode, schedule, channel, conditions
         Cloud->>Device: GetScheduleConfig (draft system.lifecycle)
         Device-->>Cloud: shutdown/reboot enabled, time, days
@@ -122,23 +122,23 @@ sequenceDiagram
 
     rect rgb(230, 255, 230)
         Note over User,Device: 阶段 3: 设备注册（enrollment）
-        Device->>Cloud: device.getEnrollmentCode (missing device.enrollment)
+        Device->>Cloud: device.getPairingCode (draft device.enrollment)
         Cloud-->>Device: { code, expiresAt, expiresInSeconds }
         Note over Device: 展示注册码
         User->>Console: 在云端管理系统输入注册码
         Console->>Cloud: 注册设备到工作空间
-        Cloud->>Device: device.setEnrollmentStatus { enrolled: true }
-        Device-->>Cloud: { ok: true }
-        Cloud->>Device: device.getEnrollmentStatus (验证)
-        Device-->>Cloud: { enrolled: true }
+        Cloud->>Device: device.setEnrollmentState { desiredState: "enrolled", reason: "pairing_code_used" }
+        Device-->>Cloud: { state: "enrolled" }
+        Cloud->>Device: device.getEnrollmentState (验证)
+        Device-->>Cloud: { state: "enrolled" }
     end
 
     rect rgb(255, 230, 245)
         Note over User,Signage: 阶段 4: 设备管理（注册成功后）
         User->>Console: 修改设备名称
         Console->>Cloud: SetDeviceName
-        Cloud->>Device: SetDeviceName { devName }
-        Device-->>Cloud: { ok: true }
+        Cloud->>Device: software.setConfig(target: "launcher", config: { displayName })
+        Device-->>Cloud: { target: "launcher", config: { displayName, appearance } }
 
         User->>Console: 修改数字标牌内容
         Console->>Cloud: SetPlaylistConfig
@@ -176,22 +176,22 @@ sequenceDiagram
 | 2 | P1 | Device / Cloud | 维护在线状态。 | Core transport heartbeat | 替代旧 `KeepAlive` 指令和事件。 | Cloud 持续感知设备在线。 | 心跳超时触发断连和重连。 |
 | 3 | P2 | Cloud / Device | 查询设备基础信息。 | Draft `device.info` | 旧字段：model, devName, cpuUsage, memoryUsage, ip, mac, version。 | UI 展示设备概览。 | 当前草案字段不足时转 Stage 20 补齐。 |
 | 4 | P2 | Cloud / Device | 查询网络信息。 | Draft `network.*` | 旧字段：type, connected, ip, mac, ssid, rssi（数组）。 | UI 展示网络状态。 | 需组合 interface/IP/Wi-Fi 查询。 |
-| 5 | P2 | Cloud / Device | 查询注册状态。 | Missing `device.enrollment` | 旧字段：bound（→ enrolled）。 | 判断设备是否已注册。 | 未注册进入阶段 3。 |
+| 5 | P2 | Cloud / Device | 查询注册状态。 | Draft `device.enrollment` | `device.getEnrollmentState(includeEndpoint: true)`；旧字段 `bound`(bool) → `state`(enum)。 | `{ state: "enrolled"/"unmanaged", endpoint? }`。 | 未注册进入阶段 3。 |
 | 6 | P2 | Cloud / Device | 查询播放列表配置。 | Draft `signage.playlist` | 请求为空。 | 返回当前完整 playlist config。 | 保持 set/get 结构一致。 |
-| 7 | P2 | Cloud / Device | 查询外观配置。 | Missing `software.config`（target: `"launcher"`） | target: `"launcher"`。 | panelLayout, autoHidePanel, autoHideDelay。 | 旧草案 `device.appearance` 已删除，转 Stage 20 新建 `software.config` 草案。 |
-| 8 | P2 | Cloud / Device | 查询更新策略。 | Missing `software.updatePolicy`（target: `"launcher"`） | target: `"launcher"`。 | updateMode, schedule, channel, conditions。 | 旧草案 `firmware.updatePolicy` 已回退为骨架，转 Stage 20 新建 `software.updatePolicy` 草案。 |
+| 7 | P2 | Cloud / Device | 查询外观配置。 | Draft `software.config`（target: `"launcher"`） | `software.getConfig(target: "launcher")`。 | displayName, panelLayout, autoHidePanel, autoHideDelay。 | 草案 `docs/protocol/software/software.config.md` v0.1；转 Stage 20 补 target 枚举确认。 |
+| 8 | P2 | Cloud / Device | 查询更新策略。 | Draft `software.updatePolicy`（target: `"launcher"`） | `software.getUpdatePolicy(target: "launcher")`。 | updateMode, schedule, channel, conditions。 | 草案 `docs/protocol/software/software.updatePolicy.md` v0.1；转 Stage 20 补 `updateMode` 枚举首批值。 |
 | 9 | P2 | Cloud / Device | 查询计划任务配置。 | Draft `system.lifecycle` | 请求为空。 | shutdown/reboot enabled, time, days。 | system.lifecycle v0.8 已有 get/setRebootSchedule 和 get/setShutdownSchedule。 |
 | 10 | P2 | Cloud | 比对配置差异，按需下发更新。 | 非 protocol — Cloud 本地逻辑 | 比对查询结果与云端存储。 | 决定是否需要下发 set 操作。 | 差异下发走对应 set 方法。 |
-| 11 | P3 | Device / Cloud | 设备请求注册码。 | Missing `device.enrollment` — getEnrollmentCode | 请求为空；方向 Device → Server。 | `{ code, expiresAt, expiresInSeconds }`。 | 旧草案 `device.binding` 已删除，转 Stage 20 新建 `device.enrollment` 草案。 |
+| 11 | P3 | Device / Cloud | 设备请求注册码。 | Draft `device.enrollment` — `device.getPairingCode` | `{ refresh: false, purpose: "initial_enrollment" }`；方向 Device → Server。 | `{ code, expiresAt, expiresInSeconds: 1800, state: "available" }`。 | 草案 `docs/protocol/device/device.enrollment.md` v0.1；`expiresInSeconds` 来自 legacy 实测不可省略。 |
 | 12 | P3 | User / Console | 用户在云端输入注册码。 | 非 protocol — Console 本地 UI | 用户输入注册码。 | Console 提交注册请求。 | 注册码过期或无效时提示用户。 |
-| 13 | P3 | Cloud / Device | 云端通知设备注册成功。 | Missing `device.enrollment` — setEnrollmentStatus | `{ enrolled: true }`。 | `{ ok: true }`。 | 待 Stage 20 补 enrolled 语义和 Server→Device 方向。 |
-| 14 | P3 | Cloud / Device | 验证注册状态。 | Missing `device.enrollment` — getEnrollmentStatus | 请求为空。 | `{ enrolled: true }`。 | 验证失败需重试或回滚。 |
+| 13 | P3 | Cloud / Device | 云端通知设备注册成功。 | Draft `device.enrollment` — `device.setEnrollmentState` | `{ desiredState: "enrolled", reason: "pairing_code_used", endpoint: { endpointId, type, displayName } }`。 | `{ state: EnrollmentState, disconnectExpected: false }`。状态变化触发 `device.enrollmentStateChanged` 事件。 | 草案 `docs/protocol/device/device.enrollment.md` v0.1。 |
+| 14 | P3 | Cloud / Device | 验证注册状态。 | Draft `device.enrollment` — `device.getEnrollmentState` | `{ includeEndpoint: true }`。 | `{ state: "enrolled", workspaceId, endpoint: { ... } }`。 | 验证失败需重试或回滚。 |
 | 15 | P4 | User / Console / Cloud / Device | 修改设备名称。 | Draft `software.config`（target: `"launcher"`） | `software.setConfig(target: "launcher", config: { displayName })`。字段映射：`devName` → `displayName`。 | `{ ok: true, result: SoftwareConfig }`。 | 写入路径在 `software.config` 草案，`device.info` 只读返回。 |
 | 16 | P4 | User / Console / Cloud / Device | 全量同步播放列表。 | Draft `signage.playlist` | `playlists[]`，含日期/时间/星期、items、settings。 | 播放器替换当前配置。 | 第二次全量下发删除缺失项。 |
 | 17 | P4 | Device / Cloud | 刷新播放项资源 URL。 | Draft `signage.playlist` | `{ itemId }`，返回 `url` 或 `urls`、`expiresAt`。 | 设备获得新资源 URL。 | URL refresh method 归属 signage.playlist。 |
-| 18 | P4 | User / Console / Cloud / Device | 设置外观配置。 | Draft `software.config`（target: `"launcher"`） | target: `"launcher"`, config: `{ appearance: { panelLayout, autoHidePanel, autoHideDelay } }`。 | 外观配置保存并生效。 | 外观字段包裹在 `appearance` 子对象中。 |
+| 18 | P4 | User / Console / Cloud / Device | 设置外观配置。 | Draft `software.config`（target: `"launcher"`） | `software.setConfig(target: "launcher", config: { appearance: { panelLayout, autoHidePanel, autoHideDelay } })`。partial update 语义。 | 返回完整 `SoftwareConfig`；触发 `software.configChanged` 事件。 | 外观字段包裹在 `appearance` 子对象中；草案 `software.config` v0.1。 |
 | 19 | P4 | User / Console / Cloud / Device | 设置重启关机计划。 | Draft `system.lifecycle` | shutdown/reboot enabled, time, days。 | 设备计划保存。 | system.lifecycle v0.8 已有 schedule 方法。 |
-| 20 | P4 | User / Console / Cloud / Device | 设置软件更新策略。 | Missing `software.updatePolicy`（target: `"launcher"`） | target: `"launcher"`, policy: updateMode, schedule, channel, conditions。 | 策略保存并生效。 | 旧草案 `firmware.updatePolicy` 已回退为骨架，转 Stage 20 新建 `software.updatePolicy` 草案。 |
+| 20 | P4 | User / Console / Cloud / Device | 设置软件更新策略。 | Draft `software.updatePolicy`（target: `"launcher"`） | `software.setUpdatePolicy(target: "launcher", policy: { updateMode, schedule, channel, conditions })`。partial update 语义。 | 返回完整 `SoftwareUpdatePolicy`；触发 `software.updatePolicyChanged` 事件。 | 草案 `docs/protocol/software/software.updatePolicy.md` v0.1；转 Stage 20 补 `updateMode` 枚举和跨日 window 语义。 |
 
 ## 7. Protocol Details
 
@@ -211,11 +211,11 @@ sequenceDiagram
 |---|---|---|---|
 | `device.info` | `GetDeviceInfo` | `device.getInfo`（只读） | `docs/protocol/device/device.info.md` |
 | `network.interface` + `network.ip` + `network.wifi` | `GetNetworkInfo` | interface list/info, IP config, Wi-Fi state | `docs/protocol/network/*.md` |
-| `device.enrollment` | `GetBindCode`, `GetBindConfig`, `SetBindConfig` | enrollment code/status get/set | 待 Stage 20 新建草案（旧 `device.binding` 草案已删除） |
+| `device.enrollment` | `GetBindCode`, `GetBindConfig`, `SetBindConfig` | `device.getPairingCode` / `device.getEnrollmentState` / `device.setEnrollmentState` / `device.enrollmentStateChanged` | `docs/protocol/device/device.enrollment.md` v0.1 |
 | `signage.playlist` | `SetPlaylistConfig`, `GetPlaylistConfig` | playlist get/set | `docs/protocol/signage/signage.playlist.md` |
 | `signage.playlist` | `GetPlaylistItemUrl` | playlist item URL refresh method | `docs/protocol/signage/signage.playlist.md` |
-| `software.config`（target: `"launcher"`） | `GetAppearanceConfig`, `SetAppearanceConfig` | software config get/set | 待 Stage 20 新建草案（旧 `device.appearance` 草案已删除） |
-| `software.updatePolicy`（target: `"launcher"`） | `GetUpdateConfig`, `SetUpdateConfig` | update policy get/set | 待 Stage 20 新建草案（旧 `firmware.updatePolicy` 已回退为骨架） |
+| `software.config`（target: `"launcher"`） | `GetAppearanceConfig`, `SetAppearanceConfig`, `SetDeviceName` | `software.getConfig` / `software.setConfig` / `software.resetConfig` / `software.configChanged` | `docs/protocol/software/software.config.md` v0.1 |
+| `software.updatePolicy`（target: `"launcher"`） | `GetUpdateConfig`, `SetUpdateConfig` | `software.getUpdatePolicy` / `software.setUpdatePolicy` / `software.resetUpdatePolicy` / `software.updatePolicyChanged` | `docs/protocol/software/software.updatePolicy.md` v0.1 |
 | `system.lifecycle` | `GetScheduleConfig`, `SetScheduleConfig` | shutdown/reboot schedule | `docs/protocol/system/system.lifecycle.md` |
 
 ### 7.3 Legacy Mapping Checklist
@@ -225,31 +225,33 @@ sequenceDiagram
 | `KeepAlive` 指令 | Server <-> Device | Core transport heartbeat | Adopted core | 不保留为业务指令。 |
 | `KeepAlive` 事件 | Server <-> Device | Core transport heartbeat | Adopted core | 不保留为业务指令。 |
 | `GetDeviceInfo` | Server -> Device | `device.info` | Drafted only | 补完整概览 schema。 |
-| `SetDeviceName` | Server -> Device, Device -> Server | 无对应草案 | Missing | 转 Stage 20 新建设备名设置草案。 |
+| `SetDeviceName` | Server -> Device, Device -> Server | `software.setConfig(target: "launcher", config: { displayName })` | Drafted only | 草案 `software.config` v0.1 已含 `displayName` 字段；`device.info` 只读返回。 |
 | `GetNetworkInfo` | Server -> Device | `network.interface` + `network.ip` + `network.wifi` | Drafted only | 分解旧数组聚合响应。 |
-| `GetBindCode` | Device -> Server | `device.getEnrollmentCode` | Missing | 旧草案 `device.binding` 已删除，转 Stage 20 新建 `device.enrollment` 草案。 |
-| `GetBindConfig` | Server <-> Device | `device.getEnrollmentStatus` | Missing | 同上。 |
-| `SetBindConfig` | Server -> Device | `device.setEnrollmentStatus` | Missing | 同上。 |
+| `GetBindCode` | Device -> Server | `device.getPairingCode` | Drafted only | 草案 `device.enrollment` v0.1；字段映射 `code` + `expiresInSeconds`(1800)。 |
+| `GetBindConfig` | Server <-> Device | `device.getEnrollmentState` | Drafted only | 草案 `device.enrollment` v0.1；旧 `bound`(bool) → `state`(enum)。 |
+| `SetBindConfig` | Server -> Device | `device.setEnrollmentState` | Drafted only | 草案 `device.enrollment` v0.1；旧 `bound: true` → `desiredState: "enrolled"`。 |
 | `SetPlaylistConfig` | Server -> Device | `signage.setPlaylistConfig` | Drafted only | 补全量替换 schema。 |
 | `GetPlaylistConfig` | Server <-> Device | `signage.getPlaylistConfig` | Drafted only | 保持 set/get 结构一致。 |
 | `GetPlaylistItemUrl` | Device -> Server | `signage.playlist` URL refresh | Drafted only | URL refresh method 归属 signage.playlist。 |
-| `GetAppearanceConfig` | Server <-> Device | `software.getConfig(target: "launcher")` | Missing | 旧草案 `device.appearance` 已删除，转 Stage 20 新建 `software.config` 草案。 |
-| `SetAppearanceConfig` | Server <-> Device | `software.setConfig(target: "launcher")` | Missing | 同上。 |
-| `GetUpdateConfig` | Server <-> Device | `software.getUpdatePolicy(target: "launcher")` | Missing | 旧草案 `firmware.updatePolicy` 已回退为骨架，转 Stage 20 新建 `software.updatePolicy` 草案。 |
-| `SetUpdateConfig` | Server <-> Device | `software.setUpdatePolicy(target: "launcher")` | Missing | 同上。 |
+| `GetAppearanceConfig` | Server <-> Device | `software.getConfig(target: "launcher")` | Drafted only | 草案 `software.config` v0.1；字段嵌套为 `config.appearance.*`。 |
+| `SetAppearanceConfig` | Server <-> Device | `software.setConfig(target: "launcher")` | Drafted only | 同上。旧 flat 字段需 adapter 包装为 `config.appearance.*`。 |
+| `GetUpdateConfig` | Server <-> Device | `software.getUpdatePolicy(target: "launcher")` | Drafted only | 草案 `software.updatePolicy` v0.1；旧 `autoUpdate`(bool) → `updateMode`(enum)。 |
+| `SetUpdateConfig` | Server <-> Device | `software.setUpdatePolicy(target: "launcher")` | Drafted only | 同上。旧 `true` → `"auto"`，`false` → `"manual"`。 |
 | `GetScheduleConfig` | Server <-> Device | `system.getRebootSchedule` / `system.getShutdownSchedule` | Drafted only | system.lifecycle v0.8 已覆盖；补 legacy 字段映射。 |
 | `SetScheduleConfig` | Server <-> Device | `system.setRebootSchedule` / `system.setShutdownSchedule` | Drafted only | system.lifecycle v0.8 已覆盖；补 legacy 字段映射。 |
 
-### 7.4 Missing Protocol Gaps
+### 7.4 Drafted Protocol Gaps
 
-| Gap | Candidate domain.feature | Candidate method/event/schema | Routed skill | Review question |
+> 以下 gap 在本 flow 编写时标记为 Missing，现已全部有草案覆盖（v0.1）。转 `draft-business-protocol` 细化和完善。
+
+| Gap | Draft | Draft methods/events | Routed skill | Review question |
 |---|---|---|---|---|
-| `SetDeviceName` 无对应 AXTP 草案 | `software.config`（target: `"launcher"`） | `software.setConfig(target: "launcher", config: { displayName })` | `draft-business-protocol` | `[REVIEW-RESOLVED]` 设备名写入路径归入 `software.config` 的 `displayName` 字段；`device.info` 只读返回。 |
-| 设备注册码与状态管理 | `device.enrollment` | getEnrollmentCode / getEnrollmentStatus / setEnrollmentStatus | `draft-business-protocol` | `[REVIEW-RESOLVED]` 旧草案 `device.binding` 已删除；`device.enrollment` 命名更准确，转 Stage 20 新建草案。 |
-| Schedule 定域已解决 | `system.lifecycle` | get/setRebootSchedule + get/setShutdownSchedule | `draft-business-protocol` | `[REVIEW-RESOLVED]` 关机/重启调度已定域 `system.lifecycle` v0.8；`signage.schedule` 草案可删除。 |
-| 播放项 URL 刷新已定域 | `signage.playlist` | playlist item URL refresh | `draft-business-protocol` | `[REVIEW-RESOLVED]` URL 刷新是播放项级操作，已归属 `signage.playlist`（v0.2）；`signage.media` 草案已删除，功能已合并。 |
-| Launcher 外观/面板配置 | `software.config`（target: `"launcher"`） | software.getConfig / setConfig / resetConfig | `draft-business-protocol` | `[REVIEW-RESOLVED]` 旧草案 `device.appearance` 已删除；外观配置实为 Launcher 软件配置，迁入 `software.config` 统一管理。 |
-| 软件更新策略 | `software.updatePolicy`（target: `"launcher"`） | software.getUpdatePolicy / setUpdatePolicy / resetUpdatePolicy | `draft-business-protocol` | `[REVIEW-RESOLVED]` 旧草案 `firmware.updatePolicy` 已回退为骨架；更新策略迁入 `software.updatePolicy`，通过 target 区分组件。 |
+| `SetDeviceName` 无对应 AXTP 草案 | `software.config` v0.1（target: `"launcher"`） | `software.setConfig(target: "launcher", config: { displayName })` | `draft-business-protocol` | `[REVIEW-RESOLVED]` 设备名写入路径归入 `software.config` 的 `displayName` 字段；`device.info` 只读返回。 |
+| 设备注册码与状态管理 | `device.enrollment` v0.1 | `device.getPairingCode` / `device.getEnrollmentState` / `device.setEnrollmentState` / `device.enrollmentStateChanged` | `draft-business-protocol` | `[REVIEW-RESOLVED]` 旧草案 `device.binding` 已删除；`device.enrollment` 命名更准确。方法名使用 `getPairingCode`（非 `getEnrollmentCode`），待产品确认命名偏好。 |
+| Schedule 定域已解决 | `system.lifecycle` v0.8 | get/setRebootSchedule + get/setShutdownSchedule | `draft-business-protocol` | `[REVIEW-RESOLVED]` 关机/重启调度已定域 `system.lifecycle` v0.8；`signage.schedule` 草案可删除。 |
+| 播放项 URL 刷新已定域 | `signage.playlist` v0.6 | playlist item URL refresh | `draft-business-protocol` | `[REVIEW-RESOLVED]` URL 刷新是播放项级操作，已归属 `signage.playlist`；`signage.media` 草案已删除，功能已合并。 |
+| Launcher 外观/面板配置 | `software.config` v0.1（target: `"launcher"`） | `software.getConfig` / `software.setConfig` / `software.resetConfig` / `software.configChanged` | `draft-business-protocol` | `[REVIEW-RESOLVED]` 旧草案 `device.appearance` 已删除；外观配置实为 Launcher 软件配置，迁入 `software.config` 统一管理。 |
+| 软件更新策略 | `software.updatePolicy` v0.1（target: `"launcher"`） | `software.getUpdatePolicy` / `software.setUpdatePolicy` / `software.resetUpdatePolicy` / `software.updatePolicyChanged` | `draft-business-protocol` | `[REVIEW-RESOLVED]` 旧草案 `firmware.updatePolicy` 已回退为骨架；更新策略迁入 `software.updatePolicy`，通过 target 区分组件。 |
 
 ## 8. Test Fixtures
 
@@ -282,6 +284,7 @@ sequenceDiagram
 ## 10. Open Questions
 
 - `[REVIEW-ASK]` 设备管理页面的真实 UI 原型有哪些 tab、字段、权限和确认弹窗？
-- `[REVIEW-ASK]` `SetDeviceName` 应归属 `device.info` 扩展还是独立新建 `device.displayName` feature？
-- `[REVIEW-ASK]` `software.config` 的 target 枚举值有哪些？除了 `"launcher"` 和 `"player"`，未来是否需要其他组件？
-- `[REVIEW-ASK]` `software.updatePolicy` 的 target `"firmware"` 与保留的 `firmware.updatePolicy` 骨架草案的关系如何界定？是否在未来统一到 `software.updatePolicy`？
+- `[REVIEW-RESOLVED]` `SetDeviceName` 应归属 `device.info` 扩展还是独立新建？→ `software.config` v0.1 已明确：`displayName` 在 `software.config` 中写入，`device.info` 只读返回。同一数据两个协议暴露，采纳前确认此设计。
+- `[REVIEW-RESOLVED]` `software.config` 的 target 枚举值有哪些？→ 草案列出 `"launcher"`、`"signagePlayer"`、`"agent"`；完整枚举仍 `[REVIEW-ASK]`，采纳前与产品和设备确认。
+- `[REVIEW-RESOLVED]` `firmware.updatePolicy` 与 `software.updatePolicy` 关系？→ `software.updatePolicy` v0.1 明确边界：固件 OTA 保留 `firmware.updatePolicy`，软件策略用 `software.updatePolicy`。未来是否统一到 `software.updatePolicy(target: "firmware")` 仍 `[REVIEW-ASK]`。
+- `[REVIEW-ASK]` Flow 原候选方法名 `device.getEnrollmentCode` 与草案实际方法名 `device.getPairingCode` 不一致。"pairing code" vs "enrollment code" 哪个命名更合适？需产品/架构确认后统一。
