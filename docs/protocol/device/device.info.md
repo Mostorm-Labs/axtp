@@ -57,7 +57,7 @@ Capability ID：`device.info`
 | 命名 | `device.getInfo` | `getInfo` 是信息型主查询；暂不引入配置写入方法或信息变化事件。 |
 | children 默认值 | 不返回 children | 子设备数量、状态和权限变化更频繁，独立到 `device.childDevice`。 |
 | capability 摘要 | 保留轻量摘要 | 让调用方看到设备大体建模方式，但不替代完整能力查询。 |
-| 设备名/资产设置 | Resolved via `software.config` | Launcher 设备显示名称通过 `software.setConfig(target: "launcher")` 的 `config.displayName` 字段写入，`device.info` 的 `product.displayName` 只读返回当前值。 |
+| 设备名/资产设置 | Deferred | 有具体设置需求、权限模型和变化通知需求后另起草协议，不预占 `device.info` 写接口。 |
 
 ## 5. 候选 Capability
 
@@ -73,7 +73,7 @@ Capability ID：`device.info`
 
 ## 7. 候选 Events
 
-本轮不定义 `device.info` 事件。信息变化通知暂不需要；`displayName` 变化事件由 `software.config` 的 `software.configChanged` 承担。其他信息变化（资产标识、软件版本或 capability）如需通知，应基于具体业务场景另行起草事件。
+本轮不定义 `device.info` 事件。信息变化通知暂不需要；如果未来出现设备名、资产标识、软件版本或 capability 变化通知需求，应基于具体业务场景另行起草事件。
 
 ## 8. 候选 Schemas
 
@@ -111,7 +111,7 @@ Capability ID：`device.info`
 | `brand` | string | no | 品牌。 | `[REVIEW-DRAFT]` |
 | `productType` | string enum | yes | 产品类型，例如 `windowsDevice` / `androidDevice` / `embeddedDevice`。 | `[REVIEW-ASK]` |
 | `model` | string | yes | 硬件或整机型号，不填软件名。 | `[REVIEW-OK]` |
-| `displayName` | string | no | 用户可见设备名称；只读。写入路径通过 `software.setConfig(target: "launcher", config: { displayName })`。 | `[REVIEW-DRAFT]` |
+| `displayName` | string | no | 用户可见设备名称；本轮仅只读返回，不提供写入接口。 | `[REVIEW-DRAFT]` |
 
 ### `DeviceHardware`
 
@@ -267,7 +267,7 @@ Capability ID：`device.info`
 |---|---|---|---|---|
 | AXDP | `CommonGetEncryptedInfo` 等设备信息命令 | `device.getInfo` | `[REVIEW-ASK]` | 字段级映射和是否包含敏感加密信息需确认。 |
 | Rooms | `GetDeviceInfo` / `GetDevInfo` / `GetSn` | `device.getInfo` | `[REVIEW-ASK]` | SN 和设备详情进入 `identity` / `product`。 |
-| Rooms / Signage | `SetDeviceName` | `software.setConfig(target: "launcher", config: { displayName })` | `[REVIEW-DRAFT]` | 字段映射 `devName` → `displayName`；写入路径在 `software.config` 草案，`device.info` 只读返回。 |
+| Rooms / Signage | `SetDeviceName` | out of current draft / future setting protocol | `[REVIEW-OK]` | 本轮不映射到 `device.info`；有明确设置需求后另起草设备名或资产设置协议。 |
 | VM33 | `System.GetDevInfo` | `device.getInfo` | `[REVIEW-ASK]` | 旧 System namespace 不决定新 domain；按语义归 `device.info`。 |
 
 ## 12. Registry 草案输入
@@ -307,4 +307,4 @@ methods:
 1. `productType`、`os.type`、`cpuArch`、`software.components[].role` 的首批 enum 值是什么？
 2. `capability.profile` 是否来自 profiles registry，还是先作为产品 profile 字符串？
 3. legacy 设备信息中是否包含敏感字段；如包含，是否应拆到 auth/vendor/diagnostic 域？
-4. legacy `SetDeviceName` 已映射到 `software.setConfig(target: "launcher", config: { displayName })`；`device.info` 的 `product.displayName` 只读返回。
+4. legacy `SetDeviceName` 是否只保留在旧 adapter，还是未来另起草设备名设置协议？
