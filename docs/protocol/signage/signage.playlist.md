@@ -1,6 +1,6 @@
 # AXTP signage.playlist 协议草案
 
-版本：v0.3
+版本：v0.6
 
 归属域：`signage`
 
@@ -29,6 +29,12 @@ Capability ID：`signage.playlist`
 **v0.2 变更说明：** 新增 `signage.getPlaylistItemUrl` 方法（原 `signage.media` URL 刷新功能），补充候选 schemas 和 JSON 示例。
 
 **v0.3 变更说明：** 播放项类型新增 `unsplash`（Unsplash 图库幻灯片），新增 `UnsplashPhoto` schema；`signage.getPlaylistItemUrl` 返回结果新增 `photos` 字段。
+
+**v0.4 变更说明：** `GetPlaylistItemUrlResult` 从顶层互斥字段（`url` / `urls` / `photos`）模式重构为 `type` + `settings` 显式类型判别模式，与 `PlaylistItem` 结构统一。新设计天然可扩展——新增播放项类型只需扩展 `type` 枚举和对应 `settings` 结构，不污染顶层 schema。
+
+**v0.5 变更说明：** 关闭三个核心设计决策：(1) 播放列表全量替换确认为硬替换，不引入版本号或 soft-delete；(2) Unsplash 等带过期时间播放项的 URL 刷新确认为设备端主动 Pull 模式（设备调用 `getPlaylistItemUrl`）；(3) `clock` 类型播放项调用 `getPlaylistItemUrl` 时服务端返回 `NOT_SUPPORTED`（common error 0x0003）。
+
+**v0.6 变更说明：** 关闭 `scheduled` 类型时间区间约束决策——采用分条件约束：(1) `startDate == endDate` 时 `startTime <= endTime`（单日范围，时间窗口必须落在同一天内）；(2) `startDate < endDate` 时允许 `startTime > endTime`（多日范围下跨午夜播放，语义为 D 日 startTime → D+1 日 endTime）。
 
 ---
 
@@ -94,7 +100,7 @@ Capability ID：`signage.playlist`
 | `signage.getPlaylistConfig` | `GetPlaylistConfigParams` | `PlaylistConfigResult` | 双向 | 查询当前播放列表配置。 | [REVIEW-DRAFT] |
 | `signage.setPlaylistConfig` | `SetPlaylistConfigParams` | `SetPlaylistConfigResult` | Server → Device | 全量同步播放列表配置（替换语义）。 | [REVIEW-DRAFT] |
 | `signage.resetPlaylistConfig` | `ResetPlaylistConfigParams` | `SetPlaylistConfigResult` | Server → Device | 恢复默认播放列表配置。 | [REVIEW-DRAFT] |
-| `signage.getPlaylistItemUrl` | `GetPlaylistItemUrlParams` | `GetPlaylistItemUrlResult` | Device → Server | 根据播放项 ID 获取最新资源 URL（URL 刷新）。 | [REVIEW-DRAFT] |
+| `signage.getPlaylistItemUrl` | `GetPlaylistItemUrlParams` | `GetPlaylistItemUrlResult` | Device → Server | 根据播放项 ID 获取最新资源 URL（URL 刷新）。`clock` 类型播放项无 URL 资源，调用此方法返回 `NOT_SUPPORTED`。 | [REVIEW-DRAFT] |
 
 ---
 
@@ -120,10 +126,10 @@ Capability ID：`signage.playlist`
 |---|---|---:|---|---|
 | `id` | `string` (UUID) | yes | 播放列表唯一标识。 | [REVIEW-DRAFT] |
 | `type` | `enum<default, scheduled>` | yes | 播放列表类型。`default` 为默认播放列表，`scheduled` 为定时播放列表。 | [REVIEW-DRAFT] |
-| `startDate` | `string` (date) | no | 开始日期 (YYYY-MM-DD)。仅 `scheduled` 类型。 | [REVIEW-DRAFT] |
-| `endDate` | `string` (date) | no | 结束日期 (YYYY-MM-DD)。仅 `scheduled` 类型。 | [REVIEW-DRAFT] |
-| `startTime` | `string` (time) | no | 开始时间 (HH:mm:ss)。仅 `scheduled` 类型。 | [REVIEW-DRAFT] |
-| `endTime` | `string` (time) | no | 结束时间 (HH:mm:ss)。仅 `scheduled` 类型。 | [REVIEW-DRAFT] |
+| `startDate` | `string` (date) | no | 开始日期 (YYYY-MM-DD)。仅 `scheduled` 类型。`startDate <= endDate`。 | [REVIEW-DRAFT] |
+| `endDate` | `string` (date) | no | 结束日期 (YYYY-MM-DD)。仅 `scheduled` 类型。`startDate <= endDate`。 | [REVIEW-DRAFT] |
+| `startTime` | `string` (time) | no | 开始时间 (HH:mm:ss)。仅 `scheduled` 类型。**当 `startDate == endDate` 时，`startTime <= endTime`。** | [REVIEW-DRAFT] |
+| `endTime` | `string` (time) | no | 结束时间 (HH:mm:ss)。仅 `scheduled` 类型。**当 `startDate == endDate` 时，`startTime <= endTime`；当 `startDate < endDate` 时允许跨午夜（`startTime > endTime`），语义为 D 日 startTime → D+1 日 endTime。** | [REVIEW-DRAFT] |
 | `days` | `uint8[]` | no | 生效星期 (1-7, 1=周一)。仅 `scheduled` 类型。 | [REVIEW-DRAFT] |
 | `items` | `PlaylistItem[]` | yes | 播放项数组。非空。 | [REVIEW-DRAFT] |
 
@@ -198,10 +204,17 @@ Capability ID：`signage.playlist`
 
 | Field | Type | Required | 说明 | Review |
 |---|---|---:|---|---|
-| `url` | `string` | conditional | 单个资源 URL（video/website 类型）。与 `urls`/`photos` 互斥。 | [REVIEW-DRAFT] |
-| `urls` | `string[]` | conditional | 资源 URL 数组（image 类型）。与 `url`/`photos` 互斥。 | [REVIEW-DRAFT] |
-| `photos` | `UnsplashPhoto[]` | conditional | Unsplash 图片列表（unsplash 类型）。与 `url`/`urls` 互斥。 | [REVIEW-DRAFT] |
-| `expiresAt` | `uint64` | no | URL 过期时间（Unix 时间戳）。`null` 表示永不过期。 | [REVIEW-DRAFT] |
+| `type` | `enum<image, video, website, unsplash>` | yes | 播放项类型。用于判别 `settings` 的内部结构。`clock` 类型不涉及 URL 资源刷新。 | [REVIEW-DRAFT] |
+| `settings` | `PlaylistItemSettings` | yes | 播放项刷新后的完整设置。结构与 `PlaylistItem.settings` 一致，按 `type` 对应不同内部字段。设备可直接用此值替换本地缓存的 `settings`。 | [REVIEW-DRAFT] |
+
+`settings` 按 `type` 值对应 `PlaylistItemSettings` 的各类型子集：
+
+| `type` | `settings` 包含字段 |
+|---|---|
+| `image` | `urls`, `delaySeconds`, `expiresAt` |
+| `video` | `url`, `expiresAt`, `muted` |
+| `website` | `url`, `ignoreCertificateError`, `refreshIntervalSecs` |
+| `unsplash` | `photos`, `delaySeconds`, `expiresAt` |
 
 ---
 
@@ -317,7 +330,7 @@ Capability ID：`signage.playlist`
 }
 ```
 
-### `signage.getPlaylistItemUrl` request（image 类型）
+### `signage.getPlaylistItemUrl` request
 
 ```json
 {
@@ -329,7 +342,7 @@ Capability ID：`signage.playlist`
 }
 ```
 
-### `signage.getPlaylistItemUrl` response（image 类型 — 多 URL）
+### `signage.getPlaylistItemUrl` response（image 类型）
 
 ```json
 {
@@ -339,13 +352,17 @@ Capability ID：`signage.playlist`
     "code": 0
   },
   "result": {
-    "urls": ["https://example.com/resource/file-1-new.jpg"],
-    "expiresAt": 1704153600
+    "type": "image",
+    "settings": {
+      "urls": ["https://example.com/resource/file-1-new.jpg"],
+      "delaySeconds": 5,
+      "expiresAt": 1704153600
+    }
   }
 }
 ```
 
-### `signage.getPlaylistItemUrl` response（video 类型 — 单 URL）
+### `signage.getPlaylistItemUrl` response（video 类型）
 
 ```json
 {
@@ -355,13 +372,37 @@ Capability ID：`signage.playlist`
     "code": 0
   },
   "result": {
-    "url": "https://example.com/resource/video-1-new.mp4",
-    "expiresAt": 1704153600
+    "type": "video",
+    "settings": {
+      "url": "https://example.com/resource/video-1-new.mp4",
+      "expiresAt": 1704153600,
+      "muted": false
+    }
   }
 }
 ```
 
-### `signage.getPlaylistItemUrl` response（unsplash 类型 — 图片列表）
+### `signage.getPlaylistItemUrl` response（website 类型）
+
+```json
+{
+  "id": 6,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "type": "website",
+    "settings": {
+      "url": "https://example.com/page",
+      "ignoreCertificateError": false,
+      "refreshIntervalSecs": 300
+    }
+  }
+}
+```
+
+### `signage.getPlaylistItemUrl` response（unsplash 类型）
 
 ```json
 {
@@ -371,23 +412,27 @@ Capability ID：`signage.playlist`
     "code": 0
   },
   "result": {
-    "photos": [
-      {
-        "url": "https://images.unsplash.example.com/photo-1-new",
-        "user": {
-          "name": "Alice Photographer",
-          "link": "https://unsplash.example.com/@alice"
+    "type": "unsplash",
+    "settings": {
+      "photos": [
+        {
+          "url": "https://images.unsplash.example.com/photo-1-new",
+          "user": {
+            "name": "Alice Photographer",
+            "link": "https://unsplash.example.com/@alice"
+          }
+        },
+        {
+          "url": "https://images.unsplash.example.com/photo-2-new",
+          "user": {
+            "name": "Bob Photographer",
+            "link": "https://unsplash.example.com/@bob"
+          }
         }
-      },
-      {
-        "url": "https://images.unsplash.example.com/photo-2-new",
-        "user": {
-          "name": "Bob Photographer",
-          "link": "https://unsplash.example.com/@bob"
-        }
-      }
-    ],
-    "expiresAt": 1704326400
+      ],
+      "delaySeconds": 10,
+      "expiresAt": 1704326400
+    }
   }
 }
 ```
@@ -408,12 +453,26 @@ Capability ID：`signage.playlist`
 }
 ```
 
+### failure response（clock 类型不支持 URL 刷新）
+
+```json
+{
+  "id": 7,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "URL refresh is not supported for clock type playlist items."
+  }
+}
+```
+
 ---
 
 ## 10. 候选 Errors
 
 | Error | 类别 | 说明 | Review |
 |---|---|---|---|
+| `NOT_SUPPORTED` (0x0003) | common | URL 刷新操作不支持当前播放项类型（如 `clock`）。 | [REVIEW-DRAFT] |
 | `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` | business | 指定的播放项 ID 不存在于当前播放列表中。 | [REVIEW-DRAFT] |
 | `SIGNAGE_PLAYLIST_EMPTY` | business | 播放列表数组为空或播放项数组为空。 | [REVIEW-DRAFT] |
 | `SIGNAGE_PLAYLIST_URL_EXPIRED` | business | 刷新 URL 时发现资源已不可用。 | [REVIEW-DRAFT] |
@@ -475,6 +534,10 @@ methods:
     responseSchema: GetPlaylistItemUrlResult
     capabilities:
       - signage.playlist
+    errors:
+      - NOT_SUPPORTED
+      - SIGNAGE_PLAYLIST_ITEM_NOT_FOUND
+      - SIGNAGE_PLAYLIST_URL_EXPIRED
 
 events:
   - name: signage.playlistConfigChanged
@@ -500,7 +563,8 @@ events:
 
 ## 14. 待确认问题
 
-1. `[REVIEW-ASK]` `GetPlaylistItemUrlResult` 中 `url` 与 `urls` 二选一的设计是否需要在 schema 层面用 `oneOf` 约束？
-2. `[REVIEW-ASK]` 播放列表全量替换语义：第二次下发删除未出现的旧 item，是否需要 soft-delete 或版本号机制？
-3. `[REVIEW-ASK]` `scheduled` 类型播放列表的时间区间是否允许跨日（如 startTime 22:00, endTime 06:00）？
-4. `[REVIEW-ASK]` unsplash 类型的 URL 过期后，设备端是主动调用 `getPlaylistItemUrl` 刷新，还是由服务端通过 `playlistConfigChanged` 事件推送新配置？
+1. `[REVIEW-RESOLVED]` `GetPlaylistItemUrlResult` 多态响应设计 — v0.4 已重构为 `type` + `settings` 显式类型判别模式，不再需要 `oneOf` 约束。
+2. `[REVIEW-RESOLVED]` 播放列表全量替换语义 — 确认为硬替换，不引入版本号或 soft-delete。服务端是唯一权威，设备不编辑播放列表，不存在并发修改冲突。第二次全量下发删除未出现的旧 item。
+3. `[REVIEW-RESOLVED]` `scheduled` 类型播放列表的时间区间约束 — 采用分条件约束：`startDate == endDate` 时 `startTime <= endTime`（单日范围，时间窗口落在同一天内）；`startDate < endDate` 时允许 `startTime > endTime`（多日范围下跨午夜播放，语义为匹配日期 D 的 startTime → D+1 日 endTime）。违反约束时返回 `RPC_PARAM_INVALID`（common error 0x0002），`details` 中说明具体违规字段。
+4. `[REVIEW-RESOLVED]` URL 过期刷新方式 — 确认为设备端主动 Pull 模式。设备持有 `expiresAt` 时间戳，可自主调度刷新时机，主动调用 `signage.getPlaylistItemUrl` 获取新 URL。服务端不跟踪设备资源过期状态，不通过 `playlistConfigChanged` 事件推送 URL 刷新。
+5. `[REVIEW-RESOLVED]` `clock` 类型播放项调用 `signage.getPlaylistItemUrl` — 服务端返回 `NOT_SUPPORTED`（common error 0x0003）。`clock` 类型不依赖远程 URL 资源，URL 刷新操作对该类型不适用。`NOT_SUPPORTED` 语义精确（操作不支持），`SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` 有误导性（播放项实际存在）。
