@@ -199,6 +199,38 @@ UI 应从 capabilities 动态生成；下面只是当前 generated schema 中适
 
 ### 8.4 Payload Examples
 
+### 8.4.1 `config` 包装层评估
+
+`audio.setAlgorithmConfig` 的请求参数当前使用：
+
+```json
+{
+  "params": {
+    "config": {
+      "noiseSuppression": {
+        "level": 3
+      }
+    }
+  }
+}
+```
+
+从单个 set 请求的 JSON 易用性看，`config` 包装层确实可以被去掉，变成：
+
+```json
+{
+  "params": {
+    "noiseSuppression": {
+      "level": 3
+    }
+  }
+}
+```
+
+但当前 `AudioSetAlgorithmConfigRequest.config`、`AudioSetAlgorithmConfigResponse.config` 和 `AudioAlgorithmConfigChangedEvent.config` 已进入 `registry/domains/audio/domain.yaml`、`protocol/axtp.protocol.yaml` 和 `docs/generated/protocol.md`。因此它不是普通 flow 推荐格式，已经是 adopted/generated 合同的一部分。本 flow 不建议在 Stage 10/20 里直接去掉该字段；如要删除或重命名，应走 `amend-adopted-protocol`，同步更新 YAML、Protocol IR、generated、SDK 和兼容策略。
+
+当前建议：短期保留 `config` 包装层。理由是它让 params 未来还能并列承载 `expectedRevision`、`applyMode`、`dryRun`、`source` 等控制字段，不会和算法对象名冲突；代价是 JSON 多一层。若产品/SDK 强烈偏向扁平调用，可在 Stage 40 中评估新增兼容方法或做 breaking amendment。
+
 单个 slider 松手后提交：
 
 ```json

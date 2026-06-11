@@ -1,91 +1,221 @@
-# AXTP storage.sdCard 协议草案
-
-版本：v0.1
-
-归属域：`storage`
-
-Capability ID：`storage.sdCard`
-
-适用范围：SD 卡检测、容量、格式化和状态。
-
+---
+status: draft
+contract: false
+generated: false
+domain: storage
+feature: storage.sdCard
+registry:
+lastReviewed: 2026-06-11
 ---
 
-## 协议审核标记（人工复核）
+# storage.sdCard
 
-| 标记 | 条目 | 审核结论 | 后续动作 |
-|---|---|---|---|
-| `[REVIEW-DRAFT]` | `storage.sdCard` capability | 本文是按 Naming and Taxonomy spec 创建的单 feature 治理草案。 | 人工确认业务语义、schema 和 legacyRefs 后进入 `registry/domains/storage/domain.yaml`。 |
-| `[REVIEW-ASK]` | legacy 映射 | legacy 映射需从 `docs/legacy-migration/classification/` 中按 `target_capability` 筛选后人工确认。 | 落 registry 前补充确定的旧协议命令、字段路径和覆盖状态。 |
+## 0. 速读结论
 
----
+| 项目 | 内容 |
+|---|---|
+| 这个能力做什么 | 查询 SD 卡状态、容量，并触发格式化任务。 |
+| 当前状态 | draft |
+| 是否可直接实现 | 否。本文是 protocol draft；正式实现以 registry / generated 为准。 |
+| 主要交互 | RPC + EVENT |
+| 是否使用 STREAM | 否 |
+| Registry readiness | candidate |
+| Conformance | needed |
+| 主要未决问题 | 格式化是否需要进度、是否允许取消、媒体占用时错误语义仍需确认。 |
 
-## 1. 文档定位
+## 1. 功能说明
 
-`storage.sdCard` 定义：SD 卡检测、容量、格式化和状态。
+`storage.sdCard` 用于 SD 卡检测、容量查询和格式化。它落实 signage flow 中 legacy `GetSDInfo` / `FormatSd`，不再把 SD 卡能力建模成普通 config get/set。
 
-本文只描述 `storage.sdCard` 这一项 capability。稳定事实必须写入 `registry/domains/storage/domain.yaml` 或相关 registry YAML，再由 Generator 生成 `protocol/axtp.protocol.yaml` 与 `docs/generated/*`。
+## 2. 能力边界
 
----
+| 类型 | 内容 |
+|---|---|
+| 包含 | SD 卡状态、容量、文件系统摘要、格式化 action、格式化状态事件。 |
+| 不包含 | 通用磁盘/分区枚举；属于 `storage.disk` 或 `storage.volume`。 |
+| 不包含 | 媒体索引、录像存储策略；属于 `storage.media` / `storage.recording`。 |
+| 数据面 | 不使用 STREAM。 |
 
-## 2. 域边界
+## 3. 方法
 
-负责：
+### 3.0 方法速览
 
-- `storage.sdCard` 的能力发现、配置、状态、动作或事件。
-- 与 `storage.sdCard` 直接相关的 method/event/schema 草案。
-- 已确认 legacy 协议到 `storage.sdCard` 的语义归类。
+| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
+|---|---|---|---|---|---|---|
+| `storage.getSdCardState` | query | 查询 SD 卡状态和容量。 | `GetSdCardStateParams` | `SdCardState` | 否 | draft |
+| `storage.formatSdCard` | action / async-action | 格式化 SD 卡。 | `FormatSdCardParams` | `SdCardFormatState` | 是，触发 `storage.sdCardFormatStateChanged`。 | draft |
 
-不负责：
+### 3.1 `storage.getSdCardState`
 
-- 不承载其他 capability feature 的业务语义；跨域关系通过 schema 字段、引用或数据面 stream/file 表达。
-- method/event 数值 ID 分配；数值以 registry/generated 为准。
-- 未确认旧协议 payload 的稳定映射。
+#### 请求参数 Params：`GetSdCardStateParams`
 
----
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `slotId` | string | no | slot id | default slot | SD 卡槽位。 |
 
-## 3. 候选 Methods / Events
+#### 返回结果 Result：`SdCardState`
 
-| 类型 | 名称 | 说明 |
-|---|---|---|
-| method | `storage.getSdCardCapabilities` | 查询 `storage.sdCard` 能力范围。 |
-| method | `storage.getSdCardConfig` | 查询 `storage.sdCard` 配置。 |
-| method | `storage.setSdCardConfig` | 设置 `storage.sdCard` 配置。 |
-| method | `storage.resetSdCardConfig` | 恢复 `storage.sdCard` 默认配置。 |
-| event | `storage.sdCardConfigChanged` | `storage.sdCard` 配置变化。 |
+字段见 6.2。
 
-候选名称用于评审和 registry 草案输入。采纳时必须按 Naming and Taxonomy spec 的配置型、状态型、动作型、流型或导出型模板复核。
+### 3.2 `storage.formatSdCard`
 
----
+| 项 | 内容 |
+|---|---|
+| 目的 | 创建 SD 卡格式化任务。 |
+| 调用类型 | action / async-action |
+| Params Schema | `FormatSdCardParams` |
+| Result Schema | `SdCardFormatState` |
+| 事件触发 | 格式化状态变化触发 `storage.sdCardFormatStateChanged`。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `INTERNAL_ERROR` |
 
-## 4. Legacy 待映射
+#### 请求参数 Params：`FormatSdCardParams`
 
-| 来源 | 旧协议条目 | 候选映射 | 状态 |
-|---|---|---|---|
-| AXDP / Rooms / VM33 / Signage | 待从 `docs/legacy-migration/classification/` 筛选 | `storage.sdCard` | `[REVIEW-ASK]` |
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `slotId` | string | no | slot id | default slot | SD 卡槽位。 |
+| `filesystem` | enum | no | `exfat`, `fat32`, `ext4`, `default` | `default` | 目标文件系统。 |
+| `confirmationToken` | string | no | opaque token | omitted | 危险操作确认 token。 |
 
----
+#### 返回结果 Result：`SdCardFormatState`
 
-## 5. Registry 草案输入
+字段见 6.3。
 
-```yaml
-capabilities:
-  - id: storage.sdCard
-    name: storage.sdCard capability
-    status: draft
-    methods:
-      - storage.getSdCardCapabilities
-      - storage.getSdCardConfig
-      - storage.setSdCardConfig
-      - storage.resetSdCardConfig
-    events:
-      - storage.sdCardConfigChanged
+## 4. 事件
+
+### 4.0 事件速览
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
+|---|---|---|---|---|
+| `storage.sdCardFormatStateChanged` | 格式化任务 accepted/running/succeeded/failed。 | `SdCardFormatStateChangedEvent` | 禁用相关操作，完成后重新读取 SD 卡状态。 | draft |
+
+### 4.1 `storage.sdCardFormatStateChanged`
+
+#### Payload：`SdCardFormatStateChangedEvent`
+
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `format` | `SdCardFormatState` | yes | see schema | none | 当前格式化状态。 |
+
+## 5. Capability
+
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 说明 |
+|---|---|---:|---|---|
+| `capability` | string | yes | fixed `storage.sdCard` | capability 名称。 |
+| `supportsFormat` | boolean | yes | `true`, `false` | 是否支持格式化。 |
+| `supportedFilesystems` | string[] | no | `exfat`, `fat32`, `ext4`, `default` | 支持文件系统。 |
+| `supportsProgress` | boolean | no | `true`, `false` | 格式化是否上报进度。 |
+
+## 6. Schemas
+
+### 6.1 Schema 层级速览
+
+```text
+SdCardState
+SdCardFormatState
+SdCardFormatStateChangedEvent
 ```
 
----
+### 6.2 `SdCardState`
 
-## 6. 后续确认
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `slotId` | string | yes | slot id | none | 槽位。 |
+| `present` | boolean | yes | `true`, `false` | none | 是否插入 SD 卡。 |
+| `status` | enum | yes | `ready`, `missing`, `formatting`, `error`, `unknown` | none | 状态。 |
+| `totalBytes` | uint64 | no | `0..uint64 max` | omitted | 总容量。 |
+| `availableBytes` | uint64 | no | `0..uint64 max` | omitted | 可用容量。 |
+| `filesystem` | string | no | filesystem name | omitted | 文件系统。 |
+| `error` | object | no | code/message | omitted | 错误摘要。 |
 
-1. 确认 `storage.sdCard` 的 MVP 范围和可选能力。
-2. 确认 method/event 是否复用已有 registry 条目或新增 draft 条目。
-3. 确认 schema 字段、错误码、权限和状态枚举。
-4. 确认 legacyRefs 覆盖范围后再写入 YAML。
+### 6.3 `SdCardFormatState`
+
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `taskId` | string | yes | opaque id | none | 格式化任务 ID。 |
+| `slotId` | string | yes | slot id | none | 槽位。 |
+| `state` | enum | yes | `accepted`, `running`, `succeeded`, `failed`, `cancelled` | none | 任务状态。 |
+| `progress` | uint8 | no | `0..100` | omitted | 进度。 |
+| `filesystem` | string | no | filesystem name | omitted | 目标文件系统。 |
+| `error` | object | no | code/message | omitted | 失败信息。 |
+
+## 7. JSON 示例
+
+```json
+{
+  "id": 901,
+  "method": "storage.getSdCardState",
+  "params": {
+    "slotId": "sd0"
+  }
+}
+```
+
+```json
+{
+  "id": 901,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "slotId": "sd0",
+    "present": true,
+    "status": "ready",
+    "totalBytes": 128000000000,
+    "availableBytes": 64000000000,
+    "filesystem": "exfat"
+  }
+}
+```
+
+```json
+{
+  "id": 902,
+  "method": "storage.formatSdCard",
+  "params": {
+    "slotId": "sd0",
+    "filesystem": "exfat",
+    "confirmationToken": "TOKEN-REDACTED"
+  }
+}
+```
+
+```json
+{
+  "id": 902,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "taskId": "<FORMAT_TASK_ID>",
+    "slotId": "sd0",
+    "state": "accepted",
+    "progress": 0,
+    "filesystem": "exfat"
+  }
+}
+```
+
+## 8. Legacy Mapping
+
+| Legacy entry | Direction | AXTP target | 状态 |
+|---|---|---|---|
+| `GetSDInfo` | Server -> Device | `storage.getSdCardState` | `[REVIEW-OK]` |
+| `FormatSd` | Server -> Device | `storage.formatSdCard` | `[REVIEW-OK]` |
+
+## 9. Registry / Conformance Status
+
+| 项 | 状态 |
+|---|---|
+| Registry YAML | not written |
+| Generated docs | not generated |
+| Method / event IDs | `TBD after adoption` |
+| Conformance | 需覆盖 missing/ready/error/formatting、格式化进度、busy、权限。 |
+
+## 10. 待确认问题
+
+| Issue | Impact | Current recommendation | Status |
+|---|---|---|---|
+| 格式化是否可取消？ | method set | P0 不新增 cancel；若需要另补 `storage.cancelSdCardFormat`。 | `[REVIEW-ASK]` |
+| 播放器正在使用 SD 媒体时是否允许格式化？ | error model | 返回 `BUSY` 或 `INVALID_STATE`。 | `[REVIEW-ASK]` |
