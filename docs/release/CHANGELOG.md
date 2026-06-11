@@ -2,6 +2,52 @@
 
 This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATCH` tags.
 
+## spec/v0.5.0
+
+Documentation governance, business protocol draft consolidation, and AXTP network byte order alignment release.
+
+### Protocol
+
+- Establishes a clearer repository narrative and role-based documentation entry points for first-time readers, runtime/SDK implementers, conformance owners, protocol maintainers, product/architecture reviewers, legacy migration owners, and release owners.
+- Adds a shared AXTP glossary and refactors `docs/specs/**` into a more normative core/registry/codec/tooling specification backbone.
+- Rewrites core runtime specs for Frame/Payload, Transport Profiles, CONTROL, RPC, STREAM, and low-bandwidth degradation to separate required v1 behavior from optional/future behavior.
+- Aligns AXTP multi-byte wire fields to Big-Endian / network byte order across specs, guides, and STREAM draft examples. Runtime implementations that followed earlier Little-Endian draft text must update frame, CONTROL, RPC JSON_BINARY, TLV, STREAM, and CRC byte handling.
+- Updates flow and protocol-draft templates so business flows identify protocol coverage/gaps, and domain-feature drafts use readable method/event overview plus per-item schema expansion.
+- Adds or refines draft business protocol documents for device information, system state/lifecycle/reset, device enrollment/child devices, signage management, software config/update policy, firmware update policy, and audio/video stream-related drafts.
+
+### Registry
+
+- No registry YAML source facts are changed in this release.
+- Keeps adopted runtime contract facts sourced from `registry/**`, `protocol/axtp.protocol.yaml`, and `docs/generated/**`.
+- Moves historical registry planning tables into non-normative appendix documents under `docs/specs/2-registry/appendix/**`; runtimes must not implement from these appendix tables.
+- Clarifies domain.feature naming, method/event/error/profile allocation rules, draft ID boundaries, and registry adoption readiness criteria.
+
+### Schemas
+
+- No adopted generated schema contract changes are introduced by this release.
+- Refines protocol draft schema presentation for audio.algorithm, audio.eq, audio.volume, device.info, system.state, system.lifecycle, system.reset, signage, software, and related draft modules.
+- Clarifies that draft methodId, eventId, errorCode, capabilityId, and fieldId values remain registry-assigned or intentionally unassigned until adoption.
+
+### Conformance
+
+- Expands conformance documentation into a clearer main entry, runtime checklist, support-level guidance, failure classification, and Phase 1 MVP expectations.
+- Adds audit material and module review checklists for future business-domain conformance planning.
+- Existing conformance cases remain the source for runtime validation; draft business protocol documents do not become conformance requirements until adopted and generated.
+
+### Migration
+
+- Adds and updates flow documents for device/system, signage device management, cast receiver/pairing, firmware update, audio/video streaming, and audio algorithm control scenarios.
+- Preserves legacy migration evidence while moving new protocol decisions into flows and protocol drafts.
+- Clarifies that legacy aliases and adapter-only behavior must not pollute formal domain.feature boundaries.
+
+### Runtime Impact
+
+- Runtime and SDK teams should bind to `spec/v0.5.0`, the exact commit, or the generated release artifact; they must not depend on floating `main`.
+- Standard Framed binary runtimes must treat AXTP multi-byte wire integers as Big-Endian / network byte order for new work against this release.
+- WebSocket JSON behavior remains RPC-oriented; CONTROL and STREAM remain Standard Framed concerns.
+- Business protocol documents under `docs/protocol/**` are review drafts unless backed by registry YAML and generated artifacts.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.0.4
 
 Spec repository purification, documentation workflow, and Phase 1 STREAM data-plane alignment release.

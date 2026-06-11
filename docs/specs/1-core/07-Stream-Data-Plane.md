@@ -137,7 +137,7 @@ Reliable transfer 和 resume MAY 由未来 profile-specific spec 添加，但它
 - Stream Context 存在前 MUST NOT 发送 STREAM。
 - 数据传输前，Stream Context MUST 由已采纳 RPC method 或 profile-specific control flow 建立。
 - CONTROL CLOSE、transport loss 或 session teardown MUST 释放该 session 的 stream 资源。
-- STREAM Header MUST 保持为 `streamId:uint32 + seqId:uint32 + cursor:uint64`。
+- STREAM Header MUST 保持为 16B：4B `streamId`、4B `seqId`、8B `cursor`。
 - STREAM Header MUST NOT 承载 business type、codec、fileType、firmware parameter、profileId、domain、event 或 capability data。
 - 通用 StreamParser MUST 将 STREAM `data` 视为不透明数据。
 - Receiver MUST 完成 L1 Frame reassembly 后再解析 STREAM Header。

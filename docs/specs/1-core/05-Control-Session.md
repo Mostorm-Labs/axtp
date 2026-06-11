@@ -99,6 +99,8 @@ Runtime MUST 解析并校验：
 
 v1 中可选或 profile 特定的内容：
 
+默认握手只要求 OPEN / ACCEPT。`READY` 是可选/保留的第三步标记，不得作为 v1 默认握手的必需条件。
+
 | 项目 | 状态 | 规则 |
 |---|---|---|
 | `READY(0x03)` | 可选/保留 | MAY 忽略；MUST NOT 要求作为 handshake 第三步 |
@@ -140,6 +142,8 @@ Opcode registry：
 PING/PONG 因 opcode 值已保留而列出，但它们不是 v1 必需项。HEARTBEAT/HEARTBEAT_ACK 仍是必需的 keepalive 机制。
 
 ACK/NACK、RESUME、SESSION_RESET、WINDOW_UPDATE、GOAWAY 和 VENDOR MUST NOT 用于声明 v1 必需 conformance。
+
+Phase 1 不要求 runtime 实现 ACK/NACK；可靠重传、选择性确认和严格分片确认只能由未来或 profile-specific reliability profile 启用。
 
 ## 规范规则
 
