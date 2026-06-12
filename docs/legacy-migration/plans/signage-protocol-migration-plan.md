@@ -23,6 +23,15 @@
 | 兼容窗口 | 允许发布灰度期保留 legacy adapter，但只服务旧 App 或旧固件回滚；新数字标牌业务不得继续扩展旧 SDK command。 |
 | 协议事实源 | `docs/protocol/**` 是草案输入，`registry/domains/**` 和 `registry/**/*.yaml` 是手写机器事实源，`protocol/axtp.protocol.yaml` 是 Generator 输出。 |
 
+> **设计变更记录 (2026-06-12)**：基于 flow 文档 `docs/flows/signage-device-management.md` 的设计决策，更新以下映射：
+> - `signage.media` → 合并进 `signage.playlist`（URL 刷新是播放项级操作）
+> - `signage.osd` → `software.config` target:"launcher"（外观配置实为 Launcher 软件配置）
+> - `signage.schedule` → `system.lifecycle`（定时关机/重启是设备生命周期）
+> - `auth.session` 绑定 → `device.enrollment`（设备注册/纳管是独立域）
+> - `firmware.updatePolicy` 软件策略 → `software.updatePolicy`（软件更新策略独立于固件 OTA）
+> - `SetDeviceName` → `software.config` displayName（设备名是 Launcher 配置字段）
+> - `KeepAlive` → Core transport heartbeat（不再保留为业务指令）
+
 ## 2. 非目标
 
 - 不修改 `protocol/axtp.protocol.yaml`。
@@ -57,10 +66,10 @@
 | 状态 | 能力 | 说明 |
 |---|---|---|
 | 已在当前 registry/generated 中出现 | `device.info`, `firmware.update` | 可复用现有正式事实，但 signage 的字段映射仍需检查是否完全覆盖旧 SDK 返回。 |
-| 草案已有，需补 legacy 字段后采纳 | `signage.playlist`, `signage.media`, `signage.osd`, `signage.schedule`, `firmware.updatePolicy`, `log.export`, `network.ip`, `storage.sdCard`, `audio.volume`, `audio.input`, `system.time`, `system.initialization`, `system.lifecycle`, `auth.session` | 这些是全量切换的主要补齐对象。 |
-| 需评审定域 | `sensor.telemetry`, schedule shutdown/reboot semantics | 遥测字段过少；旧 `GetScheduleConfig/SetScheduleConfig` 文案是定时关机/重启，不应未经确认直接落成播放排期。 |
+| 草案已有，需补 legacy 字段后采纳 | `signage.playlist`, `software.config`, `software.updatePolicy`, `device.enrollment`, `log.export`, `network.ip`, `storage.sdCard`, `audio.volume`, `audio.input`, `system.time`, `system.initialization`, `system.lifecycle` | 这些是全量切换的主要补齐对象。 |
+| 已定域 | `system.lifecycle`（schedule shutdown/reboot）, `software.config`（外观配置 + 设备名）, `device.enrollment`（设备注册） | Schedule、外观和注册三组先前未定域的条目已通过 flow 文档评审确认。`sensor.telemetry` 仍在 scope 外。 |
 
-当前 `docs/protocol/signage/**` 已给出 `signage.playlist`、`signage.media`、`signage.schedule`、`signage.osd`、`signage.playback` 的 feature 边界和候选方法，但大多仍是占位型草案。落地前必须把旧数字标牌 payload 的字段、枚举、默认值、方向、错误语义和 legacyRefs 补进去，再进入 YAML 采纳。
+当前 `docs/protocol/signage/**` 仅保留 `signage.playlist` 和 `signage.playback` 的 feature 边界。`signage.media` 已合并进 `signage.playlist` v0.7，`signage.osd` 已迁至 `software.config` v0.2，`signage.schedule` 已定域 `system.lifecycle` v0.8。非 signage 域的补充草案包括 `software.config` v0.2、`software.updatePolicy` v0.2、`device.enrollment` v0.3。落地前必须把旧数字标牌 payload 的字段、枚举、默认值、方向、错误语义和 legacyRefs 补进去，再进入 YAML 采纳。
 
 ## 4. 目标架构
 
@@ -87,10 +96,10 @@ Transport
 
 | 旧条目 | 方向 | AXTP 目标 | 迁移动作 |
 |---|---|---|---|
-| `KeepAlive` method | Server <-> Device | AXTP session liveness / `system.lifecycle` | 优先使用 transport/session 心跳；如需业务最后在线事件，再补 `system.lifecycle` 草案并采纳。 |
-| `KeepAlive` event | Server <-> Device | `system.lifecycleStateChanged` 或 session telemetry | 不保留旧同名 event；确认是否需要业务事件。 |
+| `KeepAlive` method | Server <-> Device | Core transport heartbeat | 由 Core transport heartbeat 替代，不保留为业务指令。 |
+| `KeepAlive` event | Server <-> Device | Core transport heartbeat | 不保留旧同名 event；由 Core transport heartbeat 替代，不产生业务事件。 |
 | `GetDeviceInfo` | Server -> Device | `device.getInfo` | 复用当前已采纳 `device.info`，检查是否覆盖 `model/devName/cpuUsage/memoryUsage/ip/mac/version`。 |
-| `SetDeviceName` | Server -> Device, Device -> Server | future device name setting protocol / legacy adapter | 当前 `device.info` 只读；有具体设置需求后另起草设备名设置协议。 |
+| `SetDeviceName` | Server -> Device, Device -> Server | `software.setConfig(target: "launcher", config: { displayName })` | 草案 `software.config` v0.2 已含 `displayName` 字段；`device.info` 只读返回同值。 |
 | `SetSysTime` | Server -> Device | `system.setTimeConfig` | 补 `timezone/year/month/day/hour/minute/second` 到 `system.time`。 |
 | `ResetConfig` | Server -> Device | `system.reset` / `system.initialization` | 明确是恢复配置、恢复出厂还是重启；按 system 域采纳。 |
 | `GetNetworkInfo` | Server -> Device | `network.getIpConfig` | 补接口数组、Wi-Fi/ethernet、`connected/ip/mac/ssid/rssi` 字段。 |
@@ -102,20 +111,20 @@ Transport
 | `GetLineInPreGain` | Server -> Device | `audio.getInputConfig` | 补输入配置 schema。 |
 | `RemoteUpgrade` | Server -> Device | `firmware.beginUpdate` / current generated `firmware.begin` | URL 升级走 `source.type=url`，不新增专用 `RemoteUpgrade`。 |
 | `UpgradeProgress` | Server -> Device | `firmware.getUpdateState` / firmware.update progress event | 若 App 仍要主动查询进度，采纳 query method；否则改用事件。 |
-| `GetBindCode` | Device -> Server | `auth.getSessionState` or binding-specific auth method | `auth.session` 当前草案需细化绑定码、过期时间、方向。 |
-| `GetBindConfig` | Server <-> Device | `auth.getSessionState` | 明确 `bound` 是认证 session、设备绑定还是业务租户绑定。 |
-| `SetBindConfig` | Server -> Device | `auth.createSession` or `auth.setSessionConfig` | 不直接复用旧字段；按绑定状态变更语义建 schema。 |
-| `OnBindState` | Device -> Server | `auth.sessionStateChanged` | 采纳为 auth 事件，字段含 `status/code/message` 或更明确的绑定状态。 |
+| `GetBindCode` | Device -> Server | `device.getPairingCode` | 草案 `device.enrollment` v0.3 已完整覆盖；字段映射 `code` + `expiresInSeconds`(1800)。 |
+| `GetBindConfig` | Server <-> Device | `device.getEnrollmentState` | 草案 `device.enrollment` v0.3；旧 `bound`(bool) → `state`(enum)。 |
+| `SetBindConfig` | Server -> Device | `device.setEnrollmentState` | 草案 `device.enrollment` v0.3；旧 `bound: true` → `desiredState: "enrolled"`。 |
+| `OnBindState` | Device -> Server | `device.enrollmentStateChanged` | 草案 `device.enrollment` v0.3；事件为全新设计。 |
 | `OnTelemetryReport` | Device -> Server | `sensor.telemetryReported` or split domains | 低置信度。先确认字段集合；温度、电池可拆到 sensor/device.power。 |
 | `SetPlaylistConfig` | Server -> Device | `signage.setPlaylistConfig` | 作为 signage P0；完整承接 playlists、items、settings 和全量同步语义。 |
 | `GetPlaylistConfig` | Server -> Device, Device -> Server | `signage.getPlaylistConfig` | 作为 signage P0；返回同一 playlist schema。 |
-| `GetPlaylistItemUrl` | Device -> Server | `signage.listMedia` or `signage.getPlaylistItemUrl` | 需在 `signage.media` 中确认命名；语义是按 itemId 刷新即将过期 URL。 |
-| `GetAppearanceConfig` | Server <-> Device | `signage.getOsdConfig` | 映射 `panelLayout/autoHidePanel/autoHideDelay`，确认 OSD 命名是否准确。 |
-| `SetAppearanceConfig` | Server <-> Device | `signage.setOsdConfig` | 同上；字段进入 signage OSD schema。 |
-| `GetUpdateConfig` | Server <-> Device | `firmware.getUpdatePolicyConfig` | 承接 `autoUpdate/autoUpdateWindow/channel`。 |
-| `SetUpdateConfig` | Server <-> Device | `firmware.setUpdatePolicyConfig` | 同上；确认窗口跨日和 channel 枚举。 |
-| `GetScheduleConfig` | Server <-> Device | `signage.getScheduleConfig` or system schedule | 需要评审：旧文案是定时关机/重启，不是播放排期；不得未经确认直接采纳到 `signage.schedule`。 |
-| `SetScheduleConfig` | Server <-> Device | `signage.setScheduleConfig` or system schedule | 同上；若确认为设备生命周期计划，应拆到 system domain。 |
+| `GetPlaylistItemUrl` | Device -> Server | `signage.getPlaylistItemUrl` | 已归属 `signage.playlist` v0.7；`signage.media` 草案已删除。 |
+| `GetAppearanceConfig` | Server <-> Device | `software.getConfig(target: "launcher")` | 草案 `software.config` v0.2；字段嵌套为 `config.appearance.*`。 |
+| `SetAppearanceConfig` | Server <-> Device | `software.setConfig(target: "launcher")` | 草案 `software.config` v0.2；旧 flat 字段需 adapter 包装为 `config.appearance.*`。 |
+| `GetUpdateConfig` | Server <-> Device | `software.getUpdatePolicy(target: "launcher")` | 草案 `software.updatePolicy` v0.2；旧 `autoUpdate`(bool) → `updateMode`(enum)。 |
+| `SetUpdateConfig` | Server <-> Device | `software.setUpdatePolicy(target: "launcher")` | 草案 `software.updatePolicy` v0.2；旧 `true` → `"auto"`，`false` → `"manual"`。 |
+| `GetScheduleConfig` | Server <-> Device | `system.getRebootSchedule` / `system.getShutdownSchedule` | 已定域 `system.lifecycle` v0.8；旧 shutdown/reboot → 按类型独立 schedule。 |
+| `SetScheduleConfig` | Server <-> Device | `system.setRebootSchedule` / `system.setShutdownSchedule` | 已定域 `system.lifecycle` v0.8；旧合并下发 → 拆分为两个独立 set。 |
 | `RequestLogUpload` | Server -> Device | `log.createExport` | 创建日志导出任务；上传目标、凭证和结果事件由 `log.export` schema 定义。 |
 | `NotifyLogUploadResult` | Device -> Server | `log.exportStateChanged` | 改为日志导出状态/结果事件，不保留旧 notify method。 |
 
@@ -132,38 +141,23 @@ P0 必须覆盖旧 `SetPlaylistConfig` / `GetPlaylistConfig`：
 - `settings.urls`, `settings.url`, `settings.expiresAt`, `settings.delaySeconds`, `settings.muted`, `settings.ignoreCertificateError`, `settings.refreshIntervalSecs`, `settings.clocks[]`。
 - 全量同步语义必须写入 method 描述：`setPlaylistConfig` 是替换整套播放列表，不是 patch。
 
-### 6.2 `signage.media`
+### 6.2 `signage.media` → 已合并进 `signage.playlist`
 
-P0 必须覆盖旧 `GetPlaylistItemUrl`：
+`signage.media` 已合并进 `signage.playlist` v0.7。URL 刷新方法 `signage.getPlaylistItemUrl` 归属 `signage.playlist` capability。原 `signage.media` 独立草案已删除。理由：URL 刷新是播放项级操作，不是独立媒体域。
 
-- request: `itemId`。
-- response: `url` 或 `urls` 二选一，`expiresAt` 可为 Unix timestamp 或 null。
-- 需确认方法名：分类表当前是 `signage.listMedia`，旧语义更像 `signage.getPlaylistItemUrl` 或 `signage.refreshMediaUrl`。采纳前必须统一命名。
+### 6.3 `signage.osd` → 已迁至 `software.config`
 
-### 6.3 `signage.osd`
+外观配置已从 `signage.osd` 迁至 `software.config` v0.2 (target: `"launcher"`) 的 `appearance` 子对象。理由：外观配置实为 Launcher 软件配置，不是 signage 播放域。原 `signage.osd` 独立草案已删除。字段映射：`panelLayout/autoHidePanel/autoHideDelay` → `config.appearance.panelLayout/autoHidePanel/autoHideDelay`。
 
-P0 必须覆盖旧 Appearance：
+### 6.4 Schedule → 已定域 `system.lifecycle`
 
-- `panelLayout`: `focus`, `sidebar`。
-- `autoHidePanel`: bool。
-- `autoHideDelay`: seconds, `> 0`。
-- 需确认 feature 名是否继续用 `signage.osd`；如果产品语义只是播放器侧边栏外观，schema 名称应避免误导为通用视频 OSD。
+旧 `GetScheduleConfig` / `SetScheduleConfig` 的字段是定时关机/重启（`shutdown.enabled/time/days`、`reboot.enabled/time/days`）。已评审确认为设备生命周期计划，不属于 `signage.schedule` 播放排期。定域 `system.lifecycle` v0.8：
 
-### 6.4 Schedule
-
-旧 `GetScheduleConfig` / `SetScheduleConfig` 的字段是：
-
-- `shutdown.enabled/time/days`
-- `reboot.enabled/time/days`
-
-这更像设备生命周期计划，不一定是 `signage.schedule` 的播放计划。落地前必须二选一：
-
-| 结论 | 动作 |
-|---|---|
-| 属于数字标牌播放计划 | 进入 `signage.schedule`，但需要把语义从关机/重启改为播放排期并补字段。 |
-| 属于设备定时关机/重启 | 新增或补齐 `system.lifecycle` / `system.powerSchedule` 类能力，不塞进 signage。 |
-
-在评审结论出来前，App 和固件不得以 `signage.schedule` 的名字发布关机/重启 schema。
+- `GetScheduleConfig` → `system.getRebootSchedule` + `system.getShutdownSchedule`
+- `SetScheduleConfig` → `system.setRebootSchedule` + `system.setShutdownSchedule`
+- 旧合并下发拆分为按类型独立调用
+- 旧 `days` 数字(1-7) → AXTP `daysOfWeek` 字符串数组([mon..sun])
+- `signage.schedule` 草案可删除
 
 ## 7. 分阶段实施
 
@@ -179,9 +173,11 @@ P0 必须覆盖旧 Appearance：
 
 | 优先级 | 草案 |
 |---|---|
-| P0 signage | `docs/protocol/signage/signage.playlist.md`, `docs/protocol/signage/signage.media.md`, `docs/protocol/signage/signage.osd.md` |
-| P0 common | `device.info`, `network.ip`, `storage.sdCard`, `audio.volume`, `audio.input`, `firmware.update`, `firmware.updatePolicy`, `auth.session`, `log.export` |
-| P0 review blockers | schedule 定域、telemetry 定域、binding code/session 语义 |
+| P0 signage | `docs/protocol/signage/signage.playlist.md` |
+| P0 software（signage-covered） | `docs/protocol/software/software.config.md`, `docs/protocol/software/software.updatePolicy.md` |
+| P0 device（signage-covered） | `docs/protocol/device/device.enrollment.md` |
+| P0 common | `device.info`, `network.ip`, `storage.sdCard`, `audio.volume`, `audio.input`, `firmware.update`, `firmware.updatePolicy`（固件 OTA 骨架）, `log.export` |
+| P0 review blockers | telemetry 定域（schedule 定域已解决 → system.lifecycle；binding 语义已解决 → device.enrollment） |
 | P1 optional | `signage.playback`，仅当设备需要播放控制、播放状态和进度时进入本轮 |
 
 每个草案必须补：

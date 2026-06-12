@@ -1,12 +1,22 @@
+---
+status: draft
+contract: false
+generated: false
+domain: signage
+feature: signage.playlist
+registry:
+lastReviewed: 2026-06-12
+---
+
 # AXTP signage.playlist 协议草案
 
-版本：v0.6
+版本：v1.0
 
 归属域：`signage`
 
 Capability ID：`signage.playlist`
 
-适用范围：播放列表、播放项、列表状态和播放项资源 URL 刷新。
+适用范围：数字标牌播放列表全量同步、查询、恢复默认和播放项资源 URL 刷新。
 
 ---
 
@@ -14,198 +24,216 @@ Capability ID：`signage.playlist`
 
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
-| `[REVIEW-DRAFT]` | `signage.playlist` capability | 本文是按 Naming and Taxonomy spec 创建的单 feature 治理草案。 | 人工确认业务语义、schema 和 legacyRefs 后进入 `registry/domains/signage/domain.yaml`。 |
-| `[REVIEW-ASK]` | legacy 映射 | 旧协议命令字段和语义仍需确认。 | 采纳前补齐 legacyRefs 或明确 adapter-only。 |
-| `[REVIEW-RESOLVED]` | `signage.media` 合并 | 播放项 URL 刷新功能已从 `signage.media` 合并到本草案。`signage.media` 草案可删除。 | — |
+| `[REVIEW-DRAFT]` | `signage.playlist` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
+| `[REVIEW-RESOLVED]` | Legacy `slideshow` 类型废弃 | AXTP 不保留 `slideshow`，Adapter 映射为 `image`。 | — |
+| `[REVIEW-RESOLVED]` | `signage.media` 合并 | 播放项 URL 刷新已从 `signage.media` 合并到本草案。 | — |
+| `[REVIEW-ASK]` | `PlaylistConfigChangedEvent` payload | 是否总是携带完整 playlists 需产品确认。 | 采纳前确认。 |
+| `[REVIEW-ASK]` | `ResetPlaylistConfigParams` scope | 是否支持 scoped reset 需产品确认。 | 采纳前确认。 |
 
 ---
 
-## 1. 文档定位
+**变更历史：**
 
-`signage.playlist` 定义：数字标牌播放列表的全量同步、查询、播放项管理和播放项资源 URL 刷新。
-
-本文只描述 `signage.playlist` 这一项 capability。稳定事实必须写入 `registry/domains/signage/domain.yaml` 或相关 registry YAML，再由 Generator 生成 `protocol/axtp.protocol.yaml` 与 `docs/generated/*`。
-
-**v0.2 变更说明：** 新增 `signage.getPlaylistItemUrl` 方法（原 `signage.media` URL 刷新功能），补充候选 schemas 和 JSON 示例。
-
-**v0.3 变更说明：** 播放项类型新增 `unsplash`（Unsplash 图库幻灯片），新增 `UnsplashPhoto` schema；`signage.getPlaylistItemUrl` 返回结果新增 `photos` 字段。
-
-**v0.4 变更说明：** `GetPlaylistItemUrlResult` 从顶层互斥字段（`url` / `urls` / `photos`）模式重构为 `type` + `settings` 显式类型判别模式，与 `PlaylistItem` 结构统一。新设计天然可扩展——新增播放项类型只需扩展 `type` 枚举和对应 `settings` 结构，不污染顶层 schema。
-
-**v0.5 变更说明：** 关闭三个核心设计决策：(1) 播放列表全量替换确认为硬替换，不引入版本号或 soft-delete；(2) Unsplash 等带过期时间播放项的 URL 刷新确认为设备端主动 Pull 模式（设备调用 `getPlaylistItemUrl`）；(3) `clock` 类型播放项调用 `getPlaylistItemUrl` 时服务端返回 `NOT_SUPPORTED`（common error 0x0003）。
-
-**v0.6 变更说明：** 关闭 `scheduled` 类型时间区间约束决策——采用分条件约束：(1) `startDate == endDate` 时 `startTime <= endTime`（单日范围，时间窗口必须落在同一天内）；(2) `startDate < endDate` 时允许 `startTime > endTime`（多日范围下跨午夜播放，语义为 D 日 startTime → D+1 日 endTime）。
+- **v1.0** — 结构完善：(1) 标题后新增元数据块（版本、归属域、Capability ID、适用范围），对齐 `device.enrollment` / `software.config` 等成熟草案模式；(2) 新增顶层"协议审核标记（人工复核）"节，提供快速概览；(3) 修复 §6.5 `Playlist` schema 条件必填规则块中断表格的格式问题。
+- **v0.2** — 新增 `signage.getPlaylistItemUrl` 方法（原 `signage.media` URL 刷新功能），补充候选 schemas 和 JSON 示例。
+- **v0.3** — 播放项类型新增 `unsplash`（Unsplash 图库幻灯片），新增 `UnsplashPhoto` schema；`signage.getPlaylistItemUrl` 返回结果新增 `photos` 字段。
+- **v0.4** — `GetPlaylistItemUrlResult` 从顶层互斥字段（`url` / `urls` / `photos`）模式重构为 `type` + `settings` 显式类型判别模式，与 `PlaylistItem` 结构统一。
+- **v0.5** — 关闭三个核心设计决策：(1) 播放列表全量替换确认为硬替换，不引入版本号或 soft-delete；(2) Unsplash 等带过期时间播放项的 URL 刷新确认为设备端主动 Pull 模式；(3) `clock` 类型播放项调用 `getPlaylistItemUrl` 时服务端返回 `NOT_SUPPORTED`（0x0003）。
+- **v0.6** — 关闭 `scheduled` 类型时间区间约束决策——采用分条件约束。
+- **v0.7** — 按 20-draft-business-protocol skill 规范重组全文：添加 frontmatter 和速读结论；补齐缺失 schema（`PlaylistCapabilitiesParams`/`Result`、`GetPlaylistConfigParams`、`PlaylistConfigResult`、`ResetPlaylistConfigParams`、`PlaylistConfigChangedEvent`）；新增 per-method detail blocks 和 per-event detail block；新增 Capability 字段表；扩展 Legacy 映射为 9.0-9.5 逐命令字段映射模式；补充 8 个 JSON 示例场景。`setPlaylistConfig` 响应简化为仅返回成功 status（无 result body）；`resetPlaylistConfig` 响应改为返回重置后的 `PlaylistConfigResult`；废弃 `slideshow` 播放项类型，Adapter 映射为 `image`。
+- **v0.9** — Schema 精度提升：(1) `Playlist` schema 条件必填字段（`startDate`/`endDate`/`startTime`/`endTime`/`days`）从 prose 注释升级为正式条件必填规则块（与 `device.enrollment` 模式一致）；(2) `PlaylistItem.settings` 类型列从 `object` 更正为 `PlaylistItemSettings`。Legacy 映射改进：(3) §9.1 `SetPlaylistConfig` 新增 `slideshow` → `image` settings 字段级转换子表；(4) §9.3 `GetPlaylistItemUrl` 新增 `unsplash` AXTP-only 标注和 `slideshow` 响应转换细节；(5) §9.4 adapter 模式表新增 `GetPlaylistItemUrl` 和 `slideshow` → `image` 字段转换示例表。
+- **v0.8** — 对齐仓库错误约定：业务语义校验错误由 `RPC_PARAM_INVALID`（曾误标 0x0002）统一改为 `INVALID_ARGUMENT`（0x000A，common），与 audio/software/device 草案一致；补全 §8 错误总表（新增 `INTERNAL_ERROR`、`PERMISSION_DENIED`，标注业务错误落点 0x0600-0x15FF）；为 `setPlaylistConfig` / `getPlaylistItemUrl` 增补方法级错误表；Legacy §9.0 标注 AXTP-only 新增能力、§9.3 细化各类型 URL 刷新分支。
 
 ---
 
-## 2. 业务需求
+## 0. 速读结论
+
+| 项目 | 内容 |
+|---|---|
+| 这个能力做什么 | 数字标牌播放列表全量同步、查询、恢复默认和播放项资源 URL 刷新。 |
+| 当前状态 | draft |
+| 是否可直接实现 | 否。本文是 protocol draft；正式实现以 registry / generated 为准。 |
+| 主要交互 | RPC + EVENT |
+| 是否使用 STREAM | 否 |
+| Registry readiness | candidate |
+| Conformance | needed |
+| 主要未决问题 | `PlaylistConfigChangedEvent` payload 是否携带完整 playlists、`ResetPlaylistConfigParams` 是否支持 scoped reset。 |
+
+---
+
+## 1. 功能说明
+
+`signage.playlist` 定义数字标牌播放列表的全量同步、查询、恢复默认和播放项资源 URL 刷新。
+
+本文落实 `docs/flows/signage-device-management.md` 中对 legacy `SetPlaylistConfig` / `GetPlaylistConfig` / `GetPlaylistItemUrl` 的最终定域。当前 generated 协议未包含这些方法或事件；本文所有 method、event、schema 均为候选，正式数值为 `TBD after adoption`。
+
+**需求来源**：NearHub Launcher 数字标牌设备管理 — 播放列表管理。
+
+**目标用户**：运维人员（通过云端管理控制台）、设备标牌播放器服务。
+
+**目标行为**：云端全量同步播放列表到设备；设备查询当前播放列表；设备检测到资源 URL 即将过期时主动请求刷新获取新 URL。
+
+**当前实现程度**：Drafted only — 无已有 registry/generated 事实。
+
+---
+
+## 2. 能力边界
+
+| 类型 | 内容 |
+|---|---|
+| 包含 | 播放列表全量同步（硬替换）、查询、恢复默认、播放项资源 URL 刷新、播放列表配置变更事件。 |
+| 包含 | `default` 和 `scheduled` 两种播放列表类型。 |
+| 包含 | 5 种播放项类型：`image`、`website`、`video`、`clock`、`unsplash`。 |
+| 不包含 | 播放控制（`signage.playback`）—— 播放/暂停/跳转归播放控制域。 |
+| 不包含 | 设备外观配置（`software.config` target: `"launcher"`）。 |
+| 不包含 | 系统调度（`system.lifecycle`）—— 定时重启/关机归系统生命周期域。 |
+| 数据面 | 不使用 STREAM；所有操作都是 RPC request/response + event。 |
+
+---
+
+## 3. 方法
+
+方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。
+
+### 3.0 方法速览
+
+| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
+|---|---|---|---|---|---|---|
+| `signage.getPlaylistCapabilities` | query | 查询播放列表能力范围。 | `PlaylistCapabilitiesParams` | `PlaylistCapabilitiesResult` | 否 | [REVIEW-DRAFT] |
+| `signage.getPlaylistConfig` | query | 查询当前播放列表配置。 | `GetPlaylistConfigParams` | `PlaylistConfigResult` | 否 | [REVIEW-DRAFT] |
+| `signage.setPlaylistConfig` | command | 全量替换播放列表配置。 | `SetPlaylistConfigParams` | *(无 result，仅 status)* | 是：`playlistConfigChanged` | [REVIEW-DRAFT] |
+| `signage.resetPlaylistConfig` | action | 恢复默认播放列表配置。 | `ResetPlaylistConfigParams` | `PlaylistConfigResult` | 是：`playlistConfigChanged` | [REVIEW-DRAFT] |
+| `signage.getPlaylistItemUrl` | query | 按播放项 ID 获取最新资源 URL（URL 刷新）。 | `GetPlaylistItemUrlParams` | `GetPlaylistItemUrlResult` | 否 | [REVIEW-DRAFT] |
+
+### 3.1 `signage.getPlaylistCapabilities`
 
 | 项 | 内容 |
 |---|---|
-| 需求来源 | NearHub Launcher 数字标牌设备管理 — 播放列表管理 |
-| 目标用户 | 运维人员（通过云端管理控制台）、设备标牌播放器服务 |
-| 目标行为 | 云端全量同步播放列表到设备；设备查询当前播放列表；设备检测到资源 URL 即将过期时主动请求刷新获取新 URL。 |
-| 当前实现程度 | Drafted only — 无已有 registry/generated 事实 |
+| 说明 | 查询 `signage.playlist` 能力范围，包括支持的播放项类型、数量限制和功能开关。 |
+| 调用类型 | query |
+| params | `PlaylistCapabilitiesParams` |
+| result | `PlaylistCapabilitiesResult` |
+| 触发事件 | 无 |
+| 幂等性 | 幂等只读查询。 |
+| 错误 | `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR` |
 
----
+#### 请求参数 Params：`PlaylistCapabilitiesParams`
 
-## 3. 域边界
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| *(无必填参数)* | | | | | 读取完整能力范围，无需过滤参数。 |
 
-| 项 | 决策 |
+#### 返回结果 Result：`PlaylistCapabilitiesResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `supportedItemTypes` | string[] | yes | `image`, `website`, `video`, `clock`, `unsplash` | none | 支持的播放项类型。 |
+| `maxPlaylists` | uint32 | no | product-defined | omitted | 最大播放列表数量。 |
+| `maxItemsPerPlaylist` | uint32 | no | product-defined | omitted | 每个播放列表最大播放项数量。 |
+| `supportsScheduledPlaylist` | boolean | yes | `true`, `false` | none | 是否支持 `scheduled` 类型播放列表。 |
+| `supportsUrlRefresh` | boolean | yes | `true`, `false` | none | 是否支持播放项资源 URL 刷新（`getPlaylistItemUrl`）。 |
+| `supportsReset` | boolean | yes | `true`, `false` | none | 是否支持恢复默认播放列表（`resetPlaylistConfig`）。 |
+
+### 3.2 `signage.getPlaylistConfig`
+
+| 项 | 内容 |
 |---|---|
-| Domain | `signage` |
-| Feature | `signage.playlist` |
-| Capability | `signage.playlist` |
-| 不属于本文 | 播放控制（`signage.playback`）、设备外观（`device.appearance`）、系统调度（`system.lifecycle`） |
+| 说明 | 查询当前播放列表配置。返回设备当前持有的完整播放列表数组。 |
+| 调用类型 | query |
+| params | `GetPlaylistConfigParams` |
+| result | `PlaylistConfigResult` |
+| 触发事件 | 无 |
+| 幂等性 | 幂等只读查询。 |
+| 错误 | `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR` |
 
-负责：
+#### 请求参数 Params：`GetPlaylistConfigParams`
 
-- `signage.playlist` 的能力发现、配置、状态、动作或事件。
-- 与 `signage.playlist` 直接相关的 method/event/schema 草案。
-- 播放项资源 URL 刷新（原 `signage.media` 已合并）。
-- 已确认 legacy 协议到 `signage.playlist` 的语义归类。
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| *(无必填参数)* | | | | | 读取完整配置，无需过滤参数。 |
 
-不负责：
+#### 返回结果 Result：`PlaylistConfigResult`
 
-- 不承载其他 capability feature 的业务语义；跨域关系通过 schema 字段、引用或数据面 stream/file 表达。
-- method/event 数值 ID 分配；数值以 registry/generated 为准。
-- 未确认旧协议 payload 的稳定映射。
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `playlists` | `Playlist[]` | yes | see `Playlist` schema | none | 当前播放列表配置数组。空数组表示无播放列表。 |
 
----
+### 3.3 `signage.setPlaylistConfig`
 
-## 4. 协议决策
+| 项 | 内容 |
+|---|---|
+| 说明 | 全量替换播放列表配置。服务端是唯一权威，设备不编辑播放列表。第二次全量下发删除旧配置中未出现的播放项。 |
+| 调用类型 | command |
+| params | `SetPlaylistConfigParams` |
+| result | *(无 result，仅返回标准 success status)* |
+| 触发事件 | 成功后触发 `playlistConfigChanged`。 |
+| 幂等性 | 连续相同参数调用产生相同终态；每次调用仍是硬替换。 |
+| 错误 | `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `SIGNAGE_PLAYLIST_EMPTY` |
 
-| 决策点 | 结论 | 理由 |
+#### 请求参数 Params：`SetPlaylistConfigParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `playlists` | `Playlist[]` | yes | see `Playlist` schema | none | 播放列表配置数组。非空。 |
+
+#### 方法错误
+
+| Error | Code | 触发条件 |
 |---|---|---|
-| 新增/修改/复用 | Modify | 扩展现有 v0.1 草案，新增 URL 刷新方法和详细 schema。 |
-| 控制面 | RPC method/event | 业务控制不进入 Frame Header。 |
-| 数据面 | None | 播放列表是配置同步操作，不涉及连续数据传输。 |
-| WebSocket | RPC-only | WebSocket Unframed JSON 不承载 STREAM。 |
+| `SUCCESS` | 0x0000 | 全量替换成功，触发 `playlistConfigChanged`。 |
+| `INVALID_ARGUMENT` | 0x000A | scheduled 时间区间约束违反（见 `Playlist` schema）；播放项 `settings` 字段非法。 |
+| `SIGNAGE_PLAYLIST_EMPTY` | TBD | `playlists` 为空数组，或某播放列表 `items` 为空。 |
+| `NOT_SUPPORTED` | 0x0003 | 设备不支持 `signage.playlist` 能力或当前模式不可写。 |
+| `PERMISSION_DENIED` | 0x0009 | 调用方无权修改播放列表配置。 |
 
----
+### 3.4 `signage.resetPlaylistConfig`
 
-## 5. 候选 Capability
+| 项 | 内容 |
+|---|---|
+| 说明 | 恢复默认播放列表配置。成功后设备回到出厂默认播放列表状态。 |
+| 调用类型 | action |
+| params | `ResetPlaylistConfigParams` |
+| result | `PlaylistConfigResult` |
+| 触发事件 | 成功后触发 `playlistConfigChanged`。 |
+| 幂等性 | 每次重置到相同默认状态。 |
+| 错误 | `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR` |
 
-| Capability | 状态 | 说明 |
-|---|---|---|
-| `signage.playlist` | draft | 播放列表全量同步、查询和播放项资源 URL 刷新。 |
+#### 请求参数 Params：`ResetPlaylistConfigParams`
 
----
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| *(无必填参数)* | | | | | 恢复默认配置。`[REVIEW-ASK]` 是否支持 scoped reset（如只重置 scheduled 播放列表）需产品确认。 |
 
-## 6. 候选 Methods
+#### 返回结果 Result：`PlaylistConfigResult`
 
-| Method | Params Schema | Result Schema | 方向 | 说明 | Review |
-|---|---|---|---|---|---|
-| `signage.getPlaylistCapabilities` | `PlaylistCapabilitiesParams` | `PlaylistCapabilitiesResult` | 双向 | 查询 `signage.playlist` 能力范围。 | [REVIEW-DRAFT] |
-| `signage.getPlaylistConfig` | `GetPlaylistConfigParams` | `PlaylistConfigResult` | 双向 | 查询当前播放列表配置。 | [REVIEW-DRAFT] |
-| `signage.setPlaylistConfig` | `SetPlaylistConfigParams` | `SetPlaylistConfigResult` | Server → Device | 全量同步播放列表配置（替换语义）。 | [REVIEW-DRAFT] |
-| `signage.resetPlaylistConfig` | `ResetPlaylistConfigParams` | `SetPlaylistConfigResult` | Server → Device | 恢复默认播放列表配置。 | [REVIEW-DRAFT] |
-| `signage.getPlaylistItemUrl` | `GetPlaylistItemUrlParams` | `GetPlaylistItemUrlResult` | Device → Server | 根据播放项 ID 获取最新资源 URL（URL 刷新）。`clock` 类型播放项无 URL 资源，调用此方法返回 `NOT_SUPPORTED`。 | [REVIEW-DRAFT] |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `playlists` | `Playlist[]` | yes | see `Playlist` | none | 重置后的默认播放列表配置数组。 |
 
----
+### 3.5 `signage.getPlaylistItemUrl`
 
-## 7. 候选 Events
+| 项 | 内容 |
+|---|---|
+| 说明 | 按播放项 ID 获取最新资源 URL（URL 刷新）。设备检测到资源 URL 即将过期时主动调用此方法。`clock` 类型播放项无 URL 资源，调用此方法返回 `NOT_SUPPORTED`。 |
+| 调用类型 | query |
+| params | `GetPlaylistItemUrlParams` |
+| result | `GetPlaylistItemUrlResult` |
+| 触发事件 | 无 |
+| 幂等性 | 返回当前有效 URL；同一 itemId 在有效期内返回相同结果。 |
+| 错误 | `SUCCESS`, `NOT_SUPPORTED`, `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND`, `SIGNAGE_PLAYLIST_URL_EXPIRED` |
 
-| Event | Schema | 触发时机 | Review |
-|---|---|---|---|
-| `signage.playlistConfigChanged` | `PlaylistConfigChangedEvent` | 播放列表配置发生变更时发出。 | [REVIEW-DRAFT] |
+#### 请求参数 Params：`GetPlaylistItemUrlParams`
 
----
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `itemId` | string (UUID) | yes | UUID format | none | 播放项唯一标识。 |
 
-## 8. 候选 Schemas
+#### 返回结果 Result：`GetPlaylistItemUrlResult`
 
-### `SetPlaylistConfigParams`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `playlists` | `Playlist[]` | yes | 播放列表配置数组。非空。 | [REVIEW-DRAFT] |
-
-### `Playlist`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `id` | `string` (UUID) | yes | 播放列表唯一标识。 | [REVIEW-DRAFT] |
-| `type` | `enum<default, scheduled>` | yes | 播放列表类型。`default` 为默认播放列表，`scheduled` 为定时播放列表。 | [REVIEW-DRAFT] |
-| `startDate` | `string` (date) | no | 开始日期 (YYYY-MM-DD)。仅 `scheduled` 类型。`startDate <= endDate`。 | [REVIEW-DRAFT] |
-| `endDate` | `string` (date) | no | 结束日期 (YYYY-MM-DD)。仅 `scheduled` 类型。`startDate <= endDate`。 | [REVIEW-DRAFT] |
-| `startTime` | `string` (time) | no | 开始时间 (HH:mm:ss)。仅 `scheduled` 类型。**当 `startDate == endDate` 时，`startTime <= endTime`。** | [REVIEW-DRAFT] |
-| `endTime` | `string` (time) | no | 结束时间 (HH:mm:ss)。仅 `scheduled` 类型。**当 `startDate == endDate` 时，`startTime <= endTime`；当 `startDate < endDate` 时允许跨午夜（`startTime > endTime`），语义为 D 日 startTime → D+1 日 endTime。** | [REVIEW-DRAFT] |
-| `days` | `uint8[]` | no | 生效星期 (1-7, 1=周一)。仅 `scheduled` 类型。 | [REVIEW-DRAFT] |
-| `items` | `PlaylistItem[]` | yes | 播放项数组。非空。 | [REVIEW-DRAFT] |
-
-### `PlaylistItem`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `id` | `string` (UUID) | yes | 播放项唯一标识。 | [REVIEW-DRAFT] |
-| `type` | `enum<image, slideshow, website, video, clock, unsplash>` | yes | 播放项类型。 | [REVIEW-DRAFT] |
-| `duration` | `uint32` | yes | 播放时长（秒）。0-86400。默认 60。 | [REVIEW-DRAFT] |
-| `sort` | `uint32` | yes | 播放顺序。非负整数。默认 0。 | [REVIEW-DRAFT] |
-| `settings` | `object` | yes | 播放项设置。按 `type` 不同结构不同。 | [REVIEW-DRAFT] |
-
-### `PlaylistItemSettings`（按 type 区分）
-
-**image 类型：**
-
-| Field | Type | Required | 说明 |
-|---|---|---:|---|
-| `urls` | `string[]` | yes | 图片 URL 数组。 |
-| `delaySeconds` | `uint32` | yes | 每个图片显示时长（秒）。`> 0`。默认 5。 |
-| `expiresAt` | `uint64` | no | URL 过期时间（Unix 时间戳）。`null` 表示永不过期。 |
-
-**video 类型：**
-
-| Field | Type | Required | 说明 |
-|---|---|---:|---|
-| `url` | `string` | yes | 视频 URL。 |
-| `expiresAt` | `uint64` | no | URL 过期时间。`null` 表示永不过期。 |
-| `muted` | `boolean` | no | 是否静音播放。默认 `false`。 |
-
-**website 类型：**
-
-| Field | Type | Required | 说明 |
-|---|---|---:|---|
-| `url` | `string` | yes | 网站 URL。 |
-| `ignoreCertificateError` | `boolean` | no | 忽略证书错误。默认 `false`。 |
-| `refreshIntervalSecs` | `uint32` | no | 刷新间隔秒数。`null` 表示不刷新。 |
-
-**clock 类型：**
-
-| Field | Type | Required | 说明 |
-|---|---|---:|---|
-| `clocks` | `ClockEntry[]` | yes | 时钟列表。 |
-| `clocks[].timezone` | `string` (IANA) | yes | 时区标识。 |
-| `clocks[].label` | `string` | yes | 城市标签。 |
-
-**unsplash 类型：**
-
-| Field | Type | Required | 说明 |
-|---|---|---:|---|
-| `photos` | `UnsplashPhoto[]` | yes | Unsplash 图片列表（含摄影师信息）。 |
-| `delaySeconds` | `uint32` | yes | 播放间隔秒数。`> 0`。默认 5。 |
-| `expiresAt` | `uint64` | no | URL 过期时间（Unix 时间戳秒）。`null` 表示永不过期。 |
-
-### `UnsplashPhoto`
-
-| Field | Type | Required | 说明 |
-|---|---|---:|---|
-| `url` | `string` | yes | 图片 URL。 |
-| `user` | `object` | yes | 摄影师信息。 |
-| `user.name` | `string` | yes | 摄影师名称。 |
-| `user.link` | `string` | yes | 摄影师 Unsplash 主页链接。 |
-
-### `GetPlaylistItemUrlParams`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `itemId` | `string` (UUID) | yes | 播放项唯一标识。 | [REVIEW-DRAFT] |
-
-### `GetPlaylistItemUrlResult`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `type` | `enum<image, video, website, unsplash>` | yes | 播放项类型。用于判别 `settings` 的内部结构。`clock` 类型不涉及 URL 资源刷新。 | [REVIEW-DRAFT] |
-| `settings` | `PlaylistItemSettings` | yes | 播放项刷新后的完整设置。结构与 `PlaylistItem.settings` 一致，按 `type` 对应不同内部字段。设备可直接用此值替换本地缓存的 `settings`。 | [REVIEW-DRAFT] |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `type` | enum | yes | `image`, `video`, `website`, `unsplash` | none | 播放项类型。用于判别 `settings` 的内部结构。`clock` 类型不涉及 URL 资源刷新。 |
+| `settings` | `PlaylistItemSettings` | yes | see `PlaylistItemSettings` | none | 刷新后的完整设置。设备可直接用此值替换本地缓存的 `settings`。 |
 
 `settings` 按 `type` 值对应 `PlaylistItemSettings` 的各类型子集：
 
@@ -216,17 +244,297 @@ Capability ID：`signage.playlist`
 | `website` | `url`, `ignoreCertificateError`, `refreshIntervalSecs` |
 | `unsplash` | `photos`, `delaySeconds`, `expiresAt` |
 
+#### 方法错误
+
+| Error | Code | 触发条件 |
+|---|---|---|
+| `SUCCESS` | 0x0000 | 返回刷新后的 `type` + `settings`。 |
+| `NOT_SUPPORTED` | 0x0003 | 播放项类型为 `clock`（无远程 URL 资源）。 |
+| `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` | TBD | `itemId` 不存在于当前播放列表中。 |
+| `SIGNAGE_PLAYLIST_URL_EXPIRED` | TBD | 资源 URL 已不可用且无法刷新。 |
+
 ---
 
-## 9. JSON 示例
+## 4. 事件
+
+### 4.0 事件速览
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
+|---|---|---|---|---|
+| `signage.playlistConfigChanged` | `setPlaylistConfig` 或 `resetPlaylistConfig` 成功改变播放列表配置后发出。 | `PlaylistConfigChangedEvent` | 用事件通知触发 UI 刷新或本地缓存更新；如需完整配置，调用 `getPlaylistConfig` 校准。 | [REVIEW-DRAFT] |
+
+### 4.1 `signage.playlistConfigChanged`
+
+| 项 | 内容 |
+|---|---|
+| 说明 | 播放列表配置发生变更时发出。由 `setPlaylistConfig` 或 `resetPlaylistConfig` 成功操作触发。 |
+| Payload Schema | `PlaylistConfigChangedEvent` |
+| 客户端处理建议 | 收到事件后，如本地缓存了播放列表配置应标记为失效。如需获取最新完整配置，调用 `signage.getPlaylistConfig`。 |
+
+#### Payload：`PlaylistConfigChangedEvent`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `reason` | string (enum) | yes | `set_config`, `reset_config` | none | 变更原因。`set_config` 由 `setPlaylistConfig` 触发；`reset_config` 由 `resetPlaylistConfig` 触发。 |
+| `playlists` | `Playlist[]` | no | see `Playlist` schema | omitted | 变更后的完整播放列表。设备可选择省略以减小 payload，客户端调用 `getPlaylistConfig` 获取。`[REVIEW-ASK]` 是否总是携带完整 playlists 需产品确认。 |
+
+---
+
+## 5. Capability
+
+Capability name: `signage.playlist`。
+
+| 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 说明 |
+|---|---|---:|---|---|
+| `capability` | string | yes | fixed `signage.playlist` | capability 名称。 |
+| `supportedItemTypes` | string[] | yes | `image`, `website`, `video`, `clock`, `unsplash` | 支持的播放项类型。 |
+| `maxPlaylists` | uint32 | no | product-defined | 最大播放列表数量。 |
+| `maxItemsPerPlaylist` | uint32 | no | product-defined | 每个播放列表最大播放项数量。 |
+| `supportsScheduledPlaylist` | boolean | yes | `true`, `false` | 是否支持 `scheduled` 类型播放列表。 |
+| `supportsUrlRefresh` | boolean | yes | `true`, `false` | 是否支持播放项资源 URL 刷新。 |
+
+---
+
+## 6. 字段 / Schemas
+
+### 6.1 Schema 层级速览
+
+```text
+请求 Schemas:
+  PlaylistCapabilitiesParams  → getPlaylistCapabilities
+  GetPlaylistConfigParams     → getPlaylistConfig
+  SetPlaylistConfigParams     → setPlaylistConfig
+  ResetPlaylistConfigParams   → resetPlaylistConfig
+  GetPlaylistItemUrlParams    → getPlaylistItemUrl
+
+响应 Schemas:
+  PlaylistCapabilitiesResult  ← getPlaylistCapabilities
+  PlaylistConfigResult        ← getPlaylistConfig / resetPlaylistConfig
+  GetPlaylistItemUrlResult    ← getPlaylistItemUrl
+
+事件 Payload Schemas:
+  PlaylistConfigChangedEvent  ← playlistConfigChanged
+
+共享对象:
+  Playlist, PlaylistItem, PlaylistItemSettings, ClockEntry, UnsplashPhoto
+```
+
+### 6.2 请求 Schemas
+
+#### `SetPlaylistConfigParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `playlists` | `Playlist[]` | yes | see `Playlist` | none | 播放列表配置数组。非空。 |
+
+#### `GetPlaylistItemUrlParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `itemId` | string (UUID) | yes | UUID format | none | 播放项唯一标识。 |
+
+`PlaylistCapabilitiesParams`、`GetPlaylistConfigParams`、`ResetPlaylistConfigParams`：无必填参数，详见各方法 per-method 字段表。
+
+### 6.3 响应 Schemas
+
+#### `PlaylistCapabilitiesResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `supportedItemTypes` | string[] | yes | `image`, `website`, `video`, `clock`, `unsplash` | none | 支持的播放项类型。 |
+| `maxPlaylists` | uint32 | no | product-defined | omitted | 最大播放列表数。 |
+| `maxItemsPerPlaylist` | uint32 | no | product-defined | omitted | 每列表最大播放项数。 |
+| `supportsScheduledPlaylist` | boolean | yes | `true`, `false` | none | 是否支持 scheduled 类型。 |
+| `supportsUrlRefresh` | boolean | yes | `true`, `false` | none | 是否支持 URL 刷新。 |
+| `supportsReset` | boolean | yes | `true`, `false` | none | 是否支持恢复默认。 |
+
+#### `PlaylistConfigResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `playlists` | `Playlist[]` | yes | see `Playlist` | none | 当前播放列表配置数组。 |
+
+#### `GetPlaylistItemUrlResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `type` | enum | yes | `image`, `video`, `website`, `unsplash` | none | 播放项类型。用于判别 `settings` 内部结构。 |
+| `settings` | `PlaylistItemSettings` | yes | see `PlaylistItemSettings` | none | 刷新后的完整设置。按 `type` 对应不同内部字段。 |
+
+### 6.4 事件 Payload Schemas
+
+#### `PlaylistConfigChangedEvent`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `reason` | string (enum) | yes | `set_config`, `reset_config` | none | 变更原因。 |
+| `playlists` | `Playlist[]` | no | see `Playlist` | omitted | 变更后的完整播放列表。可省略。 |
+
+### 6.5 共享对象 Schemas
+
+#### `Playlist`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `id` | string (UUID) | yes | UUID format | none | 播放列表唯一标识。 |
+| `type` | enum | yes | `default`, `scheduled` | none | 播放列表类型。`default` 为默认播放列表，`scheduled` 为定时播放列表。 |
+| `startDate` | string (date) | conditional | YYYY-MM-DD | omitted | 开始日期。`startDate <= endDate`。 |
+| `endDate` | string (date) | conditional | YYYY-MM-DD | omitted | 结束日期。`startDate <= endDate`。 |
+| `startTime` | string (time) | conditional | HH:mm:ss | omitted | 开始时间。**当 `startDate == endDate` 时，`startTime <= endTime`。** |
+| `endTime` | string (time) | conditional | HH:mm:ss | omitted | 结束时间。**当 `startDate == endDate` 时 `startTime <= endTime`；当 `startDate < endDate` 时允许跨午夜（`startTime > endTime`），语义为 D 日 startTime → D+1 日 endTime。** |
+| `days` | uint8[] | conditional | 1-7, 1=周一 | omitted | 生效星期。 |
+| `items` | `PlaylistItem[]` | yes | see `PlaylistItem` | none | 播放项数组。非空。 |
+
+> **条件必填规则**：
+> - `type: "default"` — `startDate`、`endDate`、`startTime`、`endTime`、`days` 均不可设置（省略或 `null`）。
+> - `type: "scheduled"` — `startDate`、`endDate`、`startTime`、`endTime`、`days` 全部必填。附加约束：`startDate <= endDate`；当 `startDate == endDate` 时 `startTime <= endTime`；当 `startDate < endDate` 时允许跨午夜（`startTime > endTime`）；`days` 非空且每项在 1-7 范围内。
+
+#### `PlaylistItem`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `id` | string (UUID) | yes | UUID format | none | 播放项唯一标识。 |
+| `type` | enum | yes | `image`, `website`, `video`, `clock`, `unsplash` | none | 播放项类型。 |
+| `duration` | uint32 | yes | 0-86400 | 60 | 播放时长（秒）。 |
+| `sort` | uint32 | yes | 非负整数 | 0 | 播放顺序。 |
+| `settings` | `PlaylistItemSettings` | yes | see `PlaylistItemSettings` | none | 播放项设置。按 `type` 不同结构不同。 |
+
+#### `PlaylistItemSettings`（按 type 区分）
+
+**image 类型：**
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `urls` | string[] | yes | non-empty URL array | none | 图片 URL 数组。 |
+| `delaySeconds` | uint32 | yes | > 0 | 5 | 每个图片显示时长（秒）。 |
+| `expiresAt` | uint64 | no | Unix timestamp | `null` | URL 过期时间。`null` 表示永不过期。 |
+
+**video 类型：**
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `url` | string | yes | valid URL | none | 视频 URL。 |
+| `expiresAt` | uint64 | no | Unix timestamp | `null` | URL 过期时间。`null` 表示永不过期。 |
+| `muted` | boolean | no | `true`, `false` | `false` | 是否静音播放。 |
+
+**website 类型：**
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `url` | string | yes | valid URL | none | 网站 URL。 |
+| `ignoreCertificateError` | boolean | no | `true`, `false` | `false` | 忽略证书错误。 |
+| `refreshIntervalSecs` | uint32 | no | > 0 | `null` | 刷新间隔秒数。`null` 表示不刷新。 |
+
+**clock 类型：**
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `clocks` | `ClockEntry[]` | yes | non-empty | none | 时钟列表。 |
+
+#### `ClockEntry`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `timezone` | string (IANA) | yes | IANA timezone | none | 时区标识。 |
+| `label` | string | yes | non-empty | none | 城市标签。 |
+
+**unsplash 类型：**
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `photos` | `UnsplashPhoto[]` | yes | non-empty | none | Unsplash 图片列表（含摄影师信息）。 |
+| `delaySeconds` | uint32 | yes | > 0 | 5 | 播放间隔秒数。 |
+| `expiresAt` | uint64 | no | Unix timestamp | `null` | URL 过期时间。`null` 表示永不过期。 |
+
+#### `UnsplashPhoto`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `url` | string | yes | valid URL | none | 图片 URL。 |
+| `user` | object | yes | see below | none | 摄影师信息。 |
+| `user.name` | string | yes | non-empty | none | 摄影师名称。 |
+| `user.link` | string | yes | valid URL | none | 摄影师 Unsplash 主页链接。 |
+
+---
+
+## 7. JSON 示例
 
 示例用于评审 request/response/event 语义，不是 generated 事实源。JSON 示例只写 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。
 
-### `signage.setPlaylistConfig` request
+### 7.1 查询播放列表能力
+
+**场景**：设备上线后，云端查询设备支持的播放列表能力。
+
+请求：
 
 ```json
 {
   "id": 1,
+  "method": "signage.getPlaylistCapabilities",
+  "params": {}
+}
+```
+
+响应：
+
+```json
+{
+  "id": 1,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "supportedItemTypes": ["image", "website", "video", "clock", "unsplash"],
+    "maxPlaylists": 10,
+    "maxItemsPerPlaylist": 50,
+    "supportsScheduledPlaylist": true,
+    "supportsUrlRefresh": true,
+    "supportsReset": true
+  }
+}
+```
+
+**读法**：`supportedItemTypes` 告诉云端该设备支持哪些播放项类型。`maxPlaylists` / `maxItemsPerPlaylist` 是产品级限制。`supportsUrlRefresh: true` 表示设备会主动调用 `getPlaylistItemUrl` 刷新过期 URL。
+
+### 7.2 查询当前播放列表
+
+**场景**：云端查询设备当前持有的播放列表配置。
+
+请求：
+
+```json
+{
+  "id": 2,
+  "method": "signage.getPlaylistConfig",
+  "params": {}
+}
+```
+
+响应（空列表）：
+
+```json
+{
+  "id": 2,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "playlists": []
+  }
+}
+```
+
+### 7.3 全量同步播放列表（default 类型，含 4 种 item）
+
+**场景**：云端下发自定义播放列表，包含 image、video、website、unsplash 四种播放项。
+
+请求：
+
+```json
+{
+  "id": 3,
   "method": "signage.setPlaylistConfig",
   "params": {
     "playlists": [
@@ -276,17 +584,11 @@ Capability ID：`signage.playlist`
               "photos": [
                 {
                   "url": "https://images.unsplash.example.com/photo-1",
-                  "user": {
-                    "name": "Alice Photographer",
-                    "link": "https://unsplash.example.com/@alice"
-                  }
+                  "user": { "name": "Alice Photographer", "link": "https://unsplash.example.com/@alice" }
                 },
                 {
                   "url": "https://images.unsplash.example.com/photo-2",
-                  "user": {
-                    "name": "Bob Photographer",
-                    "link": "https://unsplash.example.com/@bob"
-                  }
+                  "user": { "name": "Bob Photographer", "link": "https://unsplash.example.com/@bob" }
                 }
               ],
               "delaySeconds": 10,
@@ -300,26 +602,133 @@ Capability ID：`signage.playlist`
 }
 ```
 
-### `signage.setPlaylistConfig` response
+响应：
 
 ```json
 {
-  "id": 1,
+  "id": 3,
   "status": {
     "ok": true,
     "code": 0
-  },
-  "result": {
-    "ok": true
   }
 }
 ```
 
-### `signage.getPlaylistConfig` response（简化）
+### 7.4 全量同步播放列表（scheduled 类型，含时间约束）
+
+**场景**：云端下发定时播放列表，设置周一到周五上午 9:00 到下午 18:00 播放。
+
+请求：
 
 ```json
 {
-  "id": 2,
+  "id": 4,
+  "method": "signage.setPlaylistConfig",
+  "params": {
+    "playlists": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "default",
+        "items": [
+          {
+            "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "type": "image",
+            "duration": 60,
+            "sort": 0,
+            "settings": {
+              "urls": ["https://example.com/resource/default-bg.jpg"],
+              "delaySeconds": 5,
+              "expiresAt": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "660e8400-e29b-41d4-a716-446655440001",
+        "type": "scheduled",
+        "startDate": "2026-01-01",
+        "endDate": "2026-12-31",
+        "startTime": "09:00:00",
+        "endTime": "18:00:00",
+        "days": [1, 2, 3, 4, 5],
+        "items": [
+          {
+            "id": "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "type": "video",
+            "duration": 300,
+            "sort": 0,
+            "settings": {
+              "url": "https://example.com/resource/work-hours-content.mp4",
+              "expiresAt": 1735689600,
+              "muted": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**读法**：`startDate` < `endDate`，时间跨度为多日，`startTime < endTime` 落在同一天内（不跨午夜）。`days` 指定周一到周五生效。
+
+### 7.5 全量同步播放列表（含 clock 类型 item）
+
+**场景**：播放列表包含 clock 类型播放项，展示多个时区时钟。
+
+请求（摘录 items 部分）：
+
+```json
+{
+  "id": 5,
+  "method": "signage.setPlaylistConfig",
+  "params": {
+    "playlists": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "default",
+        "items": [
+          {
+            "id": "8ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "type": "clock",
+            "duration": 600,
+            "sort": 0,
+            "settings": {
+              "clocks": [
+                { "timezone": "Asia/Shanghai", "label": "北京" },
+                { "timezone": "America/New_York", "label": "纽约" },
+                { "timezone": "Europe/London", "label": "伦敦" }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**读法**：`clock` 类型不需要远程 URL 资源，`settings` 只包含 `clocks` 数组。调用 `getPlaylistItemUrl` 对 clock 类型返回 `NOT_SUPPORTED`。
+
+### 7.6 恢复默认播放列表
+
+**场景**：云端恢复设备出厂默认播放列表。
+
+请求：
+
+```json
+{
+  "id": 6,
+  "method": "signage.resetPlaylistConfig",
+  "params": {}
+}
+```
+
+响应：
+
+```json
+{
+  "id": 6,
   "status": {
     "ok": true,
     "code": 0
@@ -330,11 +739,54 @@ Capability ID：`signage.playlist`
 }
 ```
 
-### `signage.getPlaylistItemUrl` request
+**读法**：`resetPlaylistConfig` 返回重置后的默认播放列表配置（此处为空数组，表示出厂默认无播放列表）。
+
+### 7.7 播放列表配置变更事件
+
+**场景**：`setPlaylistConfig` 成功后，设备发出配置变更事件。
+
+事件：
 
 ```json
 {
-  "id": 3,
+  "event": "signage.playlistConfigChanged",
+  "intent": 1,
+  "data": {
+    "reason": "set_config",
+    "playlists": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "default",
+        "items": [
+          {
+            "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "type": "image",
+            "duration": 60,
+            "sort": 0,
+            "settings": {
+              "urls": ["https://example.com/resource/file-1.jpg"],
+              "delaySeconds": 5,
+              "expiresAt": 1704067200
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**读法**：`reason` 标明变更由 `setPlaylistConfig` 触发。`playlists` 携带变更后的完整配置，客户端可直接使用，也可省略后通过 `getPlaylistConfig` 获取。
+
+### 7.8 刷新播放项 URL（image 类型）
+
+**场景**：设备检测到 image 类型播放项的 URL 即将过期，主动请求刷新。
+
+请求：
+
+```json
+{
+  "id": 7,
   "method": "signage.getPlaylistItemUrl",
   "params": {
     "itemId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
@@ -342,11 +794,11 @@ Capability ID：`signage.playlist`
 }
 ```
 
-### `signage.getPlaylistItemUrl` response（image 类型）
+响应：
 
 ```json
 {
-  "id": 3,
+  "id": 7,
   "status": {
     "ok": true,
     "code": 0
@@ -362,15 +814,16 @@ Capability ID：`signage.playlist`
 }
 ```
 
-### `signage.getPlaylistItemUrl` response（video 类型）
+**读法**：设备用返回的 `settings` 直接替换本地缓存的该 item `settings`。
+
+### 7.9 刷新播放项 URL（video / website / unsplash 类型）
+
+video 类型响应：
 
 ```json
 {
-  "id": 4,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
+  "id": 8,
+  "status": { "ok": true, "code": 0 },
   "result": {
     "type": "video",
     "settings": {
@@ -382,15 +835,12 @@ Capability ID：`signage.playlist`
 }
 ```
 
-### `signage.getPlaylistItemUrl` response（website 类型）
+website 类型响应：
 
 ```json
 {
-  "id": 6,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
+  "id": 9,
+  "status": { "ok": true, "code": 0 },
   "result": {
     "type": "website",
     "settings": {
@@ -402,33 +852,18 @@ Capability ID：`signage.playlist`
 }
 ```
 
-### `signage.getPlaylistItemUrl` response（unsplash 类型）
+unsplash 类型响应：
 
 ```json
 {
-  "id": 5,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
+  "id": 10,
+  "status": { "ok": true, "code": 0 },
   "result": {
     "type": "unsplash",
     "settings": {
       "photos": [
-        {
-          "url": "https://images.unsplash.example.com/photo-1-new",
-          "user": {
-            "name": "Alice Photographer",
-            "link": "https://unsplash.example.com/@alice"
-          }
-        },
-        {
-          "url": "https://images.unsplash.example.com/photo-2-new",
-          "user": {
-            "name": "Bob Photographer",
-            "link": "https://unsplash.example.com/@bob"
-          }
-        }
+        { "url": "https://images.unsplash.example.com/photo-1-new", "user": { "name": "Alice Photographer", "link": "https://unsplash.example.com/@alice" } },
+        { "url": "https://images.unsplash.example.com/photo-2-new", "user": { "name": "Bob Photographer", "link": "https://unsplash.example.com/@bob" } }
       ],
       "delaySeconds": 10,
       "expiresAt": 1704326400
@@ -437,14 +872,14 @@ Capability ID：`signage.playlist`
 }
 ```
 
-### failure response（播放项不存在）
+### 7.10 失败：播放项不存在
 
 ```json
 {
-  "id": 3,
+  "id": 7,
   "status": {
     "ok": false,
-    "code": 10,
+    "code": 12,
     "msg": "Playlist item not found.",
     "details": {
       "candidateError": "SIGNAGE_PLAYLIST_ITEM_NOT_FOUND"
@@ -453,11 +888,11 @@ Capability ID：`signage.playlist`
 }
 ```
 
-### failure response（clock 类型不支持 URL 刷新）
+### 7.11 失败：clock 类型不支持 URL 刷新
 
 ```json
 {
-  "id": 7,
+  "id": 11,
   "status": {
     "ok": false,
     "code": 3,
@@ -466,30 +901,280 @@ Capability ID：`signage.playlist`
 }
 ```
 
+### 7.12 失败：scheduled 时间约束违反
+
+**场景**：`setPlaylistConfig` 中 scheduled 播放列表 `startDate == endDate` 但 `startTime > endTime`。
+
+```json
+{
+  "id": 12,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid scheduled time range: startTime must be <= endTime when startDate equals endDate.",
+    "details": {
+      "field": "playlists[1].startTime"
+    }
+  }
+}
+```
+
+### 7.13 失败：空播放列表
+
+**场景**：`setPlaylistConfig` 传入空 playlists 数组。
+
+```json
+{
+  "id": 13,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Playlists array must not be empty.",
+    "details": {
+      "candidateError": "SIGNAGE_PLAYLIST_EMPTY"
+    }
+  }
+}
+```
+
 ---
 
-## 10. 候选 Errors
+## 8. 错误
 
-| Error | 类别 | 说明 | Review |
-|---|---|---|---|
-| `NOT_SUPPORTED` (0x0003) | common | URL 刷新操作不支持当前播放项类型（如 `clock`）。 | [REVIEW-DRAFT] |
-| `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` | business | 指定的播放项 ID 不存在于当前播放列表中。 | [REVIEW-DRAFT] |
-| `SIGNAGE_PLAYLIST_EMPTY` | business | 播放列表数组为空或播放项数组为空。 | [REVIEW-DRAFT] |
-| `SIGNAGE_PLAYLIST_URL_EXPIRED` | business | 刷新 URL 时发现资源已不可用。 | [REVIEW-DRAFT] |
-
----
-
-## 11. Legacy 待映射
-
-| 来源 | 旧协议条目 | 候选映射 | 状态 | 说明 |
+| Error | Code | 类别 | 说明 | Review |
 |---|---|---|---|---|
-| NearHub Launcher Signage | `SetPlaylistConfig` | `signage.setPlaylistConfig` | [REVIEW-DRAFT] | 方向 Server → Device；全量替换语义一致。旧指令状态为"已研发"。 |
-| NearHub Launcher Signage | `GetPlaylistConfig` | `signage.getPlaylistConfig` | [REVIEW-DRAFT] | 方向双向；响应结构一致。旧指令状态为"已研发"。 |
-| NearHub Launcher Signage | `GetPlaylistItemUrl` | `signage.getPlaylistItemUrl` | [REVIEW-DRAFT] | 方向 Device → Server；URL 刷新语义一致。旧指令状态为"已研发"。原映射为 `signage.media`，已重新定域。 |
+| `INVALID_ARGUMENT` | 0x000A | common | 参数校验失败（如 scheduled 时间约束违反、播放项 `settings` 字段非法）。 | [REVIEW-DRAFT] |
+| `NOT_SUPPORTED` | 0x0003 | common | 操作不支持当前播放项类型（如 `clock` 调用 `getPlaylistItemUrl`）或设备不支持 `signage.playlist` 能力。 | [REVIEW-DRAFT] |
+| `PERMISSION_DENIED` | 0x0009 | common | 调用方无权修改播放列表配置（`setPlaylistConfig`）。 | [REVIEW-DRAFT] |
+| `INTERNAL_ERROR` | 0x000E | common | 设备内部错误（`getPlaylistCapabilities` / `getPlaylistConfig` / `resetPlaylistConfig` 执行失败）。 | [REVIEW-DRAFT] |
+| `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` | TBD | business | 指定的播放项 ID 不存在于当前播放列表中。 | [REVIEW-DRAFT] |
+| `SIGNAGE_PLAYLIST_EMPTY` | TBD | business | 播放列表数组为空或播放项数组为空。 | [REVIEW-DRAFT] |
+| `SIGNAGE_PLAYLIST_URL_EXPIRED` | TBD | business | 刷新 URL 时发现资源已不可用。 | [REVIEW-DRAFT] |
+
+> 通用错误码数值取自 `registry/error/error_code.yaml`。业务域错误 `SIGNAGE_PLAYLIST_*` 落点在业务域区段 `0x0600-0x15FF`，编号 `TBD after adoption`，由 registry 采纳时分配。
 
 ---
 
-## 12. Registry 草案输入
+## 9. Legacy 待映射
+
+### 9.0 Legacy 映射总览
+
+| Legacy entry | 证据源 / 状态 | Direction | AXTP target | 说明 |
+|---|---|---|---|---|
+| `SetPlaylistConfig` | 通用管理命令 · 已研发 | Server → Device | `signage.setPlaylistConfig` | 逐字段映射见 9.1。 |
+| `GetPlaylistConfig` | 通用管理命令 · 已研发 | Server ↔ Device | `signage.getPlaylistConfig` | 逐字段映射见 9.2。 |
+| `GetPlaylistItemUrl` | 通用管理命令 · 已研发 | Device → Server | `signage.getPlaylistItemUrl` | 逐字段映射见 9.3。 |
+
+> **证据源文件**：`docs/legacy-migration/evidence/NearHub-Launcher数字标牌设备管理通用管理命令.md`。
+
+> **AXTP-only 新增（无 legacy 对应）**：`signage.getPlaylistCapabilities`（能力查询）、`signage.resetPlaylistConfig`（恢复默认）、`unsplash` 播放项类型、`signage.playlistConfigChanged` 事件均为 AXTP 新增能力，legacy NearHub Launcher 无对应命令。迁移所有者据此判断完整 delta——legacy 侧仅有 `SetPlaylistConfig` / `GetPlaylistConfig` / `GetPlaylistItemUrl` 三个命令可映射，其余为纯新增。
+
+### 9.1 `SetPlaylistConfig` → `signage.setPlaylistConfig`
+
+Legacy Server → Device，请求 `{ playlists: [...] }`，响应 `{ ok: true }`。
+
+**请求参数映射**：
+
+| Legacy 字段 | 类型 | AXTP 字段 | 类型 | 转换说明 |
+|---|---|---|---|---|
+| `playlists` | Array | `playlists` | `Playlist[]` | 直传。AXTP 增加 UUID format、非空、scheduled 时间约束等校验规则。 |
+| `playlists[].id` | String | `id` | string (UUID) | 直传。AXTP 增加 UUID format 约束。 |
+| `playlists[].type` | String (`default`/`scheduled`) | `type` | enum | 直传。枚举值不变。 |
+| `playlists[].startDate` | String (date) | `startDate` | string (date) | 直传。仅 `scheduled` 类型。 |
+| `playlists[].endDate` | String (date) | `endDate` | string (date) | 直传。AXTP 新增分条件约束（见 v0.6 决策）。 |
+| `playlists[].startTime` | String (time) | `startTime` | string (time) | 直传。 |
+| `playlists[].endTime` | String (time) | `endTime` | string (time) | 直传。 |
+| `playlists[].days` | Array (1-7) | `days` | uint8[] | 直传。1=周一，语义不变。 |
+| `playlists[].items` | Array | `items` | `PlaylistItem[]` | 直传。AXTP 增加非空约束。 |
+| `playlists[].items[].id` | String | `id` | string (UUID) | 直传。 |
+| `playlists[].items[].type` | String (`image`/`slideshow`/`website`/`video`/`clock`) | `type` | enum | AXTP 新增 `unsplash`，废弃 `slideshow`。Legacy `slideshow` 由 adapter 映射为 `image`。 |
+| `playlists[].items[].duration` | Number | `duration` | uint32 | 直传。默认 60，范围 0-86400。 |
+| `playlists[].items[].sort` | Number | `sort` | uint32 | 直传。默认 0。 |
+| `playlists[].items[].settings` | Object | `settings` | `PlaylistItemSettings` | 按 `type` 区分结构。字段 1:1 映射。 |
+| *(none)* | — | *(AXTP 无额外字段)* | — | — |
+
+**Legacy `slideshow` 类型废弃说明** `[REVIEW-RESOLVED]`：AXTP 不保留 `slideshow` 播放项类型。Legacy `slideshow` 由 Adapter 映射为 AXTP `image` 类型。以下子表展示 `settings` 字段级转换：
+
+| Legacy `slideshow` 字段 | 类型 | AXTP `image` 字段 | 类型 | 转换规则 |
+|---|---|---|---|---|
+| `settings.url` | String | `settings.urls` | string[] | `settings.url` 包装为单元素数组：`"<url>"` → `["<url>"]`。 |
+| *(none)* | — | `settings.delaySeconds` | uint32 | AXTP 新增。Adapter 使用默认值 `5`。 |
+| `settings.expiresAt` | Number / null | `settings.expiresAt` | uint64 / null | 直传。类型从 Number 隐式转为 uint64。`null` 表示永不过期。 |
+
+Legacy `slideshow` 的 `type` 字段替换为 `"image"`。`duration`、`sort`、`id` 字段直传不变。
+
+**响应结果映射**：
+
+| Legacy 字段 | 类型 | AXTP 字段 | 类型 | 转换说明 |
+|---|---|---|---|---|
+| `ok` | boolean | *(无 result body)* | — | **结构变更**。Legacy `{ ok: true }` 映射到 AXTP 标准 success status（`status: { ok: true, code: 0 }`），无 result body。 |
+
+> **Adapter 说明**：Adapter 将 Legacy `{ ok: true }` 映射为 AXTP 标准 success status。setPlaylistConfig 无 result body。请求参数结构 1:1 兼容，无需字段转换。
+
+### 9.2 `GetPlaylistConfig` → `signage.getPlaylistConfig`
+
+Legacy Server ↔ Device，请求无参数，响应 `{ playlists: [...] }`。
+
+**请求参数映射**：
+
+| Legacy 字段 | 类型 | AXTP 字段 | 类型 | 转换说明 |
+|---|---|---|---|---|
+| *(none)* | — | *(none)* | — | 双方均无请求参数。 |
+
+**响应结果映射**：
+
+| Legacy 字段 | 类型 | AXTP 字段 | 类型 | 转换说明 |
+|---|---|---|---|---|
+| `playlists` | Array | `playlists` | `Playlist[]` | 直传。结构一致，嵌套对象 1:1 映射。 |
+
+> **Adapter 说明**：Legacy 响应为顶层 `playlists[]`。AXTP 响应包装在 `result` 对象内 `{ playlists: [...] }`。Adapter 需处理外层包装差异。字段内容 1:1 兼容，无需转换。
+
+### 9.3 `GetPlaylistItemUrl` → `signage.getPlaylistItemUrl`
+
+Legacy Device → Server，请求 `{ itemId }`，响应 `{ url / urls, expiresAt }`。
+
+**请求参数映射**：
+
+| Legacy 字段 | 类型 | AXTP 字段 | 类型 | 转换说明 |
+|---|---|---|---|---|
+| `itemId` | String (UUID) | `itemId` | string (UUID) | 1:1 直传。 |
+
+**响应结果映射**：
+
+| Legacy 字段 | 类型 | AXTP 字段 | 类型 | 转换说明 |
+|---|---|---|---|---|
+| `url` | String | `type` + `settings.url` | enum + string | **Breaking change**。Legacy 顶层 `url` → AXTP `type: "video"/"website"` + `settings.url`。Adapter 必须根据 item 类型推断 `type` 并将顶层 `url` 移入 `settings.url`。 |
+| `urls` | String[] | `type` + `settings.urls` | enum + string[] | **Breaking change**。Legacy 顶层 `urls` → AXTP `type: "image"` + `settings.urls`。Adapter 必须将顶层 `urls` 移入 `settings.urls`。 |
+| `expiresAt` | Number (Unix timestamp) | `settings.expiresAt` | uint64 | **Breaking change**。Legacy 顶层 `expiresAt` → AXTP `settings.expiresAt`（嵌套在对应类型 settings 内）。 |
+| *(none)* | — | `type` | enum | AXTP 新增。Legacy 响应无 `type` 字段，Adapter 必须从当前播放列表配置中查找 `itemId` 对应的 `type` 并填充。 |
+| *(none)* | — | `type: "unsplash"` + `settings.photos` / `settings.delaySeconds` / `settings.expiresAt` | enum + `UnsplashPhoto[]` + uint32 + uint64 | **AXTP-only**。Legacy `GetPlaylistItemUrl` 无 `unsplash` 类型响应。AXTP 新增此类型，Adapter 不需处理。 |
+
+> **Adapter 说明**：这是三个 legacy 命令中**结构变化最大**的。v0.4 将响应从顶层互斥字段（`url` / `urls` / `expiresAt`）重构为 `type` + `settings` 显式类型判别模式。Adapter 需要：(1) 从设备当前播放列表配置中查找 `itemId` 对应的播放项 `type`；(2) 将旧顶层字段按类型移入 `settings` 子对象：
+> - **image**：顶层 `urls[]` + `expiresAt` → `settings.urls` + `settings.expiresAt`；`delaySeconds` 取设备当前配置原值（legacy 刷新响应不含此字段）。
+> - **video / website**：顶层 `url` + `expiresAt` → `settings.url` + `settings.expiresAt`（website 保留 `ignoreCertificateError` / `refreshIntervalSecs`，video 保留 `muted`）。
+> - **slideshow**：legacy `GetPlaylistItemUrl` 响应 `url`（String）按 `image` 策略包装为 `settings.urls`（单元素数组 `["<url>"]`），补充 `settings.delaySeconds`（默认 `5`）和 `settings.expiresAt`（从响应顶层 `expiresAt` 移入）。Adapter 还需将推断的 `type` 从 `"slideshow"` 替换为 `"image"`。
+> - **unsplash**：Legacy 无此类型。AXTP 直接返回 `type: "unsplash"` + `settings`。Adapter 不需处理。
+> - **clock**：不涉及刷新，设备不应调用 `getPlaylistItemUrl`。
+
+### 9.4 Adapter 通用转换模式
+
+以下转换模式在多个 legacy 命令中共享：
+
+| 模式 | 说明 | 涉及命令 |
+|---|---|---|
+| **`{ ok: true }` 响应** | Legacy Set 指令统一返回 `{ "ok": true }`。AXTP 使用标准 success status（`status: { ok: true, code: 0 }`）加 typed result 对象。Adapter 将 `ok: true` 映射为 AXTP success status。 | `SetPlaylistConfig` |
+| **顶层 url/urls 互斥 → type+settings** | Legacy `GetPlaylistItemUrl` 响应使用顶层互斥字段（`url` 或 `urls`）。AXTP 使用 `type` + `settings` 显式类型判别模式。Adapter 需推断 `type` 并重组字段结构。 | `GetPlaylistItemUrl` |
+| **Legacy `slideshow` → AXTP `image`** `[REVIEW-RESOLVED]` | AXTP 废弃 `slideshow` 类型。Adapter 将 `slideshow` 的 `settings.url`（单 URL）包装为 `image` 的 `settings.urls`（单元素数组 `["<url>"]`）。 | `SetPlaylistConfig`, `GetPlaylistConfig`, `GetPlaylistItemUrl` |
+
+> **`slideshow` → `image` 字段转换示例**：
+>
+> | Legacy `slideshow` | AXTP `image` | 说明 |
+> |---|---|---|
+> | `type: "slideshow"` | `type: "image"` | 类型替换。 |
+> | `settings.url: "https://..."` | `settings.urls: ["https://..."]` | String → 单元素 string[]。 |
+> | *(absent)* | `settings.delaySeconds: 5` | AXTP 新增必填字段，默认值 5。 |
+> | `settings.expiresAt: 1704153600` | `settings.expiresAt: 1704153600` | 直传。`null` → `null`。 |
+> | `id`, `duration`, `sort` | `id`, `duration`, `sort` | 直传不变。 |
+
+### 9.5 Generated Legacy 文件交叉引用
+
+以下 generated 文件当前包含 signage 播放列表相关映射，采纳阶段需同步更新。
+
+**`docs/legacy-migration/generated/legacy-to-axtp-map.generated.yaml`** 当前映射：
+
+| Legacy entry | 当前 target method | Status |
+|---|---|---|
+| `SetPlaylistConfig` | `signage.setPlaylistConfig` | draft |
+| `GetPlaylistConfig` | `signage.getPlaylistConfig` | draft |
+| `GetPlaylistItemUrl` | `signage.getPlaylistItemUrl` | draft |
+
+**`docs/legacy-migration/generated/registry-patches.generated.yaml`** 当前条目：
+
+| 当前 ID | 当前名称 | 当前 domain | 当前 schema 名称 |
+|---|---|---|---|
+| Method `0x1D01` | `signage.getPlaylistConfig` | `signage` | `SignageGetPlaylistConfigRequest` / `Response` |
+| Method `0x1D02` | `signage.getPlaylistItemUrl` | `signage` | `SignageGetPlaylistItemUrlRequest` / `Response` |
+| Method `0x1D03` | `signage.setPlaylistConfig` | `signage` | `SignageSetPlaylistConfigRequest` / `Response` |
+| Capability `0x1D01` | `signage.playlistConfig` | `signage` | — |
+| Capability `0x1D02` | `signage.playlistItemUrl` | `signage` | — |
+
+采纳阶段更新要点：
+
+- Schema 名称应从 generated 占位名（`SignageGetPlaylistConfigRequest` 等）更新为与本文草案 schema 名一致（`GetPlaylistConfigParams`、`PlaylistConfigResult` 等）。
+- Capability 应从拆分的 `signage.playlistConfig` / `signage.playlistItemUrl` 合并为统一的 `signage.playlist`。
+- 新增方法 `signage.getPlaylistCapabilities`（ID `0x1D04` 或采纳时分配）、`signage.resetPlaylistConfig`（`0x1D05`）。
+- 新增事件 `signage.playlistConfigChanged`。
+- Adapter 名称（`GetplaylistconfigAdapter` 等）应同步更新。
+
+> **注意**：以上 generated 文件不在本草案阶段修改。更新发生在 `adopt-protocol-draft`（Stage 30）阶段，当 registry YAML 写入并 Generator 重跑后自动生效。本 section 9 的映射信息作为采纳阶段的输入参考。
+
+---
+
+## 10. Registry / Conformance Status
+
+| 项 | 状态 |
+|---|---|
+| Registry YAML | not written — `registry/domains/signage/` 目录存在但为空 |
+| Generated docs | not generated |
+| Method / event IDs | `TBD after adoption` |
+| Conformance | 采纳后需覆盖：全量同步、查询、恢复默认、URL 刷新（4 种类型）、clock 类型 NOT_SUPPORTED、scheduled 时间约束、空列表错误、事件触发。 |
+
+---
+
+## 11. 测试要点
+
+| 类型 | 要点 |
+|---|---|
+| happy path | `getCapabilities` 返回支持类型和限制；`getConfig` 返回当前配置；`setConfig` 全量替换；`resetConfig` 恢复默认；`getItemUrl` 按 4 种类型返回刷新 URL。 |
+| hard-replace | `setConfig` 第二次调用不出现的旧 item 被删除；设备不应保留旧 item。 |
+| scheduled constraint | `startDate == endDate` 时 `startTime <= endTime`（单日约束违反返回 `INVALID_ARGUMENT`）；`startDate < endDate` 时允许跨午夜。 |
+| URL refresh | `image`/`video`/`website`/`unsplash` 类型返回对应 `type`+`settings`；`clock` 类型返回 `NOT_SUPPORTED`；不存在 item 返回 `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND`。 |
+| event | `setConfig`/`resetConfig` 成功后触发 `playlistConfigChanged`；失败请求不触发事件。 |
+| error path | 空播放列表（`SIGNAGE_PLAYLIST_EMPTY`）、无效参数（`INVALID_ARGUMENT`）、不支持的操作（`NOT_SUPPORTED`）、资源 URL 已过期（`SIGNAGE_PLAYLIST_URL_EXPIRED`）。 |
+
+---
+
+## 12. 待确认问题
+
+### 待解决问题
+
+| 问题 | 影响 | 当前建议 | 状态 |
+|---|---|---|---|
+| `PlaylistCapabilitiesResult` 应包含哪些能力字段？ | schema / capability | 建议包含 `supportedItemTypes`、`maxPlaylists`、`maxItemsPerPlaylist`、`supportsScheduledPlaylist`、`supportsUrlRefresh`、`supportsReset`。 | open |
+| `ResetPlaylistConfigParams` 是否支持 scoped reset（如只重置 scheduled 播放列表）？ | schema / method | 当前建议无参数，全量恢复默认。 | open |
+| `PlaylistConfigChangedEvent` 是否应总是携带完整 `playlists`？还是仅通知变更？ | event payload | 建议可选携带 playlists，客户端可调用 `getConfig` 获取完整配置。 | open |
+
+### 已解决问题
+
+| 问题 | 决策 | 版本 |
+|---|---|---|
+| `GetPlaylistItemUrlResult` 多态响应设计 | v0.4 已重构为 `type` + `settings` 显式类型判别模式。 | v0.4 |
+| 播放列表全量替换语义 | 硬替换，不引入版本号或 soft-delete。第二次全量下发删除未出现的旧 item。 | v0.5 |
+| `scheduled` 类型时间区间约束 | `startDate == endDate` 时 `startTime <= endTime`；`startDate < endDate` 时允许跨午夜。违反返回 `INVALID_ARGUMENT`（0x000A）。 | v0.6 |
+| URL 过期刷新方式 | 设备端主动 Pull 模式。设备调用 `signage.getPlaylistItemUrl` 获取新 URL。服务端不推送。 | v0.5 |
+| `clock` 类型播放项调用 `getPlaylistItemUrl` | 返回 `NOT_SUPPORTED`（0x0003）。`clock` 不依赖远程 URL 资源。 | v0.5 |
+
+---
+
+## 附录 A. 协议审核标记
+
+| 标记 | 条目 | 审核结论 | 后续动作 |
+|---|---|---|---|
+| `[REVIEW-DRAFT]` | `signage.playlist` capability | 本文是按 Naming and Taxonomy spec 创建的单 feature 治理草案。 | 人工确认业务语义、schema 和 legacyRefs 后进入 `registry/domains/signage/domain.yaml`。 |
+| `[REVIEW-RESOLVED]` | Legacy `slideshow` 类型废弃 | AXTP 不保留 `slideshow`，Adapter 映射为 `image`（`url` → `urls` 单元素数组）。 | — |
+| `[REVIEW-RESOLVED]` | `signage.media` 合并 | 播放项 URL 刷新功能已从 `signage.media` 合并到本草案。`signage.media` 草案可删除。 | — |
+
+## 附录 B. 协议决策
+
+| 决策点 | 结论 | 理由 |
+|---|---|---|
+| 新增/修改/复用 | Modify | 扩展现有 v0.1 草案，新增 URL 刷新方法和详细 schema。 |
+| 控制面 | RPC method/event | 业务控制不进入 Frame Header。 |
+| 数据面 | None | 播放列表是配置同步操作，不涉及连续数据传输。 |
+| WebSocket | RPC-only | WebSocket Unframed JSON 不承载 STREAM。 |
+| 文档结构重组 | v0.7 按 20-draft-business-protocol skill 规范重组 | 对齐 `device.enrollment` / `device.info` 等成熟草案的结构规范。 |
+
+## 附录 C. Registry 草案输入
 
 采纳本文后，domain YAML 至少应包含：
 
@@ -517,14 +1202,14 @@ methods:
     id: TBD after adoption
     bitOffset: TBD after adoption
     requestSchema: SetPlaylistConfigParams
-    responseSchema: SetPlaylistConfigResult
+    # responseSchema: 无 result body，仅标准 success status
     capabilities:
       - signage.playlist
   - name: signage.resetPlaylistConfig
     id: TBD after adoption
     bitOffset: TBD after adoption
     requestSchema: ResetPlaylistConfigParams
-    responseSchema: SetPlaylistConfigResult
+    responseSchema: PlaylistConfigResult
     capabilities:
       - signage.playlist
   - name: signage.getPlaylistItemUrl
@@ -547,24 +1232,14 @@ events:
       - signage.playlist
 ```
 
----
+## 附录 D. 采纳检查清单
 
-## 13. 采纳检查清单
-
-- [ ] 08 已确认 domain.feature 粒度和 method/event 命名。
-- [ ] 09 已确认 Domain/ID 规划和生成链路。
-- [ ] 10 已确认 methodId、bitOffset、request/response schema。
-- [ ] 11 已确认 eventId、eventMasks bitOffset、event schema。
-- [ ] 12 已确认 errorCode 范围和错误归属。
-- [ ] 13 已确认 schema fieldId、capabilityId、supportedMethods。
+- [ ] 已确认 domain.feature 粒度和 method/event 命名。
+- [ ] 已确认 Domain/ID 规划和生成链路。
+- [ ] 已确认 methodId、bitOffset、request/response schema。
+- [ ] 已确认 eventId、eventMasks bitOffset、event schema。
+- [ ] 已确认 errorCode 范围和错误归属。
+- [ ] 已确认 schema fieldId、capabilityId、supportedMethods。
+- [ ] 已确认 `PlaylistCapabilitiesResult`、`PlaylistConfigResult`、`ResetPlaylistConfigParams`、`PlaylistConfigChangedEvent` 的 schema 字段。
+- [ ] 已确认 Legacy `slideshow` 类型已废弃，Adapter 映射为 `image`。
 - [ ] YAML 写入后 Generator 能完整生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
-
----
-
-## 14. 待确认问题
-
-1. `[REVIEW-RESOLVED]` `GetPlaylistItemUrlResult` 多态响应设计 — v0.4 已重构为 `type` + `settings` 显式类型判别模式，不再需要 `oneOf` 约束。
-2. `[REVIEW-RESOLVED]` 播放列表全量替换语义 — 确认为硬替换，不引入版本号或 soft-delete。服务端是唯一权威，设备不编辑播放列表，不存在并发修改冲突。第二次全量下发删除未出现的旧 item。
-3. `[REVIEW-RESOLVED]` `scheduled` 类型播放列表的时间区间约束 — 采用分条件约束：`startDate == endDate` 时 `startTime <= endTime`（单日范围，时间窗口落在同一天内）；`startDate < endDate` 时允许 `startTime > endTime`（多日范围下跨午夜播放，语义为匹配日期 D 的 startTime → D+1 日 endTime）。违反约束时返回 `RPC_PARAM_INVALID`（common error 0x0002），`details` 中说明具体违规字段。
-4. `[REVIEW-RESOLVED]` URL 过期刷新方式 — 确认为设备端主动 Pull 模式。设备持有 `expiresAt` 时间戳，可自主调度刷新时机，主动调用 `signage.getPlaylistItemUrl` 获取新 URL。服务端不跟踪设备资源过期状态，不通过 `playlistConfigChanged` 事件推送 URL 刷新。
-5. `[REVIEW-RESOLVED]` `clock` 类型播放项调用 `signage.getPlaylistItemUrl` — 服务端返回 `NOT_SUPPORTED`（common error 0x0003）。`clock` 类型不依赖远程 URL 资源，URL 刷新操作对该类型不适用。`NOT_SUPPORTED` 语义精确（操作不支持），`SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` 有误导性（播放项实际存在）。

@@ -41,7 +41,7 @@
 
 | Source | Evidence | Classified | Mapped to generated | Mapped to draft | Blocked | Adapter needed | Next step |
 |---|---|---|---|---|---|---|---|
-| NearHub Launcher Signage SDK / device management | [NearHub-Launcher数字标牌设备管理通用管理命令](evidence/NearHub-Launcher数字标牌设备管理通用管理命令.md)、[NearHub-Launcher设备管理命令](evidence/NearHub-Launcher设备管理命令.md) | [by-source/signage_sdk.md](classification/by-source/signage_sdk.md)、[classification CSV](classification/legacy-protocol-classification.csv) | TBD | TBD；signage、device、system、network、firmware 等已有候选草案 | 计划任务、关机/重启、设备信息和 signage playback 的边界需和当前 drafts 对齐 | 是，Launcher / Signage 命令到 AXTP RPC 需要 adapter | 结合 [signage migration plan](plans/signage-protocol-migration-plan.md) 优先对齐 `device.info`、`system.lifecycle`、`system.reset` 和 signage playback。 |
+| NearHub Launcher Signage SDK / device management | [NearHub-Launcher数字标牌设备管理通用管理命令](evidence/NearHub-Launcher数字标牌设备管理通用管理命令.md)、[NearHub-Launcher设备管理命令](evidence/NearHub-Launcher设备管理命令.md) | [by-source/signage_sdk.md](classification/by-source/signage_sdk.md)、[classification CSV](classification/legacy-protocol-classification.csv) | TBD | 已映射；15 个已研发指令全部有草案覆盖（device.enrollment v0.3, signage.playlist v0.7, software.config v0.2, software.updatePolicy v0.2, system.lifecycle v0.8, device.info, network.*） | 无阻塞项。Schedule 已定域 system.lifecycle，外观已定域 software.config，注册已定域 device.enrollment，URL 刷新已合并 signage.playlist。 | 是，Launcher / Signage 命令到 AXTP RPC 需要 adapter | 转 Stage 20/30 完成草案评审和采纳；根据 flow gap 细化未研发指令的优先级。 |
 
 ## uxplay / cast
 

@@ -5,12 +5,12 @@ generated: false
 domain: software
 feature: software.config
 registry:
-lastReviewed: 2026-06-11
+lastReviewed: 2026-06-12
 ---
 
 # AXTP software.config 协议草案
 
-版本：v0.1
+版本：v0.4
 
 归属域：`software`
 
@@ -27,8 +27,17 @@ Capability ID：`software.config`
 | `[REVIEW-DRAFT]` | `software.config` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
 | `[REVIEW-ASK]` | `software` 域名 | `software` 不在 Taxonomy spec rule 2 的示例列表（但 rule 2 使用 "e.g." 措辞）。 | 采纳前确认是否需要 taxonomy amendment。 |
 | `[REVIEW-ASK]` | `target` 枚举值 | 完整的 target 枚举值列表需要产品和设备确认。 | 采纳前补齐 target enum baseline。 |
-| `[REVIEW-ASK]` | legacy 映射 | 旧协议命令字段和语义仍需确认。 | 采纳前补齐 legacyRefs 或明确 adapter-only。 |
+| `[REVIEW-DRAFT]` | legacy 映射 | 已完成 evidence-based 字段映射。`GetAppearanceConfig` / `SetAppearanceConfig` / `SetDeviceName` 映射到 `software.config`；`ResetConfig` 映射到 `system.restoreFactorySettings`。 | 采纳前确认 Adapter 层实现计划。 |
 | `[REVIEW-ASK]` | `displayName` 归属 | `displayName` 在 `device.info` 中为只读，在 `software.config` 中提供写入路径。同一数据两个协议暴露可能引起困惑。 | 采纳前确认是保留此设计还是将写入路径归入 `device.info` 扩展。 |
+
+---
+
+**v0.4 变更说明：**
+(1) 修正 §8 候选 Errors 中 `INVALID_STATE` 和 `PERMISSION_DENIED` 的错误码：`INVALID_STATE` 从错误的 `0x000E` 更正为 `0x0004`；`PERMISSION_DENIED` 从错误的 `0x0105` 更正为 `0x0009`（`0x000E` 实际为 `INTERNAL_ERROR`，`0x0105` 实际为 `DEVICE_OVER_TEMPERATURE`）。与兄弟草案 `software.updatePolicy` v0.4 对齐。
+(2) 增强 §3.2 `software.setConfig` 返回结果说明，明确列出两种确认方式（事件或主动查询）。
+(3) 新增 §9.2b `software.resetConfig` AXTP-only 说明（无 legacy 对应方法）。
+(4) §12 flow 一致性问题状态从 `[REVIEW-DRAFT]` 更新为 `[REVIEW-RESOLVED]`，明确 flow 文档 step 16/19 描述有误。
+(5) 新增 flow 文档和 `software.updatePolicy` 交叉引用。
 
 ---
 
@@ -43,7 +52,7 @@ Capability ID：`software.config`
 | 是否使用 STREAM | 否 |
 | Registry readiness | candidate |
 | Conformance | needed |
-| 主要未决问题 | `target` 枚举完整值列表、`values` 是否需要按 target 展开强类型 schema、legacy `ResetConfig` 的真实 scope、`displayName` 归属 `software.config` 还是 `device.info`、`displayName` 最大长度约束。 |
+| 主要未决问题 | `target` 枚举完整值列表、`values` 是否需要按 target 展开强类型 schema、`displayName` 归属 `software.config` 还是 `device.info`、`displayName` 最大长度约束。legacy `ResetConfig` 已确认映射到 `system.restoreFactorySettings`（见 Section 9）。 |
 
 ---
 
@@ -51,9 +60,11 @@ Capability ID：`software.config`
 
 `software.config` 用于设备上运行的软件对象的运行配置，例如 Launcher、signagePlayer、agent。通过 `target` 参数区分不同软件对象，每个对象有独立的配置字段集。
 
+本草案在 signage 设备管理流程（`docs/flows/signage-device-management.md`）中覆盖以下交互步骤：步骤 8（查询外观配置）、步骤 16（设置设备名称）、步骤 19（设置外观配置）、步骤 23（恢复默认软件配置）。配置同步采用"云查询设备状态 + 比对差异 + 按需下发"模式。
+
 本草案合并了原 `device.appearance` 草案中的外观配置能力和 legacy `SetDeviceName` 设备名设置能力：Launcher 的面板布局、自动隐藏等配置统一作为 `software.config` 的 `target: "launcher"` 配置片段的 `appearance` 子对象；设备显示名称作为 `displayName` 字段提供写入路径，与 `device.info` 的只读 `product.displayName` 保持一致。
 
-注意：系统级恢复、恢复出厂、清除 OS 或设备基线配置仍属于 `system.reset`；`software.config` 不隐式执行系统恢复。
+注意：系统级恢复、恢复出厂、清除 OS 或设备基线配置仍属于 `system.reset`；`software.config` 不隐式执行系统恢复。Legacy `ResetConfig`（恢复出厂设置、设备重启）映射到 `system.restoreFactorySettings`（见 `docs/protocol/system/system.reset.md`），不映射到 `software.resetConfig`。
 
 ---
 
@@ -78,7 +89,7 @@ Capability ID：`software.config`
 | Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
 |---|---|---|---|---|---|---|
 | `software.getConfig` | query | 读取软件配置。 | `SoftwareGetConfigParams` | `SoftwareConfig` | 否 | draft |
-| `software.setConfig` | command | 设置软件配置。 | `SoftwareSetConfigParams` | `SoftwareConfig` | 是，变化后触发 `software.configChanged`。 | draft |
+| `software.setConfig` | command | 设置软件配置。 | `SoftwareSetConfigParams` | —（仅 status 确认） | 是，变化后触发 `software.configChanged`。 | draft |
 | `software.resetConfig` | command | 恢复软件默认配置。 | `SoftwareResetConfigParams` | `SoftwareConfig` | 是，变化后触发 `software.configChanged`。 | draft |
 
 ### 3.1 `software.getConfig`
@@ -95,6 +106,8 @@ Capability ID：`software.config`
 
 #### 请求参数 Params：`SoftwareGetConfigParams`
 
+字段见 6.4。
+
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` `[REVIEW-ASK]` | none | 要读取配置的软件对象。 |
@@ -110,21 +123,26 @@ Capability ID：`software.config`
 | 目的 | 设置指定软件对象的配置片段。未出现的字段保持不变（partial update 语义）。 |
 | 调用类型 | command（request_response） |
 | Params Schema | `SoftwareSetConfigParams` |
-| Result Schema | `SoftwareConfig` |
+| Result Schema | 标准成功响应（无 result body） |
 | 事件触发 | 配置实际变化后触发 `software.configChanged`。 |
 | 幂等性 | 否（写入操作） |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED` |
 
 #### 请求参数 Params：`SoftwareSetConfigParams`
 
+字段见 6.5。
+
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
 | `config` | object | yes | target-specific fields | none | 要设置的配置片段。未出现的字段保持不变。 |
 
-#### 返回结果 Result：`SoftwareConfig`
+#### 返回结果
 
-字段见 6.1。
+`software.setConfig` 返回标准成功响应（无 `result` 字段）。调用者如需确认配置变化，可通过以下方式：
+
+1. 等待 `software.configChanged` 事件获取变化后的完整配置。
+2. 调用 `software.getConfig` 主动查询最新配置。
 
 #### 可能的事件
 
@@ -145,7 +163,7 @@ Capability ID：`software.config`
 
 | 项 | 内容 |
 |---|---|
-| 目的 | 恢复指定软件对象的默认配置。 |
+| 目的 | 恢复指定软件对象的默认配置。注意：`software.resetConfig` 仅恢复指定软件对象的运行配置到当前版本默认值，不影响其他软件对象、系统配置或设备身份，不会触发设备重启。系统级恢复出厂使用 `system.restoreFactorySettings`。 |
 | 调用类型 | command（request_response） |
 | Params Schema | `SoftwareResetConfigParams` |
 | Result Schema | `SoftwareConfig` |
@@ -154,6 +172,8 @@ Capability ID：`software.config`
 | 常见错误 | `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INVALID_STATE` |
 
 #### 请求参数 Params：`SoftwareResetConfigParams`
+
+字段见 6.6。
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -189,6 +209,8 @@ Capability ID：`software.config`
 
 #### Payload：`SoftwareConfigChangedEvent`
 
+字段见 6.7。
+
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 变化的软件对象。 |
@@ -206,11 +228,43 @@ Capability name: `software.config`。
 |---|---|---:|---|---|
 | `supportedTargets` | string[] | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | 支持配置的软件对象。 `[REVIEW-ASK]` |
 | `supportsReset` | boolean | no | `true` / `false` | 是否支持恢复默认配置。 |
-| `resetMayRestartSoftware` | boolean | no | `true` / `false` | 恢复是否可能重启软件。 |
+| `resetMayRestartSoftware` | boolean | no | `true` / `false` | 恢复是否可能重启该软件对象（非设备重启）。系统级恢复出厂使用 `system.restoreFactorySettings`。 |
 
 ---
 
 ## 6. Schemas
+
+### 6.0 Schema 层级速览
+
+```text
+请求 Params
+  SoftwareGetConfigParams          ← software.getConfig
+  SoftwareSetConfigParams          ← software.setConfig
+  SoftwareResetConfigParams        ← software.resetConfig
+
+响应 / 事件共用
+  SoftwareConfig
+    target: string
+    config: object（target-specific）
+      ┌─ target: "launcher"
+      │    displayName: string
+      │    appearance: LauncherAppearance
+      │                panelLayout: string
+      │                autoHidePanel: boolean
+      │                autoHideDelay: uint32
+      └─ target: "signagePlayer" / "agent"  ← [REVIEW-ASK] 待补充
+
+事件 Payload
+  SoftwareConfigChangedEvent
+    target + config + changedFields + reason
+```
+
+阅读规则：
+
+- `config` 是 target-specific 动态对象；字段集合由 `target` 值决定。当前草案只定义了 `target: "launcher"` 的字段。
+- `displayName` 在 `software.config` 中提供写入路径；`device.info` 的 `product.displayName` 为只读返回同值（跨 capability 同步）。
+- `appearance` 是 `config` 的子对象，包含面板布局和自动隐藏配置。Legacy 使用 flat 结构（三个字段为顶层），AXTP 使用嵌套结构。
+- `SoftwareConfig` 同时用于 `software.getConfig` / `software.resetConfig` 的 Result 和 `software.configChanged` 事件 Payload。
 
 ### 6.1 `SoftwareConfig`
 
@@ -226,17 +280,70 @@ Capability name: `software.config`。
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `displayName` | string | no | non-empty, max 64 chars `[REVIEW-ASK]` | omitted（使用设备出厂名称） | 用户可见的设备显示名称。设置后覆盖 `device.info` 返回的 `product.displayName`。`[REVIEW-ASK]` 此字段是否应归 `device.info` 而非 `software.config` 管理。 |
-| `appearance` | object | yes | 见子表 | (见子表) | 外观配置。 |
+| `appearance` | object | no | 见 6.3 | omitted（使用设备默认值） | 外观配置。 |
 
-`appearance` 子对象字段：
+`[REVIEW-ASK]` 其他 target（`signagePlayer`, `agent`）的配置字段待产品和设备确认后补充。
+
+> **null / omitted 语义**：`setConfig` 使用 partial update 语义——未传（omitted）的字段保持不变。`config` 对象本身不支持 `null`（必须是一个有效的 object）。
+>
+> - `displayName: omitted` — 保持当前值不变。`getConfig` 永远返回当前有效值（用户自定义名或设备出厂名）。
+> - `displayName: "" (empty)` — 返回 `INVALID_ARGUMENT`。不允许设为空字符串。
+> - `appearance: omitted` — 保持当前外观配置不变。
+> - `appearance` 对象不支持 `null`。如需恢复默认外观，使用 `software.resetConfig`。
+> - `setConfig` 中 `config` 对象不包含任何字段时为 no-op（成功但不产生变化，不触发事件）。
+
+### 6.3 `LauncherAppearance`
+
+当 `target` 为 `"launcher"` 时，`config.appearance` 使用此 schema。
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `panelLayout` | string | yes | `"focus"`, `"sidebar"` | `"sidebar"` | 面板布局模式。`"focus"` 为专注模式，`"sidebar"` 为侧边栏模式。 |
-| `autoHidePanel` | boolean | yes | `true` / `false` | `false` | 是否自动隐藏面板。 |
-| `autoHideDelay` | uint32 | yes | `> 0` | `5` | 自动隐藏延迟时间（秒）。仅在 `autoHidePanel` 为 `true` 时生效。 |
+| `panelLayout` | string | no | `"focus"`, `"sidebar"` | `"sidebar"` | 面板布局模式。`"focus"` 为专注模式，`"sidebar"` 为侧边栏模式。 |
+| `autoHidePanel` | boolean | no | `true` / `false` | `false` | 是否自动隐藏面板。 |
+| `autoHideDelay` | uint32 | no | `> 0` | `5` | 自动隐藏延迟时间（秒）。仅在 `autoHidePanel` 为 `true` 时生效。 |
 
-`[REVIEW-ASK]` 其他 target（`signagePlayer`, `agent`）的配置字段待产品和设备确认后补充。
+> **校验规则**：
+>
+> - `panelLayout` 必须为 `"focus"` 或 `"sidebar"`。传其他值返回 `INVALID_ARGUMENT`。
+> - `autoHideDelay` 必须 `> 0`。传 0 或负数返回 `INVALID_ARGUMENT`。
+> - `displayName` 必须 non-empty 且 max 64 chars（前后空格自动 trimmed）。空字符串或超长返回 `INVALID_ARGUMENT`。`[REVIEW-ASK]` 64 字符上限需产品确认。
+
+> **字段间约束**：`autoHideDelay` 的值不因 `autoHidePanel` 切换而丢失。当 `autoHidePanel` 为 `false` 时，`autoHideDelay` 可被设置和持久化，但不影响设备行为。切换回 `true` 后，原 `autoHideDelay` 继续生效。
+
+> **null / omitted 语义**：`setConfig` 使用 partial update 语义——未传（omitted）的字段保持不变，这与显式传 `null`（清除）不同。具体规则：
+>
+> - `displayName: omitted` — 保持当前值不变。`getConfig` 永远返回当前有效值（用户自定义名或设备出厂名）。
+> - `appearance: omitted` — 保持当前外观配置不变。
+> - `software.resetConfig` 恢复所有 launcher 配置到出厂默认值，包括 `displayName` 恢复为设备出厂名称、`appearance` 恢复为默认值（`panelLayout: "sidebar"`、`autoHidePanel: false`、`autoHideDelay: 5`）。`[REVIEW-ASK]` resetConfig 是否也重置 `displayName`。
+> - `getConfig` 和 `configChanged` 事件不区分"出厂默认"和"用户设置"，始终返回当前生效值。
+
+### 6.4 `SoftwareGetConfigParams`
+
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` `[REVIEW-ASK]` | none | 要读取配置的软件对象。 |
+
+### 6.5 `SoftwareSetConfigParams`
+
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
+| `config` | object | yes | target-specific fields | none | 要设置的配置片段。未出现的字段保持不变（partial update 语义）。`target: "launcher"` 时见 6.2。 |
+
+### 6.6 `SoftwareResetConfigParams`
+
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 要恢复默认配置的软件对象。 |
+
+### 6.7 `SoftwareConfigChangedEvent`
+
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 变化的软件对象。 |
+| `config` | object | yes | target-specific fields | none | 变化后的完整配置片段。 |
+| `changedFields` | string[] | no | field paths（dot-notation） | omitted | 变化的字段路径列表。字段路径使用点号分隔嵌套层级，如 `"appearance.panelLayout"`。 |
+| `reason` | string | no | `"user_request"`, `"restore_default"`, `"device_policy"`, `"unknown"` | `"unknown"` | 变化原因。 |
 
 ---
 
@@ -314,22 +421,11 @@ Capability name: `software.config`。
   "status": {
     "ok": true,
     "code": 0
-  },
-  "result": {
-    "target": "launcher",
-    "config": {
-      "displayName": "Meeting Room A",
-      "appearance": {
-        "panelLayout": "focus",
-        "autoHidePanel": true,
-        "autoHideDelay": 10
-      }
-    }
   }
 }
 ```
 
-**读法**：partial update 语义——只传需要修改的 `appearance` 字段，`displayName` 保持不变。返回完整配置。
+**读法**：partial update 语义——只传需要修改的 `appearance` 字段，`displayName` 保持不变。设置成功后可调用 `software.getConfig` 获取最新配置，或等待 `software.configChanged` 事件。
 
 ### 7.2b 设置 Launcher 设备显示名称
 
@@ -358,17 +454,6 @@ Capability name: `software.config`。
   "status": {
     "ok": true,
     "code": 0
-  },
-  "result": {
-    "target": "launcher",
-    "config": {
-      "displayName": "Lobby Display",
-      "appearance": {
-        "panelLayout": "focus",
-        "autoHidePanel": true,
-        "autoHideDelay": 10
-      }
-    }
   }
 }
 ```
@@ -466,19 +551,201 @@ Capability name: `software.config`。
 |---|---|---|---|
 | `NOT_SUPPORTED` | common (0x0003) | target 不支持或 config 字段不支持。 | — |
 | `INVALID_ARGUMENT` | common (0x000A) | config 字段值非法（如 autoHideDelay ≤ 0）。 | `[REVIEW-DRAFT]` |
-| `PERMISSION_DENIED` | common (0x0105) | 无权修改该 target 的配置。 | `[REVIEW-DRAFT]` |
-| `INVALID_STATE` | common (0x000E) | 软件正在升级或恢复中，不允许配置变更。 | `[REVIEW-DRAFT]` |
+| `PERMISSION_DENIED` | common (0x0009) | 无权修改该 target 的配置。 | `[REVIEW-DRAFT]` |
+| `INVALID_STATE` | common (0x0004) | 软件正在升级或恢复中，不允许配置变更。 | `[REVIEW-DRAFT]` |
 
 ---
 
-## 9. Legacy 待映射
+## 9. Legacy 映射
 
-| Legacy entry | Direction | AXTP target | 状态 | 说明 |
+以下映射基于 `docs/legacy-migration/evidence/NearHub-Launcher数字标牌设备管理通用管理命令.md`。分类条目详见 `docs/legacy-migration/classification/by-source/signage_sdk.md`，其中 `GetAppearanceConfig`（line 557）、`SetAppearanceConfig`（line 580）和 `SetDeviceName`（line 81）均标记为 high confidence 映射到 `software.config`。
+
+### 9.1 `GetAppearanceConfig` → `software.getConfig(target: "launcher")`
+
+**方向**：Server -> Device
+
+**状态**：`[REVIEW-DRAFT]`
+
+| Legacy 字段 | Legacy 类型 | AXTP 字段路径 | 说明 |
+|---|---|---|---|
+| *(response root)* | — | `result.target` | AXTP 新增 `target: "launcher"` 包裹。 |
+| `panelLayout` | string | `result.config.appearance.panelLayout` | 字段名不变，嵌套层级变化。 |
+| `autoHidePanel` | boolean | `result.config.appearance.autoHidePanel` | 字段名不变，嵌套层级变化。 |
+| `autoHideDelay` | number | `result.config.appearance.autoHideDelay` | 字段名不变，嵌套层级变化。 |
+
+**结构变换**：Legacy 响应为 flat object `{ panelLayout, autoHidePanel, autoHideDelay }`；AXTP 响应嵌套为 `{ target, config: { displayName, appearance: { ... } } }`。Adapter 层需执行 flat → nested 包装。
+
+**AXTP 新增字段**：`result.config.displayName` 在 legacy 中无对应字段。Adapter 可选保留或丢弃。
+
+### 9.2 `SetAppearanceConfig` → `software.setConfig(target: "launcher")`
+
+**方向**：Server -> Device
+
+**状态**：`[REVIEW-DRAFT]`
+
+| Legacy 字段 | Legacy 类型 | AXTP 字段路径 | 说明 |
+|---|---|---|---|
+| *(request root)* | — | `params.target` | AXTP 新增 `target: "launcher"` 包裹。 |
+| `panelLayout` | string (必填) | `params.config.appearance.panelLayout` | 字段名不变，嵌套层级变化。 |
+| `autoHidePanel` | boolean (必填) | `params.config.appearance.autoHidePanel` | 字段名不变，嵌套层级变化。 |
+| `autoHideDelay` | number (必填) | `params.config.appearance.autoHideDelay` | 字段名不变，嵌套层级变化。 |
+
+**语义差异**：Legacy `SetAppearanceConfig` 要求所有字段必填（全量覆盖语义）；AXTP `software.setConfig` 使用 partial update 语义（未传字段保持不变）。Adapter 层需在 legacy→AXTP 方向透传全部字段以兼容旧行为；在 AXTP→legacy 方向需将 partial update 转为全量覆盖（先 getConfig 读取当前值，合并变更字段后全量下发）。
+
+**结构变换**：Legacy 请求为 flat object `{ panelLayout, autoHidePanel, autoHideDelay }`；AXTP 请求嵌套为 `{ target: "launcher", config: { appearance: { ... } } }`。
+
+### 9.3 `SetDeviceName` → `software.setConfig(target: "launcher")`
+
+**方向**：Server -> Device
+
+**状态**：`[REVIEW-DRAFT]`
+
+| Legacy 字段 | Legacy 类型 | AXTP 字段路径 | 说明 |
+|---|---|---|---|
+| *(request root)* | — | `params.target` | AXTP 新增 `target: "launcher"` 包裹。 |
+| `devName` | string | `params.config.displayName` | 字段名从 `devName` 改为 `displayName`。 |
+
+**字段映射**：`devName` → `config.displayName`。写入路径在 `software.config`；`device.info` 的 `product.displayName` 为只读返回同值。
+
+### 9.4 `ResetConfig` → `system.restoreFactorySettings`
+
+**方向**：Server -> Device
+
+**状态**：`[REVIEW-RESOLVED]`
+
+| Legacy 字段 | Legacy 类型 | AXTP 方法 | 说明 |
+|---|---|---|---|
+| *(no params)* | — | `system.restoreFactorySettings` | Legacy 无参数。AXTP 使用 `system.restoreFactorySettings`。 |
+
+**重要结论**：Legacy `ResetConfig` 描述为"恢复出厂设置。注意：执行后设备通常会自动重启"。这是系统级出厂恢复（设备重启），不是软件配置默认值恢复。因此映射到 `system.restoreFactorySettings`（见 `docs/protocol/system/system.reset.md`），**不映射到** `software.resetConfig`。
+
+**区分**：
+- `software.resetConfig(target: "launcher")` — 恢复 Launcher 运行配置到当前版本默认值，不重启设备。
+- `system.restoreFactorySettings` — 恢复出厂设置，设备重启，可能回退 Launcher 等软件组件到出厂初始版本。
+
+**Legacy classification 验证**：`docs/legacy-migration/classification/system.md` 已将 signage_sdk 的 `ResetConfig` 映射到 `system.initialization` → `system.reset`，与本文结论一致。
+
+### 9.4b `software.resetConfig` — AXTP-only
+
+**状态**：`[REVIEW-DRAFT]`
+
+`software.resetConfig` 在 legacy 协议中没有对应方法。Legacy 系统没有"恢复默认软件配置（非出厂恢复）"的专用命令。
+
+- Legacy `ResetConfig`（恢复出厂设置）映射到 `system.restoreFactorySettings`，不是 `software.resetConfig`。两者语义不同：前者恢复整个设备出厂状态并重启，后者仅恢复指定软件对象的运行配置到当前版本默认值。
+- Adapter 层在 legacy 请求恢复出厂时**不应**调用 `software.resetConfig`，应路由到 `system.restoreFactorySettings`。
+- 如果 legacy 客户端需要仅重置 Launcher 配置（非恢复出厂），Adapter 需从带外知识合成默认值（`displayName` 恢复为出厂名称、`appearance` 恢复为 `panelLayout: "sidebar"`, `autoHidePanel: false`, `autoHideDelay: 5`），通过 `software.setConfig` 下发。
+- `software.resetConfig` 返回重置后的完整配置，省去额外 round-trip，这是 AXTP-only 能力优势。
+
+### 9.5 `GetDeviceInfo` → `device.getInfo` 读路径交叉引用
+
+**方向**：Server -> Device
+
+**状态**：`[REVIEW-DRAFT]`（交叉引用，非直接映射）
+
+Legacy `GetDeviceInfo` 不是 `software.config` 的直接映射目标（归 `device.info`），但其响应中的 `devName` 字段与 `software.config` 的 `config.displayName` 读取同源数据。Adapter 层需注意此交叉关系：
+
+| Legacy 字段 | Legacy 类型 | AXTP 读路径 | AXTP 写路径 | 说明 |
 |---|---|---|---|---|
-| `GetAppearanceConfig` | Server -> Device | `software.getConfig(target: "launcher")` | `[REVIEW-DRAFT]` | 字段映射：`panelLayout` → `config.appearance.panelLayout`, `autoHidePanel` → `config.appearance.autoHidePanel`, `autoHideDelay` → `config.appearance.autoHideDelay`。结构从 flat 变为嵌套。 |
-| `SetAppearanceConfig` | Server -> Device | `software.setConfig(target: "launcher")` | `[REVIEW-DRAFT]` | 同上字段映射。旧 flat 字段需 adapter 包装为 `config.appearance.*`。 |
-| `SetDeviceName` | Server -> Device | `software.setConfig(target: "launcher", config: { displayName })` | `[REVIEW-DRAFT]` | 字段映射：`devName` → `config.displayName`。`[REVIEW-ASK]` 是否应在 adapter 中映射还是通过独立 AXTP 方法。 |
-| `ResetConfig` | Server -> Device | `software.resetConfig(target: "launcher")` or `system.reset` | `[REVIEW-ASK]` | 需确认 legacy ResetConfig 是 Launcher 默认配置恢复还是系统级恢复。若是系统级，应走 `system.reset`。 |
+| `devName` (in `GetDeviceInfo` response) | string | `device.getInfo` → `product.displayName` | `software.setConfig(target: "launcher", config: { displayName })` | 同一数据两个协议暴露。`device.info` 只读，`software.config` 提供写入路径。 |
+
+**Adapter 职责**：
+
+1. Legacy `GetDeviceInfo` 的 `devName` 字段 → AXTP `device.getInfo` 的 `product.displayName`（primary mapping，见 `device.info` 草案）。
+2. Adapter 无需在 `GetDeviceInfo` ↔ `software.getConfig` 之间做额外映射；两者返回同值但归属不同 capability。
+3. `SetDeviceName` 修改 `displayName` 后，`GetDeviceInfo.devName` 应自动反映新值（跨 capability 同步）。
+
+### 9.6 Adapter 层结构变换说明
+
+Legacy 外观配置使用 flat object 结构（`panelLayout`、`autoHidePanel`、`autoHideDelay` 为顶层字段）。AXTP 使用嵌套结构（这三个字段位于 `config.appearance.*`）。Adapter 层职责：
+
+1. **Get 方向**（AXTP → legacy）：从 `config.appearance.*` 中提取字段，展平为 `{ panelLayout, autoHidePanel, autoHideDelay }`。如 AXTP 响应包含 `displayName`，Adapter 可选保留或丢弃（legacy 不包含此字段）。
+2. **Set 方向**（legacy → AXTP）：将 flat `{ panelLayout, autoHidePanel, autoHideDelay }` 包装为 `{ target: "launcher", config: { appearance: { panelLayout, autoHidePanel, autoHideDelay } } }`。由于 legacy 全量覆盖语义，Adapter 需透传全部字段。
+3. **DeviceName 方向**：将 `{ devName }` 映射为 `{ target: "launcher", config: { displayName: devName } }`。反向提取 `config.displayName` 回填 `devName`。注意 legacy 无独立 GetDeviceName 命令——设备名通过 `GetDeviceInfo.devName` 读取（映射到 `device.getInfo` 的 `product.displayName`，非 `software.getConfig`）。Adapter 在 legacy→AXTP 方向：`SetDeviceName` → `software.setConfig`；在 AXTP→legacy 方向：`device.getInfo` 的 `product.displayName` → `GetDeviceInfo` 的 `devName`（跨 capability 读路径，见 9.5）。
+4. **语义差异兼容**：Legacy `SetAppearanceConfig` 全量覆盖 vs AXTP partial update 的差异由 Adapter 层处理。
+
+**JSON 变换示例 — Get 方向（AXTP → legacy）**：
+
+AXTP 响应（`software.getConfig` result）：
+
+```json
+{
+  "target": "launcher",
+  "config": {
+    "displayName": "Meeting Room A",
+    "appearance": {
+      "panelLayout": "sidebar",
+      "autoHidePanel": false,
+      "autoHideDelay": 5
+    }
+  }
+}
+```
+
+Legacy 响应（Adapter 输出，对应 `GetAppearanceConfig`）：
+
+```json
+{
+  "panelLayout": "sidebar",
+  "autoHidePanel": false,
+  "autoHideDelay": 5
+}
+```
+
+> 展平 `config.appearance.*` → 顶层字段；丢弃 `target`、`displayName`（legacy 无对应字段）。
+
+**JSON 变换示例 — Set 方向（legacy → AXTP）**：
+
+Legacy 请求（`SetAppearanceConfig`）：
+
+```json
+{
+  "panelLayout": "focus",
+  "autoHidePanel": true,
+  "autoHideDelay": 10
+}
+```
+
+AXTP 请求（Adapter 输出，对应 `software.setConfig` params）：
+
+```json
+{
+  "target": "launcher",
+  "config": {
+    "appearance": {
+      "panelLayout": "focus",
+      "autoHidePanel": true,
+      "autoHideDelay": 10
+    }
+  }
+}
+```
+
+> 将 flat 字段包装为 `config.appearance.*` 嵌套结构；新增 `target: "launcher"` 包裹。由于 legacy 全量覆盖语义，Adapter 透传全部字段。
+
+**JSON 变换示例 — DeviceName 方向（legacy → AXTP）**：
+
+Legacy 请求（`SetDeviceName`）：
+
+```json
+{
+  "devName": "Lobby Display"
+}
+```
+
+AXTP 请求（Adapter 输出，对应 `software.setConfig` params）：
+
+```json
+{
+  "target": "launcher",
+  "config": {
+    "displayName": "Lobby Display"
+  }
+}
+```
+
+> `devName` → `config.displayName`；新增 `target: "launcher"` 包裹。字段名变化，语义不变。
+
+**响应变换**：AXTP `software.setConfig` 仅返回 status 确认（无 result body），与 legacy `{ ok: true }` 行为一致，Adapter 无需做响应变换。
 
 ---
 
@@ -495,16 +762,23 @@ Capability name: `software.config`。
 
 ## 11. Test Notes
 
-- `software.getConfig(target: "launcher")` / `software.setConfig(target: "launcher")` 配置 get/set 一致。
-- `software.setConfig` partial update 语义验证：只传 `appearance.panelLayout`，`displayName`、`appearance.autoHidePanel` 和 `appearance.autoHideDelay` 保持不变。
-- `software.setConfig` 独立修改 `displayName`：只传 `config.displayName`，`appearance` 整体保持不变。
+- `software.getConfig(target: "launcher")` / `software.setConfig(target: "launcher")` 配置 get/set 一致：setConfig 返回成功后，getConfig 返回更新后的配置。
+- `software.setConfig` partial update 语义验证：只传 `appearance.panelLayout`，`displayName`、`appearance.autoHidePanel` 和 `appearance.autoHideDelay` 保持不变（通过 getConfig 验证）。
+- `software.setConfig` 独立修改 `displayName`：只传 `config.displayName`，`appearance` 整体保持不变（通过 getConfig 验证）。
 - 修改 `displayName` 后，`device.info` 的 `product.displayName` 查询应返回相同新值（跨 capability 一致性）。
 - `software.resetConfig(target: "launcher")` 恢复后配置与默认值一致（包括 `displayName` 恢复为出厂名称）。
 - 收到 `software.configChanged` 事件后，`software.getConfig` 返回的配置应与事件 payload 一致。
 - `software.configChanged` 的 `changedFields` 应使用点号路径：`"appearance.panelLayout"` 而非 `"panelLayout"`。
 - `displayName` 传空字符串或超过最大长度时应返回 `INVALID_ARGUMENT`。
 - `autoHideDelay` 传 0 或负数时应返回 `INVALID_ARGUMENT`。
+- `panelLayout` 传非 `"focus"` / `"sidebar"` 值时应返回 `INVALID_ARGUMENT`。
 - 不支持的 target 应返回 `NOT_SUPPORTED`。
+- `autoHidePanel: false` 时设置 `autoHideDelay`，值持久化但行为不生效；切回 `true` 后原值生效（通过 getConfig 验证值未丢失）。
+- `software.resetConfig` 后 `displayName` 恢复为出厂名称（与 `device.info` 默认 `product.displayName` 一致）。
+- Legacy `GetAppearanceConfig` Adapter 测试：AXTP `{ target: "launcher", config: { displayName: "Meeting Room A", appearance: { panelLayout: "sidebar", autoHidePanel: false, autoHideDelay: 5 } } }` → legacy `{ panelLayout: "sidebar", autoHidePanel: false, autoHideDelay: 5 }`（丢弃 `displayName`）。
+- Legacy `SetAppearanceConfig` Adapter 测试：legacy `{ panelLayout: "focus", autoHidePanel: true, autoHideDelay: 10 }` → AXTP `{ target: "launcher", config: { appearance: { panelLayout: "focus", autoHidePanel: true, autoHideDelay: 10 } } }`。
+- Legacy `SetDeviceName` Adapter 测试：legacy `{ devName: "Lobby Display" }` → AXTP `{ target: "launcher", config: { displayName: "Lobby Display" } }`。
+- Legacy `SetAppearanceConfig` 全量覆盖语义与 AXTP partial update 的 Adapter 兼容性测试：Adapter 在 legacy→AXTP 方向透传全部字段；在 AXTP→legacy 方向先 getConfig 读取当前值再全量合并下发。
 
 ---
 
@@ -514,8 +788,10 @@ Capability name: `software.config`。
 |---|---|---|---|
 | `software` domain 未在 Taxonomy spec rule 2 示例列表中 | 采纳阻塞 | 采纳前确认是否需要 taxonomy amendment。 | `[REVIEW-ASK]` |
 | `target` 枚举完整值列表 | schema 约束 | 当前草案列出 `launcher`、`signagePlayer`、`agent`；采纳前与产品和设备确认。 | `[REVIEW-ASK]` |
-| legacy `ResetConfig` 真实 scope | legacy mapping | 暂按 Launcher 默认配置恢复处理；若是系统级恢复则走 `system.reset`。 | `[REVIEW-ASK]` |
+| legacy `ResetConfig` 真实 scope | legacy mapping | 已确认为系统级出厂恢复（设备重启）。映射到 `system.restoreFactorySettings`，不映射到 `software.resetConfig`。见 Section 9.4。 | `[REVIEW-RESOLVED]` |
 | 其他 target 的配置字段 | schema / adoption | `target: "signagePlayer"` 和 `target: "agent"` 的配置字段待产品和设备确认后补充。 | `[REVIEW-ASK]` |
 | `displayName` 归属：`software.config` vs `device.info` | schema / 语义边界 | 推荐在 `software.config` 写入，`device.info` 只读返回。同一个值两个协议暴露。 | `[REVIEW-ASK]` |
 | `displayName` 最大长度和格式约束 | schema / 校验 | 推荐 64 字符，非空。采纳前与产品确认。 | `[REVIEW-ASK]` |
 | `resetConfig` 是否重置 `displayName` | 语义 / UX | 推荐 resetConfig 重置所有 launcher 配置包括 displayName；但设备显示名恢复出厂可能影响设备识别。 | `[REVIEW-ASK]` |
+| Adapter flat→nested 变换 | adapter 实现 | Legacy 外观配置为 flat 结构，AXTP 为 `config.appearance.*` 嵌套结构。Adapter 层负责包装/展平变换。Legacy `SetAppearanceConfig` 全量覆盖语义与 AXTP partial update 语义的差异由 Adapter 兼容。 | `[REVIEW-DRAFT]` |
+| Flow step 16/19 vs 草案 setConfig 响应 | flow / draft 一致性 | Flow 文档描述有误（step 16/19 及同类 step 21）。草案正确：`software.setConfig` 仅返回 status 确认（无 result body），与 `software.updatePolicy` pattern 一致。Flow 文档 step 16 和 step 19 的"Response / state result"列应修正为"返回标准成功响应（无 result body）；触发 `software.configChanged` 事件"。 | `[REVIEW-RESOLVED]` |
