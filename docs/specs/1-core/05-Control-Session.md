@@ -151,6 +151,7 @@ Phase 1 不要求 runtime 实现 ACK/NACK；可靠重传、选择性确认和严
 - WebSocket Unframed JSON MUST NOT 发送或要求 CONTROL。
 - Physical Client MUST 发起 CONTROL OPEN。
 - Physical Server MUST 裁决 OPEN，并在可以安全响应时返回成功或非零拒绝状态的 ACCEPT。
+- AXTP Link Session 仍由 Physical Client 发起 OPEN，并由 Physical Server 返回 ACCEPT 成功或非零拒绝结果；该物理建连方向不限制 APP_READY 后 RPC 业务 Request 的发起方。
 - OPEN / ACCEPT MUST NOT 协商 Header Profile；Frame Profile 由 Transport Profile 固定。
 - CONTROL MUST NOT 承载业务 capability discovery。
 - CONTROL MUST NOT 承载业务 method 参数或 event。
