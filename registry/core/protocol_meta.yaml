@@ -5,6 +5,13 @@ protocol:
   registryVersion: 1.0.0
   status: rc1
 
+wire:
+  byteOrder: big-endian
+  byteOrderAlias: network
+  integerEncoding: unsigned and signed multi-byte integers use Big-Endian / network byte order
+  crcByteOrder: big-endian
+  scope: Standard Framed Binary, CONTROL, RPC JSON_BINARY, TLV, STREAM header, and CRC footer
+
 overview:
   title: AXTP Protocol
   summary: >

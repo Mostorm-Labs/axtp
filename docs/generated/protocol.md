@@ -35,6 +35,9 @@ AXTP is a transport-independent device communication protocol for CONTROL, RPC a
 | Spec Version | 1 |
 | Registry Version | 1.0.0 |
 | Status | rc1 |
+| Wire Byte Order | big-endian / network |
+| Wire Integer Encoding | unsigned and signed multi-byte integers use Big-Endian / network byte order |
+| CRC Byte Order | big-endian |
 
 ## Protocol Framework
 

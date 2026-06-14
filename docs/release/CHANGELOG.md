@@ -2,6 +2,27 @@
 
 This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATCH` tags.
 
+## spec/v0.5.1
+
+Wire byte order metadata and runtime release hotfix.
+
+### Protocol
+
+- Adds machine-readable `wire` metadata to the Protocol IR with `byteOrder: big-endian`, `byteOrderAlias: network`, and `crcByteOrder: big-endian`.
+- Emits the same wire byte order facts into `docs/generated/protocol.json` and `docs/generated/protocol.md`.
+- Updates generator validation so Protocol IR and core specs must continue to agree on Big-Endian / network byte order.
+
+### Conformance
+
+- Updates Standard Framed test vectors to use Big-Endian / network byte order for frame length, message id, RPC method/event ids, and STREAM header fields.
+- Adds a STREAM conformance byte-order assertion for `streamId:uint32`, `seqId:uint32`, and `cursor:uint64`.
+
+### Runtime Impact
+
+- Runtime repositories should bind to `spec/v0.5.1` rather than `spec/v0.5.0` for Standard Framed binary work.
+- Runtime wire codecs must serialize and parse AXTP multi-byte wire integers using Big-Endian / network byte order.
+- Runtime vendored generator templates and generated protocol references should no longer mention Little-Endian for AXTP wire integers.
+
 ## spec/v0.5.0
 
 Documentation governance, business protocol draft consolidation, and AXTP network byte order alignment release.

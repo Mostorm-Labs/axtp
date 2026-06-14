@@ -27,7 +27,12 @@ steps:
         seqId: 1
         cursor: 1000000
         data: "AABBCC"
+      wire:
+        byteOrder: big-endian
+        streamHeaderHex: "000000090000000100000000000F4240"
 
 assertions:
   - observed.streamId == stream.streamId
   - observed.seqId == stream.seqId
+  - observed.cursor == stream.cursor
+  - wire.streamHeaderHex startsWith "000000090000000100000000000F4240"

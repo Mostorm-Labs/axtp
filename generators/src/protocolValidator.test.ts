@@ -96,6 +96,12 @@ describe("protocol definition validator", () => {
     expect(() => validateProtocolDefinition(model)).toThrow(/STREAM header must be streamId:uint32, seqId:uint32, cursor:uint64/);
   });
 
+  it("rejects protocol IR that does not declare network byte order", async () => {
+    const model = cloneModel(await loadCurrentProtocol());
+    model.wire.byteOrder = "little-endian";
+    expect(() => validateProtocolDefinition(model)).toThrow(/byte order must be big-endian/);
+  });
+
   it("rejects old capability method mask derivation names", async () => {
     const model = cloneModel(await loadCurrentProtocol());
     model.schemas.push({
@@ -230,6 +236,13 @@ describe("protocol docs consistency validator", () => {
     expect(() => validateProtocolDocsConsistency(model, docs)).toThrow(/cursor:uint64/);
   });
 
+  it("rejects missing byte order facts in docs", async () => {
+    const model = await loadCurrentProtocol();
+    const docs = await loadProtocolDocs(repoRoot);
+    docs.frameSpec = docs.frameSpec.replace("Big-Endian", "Little-Endian");
+    expect(() => validateProtocolDocsConsistency(model, docs)).toThrow(/Big-Endian/);
+  });
+
   it("rejects yaml that disagrees with docs facts", async () => {
     const model = cloneModel(await loadCurrentProtocol());
     const docs = await loadProtocolDocs(repoRoot);
@@ -246,10 +259,14 @@ describe("protocol definition emitters", () => {
       await emitProtocolDocs(model, dir);
       const json = await readFile(path.join(dir, "protocol.json"), "utf8");
       const markdown = await readFile(path.join(dir, "protocol.md"), "utf8");
+      expect(json).toContain("\"byteOrder\": \"big-endian\"");
+      expect(json).toContain("\"byteOrderAlias\": \"network\"");
       expect(json).toContain("\"supportsStream\": false");
       expect(json).toContain("\"supportsControl\": false");
       expect(markdown).toContain("## Main Table of Contents");
       expect(markdown).toContain("## Protocol Framework");
+      expect(markdown).toContain("Wire Byte Order");
+      expect(markdown).toContain("big-endian / network");
       expect(markdown).toContain("## Supported Connection Profiles");
       expect(markdown).toContain("AXTP-USB-HID");
       expect(markdown).toContain("AXTP-TCP");
