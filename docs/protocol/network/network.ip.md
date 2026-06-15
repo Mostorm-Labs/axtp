@@ -1,191 +1,312 @@
-# AXTP network.ip 协议草案
-
-版本：v0.3
-
-归属域：`network`
-
-Capability ID：`network.ip`
-
-适用范围：接口上的最小 IPv4/IPv6 地址配置，包括 DHCP、静态地址、网关、DNS 和地址变化事件。
-
+---
+status: draft
+contract: false
+generated: false
+domain: network
+feature: network.ip
+registry:
+lastReviewed: 2026-06-13
 ---
 
-## 协议审核标记
+# network.ip
 
-| 标记 | 对象 | 结论 | 后续动作 |
-|---|---|---|---|
-| `[REVIEW-DRAFT]` | `network.ip` capability | 本文将 v0.2 的完整三层网络模型收敛为 DHCP/static 的最小可采纳协议。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-OK]` | domain.feature 粒度 | IP/DHCP/DNS/默认网关属于 `network` 域下同一地址配置能力块。 | 采纳前按 Naming and Taxonomy spec 再次复核 method/event 命名。 |
-| `[REVIEW-DRAFT]` | 事件分层 | `network.ipConfigChanged` 只表达地址配置或有效地址变化；Wi-Fi/AP/interface 状态由各自 feature 事件表达。 | 采纳前与 interface/Wi-Fi/AP 草案一起确认。 |
-| `[REVIEW-ASK]` | AP 子网边界 | AP 本端地址可由 `network.ip` 表达；AP DHCP Server 地址池是否归 `network.ap` 仍需确认。 | 采纳前确认 AP 子网写入入口。 |
-| `[REVIEW-ASK]` | IPv6 支持范围 | 当前草案保留 IPv6 family，但 MVP 是否支持 IPv6 待确认。 | 采纳前确认 IPv6 是 MVP 还是 optional。 |
-| `[REVIEW-ASK]` | legacy 映射 | AXDP / VM33 / Signage 的 IP 命令已有候选归属，但 payload、netmask、状态码仍需字段级确认。 | 落 registry 前补齐 legacyRefs 或明确 adapter-only。 |
+## 0. 速读结论
 
-## 1. 文档定位
+| 项目 | 内容 |
+|---|---|
+| 这个能力做什么 | 按设备返回的 `interfaceId` 查询或设置 IPv4/IPv6 DHCP/static 地址、网关、DNS，并报告有效地址变化。 |
+| 当前状态 | draft |
+| 是否可直接实现 | 否。draft 阶段仅供评审；正式实现以 registry / generated 为准。 |
+| 主要交互 | RPC + EVENT |
+| 是否使用 STREAM | 否 |
+| Registry readiness | candidate |
+| Conformance | needed |
+| 主要未决问题 | IP ready 是否作为配对验收、AP DHCP Server 地址池归属、IPv6 是否进入 MVP。 |
 
-本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`，涉及 profile/MVP 时同步确认 `docs/specs/2-registry/05-Profiles-Registry.md`，再写入 `registry/domains/network/domain.yaml`，并由 `generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+## 1. 功能说明
 
-当前 generated 协议没有 adopted `network.ip` 方法、事件或 schema；本文所有 methodId、eventId、errorCode、fieldId 均为 `TBD after adoption`。
+`network.ip` 描述指定网络接口上的地址配置和有效地址变化。Cast RX/TX 配对中，NT10 Wi-Fi 关联成功后，产品如需要 IP ready，可继续通过 `network.getIpConfig` 或 `network.ipConfigChanged` 确认有效地址。
 
-## 2. 业务需求
+本 feature 不表达 Wi-Fi 认证/关联、不表达 AP running，也不表达接口基础链路变化；这些分别由 `network.wifi`、`network.ap` 和 `network.interface` 负责。NA20 AP 本端 IP 可以通过 AP 接口的 `interfaceId` 查询；AP DHCP Server 地址池是否也放在 `network.ap` 仍待确认。
+
+当前 generated 协议没有 adopted `network.ip` 方法、事件或 schema。本文所有 methodId、eventId、errorCode、fieldId 均为 `TBD after adoption`。
+
+## 2. 能力边界
+
+| 类型 | 内容 |
+|---|---|
+| 包含 | 查询指定接口、指定地址族的当前 IP 配置和有效地址。 |
+| 包含 | 设置 DHCP/static/disabled 模式、静态地址、前缀长度、默认网关和 DNS。 |
+| 包含 | 地址配置或有效地址变化事件。 |
+| 包含 | 配对后可选 IP ready 验收。 |
+| 不包含 | 接口枚举、MAC、基础链路；这些属于 `network.interface`。 |
+| 不包含 | Wi-Fi profile、扫描、认证、关联、断开；这些属于 `network.wifi`。 |
+| 不包含 | AP SSID、安全、凭据导出、启停、客户端列表；这些属于 `network.ap`。 |
+| 不包含 | 静态路由、DHCP lease 详情、独立 DNS 管理和 AP DHCP Server 地址池；这些保持 future / open。 |
+| 数据面 | 本 feature 不定义 STREAM payload，所有操作均通过 RPC method/event 完成。 |
+
+## 3. 方法 Methods
+
+方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。不要在草案中分配正式 ID。
+
+### 3.0 方法速览
+
+| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
+|---|---|---|---|---|---|---|
+| `network.getIpConfig` | query | 查询接口地址配置和当前有效地址。 | `NetworkGetIpConfigParams` | `NetworkIpConfig` | 否 | draft |
+| `network.setIpConfig` | command | 设置 DHCP/static/disabled 地址配置。 | `NetworkSetIpConfigParams` | `NetworkSetIpConfigResult` | 是，`network.ipConfigChanged` | draft |
+
+### 3.1 `network.getIpConfig`
+
+**用途**：查询指定接口和地址族的 IP 配置及当前有效地址。
 
 | 项 | 内容 |
 |---|---|
-| 需求来源 | AP/Wi-Fi 草案中的接口网络配置前置条件，以及 archive 中 IP/DNS 原始方案。 |
-| 目标用户 | 上位机网络配置服务、设备固件、部署工具、产测/诊断工具。 |
-| 目标行为 | 调用方通过 `interfaceId` 查询或设置接口 DHCP/static 地址、默认网关和 DNS。 |
-| 当前实现程度 | Drafted only：`docs/protocol/network/network.ip.md` 存在草案，但 YAML/generated 尚未采纳。 |
+| 调用类型 | query |
+| Params Schema | `NetworkGetIpConfigParams` |
+| Result Schema | `NetworkIpConfig` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-## 3. Domain 边界
+#### 3.1.1 请求参数 Params：`NetworkGetIpConfigParams`
 
-| 项 | 决策 |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | yes | device-returned id | none | 目标接口，来自 `network.interface`。 |
+| `family` | `NetworkIpFamily` | no | `ipv4`, `ipv6` | `ipv4` | 地址族。 |
+
+#### 3.1.2 返回结果 Result：`NetworkIpConfig`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | yes | device-returned id | none | 接口标识。 |
+| `family` | `NetworkIpFamily` | yes | `ipv4`, `ipv6` | none | 地址族。 |
+| `mode` | `NetworkIpMode` | yes | `dhcp`, `static`, `disabled` | none | 地址模式。 |
+| `address` | string | no | IP address | omitted | 当前有效地址。 |
+| `prefixLength` | uint8 | no | IPv4 `0..32`, IPv6 `0..128` | omitted | 前缀长度。 |
+| `gateway` | string | no | IP address | omitted | 默认网关。 |
+| `dnsServers` | string[] | no | IP address array | omitted | DNS 服务器。 |
+| `source` | string enum | no | `static`, `dhcp`, `system_policy`, `runtime` | omitted | 当前有效配置来源。 |
+| `effective` | boolean | yes | bool | none | 返回内容是否为当前已生效配置。 |
+
+#### 3.1.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.1.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_FOUND` | 指定接口不存在或不支持 IP 配置。 | 使用 adopted numeric code `12`。 |
+| `NOT_SUPPORTED` | 地址族或 feature 不支持。 | 使用 adopted numeric code `3`。 |
+
+### 3.2 `network.setIpConfig`
+
+**用途**：设置指定接口和地址族的 DHCP/static/disabled 配置。
+
+| 项 | 内容 |
 |---|---|
-| Domain | `network` |
-| Feature | `network.ip` |
-| Capability | `network.ip` |
-| 负责 | 接口 IPv4/IPv6 地址模式、当前地址、静态地址、DHCP、默认网关、DNS、地址变化事件。 |
-| 不负责 | 接口枚举/MAC/链路状态，归 `network.interface`；Wi-Fi profile/认证/连接，归 `network.wifi`；AP SSID/安全/启停/客户端，归 `network.ap`。 |
-| 设计原则 | `network.ip` 只绑定 `interfaceId` 和地址族，不重复描述接口类型、Wi-Fi 连接状态或 AP 运行状态。 |
+| 调用类型 | command |
+| Params Schema | `NetworkSetIpConfigParams` |
+| Result Schema | `NetworkSetIpConfigResult` |
+| 是否触发事件 | 是，配置或有效地址实际变化后触发 `network.ipConfigChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；`apply=immediate` 可能导致当前网络会话重连。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `TIMEOUT` |
 
-## 4. 简化决策
+#### 3.2.1 请求参数 Params：`NetworkSetIpConfigParams`
 
-| 决策点 | 结论 | 理由 |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | yes | device-returned id | none | 目标接口。 |
+| `family` | `NetworkIpFamily` | no | `ipv4`, `ipv6` | `ipv4` | 地址族。 |
+| `mode` | `NetworkIpMode` | yes | `dhcp`, `static`, `disabled` | none | 地址模式。 |
+| `address` | string | conditional | IP address | omitted | static 模式必填。 |
+| `prefixLength` | uint8 | conditional | IPv4 `0..32`, IPv6 `0..128` | omitted | static 模式必填。 |
+| `gateway` | string | no | IP address | omitted | 默认网关。 |
+| `dnsServers` | string[] | no | IP address array | omitted | DNS 服务器。 |
+| `apply` | `NetworkConfigApplyPolicy` | no | `immediate`, `on_reconnect`, `on_reboot` | `immediate` | 生效策略。 |
+
+#### 3.2.2 返回结果 Result：`NetworkSetIpConfigResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `config` | `NetworkIpConfig` | yes | object | none | 写入后的配置摘要。 |
+| `applied` | boolean | yes | bool | none | 是否已经生效。 |
+| `effectiveAfter` | `NetworkConfigApplyPolicy` | yes | see enum | none | 实际生效时机。 |
+| `requiresReconnect` | boolean | no | bool | omitted | 是否可能导致当前 AXTP 会话断开或需要客户端重连。 |
+| `requiresReboot` | boolean | no | bool | omitted | 是否需要设备重启。 |
+
+#### 3.2.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `network.ipConfigChanged` | 配置或有效地址实际变化。 | `NetworkIpConfigChangedEvent` | 更新 IP 缓存；配对验收可在有效地址出现时通过。 |
+
+#### 3.2.4 错误
+
+| 错误 | 场景 | 返回建议 |
 |---|---|---|
-| 新增/修改/复用 | Modify existing draft | v0.2 字段过宽，现保留 DHCP/static 主路径。 |
-| MVP 方法 | `getIpConfig`、`setIpConfig` | 满足部署、配对后查询地址和基础网络配置。 |
-| Deferred 能力 | 静态路由表、DHCP lease 详情、独立 DNS 方法、DHCPv6/SLAAC 细节 | 这些不是 AP/Wi-Fi 前置协议的最小需求。 |
-| 事件范围 | 地址配置/有效地址变化 | 避免和 `interfaceStateChanged`、`wifiStateChanged`、`apStateChanged` 重复。 |
-| 字段策略 | 单 family 一次读写 | 简化请求模型；多地址族由客户端分别调用或 future batch 处理。 |
+| `INVALID_ARGUMENT` | static 模式缺少 `address` 或 `prefixLength`。 | 使用 adopted numeric code `10`，details 指出字段路径。 |
+| `OUT_OF_RANGE` | `prefixLength` 超出地址族范围。 | 使用 adopted numeric code `11`。 |
+| `INVALID_STATE` | 当前接口状态不允许立即应用配置。 | 使用 adopted numeric code `4`。 |
 
-## 5. 候选 Capability
+## 4. 事件 Events
 
-| Capability | 状态 | 说明 |
-|---|---|---|
-| `network.ip` | draft | 设备支持查询和配置指定接口的 DHCP/static 地址、默认网关和 DNS。 |
+### 4.0 事件速览
 
-## 6. 候选 Methods
-
-| Method | Params Schema | Result Schema | 说明 | Review |
+| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|
-| `network.getIpConfig` | `NetworkGetIpConfigRequest` | `NetworkIpConfig` | 查询单个接口、单个地址族的 IP 配置和当前有效地址。 | `[REVIEW-DRAFT]` |
-| `network.setIpConfig` | `NetworkSetIpConfigRequest` | `NetworkSetIpConfigResponse` | 设置单个接口、单个地址族的 DHCP/static IP 配置。 | `[REVIEW-DRAFT]` |
+| `network.ipConfigChanged` | IP 模式、地址、网关、DNS 或有效地址发生变化。 | `NetworkIpConfigChangedEvent` | 若产品要求 IP ready，则在有效地址出现后通过验收。 | draft |
 
-方法错误候选：`SUCCESS`、`NOT_SUPPORTED`、`INVALID_ARGUMENT`、`OUT_OF_RANGE`、`INVALID_STATE`、`BUSY`、`PERMISSION_DENIED`、`TIMEOUT`、`NOT_FOUND`、`UNAVAILABLE`、`INTERNAL_ERROR`，以及本文“候选 Errors”中的 network 业务错误。
+### 4.1 `network.ipConfigChanged`
 
-## 7. 候选 Events
+**触发条件**：
 
-| Event | Schema | 触发时机 | Review |
-|---|---|---|---|
-| `network.ipConfigChanged` | `NetworkIpConfigChangedEvent` | IP 模式、地址、网关、DNS 或有效地址发生变化。 | `[REVIEW-DRAFT]` |
+- `network.setIpConfig` 导致 IP 配置变化。
+- DHCP 获取、续租、失效或地址冲突。
+- 接口 link down 导致有效地址清空。
+- 设备策略或恢复默认改变地址配置。
 
-事件去重规则：
+不因 Wi-Fi 连接成功或 AP 启停本身触发；只有有效地址或 IP 配置变化才触发。
 
-1. Wi-Fi 连接成功或失败只发 `network.wifiStateChanged`；分配到 IP 后再发 `network.ipConfigChanged`。
-2. AP start/stop 只发 `network.apStateChanged`；AP 接口本端地址变化才发 `network.ipConfigChanged`。
-3. 接口 up/down 只发 `network.interfaceStateChanged`；若因此地址失效，可追加 `network.ipConfigChanged` 表示地址清空。
+#### Payload：`NetworkIpConfigChangedEvent`
 
-## 8. 配置语义
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | yes | device-returned id | none | 发生变化的接口。 |
+| `family` | `NetworkIpFamily` | yes | `ipv4`, `ipv6` | none | 地址族。 |
+| `config` | `NetworkIpConfig` | yes | object | none | 变化后的 IP 配置。 |
+| `previousConfig` | `NetworkIpConfig` | no | object | omitted | 变化前配置。 |
+| `reason` | string enum | no | `user_request`, `dhcp_updated`, `lease_expired`, `link_lost`, `system_policy`, `apply_failed`, `unknown` | `unknown` | 变化原因。 |
 
-| 场景 | 规则 | Review |
+#### 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| `config.effective=true` 且有 `address` | 可判定该接口地址 ready。 |
+| Wi-Fi connected 后等待 IP | 订阅该事件或轮询 `network.getIpConfig`。 |
+| event 丢失或重连 | 重连后主动调用 `network.getIpConfig` 校准。 |
+
+## 5. Capability
+
+Capability name: `network.ip`。
+
+| 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 说明 |
+|---|---|---:|---|---|
+| `capability` | string | yes | fixed `network.ip` | capability 名称。 |
+| `families` | `NetworkIpFamily[]` | yes | `ipv4`, `ipv6` | 支持的地址族。 |
+| `modes` | `NetworkIpMode[]` | yes | `dhcp`, `static`, `disabled` | 支持模式。 |
+| `supportsGateway` | boolean | no | bool | 是否支持默认网关字段。 |
+| `supportsDnsServers` | boolean | no | bool | 是否支持 DNS 服务器字段。 |
+| `applyPolicies` | `NetworkConfigApplyPolicy[]` | no | see enum | 支持的生效策略。 |
+| `ipReadyObservable` | boolean | no | bool | 是否能通过查询或事件观察有效地址。 |
+
+## 6. 字段 / Schemas
+
+### 6.1 Schema 层级速览
+
+```text
+NetworkIpConfig
+NetworkSetIpConfigResult
+  config: NetworkIpConfig
+NetworkIpConfigChangedEvent
+  config: NetworkIpConfig
+  previousConfig: NetworkIpConfig
+```
+
+`NetworkIpConfig` 同时用于查询结果、设置结果和事件 payload。Capability 只描述设备支持范围，不混入运行时地址。
+
+### 6.2 请求与响应 Schemas
+
+#### `NetworkGetIpConfigParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | yes | device-returned id | none | 目标接口。 |
+| `family` | `NetworkIpFamily` | no | `ipv4`, `ipv6` | `ipv4` | 地址族。 |
+
+#### `NetworkSetIpConfigParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | yes | device-returned id | none | 目标接口。 |
+| `family` | `NetworkIpFamily` | no | `ipv4`, `ipv6` | `ipv4` | 地址族。 |
+| `mode` | `NetworkIpMode` | yes | `dhcp`, `static`, `disabled` | none | 地址模式。 |
+| `address` | string | conditional | IP address | omitted | static 模式必填。 |
+| `prefixLength` | uint8 | conditional | IPv4 `0..32`, IPv6 `0..128` | omitted | static 模式必填。 |
+| `gateway` | string | no | IP address | omitted | 默认网关。 |
+| `dnsServers` | string[] | no | IP address array | omitted | DNS 服务器。 |
+| `apply` | `NetworkConfigApplyPolicy` | no | see enum | `immediate` | 生效策略。 |
+
+#### `NetworkSetIpConfigResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `config` | `NetworkIpConfig` | yes | object | none | 写入后的配置摘要。 |
+| `applied` | boolean | yes | bool | none | 是否已生效。 |
+| `effectiveAfter` | `NetworkConfigApplyPolicy` | yes | see enum | none | 生效时机。 |
+| `requiresReconnect` | boolean | no | bool | omitted | 是否可能需要客户端重连。 |
+| `requiresReboot` | boolean | no | bool | omitted | 是否需要设备重启。 |
+
+### 6.3 Capability Schemas
+
+#### `NetworkIpCapability`
+
+字段同第 5 章 Capability 表；采纳时可作为 capability object。
+
+### 6.4 Event Schemas
+
+#### `NetworkIpConfigChangedEvent`
+
+字段同第 4.1 节 payload 表；采纳时应作为独立 event schema。
+
+### 6.5 State / Config / Object Schemas
+
+#### `NetworkIpConfig`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | yes | device-returned id | none | 接口标识。 |
+| `family` | `NetworkIpFamily` | yes | `ipv4`, `ipv6` | none | 地址族。 |
+| `mode` | `NetworkIpMode` | yes | `dhcp`, `static`, `disabled` | none | 地址模式。 |
+| `address` | string | no | IP address | omitted | 当前有效地址。 |
+| `prefixLength` | uint8 | no | IPv4 `0..32`, IPv6 `0..128` | omitted | 前缀长度。 |
+| `gateway` | string | no | IP address | omitted | 默认网关。 |
+| `dnsServers` | string[] | no | IP address array | omitted | DNS 服务器。 |
+| `source` | string enum | no | `static`, `dhcp`, `system_policy`, `runtime` | omitted | 配置来源。 |
+| `effective` | boolean | yes | bool | none | 是否为当前有效配置。 |
+
+#### 枚举
+
+| Type | 候选值 | 说明 |
 |---|---|---|
-| `mode=dhcp` | 不要求 `address`、`prefixLength`、`gateway`；DNS 可省略或使用静态覆盖。 | `[REVIEW-DRAFT]` |
-| `mode=static` | 必须提供 `address` 和 `prefixLength`；`gateway`、`dnsServers` 可选。 | `[REVIEW-DRAFT]` |
-| `mode=disabled` | 禁用该地址族，并清除对应有效地址。 | `[REVIEW-DRAFT]` |
-| IPv6 | 使用同一 schema，但 `slaac`、DHCPv6 和多个 IPv6 地址先作为 deferred。 | `[REVIEW-ASK]` |
-| 生效策略 | `apply=immediate` 可能断开当前 AXTP 会话；响应必须返回 `requiresReconnect`。 | `[REVIEW-DRAFT]` |
-| AP 本端地址 | 查询走 `network.getIpConfig(interfaceId=ap0)`；AP DHCP Server 地址池暂留 `network.ap` 待确认。 | `[REVIEW-ASK]` |
+| `NetworkIpFamily` | `ipv4`, `ipv6` | 地址族。 |
+| `NetworkIpMode` | `dhcp`, `static`, `disabled` | 地址模式。 |
+| `NetworkConfigApplyPolicy` | `immediate`, `on_reconnect`, `on_reboot` | 生效策略。 |
 
-## 9. 候选 Schemas
+## 7. JSON 示例
 
-### `NetworkGetIpConfigRequest`
+示例只展示 RPC data block，不包裹外层 wire envelope。字段和 ID 在采纳前均为草案；IP 地址均使用占位符。
 
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `interfaceId` | string | yes | 目标接口标识，来自 `network.interface`。 | `[REVIEW-DRAFT]` |
-| `family` | `NetworkIpFamily` | no | `ipv4` 或 `ipv6`；省略表示默认 `ipv4`。 | `[REVIEW-DRAFT]` |
+### 7.1 场景：配对后查询 NT10 STA IPv4
 
-### `NetworkSetIpConfigRequest`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `interfaceId` | string | yes | 目标接口。 | `[REVIEW-DRAFT]` |
-| `family` | `NetworkIpFamily` | no | `ipv4` 或 `ipv6`；省略表示默认 `ipv4`。 | `[REVIEW-DRAFT]` |
-| `mode` | `NetworkIpMode` | yes | `dhcp`、`static`、`disabled`。 | `[REVIEW-DRAFT]` |
-| `address` | string | conditional | static 模式必填。 | `[REVIEW-DRAFT]` |
-| `prefixLength` | uint8 | conditional | static 模式必填；IPv4 0-32，IPv6 0-128。 | `[REVIEW-DRAFT]` |
-| `gateway` | string | no | 默认网关。旧 gateway 字段映射到这里。 | `[REVIEW-DRAFT]` |
-| `dnsServers` | string[] | no | DNS 服务器；省略表示保持现有策略。 | `[REVIEW-DRAFT]` |
-| `apply` | `NetworkConfigApplyPolicy` | no | `immediate`、`on_reconnect`、`on_reboot`；默认 `immediate`。 | `[REVIEW-DRAFT]` |
-
-### `NetworkIpConfig`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `interfaceId` | string | yes | 接口标识。 | `[REVIEW-DRAFT]` |
-| `family` | `NetworkIpFamily` | yes | 地址族。 | `[REVIEW-DRAFT]` |
-| `mode` | `NetworkIpMode` | yes | 地址模式。 | `[REVIEW-DRAFT]` |
-| `address` | string | no | 当前有效地址。 | `[REVIEW-DRAFT]` |
-| `prefixLength` | uint8 | no | 当前有效地址前缀长度。 | `[REVIEW-DRAFT]` |
-| `gateway` | string | no | 默认网关。 | `[REVIEW-DRAFT]` |
-| `dnsServers` | string[] | no | 当前 DNS 服务器。 | `[REVIEW-DRAFT]` |
-| `source` | enum | no | `static`、`dhcp`、`system_policy`、`runtime`。 | `[REVIEW-DRAFT]` |
-| `effective` | bool | yes | 返回内容是否为当前已生效配置。 | `[REVIEW-DRAFT]` |
-
-### `NetworkSetIpConfigResponse`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `config` | `NetworkIpConfig` | yes | 写入后的配置摘要。 | `[REVIEW-DRAFT]` |
-| `applied` | bool | yes | 配置是否已经生效。 | `[REVIEW-DRAFT]` |
-| `effectiveAfter` | `NetworkConfigApplyPolicy` | yes | 实际生效时机。 | `[REVIEW-DRAFT]` |
-| `requiresReconnect` | bool | no | 是否可能导致当前 AXTP 会话断开或需要客户端重连。 | `[REVIEW-DRAFT]` |
-| `requiresReboot` | bool | no | 是否需要设备重启后生效。 | `[REVIEW-DRAFT]` |
-
-### `NetworkIpConfigChangedEvent`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `interfaceId` | string | yes | 发生变化的接口。 | `[REVIEW-DRAFT]` |
-| `family` | `NetworkIpFamily` | yes | 发生变化的地址族。 | `[REVIEW-DRAFT]` |
-| `config` | `NetworkIpConfig` | yes | 变化后的 IP 配置。 | `[REVIEW-DRAFT]` |
-| `previousConfig` | `NetworkIpConfig` | no | 变化前配置。 | `[REVIEW-DRAFT]` |
-| `reason` | enum | no | `user_request`、`dhcp_updated`、`lease_expired`、`link_lost`、`system_policy`、`apply_failed`。 | `[REVIEW-DRAFT]` |
-
-### Deferred Schemas / Fields
-
-| Schema / Field | 延后原因 | Review |
-|---|---|---|
-| `NetworkRouteConfig[]` | 多路由和 metric 不是基础配置 MVP，旧 gateway 先映射为单字段。 | `[REVIEW-DRAFT]` |
-| `NetworkDhcpLease` | 诊断价值高，但会显著增加 schema；先不作为 MVP。 | `[REVIEW-DRAFT]` |
-| `network.getDnsConfig` / `network.setDnsConfig` | 独立 DNS 方法可后续补充，MVP 随 IP 配置读写即可。 | `[REVIEW-DRAFT]` |
-| `slaac` / DHCPv6 | IPv6 详细行为待设备实现确认。 | `[REVIEW-ASK]` |
-
-### Shared / Enum Types
-
-| Type | 候选值 | 说明 | Review |
-|---|---|---|---|
-| `NetworkIpFamily` | `ipv4`, `ipv6` | 地址族。 | `[REVIEW-DRAFT]` |
-| `NetworkIpMode` | `dhcp`, `static`, `disabled` | MVP 地址模式。 | `[REVIEW-DRAFT]` |
-| `NetworkConfigApplyPolicy` | `immediate`, `on_reconnect`, `on_reboot` | 配置生效策略；与 `network.interface` 共享。 | `[REVIEW-DRAFT]` |
-
-## 10. JSON 示例
-
-示例用于评审 `network.ip` request/response/event 语义，不是 generated 事实源。JSON 示例只写 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope；Request 使用 `id`、`method`、`params`，Response 使用 `id`、`status`、`result`，Event 使用 `event`、`intent`、`data`。`status.code` 必须是数字 ErrorCode。IP 等设备相关字段均使用占位符。
-
-失败示例中的草案业务错误尚未分配数字码，因此 JSON 中先使用已采纳通用错误码，并在 `status.details.candidateError` 中标注候选错误名。
-
-### 10.1 查询接口 IPv4 配置
+#### request
 
 ```json
 {
   "id": 401,
   "method": "network.getIpConfig",
   "params": {
-    "interfaceId": "wlan0",
+    "interfaceId": "<STA_INTERFACE_ID>",
     "family": "ipv4"
   }
 }
 ```
+
+#### response
 
 ```json
 {
@@ -195,7 +316,7 @@ Capability ID：`network.ip`
     "code": 0
   },
   "result": {
-    "interfaceId": "wlan0",
+    "interfaceId": "<STA_INTERFACE_ID>",
     "family": "ipv4",
     "mode": "dhcp",
     "address": "<DEVICE_IP>",
@@ -210,20 +331,26 @@ Capability ID：`network.ip`
 }
 ```
 
-### 10.2 切换接口为 DHCP
+读法：当产品把 IP ready 作为验收条件时，`effective=true` 且 `address` 存在即可作为通过依据之一。
+
+### 7.2 场景：切换接口为 DHCP
+
+#### request
 
 ```json
 {
   "id": 402,
   "method": "network.setIpConfig",
   "params": {
-    "interfaceId": "wlan0",
+    "interfaceId": "<STA_INTERFACE_ID>",
     "family": "ipv4",
     "mode": "dhcp",
     "apply": "immediate"
   }
 }
 ```
+
+#### response
 
 ```json
 {
@@ -234,7 +361,7 @@ Capability ID：`network.ip`
   },
   "result": {
     "config": {
-      "interfaceId": "wlan0",
+      "interfaceId": "<STA_INTERFACE_ID>",
       "family": "ipv4",
       "mode": "dhcp",
       "address": "<NEW_DEVICE_IP>",
@@ -254,69 +381,19 @@ Capability ID：`network.ip`
 }
 ```
 
-### 10.3 设置静态 IPv4 地址
+读法：`requiresReconnect=true` 提醒 Host 当前控制链路可能受影响。
 
-```json
-{
-  "id": 403,
-  "method": "network.setIpConfig",
-  "params": {
-    "interfaceId": "eth0",
-    "family": "ipv4",
-    "mode": "static",
-    "address": "<STATIC_IP>",
-    "prefixLength": 24,
-    "gateway": "<STATIC_GATEWAY_IP>",
-    "dnsServers": [
-      "<DNS_IP_1>",
-      "<DNS_IP_2>"
-    ],
-    "apply": "on_reconnect"
-  }
-}
-```
-
-```json
-{
-  "id": 403,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "config": {
-      "interfaceId": "eth0",
-      "family": "ipv4",
-      "mode": "static",
-      "address": "<STATIC_IP>",
-      "prefixLength": 24,
-      "gateway": "<STATIC_GATEWAY_IP>",
-      "dnsServers": [
-        "<DNS_IP_1>",
-        "<DNS_IP_2>"
-      ],
-      "source": "static",
-      "effective": false
-    },
-    "applied": false,
-    "effectiveAfter": "on_reconnect",
-    "requiresReconnect": true,
-    "requiresReboot": false
-  }
-}
-```
-
-### 10.4 IP 配置变化事件
+### 7.3 场景：IP 配置变化事件
 
 ```json
 {
   "event": "network.ipConfigChanged",
   "intent": 2,
   "data": {
-    "interfaceId": "wlan0",
+    "interfaceId": "<STA_INTERFACE_ID>",
     "family": "ipv4",
     "config": {
-      "interfaceId": "wlan0",
+      "interfaceId": "<STA_INTERFACE_ID>",
       "family": "ipv4",
       "mode": "dhcp",
       "address": "<NEW_DEVICE_IP>",
@@ -333,25 +410,13 @@ Capability ID：`network.ip`
 }
 ```
 
-### 10.5 静态地址缺少前缀失败示例
+读法：这是地址变化事件，不表示 Wi-Fi 认证状态变化；Wi-Fi 仍由 `network.wifiStateChanged` 表达。
+
+### 7.4 场景：静态地址缺少前缀失败响应
 
 ```json
 {
-  "id": 404,
-  "method": "network.setIpConfig",
-  "params": {
-    "interfaceId": "eth0",
-    "family": "ipv4",
-    "mode": "static",
-    "address": "<STATIC_IP>",
-    "apply": "immediate"
-  }
-}
-```
-
-```json
-{
-  "id": 404,
+  "id": 403,
   "status": {
     "ok": false,
     "code": 10,
@@ -364,75 +429,64 @@ Capability ID：`network.ip`
 }
 ```
 
-## 11. 候选 Errors
+读法：`status.code=10` 对应 adopted `INVALID_ARGUMENT`。候选业务错误名只作为草案 details。
 
-| Error | 类别 | 说明 | Review |
+## 8. 错误
+
+| 错误 | 适用场景 | 说明 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备或接口不支持 IP 配置、地址族或模式。 | 使用 adopted numeric code `3`。 |
+| `INVALID_ARGUMENT` | static 配置缺少必填字段或参数组合非法。 | 使用 adopted numeric code `10`。 |
+| `OUT_OF_RANGE` | prefixLength 或地址范围非法。 | 使用 adopted numeric code `11`。 |
+| `NOT_FOUND` | 指定 `interfaceId` 不存在。 | 使用 adopted numeric code `12`。 |
+| `BUSY` | IP 配置正在应用。 | 使用 adopted numeric code `5`。 |
+| `NETWORK_IP_CONFIG_INVALID` | 候选业务错误：IP 配置组合无效。 | `[REVIEW-DRAFT]`；采纳前确认是否需要 feature-specific errorCode。 |
+| `NETWORK_DHCP_FAILED` | 候选业务错误：DHCP 获取或续租失败。 | `[REVIEW-DRAFT]`；也可通过事件 reason 表达。 |
+| `NETWORK_IP_ADDRESS_CONFLICT` | 候选业务错误：地址冲突。 | `[REVIEW-DRAFT]`。 |
+
+## 9. Legacy 映射
+
+Legacy 映射是迁移证据，不是 runtime 合同。
+
+| legacy 项 | 候选映射 | 状态 | 说明 |
 |---|---|---|---|
-| `NETWORK_IP_CONFIG_INVALID` | network/business | IP 配置组合无效，例如 static 缺少地址或 prefixLength。 | `[REVIEW-DRAFT]` |
-| `NETWORK_IP_INTERFACE_NOT_FOUND` | network/business | 指定 `interfaceId` 不存在或不支持 IP 配置。 | `[REVIEW-DRAFT]` |
-| `NETWORK_IP_FAMILY_UNSUPPORTED` | network/business | 接口或设备不支持请求的 IPv4/IPv6 地址族。 | `[REVIEW-DRAFT]` |
-| `NETWORK_IP_ADDRESS_CONFLICT` | network/business | 静态地址或 DHCP 地址发生冲突。 | `[REVIEW-DRAFT]` |
-| `NETWORK_DHCP_FAILED` | network/business | DHCP 获取或续租失败。 | `[REVIEW-DRAFT]` |
+| AXDP `CommonGetIPConfig` | `network.getIpConfig` | `[REVIEW-ASK]` | 需确认旧 payload 是否聚合 DHCP、IP、netmask、gateway。 |
+| AXDP `CommonSetDHCPState` / `CommonGetDHCPState` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | DHCP state 映射到 `mode=dhcp/static/disabled` 的规则待确认。 |
+| AXDP `CommonSetIPAddress` / `CommonGetIPAddress` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | 映射到 `address`。 |
+| AXDP `CommonSetNetMask` / `CommonGetNetMask` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | 旧 netmask 需转换为 `prefixLength`。 |
+| AXDP `CommonSetGateway` / `CommonGetGateway` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | 映射到 `gateway`。 |
+| Signage `GetNetworkInfo` | `network.getIpConfig` | `[REVIEW-ASK]` | 需确认是否还包含接口、Wi-Fi 或服务端点字段。 |
+| VM33 `NetWork.SetNetwork` / `NetWork.SetIP` | `network.setIpConfig` | `[REVIEW-ASK]` | 需确认字段路径、静态/DHCP 切换和重启要求。 |
+| VM33 `NetWork.GetNetwork` / `NetWork.GetNetworkStatus` | `network.getIpConfig` | `[REVIEW-ASK]` | 需确认状态字段。 |
 
-采纳时若通用错误码和事件 `reason` 足够表达上述场景，可不新增全部业务错误；否则错误码应在 network domain 范围内分配，编号为 `TBD after adoption`。
+## 10. Registry / Conformance 状态
 
-## 12. Legacy 待映射
+| 项 | 状态 | 说明 |
+|---|---|---|
+| registry | not generated | 当前未写入 `registry/domains/network/domain.yaml`。 |
+| generated | false | `docs/generated/**` 未生成 `network.ip` 方法或事件。 |
+| protocol draft | draft | 本文是 Stage 20 草案，不能作为 runtime 合同。 |
+| registry readiness | candidate | DHCP/static 主路径已收敛；IPv6、AP DHCP Server 地址池和重连策略仍待确认。 |
+| conformance | needed | 采纳后需要覆盖 DHCP、static、disabled、事件去重、IP ready 和错误路径。 |
 
-| 来源 | 旧协议条目 | 候选映射 | 状态 | 说明 |
-|---|---|---|---|---|
-| AXDP HID | `CommonGetIPConfig` (`0xC0103 / 0x0103 -> 0x0183`) | `network.getIpConfig` | `[REVIEW-ASK]` | 需确认旧 payload 是否聚合 DHCP、IP、netmask、gateway。 |
-| AXDP HID | `CommonSetDHCPState` / `CommonGetDHCPState` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | DHCP state 映射到 `mode=dhcp/static/disabled` 的规则待确认。 |
-| AXDP HID | `CommonSetIPAddress` / `CommonGetIPAddress` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | 映射到 `address`。 |
-| AXDP HID | `CommonSetNetMask` / `CommonGetNetMask` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | 旧 netmask 需转换为 `prefixLength`。 |
-| AXDP HID | `CommonSetGateway` / `CommonGetGateway` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | 映射到 `gateway`。 |
-| Signage SDK | `GetNetworkInfo` | `network.getIpConfig` | `[REVIEW-ASK]` | 需确认是否还包含接口、Wi-Fi 或服务端点字段。 |
-| VM33 HTTP JSON | `NetWork.SetNetwork` / `NetWork.SetIP` | `network.setIpConfig` | `[REVIEW-ASK]` | 需确认字段路径、静态/DHCP 切换和重启要求。 |
-| VM33 HTTP JSON | `NetWork.GetNetwork` / `NetWork.GetNetworkStatus` | `network.getIpConfig` | `[REVIEW-ASK]` | 需确认状态字段。 |
+## 11. 测试要点
 
-## 13. Registry 草案输入
+| 类型 | 要点 |
+|---|---|
+| happy path | `network.getIpConfig` 返回有效 DHCP 地址。 |
+| config path | `network.setIpConfig(mode=dhcp/static/disabled)` 校验必填字段和生效策略。 |
+| event path | DHCP 地址变化触发 `network.ipConfigChanged`；Wi-Fi connected 不直接触发 IP 事件。 |
+| boundary case | IPv4/IPv6 family、省略 family 默认 IPv4、static 缺少 prefixLength。 |
+| error case | 接口不存在、地址族不支持、静态地址冲突、配置应用 busy。 |
+| pairing path | 若产品要求 IP ready，NT10 connected 后等待 `effective=true` 且 `address` 存在。 |
+| compatibility | legacy netmask 转 `prefixLength`，gateway/DNS 字段映射需确认。 |
 
-采纳本文后，`registry/domains/network/domain.yaml` 至少应包含：
+## 12. 待确认问题
 
-```yaml
-capabilities:
-  - id: network.ip
-    name: network.ip capability
-    status: draft
-    schema: NetworkIpConfig
-    methods:
-      - network.getIpConfig
-      - network.setIpConfig
-    events:
-      - network.ipConfigChanged
-
-methods:
-  - name: network.getIpConfig
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    requestSchema: NetworkGetIpConfigRequest
-    responseSchema: NetworkIpConfig
-    capabilities: [network.ip]
-```
-
-其他 method/event/schema/error 的 ID、bitOffset 和 fieldId 均在采纳阶段分配。
-
-## 14. 采纳检查清单
-
-- [ ] 08 已确认 `network.ip` 粒度和 method/event 命名。
-- [ ] 09 已确认 network domain 写入 `registry/domains/network/domain.yaml`。
-- [ ] 10 已确认 methodId、bitOffset、request/response schema。
-- [ ] 11 已确认 eventId、eventMasks bitOffset、event schema。
-- [ ] 12 已确认是否新增 network domain 错误码。
-- [ ] 13 已确认 schema fieldId、capabilityId、supportedMethods。
-- [ ] 事件去重规则已与 `network.interface`、`network.wifi`、`network.ap` 同步确认。
-- [ ] `mode=dhcp/static/disabled` 的校验规则已确认。
-- [ ] AP 接口本端 IP 与 `network.ap` 中 AP DHCP Server 地址池边界已确认。
-- [ ] 修改当前控制链路 IP 时的重连策略已确认。
-
-## 15. 待确认问题
-
-1. `[REVIEW-ASK]` AP 本端地址是否由 `network.setIpConfig` 写入，还是也允许 `network.setApConfig` 携带快捷字段？
-2. `[REVIEW-ASK]` IPv6 是否进入 MVP，还是作为 optional family 保留？
-3. `[REVIEW-ASK]` DNS 是否需要独立 `network.setDnsConfig` / `network.getDnsConfig` 方法，还是随 IP 配置即可？
-4. `[REVIEW-ASK]` 静态 IP 写入后是否立即断开当前 AXTP 会话，还是设备支持延迟到重连或重启生效？
-5. `[REVIEW-ASK]` 旧协议 `DHCPState=false` 应映射为 `static`、`disabled`，还是保持当前静态配置不变？
+| 问题 | 影响 | 当前建议 | 状态 |
+|---|---|---|---|
+| 配对成功是否必须确认 IP ready？ | product / conformance | 当前作为 optional 验收；默认 Wi-Fi connected 可先算基础成功。 | open |
+| AP 本端地址是否由 `network.setIpConfig` 写入？ | schema boundary | 查询 AP 本端地址用 `network.ip`；写入入口和 AP DHCP Server 地址池需确认。 | open |
+| IPv6 是否进入 MVP？ | registry / conformance | 保留 `family=ipv6` 形状，MVP 可先要求 IPv4。 | open |
+| DNS 是否需要独立方法？ | schema | 当前随 IP 配置读写；复杂 DNS 策略 future。 | open |
+| 修改当前控制链路 IP 时如何避免断连？ | runtime / conformance | 使用 `effectiveAfter` 和 `requiresReconnect` 表达风险。 | open |

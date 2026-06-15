@@ -1,225 +1,607 @@
-# AXTP network.ap 协议草案
-
-版本：v0.3
-
-归属域：`network`
-
-Capability ID：`network.ap`
-
-适用范围：设备自身开启 AP/SoftAP/Hotspot，包括 AP 能力、配置、凭据导出策略、启停和角色状态。
-
+---
+status: draft
+contract: false
+generated: false
+domain: network
+feature: network.ap
+registry:
+lastReviewed: 2026-06-13
 ---
 
-## 协议审核标记
+# network.ap
 
-| 标记 | 对象 | 结论 | 后续动作 |
-|---|---|---|---|
-| `[REVIEW-DRAFT]` | `network.ap` capability | 本文将 v0.2 的 AP 完整模型收敛为配对和基础热点控制所需的角色层协议。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-OK]` | domain.feature 粒度 | AP/SoftAP/Hotspot 是 `network` 域下合适的能力块；不把 `Config`、`State`、`Credential` 提升为 feature。 | 采纳前按 Naming and Taxonomy spec 再次复核 method/event 命名。 |
-| `[REVIEW-DRAFT]` | 事件分层 | `network.apStateChanged` 只表达 AP 服务角色状态；接口链路变化归 `network.interface`，本端 IP 变化归 `network.ip`。 | 采纳前与 interface/ip/wifi 草案一起确认。 |
-| `[REVIEW-ASK]` | AP 凭据导出策略 | 当前尚未确认 NA20 是否允许读取明文密码，或必须使用一次性 token / opaque credential。 | 采纳前确认 `NetworkCredential` 语义和安全边界。 |
-| `[REVIEW-ASK]` | AP 客户端列表 | 客户端列表对配对验收有价值，但不是 AP 启停和配置 MVP 的必要条件。 | 若作为验收条件，采纳 optional `network.getApClients`。 |
-| `[REVIEW-ASK]` | legacy 映射 | VM33 `APInfo`、`Wifi.OpenApService` 等旧协议 payload 仍需字段级确认。 | 落 registry 前补齐 legacyRefs 或明确 adapter-only。 |
+## 0. 速读结论
 
-## 1. 文档定位
+| 项目 | 内容 |
+|---|---|
+| 这个能力做什么 | 管理设备自身 AP/SoftAP 的能力、SSID/安全配置、一次性凭据导出、运行状态和可选客户端列表。 |
+| 当前状态 | draft |
+| 是否可直接实现 | 否。draft 阶段仅供评审；正式实现以 registry / generated 为准。 |
+| 主要交互 | RPC + EVENT |
+| 是否使用 STREAM | 否 |
+| Registry readiness | candidate |
+| Conformance | needed |
+| 主要未决问题 | AP 客户端列表是否作为强验收、DHCP Server 地址池归属、一次性凭据导出的有效期/重放策略。 |
 
-本文是 `docs/protocol` 评审输入，不是最终协议事实源。采纳后，稳定事实必须反向确认到 `docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`，涉及 profile/MVP 时同步确认 `docs/specs/2-registry/05-Profiles-Registry.md`，再写入 `registry/domains/network/domain.yaml`，并由 `generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+## 1. 功能说明
 
-当前 generated 协议没有 adopted `network.ap` 方法、事件或 schema；本文所有 methodId、eventId、errorCode、fieldId 均为 `TBD after adoption`。
+`network.ap` 描述设备作为 AP/SoftAP/Hotspot 端点时的控制面。Cast RX/TX 配对中，Host 从 NA20 读取 AP SSID、安全类型和一次性导出的凭据，再把这些材料写入 NT10 的 `network.wifi` profile。
 
-## 2. 业务需求
+已确认的 flow 决策包括：NA20 AP 默认始终开启；AP SSID/密码由上位机可配置；AP 凭据允许通过 AXTP 一次性导出；`startAp` / `stopAp` 可作为低优先级 optional 能力，但配对主路径不依赖启动 AP。
+
+当前 generated 协议没有 adopted `network.ap` 方法、事件或 schema。本文所有 methodId、eventId、errorCode、fieldId 均为 `TBD after adoption`。
+
+## 2. 能力边界
+
+| 类型 | 内容 |
+|---|---|
+| 包含 | AP 能力查询，包括安全类型、频段、凭据导出模式、默认开启和可选启停能力。 |
+| 包含 | AP 基础配置读取和写入，包括 SSID、安全类型、凭据、隐藏 SSID、频段和信道。 |
+| 包含 | 一次性导出 AP 凭据供本地 Host 写入 STA 设备。 |
+| 包含 | AP 运行状态查询和状态变化事件。 |
+| 包含 | 可选 AP 客户端列表查询和客户端变化事件，用于强验收或诊断。 |
+| 不包含 | 接口发现、MAC、基础链路；这些属于 `network.interface`。 |
+| 不包含 | AP 本端 IP 地址；这属于 `network.ip`。 |
+| 不包含 | NT10 作为 STA 保存 profile 和连接 AP；这属于 `network.wifi`。 |
+| 不包含 | 上位机多设备选择、配对编排和凭据日志策略；这些属于 Host local-only 行为。 |
+| 数据面 | 本 feature 不定义 STREAM payload，所有操作均通过 RPC method/event 完成。 |
+
+## 3. 方法 Methods
+
+方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。不要在草案中分配正式 ID。
+
+### 3.0 方法速览
+
+| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
+|---|---|---|---|---|---|---|
+| `network.getApCapabilities` | query | 查询 AP 能力和策略。 | `NetworkGetApCapabilitiesParams` | `NetworkApCapabilities` | 否 | draft |
+| `network.getApConfig` | query | 读取 AP 配置，可请求一次性导出凭据。 | `NetworkGetApConfigParams` | `NetworkApConfig` | 否 | draft |
+| `network.setApConfig` | command | 设置 AP SSID、安全、凭据和基础无线配置。 | `NetworkSetApConfigParams` | `NetworkSetApConfigResult` | 是，`network.apConfigChanged` | draft |
+| `network.getApState` | query | 查询 AP 角色运行状态。 | `NetworkGetApStateParams` | `NetworkApState` | 否 | draft |
+| `network.startAp` | action | 低优先级可选：启动 AP。 | `NetworkApActionParams` | `NetworkApActionResult` | 是，`network.apStateChanged` | optional draft |
+| `network.stopAp` | action | 低优先级可选：停止 AP。 | `NetworkApActionParams` | `NetworkApActionResult` | 是，`network.apStateChanged` | optional draft |
+| `network.getApClients` | query | 可选查询 AP 客户端列表。 | `NetworkGetApClientsParams` | `NetworkApClients` | 否 | review-ask |
+
+### 3.1 `network.getApCapabilities`
+
+**用途**：查询指定 AP 接口的能力、默认开启语义和凭据导出策略。
 
 | 项 | 内容 |
 |---|---|
-| 需求来源 | `docs/flows/cast-rxtx-paring.md`，NA20/NT10 自动配对流程。 |
-| 目标用户 | 上位机配对服务、NA20 接收端固件、测试工具。 |
-| 目标行为 | 上位机从 NA20 读取 AP 信息，必要时启动 AP，并把 AP 凭据交给 NT10 的 `network.wifi`。 |
-| 当前实现程度 | Drafted only：`docs/protocol/network/network.ap.md` 存在草案，但 YAML/generated 尚未采纳。 |
+| 调用类型 | query |
+| Params Schema | `NetworkGetApCapabilitiesParams` |
+| Result Schema | `NetworkApCapabilities` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回能力快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-## 3. Domain 边界
+#### 3.1.1 请求参数 Params：`NetworkGetApCapabilitiesParams`
 
-| 项 | 决策 |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口；省略表示 `network.interface.defaults.ap`。 |
+
+#### 3.1.2 返回结果 Result：`NetworkApCapabilities`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `capability` | string | yes | fixed `network.ap` | none | capability 名称。 |
+| `securityTypes` | `NetworkWifiSecurityType[]` | yes | see enum | none | 支持的 AP 安全类型。 |
+| `bands` | `NetworkWifiBand[]` | no | see enum | omitted | 支持频段。 |
+| `credentialExportModes` | `NetworkCredentialType[]` | yes | `passphrase`, `pairing_token`, `opaque_ref` | none | 可导出的凭据形态；NA20 主路径支持 `passphrase`。 |
+| `credentialExportPolicies` | string[] | no | `one_time`, `redacted`, `none` | omitted | 凭据导出策略。 |
+| `defaultEnabled` | boolean | no | bool | omitted | AP 是否默认开启；NA20 为 `true`。 |
+| `canStartStop` | boolean | yes | bool | none | 是否支持 AXTP 启停；配对主路径不依赖此能力。 |
+| `clientListSupported` | boolean | no | bool | omitted | 是否支持客户端列表。 |
+| `maxClients` | uint16 | no | `0..65535` | omitted | 最大客户端数量。 |
+
+#### 3.1.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.1.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_FOUND` | 指定 `interfaceId` 不存在或不是 AP-capable 接口。 | 使用 adopted numeric code `12`。 |
+| `NOT_SUPPORTED` | 设备不支持 AP 能力。 | 使用 adopted numeric code `3`。 |
+
+### 3.2 `network.getApConfig`
+
+**用途**：读取当前 AP 配置；配对场景可请求一次性导出凭据。
+
+| 项 | 内容 |
 |---|---|
-| Domain | `network` |
-| Feature | `network.ap` |
-| Capability | `network.ap` |
-| 负责 | AP 能力、SSID/安全/凭据配置、AP 启停、AP 运行状态、可选客户端列表。 |
-| 不负责 | 接口枚举/MAC/链路，归 `network.interface`；AP 本端 IP，归 `network.ip`；NT10 作为 STA 连接 AP，归 `network.wifi`；投屏业务编排不在本文。 |
-| 跨设备配对 | 默认由上位机编排 `network.ap` + `network.wifi` + 可选 `network.ip`；暂不新增 `cast.pairing` 一键方法。 |
+| 调用类型 | query |
+| Params Schema | `NetworkGetApConfigParams` |
+| Result Schema | `NetworkApConfig` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 查询幂等；`credentialExport=one_time` 会消耗或生成一次性导出材料，具体重放策略待确认。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-## 4. 简化决策
+#### 3.2.1 请求参数 Params：`NetworkGetApConfigParams`
 
-| 决策点 | 结论 | 理由 |
-|---|---|---|
-| 新增/修改/复用 | Modify existing draft | v0.2 字段过宽，现保留 AP 角色控制主路径。 |
-| MVP 方法 | capabilities/config/start/stop/state | 支持配对读取凭据和启动热点。 |
-| Optional 方法 | `network.getApClients` | 只在产品要求客户端列表作为配对验收时采纳。 |
-| Deferred 字段 | AP 本端 IP、DHCP Server 地址池、NAT、client isolation、country/channelWidth | 这些是部署增强，不是配对最小控制面。 |
-| 事件范围 | AP 配置和 AP 角色状态 | 避免和 interface/ip 事件重复。 |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
+| `credentialExport` | string enum | no | `none`, `one_time` | `none` | 是否一次性导出凭据。 |
 
-## 5. 候选 Capability
+#### 3.2.2 返回结果 Result：`NetworkApConfig`
 
-| Capability | 状态 | 说明 |
-|---|---|---|
-| `network.ap` | draft | 设备支持作为 AP/SoftAP/Hotspot 端点，提供配置、凭据导出、启停和状态查询。 |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | interface id | omitted | AP 接口标识。 |
+| `ssid` | string | yes | non-empty | none | AP SSID。 |
+| `security` | `NetworkWifiSecurityType` | yes | see enum | none | AP 安全类型。 |
+| `credential` | `NetworkCredential` | no | object | omitted | 仅在请求导出且权限允许时返回；敏感字段。 |
+| `hidden` | boolean | no | bool | `false` | 是否隐藏 SSID。 |
+| `band` | `NetworkWifiBand` | no | see enum | omitted | AP 频段。 |
+| `channel` | uint16 | no | valid channel | omitted | AP 信道。 |
+| `maxClients` | uint16 | no | `0..65535` | omitted | 客户端上限。 |
 
-## 6. 候选 Methods
+#### 3.2.3 可能触发的事件
 
-| Method | Params Schema | Result Schema | MVP | 说明 | Review |
-|---|---|---|---:|---|---|
-| `network.getApCapabilities` | `NetworkGetApCapabilitiesRequest` | `NetworkApCapabilities` | yes | 查询 AP 支持的安全类型、频段、凭据导出能力和启停能力。 | `[REVIEW-DRAFT]` |
-| `network.getApConfig` | `NetworkGetApConfigRequest` | `NetworkApConfig` | yes | 读取当前 AP 配置；配对场景需要 SSID、安全类型和凭据材料。 | `[REVIEW-DRAFT]` |
-| `network.setApConfig` | `NetworkSetApConfigRequest` | `NetworkSetApConfigResponse` | yes | 设置 AP 基础配置，例如 SSID、安全、频段、信道。 | `[REVIEW-DRAFT]` |
-| `network.startAp` | `NetworkStartApRequest` | `NetworkApActionResponse` | yes | 启动 AP。 | `[REVIEW-DRAFT]` |
-| `network.stopAp` | `NetworkStopApRequest` | `NetworkApActionResponse` | yes | 停止 AP。 | `[REVIEW-DRAFT]` |
-| `network.getApState` | `NetworkGetApStateRequest` | `NetworkApState` | yes | 查询 AP 当前角色状态。 | `[REVIEW-DRAFT]` |
-| `network.getApClients` | `NetworkGetApClientsRequest` | `NetworkApClients` | no | 可选查询 AP 客户端列表，用于配对验收或诊断。 | `[REVIEW-ASK]` |
-
-方法错误候选：`SUCCESS`、`NOT_SUPPORTED`、`INVALID_ARGUMENT`、`OUT_OF_RANGE`、`INVALID_STATE`、`BUSY`、`PERMISSION_DENIED`、`TIMEOUT`、`UNAVAILABLE`、`INTERNAL_ERROR`，以及本文“候选 Errors”中的 network 业务错误。
-
-## 7. 候选 Events
-
-| Event | Schema | MVP | 触发时机 | Review |
-|---|---|---:|---|---|
-| `network.apConfigChanged` | `NetworkApConfigChangedEvent` | yes | AP 配置被本会话、其他会话或设备策略改变。 | `[REVIEW-DRAFT]` |
-| `network.apStateChanged` | `NetworkApStateChangedEvent` | yes | AP 服务从 `stopped`、`starting`、`running`、`stopping`、`error` 等状态发生变化。 | `[REVIEW-DRAFT]` |
-| `network.apClientChanged` | `NetworkApClientChangedEvent` | no | 客户端加入或离开 AP；仅在采纳客户端列表时启用。 | `[REVIEW-ASK]` |
-
-事件去重规则：
-
-1. AP 接口 up/down 不由 `network.apStateChanged` 表达，归 `network.interfaceStateChanged`。
-2. AP 本端 IP 变化不由 `network.apStateChanged` 表达，归 `network.ipConfigChanged`。
-3. AP 启停、配置变化和客户端变化只由 AP feature 事件表达。
-
-## 8. 候选 Schemas
-
-### `NetworkGetApCapabilitiesRequest` / `NetworkGetApConfigRequest` / `NetworkGetApStateRequest`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `interfaceId` | string | no | AP 接口；省略表示默认 AP 接口。 | `[REVIEW-DRAFT]` |
-
-### `NetworkApCapabilities`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `capability` | string | yes | 固定为 `network.ap`。 | `[REVIEW-DRAFT]` |
-| `securityTypes` | `NetworkWifiSecurityType[]` | yes | 支持的 AP 安全类型。 | `[REVIEW-DRAFT]` |
-| `bands` | `NetworkWifiBand[]` | no | 支持的频段。 | `[REVIEW-DRAFT]` |
-| `credentialExportModes` | `NetworkCredentialType[]` | yes | 可导出的凭据形态：`passphrase`、`pairing_token`、`opaque_ref`。 | `[REVIEW-ASK]` |
-| `canStartStop` | bool | yes | 是否支持通过 AXTP 启停 AP。 | `[REVIEW-DRAFT]` |
-| `clientListSupported` | bool | no | 是否支持客户端列表。 | `[REVIEW-ASK]` |
-| `maxClients` | uint16 | no | AP 最大客户端数量。 | `[REVIEW-DRAFT]` |
-
-### `NetworkApConfig`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `interfaceId` | string | no | AP 接口标识。 | `[REVIEW-DRAFT]` |
-| `ssid` | string | yes | AP SSID。 | `[REVIEW-DRAFT]` |
-| `security` | `NetworkWifiSecurityType` | yes | AP 安全类型。 | `[REVIEW-DRAFT]` |
-| `credential` | `NetworkCredential` | no | 配对可用凭据；是否可读取由 `credentialExportModes` 决定。 | `[REVIEW-ASK]` |
-| `hidden` | bool | no | 是否隐藏 SSID。 | `[REVIEW-DRAFT]` |
-| `band` | `NetworkWifiBand` | no | AP 频段。 | `[REVIEW-DRAFT]` |
-| `channel` | uint16 | no | AP 信道。 | `[REVIEW-DRAFT]` |
-| `maxClients` | uint16 | no | 客户端上限。 | `[REVIEW-DRAFT]` |
-
-### `NetworkCredential`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `type` | enum | yes | `passphrase`、`pairing_token`、`opaque_ref`。 | `[REVIEW-ASK]` |
-| `value` | string | yes | 敏感凭据内容或引用值；不得进入普通日志。 | `[REVIEW-ASK]` |
-| `expiresAtMs` | uint64 | no | 一次性 token 的过期时间；非 token 可省略。 | `[REVIEW-ASK]` |
-
-### `NetworkSetApConfigRequest`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `config` | `NetworkApConfig` | yes | 要写入的 AP 配置。 | `[REVIEW-DRAFT]` |
-| `apply` | enum | no | `immediate`、`on_restart`；默认 `immediate`。 | `[REVIEW-DRAFT]` |
-
-### `NetworkSetApConfigResponse`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `config` | `NetworkApConfig` | yes | 设备接受的配置摘要。 | `[REVIEW-DRAFT]` |
-| `applied` | bool | yes | 是否已经生效。 | `[REVIEW-DRAFT]` |
-| `requiresApRestart` | bool | no | 是否需要重启 AP 才能生效。 | `[REVIEW-DRAFT]` |
-
-### `NetworkStartApRequest` / `NetworkStopApRequest`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `interfaceId` | string | no | 目标 AP 接口。 | `[REVIEW-DRAFT]` |
-
-### `NetworkApActionResponse`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `accepted` | bool | yes | 动作是否被接受；状态可能异步变化。 | `[REVIEW-DRAFT]` |
-| `state` | `NetworkApState` | yes | 操作后的 AP 状态摘要。 | `[REVIEW-DRAFT]` |
-
-### `NetworkApState`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `interfaceId` | string | no | AP 接口标识。 | `[REVIEW-DRAFT]` |
-| `state` | enum | yes | `stopped`、`starting`、`running`、`stopping`、`error`。 | `[REVIEW-DRAFT]` |
-| `ssid` | string | no | 当前运行的 SSID。 | `[REVIEW-DRAFT]` |
-| `bssid` | string | no | 当前 BSSID/MAC。 | `[REVIEW-DRAFT]` |
-| `clientCount` | uint16 | no | 当前客户端数量。 | `[REVIEW-DRAFT]` |
-| `lastError` | enum | no | 最近一次失败原因，例如 `unsupported_security`、`start_failed`、`policy_denied`。 | `[REVIEW-DRAFT]` |
-
-### Optional Client Schemas
-
-| Schema / Field | 说明 | Review |
-|---|---|---|
-| `NetworkGetApClientsRequest.interfaceId` | 目标 AP 接口。 | `[REVIEW-ASK]` |
-| `NetworkApClients.clients` | `NetworkApClientInfo[]`。 | `[REVIEW-ASK]` |
-| `NetworkApClientInfo` | `macAddress`、`ipAddress`、`hostname`、`connectedMs`；`ipAddress` 表示客户端租约地址，不表示 AP 本端 IP。 | `[REVIEW-ASK]` |
-
-### Event Schemas
-
-| Schema | 关键字段 | 说明 | Review |
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
-| `NetworkApConfigChangedEvent` | `interfaceId`, `config`, `reason` | AP 配置变化通知。 | `[REVIEW-DRAFT]` |
-| `NetworkApStateChangedEvent` | `interfaceId`, `state`, `previousState`, `reason` | AP 角色状态变化通知。 | `[REVIEW-DRAFT]` |
-| `NetworkApClientChangedEvent` | `interfaceId`, `change`, `client` | 可选客户端变化通知。 | `[REVIEW-ASK]` |
+| 无 | 查询不改变 AP 配置。 | none | 无需处理。 |
 
-### Deferred Fields
+#### 3.2.4 错误
 
-| Field / Method | 延后原因 | Review |
+| 错误 | 场景 | 返回建议 |
 |---|---|---|
-| `ipAddress` | AP 本端 IP 归 `network.ip`，不在 AP config/state 重复。 | `[REVIEW-DRAFT]` |
-| `dhcpPool` / DHCP Server 地址池 | 属于 AP 服务增强，但不是配对最小字段；是否归 AP 仍需确认。 | `[REVIEW-ASK]` |
-| `uplinkSharing` / NAT / client isolation | 部署策略复杂，暂不进入 MVP。 | `[REVIEW-DRAFT]` |
-| `resetApConfig` | 可后续补充，不影响配对主路径。 | `[REVIEW-DRAFT]` |
+| `PERMISSION_DENIED` | 当前会话无权导出凭据。 | 使用 adopted numeric code `9`，details 可标注候选 `NETWORK_CREDENTIAL_EXPORT_DENIED`。 |
+| `INVALID_ARGUMENT` | `credentialExport` 枚举非法。 | 使用 adopted numeric code `10`。 |
 
-### Shared Network Types
+### 3.3 `network.setApConfig`
 
-| Type | 候选值 | 说明 | Review |
+**用途**：设置 AP 基础配置。NA20 的 SSID/密码由上位机可配置，进入本方法语义。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | command |
+| Params Schema | `NetworkSetApConfigParams` |
+| Result Schema | `NetworkSetApConfigResult` |
+| 是否触发事件 | 是，实际配置变化后触发 `network.apConfigChanged`；如需要重启 AP，随后可能触发 `network.apStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复设置相同配置应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.3.1 请求参数 Params：`NetworkSetApConfigParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `config` | `NetworkApConfig` | yes | object | none | 要写入的 AP 配置。 |
+| `apply` | string enum | no | `immediate`, `on_restart` | `immediate` | 生效策略。 |
+
+#### 3.3.2 返回结果 Result：`NetworkSetApConfigResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `config` | `NetworkApConfig` | yes | object | none | 设备接受的配置摘要，敏感 credential 不应明文回显。 |
+| `applied` | boolean | yes | bool | none | 是否已生效。 |
+| `requiresApRestart` | boolean | no | bool | omitted | 是否需要 AP 重启后生效。 |
+
+#### 3.3.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
-| `NetworkWifiSecurityType` | `open`, `wpa2_psk`, `wpa3_sae`, `wpa2_wpa3_mixed` | 与 `network.wifi` 共享。 | `[REVIEW-DRAFT]` |
-| `NetworkWifiBand` | `2g4`, `5g`, `6g`, `auto` | 与 `network.wifi` 共享。 | `[REVIEW-DRAFT]` |
+| `network.apConfigChanged` | AP 配置实际变化。 | `NetworkApConfigChangedEvent` | 重新读取 AP config，必要时重建 NT10 profile。 |
+| `network.apStateChanged` | 配置应用导致 AP 重启或异常。 | `NetworkApStateChangedEvent` | 展示状态并等待 running。 |
 
-## 9. JSON 示例
+#### 3.3.4 错误
 
-示例用于评审 `network.ap` request/response/event 语义，不是 generated 事实源。JSON 示例只写 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope；Request 使用 `id`、`method`、`params`，Response 使用 `id`、`status`、`result`，Event 使用 `event`、`intent`、`data`。`status.code` 必须是数字 ErrorCode。`credential.value`、MAC、序列号等敏感或设备相关字段均使用占位符。
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `OUT_OF_RANGE` | SSID 长度、信道或客户端上限超出能力。 | 使用 adopted numeric code `11`。 |
+| `BUSY` | AP 正在启动、停止或重配置。 | 使用 adopted numeric code `5`，客户端稍后重试。 |
 
-失败示例中的草案业务错误尚未分配数字码，因此 JSON 中先使用已采纳通用错误码，并在 `status.details.candidateError` 中标注候选错误名。
+### 3.4 `network.getApState`
 
-### 9.1 查询 AP 能力
+**用途**：查询 AP 当前角色状态。AP 本端 IP 不在此返回。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | query |
+| Params Schema | `NetworkGetApStateParams` |
+| Result Schema | `NetworkApState` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `UNAVAILABLE` |
+
+#### 3.4.1 请求参数 Params：`NetworkGetApStateParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
+
+#### 3.4.2 返回结果 Result：`NetworkApState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | interface id | omitted | AP 接口标识。 |
+| `state` | string enum | yes | `stopped`, `starting`, `running`, `stopping`, `error` | none | AP 服务状态。 |
+| `ssid` | string | no | SSID | omitted | 当前运行的 SSID。 |
+| `bssid` | string | no | MAC/BSSID | omitted | 当前 BSSID。 |
+| `clientCount` | uint16 | no | `0..65535` | omitted | 当前客户端数量。 |
+| `lastError` | string enum | no | see 6.5 | omitted | 最近一次失败原因。 |
+
+#### 3.4.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | 查询不改变 AP 状态。 | none | 无需处理。 |
+
+#### 3.4.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_FOUND` | 指定 AP 接口不存在。 | 使用 adopted numeric code `12`。 |
+
+### 3.5 `network.startAp`
+
+**用途**：低优先级可选：启动 AP。NA20 配对主路径默认 AP 已开启，不要求调用此方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `NetworkApActionParams` |
+| Result Schema | `NetworkApActionResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `network.apStateChanged`。 |
+| 幂等性 / 异步性 | 对已 running 的 AP 建议返回成功；启动过程可异步。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `TIMEOUT` |
+
+#### 3.5.1 请求参数 Params：`NetworkApActionParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
+| `timeoutMs` | uint32 | no | `0..uint32 max` | omitted | 动作等待超时。 |
+
+#### 3.5.2 返回结果 Result：`NetworkApActionResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | bool | none | 动作是否被接受。 |
+| `state` | `NetworkApState` | yes | object | none | 操作后的当前或目标状态。 |
+
+#### 3.5.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `network.apStateChanged` | AP 进入 starting / running / error。 | `NetworkApStateChangedEvent` | 等待 running 或处理失败。 |
+
+#### 3.5.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持远程启动 AP。 | 使用 adopted numeric code `3`。 |
+| `BUSY` | AP 正在处理冲突动作。 | 使用 adopted numeric code `5`。 |
+
+### 3.6 `network.stopAp`
+
+**用途**：低优先级可选：停止 AP。此操作可能影响已配对或正在投屏的设备。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `NetworkApActionParams` |
+| Result Schema | `NetworkApActionResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `network.apStateChanged`。 |
+| 幂等性 / 异步性 | 对已 stopped 的 AP 建议返回成功；停止过程可异步。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `TIMEOUT` |
+
+#### 3.6.1 请求参数 Params：`NetworkApActionParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
+| `timeoutMs` | uint32 | no | `0..uint32 max` | omitted | 动作等待超时。 |
+
+#### 3.6.2 返回结果 Result：`NetworkApActionResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | bool | none | 动作是否被接受。 |
+| `state` | `NetworkApState` | yes | object | none | 操作后的当前或目标状态。 |
+
+#### 3.6.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `network.apStateChanged` | AP 进入 stopping / stopped / error。 | `NetworkApStateChangedEvent` | 更新 UI，并提示可能断开 STA。 |
+
+#### 3.6.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `PERMISSION_DENIED` | 当前策略禁止关闭 AP。 | 使用 adopted numeric code `9`。 |
+
+### 3.7 `network.getApClients`
+
+**用途**：可选查询 AP 客户端列表。可用于配对强验收或诊断，不是默认成功条件。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | query |
+| Params Schema | `NetworkGetApClientsParams` |
+| Result Schema | `NetworkApClients` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE` |
+
+#### 3.7.1 请求参数 Params：`NetworkGetApClientsParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
+
+#### 3.7.2 返回结果 Result：`NetworkApClients`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | interface id | omitted | AP 接口。 |
+| `clients` | `NetworkApClientInfo[]` | yes | array | none | 当前客户端列表。 |
+
+#### 3.7.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | 查询不改变客户端列表。 | none | 无需处理。 |
+
+#### 3.7.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持客户端列表。 | 使用 adopted numeric code `3`；details 可标注候选 `NETWORK_AP_CLIENT_LIST_UNAVAILABLE`。 |
+
+## 4. 事件 Events
+
+### 4.0 事件速览
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
+|---|---|---|---|---|
+| `network.apConfigChanged` | AP 配置被本会话、其他会话或设备策略改变。 | `NetworkApConfigChangedEvent` | 重新读取 AP config；配对中应重建 NT10 profile。 | draft |
+| `network.apStateChanged` | AP 服务启动、停止、异常或恢复。 | `NetworkApStateChangedEvent` | 更新 AP 状态；等待 running 或处理失败。 | draft |
+| `network.apClientChanged` | 客户端加入或离开 AP。 | `NetworkApClientChangedEvent` | 仅在采纳客户端列表时用于强验收或诊断。 | review-ask |
+
+### 4.1 `network.apConfigChanged`
+
+**触发条件**：
+
+- `network.setApConfig` 导致配置变化。
+- 其他会话、设备策略、恢复默认或工厂设置改变 AP 配置。
+
+#### Payload：`NetworkApConfigChangedEvent`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | interface id | omitted | AP 接口。 |
+| `config` | `NetworkApConfig` | yes | object | none | 变化后的配置摘要；不应包含明文 credential。 |
+| `changedFields` | string[] | no | field paths | omitted | 变化字段。 |
+| `reason` | string enum | no | `user_request`, `system_policy`, `factory_reset`, `unknown` | `unknown` | 变化原因。 |
+
+#### 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| 配对过程中 AP 配置变化 | 重新调用 `network.getApConfig`，必要时重新导出凭据并写入 NT10。 |
+| event 丢失或重连 | 重连后主动调用 `network.getApConfig` 校准。 |
+
+### 4.2 `network.apStateChanged`
+
+**触发条件**：
+
+- AP 启动、停止、重启、异常或恢复。
+- 配置应用导致 AP 服务状态变化。
+
+#### Payload：`NetworkApStateChangedEvent`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | interface id | omitted | AP 接口。 |
+| `state` | `NetworkApState` | yes | object | none | 变化后的 AP 状态。 |
+| `previousState` | `NetworkApState` | no | object | omitted | 变化前状态。 |
+| `reason` | string enum | no | `user_request`, `system_policy`, `config_applied`, `error`, `unknown` | `unknown` | 变化原因。 |
+
+#### 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| AP 默认开启 | 配对主路径通常只校验 state 是否 running，不主动 start。 |
+| AP 被关闭 | 若产品允许且能力支持，可调用 `network.startAp`；否则提示用户或中止。 |
+
+### 4.3 `network.apClientChanged`
+
+**触发条件**：
+
+- STA 客户端加入或离开 AP。
+- 设备刷新客户端列表时发现客户端状态变化。
+
+#### Payload：`NetworkApClientChangedEvent`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | interface id | omitted | AP 接口。 |
+| `change` | string enum | yes | `joined`, `left`, `updated` | none | 客户端变化类型。 |
+| `client` | `NetworkApClientInfo` | yes | object | none | 客户端摘要。 |
+| `reason` | string enum | no | `association`, `disconnect`, `timeout`, `unknown` | `unknown` | 变化原因。 |
+
+#### 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| 强验收 | 若产品要求 NA20 侧确认 NT10 可见，可用该事件或 `network.getApClients` 辅助判断。 |
+| 隐私限制 | 客户端标识可使用 opaque id，避免在普通日志中记录 MAC。 |
+
+## 5. Capability
+
+Capability name: `network.ap`。
+
+| 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 说明 |
+|---|---|---:|---|---|
+| `capability` | string | yes | fixed `network.ap` | capability 名称。 |
+| `securityTypes` | `NetworkWifiSecurityType[]` | yes | see enum | 支持安全类型。 |
+| `bands` | `NetworkWifiBand[]` | no | see enum | 支持频段。 |
+| `credentialExportModes` | `NetworkCredentialType[]` | yes | see enum | 可导出凭据形态。 |
+| `credentialExportPolicies` | string[] | no | `one_time`, `redacted`, `none` | 凭据导出策略。 |
+| `defaultEnabled` | boolean | no | bool | AP 是否默认开启；NA20 为 `true`。 |
+| `canStartStop` | boolean | yes | bool | 是否支持远程启停 AP。 |
+| `clientListSupported` | boolean | no | bool | 是否支持客户端列表。 |
+| `maxClients` | uint16 | no | `0..65535` | 最大客户端数量。 |
+
+## 6. 字段 / Schemas
+
+### 6.1 Schema 层级速览
+
+```text
+NetworkApCapabilities
+NetworkApConfig
+  credential: NetworkCredential
+NetworkApState
+NetworkApClients
+  clients: NetworkApClientInfo[]
+NetworkApConfigChangedEvent
+NetworkApStateChangedEvent
+NetworkApClientChangedEvent
+```
+
+Capability 描述设备能做什么；`NetworkApConfig` 描述当前或目标配置；`NetworkApState` 描述 AP 服务角色状态。
+
+### 6.2 请求与响应 Schemas
+
+#### `NetworkGetApCapabilitiesParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
+
+#### `NetworkGetApConfigParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
+| `credentialExport` | string enum | no | `none`, `one_time` | `none` | 是否一次性导出凭据。 |
+
+#### `NetworkSetApConfigParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `config` | `NetworkApConfig` | yes | object | none | 目标 AP 配置。 |
+| `apply` | string enum | no | `immediate`, `on_restart` | `immediate` | 生效策略。 |
+
+#### `NetworkSetApConfigResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `config` | `NetworkApConfig` | yes | object | none | 设备接受的配置摘要。 |
+| `applied` | boolean | yes | bool | none | 是否已经生效。 |
+| `requiresApRestart` | boolean | no | bool | omitted | 是否需要 AP 重启。 |
+
+#### `NetworkApActionParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
+| `timeoutMs` | uint32 | no | `0..uint32 max` | omitted | 等待超时。 |
+
+#### `NetworkApActionResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | bool | none | 动作是否被接受。 |
+| `state` | `NetworkApState` | yes | object | none | 操作后的状态摘要。 |
+
+### 6.3 Capability Schemas
+
+#### `NetworkApCapabilities`
+
+字段同第 5 章 Capability 表；采纳时可作为 capability object 或 query result 复用。
+
+### 6.4 Event Schemas
+
+事件 payload 字段见第 4 章；采纳时应为每个 event 分配独立 event schema。
+
+### 6.5 State / Config / Object Schemas
+
+#### `NetworkApConfig`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | interface id | omitted | AP 接口标识。 |
+| `ssid` | string | yes | non-empty | none | AP SSID。 |
+| `security` | `NetworkWifiSecurityType` | yes | see enum | none | AP 安全类型。 |
+| `credential` | `NetworkCredential` | no | object | omitted | AP 凭据；响应和事件必须按敏感字段处理。 |
+| `hidden` | boolean | no | bool | `false` | 是否隐藏 SSID。 |
+| `band` | `NetworkWifiBand` | no | see enum | omitted | 频段。 |
+| `channel` | uint16 | no | valid channel | omitted | 信道。 |
+| `maxClients` | uint16 | no | `0..65535` | omitted | 客户端上限。 |
+
+#### `NetworkCredential`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `type` | `NetworkCredentialType` | yes | `passphrase`, `pairing_token`, `opaque_ref` | none | 凭据形态；配对主路径使用 `passphrase`。 |
+| `value` | string | yes | secret or reference | none | 敏感凭据内容或引用值；不得进入普通日志。 |
+| `exportPolicy` | string enum | no | `one_time`, `redacted`, `reusable_ref` | omitted | 导出策略。 |
+| `expiresAtMs` | uint64 | no | epoch ms or `0` | omitted | 过期时间；`0` 表示设备未声明。 |
+| `exportId` | string | no | opaque id | omitted | 导出标识，用于审计或防重放。 |
+
+#### `NetworkApState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | interface id | omitted | AP 接口。 |
+| `state` | string enum | yes | `stopped`, `starting`, `running`, `stopping`, `error` | none | AP 服务状态。 |
+| `ssid` | string | no | SSID | omitted | 当前运行 SSID。 |
+| `bssid` | string | no | BSSID | omitted | 当前 BSSID。 |
+| `clientCount` | uint16 | no | `0..65535` | omitted | 客户端数量。 |
+| `lastError` | string enum | no | `unsupported_security`, `start_failed`, `policy_denied`, `unknown` | omitted | 最近失败原因。 |
+
+#### `NetworkApClients`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | interface id | omitted | AP 接口。 |
+| `clients` | `NetworkApClientInfo[]` | yes | array | none | 客户端列表。 |
+
+#### `NetworkApClientInfo`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `clientId` | string | yes | opaque id | none | 客户端标识；优先使用 opaque id。 |
+| `macAddress` | string | no | policy-dependent | omitted | 客户端 MAC，可脱敏或省略。 |
+| `ipAddress` | string | no | IP address | omitted | 客户端租约地址，不表示 AP 本端 IP。 |
+| `hostname` | string | no | host name | omitted | 客户端主机名。 |
+| `connectedMs` | uint64 | no | milliseconds | omitted | 已连接时长。 |
+
+#### 枚举
+
+| Type | 候选值 | 说明 |
+|---|---|---|
+| `NetworkWifiSecurityType` | `open`, `wpa2_psk`, `wpa3_sae`, `wpa2_wpa3_mixed` | 与 `network.wifi` 共享。 |
+| `NetworkWifiBand` | `2g4`, `5g`, `6g`, `auto` | 与 `network.wifi` 共享。 |
+| `NetworkCredentialType` | `passphrase`, `pairing_token`, `opaque_ref` | 与 `network.wifi` 共享。 |
+
+## 7. JSON 示例
+
+示例只展示 RPC data block，不包裹外层 wire envelope。字段和 ID 在采纳前均为草案；敏感字段均使用占位符。
+
+### 7.1 场景：查询 AP 能力
+
+#### request
 
 ```json
 {
   "id": 101,
   "method": "network.getApCapabilities",
   "params": {
-    "interfaceId": "ap0"
+    "interfaceId": "<AP_INTERFACE_ID>"
   }
 }
 ```
+
+#### response
 
 ```json
 {
@@ -238,9 +620,12 @@ Capability ID：`network.ap`
       "5g"
     ],
     "credentialExportModes": [
-      "pairing_token",
-      "opaque_ref"
+      "passphrase"
     ],
+    "credentialExportPolicies": [
+      "one_time"
+    ],
+    "defaultEnabled": true,
     "canStartStop": true,
     "clientListSupported": true,
     "maxClients": 8
@@ -248,17 +633,24 @@ Capability ID：`network.ap`
 }
 ```
 
-### 9.2 读取 AP 配置用于配对
+读法：`defaultEnabled=true` 表示配对主路径默认不需要调用 `network.startAp`。
+
+### 7.2 场景：读取 AP 配置并一次性导出凭据
+
+#### request
 
 ```json
 {
   "id": 102,
   "method": "network.getApConfig",
   "params": {
-    "interfaceId": "ap0"
+    "interfaceId": "<AP_INTERFACE_ID>",
+    "credentialExport": "one_time"
   }
 }
 ```
+
+#### response
 
 ```json
 {
@@ -268,13 +660,15 @@ Capability ID：`network.ap`
     "code": 0
   },
   "result": {
-    "interfaceId": "ap0",
+    "interfaceId": "<AP_INTERFACE_ID>",
     "ssid": "NA20-<receiver-id>",
     "security": "wpa2_psk",
     "credential": {
-      "type": "pairing_token",
-      "value": "<PAIRING_TOKEN_OR_SECRET>",
-      "expiresAtMs": 0
+      "type": "passphrase",
+      "value": "<ONE_TIME_EXPORTED_AP_PASSPHRASE>",
+      "exportPolicy": "one_time",
+      "expiresAtMs": 0,
+      "exportId": "<CREDENTIAL_EXPORT_ID>"
     },
     "hidden": false,
     "band": "5g",
@@ -284,17 +678,36 @@ Capability ID：`network.ap`
 }
 ```
 
-### 9.3 启动 AP
+读法：`credential.value` 是敏感的一次性导出凭据，只用于本地 Host 写入 NT10 Wi-Fi profile。
+
+### 7.3 场景：设置 AP SSID 和密码
+
+#### request
 
 ```json
 {
   "id": 103,
-  "method": "network.startAp",
+  "method": "network.setApConfig",
   "params": {
-    "interfaceId": "ap0"
+    "config": {
+      "interfaceId": "<AP_INTERFACE_ID>",
+      "ssid": "NA20-<receiver-id>",
+      "security": "wpa2_psk",
+      "credential": {
+        "type": "passphrase",
+        "value": "<NEW_AP_PASSPHRASE>",
+        "exportPolicy": "redacted"
+      },
+      "hidden": false,
+      "band": "5g",
+      "channel": 149
+    },
+    "apply": "immediate"
   }
 }
 ```
+
+#### response
 
 ```json
 {
@@ -304,31 +717,36 @@ Capability ID：`network.ap`
     "code": 0
   },
   "result": {
-    "accepted": true,
-    "state": {
-      "interfaceId": "ap0",
-      "state": "starting",
+    "config": {
+      "interfaceId": "<AP_INTERFACE_ID>",
       "ssid": "NA20-<receiver-id>",
-      "bssid": "<NA20_AP_BSSID>"
-    }
+      "security": "wpa2_psk",
+      "hidden": false,
+      "band": "5g",
+      "channel": 149
+    },
+    "applied": true,
+    "requiresApRestart": false
   }
 }
 ```
 
-### 9.4 AP 角色状态变化事件
+读法：响应不回显明文 AP 密码。配置变化后设备应触发 `network.apConfigChanged`。
+
+### 7.4 场景：AP 状态变化事件
 
 ```json
 {
   "event": "network.apStateChanged",
   "intent": 2,
   "data": {
-    "interfaceId": "ap0",
+    "interfaceId": "<AP_INTERFACE_ID>",
     "previousState": {
-      "interfaceId": "ap0",
+      "interfaceId": "<AP_INTERFACE_ID>",
       "state": "starting"
     },
     "state": {
-      "interfaceId": "ap0",
+      "interfaceId": "<AP_INTERFACE_ID>",
       "state": "running",
       "ssid": "NA20-<receiver-id>",
       "bssid": "<NA20_AP_BSSID>",
@@ -339,17 +757,9 @@ Capability ID：`network.ap`
 }
 ```
 
-### 9.5 凭据不可导出失败示例
+读法：AP 状态事件只表达 AP 服务角色状态；AP 本端 IP 由 `network.ipConfigChanged` 表达。
 
-```json
-{
-  "id": 104,
-  "method": "network.getApConfig",
-  "params": {
-    "interfaceId": "ap0"
-  }
-}
-```
+### 7.5 场景：一次性凭据导出被拒绝
 
 ```json
 {
@@ -357,85 +767,70 @@ Capability ID：`network.ap`
   "status": {
     "ok": false,
     "code": 9,
-    "msg": "AP credential is not exportable by current policy.",
+    "msg": "AP credential export is denied by current policy.",
     "details": {
-      "candidateError": "NETWORK_CREDENTIAL_NOT_EXPORTABLE",
+      "candidateError": "NETWORK_CREDENTIAL_EXPORT_DENIED",
       "supportedCredentialExportModes": [
-        "opaque_ref"
+        "passphrase"
       ]
     }
   }
 }
 ```
 
-## 10. 候选 Errors
+读法：`status.code=9` 对应 adopted `PERMISSION_DENIED`。候选业务错误名只作为草案 details。
 
-| Error | 类别 | 说明 | Review |
+## 8. 错误
+
+| 错误 | 适用场景 | 说明 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备或接口不支持 AP 能力、启停或客户端列表。 | 使用 adopted numeric code `3`。 |
+| `INVALID_ARGUMENT` | SSID、安全类型、导出策略或 action 参数非法。 | 使用 adopted numeric code `10`。 |
+| `OUT_OF_RANGE` | 信道、SSID 长度或客户端上限超范围。 | 使用 adopted numeric code `11`。 |
+| `PERMISSION_DENIED` | 凭据导出、设置配置或停止 AP 被策略拒绝。 | 使用 adopted numeric code `9`。 |
+| `BUSY` | AP 正在启动、停止或重配置。 | 使用 adopted numeric code `5`。 |
+| `NETWORK_CREDENTIAL_EXPORT_DENIED` | 候选业务错误：一次性凭据导出被拒绝。 | `[REVIEW-DRAFT]`；采纳前确认是否需要 feature-specific errorCode。 |
+| `NETWORK_AP_CLIENT_LIST_UNAVAILABLE` | 候选业务错误：客户端列表不可用。 | `[REVIEW-ASK]`；若客户端列表不进 MVP，可不采纳。 |
+
+## 9. Legacy 映射
+
+Legacy 映射是迁移证据，不是 runtime 合同。
+
+| legacy 项 | 候选映射 | 状态 | 说明 |
 |---|---|---|---|
-| `NETWORK_CREDENTIAL_NOT_EXPORTABLE` | network/business | AP 凭据策略不允许导出，无法用于自动配对。 | `[REVIEW-ASK]` |
-| `NETWORK_SECURITY_UNSUPPORTED` | network/business | 请求的 AP 安全类型不被设备支持。 | `[REVIEW-DRAFT]` |
-| `NETWORK_AP_START_FAILED` | network/business | AP 启动失败，详细原因可放入 response details。 | `[REVIEW-DRAFT]` |
-| `NETWORK_AP_CLIENT_LIST_UNAVAILABLE` | network/business | 当前设备或状态无法提供客户端列表。 | `[REVIEW-ASK]` |
+| VM33 `Config.Get:APInfo` | `network.getApConfig` | `[REVIEW-DRAFT]` | 字段线索：`Config.Ssid` -> `ssid`，`Config.Password` -> `credential.value`，`Config.FreqBand` -> `band`。 |
+| VM33 `Config.Set:APInfo` | `network.setApConfig` | `[REVIEW-DRAFT]` | `Ssid` 和 `Password` 可映射到 AP config；是否立即重启 AP 待确认。 |
+| VM33 `Wifi.OpenApService` / `Wifi.openApService` | optional `network.startAp` + possible `network.setApConfig` | `[REVIEW-DRAFT]` | 旧 payload 同时带 `Password`、`FreqBand`、`Retransmit`；新协议中 AP 默认开启，开关低优先级。 |
 
-采纳时若通用错误码足够表达上述场景，可不新增业务错误；否则错误码应在 network domain 范围内分配，编号为 `TBD after adoption`。
+## 10. Registry / Conformance 状态
 
-## 11. Legacy 待映射
+| 项 | 状态 | 说明 |
+|---|---|---|
+| registry | not generated | 当前未写入 `registry/domains/network/domain.yaml`。 |
+| generated | false | `docs/generated/**` 未生成 `network.ap` 方法或事件。 |
+| protocol draft | draft | 本文是 Stage 20 草案，不能作为 runtime 合同。 |
+| registry readiness | candidate | 主路径 method/event/schema 已收敛；客户端列表和 DHCP Server 地址池仍待确认。 |
+| conformance | needed | 采纳后需要覆盖凭据导出、配置写入、AP 默认开启、状态事件和敏感字段脱敏。 |
 
-| 来源 | 旧协议条目 | 候选映射 | 状态 | 说明 |
-|---|---|---|---|---|
-| VM33 HTTP JSON | `Config.Get:APInfo` | `network.getApConfig` | `[REVIEW-ASK]` | 需确认 payload 是否包含 SSID、安全类型、密码、频段、信道。 |
-| VM33 HTTP JSON | `Config.Set:APInfo` | `network.setApConfig` | `[REVIEW-ASK]` | 需确认字段路径、持久化策略和是否会重启 AP。 |
-| VM33 HTTP JSON | `Wifi.OpenApService` / `Wifi.openApService` | `network.startAp` | `[REVIEW-ASK]` | 需确认是否只启动服务，还是同时写配置。 |
+## 11. 测试要点
 
-## 12. Registry 草案输入
+| 类型 | 要点 |
+|---|---|
+| happy path | NA20 AP 默认 running，Host 读取 config 并一次性导出凭据。 |
+| config path | `network.setApConfig` 可设置 SSID/密码，响应不回显明文密码。 |
+| event path | AP 配置变化触发 `network.apConfigChanged`；启停或异常触发 `network.apStateChanged`。 |
+| boundary case | `credentialExport=none` 不返回 credential；接口省略时使用默认 AP 接口。 |
+| error case | 凭据导出被拒绝、接口不是 AP-capable、AP 正在重配置。 |
+| compatibility | VM33 `APInfo` / `OpenApService` 字段可迁移，但旧 `Retransmit` 暂不进入 MVP。 |
+| pairing path | Host 用 AP config 组装 NT10 Wi-Fi profile；AP 本端 IP 和客户端列表仅作为可选验收。 |
 
-采纳本文后，`registry/domains/network/domain.yaml` 至少应包含：
+## 12. 待确认问题
 
-```yaml
-capabilities:
-  - id: network.ap
-    name: network.ap capability
-    status: draft
-    schema: NetworkApCapabilities
-    methods:
-      - network.getApCapabilities
-      - network.getApConfig
-      - network.setApConfig
-      - network.startAp
-      - network.stopAp
-      - network.getApState
-    events:
-      - network.apConfigChanged
-      - network.apStateChanged
-
-methods:
-  - name: network.getApCapabilities
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    requestSchema: NetworkGetApCapabilitiesRequest
-    responseSchema: NetworkApCapabilities
-    capabilities: [network.ap]
-```
-
-`network.getApClients` / `network.apClientChanged` 若采纳，应作为 optional method/event 追加。
-
-## 13. 采纳检查清单
-
-- [ ] 08 已确认 `network.ap` 粒度和 method/event 命名。
-- [ ] 09 已确认 network domain 写入 `registry/domains/network/domain.yaml`。
-- [ ] 10 已确认 methodId、bitOffset、request/response schema。
-- [ ] 11 已确认 eventId、eventMasks bitOffset、event schema。
-- [ ] 12 已确认是否新增 network domain 错误码。
-- [ ] 13 已确认 schema fieldId、capabilityId、supportedMethods。
-- [ ] 事件去重规则已与 `network.interface`、`network.ip`、`network.wifi` 同步确认。
-- [ ] 凭据字段已完成安全评审，不会被普通日志、遥测或崩溃报告记录。
-- [ ] AP 本端 IP 和 DHCP Server 地址池归属已确认。
-- [ ] legacyRefs 已确认或明确延后到 adapter-only。
-
-## 14. 待确认问题
-
-1. `[REVIEW-ASK]` NA20 AP 密码是否允许通过 AXTP 明文读取？
-2. `[REVIEW-ASK]` 若不允许明文读取，配对凭据使用一次性 token、opaque reference，还是绑定目标设备身份的加密 credential？
-3. `[REVIEW-ASK]` `network.getApClients` 是否是配对成功的强制验收条件？
-4. `[REVIEW-ASK]` AP DHCP Server 地址池是否纳入 `network.ap` optional schema，还是另起更明确的 DHCP Server 能力？
-5. `[REVIEW-ASK]` AP 配置改变后是否立即生效，还是需要 AP restart / device restart？
+| 问题 | 影响 | 当前建议 | 状态 |
+|---|---|---|---|
+| NA20 AP 是否默认开启？ | pairing / conformance | 是，配对主路径不调用 `startAp`。 | decided |
+| NA20 AP SSID/密码是否可由上位机配置？ | schema / product behavior | 是，使用 `network.setApConfig`。 | decided |
+| AP 凭据是否允许通过 AXTP 导出？ | security / pairing | 是，允许一次性导出；日志必须脱敏。 | decided |
+| `network.getApClients` 是否是配对成功强制验收？ | conformance / product behavior | 当前建议 optional；默认以 NT10 Wi-Fi state 或 IP ready 验收。 | open |
+| AP DHCP Server 地址池归属哪里？ | schema boundary | AP 本端 IP 归 `network.ip`；DHCP Server 地址池暂留 open。 | open |
+| 一次性凭据导出的有效期、频率和目标设备绑定如何定义？ | security / registry | 建议采纳前补充 exportId、expiresAtMs 和重放策略。 | open |
