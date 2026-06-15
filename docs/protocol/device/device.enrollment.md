@@ -45,6 +45,27 @@ Capability ID：`device.enrollment`
 
 ---
 
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 ## 1. 功能说明
 
 `device.enrollment` 用于设备注册、pairing code 获取、纳管状态查询和变更。它描述"未入管设备成为后台管理对象"的过程，不属于认证会话（`auth.*`），也不属于 room 业务域（`room.*`）。
@@ -68,7 +89,7 @@ Capability ID：`device.enrollment`
 
 ---
 
-## 3. 方法
+## 3. 方法 Methods
 
 ### 3.0 方法速览
 
@@ -97,6 +118,21 @@ Capability ID：`device.enrollment`
 | `refresh` | boolean | no | `true` / `false` | `false` | 是否强制刷新 pairing code。 |
 | `purpose` | string | no | `"initial_enrollment"`, `"re_enrollment"`, `"service_repair"` | `"initial_enrollment"` | code 使用场景。`[REVIEW-DRAFT]` |
 
+#### Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "device.getPairingCode",
+  "params": {
+    "refresh": true,
+    "purpose": "initial_enrollment"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetPairingCodeParams`，省略字段按上表默认值处理。
+
 #### 返回结果 Result：`PairingCodeInfo`
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
@@ -106,6 +142,25 @@ Capability ID：`device.enrollment`
 | `expiresInSeconds` | uint32 | no | `> 0` | omitted | 相对过期秒数。legacy device-sdk 实测值为 `1800`，不可省略。 |
 | `state` | string | no | `"available"`, `"expired"`, `"used"`, `"disabled"` | `"available"` | code 当前状态。 |
 
+#### Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "code": "123456",
+    "expiresInSeconds": 1800,
+    "state": "available"
+  }
+}
+```
+
+读法：`result` 是 `PairingCodeInfo` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
 #### `device.getPairingCode` 候选错误
 
 | Error | 类别 | 说明 |
@@ -113,6 +168,26 @@ Capability ID：`device.enrollment`
 | `NOT_SUPPORTED` | common | 设备或服务端不支持 pairing code。 |
 | `PERMISSION_DENIED` | common | 无权获取 pairing code。 |
 | `INTERNAL_ERROR` | common | 服务端无法生成 code。 |
+
+#### Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "refresh",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `device.getEnrollmentState`
 
@@ -132,9 +207,67 @@ Capability ID：`device.enrollment`
 |---|---|---:|---|---|---|
 | `includeEndpoint` | boolean | no | `true` / `false` | `true` | 是否返回 enrollment 后的 endpoint 摘要。 |
 
+#### Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "device.getEnrollmentState",
+  "params": {
+    "includeEndpoint": true
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetEnrollmentStateParams`，省略字段按上表默认值处理。
+
 #### 返回结果 Result：`EnrollmentState`
 
 字段见 6.1。
+
+#### Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "includeEndpoint",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
+
+#### Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": "enrolled",
+    "deviceId": "dev_001",
+    "workspaceId": "workspace_001",
+    "endpoint": {
+      "endpointId": "room_101",
+      "type": "room",
+      "displayName": "Room 101"
+    }
+  }
+}
+```
+
+读法：`result` 是 `EnrollmentState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
 
 ### 3.3 `device.setEnrollmentState`
 
@@ -157,6 +290,21 @@ Capability ID：`device.enrollment`
 | `endpoint` | `EnrollmentEndpointSummary` | no | see schema | omitted | enrollment 成功后关联的 endpoint 摘要。 |
 | `message` | string | no | human-readable | omitted | 失败、解绑或修复说明。 |
 
+#### Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "device.setEnrollmentState",
+  "params": {
+    "desiredState": "enrolled",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `SetEnrollmentStateParams`，省略字段按上表默认值处理。
+
 #### 返回结果 Result：`SetEnrollmentStateResult`
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
@@ -164,11 +312,55 @@ Capability ID：`device.enrollment`
 | `state` | `EnrollmentState` | yes | see schema | none | 操作后的纳管状态。 |
 | `disconnectExpected` | boolean | no | `true` / `false` | `false` | 解绑或重置是否预期导致连接变化。 |
 
+#### Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": "enrolled",
+    "deviceId": "dev_001",
+    "workspaceId": "workspace_001",
+    "endpoint": {
+      "endpointId": "room_101",
+      "type": "room",
+      "displayName": "Room 101"
+    }
+  }
+}
+```
+
+读法：`result` 是 `SetEnrollmentStateResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
 #### 可能的事件
 
 | Event | 条件 |
 |---|---|
 | `device.enrollmentStateChanged` | 状态实际变化时触发。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "device.enrollmentStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### `device.setEnrollmentState` 候选错误
 
@@ -181,7 +373,27 @@ Capability ID：`device.enrollment`
 
 ---
 
-## 4. 事件
+#### Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "desiredState",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
+
+## 4. 事件 Events
 
 ### 4.0 事件速览
 
@@ -207,6 +419,31 @@ Capability ID：`device.enrollment`
 
 ---
 
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "device.enrollmentStateChanged",
+  "intent": 1,
+  "data": {
+    "state": {
+      "state": "enrolled",
+      "deviceId": "dev_001",
+      "workspaceId": "workspace_001",
+      "endpoint": {
+        "endpointId": "room_101",
+        "type": "room",
+        "displayName": "Room 101"
+      }
+    },
+    "previousState": "active",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
 ## 5. Capability
 
 Capability name: `device.enrollment`。
@@ -220,7 +457,7 @@ Capability name: `device.enrollment`。
 
 ---
 
-## 6. Schemas
+## 6. 字段 / Schemas
 
 ### 6.1 `EnrollmentState`
 
@@ -244,7 +481,7 @@ Capability name: `device.enrollment`。
 
 ---
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
 ### 7.1 获取 pairing code
 
@@ -448,7 +685,7 @@ Capability name: `device.enrollment`。
 
 ---
 
-## 8. 候选 Errors
+## 8. 错误
 
 | Error | 复用 / 候选 | 说明 | Review |
 |---|---|---|---|
@@ -472,7 +709,7 @@ Capability name: `device.enrollment`。
 
 ---
 
-## 10. Registry / Conformance Status
+## 10. Registry / Conformance 状态
 
 | 项 | 状态 |
 |---|---|
@@ -483,7 +720,7 @@ Capability name: `device.enrollment`。
 
 ---
 
-## 11. Test Notes
+## 11. 测试要点
 
 - `device.getPairingCode` 返回 `code`、`expiresAt`、`expiresInSeconds`。`expiresInSeconds` 不可省略。
 - `device.getEnrollmentState` 未纳管时返回 `state: "unmanaged"`；已纳管时返回 `state: "enrolled"` + endpoint。

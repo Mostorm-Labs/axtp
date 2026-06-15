@@ -23,6 +23,27 @@ lastReviewed: 2026-06-13
 | Conformance | needed；需覆盖 capability、partial set、reset、event、unsupported/range。 |
 | 主要未决问题 | `[REVIEW-ASK]` sightAngle 是否归 image，VM33 Camera 泛配置如何拆分到 image/exposure/whiteBalance。 |
 
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 ## 1. 功能说明
 
 `camera.image` 用于基础图像质量参数配置。它不承载曝光、白平衡、focus/zoom/PTZ、framing 或视频流编码参数。
@@ -61,21 +82,74 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.1.2 返回结果 Result：`ImageCapabilities`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "camera.getImageCapabilities",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetImageCapabilitiesParams`，省略字段按上表默认值处理。
+
+#### 3.1.3 返回结果 Result：`ImageCapabilities`
 
 字段见 [6.3](#63-capability-schemas)。
 
-#### 3.1.3 可能触发的事件
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "capability": "camera.image",
+    "fields": {},
+    "partialUpdate": true
+  }
+}
+```
+
+读法：`result` 是 `ImageCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.1.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变配置。 | none | 无需处理。 |
 
-#### 3.1.4 错误
+#### 3.1.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持基础图像调节。 | 隐藏图像设置。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `camera.getImageConfig`
 
@@ -92,21 +166,76 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.2.2 返回结果 Result：`ImageConfig`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "camera.getImageConfig",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetImageConfigParams`，省略字段按上表默认值处理。
+
+#### 3.2.3 返回结果 Result：`ImageConfig`
 
 字段见 [6.4](#64-config--state-总结构)。
 
-#### 3.2.3 可能触发的事件
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "cameraId": "main",
+    "brightness": 50,
+    "contrast": 50,
+    "saturation": 50,
+    "sharpness": 50
+  }
+}
+```
+
+读法：`result` 是 `ImageConfig` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.2.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变配置。 | none | 无需处理。 |
 
-#### 3.2.4 错误
+#### 3.2.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | camera pipeline 不可读。 | 返回不可用原因。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 13,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "UNAVAILABLE",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `camera.setImageConfig`
 
@@ -123,23 +252,106 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.3.2 返回结果 Result：`SetImageConfigResult`
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "camera.setImageConfig",
+  "params": {
+    "cameraId": "main",
+    "config": {
+      "cameraId": "main",
+      "brightness": 50,
+      "contrast": 50,
+      "saturation": 50,
+      "sharpness": 50
+    },
+    "expectedVersion": "1.2.3"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `SetImageConfigParams`，省略字段按上表默认值处理。
+
+#### 3.3.3 返回结果 Result：`SetImageConfigResult`
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.3.3 可能触发的事件
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "cameraId": "main",
+    "brightness": 50,
+    "contrast": 50,
+    "saturation": 50,
+    "sharpness": 50
+  }
+}
+```
+
+读法：`result` 是 `SetImageConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.3.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.imageConfigChanged` | 配置实际变化。 | `ImageConfigChangedEvent` | 更新 UI；需要完整状态时调用 get。 |
 
-#### 3.3.4 错误
+#### 3.3.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "camera.imageConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "config"
+    ],
+    "config": {
+      "mode": "auto"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.3.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `OUT_OF_RANGE` | brightness 等字段超范围。 | 返回合法范围。 |
 | `INVALID_ARGUMENT` | 字段不支持或组合非法。 | 返回字段路径。 |
 | `BUSY` | ISP 正在切换。 | 稍后重试。 |
+
+#### 3.3.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "OUT_OF_RANGE",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.4 `camera.resetImageConfig`
 
@@ -156,21 +368,96 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.4.2 返回结果 Result：`SetImageConfigResult`
+#### 3.4.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 104,
+  "method": "camera.resetImageConfig",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `ResetImageConfigParams`，省略字段按上表默认值处理。
+
+#### 3.4.3 返回结果 Result：`SetImageConfigResult`
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.4.3 可能触发的事件
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "cameraId": "main",
+    "brightness": 50,
+    "contrast": 50,
+    "saturation": 50,
+    "sharpness": 50
+  }
+}
+```
+
+读法：`result` 是 `SetImageConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.4.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.imageConfigChanged` | reset 后配置变化。 | `ImageConfigChangedEvent` | 更新 UI。 |
 
-#### 3.4.4 错误
+#### 3.4.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "camera.imageConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "config"
+    ],
+    "config": {
+      "mode": "auto"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.4.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 不支持 reset。 | 隐藏恢复默认。 |
+
+#### 3.4.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -191,6 +478,31 @@ lastReviewed: 2026-06-13
 | `config` | `ImageConfig` | yes | see schema | none | 变化后的配置。 |
 | `applyState` | string enum | yes | `applied`, `pending_restart`, `failed` | none | 应用状态。 |
 | `reason` | string enum | no | `user_request`, `reset_to_default`, `profile_changed`, `device_policy`, `legacy_adapter`, `unknown` | `unknown` | 变化原因。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "camera.imageConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "config": {
+      "cameraId": "main",
+      "brightness": 50,
+      "contrast": 50,
+      "saturation": 50,
+      "sharpness": 50
+    },
+    "applyState": "active",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 

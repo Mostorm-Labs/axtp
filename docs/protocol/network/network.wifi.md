@@ -23,6 +23,27 @@ lastReviewed: 2026-06-13
 | Conformance | needed |
 | 主要未决问题 | pairing profile 是否默认持久化、IP ready 是否纳入配对验收、`forgetWifi` 是否进入 MVP。 |
 
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 ## 1. 功能说明
 
 `network.wifi` 描述设备作为 Wi-Fi STA 连接外部 AP 的控制面。Cast RX/TX 配对中，Host 从 NA20 的 `network.ap` 一次性导出 AP 凭据，再调用 NT10 的 `network.setWifiConfig` 写入 STA profile。
@@ -80,7 +101,21 @@ lastReviewed: 2026-06-13
 |---|---|---:|---|---|---|
 | `interfaceId` | string | no | STA-capable interface id | `defaults.wifiSta` | STA 接口；省略表示默认 STA 接口。 |
 
-#### 3.1.2 返回结果 Result：`NetworkWifiCapabilities`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "network.getWifiCapabilities",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkGetWifiCapabilitiesParams`，省略字段按上表默认值处理。
+
+#### 3.1.3 返回结果 Result：`NetworkWifiCapabilities`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -92,18 +127,66 @@ lastReviewed: 2026-06-13
 | `scanSupported` | boolean | yes | bool | none | 是否支持扫描。 |
 | `autoConnectSupported` | boolean | no | bool | omitted | 是否支持 profile 自动连接。 |
 
-#### 3.1.3 可能触发的事件
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "capability": "network.wifi",
+    "securityTypes": [
+      "wpa2_psk",
+      "wpa3_sae"
+    ],
+    "credentialImportModes": [
+      "passphrase",
+      "pairing_token",
+      "opaque_ref"
+    ],
+    "savedProfilesSupported": true,
+    "scanSupported": true
+  }
+}
+```
+
+读法：`result` 是 `NetworkWifiCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.1.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.1.4 错误
+#### 3.1.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_FOUND` | 指定接口不存在或不是 STA-capable。 | 使用 adopted numeric code `12`。 |
 | `NOT_SUPPORTED` | 设备不支持 Wi-Fi STA 能力。 | 使用 adopted numeric code `3`。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 12,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_FOUND",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `network.getWifiConfig`
 
@@ -125,7 +208,22 @@ lastReviewed: 2026-06-13
 | `interfaceId` | string | no | STA-capable interface id | `defaults.wifiSta` | STA 接口。 |
 | `includeProfiles` | boolean | no | bool | `true` | 是否返回 profile 摘要。 |
 
-#### 3.2.2 返回结果 Result：`NetworkWifiConfig`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "network.getWifiConfig",
+  "params": {
+    "interfaceId": "wlan0",
+    "includeProfiles": true
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkGetWifiConfigParams`，省略字段按上表默认值处理。
+
+#### 3.2.3 返回结果 Result：`NetworkWifiConfig`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -133,17 +231,67 @@ lastReviewed: 2026-06-13
 | `profiles` | `NetworkWifiProfile[]` | no | array | omitted | 已保存 profile 摘要；不含明文 credential。 |
 | `defaultProfileId` | string | no | profile id | omitted | 默认 profile。 |
 
-#### 3.2.3 可能触发的事件
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "interfaceId": "wlan0",
+    "profiles": [
+      {
+        "profileId": "profile_na20",
+        "ssid": "NearHub-Cast-A1",
+        "securityType": "wpa2_psk",
+        "credential": {
+          "type": "passphrase",
+          "secretRef": "<redacted>"
+        },
+        "source": "pairing"
+      }
+    ],
+    "defaultProfileId": "profile_na20"
+  }
+}
+```
+
+读法：`result` 是 `NetworkWifiConfig` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.2.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变配置。 | none | 无需处理。 |
 
-#### 3.2.4 错误
+#### 3.2.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `PERMISSION_DENIED` | 调用方无权读取配置摘要。 | 使用 adopted numeric code `9`。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 9,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "PERMISSION_DENIED",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `network.setWifiConfig`
 
@@ -168,7 +316,34 @@ lastReviewed: 2026-06-13
 | `makeDefault` | boolean | no | bool | `false` | 是否设为默认 profile。 |
 | `connectAfterSave` | boolean | no | bool | `true` when `profile.source=pairing`; otherwise `false` | 保存后是否立即连接。 |
 
-#### 3.3.2 返回结果 Result：`NetworkSetWifiConfigResult`
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "network.setWifiConfig",
+  "params": {
+    "interfaceId": "wlan0",
+    "profile": {
+      "profileId": "profile_na20",
+      "ssid": "NearHub-Cast-A1",
+      "securityType": "wpa2_psk",
+      "credential": {
+        "type": "passphrase",
+        "secretRef": "<redacted>"
+      },
+      "source": "pairing"
+    },
+    "replaceExisting": true,
+    "makeDefault": true,
+    "connectAfterSave": true
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkSetWifiConfigParams`，省略字段按上表默认值处理。
+
+#### 3.3.3 返回结果 Result：`NetworkSetWifiConfigResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -176,20 +351,90 @@ lastReviewed: 2026-06-13
 | `config` | `NetworkWifiConfig` | no | object | omitted | 更新后的配置摘要，不含明文 credential。 |
 | `connectStarted` | boolean | no | bool | omitted | 是否已经开始连接。 |
 
-#### 3.3.3 可能触发的事件
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "interfaceId": "wlan0",
+    "profiles": [
+      {
+        "profileId": "profile_na20",
+        "ssid": "NearHub-Cast-A1",
+        "securityType": "wpa2_psk",
+        "credential": {
+          "type": "passphrase",
+          "secretRef": "<redacted>"
+        },
+        "source": "pairing"
+      }
+    ],
+    "defaultProfileId": "profile_na20"
+  }
+}
+```
+
+读法：`result` 是 `NetworkSetWifiConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.3.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.wifiConfigChanged` | profile 新增、更新或默认 profile 改变。 | `NetworkWifiConfigChangedEvent` | 更新本地 profile 摘要；不要期待敏感凭据回显。 |
 | `network.wifiStateChanged` | 保存后默认或显式连接。 | `NetworkWifiStateChangedEvent` | 展示连接进度；connected 后如需要继续查 `network.ip`。 |
 
-#### 3.3.4 错误
+#### 3.3.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "network.wifiConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "config"
+    ],
+    "config": {
+      "mode": "auto"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.3.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `INVALID_ARGUMENT` | `profile` 缺少 SSID、安全类型或凭据组合非法。 | 使用 adopted numeric code `10`。 |
 | `PERMISSION_DENIED` | 当前策略禁止保存 profile 或导入凭据。 | 使用 adopted numeric code `9`。 |
 | `BUSY` | Wi-Fi 正在连接、扫描或写配置。 | 使用 adopted numeric code `5`。 |
+
+#### 3.3.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.4 `network.scanWifi`
 
@@ -212,7 +457,22 @@ lastReviewed: 2026-06-13
 | `ssidFilter` | string | no | SSID | omitted | 只扫描指定 SSID。 |
 | `timeoutMs` | uint32 | no | `0..uint32 max` | omitted | 扫描超时。 |
 
-#### 3.4.2 返回结果 Result：`NetworkScanWifiResult`
+#### 3.4.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 104,
+  "method": "network.scanWifi",
+  "params": {
+    "interfaceId": "wlan0",
+    "timeoutMs": 5000
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkScanWifiParams`，省略字段按上表默认值处理。
+
+#### 3.4.3 返回结果 Result：`NetworkScanWifiResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -220,18 +480,73 @@ lastReviewed: 2026-06-13
 | `results` | `NetworkWifiScanResult[]` | no | array | omitted | 同步返回结果。 |
 | `complete` | boolean | no | bool | omitted | 同步结果是否完整。 |
 
-#### 3.4.3 可能触发的事件
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {}
+}
+```
+
+读法：`result` 是 `NetworkScanWifiResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.4.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.wifiScanResultReported` | 异步扫描返回结果或结束。 | `NetworkWifiScanResultReportedEvent` | 累积结果；complete 后停止等待。 |
 
-#### 3.4.4 错误
+#### 3.4.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "network.wifiScanResultReported",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.4.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `BUSY` | 正在连接或已有扫描进行中。 | 使用 adopted numeric code `5`。 |
 | `TIMEOUT` | 扫描超时。 | 使用 adopted numeric code `6`。 |
+
+#### 3.4.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 5,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "BUSY",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.5 `network.connectWifi`
 
@@ -255,25 +570,117 @@ lastReviewed: 2026-06-13
 | `profile` | `NetworkWifiProfile` | conditional | object | omitted | 使用 inline profile 连接；是否保存由 `profile.persist` 决定。 |
 | `timeoutMs` | uint32 | no | `0..uint32 max` | omitted | 连接超时。 |
 
-#### 3.5.2 返回结果 Result：`NetworkWifiActionResult`
+#### 3.5.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 105,
+  "method": "network.connectWifi",
+  "params": {
+    "interfaceId": "wlan0",
+    "profileId": "profile_na20",
+    "profile": {
+      "profileId": "profile_na20",
+      "ssid": "NearHub-Cast-A1",
+      "securityType": "wpa2_psk",
+      "credential": {
+        "type": "passphrase",
+        "secretRef": "<redacted>"
+      },
+      "source": "pairing"
+    },
+    "timeoutMs": 5000
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkConnectWifiParams`，省略字段按上表默认值处理。
+
+#### 3.5.3 返回结果 Result：`NetworkWifiActionResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `accepted` | boolean | yes | bool | none | 动作是否被接受。 |
 | `state` | `NetworkWifiState` | yes | object | none | 操作后的当前或目标状态。 |
 
-#### 3.5.3 可能触发的事件
+#### 3.5.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true,
+    "state": {
+      "interfaceId": "wlan0",
+      "state": "connected",
+      "profileId": "profile_na20",
+      "ssid": "NearHub-Cast-A1",
+      "ipReady": true
+    }
+  }
+}
+```
+
+读法：`result` 是 `NetworkWifiActionResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.5.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.wifiStateChanged` | STA 扫描、认证、关联、断开或失败。 | `NetworkWifiStateChangedEvent` | 用 state/failureReason 展示进度和失败原因。 |
 
-#### 3.5.4 错误
+#### 3.5.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "network.wifiStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "interfaceId": "wlan0",
+      "state": "connected",
+      "profileId": "profile_na20"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.5.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_FOUND` | `profileId` 不存在。 | 使用 adopted numeric code `12`，details 可标注候选 `NETWORK_PROFILE_NOT_FOUND`。 |
 | `INVALID_ARGUMENT` | `profileId` 与 `profile` 同时缺失或同时出现。 | 使用 adopted numeric code `10`。 |
+
+#### 3.5.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": false,
+    "code": 12,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_FOUND",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.6 `network.disconnectWifi`
 
@@ -294,24 +701,104 @@ lastReviewed: 2026-06-13
 |---|---|---:|---|---|---|
 | `interfaceId` | string | no | STA-capable interface id | `defaults.wifiSta` | STA 接口。 |
 
-#### 3.6.2 返回结果 Result：`NetworkWifiActionResult`
+#### 3.6.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 106,
+  "method": "network.disconnectWifi",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkDisconnectWifiParams`，省略字段按上表默认值处理。
+
+#### 3.6.3 返回结果 Result：`NetworkWifiActionResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `accepted` | boolean | yes | bool | none | 动作是否被接受。 |
 | `state` | `NetworkWifiState` | yes | object | none | 操作后的当前或目标状态。 |
 
-#### 3.6.3 可能触发的事件
+#### 3.6.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 106,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true,
+    "state": {
+      "interfaceId": "wlan0",
+      "state": "connected",
+      "profileId": "profile_na20",
+      "ssid": "NearHub-Cast-A1",
+      "ipReady": true
+    }
+  }
+}
+```
+
+读法：`result` 是 `NetworkWifiActionResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.6.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.wifiStateChanged` | STA 进入 disconnecting / disconnected。 | `NetworkWifiStateChangedEvent` | 更新 UI；IP 地址失效由 `network.ipConfigChanged` 表达。 |
 
-#### 3.6.4 错误
+#### 3.6.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "network.wifiStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "interfaceId": "wlan0",
+      "state": "connected",
+      "profileId": "profile_na20"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.6.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `PERMISSION_DENIED` | 当前策略禁止断开。 | 使用 adopted numeric code `9`。 |
+
+#### 3.6.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 106,
+  "status": {
+    "ok": false,
+    "code": 9,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "PERMISSION_DENIED",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.7 `network.getWifiState`
 
@@ -332,7 +819,21 @@ lastReviewed: 2026-06-13
 |---|---|---:|---|---|---|
 | `interfaceId` | string | no | STA-capable interface id | `defaults.wifiSta` | STA 接口。 |
 
-#### 3.7.2 返回结果 Result：`NetworkWifiState`
+#### 3.7.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 107,
+  "method": "network.getWifiState",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkGetWifiStateParams`，省略字段按上表默认值处理。
+
+#### 3.7.3 返回结果 Result：`NetworkWifiState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -344,17 +845,58 @@ lastReviewed: 2026-06-13
 | `rssiDbm` | int16 | no | dBm | omitted | 信号强度。 |
 | `failureReason` | `NetworkWifiFailureReason` | no | see enum | omitted | 最近失败原因。 |
 
-#### 3.7.3 可能触发的事件
+#### 3.7.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 107,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "interfaceId": "wlan0",
+    "state": "connected",
+    "profileId": "profile_na20",
+    "ssid": "NearHub-Cast-A1",
+    "ipReady": true
+  }
+}
+```
+
+读法：`result` 是 `NetworkWifiState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.7.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.7.4 错误
+#### 3.7.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_FOUND` | 指定接口不存在。 | 使用 adopted numeric code `12`。 |
+
+#### 3.7.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 107,
+  "status": {
+    "ok": false,
+    "code": 12,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_FOUND",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -382,6 +924,39 @@ lastReviewed: 2026-06-13
 | `changedFields` | string[] | no | field paths | omitted | 变化字段。 |
 | `reason` | string enum | no | `user_request`, `pairing`, `system_policy`, `factory_reset`, `unknown` | `unknown` | 变化原因。 |
 
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "network.wifiConfigChanged",
+  "intent": 1,
+  "data": {
+    "config": {
+      "interfaceId": "wlan0",
+      "profiles": [
+        {
+          "profileId": "profile_na20",
+          "ssid": "NearHub-Cast-A1",
+          "securityType": "wpa2_psk",
+          "credential": {
+            "type": "passphrase",
+            "secretRef": "<redacted>"
+          },
+          "source": "pairing"
+        }
+      ],
+      "defaultProfileId": "profile_na20"
+    },
+    "changedFields": [
+      "state"
+    ],
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
 #### 客户端处理建议
 
 | 场景 | 建议 |
@@ -404,6 +979,34 @@ lastReviewed: 2026-06-13
 | `state` | `NetworkWifiState` | yes | object | none | 变化后的 Wi-Fi 状态。 |
 | `previousState` | `NetworkWifiState` | no | object | omitted | 变化前状态。 |
 | `reason` | string enum | no | `connect_started`, `connect_completed`, `auth_failed`, `ap_not_found`, `disconnect`, `link_lost`, `unknown` | `unknown` | 变化原因。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "network.wifiStateChanged",
+  "intent": 1,
+  "data": {
+    "state": {
+      "interfaceId": "wlan0",
+      "state": "connected",
+      "profileId": "profile_na20",
+      "ssid": "NearHub-Cast-A1",
+      "ipReady": true
+    },
+    "previousState": {
+      "interfaceId": "wlan0",
+      "state": "connected",
+      "profileId": "profile_na20",
+      "ssid": "NearHub-Cast-A1",
+      "ipReady": true
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 
@@ -429,6 +1032,20 @@ lastReviewed: 2026-06-13
 | `result` | `NetworkWifiScanResult` | no | object | omitted | 单条扫描结果。 |
 | `complete` | boolean | no | bool | `false` | 是否扫描完成。 |
 | `reason` | string enum | no | `result`, `complete`, `timeout`, `error` | omitted | 上报原因。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "network.wifiScanResultReported",
+  "intent": 1,
+  "data": {
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 

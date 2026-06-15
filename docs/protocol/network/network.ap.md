@@ -23,6 +23,27 @@ lastReviewed: 2026-06-13
 | Conformance | needed |
 | 主要未决问题 | AP 客户端列表是否作为强验收、DHCP Server 地址池归属、一次性凭据导出的有效期/重放策略。 |
 
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 ## 1. 功能说明
 
 `network.ap` 描述设备作为 AP/SoftAP/Hotspot 端点时的控制面。Cast RX/TX 配对中，Host 从 NA20 读取 AP SSID、安全类型和一次性导出的凭据，再把这些材料写入 NT10 的 `network.wifi` profile。
@@ -81,7 +102,21 @@ lastReviewed: 2026-06-13
 |---|---|---:|---|---|---|
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口；省略表示 `network.interface.defaults.ap`。 |
 
-#### 3.1.2 返回结果 Result：`NetworkApCapabilities`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "network.getApCapabilities",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkGetApCapabilitiesParams`，省略字段按上表默认值处理。
+
+#### 3.1.3 返回结果 Result：`NetworkApCapabilities`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -95,18 +130,58 @@ lastReviewed: 2026-06-13
 | `clientListSupported` | boolean | no | bool | omitted | 是否支持客户端列表。 |
 | `maxClients` | uint16 | no | `0..65535` | omitted | 最大客户端数量。 |
 
-#### 3.1.3 可能触发的事件
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "capability": "network.ap",
+    "securityTypes": [],
+    "credentialExportModes": "<redacted>",
+    "canStartStop": true
+  }
+}
+```
+
+读法：`result` 是 `NetworkApCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.1.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.1.4 错误
+#### 3.1.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_FOUND` | 指定 `interfaceId` 不存在或不是 AP-capable 接口。 | 使用 adopted numeric code `12`。 |
 | `NOT_SUPPORTED` | 设备不支持 AP 能力。 | 使用 adopted numeric code `3`。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 12,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_FOUND",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `network.getApConfig`
 
@@ -128,7 +203,21 @@ lastReviewed: 2026-06-13
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
 | `credentialExport` | string enum | no | `none`, `one_time` | `none` | 是否一次性导出凭据。 |
 
-#### 3.2.2 返回结果 Result：`NetworkApConfig`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "network.getApConfig",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkGetApConfigParams`，省略字段按上表默认值处理。
+
+#### 3.2.3 返回结果 Result：`NetworkApConfig`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -141,18 +230,63 @@ lastReviewed: 2026-06-13
 | `channel` | uint16 | no | valid channel | omitted | AP 信道。 |
 | `maxClients` | uint16 | no | `0..65535` | omitted | 客户端上限。 |
 
-#### 3.2.3 可能触发的事件
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "interfaceId": "wlan0",
+    "ssid": "NearHub-Cast-A1",
+    "securityType": "wpa2_psk",
+    "credential": {
+      "type": "passphrase",
+      "secretRef": "<redacted>"
+    },
+    "band": "5GHz",
+    "channel": 36
+  }
+}
+```
+
+读法：`result` 是 `NetworkApConfig` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.2.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变 AP 配置。 | none | 无需处理。 |
 
-#### 3.2.4 错误
+#### 3.2.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `PERMISSION_DENIED` | 当前会话无权导出凭据。 | 使用 adopted numeric code `9`，details 可标注候选 `NETWORK_CREDENTIAL_EXPORT_DENIED`。 |
 | `INVALID_ARGUMENT` | `credentialExport` 枚举非法。 | 使用 adopted numeric code `10`。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 9,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "PERMISSION_DENIED",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `network.setApConfig`
 
@@ -174,7 +308,31 @@ lastReviewed: 2026-06-13
 | `config` | `NetworkApConfig` | yes | object | none | 要写入的 AP 配置。 |
 | `apply` | string enum | no | `immediate`, `on_restart` | `immediate` | 生效策略。 |
 
-#### 3.3.2 返回结果 Result：`NetworkSetApConfigResult`
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "network.setApConfig",
+  "params": {
+    "config": {
+      "interfaceId": "wlan0",
+      "ssid": "NearHub-Cast-A1",
+      "securityType": "wpa2_psk",
+      "credential": {
+        "type": "passphrase",
+        "secretRef": "<redacted>"
+      },
+      "band": "5GHz",
+      "channel": 36
+    }
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkSetApConfigParams`，省略字段按上表默认值处理。
+
+#### 3.3.3 返回结果 Result：`NetworkSetApConfigResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -182,19 +340,84 @@ lastReviewed: 2026-06-13
 | `applied` | boolean | yes | bool | none | 是否已生效。 |
 | `requiresApRestart` | boolean | no | bool | omitted | 是否需要 AP 重启后生效。 |
 
-#### 3.3.3 可能触发的事件
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "interfaceId": "wlan0",
+    "ssid": "NearHub-Cast-A1",
+    "securityType": "wpa2_psk",
+    "credential": {
+      "type": "passphrase",
+      "secretRef": "<redacted>"
+    },
+    "band": "5GHz",
+    "channel": 36
+  }
+}
+```
+
+读法：`result` 是 `NetworkSetApConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.3.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.apConfigChanged` | AP 配置实际变化。 | `NetworkApConfigChangedEvent` | 重新读取 AP config，必要时重建 NT10 profile。 |
 | `network.apStateChanged` | 配置应用导致 AP 重启或异常。 | `NetworkApStateChangedEvent` | 展示状态并等待 running。 |
 
-#### 3.3.4 错误
+#### 3.3.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "network.apConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "config"
+    ],
+    "config": {
+      "mode": "auto"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.3.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `OUT_OF_RANGE` | SSID 长度、信道或客户端上限超出能力。 | 使用 adopted numeric code `11`。 |
 | `BUSY` | AP 正在启动、停止或重配置。 | 使用 adopted numeric code `5`，客户端稍后重试。 |
+
+#### 3.3.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "OUT_OF_RANGE",
+      "field": "config",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.4 `network.getApState`
 
@@ -215,7 +438,21 @@ lastReviewed: 2026-06-13
 |---|---|---:|---|---|---|
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
 
-#### 3.4.2 返回结果 Result：`NetworkApState`
+#### 3.4.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 104,
+  "method": "network.getApState",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkGetApStateParams`，省略字段按上表默认值处理。
+
+#### 3.4.3 返回结果 Result：`NetworkApState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -226,17 +463,58 @@ lastReviewed: 2026-06-13
 | `clientCount` | uint16 | no | `0..65535` | omitted | 当前客户端数量。 |
 | `lastError` | string enum | no | see 6.5 | omitted | 最近一次失败原因。 |
 
-#### 3.4.3 可能触发的事件
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "interfaceId": "wlan0",
+    "enabled": true,
+    "state": "enabled",
+    "ssid": "NearHub-Cast-A1",
+    "clientCount": 1
+  }
+}
+```
+
+读法：`result` 是 `NetworkApState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.4.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变 AP 状态。 | none | 无需处理。 |
 
-#### 3.4.4 错误
+#### 3.4.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_FOUND` | 指定 AP 接口不存在。 | 使用 adopted numeric code `12`。 |
+
+#### 3.4.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 12,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_FOUND",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.5 `network.startAp`
 
@@ -258,25 +536,104 @@ lastReviewed: 2026-06-13
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
 | `timeoutMs` | uint32 | no | `0..uint32 max` | omitted | 动作等待超时。 |
 
-#### 3.5.2 返回结果 Result：`NetworkApActionResult`
+#### 3.5.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 105,
+  "method": "network.startAp",
+  "params": {
+    "interfaceId": "wlan0",
+    "timeoutMs": 5000
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkApActionParams`，省略字段按上表默认值处理。
+
+#### 3.5.3 返回结果 Result：`NetworkApActionResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `accepted` | boolean | yes | bool | none | 动作是否被接受。 |
 | `state` | `NetworkApState` | yes | object | none | 操作后的当前或目标状态。 |
 
-#### 3.5.3 可能触发的事件
+#### 3.5.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true,
+    "state": {
+      "interfaceId": "wlan0",
+      "enabled": true,
+      "state": "enabled",
+      "ssid": "NearHub-Cast-A1",
+      "clientCount": 1
+    }
+  }
+}
+```
+
+读法：`result` 是 `NetworkApActionResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.5.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.apStateChanged` | AP 进入 starting / running / error。 | `NetworkApStateChangedEvent` | 等待 running 或处理失败。 |
 
-#### 3.5.4 错误
+#### 3.5.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "network.apStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.5.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持远程启动 AP。 | 使用 adopted numeric code `3`。 |
 | `BUSY` | AP 正在处理冲突动作。 | 使用 adopted numeric code `5`。 |
+
+#### 3.5.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.6 `network.stopAp`
 
@@ -298,24 +655,103 @@ lastReviewed: 2026-06-13
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
 | `timeoutMs` | uint32 | no | `0..uint32 max` | omitted | 动作等待超时。 |
 
-#### 3.6.2 返回结果 Result：`NetworkApActionResult`
+#### 3.6.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 106,
+  "method": "network.stopAp",
+  "params": {
+    "interfaceId": "wlan0",
+    "timeoutMs": 5000
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkApActionParams`，省略字段按上表默认值处理。
+
+#### 3.6.3 返回结果 Result：`NetworkApActionResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `accepted` | boolean | yes | bool | none | 动作是否被接受。 |
 | `state` | `NetworkApState` | yes | object | none | 操作后的当前或目标状态。 |
 
-#### 3.6.3 可能触发的事件
+#### 3.6.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 106,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true,
+    "state": {
+      "interfaceId": "wlan0",
+      "enabled": true,
+      "state": "enabled",
+      "ssid": "NearHub-Cast-A1",
+      "clientCount": 1
+    }
+  }
+}
+```
+
+读法：`result` 是 `NetworkApActionResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.6.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.apStateChanged` | AP 进入 stopping / stopped / error。 | `NetworkApStateChangedEvent` | 更新 UI，并提示可能断开 STA。 |
 
-#### 3.6.4 错误
+#### 3.6.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "network.apStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.6.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `PERMISSION_DENIED` | 当前策略禁止关闭 AP。 | 使用 adopted numeric code `9`。 |
+
+#### 3.6.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 106,
+  "status": {
+    "ok": false,
+    "code": 9,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "PERMISSION_DENIED",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.7 `network.getApClients`
 
@@ -336,24 +772,79 @@ lastReviewed: 2026-06-13
 |---|---|---:|---|---|---|
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
 
-#### 3.7.2 返回结果 Result：`NetworkApClients`
+#### 3.7.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 107,
+  "method": "network.getApClients",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkGetApClientsParams`，省略字段按上表默认值处理。
+
+#### 3.7.3 返回结果 Result：`NetworkApClients`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `interfaceId` | string | no | interface id | omitted | AP 接口。 |
 | `clients` | `NetworkApClientInfo[]` | yes | array | none | 当前客户端列表。 |
 
-#### 3.7.3 可能触发的事件
+#### 3.7.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 107,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "clients": [
+      {
+        "clientId": "client_001"
+      }
+    ]
+  }
+}
+```
+
+读法：`result` 是 `NetworkApClients` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.7.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变客户端列表。 | none | 无需处理。 |
 
-#### 3.7.4 错误
+#### 3.7.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持客户端列表。 | 使用 adopted numeric code `3`；details 可标注候选 `NETWORK_AP_CLIENT_LIST_UNAVAILABLE`。 |
+
+#### 3.7.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 107,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -381,6 +872,34 @@ lastReviewed: 2026-06-13
 | `changedFields` | string[] | no | field paths | omitted | 变化字段。 |
 | `reason` | string enum | no | `user_request`, `system_policy`, `factory_reset`, `unknown` | `unknown` | 变化原因。 |
 
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "network.apConfigChanged",
+  "intent": 1,
+  "data": {
+    "config": {
+      "interfaceId": "wlan0",
+      "ssid": "NearHub-Cast-A1",
+      "securityType": "wpa2_psk",
+      "credential": {
+        "type": "passphrase",
+        "secretRef": "<redacted>"
+      },
+      "band": "5GHz",
+      "channel": 36
+    },
+    "changedFields": [
+      "state"
+    ],
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
 #### 客户端处理建议
 
 | 场景 | 建议 |
@@ -404,6 +923,34 @@ lastReviewed: 2026-06-13
 | `previousState` | `NetworkApState` | no | object | omitted | 变化前状态。 |
 | `reason` | string enum | no | `user_request`, `system_policy`, `config_applied`, `error`, `unknown` | `unknown` | 变化原因。 |
 
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "network.apStateChanged",
+  "intent": 1,
+  "data": {
+    "state": {
+      "interfaceId": "wlan0",
+      "enabled": true,
+      "state": "enabled",
+      "ssid": "NearHub-Cast-A1",
+      "clientCount": 1
+    },
+    "previousState": {
+      "interfaceId": "wlan0",
+      "enabled": true,
+      "state": "enabled",
+      "ssid": "NearHub-Cast-A1",
+      "clientCount": 1
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
 #### 客户端处理建议
 
 | 场景 | 建议 |
@@ -426,6 +973,24 @@ lastReviewed: 2026-06-13
 | `change` | string enum | yes | `joined`, `left`, `updated` | none | 客户端变化类型。 |
 | `client` | `NetworkApClientInfo` | yes | object | none | 客户端摘要。 |
 | `reason` | string enum | no | `association`, `disconnect`, `timeout`, `unknown` | `unknown` | 变化原因。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "network.apClientChanged",
+  "intent": 1,
+  "data": {
+    "change": "joined",
+    "client": {
+      "clientId": "client_001"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 

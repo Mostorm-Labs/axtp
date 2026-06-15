@@ -47,6 +47,27 @@ Capability ID：`software.updatePolicy`
 
 ---
 
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 ## 1. 功能说明
 
 `software.updatePolicy` 用于读取、设置和通知软件自动更新策略。通过 `target` 参数区分不同软件对象，每个对象有独立的更新策略。
@@ -75,7 +96,7 @@ Capability ID：`software.updatePolicy`
 
 ---
 
-## 3. 方法
+## 3. 方法 Methods
 
 ### 3.0 方法速览
 
@@ -103,9 +124,66 @@ Capability ID：`software.updatePolicy`
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` `[REVIEW-ASK]` | none | 要查询策略的软件对象。 |
 
+#### Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "software.getUpdatePolicy",
+  "params": {
+    "target": "launcher"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `SoftwareGetUpdatePolicyParams`，省略字段按上表默认值处理。
+
 #### 返回结果 Result：`SoftwareUpdatePolicy`
 
 字段见 6.1。
+
+#### Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
+
+#### Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "target": "launcher",
+    "mode": "manual",
+    "allowedWindow": {
+      "start": "02:00",
+      "end": "05:00"
+    },
+    "autoInstall": false
+  }
+}
+```
+
+读法：`result` 是 `SoftwareUpdatePolicy` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
 
 ### 3.2 `software.setUpdatePolicy`
 
@@ -126,15 +204,73 @@ Capability ID：`software.updatePolicy`
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
 | `policy` | object | yes | target-specific fields | none | 要设置的策略片段。未出现的字段保持不变。 |
 
+#### Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "software.setUpdatePolicy",
+  "params": {
+    "target": "launcher",
+    "policy": {}
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `SoftwareSetUpdatePolicyParams`，省略字段按上表默认值处理。
+
 #### 返回结果 Result：`SoftwareUpdatePolicy`
 
 字段见 6.1。
+
+#### Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "target": "launcher",
+    "mode": "manual",
+    "allowedWindow": {
+      "start": "02:00",
+      "end": "05:00"
+    },
+    "autoInstall": false
+  }
+}
+```
+
+读法：`result` 是 `SoftwareUpdatePolicy` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
 
 #### 可能的事件
 
 | Event | 条件 |
 |---|---|
 | `software.updatePolicyChanged` | 策略实际变化时触发。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "software.updatePolicyChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### `software.setUpdatePolicy` 候选错误
 
@@ -143,6 +279,26 @@ Capability ID：`software.updatePolicy`
 | `NOT_SUPPORTED` | common | target、channel 或 schedule 不支持。 |
 | `INVALID_ARGUMENT` | common | policy 字段值非法（如时间格式错误）。 |
 | `PERMISSION_DENIED` | common | 无权修改更新策略。 |
+
+#### Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "target",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `software.resetUpdatePolicy`
 
@@ -162,13 +318,70 @@ Capability ID：`software.updatePolicy`
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 要恢复默认策略的软件对象。 |
 
+#### Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "software.resetUpdatePolicy",
+  "params": {
+    "target": "launcher"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `SoftwareResetUpdatePolicyParams`，省略字段按上表默认值处理。
+
 #### 返回结果 Result：`SoftwareUpdatePolicy`
 
 返回重置后的完整策略，省去额外 round-trip。字段见 6.1。
 
 ---
 
-## 4. 事件
+#### Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
+
+#### Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "target": "launcher",
+    "mode": "manual",
+    "allowedWindow": {
+      "start": "02:00",
+      "end": "05:00"
+    },
+    "autoInstall": false
+  }
+}
+```
+
+读法：`result` 是 `SoftwareUpdatePolicy` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+## 4. 事件 Events
 
 ### 4.0 事件速览
 
@@ -195,6 +408,25 @@ Capability ID：`software.updatePolicy`
 
 ---
 
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "software.updatePolicyChanged",
+  "intent": 1,
+  "data": {
+    "target": "launcher",
+    "policy": {},
+    "changedFields": [
+      "state"
+    ],
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
 ## 5. Capability
 
 Capability name: `software.updatePolicy`。
@@ -207,7 +439,7 @@ Capability name: `software.updatePolicy`。
 
 ---
 
-## 6. Schemas
+## 6. 字段 / Schemas
 
 ### 6.1 `SoftwareUpdatePolicy`
 
@@ -246,7 +478,7 @@ Capability name: `software.updatePolicy`。
 
 ---
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
 ### 7.1 查询 Launcher 更新策略
 
@@ -436,7 +668,7 @@ Capability name: `software.updatePolicy`。
 
 ---
 
-## 8. 候选 Errors
+## 8. 错误
 
 | Error | 复用 / 候选 | 说明 | Review |
 |---|---|---|---|
@@ -455,7 +687,7 @@ Capability name: `software.updatePolicy`。
 
 ---
 
-## 10. Registry / Conformance Status
+## 10. Registry / Conformance 状态
 
 | 项 | 状态 |
 |---|---|
@@ -466,7 +698,7 @@ Capability name: `software.updatePolicy`。
 
 ---
 
-## 11. Test Notes
+## 11. 测试要点
 
 - `software.getUpdatePolicy(target: "launcher")` / `software.setUpdatePolicy(target: "launcher")` 策略 get/set 一致。
 - `software.setUpdatePolicy` partial update 语义验证：只传 `channel`，其余字段保持不变。

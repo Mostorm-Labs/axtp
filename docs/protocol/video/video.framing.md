@@ -23,6 +23,27 @@ lastReviewed: 2026-06-13
 | Conformance | needed；需覆盖 capability、mode switch、region tracking、event sync、unsupported/conflict。 |
 | 主要未决问题 | `[REVIEW-ASK]` gallery/no-top-bar 是否归 framing，region tracking carrier 是否作为参数，speaker tracking 音频依赖如何表达。 |
 
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 ## 1. 功能说明
 
 `video.framing` 用于控制设备输出画面的构图算法和构图运行态。它覆盖全景、auto framing、区域追踪、gallery、无上边条 gallery、speaker tracking 等模式，以及这些模式下的可选配置。
@@ -68,22 +89,79 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。主要字段为 `cameraId` 和 `sourceId`。
 
-#### 3.1.2 返回结果 Result：`VideoFramingCapabilities`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "video.getFramingCapabilities",
+  "params": {
+    "cameraId": "main",
+    "sourceId": "camera.main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetFramingCapabilitiesParams`，省略字段按上表默认值处理。
+
+#### 3.1.3 返回结果 Result：`VideoFramingCapabilities`
 
 字段见 [6.3](#63-capability-schemas)。必须能表达 `modes`、`galleryVariants`、`trackingCarriers` 和默认配置。
 
-#### 3.1.3 可能触发的事件
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "capability": "video.framing",
+    "modes": [
+      "auto",
+      "manual"
+    ],
+    "regionCoordinateUnit": "normalized"
+  }
+}
+```
+
+读法：`result` 是 `VideoFramingCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.1.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query 不应产生状态变化。 | none | 无需处理。 |
 
-#### 3.1.4 错误
+#### 3.1.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备没有 framing 服务。 | UI 隐藏 framing 设置。 |
 | `UNAVAILABLE` | 摄像头链路或算法服务暂不可用。 | 稍后重试或展示不可用原因。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `video.getFramingConfig`
 
@@ -102,22 +180,76 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.2.2 返回结果 Result：`VideoFramingConfig`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "video.getFramingConfig",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetFramingConfigParams`，省略字段按上表默认值处理。
+
+#### 3.2.3 返回结果 Result：`VideoFramingConfig`
 
 字段见 [6.4](#64-config--state-总结构)。
 
-#### 3.2.3 可能触发的事件
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "cameraId": "main",
+    "mode": "auto",
+    "target": "speaker",
+    "margin": 12
+  }
+}
+```
+
+读法：`result` 是 `VideoFramingConfig` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.2.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变配置。 | none | 无需处理。 |
 
-#### 3.2.4 错误
+#### 3.2.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `INVALID_ARGUMENT` | `cameraId` 或 `sourceId` 非法。 | 返回字段路径。 |
 | `UNAVAILABLE` | framing 状态不可读。 | 返回 `unavailableReason` detail。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `video.setFramingConfig`
 
@@ -136,11 +268,52 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。`config.mode` 是必填或部分更新字段，未携带的字段保持原值。
 
-#### 3.3.2 返回结果 Result：`SetFramingConfigResult`
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "video.setFramingConfig",
+  "params": {
+    "cameraId": "main",
+    "config": {
+      "cameraId": "main",
+      "mode": "auto",
+      "target": "speaker",
+      "margin": 12
+    },
+    "expectedVersion": "1.2.3"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `SetFramingConfigParams`，省略字段按上表默认值处理。
+
+#### 3.3.3 返回结果 Result：`SetFramingConfigResult`
 
 字段见 [6.2](#62-请求与响应-schemas)。返回最终配置或 `applying` 状态下的目标配置。
 
-#### 3.3.3 可能触发的事件
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "cameraId": "main",
+    "mode": "auto",
+    "target": "speaker",
+    "margin": 12
+  }
+}
+```
+
+读法：`result` 是 `SetFramingConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.3.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
@@ -148,7 +321,27 @@ lastReviewed: 2026-06-13
 | `video.framingStateChanged` | mode 切换进入 applying / active / degraded / failed。 | `VideoFramingStateChangedEvent` | 更新状态文案和禁用态。 |
 | `camera.ptzStateChanged` | `trackingCarrier=physical_ptz` 时 framing 接管或释放 PTZ。 | `PtzStateChangedEvent` | 禁用或恢复手动 PTZ 控件。 |
 
-#### 3.3.4 错误
+#### 3.3.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "video.framingConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "config"
+    ],
+    "config": {
+      "mode": "auto"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.3.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -156,6 +349,26 @@ lastReviewed: 2026-06-13
 | `OUT_OF_RANGE` | tracking region 越界。 | 返回合法范围。 |
 | `DEVICE_MODE_CONFLICT` | physical PTZ 正被其他控制端占用，或 privacy cover 生效。 | 返回冲突 owner。 |
 | `BUSY` | 算法服务正在切换。 | 建议稍后重试。 |
+
+#### 3.3.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.4 `video.resetFramingConfig`
 
@@ -174,22 +387,96 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.4.2 返回结果 Result：`SetFramingConfigResult`
+#### 3.4.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 104,
+  "method": "video.resetFramingConfig",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `ResetFramingConfigParams`，省略字段按上表默认值处理。
+
+#### 3.4.3 返回结果 Result：`SetFramingConfigResult`
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.4.3 可能触发的事件
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "cameraId": "main",
+    "mode": "auto",
+    "target": "speaker",
+    "margin": 12
+  }
+}
+```
+
+读法：`result` 是 `SetFramingConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.4.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `video.framingConfigChanged` | 默认配置与当前配置不同。 | `VideoFramingConfigChangedEvent` | 更新 UI。 |
 
-#### 3.4.4 错误
+#### 3.4.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "video.framingConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "config"
+    ],
+    "config": {
+      "mode": "auto"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.4.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 reset。 | UI 隐藏恢复默认。 |
 | `BUSY` | 正在切换 mode。 | 稍后重试。 |
+
+#### 3.4.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.5 `video.getFramingState`
 
@@ -208,21 +495,75 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.5.2 返回结果 Result：`VideoFramingState`
+#### 3.5.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 105,
+  "method": "video.getFramingState",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetFramingStateParams`，省略字段按上表默认值处理。
+
+#### 3.5.3 返回结果 Result：`VideoFramingState`
 
 字段见 [6.4](#64-config--state-总结构)。
 
-#### 3.5.3 可能触发的事件
+#### 3.5.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "cameraId": "main",
+    "mode": "auto",
+    "active": true,
+    "target": "speaker"
+  }
+}
+```
+
+读法：`result` 是 `VideoFramingState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.5.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.5.4 错误
+#### 3.5.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | camera pipeline 不可读。 | 返回 unavailable detail。 |
+
+#### 3.5.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": false,
+    "code": 13,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "UNAVAILABLE",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -251,6 +592,30 @@ lastReviewed: 2026-06-13
 | `applyState` | string enum | yes | `applied`, `applying`, `pending_restart`, `failed` | none | 应用状态。 |
 | `reason` | string enum | no | `user_request`, `physical_control`, `profile_changed`, `restore_config`, `legacy_adapter`, `device_policy`, `unknown` | `unknown` | 变化来源。 |
 
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "video.framingConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "config": {
+      "cameraId": "main",
+      "mode": "auto",
+      "target": "speaker",
+      "margin": 12
+    },
+    "applyState": "active",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
 #### 客户端处理建议
 
 | 场景 | 建议 |
@@ -275,6 +640,26 @@ lastReviewed: 2026-06-13
 | `state` | `VideoFramingState` | yes | see schema | none | 当前运行态。 |
 | `reason` | string enum | no | `config_changed`, `algorithm_ready`, `resource_conflict`, `dependency_unavailable`, `unknown` | `unknown` | 状态变化原因。 |
 
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "video.framingStateChanged",
+  "intent": 1,
+  "data": {
+    "state": {
+      "cameraId": "main",
+      "mode": "auto",
+      "active": true,
+      "target": "speaker"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
 #### 客户端处理建议
 
 | 场景 | 建议 |
@@ -295,6 +680,22 @@ lastReviewed: 2026-06-13
 | `mode` | string enum | yes | `panorama`, `auto_framing`, `region_tracking`, `gallery`, `speaker_tracking`, `manual` | none | 新 mode。 |
 | `previousMode` | string enum | no | same as `mode` | omitted | 旧 mode。 |
 | `reason` | string enum | no | see config event | `unknown` | 变化原因。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "video.framingModeChanged",
+  "intent": 1,
+  "data": {
+    "mode": "auto",
+    "previousMode": "auto",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 

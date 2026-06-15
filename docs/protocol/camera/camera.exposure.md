@@ -23,6 +23,27 @@ lastReviewed: 2026-06-13
 | Conformance | needed；需覆盖 capability、mode dependency、set/reset/event、非法组合。 |
 | 主要未决问题 | `[REVIEW-ASK]` ISO 与 gain 是否同字段，shutter 单位，EV 枚举/范围，WDR 是否归 exposure。 |
 
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 ## 1. 功能说明
 
 `camera.exposure` 用于摄像头曝光链路配置。它覆盖自动/手动曝光模式、ISO/gain、快门、曝光补偿、WDR 和防频闪。基础画质参数归 `camera.image`，白平衡归 `camera.whiteBalance`。
@@ -61,21 +82,77 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.1.2 返回结果 Result：`ExposureCapabilities`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "camera.getExposureCapabilities",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetExposureCapabilitiesParams`，省略字段按上表默认值处理。
+
+#### 3.1.3 返回结果 Result：`ExposureCapabilities`
 
 字段见 [6.3](#63-capability-schemas)。
 
-#### 3.1.3 可能触发的事件
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "capability": "camera.exposure",
+    "modes": [
+      "auto",
+      "manual"
+    ],
+    "fields": {}
+  }
+}
+```
+
+读法：`result` 是 `ExposureCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.1.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变配置。 | none | 无需处理。 |
 
-#### 3.1.4 错误
+#### 3.1.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持曝光控制。 | 隐藏曝光设置。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `camera.getExposureConfig`
 
@@ -92,21 +169,76 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.2.2 返回结果 Result：`ExposureConfig`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "camera.getExposureConfig",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetExposureConfigParams`，省略字段按上表默认值处理。
+
+#### 3.2.3 返回结果 Result：`ExposureConfig`
 
 字段见 [6.4](#64-config--state-总结构)。
 
-#### 3.2.3 可能触发的事件
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "cameraId": "main",
+    "mode": "auto",
+    "ev": 0,
+    "powerLineFrequency": "50Hz",
+    "wdrEnabled": true
+  }
+}
+```
+
+读法：`result` 是 `ExposureConfig` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.2.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变配置。 | none | 无需处理。 |
 
-#### 3.2.4 错误
+#### 3.2.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | sensor 状态不可读。 | 返回 unavailable detail。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 13,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "UNAVAILABLE",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `camera.setExposureConfig`
 
@@ -123,23 +255,106 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.3.2 返回结果 Result：`SetExposureConfigResult`
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "camera.setExposureConfig",
+  "params": {
+    "cameraId": "main",
+    "config": {
+      "cameraId": "main",
+      "mode": "auto",
+      "ev": 0,
+      "powerLineFrequency": "50Hz",
+      "wdrEnabled": true
+    },
+    "expectedVersion": "1.2.3"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `SetExposureConfigParams`，省略字段按上表默认值处理。
+
+#### 3.3.3 返回结果 Result：`SetExposureConfigResult`
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.3.3 可能触发的事件
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "cameraId": "main",
+    "mode": "auto",
+    "ev": 0,
+    "powerLineFrequency": "50Hz",
+    "wdrEnabled": true
+  }
+}
+```
+
+读法：`result` 是 `SetExposureConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.3.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.exposureConfigChanged` | 配置实际变化。 | `ExposureConfigChangedEvent` | 更新 UI；根据 mode 禁用/启用字段。 |
 
-#### 3.3.4 错误
+#### 3.3.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "camera.exposureConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "config"
+    ],
+    "config": {
+      "mode": "auto"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.3.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `DEVICE_MODE_CONFLICT` | auto mode 下写 manual-only 字段。 | 返回 required mode。 |
 | `OUT_OF_RANGE` | ISO/gain/shutter/EV 越界。 | 返回合法范围。 |
 | `INVALID_ARGUMENT` | 字段组合非法。 | 整体失败，不部分生效。 |
+
+#### 3.3.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "DEVICE_MODE_CONFLICT",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.4 `camera.resetExposureConfig`
 
@@ -156,21 +371,96 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.4.2 返回结果 Result：`SetExposureConfigResult`
+#### 3.4.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 104,
+  "method": "camera.resetExposureConfig",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `ResetExposureConfigParams`，省略字段按上表默认值处理。
+
+#### 3.4.3 返回结果 Result：`SetExposureConfigResult`
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.4.3 可能触发的事件
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "cameraId": "main",
+    "mode": "auto",
+    "ev": 0,
+    "powerLineFrequency": "50Hz",
+    "wdrEnabled": true
+  }
+}
+```
+
+读法：`result` 是 `SetExposureConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.4.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.exposureConfigChanged` | reset 后配置变化。 | `ExposureConfigChangedEvent` | 更新 UI。 |
 
-#### 3.4.4 错误
+#### 3.4.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "camera.exposureConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "config"
+    ],
+    "config": {
+      "mode": "auto"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.4.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `BUSY` | sensor 正忙。 | 稍后重试。 |
+
+#### 3.4.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 5,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "BUSY",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -191,6 +481,31 @@ lastReviewed: 2026-06-13
 | `config` | `ExposureConfig` | yes | see schema | none | 变化后的配置。 |
 | `applyState` | string enum | yes | `applied`, `pending_restart`, `failed` | none | 应用状态。 |
 | `reason` | string enum | no | `user_request`, `reset_to_default`, `auto_algorithm`, `profile_changed`, `legacy_adapter`, `unknown` | `unknown` | 变化原因。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "camera.exposureConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "config": {
+      "cameraId": "main",
+      "mode": "auto",
+      "ev": 0,
+      "powerLineFrequency": "50Hz",
+      "wdrEnabled": true
+    },
+    "applyState": "active",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 

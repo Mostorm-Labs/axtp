@@ -1,1146 +1,1478 @@
-# AXTP 音频录制协议方案
-
-版本：v0.2
-
-归属域：`audio`
-
-Capability ID：`audio.recording`
-
-数据面：`stream`
-
-文件结果：`file`
-
-适用范围：音频调试、产测抓音、问题定位、上位机实时监听、算法前后数据录制、文件化录制导出。
-
+---
+status: draft
+contract: false
+generated: false
+domain: audio
+feature: audio.recording
+registry:
+lastReviewed: 2026-06-15
 ---
 
-## 协议审核标记（人工复核）
+# audio.recording
 
-| 标记 | 条目 | 审核结论 | 后续动作 |
-|---|---|---|---|
-| `[REVIEW-OK]` | `audio.recording` capability | 录制业务控制面归 `audio`，数据面归 `stream`，文件结果归 `file`，符合 Naming/YAML mapping specs taxonomy。 | 可作为 `registry/domains/audio/domain.yaml` 草案输入。 |
-| `[REVIEW-OK]` | `audio.startRecording` / `audio.stopRecording` / `audio.cancelRecording` / `audio.getRecordingState` | 业务域创建、关闭和查询业务流，不使用常规 `stream.open`。 | 进入 registry 时按本文 schema 拆分 request/response。 |
-| `[REVIEW-OK]` | `audio.recordingStateChanged` / `audio.recordingProgressReported` | 状态变化和周期进度归业务域，公共 stream 层只承载数据面和可选流控。 | 进入 registry 时分配或复用 eventId。 |
-| `[REVIEW-FIX]` | 文件模式与 `file` 域方法 | 当前 `docs/protocol/file/file.transfer.md` 仍是 blocker，本文不把 `file.getInfo` / `file.download` / `file.delete` 写成已定稿合同。 | file 域重写后同步文件查询、下载、删除方法名和 `fileRef` schema。 |
-| `[REVIEW-ASK]` | AXDP `CommonAudioRecord` / `CommonAudioRecordStart` / `CommonAudioRecordStop` / `CommonAudioRecordData` | 旧协议可能用于产测抓音或工厂录音，不一定全部属于通用音频录制能力。 | 人工确认后再写 `legacyRefs`；产测专用流程可由 `diagnostic.audioTest` 触发并复用 `audio.recording`。 |
-| `[REVIEW-ASK]` | `deliveryMode=file` | 本文补充了 `fileId` 生命周期、保留策略和权限字段，但具体持久化策略需要设备侧确认。 | 确认后写入 registry schema、能力字段和 file 域互操作说明。 |
+## 0. 速读结论
 
----
-
-## 1. 文档定位
-
-`audio.recording` 定义设备侧音频录制任务的控制面。它回答：
-
-1. 设备支持哪些录制源、格式、采样率、位深、通道数和输出方式。
-2. 如何创建录制任务并取得 `recordingId`。
-3. 实时输出时如何取得 `streamId` 并接收音频 chunk。
-4. 文件输出时如何取得录制完成后的 `fileId`。
-5. 如何查询、停止、取消录制任务。
-6. 状态和进度如何通知客户端。
-7. 旧 AXDP 音频录制命令如何迁移或保留为待确认适配项。
-
-本方案是业务协议方案和人工评审输入。采纳后，稳定事实必须写入 `registry/domains/audio/domain.yaml` 或对应 registry YAML，并由 Generator 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。本文不直接分配 numeric methodId、eventId、schema fieldId 或 stream profile ID；数值以 registry/generated 为准。
-
----
-
-## 2. 域边界
-
-| 内容 | 归属 | 说明 |
-|---|---|---|
-| 录制源、格式、采样率、通道、开始、停止、取消、状态 | `audio.recording` | 音频录制业务生命周期。 |
-| `streamId`、`seqId`、`cursor`、payload、ACK/window/pause/resume/abort | `stream` | 统一数据面和可选公共流控。 |
-| 文件查询、下载、删除、断点续传 | `file` | `audio` 只返回 `fileId` / `fileRef`，不承载文件数据。 |
-| 产测流程编排、测试结果判定 | `diagnostic.audioTest` | 可以调用或复用 `audio.recording`，但不重新定义音频数据面。 |
-| 音频算法参数 | `audio.algorithm` | 录制源可引用 `algorithm_input` / `algorithm_output`，但不配置算法参数。 |
-| EQ 参数 | `audio.eq` | 录制可以抓取 EQ 前后链路，EQ 配置仍归 `audio.eq`。 |
-
-关键原则：
-
-```text
-audio 负责录什么和何时录。
-stream 负责怎么传音频数据。
-file 负责录完后如何取文件。
-diagnostic 负责产测流程编排，不拥有通用音频录制协议。
-```
-
----
-
-## 3. 非目标
-
-`audio.recording` 不负责：
-
-1. 不定义常规 `stream.open`，也不要求客户端先打开 stream。
-2. 不把音频数据塞进普通 RPC response。
-3. 不定义 UAC、会议、播放、路由、音量或算法配置。
-4. 不定义通用文件传输协议。
-5. 不承诺所有 legacy 工厂抓音命令都直接映射为通用录制能力。
-
-正确调用路径：
-
-```text
-audio.startRecording
-  -> 返回 recordingId
-  -> deliveryMode=stream 时同时返回 streamId
-  -> 后续音频数据走 stream 数据面
-
-audio.stopRecording
-  -> 正常停止采集
-  -> deliveryMode=file 时返回 fileId 或 fileRef
-```
-
----
-
-## 4. 核心接口
-
-| 类型 | 名称 | 说明 |
-|---|---|---|
-| capability | `audio.recording` | 音频录制能力块。 |
-| method | `audio.getRecordingCapabilities` | 查询录制能力、默认值和约束。 |
-| method | `audio.startRecording` | 创建录制任务。 |
-| method | `audio.stopRecording` | 正常停止录制任务并产出最终结果。 |
-| method | `audio.cancelRecording` | 取消任务并丢弃未完成结果。 |
-| method | `audio.getRecordingState` | 查询指定录制任务状态。 |
-| event | `audio.recordingStateChanged` | 录制状态变化通知。 |
-| event | `audio.recordingProgressReported` | 录制进度周期上报。 |
-
-`audio.getRecordingCapabilities` 是 audio 域内的细粒度能力查询；全局 capability discovery 只负责发现设备是否支持 `audio.recording` 能力块以及暴露哪些 methods/events。
-
----
-
-## 5. 核心模型
-
-### 5.1 录制源
-
-推荐源名称如下。设备必须通过 `audio.getRecordingCapabilities` 声明实际支持的源。
-
-| source | 说明 |
+| 项目 | 内容 |
 |---|---|
-| `mic_raw` | 麦克风原始采集数据。 |
-| `mic_processed` | 麦克风处理后数据。 |
-| `uplink_raw` | 上行链路原始数据。 |
-| `uplink_processed` | 上行处理后数据，通常送给远端、UAC、网络会议或编码器。 |
-| `downlink_raw` | 下行接收原始数据。 |
-| `downlink_playback` | 下行播放前数据。 |
-| `aec_reference` | AEC 回声参考信号。 |
-| `algorithm_input` | 音频算法输入。 |
-| `algorithm_output` | 音频算法输出。 |
-| `speaker_output` | 扬声器输出数据。 |
+| 这个能力做什么 | 音频调试、产测抓音、问题定位、上位机实时监听、算法前后数据录制、文件化录制导出。 |
+| 当前状态 | draft |
+| 是否可直接实现 | 否。本文是 protocol draft；正式实现以 registry / generated 为准。 |
+| 主要交互 | RPC + EVENT |
+| 是否使用 STREAM | 否 |
+| Registry readiness | partial |
+| Conformance | needed |
+| 主要未决问题 | schema 字段、错误模型、legacy 映射和 conformance case 仍需人工确认。 |
 
-### 5.2 输出模式
+## JSON 示例约定
 
-| deliveryMode | 说明 | start response | 完成结果 |
-|---|---|---|---|
-| `stream` | 实时通过 stream 数据面输出音频 chunk。 | `recordingId` + `streamId` | `finalCursor` / `finalSeqId` / `bytesProduced` |
-| `file` | 设备内部写入文件，完成后暴露文件引用。 | `recordingId` | `fileId` 或 `fileRef` |
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
 
-MVP 推荐 `deliveryMode=stream`。`deliveryMode=file` 需要设备确认存储空间、保留策略、权限和 file 域方法名。
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
 
-### 5.3 音频格式
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| `format` | enum | `pcm` 或 `wav`。stream 模式 MVP 使用 `pcm`；file 模式可使用 `wav`。 |
-| `sampleRate` | uint32 | 采样率，单位 Hz。 |
-| `bitDepth` | uint8 | 位深，例如 `16`、`24`、`32`。 |
-| `sampleFormat` | enum | 可选，推荐 `s16le`、`s24le`、`s32le`、`float32le`。 |
-| `channels` | uint8 | 通道数。 |
-| `channelMask` | uint8[] | 可选，选择物理或逻辑通道索引。 |
-| `chunkDurationMs` | uint16 | stream 模式下每个音频 chunk 的目标时长。 |
-
-PCM 默认规则：
-
-1. 未声明 `sampleFormat` 时，按 `bitDepth` 推导为 little-endian signed PCM。
-2. 多通道默认 interleaved。
-3. `payloadBytesPerChunk = sampleRate * channels * bytesPerSample * chunkDurationMs / 1000`。
-
-示例：
-
-```text
-48000 Hz * 2 channels * 2 bytes * 20 ms / 1000 = 3840 bytes
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
 ```
 
-### 5.4 录制状态
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
 
-| state | 说明 |
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
+
+## 1. 功能说明
+
+`audio.recording` 用于音频调试、产测抓音、问题定位、上位机实时监听、算法前后数据录制、文件化录制导出。
+
+本文是 `docs/protocol` 下的协议草案或可读说明，不是新的机器事实源。draft / review-ok 阶段不得作为 runtime 实现合同；正式实现必须以 `registry/**/*.yaml`、`protocol/axtp.protocol.yaml`、`docs/generated/**` 和 conformance case 为准。
+
+## 2. 能力边界
+
+| 类型 | 内容 |
 |---|---|
-| `starting` | 设备已接受请求，正在准备音频链路或 stream/file 资源。 |
-| `recording` | 正在录制。 |
-| `stopping` | 正在停止采集、关闭 stream 或写文件尾。 |
-| `completed` | 正常完成。 |
-| `failed` | 录制失败，结果不可用或不完整。 |
-| `cancelled` | 已取消，未完成结果应被丢弃。 |
+| 包含 | audio.recording 的能力发现、状态查询、配置或动作控制。 |
+| 包含 | 与 audio.recording 直接相关的 method/event/schema 草案。 |
+| 不包含 | 不承载其他 capability feature 的业务语义；跨域关系通过 schema 字段、引用或数据面 stream/file 表达。 |
+| 不包含 | method/event 数值 ID 分配；数值以 registry/generated 为准。 |
+| 数据面 | 本 feature 默认不定义 STREAM payload，所有操作均通过 RPC method/event 完成。 |
 
-`unsupported` 不作为录制任务状态；不支持能力、源或格式时，RPC 返回错误。
+## 3. 方法 Methods
 
-### 5.5 标识符和时间
+方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。不要在草案中分配正式 ID。
 
-| 字段 | 说明 |
-|---|---|
-| `recordingId` | 录制任务 ID，由设备生成，在当前 session 或设备定义的保留窗口内唯一。 |
-| `streamId` | stream 数据面 ID，由 stream runtime 分配，`deliveryMode=stream` 时由 `audio.startRecording` 返回。 |
-| `seqId` | 每个 `streamId` 内从 0 开始递增的数据包序号。 |
-| `cursor` | stream header 游标，语义由 `cursorUnit` 决定。 |
-| `cursorUnit` | 推荐 `byteOffset`、`timestampUs` 或 `sampleIndex`。`recording_audio` 默认 `byteOffset`，`realtime_audio` 默认 `timestampUs`。 |
-| `timestampUs` | 音频 chunk 对应的采样起始时间；无法取得采样时间时使用设备发送时间。 |
-| `startedAtMs` / `endedAtMs` | 设备时钟下的任务开始/结束时间，单位毫秒。 |
+### 3.0 方法速览
 
----
-
-## 6. `audio.getRecordingCapabilities`
-
-### 6.1 请求
-
-```json
-{
-  "method": "audio.getRecordingCapabilities",
-  "params": {}
-}
-```
-
-可选按源查询：
-
-```json
-{
-  "method": "audio.getRecordingCapabilities",
-  "params": {
-    "source": "mic_raw"
-  }
-}
-```
-
-### 6.2 返回
-
-```json
-{
-  "result": {
-    "supported": true,
-    "capability": "audio.recording",
-    "maxConcurrentRecordings": 1,
-    "defaultDeliveryMode": "stream",
-    "deliveryModes": ["stream", "file"],
-    "sources": [
-      {
-        "source": "mic_raw",
-        "formats": ["pcm"],
-        "sampleRates": [16000, 32000, 48000],
-        "bitDepths": [16, 24, 32],
-        "sampleFormats": ["s16le", "s24le", "s32le"],
-        "channelCounts": [1, 2, 4, 6],
-        "supportsChannelMask": true,
-        "defaultSampleRate": 48000,
-        "defaultBitDepth": 16,
-        "defaultChannels": 2
-      },
-      {
-        "source": "uplink_processed",
-        "formats": ["pcm", "wav"],
-        "sampleRates": [16000, 48000],
-        "bitDepths": [16],
-        "channelCounts": [1, 2]
-      }
-    ],
-    "stream": {
-      "profiles": ["recording_audio", "realtime_audio"],
-      "defaultProfile": "recording_audio",
-      "cursorUnits": ["byteOffset", "timestampUs", "sampleIndex"],
-      "chunkDurationMs": [10, 20, 40],
-      "preferredChunkDurationMs": 20,
-      "maxPayloadBytes": 8192,
-      "supportsSeqId": true,
-      "supportsCursor": true,
-      "supportsResume": false,
-      "supportsMissingRanges": false
-    },
-    "file": {
-      "formats": ["wav", "pcm"],
-      "maxDurationMs": 600000,
-      "maxBytes": 104857600,
-      "defaultRetentionMs": 86400000,
-      "requiresExplicitDelete": false
-    },
-    "multiSource": {
-      "supported": false,
-      "modes": []
-    },
-    "progress": {
-      "supported": true,
-      "defaultIntervalMs": 1000,
-      "minIntervalMs": 200
-    }
-  }
-}
-```
-
-### 6.3 能力字段规则
-
-1. 客户端必须以 `sources[]` 中的实际能力为准，不得只按全局默认值构造请求。
-2. `maxConcurrentRecordings=1` 时，第二个互斥录制请求返回 `BUSY` 或 `INVALID_STATE`。
-3. `deliveryModes` 中不包含 `file` 时，客户端不得请求文件录制。
-4. `stream.supportsResume=false` 时，断线后不能要求设备从旧 cursor 自动续传；客户端可以重新创建任务。
-5. `file.requiresExplicitDelete=false` 时，设备可以按 `defaultRetentionMs` 自动清理文件。
-
----
-
-## 7. `audio.startRecording`
-
-### 7.1 请求字段
-
-请求必须满足：`source` 和 `sources` 二选一；MVP 只要求支持 `source`。
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| `source` | enum | 条件必填 | 单源录制源。 |
-| `sources` | object[] | 条件必填 | 多源录制配置。 |
-| `deliveryMode` | enum | 否 | `stream` 或 `file`；默认来自 capabilities。 |
-| `format` | enum | 是 | `pcm` 或 `wav`。 |
-| `sampleRate` | uint32 | 是 | 采样率，单位 Hz。 |
-| `bitDepth` | uint8 | 是 | 位深。 |
-| `sampleFormat` | enum | 否 | PCM 采样格式。 |
-| `channels` | uint8 | 单源必填 | 通道数。 |
-| `channelMask` | uint8[] | 否 | 要录制的通道索引。 |
-| `durationMs` | uint32 | 否 | 期望录制时长；缺省表示由客户端显式停止。 |
-| `maxDurationMs` | uint32 | 否 | 客户端可接受的最大时长，设备可用于防护。 |
-| `streamProfile` | string | stream 模式可选 | 默认 `recording_audio`。 |
-| `cursorUnit` | enum | stream 模式可选 | 默认随 stream profile。 |
-| `chunkDurationMs` | uint16 | stream 模式可选 | 默认来自 capabilities。 |
-| `progressIntervalMs` | uint32 | 否 | 进度事件间隔；低于能力最小值时返回 `OUT_OF_RANGE`。 |
-| `metadata` | object | 否 | 调试工具、caseId、备注等非路由字段。 |
-
-### 7.2 stream 模式请求
-
-```json
-{
-  "method": "audio.startRecording",
-  "params": {
-    "source": "mic_raw",
-    "format": "pcm",
-    "sampleRate": 48000,
-    "bitDepth": 16,
-    "sampleFormat": "s16le",
-    "channels": 2,
-    "durationMs": 30000,
-    "deliveryMode": "stream",
-    "streamProfile": "recording_audio",
-    "cursorUnit": "byteOffset",
-    "chunkDurationMs": 20,
-    "progressIntervalMs": 1000
-  }
-}
-```
-
-### 7.3 stream 模式返回
-
-```json
-{
-  "result": {
-    "recordingId": "rec_001",
-    "state": "recording",
-    "deliveryMode": "stream",
-    "streamId": 201,
-    "streamProfile": "recording_audio",
-    "cursorUnit": "byteOffset",
-    "source": "mic_raw",
-    "format": "pcm",
-    "sampleRate": 48000,
-    "bitDepth": 16,
-    "sampleFormat": "s16le",
-    "channels": 2,
-    "chunkDurationMs": 20,
-    "payloadBytesPerChunk": 3840,
-    "cursor": 0,
-    "nextSeqId": 0,
-    "startedAtMs": 1710000000000
-  }
-}
-```
-
-### 7.4 file 模式请求
-
-```json
-{
-  "method": "audio.startRecording",
-  "params": {
-    "source": "uplink_processed",
-    "format": "wav",
-    "sampleRate": 48000,
-    "bitDepth": 16,
-    "sampleFormat": "s16le",
-    "channels": 2,
-    "durationMs": 30000,
-    "deliveryMode": "file",
-    "progressIntervalMs": 1000,
-    "metadata": {
-      "caseId": "issue-1024"
-    }
-  }
-}
-```
-
-### 7.5 file 模式返回
-
-```json
-{
-  "result": {
-    "recordingId": "rec_002",
-    "state": "recording",
-    "deliveryMode": "file",
-    "source": "uplink_processed",
-    "format": "wav",
-    "sampleRate": 48000,
-    "bitDepth": 16,
-    "sampleFormat": "s16le",
-    "channels": 2,
-    "cursor": 0,
-    "cursorUnit": "byteOffset",
-    "startedAtMs": 1710000000000
-  }
-}
-```
-
-file 模式开始时不返回 `streamId`。录制完成后，`audio.stopRecording` response 或 `audio.recordingStateChanged` event 返回 `fileId` / `fileRef`。
-
-### 7.6 多源扩展
-
-多源录制必须由 capabilities 声明 `multiSource.supported=true` 后才能使用。
-
-```json
-{
-  "method": "audio.startRecording",
-  "params": {
-    "sources": [
-      {
-        "source": "mic_raw",
-        "trackId": 0,
-        "channels": 6,
-        "channelMask": [0, 1, 2, 3, 4, 5]
-      },
-      {
-        "source": "aec_reference",
-        "trackId": 1,
-        "channels": 2
-      }
-    ],
-    "multiSourceMode": "separate_tracks",
-    "format": "pcm",
-    "sampleRate": 48000,
-    "bitDepth": 16,
-    "deliveryMode": "stream",
-    "streamProfile": "recording_audio"
-  }
-}
-```
-
-多源封装模式：
-
-| multiSourceMode | 说明 |
-|---|---|
-| `interleaved` | 多个源按约定顺序交织在同一个 payload 中。 |
-| `separate_tracks` | 一个 `streamId` 内包含多个 track，chunk metadata 标识 `trackId`。 |
-| `multi_stream` | 每个 source 返回独立 `streamId`，共享同一个 `recordingId`。 |
-
-MVP 不要求实现多源录制。进入 registry 前必须为多源模式补充稳定 schema。
-
----
-
-## 8. stream 数据面
-
-### 8.1 数据包模型
-
-`deliveryMode=stream` 时，音频数据通过 stream 数据面传输。JSON 示例用于说明字段语义；二进制 STREAM 帧只在 header 中携带 `streamId`、`seqId`、`cursor`，业务 metadata 由 stream context 或数据面 payload profile 解释。
-
-```json
-{
-  "streamId": 201,
-  "seqId": 0,
-  "cursor": 0,
-  "cursorUnit": "byteOffset",
-  "timestampUs": 1710000000000000,
-  "payloadType": "audio_chunk",
-  "source": "mic_raw",
-  "format": "pcm",
-  "sampleRate": 48000,
-  "channels": 2,
-  "bitDepth": 16,
-  "sampleFormat": "s16le",
-  "chunkDurationMs": 20,
-  "payloadBytes": 3840,
-  "payload": "base64:AAAA..."
-}
-```
-
-下一包：
-
-```json
-{
-  "streamId": 201,
-  "seqId": 1,
-  "cursor": 3840,
-  "cursorUnit": "byteOffset",
-  "timestampUs": 1710000000020000,
-  "payloadType": "audio_chunk",
-  "payloadBytes": 3840,
-  "payload": "base64:BBBB..."
-}
-```
-
-### 8.2 `seqId` 规则
-
-1. `seqId` 在每个 `streamId` 内独立计数。
-2. 第一包为 `0`，每发送一个 `audio_chunk` 加 `1`。
-3. 用于检测丢包、乱序和重复包。
-4. `seqId` 不表示时间戳或字节偏移。
-
-### 8.3 `cursor` 规则
-
-`cursor` 的单位由 `cursorUnit` 决定：
-
-| cursorUnit | cursor 含义 | 推荐场景 |
-|---|---|---|
-| `byteOffset` | 当前 chunk 在录制对象中的起始字节偏移。 | 可靠录制、问题复现、文件化导出。 |
-| `timestampUs` | 当前 chunk 的采样起始时间戳，单位微秒。 | 实时监听、低延迟预览。 |
-| `sampleIndex` | 当前 chunk 的第一帧采样序号。 | 需要无歧义音频采样定位的实现。 |
-
-`recording_audio` profile 默认使用 `byteOffset`。如果使用 `byteOffset`：
-
-```text
-seqId=0 cursor=0    payloadBytes=3840
-seqId=1 cursor=3840 payloadBytes=3840
-seqId=2 cursor=7680 payloadBytes=3840
-```
-
-如果接收端收到 `seqId=0` 和 `seqId=2`，则 `seqId=1` 缺失；缺失字节范围大概率为 `3840..7679`。
-
-### 8.4 stream profile
-
-| profile | 目标 | reliability | ordered | ackMode | cursorUnit | backpressurePolicy |
+| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
 |---|---|---|---|---|---|---|
-| `recording_audio` | 录制导出、问题定位、产测抓音 | `reliable` | true | `window` | `byteOffset` | `pause_producer` |
-| `realtime_audio` | 实时监听、低延迟预览 | `best_effort` | true | `periodic` 或 `none` | `timestampUs` | `drop_old_chunks` |
+| `audio.startRecording` | action | 原草案中出现的候选方法 | `StartRecordingParams` | `StartRecordingResult` | 是，`audio.recordingStateChanged` | draft |
+| `audio.stopRecording` | action | 原草案中出现的候选方法 | `StopRecordingParams` | `StopRecordingResult` | 是，`audio.recordingStateChanged` | draft |
+| `audio.cancelRecording` | action | 原草案中出现的候选方法 | `CancelRecordingParams` | `CancelRecordingResult` | 是，`audio.recordingStateChanged` | draft |
+| `audio.getRecordingState` | query | 原草案中出现的候选方法 | `GetRecordingStateParams` | `GetRecordingStateResult` | 否 | draft |
+| `stream.open` | action | 原草案中出现的候选方法 | `OpenParams` | `OpenResult` | 是，`audio.recordingStateChanged` | draft |
+| `file.getInfo` | query | 原草案中出现的候选方法 | `GetInfoParams` | `GetInfoResult` | 否 | draft |
+| `file.download` | action | 原草案中出现的候选方法 | `DownloadParams` | `DownloadResult` | 是，`audio.recordingStateChanged` | draft |
+| `file.delete` | action | 原草案中出现的候选方法 | `DeleteParams` | `DeleteResult` | 是，`audio.recordingStateChanged` | draft |
+| `audio.getRecordingCapabilities` | query | 查询录制能力、默认值和约束 | `GetRecordingCapabilitiesParams` | `GetRecordingCapabilitiesResult` | 否 | draft |
 
-`recording_audio` 完整性优先，可以接受较高延迟，不应静默丢数据。`realtime_audio` 低延迟优先，可以接受少量丢包，不建议重传过旧音频。
+### 3.1 `audio.startRecording`
 
----
+**用途**：原草案中出现的候选方法。
 
-## 9. `audio.getRecordingState`
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `StartRecordingParams` |
+| Result Schema | `StartRecordingResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `audio.recordingStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
 
-### 9.1 请求
+#### 3.1.1 请求参数 Params：`StartRecordingParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
+
+#### 3.1.2 Request d block Example (op=7)
 
 ```json
 {
-  "method": "audio.getRecordingState",
+  "id": 101,
+  "method": "audio.startRecording",
   "params": {
-    "recordingId": "rec_001"
-  }
-}
-```
-
-### 9.2 stream 模式返回
-
-```json
-{
-  "result": {
-    "recordingId": "rec_001",
-    "state": "recording",
-    "deliveryMode": "stream",
-    "streamId": 201,
-    "streamProfile": "recording_audio",
-    "cursorUnit": "byteOffset",
-    "source": "mic_raw",
-    "format": "pcm",
-    "sampleRate": 48000,
-    "bitDepth": 16,
-    "sampleFormat": "s16le",
-    "channels": 2,
-    "durationMs": 12000,
-    "bytesProduced": 2304000,
-    "cursor": 2304000,
-    "nextSeqId": 600,
-    "startedAtMs": 1710000000000
-  }
-}
-```
-
-### 9.3 file 模式返回
-
-```json
-{
-  "result": {
-    "recordingId": "rec_002",
-    "state": "recording",
-    "deliveryMode": "file",
-    "source": "uplink_processed",
-    "format": "wav",
-    "sampleRate": 48000,
-    "bitDepth": 16,
-    "channels": 2,
-    "durationMs": 12000,
-    "bytesWritten": 2304044,
-    "cursor": 2304044,
-    "cursorUnit": "byteOffset",
-    "startedAtMs": 1710000000000
-  }
-}
-```
-
-### 9.4 终态返回
-
-终态任务在设备保留窗口内仍可查询。超过保留窗口后返回 `NOT_FOUND`。
-
-```json
-{
-  "result": {
-    "recordingId": "rec_002",
-    "state": "completed",
-    "deliveryMode": "file",
-    "durationMs": 30000,
-    "bytesWritten": 5760044,
-    "finalCursor": 5760044,
-    "fileRef": {
-      "fileId": "file_audio_rec_002",
-      "name": "audio_rec_002.wav",
-      "mimeType": "audio/wav",
-      "size": 5760044,
-      "createdAtMs": 1710000030000,
-      "expiresAtMs": 1710086430000
-    },
-    "endedAtMs": 1710000030000
-  }
-}
-```
-
----
-
-## 10. `audio.stopRecording`
-
-### 10.1 请求
-
-```json
-{
-  "method": "audio.stopRecording",
-  "params": {
-    "recordingId": "rec_001"
-  }
-}
-```
-
-### 10.2 stream 模式返回
-
-```json
-{
-  "result": {
-    "recordingId": "rec_001",
-    "state": "completed",
-    "deliveryMode": "stream",
-    "streamId": 201,
-    "durationMs": 30000,
-    "bytesProduced": 5760000,
-    "finalCursor": 5760000,
-    "finalSeqId": 1499,
-    "endedAtMs": 1710000030000
-  }
-}
-```
-
-### 10.3 file 模式返回
-
-```json
-{
-  "result": {
-    "recordingId": "rec_002",
-    "state": "completed",
-    "deliveryMode": "file",
-    "durationMs": 30000,
-    "bytesWritten": 5760044,
-    "finalCursor": 5760044,
-    "fileRef": {
-      "fileId": "file_audio_rec_002",
-      "name": "audio_rec_002.wav",
-      "mimeType": "audio/wav",
-      "size": 5760044,
-      "createdAtMs": 1710000030000,
-      "expiresAtMs": 1710086430000
-    },
-    "endedAtMs": 1710000030000
-  }
-}
-```
-
-### 10.4 停止规则
-
-1. 正常停止必须使用 `audio.stopRecording`。
-2. `recording` 状态下可停止；`starting` 状态下设备可以等待启动完成后停止，也可以返回 `INVALID_STATE`。
-3. `completed` / `failed` / `cancelled` 状态下重复停止应返回当前终态，或返回 `INVALID_STATE`；具体策略进入 registry 前应固定。
-4. stream 模式下，最后一个音频 chunk 必须先发送，再发布 `completed` 状态事件。
-5. file 模式下，设备必须写完文件尾或索引后才能返回 `fileRef`。
-
----
-
-## 11. `audio.cancelRecording`
-
-### 11.1 请求
-
-```json
-{
-  "method": "audio.cancelRecording",
-  "params": {
-    "recordingId": "rec_001",
+    "target": "default",
     "reason": "user_request"
   }
 }
 ```
 
-### 11.2 返回
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.1.3 返回结果 Result：`StartRecordingResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.1.4 Success Response d block Example (op=8)
 
 ```json
 {
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
   "result": {
-    "recordingId": "rec_001",
-    "state": "cancelled",
-    "reason": "user_request",
-    "endedAtMs": 1710000012000
+    "accepted": true
   }
 }
 ```
 
-### 11.3 取消规则
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
 
-1. `starting` / `recording` / `stopping` 状态可以取消。
-2. `completed` 后不允许取消；如需删除文件，由 file 域执行。
-3. file 模式取消后，设备应删除临时文件或将临时文件标记为不可见。
-4. stream 模式取消后，设备应释放 `streamId`，并停止发送后续 chunk。
-5. 取消会触发 `audio.recordingStateChanged(state=cancelled)`。
+#### 3.1.5 可能触发的事件
 
----
-
-## 12. 事件
-
-### 12.1 `audio.recordingStateChanged`
-
-触发条件：
-
-1. 录制进入 `starting` 或 `recording`。
-2. 客户端停止录制。
-3. 达到 `durationMs` 或设备最大时长自动停止。
-4. 录制完成。
-5. 客户端取消录制。
-6. stream 异常中止。
-7. 文件写入失败、存储空间不足或音频设备不可用。
-
-stream 开始事件：
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `audio.recordingStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `RecordingStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
 ```json
 {
   "event": "audio.recordingStateChanged",
-  "params": {
-    "recordingId": "rec_001",
-    "previousState": "starting",
-    "state": "recording",
-    "deliveryMode": "stream",
-    "streamId": 201,
-    "streamProfile": "recording_audio",
-    "cursor": 0,
-    "cursorUnit": "byteOffset",
-    "nextSeqId": 0,
-    "timestampMs": 1710000000000
-  }
-}
-```
-
-stream 完成事件：
-
-```json
-{
-  "event": "audio.recordingStateChanged",
-  "params": {
-    "recordingId": "rec_001",
-    "previousState": "stopping",
-    "state": "completed",
-    "deliveryMode": "stream",
-    "streamId": 201,
-    "finalCursor": 5760000,
-    "finalSeqId": 1499,
-    "durationMs": 30000,
-    "reason": "user_stop",
-    "timestampMs": 1710000030000
-  }
-}
-```
-
-file 完成事件：
-
-```json
-{
-  "event": "audio.recordingStateChanged",
-  "params": {
-    "recordingId": "rec_002",
-    "previousState": "stopping",
-    "state": "completed",
-    "deliveryMode": "file",
-    "fileRef": {
-      "fileId": "file_audio_rec_002",
-      "name": "audio_rec_002.wav",
-      "mimeType": "audio/wav",
-      "size": 5760044,
-      "createdAtMs": 1710000030000,
-      "expiresAtMs": 1710086430000
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
     },
-    "finalCursor": 5760044,
-    "durationMs": 30000,
-    "reason": "duration_reached",
-    "timestampMs": 1710000030000
+    "reason": "user_request"
   }
 }
 ```
 
-失败事件：
+#### 3.1.6 Event d block Example (op=6)
 
 ```json
 {
   "event": "audio.recordingStateChanged",
-  "params": {
-    "recordingId": "rec_001",
-    "previousState": "recording",
-    "state": "failed",
-    "deliveryMode": "stream",
-    "streamId": 201,
-    "error": {
-      "code": "UNAVAILABLE",
-      "reason": "audio_device_lost",
-      "message": "Audio device is unavailable"
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
     },
-    "timestampMs": 1710000012000
+    "reason": "user_request"
   }
 }
 ```
 
-### 12.2 `audio.recordingProgressReported`
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
-进度是周期性上报，使用 `Reported`，不使用 `Changed`。
+#### 3.1.7 错误
 
-stream 模式：
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
-```json
-{
-  "event": "audio.recordingProgressReported",
-  "params": {
-    "recordingId": "rec_001",
-    "state": "recording",
-    "deliveryMode": "stream",
-    "streamId": 201,
-    "durationMs": 12000,
-    "bytesProduced": 2304000,
-    "cursor": 2304000,
-    "cursorUnit": "byteOffset",
-    "nextSeqId": 600,
-    "timestampMs": 1710000012000
-  }
-}
-```
-
-file 模式：
+#### 3.1.8 Error Response d block Example (op=8)
 
 ```json
 {
-  "event": "audio.recordingProgressReported",
-  "params": {
-    "recordingId": "rec_002",
-    "state": "recording",
-    "deliveryMode": "file",
-    "durationMs": 12000,
-    "bytesWritten": 2304044,
-    "cursor": 2304044,
-    "cursorUnit": "byteOffset",
-    "timestampMs": 1710000012000
-  }
-}
-```
-
-事件节流规则：
-
-1. 默认间隔由 capabilities 的 `progress.defaultIntervalMs` 给出。
-2. 状态变化事件不受进度节流限制。
-3. 设备在资源紧张时可以降低进度频率，但不得省略终态事件。
-
----
-
-## 13. 与 `stream.abort` 的关系
-
-`stream.abort` 只用于异常释放，不替代正常停止。
-
-正常路径：
-
-```text
-audio.stopRecording(recordingId)
-```
-
-异常路径：
-
-```text
-stream.abort(streamId)
-  -> stream 层释放数据面资源
-  -> audio 层将 recordingId 转为 failed 或 cancelled
-  -> audio.recordingStateChanged 上报终态
-```
-
-`stream.abort` 适用场景：
-
-1. 接收端崩溃或不再接收数据。
-2. transport 断开。
-3. 流控检测到不可恢复错误。
-4. 调试工具强制释放资源。
-
-事件示例：
-
-```json
-{
-  "event": "audio.recordingStateChanged",
-  "params": {
-    "recordingId": "rec_001",
-    "previousState": "recording",
-    "state": "failed",
-    "deliveryMode": "stream",
-    "streamId": 201,
-    "error": {
-      "code": "CANCELED",
-      "reason": "stream_aborted",
-      "message": "Stream was aborted by receiver"
-    },
-    "timestampMs": 1710000012000
-  }
-}
-```
-
----
-
-## 14. 与 file 域的关系
-
-`deliveryMode=file` 时，`audio` 域负责创建录制任务并生成音频文件，完成后返回 `fileRef`。
-
-```json
-{
-  "fileRef": {
-    "fileId": "file_audio_rec_002",
-    "name": "audio_rec_002.wav",
-    "mimeType": "audio/wav",
-    "size": 5760044,
-    "sha256": "optional-lowercase-hex",
-    "createdAtMs": 1710000030000,
-    "expiresAtMs": 1710086430000
-  }
-}
-```
-
-`fileRef` 字段规则：
-
-1. `fileId` 是跨域文件引用，供 file 域后续查询或传输。
-2. `name`、`mimeType`、`size`、`createdAtMs` 应尽量在录制完成时返回，减少额外查询。
-3. `sha256` 可选；设备无法实时计算时可以省略。
-4. `expiresAtMs` 可选；存在时表示自动清理时间。
-5. file 域正式协议重写前，本文不固定文件查询、下载、删除方法名。
-
-权限和隐私规则：
-
-1. 音频录制属于敏感能力，设备可以要求 session 权限、用户授权或调试模式。
-2. 权限不足返回 `PERMISSION_DENIED`。
-3. 文件默认保留时间必须由 capabilities 或产品策略声明。
-4. 设备应避免把录音文件暴露给未授权 session。
-
----
-
-## 15. 与 diagnostic 域的关系
-
-产测、工厂录音或自动化诊断可以由 `diagnostic.audioTest` 编排：
-
-```text
-diagnostic.runAudioTest
-  -> 内部调用 audio.startRecording
-  -> 收集 stream/file 结果
-  -> 判定测试结果
-```
-
-边界规则：
-
-1. `diagnostic` 可以决定何时录、录多久、如何判定结果。
-2. `audio.recording` 仍然负责录制任务生命周期和音频数据面。
-3. legacy 工厂抓音命令如果只在产测中使用，优先登记为 `diagnostic.audioTest` 的流程适配，而不是暴露为通用用户能力。
-
----
-
-## 16. 错误处理
-
-优先复用 registry 中的 common error code。错误的具体字段放入 `error.data`。
-
-| code | 典型场景 |
-|---|---|
-| `NOT_SUPPORTED` | 不支持 `audio.recording`、指定源、格式、采样率、位深或输出模式。 |
-| `INVALID_ARGUMENT` | 参数类型错误、缺少必填字段、`source` 与 `sources` 同时出现。 |
-| `OUT_OF_RANGE` | `durationMs`、`chunkDurationMs`、`progressIntervalMs` 或通道索引越界。 |
-| `INVALID_STATE` | 当前状态不允许停止、取消或重复开始互斥任务。 |
-| `BUSY` | 音频链路、录制资源或目标 source 被占用。 |
-| `RESOURCE_EXHAUSTED` | 存储空间不足、stream buffer 不足或达到并发上限。 |
-| `PERMISSION_DENIED` | 当前 session 无录音权限或文件读取权限。 |
-| `NOT_FOUND` | `recordingId` 或完成后的 `fileId` 不存在。 |
-| `UNAVAILABLE` | 音频设备不可用、链路未初始化或设备处于不可录制模式。 |
-| `TIMEOUT` | 启动、停止、写文件尾或 stream drain 超时。 |
-| `INTERNAL_ERROR` | 设备内部错误。 |
-
-错误示例：
-
-```json
-{
-  "error": {
-    "code": "NOT_SUPPORTED",
-    "message": "sampleRate is not supported by source",
-    "data": {
-      "field": "sampleRate",
-      "value": 96000,
-      "source": "mic_raw",
-      "supported": [16000, 32000, 48000]
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
     }
   }
 }
 ```
 
----
+#### 3.1.9 规则
 
-## 17. Legacy AXDP 映射
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
-以下映射只作为评审输入。未完成人工确认前，不应直接写入 `legacyRefs`。
+### 3.2 `audio.stopRecording`
 
-| legacy | wire | 已知行为 | AXTP 映射建议 | 评审状态 |
-|---|---|---|---|---|
-| `CommonAudioRecord` | `0xC0025 / 0x0025 -> 0x00A5` | request 为 `uint32 BE mic_mask`，注释为工厂录音；case 空，未读取 payload，无 callback。 | 待确认。若是通用抓音，可适配 `audio.startRecording`；若是产测流程，归 `diagnostic.audioTest`。 | `[REVIEW-ASK]` |
-| `CommonAudioRecordStart` | `0xC0063 / 0x0063 -> 0x00E3` | request 为 `uint16 BE max_time_seconds`；response 至少 8B：`support`、`audio_type`、`sample_rate`、`channel`、`bit_width`。 | 可适配 `audio.startRecording`，把 `max_time_seconds` 映射为 `durationMs` 或 `maxDurationMs`。 | `[REVIEW-ASK]` |
-| `CommonAudioRecordStop` | `0xC0064 / 0x0064 -> 0x00E4` | request 无 payload；response 至少 2B：`data_len`。 | 可适配 `audio.stopRecording`，`data_len` 映射为 `bytesProduced` 或 `finalCursor`，具体单位需确认。 | `[REVIEW-ASK]` |
-| `CommonAudioRecordData` | `0xBFFE5 / 0xFFE5 -> 0x0065` | 设备上报 raw payload；注释说明原应为 `0xC0065` 且下位机错误。 | 映射为 stream 数据面 `payloadType=audio_chunk`，不新增 `audio.record.data` RPC 方法。 | `[REVIEW-ASK]` |
+**用途**：原草案中出现的候选方法。
 
-兼容命名说明：
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `StopRecordingParams` |
+| Result Schema | `StopRecordingResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `audio.recordingStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
 
-1. migration generated 中的 `audio.record.start` / `audio.record.stop` / `audio.record.data` 是候选兼容名，不是本文推荐的最终 wire name。
-2. 最终新协议使用 `audio.startRecording` / `audio.stopRecording`。
-3. raw 音频数据必须归 stream 数据面，不作为普通 RPC method。
+#### 3.2.1 请求参数 Params：`StopRecordingParams`
 
----
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
 
-## 18. Binary / TLV 映射建议
+#### 3.2.2 Request d block Example (op=7)
 
-JSON 中使用可读字段；二进制映射进入 registry 前再分配 fieldId。
+```json
+{
+  "id": 102,
+  "method": "audio.stopRecording",
+  "params": {
+    "target": "default",
+    "reason": "user_request"
+  }
+}
+```
 
-| 字段 | 建议类型 | 说明 |
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.2.3 返回结果 Result：`StopRecordingResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.2.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `audio.recordingStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `RecordingStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.2.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.2.7 错误
+
+| 错误 | 场景 | 返回建议 |
 |---|---|---|
-| `recordingId` | string 或 uint32 handle | RPC 控制面任务 ID。 |
-| `streamId` | uint32 | STREAM header 字段。 |
-| `seqId` | uint32 或 uint64 | STREAM header 字段。 |
-| `cursor` | uint64 | STREAM header 字段。 |
-| `cursorUnit` | enum uint8 | stream context 字段。 |
-| `timestampUs` | uint64 | chunk metadata。 |
-| `payloadType` | enum uint8 | `audio_chunk`。 |
-| `source` / `sourceId` | enum uint8 | 音频录制源。 |
-| `format` | enum uint8 | `pcm` / `wav`。 |
-| `sampleRate` | uint32 | Hz。 |
-| `channels` | uint8 | 通道数。 |
-| `bitDepth` | uint8 | 位深。 |
-| `sampleFormat` | enum uint8 | PCM 采样格式。 |
-| `chunkDurationMs` | uint16 | chunk 时长。 |
-| `payloadLength` | uint32 | payload 长度。 |
-| `payload` | bytes | 音频数据。 |
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
-`sourceId` 候选值：
+#### 3.2.8 Error Response d block Example (op=8)
 
-| sourceId | source |
-|---|---|
-| `0x01` | `mic_raw` |
-| `0x02` | `mic_processed` |
-| `0x03` | `uplink_raw` |
-| `0x04` | `uplink_processed` |
-| `0x05` | `downlink_raw` |
-| `0x06` | `downlink_playback` |
-| `0x07` | `aec_reference` |
-| `0x08` | `algorithm_input` |
-| `0x09` | `algorithm_output` |
-| `0x0A` | `speaker_output` |
-
-候选数字值只用于后续 registry 评审；JSON 协议继续使用字符串枚举。
-
----
-
-## 19. 推荐 MVP
-
-MVP 方法：
-
-```text
-audio.getRecordingCapabilities
-audio.startRecording
-audio.stopRecording
-audio.getRecordingState
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
 ```
 
-MVP 事件：
+#### 3.2.9 规则
 
-```text
-audio.recordingStateChanged
-audio.recordingProgressReported
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.3 `audio.cancelRecording`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `CancelRecordingParams` |
+| Result Schema | `CancelRecordingResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `audio.recordingStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.3.1 请求参数 Params：`CancelRecordingParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
+
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "audio.cancelRecording",
+  "params": {
+    "target": "default",
+    "reason": "user_request"
+  }
+}
 ```
 
-MVP 能力：
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
-| 项 | 要求 |
-|---|---|
-| source | 单源，至少 `mic_raw` 或设备主录制源。 |
-| deliveryMode | `stream`。 |
-| format | `pcm`。 |
-| sampleRate | 至少 `48000` 或设备主采样率。 |
-| bitDepth | `16`。 |
-| channels | `1` / `2`，或设备声明的主通道数。 |
-| chunkDurationMs | 推荐 `20`。 |
-| streamProfile | `recording_audio`。 |
-| cursorUnit | `byteOffset`。 |
-| stop | 支持 `audio.stopRecording` 正常停止。 |
-| error | 支持 common error code 和 `error.data.field`。 |
+#### 3.3.3 返回结果 Result：`CancelRecordingResult`
 
-可选增强：
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
 
-```text
-audio.cancelRecording
-deliveryMode=file
-multiSource
-channelMask
-realtime_audio profile
-cursorUnit=sampleIndex
-resume_from_cursor
-missingRanges
-fileRef.sha256
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
 ```
 
----
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
 
-## 20. Registry 草案拆分清单
+#### 3.3.5 可能触发的事件
 
-进入 `registry/domains/audio/domain.yaml` 时，建议拆分为：
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `audio.recordingStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `RecordingStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-| registry 对象 | 建议名称 |
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.3.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.3.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.3.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.3.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.4 `audio.getRecordingState`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
 |---|---|
-| capability | `audio.recording` |
-| methods | `audio.getRecordingCapabilities`、`audio.startRecording`、`audio.stopRecording`、`audio.cancelRecording`、`audio.getRecordingState` |
-| events | `audio.recordingStateChanged`、`audio.recordingProgressReported` |
-| schemas | `RecordingCapabilities`、`RecordingSourceCapability`、`StartRecordingRequest`、`RecordingState`、`RecordingProgress`、`RecordingFileRef` |
-| stream profiles | `recording_audio`、`realtime_audio`，或按 stream profile registry 命名规则收敛为正式名称 |
-| payload type | `audio_chunk` |
-| legacyRefs | 仅写入人工确认后的 AXDP 命令映射 |
+| 调用类型 | query |
+| Params Schema | `GetRecordingStateParams` |
+| Result Schema | `GetRecordingStateResult` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-采纳前检查：
+#### 3.4.1 请求参数 Params：`GetRecordingStateParams`
 
-1. file 域 blocker 已处理，`fileRef` 与 file 方法名一致。
-2. stream profile 命名和 ID 已在 stream profile registry 中确认。
-3. `cursorUnit` 默认值与 stream spec 一致。
-4. legacy AXDP 工厂抓音是否归 `audio.recording` 已确认。
-5. 每个 schema 字段都有类型、必填规则、单位和枚举范围。
-6. 至少补充一个 stream 模式正向测试向量和一个错误测试向量。
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
+| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
 
----
+#### 3.4.2 Request d block Example (op=7)
 
-## 21. 最终结论
+```json
+{
+  "id": 104,
+  "method": "audio.getRecordingState",
+  "params": {
+    "target": "default",
+    "sections": [
+      "summary"
+    ]
+  }
+}
+```
 
-`audio.recording` 是音频录制、抓音和录制导出的业务能力块。它负责录制任务生命周期；`stream` 负责实时数据面；`file` 负责完成后的文件访问；`diagnostic` 只负责产测流程编排。
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
-普通业务调用方不需要显式调用 `stream.open`。正常停止必须走 `audio.stopRecording`；`stream.abort` 仅用于异常释放。旧 AXDP 录音命令在人工确认前只保留为待确认 legacy 线索，不直接进入最终 registry 合同。
+#### 3.4.3 返回结果 Result：`GetRecordingStateResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": {
+      "target": "default",
+      "status": "ok"
+    }
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.4.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.4.6 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.4.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.4.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.5 `stream.open`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `OpenParams` |
+| Result Schema | `OpenResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `audio.recordingStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.5.1 请求参数 Params：`OpenParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
+
+#### 3.5.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 105,
+  "method": "stream.open",
+  "params": {
+    "target": "default",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.5.3 返回结果 Result：`OpenResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.5.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.5.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `audio.recordingStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `RecordingStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.5.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.5.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.5.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.5.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.6 `file.getInfo`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | query |
+| Params Schema | `GetInfoParams` |
+| Result Schema | `GetInfoResult` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
+
+#### 3.6.1 请求参数 Params：`GetInfoParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
+| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+
+#### 3.6.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 106,
+  "method": "file.getInfo",
+  "params": {
+    "target": "default",
+    "sections": [
+      "summary"
+    ]
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.6.3 返回结果 Result：`GetInfoResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+
+#### 3.6.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 106,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": {
+      "target": "default",
+      "status": "ok"
+    }
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.6.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.6.6 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.6.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 106,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.6.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.7 `file.download`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `DownloadParams` |
+| Result Schema | `DownloadResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `audio.recordingStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.7.1 请求参数 Params：`DownloadParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
+
+#### 3.7.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 107,
+  "method": "file.download",
+  "params": {
+    "target": "default",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.7.3 返回结果 Result：`DownloadResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.7.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 107,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.7.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `audio.recordingStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `RecordingStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.7.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.7.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.7.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 107,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.7.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.8 `file.delete`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `DeleteParams` |
+| Result Schema | `DeleteResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `audio.recordingStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.8.1 请求参数 Params：`DeleteParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
+
+#### 3.8.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 108,
+  "method": "file.delete",
+  "params": {
+    "target": "default",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.8.3 返回结果 Result：`DeleteResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.8.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 108,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.8.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `audio.recordingStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `RecordingStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.8.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.8.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.8.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 108,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.8.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.9 `audio.getRecordingCapabilities`
+
+**用途**：查询录制能力、默认值和约束。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | query |
+| Params Schema | `GetRecordingCapabilitiesParams` |
+| Result Schema | `GetRecordingCapabilitiesResult` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
+
+#### 3.9.1 请求参数 Params：`GetRecordingCapabilitiesParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
+| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+
+#### 3.9.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 109,
+  "method": "audio.getRecordingCapabilities",
+  "params": {
+    "target": "default",
+    "sections": [
+      "summary"
+    ]
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.9.3 返回结果 Result：`GetRecordingCapabilitiesResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+
+#### 3.9.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 109,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": {
+      "target": "default",
+      "status": "ok"
+    }
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.9.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.9.6 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.9.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 109,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.9.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+## 4. 事件 Events
+
+### 4.0 事件速览
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
+|---|---|---|---|---|
+| `audio.recordingStateChanged` | 原草案中出现的候选事件 | `RecordingStateChangedEvent` | 更新 UI 或调用对应 get method 校准 | draft |
+| `audio.recordingProgressReported` | 原草案中出现的候选事件 | `RecordingProgressReportedEvent` | 更新 UI 或调用对应 get method 校准 | draft |
+
+### 4.1 `audio.recordingStateChanged`
+
+**触发条件**：原草案中出现的候选事件。
+
+#### 4.1.1 Payload：`RecordingStateChangedEvent`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `changedFields` | string[] | no | field path array | omitted | 变化字段路径。 |
+| `state` | object | no | see schema | omitted | 变化后的状态、配置或摘要。 |
+| `source` | string enum | no | `remoteApp`, `localPanel`, `devicePolicy`, `adapter`, `unknown` | `unknown` | 状态变化来源。 |
+| `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
+| `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
+
+#### 4.1.2 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "source": "remoteApp",
+    "reason": "user_request",
+    "stateRevision": 1
+  }
+}
+```
+
+#### 4.1.3 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| payload 是完整状态 | 可直接更新 UI 或本地缓存。 |
+| payload 是变化片段 | 调用对应 get method 校准完整状态。 |
+| event 丢失或重连 | 重连后主动调用 get method 校准。 |
+
+#### 4.1.4 规则
+
+- Event MUST 使用 `op=6`。
+- Event MUST NOT 携带 `d.id`。
+- Event payload MUST 放在 `d.data` 中。
+
+### 4.2 `audio.recordingProgressReported`
+
+**触发条件**：原草案中出现的候选事件。
+
+#### 4.2.1 Payload：`RecordingProgressReportedEvent`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `changedFields` | string[] | no | field path array | omitted | 变化字段路径。 |
+| `state` | object | no | see schema | omitted | 变化后的状态、配置或摘要。 |
+| `source` | string enum | no | `remoteApp`, `localPanel`, `devicePolicy`, `adapter`, `unknown` | `unknown` | 状态变化来源。 |
+| `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
+| `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
+
+#### 4.2.2 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.recordingProgressReported",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "source": "remoteApp",
+    "reason": "user_request",
+    "stateRevision": 1
+  }
+}
+```
+
+#### 4.2.3 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| payload 是完整状态 | 可直接更新 UI 或本地缓存。 |
+| payload 是变化片段 | 调用对应 get method 校准完整状态。 |
+| event 丢失或重连 | 重连后主动调用 get method 校准。 |
+
+#### 4.2.4 规则
+
+- Event MUST 使用 `op=6`。
+- Event MUST NOT 携带 `d.id`。
+- Event payload MUST 放在 `d.data` 中。
+
+## 5. Capability
+
+Capability name: `audio.recording`。
+
+设备通过 capability 声明是否支持该 feature，以及支持哪些范围、模式、对象或约束。Capability 字段只描述“设备能做什么”，不得混入 method params/result 或 event payload。
+
+| 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `capability` | string | yes | fixed `audio.recording` | none | capability 名称。 |
+| `supportedMethods` | string[] | no | method name array | omitted | 支持的 method 列表；采纳后应由 capability discovery 或 registry/generated 表达。 |
+| `supportedEvents` | string[] | no | event name array | omitted | 支持的 event 列表；采纳后应由 capability discovery 或 registry/generated 表达。 |
+| `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
+| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
+
+## 6. 字段 / Schemas
+
+### 6.1 Schema 层级速览
+
+本草案采用保守 schema 展开方式：method/event 小节给出 Params / Result / Payload 字段表和 JSON `d` block 示例；本章作为 schema 索引，避免在草案阶段重复维护大量未确认字段。
+
+```text
+RecordingCapability
+  capability / supportedMethods / supportedEvents / supportedTargets / constraints
+RecordingState
+  target / status / sampledAt
+RecordingChangedEvent
+  changedFields / state / source / reason / stateRevision
+```
+
+### 6.2 请求与响应 Schemas
+
+| Schema | 用途 | 字段定义 |
+|---|---|---|
+| `StartRecordingParams` | `audio.startRecording` request params | 见 `audio.startRecording` 方法小节。 |
+| `StartRecordingResult` | `audio.startRecording` result | 见 `audio.startRecording` 方法小节。 |
+| `StopRecordingParams` | `audio.stopRecording` request params | 见 `audio.stopRecording` 方法小节。 |
+| `StopRecordingResult` | `audio.stopRecording` result | 见 `audio.stopRecording` 方法小节。 |
+| `CancelRecordingParams` | `audio.cancelRecording` request params | 见 `audio.cancelRecording` 方法小节。 |
+| `CancelRecordingResult` | `audio.cancelRecording` result | 见 `audio.cancelRecording` 方法小节。 |
+| `GetRecordingStateParams` | `audio.getRecordingState` request params | 见 `audio.getRecordingState` 方法小节。 |
+| `GetRecordingStateResult` | `audio.getRecordingState` result | 见 `audio.getRecordingState` 方法小节。 |
+| `OpenParams` | `stream.open` request params | 见 `stream.open` 方法小节。 |
+| `OpenResult` | `stream.open` result | 见 `stream.open` 方法小节。 |
+| `GetInfoParams` | `file.getInfo` request params | 见 `file.getInfo` 方法小节。 |
+| `GetInfoResult` | `file.getInfo` result | 见 `file.getInfo` 方法小节。 |
+| `DownloadParams` | `file.download` request params | 见 `file.download` 方法小节。 |
+| `DownloadResult` | `file.download` result | 见 `file.download` 方法小节。 |
+| `DeleteParams` | `file.delete` request params | 见 `file.delete` 方法小节。 |
+| `DeleteResult` | `file.delete` result | 见 `file.delete` 方法小节。 |
+| `GetRecordingCapabilitiesParams` | `audio.getRecordingCapabilities` request params | 见 `audio.getRecordingCapabilities` 方法小节。 |
+| `GetRecordingCapabilitiesResult` | `audio.getRecordingCapabilities` result | 见 `audio.getRecordingCapabilities` 方法小节。 |
+
+### 6.3 Capability Schemas
+
+Capability 字段见第 5 章。复杂 capability 对象在 registry review 前需要拆成独立字段表。
+
+### 6.4 Event Schemas
+
+| Schema | Event | 字段定义 |
+|---|---|---|
+| `RecordingStateChangedEvent` | `audio.recordingStateChanged` | 见 `audio.recordingStateChanged` 事件小节。 |
+| `RecordingProgressReportedEvent` | `audio.recordingProgressReported` | 见 `audio.recordingProgressReported` 事件小节。 |
+
+### 6.5 State / Config / Object Schemas
+
+| Schema | 用途 | 状态 |
+|---|---|---|
+| `RecordingState` | 表达 `audio.recording` 的当前状态、配置或摘要。 | `[REVIEW-ASK]` |
+| `RecordingConfig` | 表达 `audio.recording` 的可写配置。 | `[REVIEW-ASK]` |
+
+## 7. 交互流程示例 Flow Examples
+
+本章只展示多个 method/event 组成的端到端业务流程。单个 method 的 Request / Success Response / Error Response 示例见第 3 章；单个 event 的 Event 示例见第 4 章。
+
+### 7.1 场景：读取或修改 `audio.recording`
+
+#### Step 1. 调用 method：Request d block (op=7)
+
+```json
+{
+  "id": 201,
+  "method": "audio.startRecording",
+  "params": {}
+}
+```
+
+#### Step 2. 接收响应：Success Response d block (op=8)
+
+```json
+{
+  "id": 201,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+
+#### Step 3. 订阅事件：Event d block (op=6)
+
+```json
+{
+  "event": "audio.recordingStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    }
+  }
+}
+```
+
+读法：客户端应先通过 capability discovery 判断 feature/method 是否支持；如果事件 payload 不完整或重连后状态不确定，应主动调用 query method 校准。
+
+## 8. 错误
+
+错误处理语义见 `docs/specs/1-core/09-Error-Model.md`；错误注册规则见 `docs/specs/2-registry/04-Errors-Registry.md`。草案不得随意分配正式 numeric errorCode。
+
+| 错误 | 适用场景 | 说明 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持 feature、method、target、scope 或 section。 | 优先复用通用错误。 |
+| `INVALID_ARGUMENT` | 参数非法、枚举非法、范围非法。 | 应指出具体字段。 |
+| `INVALID_STATE` | 当前状态不允许执行。 | 如 lifecycle/reset/initialization 冲突。 |
+| `BUSY` | 设备或资源繁忙。 | 如已有动作执行中。 |
+| `PERMISSION_DENIED` | 调用方权限不足。 | 危险操作或敏感信息读取。 |
+| `<FEATURE_SPECIFIC_ERROR>` | 候选业务错误。 | `[REVIEW-DRAFT]`；采纳前确认是否需要 feature-specific errorCode。 |
+
+JSON 示例中的 `status.code` 如果 registry 尚未采纳，可以使用 `10` 作为占位示例，并在 `status.details.candidateError` 中放候选错误名。正式 numeric code 必须由 registry 采纳时分配。
+
+## 9. Legacy 映射
+
+Legacy 映射是迁移证据，不是 runtime 合同。当前映射仍需从 `docs/legacy-migration/classification/` 和旧协议证据中按 `audio.recording` 人工确认。
+
+| legacy 项 | 候选映射 | 状态 | 说明 |
+|---|---|---|---|
+| AXDP / Rooms / VM33 / Signage legacy command or field | `audio.recording` | `[REVIEW-ASK]` | 采纳前补齐确定的旧协议命令、字段路径、状态码和覆盖范围。 |
+
+## 10. Registry / Conformance 状态
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| registry | not generated | 尚未写入正式 registry YAML。 |
+| generated | false | 是否已进入 protocol IR / docs/generated。 |
+| protocol draft | draft | 当前草案状态。 |
+| registry readiness | partial | 是否可进入 registry review。 |
+| conformance | needed | 是否已有测试用例。 |
+
+## 11. 测试要点
+
+| 类型 | 要点 |
+|---|---|
+| happy path | capability discovery 后调用主要 query/command/action method，返回成功响应。 |
+| event path | 会改变状态的 method 成功后，按需产生 changed/progress/state event；客户端可更新 UI 或调用 get 校准。 |
+| boundary case | 省略可选字段、非法 target、非法枚举、越界值、空列表和最大对象数量。 |
+| error case | unsupported feature/method、permission denied、busy、invalid argument、version/capability mismatch。 |
+| compatibility | 新旧 App / 设备组合下，未知可选字段可忽略，未知必填语义必须返回标准错误。 |
+
+## 12. 待确认问题
+
+| 问题 | 影响 | 当前建议 | 状态 |
+|---|---|---|---|
+| `audio.recording` 的 MVP 字段范围是否完整？ | schema / conformance | 进入 registry review 前由产品、设备实现和测试共同确认。 | open |
+| method/event 命名是否需要与已有 generated 事实合并？ | registry | 采纳前搜索 registry/generated，避免重复定义。 | open |
+| legacy 命令和字段是否全部映射清楚？ | legacy | 未确认条目保持 `[REVIEW-ASK]`，不得写入正式 YAML。 | open |

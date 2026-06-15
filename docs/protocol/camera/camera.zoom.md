@@ -23,6 +23,27 @@ lastReviewed: 2026-06-13
 | Conformance | needed；需覆盖 capability、set ratio/position、move/stop、event 和 unsupported。 |
 | 主要未决问题 | `[REVIEW-ASK]` optical/digital/default zoom 如何表达；ratio 与 device position 的单位需固件确认。 |
 
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 ## 1. 功能说明
 
 `camera.zoom` 用于摄像头变焦控制。它独立于 `camera.ptz` 的物理 pan/tilt，也独立于 `video.framing` 的电子裁切构图。若设备历史协议将 pan/tilt/zoom 合在同一命令中，采纳前必须拆分正式语义。
@@ -63,21 +84,74 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.1.2 返回结果 Result：`ZoomCapabilities`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "camera.getZoomCapabilities",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetZoomCapabilitiesParams`，省略字段按上表默认值处理。
+
+#### 3.1.3 返回结果 Result：`ZoomCapabilities`
 
 字段见 [6.3](#63-capability-schemas)。
 
-#### 3.1.3 可能触发的事件
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "capability": "camera.zoom",
+    "zoomTypes": 1.5,
+    "regionZoom": 1.5
+  }
+}
+```
+
+读法：`result` 是 `ZoomCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.1.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.1.4 错误
+#### 3.1.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备无可控 zoom。 | 隐藏控件。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `camera.getZoomState`
 
@@ -94,21 +168,74 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.2.2 返回结果 Result：`ZoomState`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "camera.getZoomState",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetZoomStateParams`，省略字段按上表默认值处理。
+
+#### 3.2.3 返回结果 Result：`ZoomState`
 
 字段见 [6.4](#64-config--state-总结构)。
 
-#### 3.2.3 可能触发的事件
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "cameraId": "main",
+    "zoom": 1.5,
+    "moving": false
+  }
+}
+```
+
+读法：`result` 是 `ZoomState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.2.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.2.4 错误
+#### 3.2.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | zoom 状态不可读。 | 返回 unavailable detail。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 13,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "UNAVAILABLE",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `camera.setZoomConfig`
 
@@ -125,22 +252,98 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.3.2 返回结果 Result：`ZoomCommandResult`
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "camera.setZoomConfig",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `SetZoomConfigParams`，省略字段按上表默认值处理。
+
+#### 3.3.3 返回结果 Result：`ZoomCommandResult`
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.3.3 可能触发的事件
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true,
+    "state": {
+      "cameraId": "main",
+      "zoom": 1.5,
+      "moving": false
+    }
+  }
+}
+```
+
+读法：`result` 是 `ZoomCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.3.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.zoomStateChanged` | ratio/position/type/state 变化。 | `ZoomStateChangedEvent` | 更新 zoom slider。 |
 
-#### 3.3.4 错误
+#### 3.3.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "camera.zoomStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.3.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `OUT_OF_RANGE` | ratio 或 position 超范围。 | 返回合法范围。 |
 | `DEVICE_MODE_CONFLICT` | framing 或 PTZ preset 正在占用 lens。 | 返回 owner。 |
+
+#### 3.3.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "OUT_OF_RANGE",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.4 `camera.startZoomMove`
 
@@ -157,21 +360,99 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.4.2 返回结果 Result：`ZoomCommandResult`
+#### 3.4.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 104,
+  "method": "camera.startZoomMove",
+  "params": {
+    "cameraId": "main",
+    "direction": "in",
+    "timeoutMs": 5000
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `StartZoomMoveParams`，省略字段按上表默认值处理。
+
+#### 3.4.3 返回结果 Result：`ZoomCommandResult`
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.4.3 可能触发的事件
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true,
+    "state": {
+      "cameraId": "main",
+      "zoom": 1.5,
+      "moving": false
+    }
+  }
+}
+```
+
+读法：`result` 是 `ZoomCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.4.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.zoomStateChanged` | zoom 进入 moving。 | `ZoomStateChangedEvent` | UI 显示移动中。 |
 
-#### 3.4.4 错误
+#### 3.4.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "camera.zoomStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.4.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `INVALID_ARGUMENT` | direction/speed 非法。 | 返回字段路径。 |
+
+#### 3.4.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.5 `camera.stopZoomMove`
 
@@ -188,21 +469,97 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.5.2 返回结果 Result：`ZoomCommandResult`
+#### 3.5.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 105,
+  "method": "camera.stopZoomMove",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `StopZoomMoveParams`，省略字段按上表默认值处理。
+
+#### 3.5.3 返回结果 Result：`ZoomCommandResult`
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.5.3 可能触发的事件
+#### 3.5.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true,
+    "state": {
+      "cameraId": "main",
+      "zoom": 1.5,
+      "moving": false
+    }
+  }
+}
+```
+
+读法：`result` 是 `ZoomCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.5.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.zoomStateChanged` | zoom 停止。 | `ZoomStateChangedEvent` | 释放按下态。 |
 
-#### 3.5.4 错误
+#### 3.5.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "camera.zoomStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.5.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | zoom 控制不可用。 | 清除移动 UI。 |
+
+#### 3.5.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": false,
+    "code": 13,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "UNAVAILABLE",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.6 `camera.resetZoomConfig`
 
@@ -219,21 +576,97 @@ lastReviewed: 2026-06-13
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.6.2 返回结果 Result：`ZoomCommandResult`
+#### 3.6.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 106,
+  "method": "camera.resetZoomConfig",
+  "params": {
+    "cameraId": "main"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `ResetZoomConfigParams`，省略字段按上表默认值处理。
+
+#### 3.6.3 返回结果 Result：`ZoomCommandResult`
 
 字段见 [6.2](#62-请求与响应-schemas)。
 
-#### 3.6.3 可能触发的事件
+#### 3.6.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 106,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true,
+    "state": {
+      "cameraId": "main",
+      "zoom": 1.5,
+      "moving": false
+    }
+  }
+}
+```
+
+读法：`result` 是 `ZoomCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.6.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.zoomStateChanged` | 默认值不同于当前值。 | `ZoomStateChangedEvent` | 更新 slider。 |
 
-#### 3.6.4 错误
+#### 3.6.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "camera.zoomStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.6.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `BUSY` | zoom 正在移动。 | 先 stop 或稍后重试。 |
+
+#### 3.6.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 106,
+  "status": {
+    "ok": false,
+    "code": 5,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "BUSY",
+      "field": "cameraId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -253,6 +686,28 @@ lastReviewed: 2026-06-13
 | `state` | `ZoomState` | yes | see schema | none | 当前 zoom 状态。 |
 | `changedFields` | string[] | no | field path array | omitted | 变化字段。 |
 | `reason` | string enum | no | `user_request`, `preset`, `framing_algorithm`, `physical_control`, `unknown` | `unknown` | 变化原因。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "camera.zoomStateChanged",
+  "intent": 1,
+  "data": {
+    "state": {
+      "cameraId": "main",
+      "zoom": 1.5,
+      "moving": false
+    },
+    "changedFields": [
+      "state"
+    ],
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 

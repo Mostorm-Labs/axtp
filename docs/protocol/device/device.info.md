@@ -23,6 +23,27 @@ lastReviewed: 2026-06-13
 | Conformance | needed |
 | 主要未决问题 | 首批 enum、legacy 敏感字段和 capability profile 来源。 |
 
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 ## 1. 功能说明
 
 `device.info` 用于只读获取当前主设备信息，回答“这台设备是谁、是什么产品、运行什么系统和 AXTP runtime”。它也可以返回轻量 capability summary，帮助 Host 或工具理解设备大体按哪些 `domain.feature` 建模。
@@ -73,7 +94,21 @@ Cast RX/TX 配对 flow 中，NA20 / NT10 的识别由 Host 基于 USB descriptor
 |---|---|---:|---|---|---|
 | `includeCapabilitySummary` | boolean | no | `true`, `false` | `true` | 是否返回轻量 `capability` 建模摘要。 |
 
-#### 3.1.2 返回结果 Result：`DeviceInfo`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "device.getInfo",
+  "params": {
+    "includeCapabilitySummary": true
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetDeviceInfoParams`，省略字段按上表默认值处理。
+
+#### 3.1.3 返回结果 Result：`DeviceInfo`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -85,19 +120,106 @@ Cast RX/TX 配对 flow 中，NA20 / NT10 的识别由 Host 基于 USB descriptor
 | `runtime` | `DeviceAxtpRuntime` | no | object | omitted | AXTP runtime 摘要。 |
 | `capability` | `DeviceCapabilitySummary` | no | object | omitted | 轻量建模摘要；不是完整 capability registry。 |
 
-#### 3.1.3 可能触发的事件
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "identity": {
+      "deviceId": "dev_001",
+      "serialNumber": "NH-2026-000001",
+      "vendorId": "nearhub",
+      "productId": "nh-win-box-a1"
+    },
+    "product": {
+      "brand": "NearHub",
+      "productType": "windowsDevice",
+      "model": "NH-WIN-BOX-A1",
+      "displayName": "NearHub Display Controller"
+    },
+    "hardware": {
+      "revision": "A1",
+      "cpuArch": "x86_64",
+      "memoryBytes": 8589934592
+    },
+    "os": {
+      "type": "windows",
+      "name": "Windows 11 IoT Enterprise",
+      "version": "10.0.22631",
+      "arch": "x86_64"
+    },
+    "software": {
+      "components": [
+        {
+          "id": "launcher",
+          "name": "NearHub Launcher",
+          "version": "1.2.3",
+          "role": "axtpHost"
+        }
+      ]
+    },
+    "runtime": {
+      "axtpRuntime": "axtp-ts-runtime",
+      "axtpRuntimeVersion": "0.1.0",
+      "hostAppId": "launcher"
+    },
+    "capability": {
+      "domains": [
+        "device",
+        "system",
+        "audio",
+        "video",
+        "network"
+      ],
+      "features": [
+        "device.info",
+        "system.state"
+      ]
+    }
+  }
+}
+```
+
+读法：`result` 是 `DeviceInfo` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.1.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 需要刷新时重新调用 `device.getInfo`。 |
 
-#### 3.1.4 错误
+#### 3.1.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `INVALID_ARGUMENT` | 请求结构或参数类型非法。 | 使用 adopted numeric code `10`。 |
 | `PERMISSION_DENIED` | 当前调用方无权读取设备身份或序列号。 | 使用 adopted numeric code `9`；敏感字段可省略。 |
 | `INTERNAL_ERROR` | 设备信息服务、OS 查询或 runtime 查询失败。 | 使用 adopted numeric code `14`。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "includeCapabilitySummary",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -107,7 +229,7 @@ Cast RX/TX 配对 flow 中，NA20 / NT10 的识别由 Host 基于 USB descriptor
 |---|---|---|---|---|
 | none | 本 feature 当前不定义事件。 | none | 需要刷新时重新调用 `device.getInfo`。 | deferred |
 
-### 4.1 `device.infoChanged`
+### 4.1 Deferred：`device.infoChanged`
 
 本轮不定义 `device.infoChanged`。如未来出现设备名、资产标识、软件版本或 capability summary 变化通知需求，应基于具体业务场景另行起草事件。
 
