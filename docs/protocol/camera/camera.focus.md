@@ -1,947 +1,565 @@
-# Camera Focus 协议方案 v0.2
+---
+status: draft
+contract: false
+generated: false
+domain: camera
+feature: camera.focus
+registry:
+lastReviewed: 2026-06-13
+---
 
-## 协议审核标记（人工复核）
+# camera.focus
 
-| 标记 | 对象 | 审核结论 | 后续动作 |
+## 0. 速读结论
+
+| 项目 | 内容 |
+|---|---|
+| 这个能力做什么 | 管理自动对焦、连续自动对焦、手动对焦位置、点选/区域对焦、focus jog 和状态事件。 |
+| 当前状态 | draft；保留原草案中的 legacy 结论，并由 `docs/flows/camera-lens-control.md` 收敛。 |
+| 是否可直接实现 | 否。草案阶段仅供评审；正式实现以 registry / generated 为准。 |
+| 主要交互 | RPC + EVENT |
+| 是否使用 STREAM | 否 |
+| Registry readiness | candidate；`camera.getFocusState` / `camera.triggerAutoFocus` 已在 appendix 候选中，其他方法待采纳评审。 |
+| Conformance | needed；需覆盖 mode、AF action、manual position、region、state event 和 mode conflict。 |
+| 主要未决问题 | `[REVIEW-ASK]` VM33 `Focus.SetFocus` 是绝对位置还是触发 AF；focus config event 是否独立。 |
+
+## 1. 功能说明
+
+`camera.focus` 用于普通运行时对焦控制。它覆盖对焦模式、一次性自动对焦、连续自动对焦、手动对焦位置、点选/区域对焦和可选 jog 移动。AF calibration 和工厂校准不属于本 feature。
+
+## 2. 能力边界
+
+| 类型 | 内容 |
+|---|---|
+| 包含 | focus mode、manual focus position、auto focus target、focus region、trigger autofocus、focus jog、focus state event。 |
+| 不包含 | zoom、PTZ、framing、AF calibration、产测校准、视频帧传输。 |
+| 数据面 | 不使用 STREAM。 |
+
+## 3. 方法 Methods
+
+### 3.0 方法速览
+
+| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
+|---|---|---|---|---|---|---|
+| `camera.getFocusCapabilities` | query | 查询 focus modes、position、region、manual move 能力。 | `GetFocusCapabilitiesParams` | `FocusCapabilities` | 否 | `[REVIEW-DRAFT]` |
+| `camera.getFocusState` | query | 查询当前 focus mode、position、target 和状态。 | `GetFocusStateParams` | `FocusState` | 否 | `[REVIEW-DRAFT]` |
+| `camera.setFocusMode` | command | 切换 manual/auto/continuous/fixed 等模式。 | `SetFocusModeParams` | `FocusCommandResult` | 是 | `[REVIEW-DRAFT]` |
+| `camera.setFocusPosition` | command | 设置绝对手动对焦位置。 | `SetFocusPositionParams` | `FocusCommandResult` | 是 | `[REVIEW-DRAFT]` |
+| `camera.setFocusRegion` | command | 设置持久点选或区域 AF 目标。 | `SetFocusRegionParams` | `FocusCommandResult` | 是 | `[REVIEW-DRAFT]` |
+| `camera.triggerAutoFocus` | action | 触发一次自动对焦。 | `TriggerAutoFocusParams` | `FocusCommandResult` | 是 | `[REVIEW-DRAFT]` |
+| `camera.startFocusMove` | command | near/far jog 移动。 | `StartFocusMoveParams` | `FocusCommandResult` | 是 | `[REVIEW-ASK]` |
+| `camera.stopFocus` | command | 停止 AF、扫描或 jog。 | `StopFocusParams` | `FocusCommandResult` | 是 | `[REVIEW-DRAFT]` |
+
+### 3.1 `camera.getFocusCapabilities`
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | query |
+| Params Schema | `GetFocusCapabilitiesParams` |
+| Result Schema | `FocusCapabilities` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
+
+#### 3.1.1 请求参数 Params：`GetFocusCapabilitiesParams`
+
+字段见 [6.2](#62-请求与响应-schemas)。
+
+#### 3.1.2 返回结果 Result：`FocusCapabilities`
+
+字段见 [6.3](#63-capability-schemas)。
+
+#### 3.1.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
-| `[REVIEW-OK]` | `camera.focus` capability | 对焦属于摄像头采集链路与镜头控制能力，归 `camera.focus`，不归 `video.framing` 或 `diagnostic.*`。 | 可作为 `camera` domain YAML 草案输入。 |
-| `[REVIEW-OK]` | `camera.getFocusState` / `camera.triggerAutoFocus` | 两个方法已出现在 registry spec 草案中，方向符合动作型与状态型命名。 | 进入 source registry 时同步 schema、errors、events。 |
-| `[REVIEW-FIX]` | 原文方法清单 | 原草案缺少 region 持久配置和手动 jog 语义，无法完整覆盖 VM33 `Focus.SetFocusRegion` 与 `Focus.Manual`。 | 本版新增候选方法 `camera.setFocusRegion` / `camera.getFocusRegion` / `camera.startFocusMove`，其中 `startFocusMove` 为 legacy/高级能力可选项。 |
-| `[REVIEW-FIX]` | VM33 `Focus.SetFocus` | 分类表曾将其映射到 `camera.triggerAutoFocus`，但原文参数 `pos` 是绝对镜头位置，范围 `0..1478`。 | 修正为 `camera.setFocusPosition`。 |
-| `[REVIEW-ASK]` | AXDP `CommonSetLensCenter` | 源码扫描只确认 `uint32 BE value`，接收侧 case 为空；名称可能表示中心区域 AF、镜头机械归中或校准动作。 | 设备实现确认前不得写入正式 `legacyRefs`；仅可按第 18 节规则做 adapter-only 映射。 |
-| `[REVIEW-ASK]` | AXDP `CommonSetAutoFocusState` / `CommonGetAutoFocusState` | 当前可暂映射到 `camera.setFocusMode` / `camera.getFocusMode`，但旧 `EnableState` 的取值域仍需确认。 | 先按 `0=manual, 1=auto` 做兼容建议；多值枚举必须补充旧协议定义后再进入 registry。 |
+| 无 | 查询不改变状态。 | none | 无需处理。 |
 
-## 1. 文档定位
+#### 3.1.4 错误
 
-本文定义 `camera.focus` 的运行时控制协议草案，用于沉淀方法、事件、字段、错误和 legacy 迁移规则。它位于 `docs/protocol/`，因此仍是评审输入；只有写入 `registry/` 或 `registry/domains/camera/domain.yaml` 后，才成为生成路径的正式协议事实源。
-
-本文覆盖：
-
-- 自动对焦、连续自动对焦、单次自动对焦。
-- 手动对焦模式与绝对对焦位置。
-- 自动对焦目标，包括中心、全画面、点选和区域。
-- 可选的手动 jog 对焦动作，用于兼容 `near/far + enable` 类旧协议。
-- 对焦状态查询与状态变化事件。
-- AXDP、VM33 旧协议迁移建议。
-
-本文不覆盖：
-
-- 变焦、光学变倍、数字变倍，它们归 `camera.zoom`。
-- PTZ pan/tilt/zoom 联动，它们归 `camera.ptz` 或 `camera.zoom`。
-- AF calibration、镜头标定、产测校准，它们归 `camera.calibration` 或 `diagnostic.*`。
-- 视频构图、人物追踪、画面裁切，它们归 `video.framing`。
-
-## 2. 域边界
-
-| 能力 | 归属 | 说明 |
+| 错误 | 场景 | 返回建议 |
 |---|---|---|
-| 对焦模式 | `camera.focus` | `manual`、`auto`、`continuous_auto`、`one_shot_auto`、`fixed`。 |
-| 手动对焦位置 | `camera.focus` | 运行时设置或查询镜头对焦位置。 |
-| 自动对焦触发 | `camera.focus` | 中心、全画面、点选或区域的一次性 AF 动作。 |
-| 手动 jog 对焦 | `camera.focus` | `near/far` 方向移动，通常需要 `stopFocus` 停止。 |
-| 光学/数字变倍 | `camera.zoom` | 包括 `Focus.ManualZoom`、`DigitalZoom`、`OpticsZoom` 等旧接口。 |
-| AF calibration | `camera.calibration` | 设备级镜头/AF 标定，不是普通运行时对焦。 |
-| 产测校准 | `diagnostic.*` | 工厂、维修、测试流程。 |
+| `NOT_SUPPORTED` | 设备固定焦且无可控 focus。 | 返回 `supported=false` 或隐藏控件。 |
 
-边界规则：
+### 3.2 `camera.getFocusState`
 
-```text
-camera.focus
-  普通用户态或业务态对焦控制。
-
-camera.calibration
-  设备维护态的镜头、AF 或传感器标定。
-
-diagnostic.*
-  产测、维修、实验性测试命令。
-
-video.framing
-  根据人物、白板、区域或场景进行画面构图。
-```
-
-## 3. 核心模型
-
-所有方法都可以携带可选 `cameraId`。省略 `cameraId` 时，设备必须使用当前默认摄像头或主摄像头。
-
-```json
-{
-  "cameraId": "main"
-}
-```
-
-`camera.focus` 由以下对象组成：
-
-| 对象 | 字段 | 说明 |
-|---|---|---|
-| 能力 | `supported`、`modes`、`position`、`region`、`manualMove` | 描述设备支持哪些对焦能力。 |
-| 模式 | `mode` | 当前对焦控制模式。 |
-| 位置 | `position` | 能力范围内的绝对镜头位置，使用设备原生步进。 |
-| 区域 | `target`、`point`、`region` | 自动对焦目标。 |
-| 动作 | `operationId`、`accepted`、`state` | 一次异步对焦或移动动作。 |
-| 状态 | `state`、`confidence`、`reason` | 当前对焦状态与原因。 |
-
-### 3.1 对焦模式枚举
-
-| 值 | 含义 | 说明 |
-|---|---|---|
-| `manual` | 手动对焦 | 上位机通过 `position` 或 `startFocusMove` 控制镜头。 |
-| `auto` | 自动对焦 | 兼容型自动模式；设备可映射到默认 AF 行为。 |
-| `continuous_auto` | 连续自动对焦 | 设备持续根据画面变化调整焦点。 |
-| `one_shot_auto` | 单次自动对焦 | 触发一次对焦，完成后进入稳定状态。 |
-| `fixed` | 固定焦 | 设备镜头固定或运行时不可调焦。 |
-
-`unsupported` 不作为 `mode` 返回。设备不支持对焦时，应在能力中返回 `supported=false`，或对相关方法返回 `RPC_METHOD_NOT_FOUND`。
-
-### 3.2 对焦状态枚举
-
-| 值 | 含义 |
+| 项 | 内容 |
 |---|---|
-| `idle` | 当前没有进行中的对焦动作。 |
-| `moving` | 手动 jog 或镜头移动中。 |
-| `focusing` | 自动对焦中。 |
-| `focused` | 已完成对焦。 |
-| `failed` | 对焦失败。 |
-| `locked` | 焦点已锁定。 |
-| `unavailable` | 摄像头未打开、链路不可用或被校准流程占用。 |
+| 调用类型 | query |
+| Params Schema | `GetFocusStateParams` |
+| Result Schema | `FocusState` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-### 3.3 自动对焦目标
+#### 3.2.1 请求参数 Params：`GetFocusStateParams`
 
-| 值 | 含义 | 参数 |
+字段见 [6.2](#62-请求与响应-schemas)。
+
+#### 3.2.2 返回结果 Result：`FocusState`
+
+字段见 [6.4](#64-config--state-总结构)。
+
+#### 3.2.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | 查询不改变状态。 | none | 无需处理。 |
+
+#### 3.2.4 错误
+
+| 错误 | 场景 | 返回建议 |
 |---|---|---|
-| `center` | 画面中心 | 无。 |
-| `full_frame` | 全画面 | 无。 |
-| `point` | 点选对焦 | `point.x`、`point.y`。 |
-| `region` | 区域对焦 | `region.x`、`region.y`、`region.width`、`region.height`。 |
+| `UNAVAILABLE` | 摄像头未打开或被校准占用。 | 返回不可用原因。 |
 
-坐标默认使用 `normalized`，原点为画面左上角，取值范围为 `0.0..1.0`。`region.x + region.width` 和 `region.y + region.height` 必须小于等于 `1.0`。
+### 3.3 `camera.setFocusMode`
 
-### 3.4 手动移动方向
-
-| 值 | 含义 |
+| 项 | 内容 |
 |---|---|
-| `near` | 向近焦方向移动。 |
-| `far` | 向远焦方向移动。 |
+| 调用类型 | command |
+| Params Schema | `SetFocusModeParams` |
+| Result Schema | `FocusCommandResult` |
+| 是否触发事件 | 是，mode 或 state 变化后触发事件。 |
+| 幂等性 / 异步性 | 设置相同 mode 应成功；切换 continuous AF 可能异步。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `DEVICE_MODE_CONFLICT`, `BUSY`, `PERMISSION_DENIED` |
 
-## 4. 方法与事件清单
+#### 3.3.1 请求参数 Params：`SetFocusModeParams`
 
-### 4.1 方法
+字段见 [6.2](#62-请求与响应-schemas)。
 
-| 方法 | 状态 | MVP | 说明 |
-|---|---|---:|---|
-| `camera.getFocusCapabilities` | candidate | 是 | 查询对焦能力。 |
-| `camera.setFocusMode` | candidate | 是 | 设置对焦模式。 |
-| `camera.getFocusMode` | candidate | 是 | 查询对焦模式。 |
-| `camera.setFocusPosition` | candidate | 是 | 设置绝对手动对焦位置。 |
-| `camera.getFocusPosition` | candidate | 是 | 查询绝对手动对焦位置。 |
-| `camera.setFocusRegion` | candidate | 否 | 设置持久自动对焦点或区域。 |
-| `camera.getFocusRegion` | candidate | 否 | 查询持久自动对焦点或区域。 |
-| `camera.triggerAutoFocus` | specs draft `0x0708` | 是 | 触发一次自动对焦。 |
-| `camera.startFocusMove` | candidate | 否 | 按 `near/far` 方向开始手动移动，用于 jog 兼容。 |
-| `camera.stopFocus` | candidate | 否 | 停止自动对焦、连续对焦、扫描或手动 jog。 |
-| `camera.getFocusState` | specs draft `0x0707` | 是 | 查询当前对焦状态。 |
+#### 3.3.2 返回结果 Result：`FocusCommandResult`
 
-说明：`docs/specs/2-registry/02-Methods-Registry.md` 已列出 `camera.getFocusState` 和 `camera.triggerAutoFocus`。当前 source registry YAML 尚未落地 `camera.*`，因此本文其他方法暂不分配 methodId。
+字段见 [6.2](#62-请求与响应-schemas)。
 
-### 4.2 事件
+#### 3.3.3 可能触发的事件
 
-| 事件 | 状态 | 说明 |
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `camera.focusConfigChanged` | mode 实际变化。 | `FocusConfigChangedEvent` | 更新 mode selector。 |
+| `camera.focusStateChanged` | state 进入 focusing/focused/idle。 | `FocusStateChangedEvent` | 更新状态。 |
+
+#### 3.3.4 错误
+
+| 错误 | 场景 | 返回建议 |
 |---|---|---|
-| `camera.focusStateChanged` | specs draft `0x0704` | 对焦状态变化。 |
-| `camera.focusModeChanged` | candidate | 对焦模式变化。 |
-| `camera.focusPositionChanged` | candidate | 手动对焦位置变化。 |
-| `camera.focusRegionChanged` | candidate | 持久对焦点或区域变化。 |
+| `NOT_SUPPORTED` | mode 不支持。 | 返回合法 modes。 |
+| `DEVICE_MODE_CONFLICT` | framing、calibration 或其他 owner 占用。 | 返回 owner。 |
 
-## 5. `camera.getFocusCapabilities`
+### 3.4 `camera.setFocusPosition`
 
-查询设备对焦能力范围。能力查询必须可在摄像头未打开时调用；如果设备需要打开摄像头才能得到动态能力，应返回静态能力并在 `dynamic=true` 标明。
-
-请求：
-
-```json
-{
-  "method": "camera.getFocusCapabilities",
-  "params": {
-    "cameraId": "main"
-  }
-}
-```
-
-返回：
-
-```json
-{
-  "result": {
-    "cameraId": "main",
-    "supported": true,
-    "modes": ["manual", "auto", "continuous_auto", "one_shot_auto"],
-    "defaultMode": "continuous_auto",
-    "position": {
-      "supported": true,
-      "min": 0,
-      "max": 1478,
-      "step": 1,
-      "defaultValue": 512,
-      "unit": "device_steps"
-    },
-    "region": {
-      "supported": true,
-      "targets": ["center", "full_frame", "point", "region"],
-      "coordinateUnit": "normalized",
-      "persistent": true
-    },
-    "manualMove": {
-      "supported": true,
-      "directions": ["near", "far"],
-      "speed": {
-        "min": 1,
-        "max": 100,
-        "step": 1,
-        "defaultValue": 50
-      }
-    },
-    "triggerAutoFocus": {
-      "supported": true,
-      "operationIdSupported": true
-    },
-    "stopFocus": {
-      "supported": true
-    },
-    "state": {
-      "supported": true,
-      "events": ["camera.focusStateChanged"]
-    }
-  }
-}
-```
-
-规则：
-
-- `modes` 必须只包含设备真实支持的模式。
-- `position.max` 使用设备原生步进，不强制统一为 `1023` 或 `100`。
-- 如果设备固定焦，应返回 `supported=true`、`modes=["fixed"]`、`position.supported=false`、`triggerAutoFocus.supported=false`。
-- 如果设备完全不支持 focus 控制，应返回 `supported=false`，其他能力对象可省略。
-
-## 6. `camera.setFocusMode`
-
-设置对焦模式。
-
-请求：
-
-```json
-{
-  "method": "camera.setFocusMode",
-  "params": {
-    "cameraId": "main",
-    "mode": "manual"
-  }
-}
-```
-
-返回：
-
-```json
-{
-  "result": {
-    "cameraId": "main",
-    "mode": "manual",
-    "state": "idle"
-  }
-}
-```
-
-规则：
-
-- `mode` 必须存在于 `getFocusCapabilities.modes`。
-- 切换到 `manual` 不应隐式改变 `position`，除非设备固件只能在切换时归位；这种行为必须通过事件报告。
-- 切换到 `continuous_auto` 后，设备可以立即进入 `focusing`，也可以保持 `focused` 或 `idle`，但必须在返回值或事件中报告实际 `state`。
-- `fixed` 通常是只读能力。只有设备明确支持切换到固定焦锁定模式时，才允许 `setFocusMode(mode="fixed")`。
-
-事件：
-
-```json
-{
-  "event": "camera.focusModeChanged",
-  "params": {
-    "cameraId": "main",
-    "mode": "manual",
-    "reason": "user_request"
-  }
-}
-```
-
-## 7. `camera.getFocusMode`
-
-查询当前对焦模式。
-
-请求：
-
-```json
-{
-  "method": "camera.getFocusMode",
-  "params": {
-    "cameraId": "main"
-  }
-}
-```
-
-返回：
-
-```json
-{
-  "result": {
-    "cameraId": "main",
-    "mode": "manual"
-  }
-}
-```
-
-## 8. `camera.setFocusPosition`
-
-设置绝对手动对焦位置。
-
-请求：
-
-```json
-{
-  "method": "camera.setFocusPosition",
-  "params": {
-    "cameraId": "main",
-    "position": 320,
-    "applyMode": "require_manual"
-  }
-}
-```
-
-返回：
-
-```json
-{
-  "result": {
-    "cameraId": "main",
-    "position": 320,
-    "mode": "manual",
-    "state": "idle"
-  }
-}
-```
-
-`applyMode` 取值：
-
-| 值 | 说明 |
+| 项 | 内容 |
 |---|---|
-| `require_manual` | 默认值。当前不是 `manual` 时返回 `DEVICE_MODE_CONFLICT`。 |
-| `switch_to_manual` | 设备支持原子切换时，可先切到 `manual` 再设置位置。 |
+| 调用类型 | command |
+| Params Schema | `SetFocusPositionParams` |
+| Result Schema | `FocusCommandResult` |
+| 是否触发事件 | 是 |
+| 幂等性 / 异步性 | 设置相同 position 应成功；镜头移动可能异步。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `DEVICE_MODE_CONFLICT`, `BUSY`, `PERMISSION_DENIED` |
 
-规则：
+#### 3.4.1 请求参数 Params：`SetFocusPositionParams`
 
-- `position` 必须落在 `getFocusCapabilities.position` 的范围内，并满足 `step`。
-- `position` 是设备原生步进值，不能假设所有设备都是 `0..1023`。
-- 当前模式不是 `manual` 且 `applyMode=require_manual` 时，必须返回 `DEVICE_MODE_CONFLICT`。
-- 如果 `applyMode=switch_to_manual` 被接受，设备必须同时发送 `camera.focusModeChanged` 和 `camera.focusPositionChanged`，或在响应中明确返回最终 `mode` 与 `position`。
+字段见 [6.2](#62-请求与响应-schemas)。
 
-事件：
+#### 3.4.2 返回结果 Result：`FocusCommandResult`
+
+字段见 [6.2](#62-请求与响应-schemas)。
+
+#### 3.4.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `camera.focusConfigChanged` | position 变化。 | `FocusConfigChangedEvent` | 更新位置 UI。 |
+| `camera.focusStateChanged` | 镜头 moving/focused/failed。 | `FocusStateChangedEvent` | 更新状态。 |
+
+#### 3.4.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `OUT_OF_RANGE` | position 超出能力范围。 | 返回合法范围。 |
+| `DEVICE_MODE_CONFLICT` | 当前不是 manual 且 `applyMode=require_manual`。 | 提示切换手动模式。 |
+
+### 3.5 `camera.setFocusRegion`
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | command |
+| Params Schema | `SetFocusRegionParams` |
+| Result Schema | `FocusCommandResult` |
+| 是否触发事件 | 是 |
+| 幂等性 / 异步性 | 设置相同 region 应成功；是否立即 AF 由参数决定。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `DEVICE_MODE_CONFLICT`, `PERMISSION_DENIED` |
+
+#### 3.5.1 请求参数 Params：`SetFocusRegionParams`
+
+字段见 [6.2](#62-请求与响应-schemas)。
+
+#### 3.5.2 返回结果 Result：`FocusCommandResult`
+
+字段见 [6.2](#62-请求与响应-schemas)。
+
+#### 3.5.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `camera.focusConfigChanged` | target/region 变化。 | `FocusConfigChangedEvent` | 更新区域 UI。 |
+
+#### 3.5.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `OUT_OF_RANGE` | point/region 坐标越界。 | 返回合法范围。 |
+
+### 3.6 `camera.triggerAutoFocus`
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `TriggerAutoFocusParams` |
+| Result Schema | `FocusCommandResult` |
+| 是否触发事件 | 是，AF 开始和完成/失败触发 `camera.focusStateChanged`。 |
+| 幂等性 / 异步性 | 动作型；返回 accepted 不代表完成。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `DEVICE_MODE_CONFLICT`, `BUSY`, `TIMEOUT`, `PERMISSION_DENIED` |
+
+#### 3.6.1 请求参数 Params：`TriggerAutoFocusParams`
+
+字段见 [6.2](#62-请求与响应-schemas)。
+
+#### 3.6.2 返回结果 Result：`FocusCommandResult`
+
+字段见 [6.2](#62-请求与响应-schemas)。
+
+#### 3.6.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `camera.focusStateChanged` | AF focusing/focused/failed。 | `FocusStateChangedEvent` | 更新状态；失败显示原因。 |
+
+#### 3.6.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `BUSY` | 已有 AF 或校准动作进行中。 | 稍后重试。 |
+| `TIMEOUT` | AF 超时。 | 可允许重试。 |
+
+### 3.7 `camera.startFocusMove`
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | command |
+| Params Schema | `StartFocusMoveParams` |
+| Result Schema | `FocusCommandResult` |
+| 是否触发事件 | 是 |
+| 幂等性 / 异步性 | 非幂等；用于 near/far jog，需 stop 或 timeout。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `DEVICE_MODE_CONFLICT`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.7.1 请求参数 Params：`StartFocusMoveParams`
+
+字段见 [6.2](#62-请求与响应-schemas)。
+
+#### 3.7.2 返回结果 Result：`FocusCommandResult`
+
+字段见 [6.2](#62-请求与响应-schemas)。
+
+#### 3.7.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `camera.focusStateChanged` | focus 进入 moving。 | `FocusStateChangedEvent` | UI 显示 moving。 |
+
+#### 3.7.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `DEVICE_MODE_CONFLICT` | 当前不是 manual 或设备不能自动切换。 | 提示切换手动。 |
+
+### 3.8 `camera.stopFocus`
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | command |
+| Params Schema | `StopFocusParams` |
+| Result Schema | `FocusCommandResult` |
+| 是否触发事件 | 是 |
+| 幂等性 / 异步性 | 幂等；没有动作时成功返回当前状态。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
+
+#### 3.8.1 请求参数 Params：`StopFocusParams`
+
+字段见 [6.2](#62-请求与响应-schemas)。
+
+#### 3.8.2 返回结果 Result：`FocusCommandResult`
+
+字段见 [6.2](#62-请求与响应-schemas)。
+
+#### 3.8.3 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `camera.focusStateChanged` | moving/focusing 停止。 | `FocusStateChangedEvent` | 释放 UI 操作态。 |
+
+#### 3.8.4 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `UNAVAILABLE` | focus 控制链路不可用。 | 清除本地操作态。 |
+
+## 4. 事件 Events
+
+### 4.0 事件速览
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
+|---|---|---|---|---|
+| `camera.focusStateChanged` | focusing/moving/focused/failed/locked/unavailable 变化。 | `FocusStateChangedEvent` | 更新状态，必要时 get 校准。 | `[REVIEW-DRAFT]` |
+| `camera.focusConfigChanged` | mode、position、region 变化。 | `FocusConfigChangedEvent` | 更新配置控件。 | `[REVIEW-DRAFT]` |
+
+### 4.1 `camera.focusStateChanged`
+
+#### Payload：`FocusStateChangedEvent`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+| `state` | `FocusState` | yes | see schema | none | 当前状态。 |
+| `reason` | string enum | no | `trigger_auto_focus`, `focus_completed`, `focus_failed`, `manual_move`, `stop`, `unknown` | `unknown` | 变化原因。 |
+
+#### 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| `state.focusState=focused` | 显示对焦完成。 |
+| `state.focusState=failed` | 展示失败原因，允许重试。 |
+
+### 4.2 `camera.focusConfigChanged`
+
+#### Payload：`FocusConfigChangedEvent`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+| `changedFields` | string[] | no | field path array | omitted | 变化字段。 |
+| `state` | `FocusState` | yes | see schema | none | 变化后的状态/配置快照。 |
+| `reason` | string enum | no | `user_request`, `profile_changed`, `restore_config`, `legacy_adapter`, `unknown` | `unknown` | 变化原因。 |
+
+#### 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| 完整状态 | 直接更新 mode/position/region。 |
+| patch 事件 | 调用 `camera.getFocusState` 校准。 |
+
+## 5. Capability
+
+| 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 说明 |
+|---|---|---:|---|---|
+| `capability` | string | yes | fixed `camera.focus` | capability 名称。 |
+| `modes` | string[] | yes | `manual`, `auto`, `continuous_auto`, `one_shot_auto`, `fixed` | 支持模式。 |
+| `positionRange` | object | no | device steps | 手动对焦位置范围。 |
+| `targets` | string[] | no | `center`, `full_frame`, `point`, `region` | AF 目标类型。 |
+| `manualMove` | object | no | directions/speed | near/far jog 能力。 |
+| `events` | string[] | no | event names | 支持事件。 |
+
+## 6. 字段 / Schemas
+
+### 6.1 Schema 层级速览
+
+| 层级 | 用在哪里 | 作用 |
+|---|---|---|
+| `FocusCapabilities` | get capabilities result | 描述 modes、position、targets 和 manual move。 |
+| `FocusState` | get state/event | 描述 mode、position、target、focus state。 |
+| `FocusCommandResult` | set/trigger/move/stop result | 描述 accepted、operationId 和当前状态。 |
+
+### 6.2 请求与响应 Schemas
+
+#### `GetFocusCapabilitiesParams` / `GetFocusStateParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+
+#### `SetFocusModeParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+| `mode` | string enum | yes | supported mode | none | 目标模式。 |
+
+#### `SetFocusPositionParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+| `position` | int32 | yes | capability range | none | 原生对焦位置。 |
+| `applyMode` | string enum | no | `require_manual`, `switch_to_manual` | `require_manual` | 非 manual 时处理策略。 |
+
+#### `SetFocusRegionParams` / `TriggerAutoFocusParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+| `target` | string enum | yes | `center`, `full_frame`, `point`, `region` | none | AF 目标。 |
+| `point` | object | no | normalized x/y | omitted | 点选目标。 |
+| `region` | object | no | normalized rect | omitted | 区域目标。 |
+| `lockAfterFocus` | bool | no | true/false | false | AF 成功后是否锁定。 |
+| `timeoutMs` | uint16 | no | capability range | device default | 超时。 |
+
+#### `StartFocusMoveParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+| `direction` | string enum | yes | `near`, `far` | none | 移动方向。 |
+| `speed` | uint8 | no | capability range | default | 速度。 |
+| `timeoutMs` | uint16 | no | capability range | device default | 安全超时。 |
+
+#### `StopFocusParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+| `operationId` | string | no | device-defined | omitted | 要停止的动作。 |
+
+#### `FocusCommandResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | bool | yes | true/false | none | 动作是否接受。 |
+| `operationId` | string | no | device-defined | omitted | 异步动作 ID。 |
+| `state` | `FocusState` | yes | see schema | none | 当前状态。 |
+| `applyState` | string enum | no | `applied`, `focusing`, `moving`, `failed` | omitted | 应用状态。 |
+
+### 6.3 Capability Schemas
+
+#### `FocusCapabilities`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `capability` | string | yes | fixed `camera.focus` | none | capability 名称。 |
+| `modes` | string[] | yes | focus modes | none | 支持模式。 |
+| `defaultMode` | string enum | no | one of modes | omitted | 默认模式。 |
+| `positionRange` | object | no | min/max/step/unit | omitted | 位置范围。 |
+| `targets` | string[] | no | `center`, `full_frame`, `point`, `region` | omitted | AF target 能力。 |
+| `manualMove` | object | no | directions/speed | omitted | jog 能力。 |
+| `events` | string[] | no | event names | omitted | 支持事件。 |
+
+### 6.4 Config / State 总结构
+
+#### `FocusState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+| `mode` | string enum | yes | `manual`, `auto`, `continuous_auto`, `one_shot_auto`, `fixed` | none | 当前模式。 |
+| `position` | int32 | no | capability range | omitted | 当前位置。 |
+| `target` | string enum | no | `center`, `full_frame`, `point`, `region` | omitted | 当前 AF 目标。 |
+| `point` | object | no | normalized x/y | omitted | 点目标。 |
+| `region` | object | no | normalized rect | omitted | 区域目标。 |
+| `focusState` | string enum | yes | `idle`, `moving`, `focusing`, `focused`, `failed`, `locked`, `unavailable` | none | 运行态。 |
+| `confidence` | uint8 | no | `0..100` | omitted | 对焦置信度。 |
+| `failureReason` | string enum | no | `low_light`, `no_target`, `timeout`, `resource_conflict`, `unknown` | omitted | 失败原因。 |
+
+## 7. JSON 示例
+
+### 7.1 场景：触发点选自动对焦
 
 ```json
 {
-  "event": "camera.focusPositionChanged",
-  "params": {
-    "cameraId": "main",
-    "position": 320,
-    "mode": "manual",
-    "reason": "user_request"
-  }
-}
-```
-
-## 9. `camera.getFocusPosition`
-
-查询当前手动对焦位置。
-
-请求：
-
-```json
-{
-  "method": "camera.getFocusPosition",
-  "params": {
-    "cameraId": "main"
-  }
-}
-```
-
-返回：
-
-```json
-{
-  "result": {
-    "cameraId": "main",
-    "position": 320,
-    "range": {
-      "min": 0,
-      "max": 1478,
-      "step": 1,
-      "unit": "device_steps"
-    },
-    "mode": "manual"
-  }
-}
-```
-
-如果设备处于自动模式但仍能报告镜头当前位置，可以照常返回 `position`，并将 `mode` 返回为当前自动模式。
-
-## 10. `camera.setFocusRegion`
-
-设置持久自动对焦点或区域。该方法只配置目标区域，不一定立即触发一次 AF。需要立即执行时，使用 `camera.triggerAutoFocus`。
-
-请求：点选对焦
-
-```json
-{
-  "method": "camera.setFocusRegion",
-  "params": {
-    "cameraId": "main",
-    "target": "point",
-    "point": {
-      "x": 0.875,
-      "y": 0.426,
-      "unit": "normalized"
-    }
-  }
-}
-```
-
-请求：区域对焦
-
-```json
-{
-  "method": "camera.setFocusRegion",
-  "params": {
-    "cameraId": "main",
-    "target": "region",
-    "region": {
-      "x": 0.35,
-      "y": 0.30,
-      "width": 0.30,
-      "height": 0.25,
-      "unit": "normalized"
-    }
-  }
-}
-```
-
-返回：
-
-```json
-{
-  "result": {
-    "cameraId": "main",
-    "target": "point",
-    "point": {
-      "x": 0.875,
-      "y": 0.426,
-      "unit": "normalized"
-    },
-    "mode": "auto"
-  }
-}
-```
-
-规则：
-
-- 该方法只在 `region.persistent=true` 时推荐注册。
-- `manual` 或 `fixed` 模式下设置区域应返回 `DEVICE_MODE_CONFLICT`，除非设备明确支持预配置。
-- VM33 `Focus.SetFocusRegion` 的 `x/y` 是点选坐标，应映射为 `target=point`。
-
-事件：
-
-```json
-{
-  "event": "camera.focusRegionChanged",
-  "params": {
-    "cameraId": "main",
-    "target": "point",
-    "point": {
-      "x": 0.875,
-      "y": 0.426,
-      "unit": "normalized"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-## 11. `camera.getFocusRegion`
-
-查询当前持久自动对焦点或区域。
-
-请求：
-
-```json
-{
-  "method": "camera.getFocusRegion",
-  "params": {
-    "cameraId": "main"
-  }
-}
-```
-
-返回：
-
-```json
-{
-  "result": {
-    "cameraId": "main",
-    "target": "center"
-  }
-}
-```
-
-## 12. `camera.triggerAutoFocus`
-
-触发一次自动对焦。该方法是动作型接口，返回 `accepted=true` 表示设备接受请求；最终成功或失败通过 `camera.focusStateChanged` 或后续 `camera.getFocusState` 确认。
-
-请求：中心对焦
-
-```json
-{
-  "method": "camera.triggerAutoFocus",
-  "params": {
-    "cameraId": "main",
-    "target": "center"
-  }
-}
-```
-
-请求：点选对焦
-
-```json
-{
+  "id": 1,
   "method": "camera.triggerAutoFocus",
   "params": {
     "cameraId": "main",
     "target": "point",
-    "point": {
-      "x": 0.5,
-      "y": 0.42,
-      "unit": "normalized"
-    },
-    "lockAfterFocus": false,
+    "point": { "x": 0.5, "y": 0.42 },
     "timeoutMs": 3000
   }
 }
 ```
 
-请求：区域对焦
-
 ```json
 {
-  "method": "camera.triggerAutoFocus",
-  "params": {
-    "cameraId": "main",
-    "target": "region",
-    "region": {
-      "x": 0.35,
-      "y": 0.30,
-      "width": 0.30,
-      "height": 0.25,
-      "unit": "normalized"
-    }
-  }
-}
-```
-
-返回：
-
-```json
-{
+  "id": 1,
+  "status": { "ok": true, "code": 0 },
   "result": {
-    "cameraId": "main",
     "accepted": true,
     "operationId": "af-42",
-    "state": "focusing"
+    "applyState": "focusing",
+    "state": { "mode": "auto", "target": "point", "focusState": "focusing" }
   }
 }
 ```
 
-规则：
-
-- `target` 必须存在于 `getFocusCapabilities.region.targets`。
-- 该方法可以临时执行一次 AF，不要求持久改变 `mode`。
-- 如果设备执行该动作时会切换 `mode`，必须在返回值或 `camera.focusModeChanged` 中报告。
-- `lockAfterFocus=true` 表示成功后锁定焦点；不支持锁定时返回 `RPC_PARAM_INVALID` 或忽略并在返回中报告 `locked=false`，二者选其一并保持一致。
-
-## 13. `camera.startFocusMove`
-
-按方向开始手动 jog 对焦。该方法用于兼容旧协议中的 `Near/Far + Enable` 手动聚焦动作，不是 MVP 必选方法。
-
-请求：
-
-```json
-{
-  "method": "camera.startFocusMove",
-  "params": {
-    "cameraId": "main",
-    "direction": "near",
-    "speed": 60
-  }
-}
-```
-
-返回：
-
-```json
-{
-  "result": {
-    "cameraId": "main",
-    "accepted": true,
-    "operationId": "focus-move-7",
-    "state": "moving",
-    "mode": "manual"
-  }
-}
-```
-
-规则：
-
-- 设备支持 `manualMove.supported=true` 时才应注册该方法。
-- 当前不是 `manual` 时，建议返回 `DEVICE_MODE_CONFLICT`；如果设备自动切换到 `manual`，必须报告最终 `mode`。
-- `speed` 取值来自 `manualMove.speed`。设备不支持速度控制时，可以忽略 `speed`，但必须在能力中不返回 speed range。
-- 调用方应使用 `camera.stopFocus` 停止移动。设备也可以在到达限位时自动停止并发送 `camera.focusStateChanged`。
-
-## 14. `camera.stopFocus`
-
-停止当前对焦相关动作。
-
-请求：
-
-```json
-{
-  "method": "camera.stopFocus",
-  "params": {
-    "cameraId": "main",
-    "operationId": "focus-move-7"
-  }
-}
-```
-
-返回：
-
-```json
-{
-  "result": {
-    "cameraId": "main",
-    "state": "idle"
-  }
-}
-```
-
-适用场景：
-
-- 停止 `camera.startFocusMove` 启动的手动 jog。
-- 停止正在进行的一次 AF。
-- 停止连续 AF 或 focus scan，前提是设备支持。
-
-如果没有进行中的动作，设备可以返回当前 `state`，不应把幂等停止视为错误。
-
-## 15. `camera.getFocusState`
-
-查询当前对焦状态。
-
-请求：
-
-```json
-{
-  "method": "camera.getFocusState",
-  "params": {
-    "cameraId": "main"
-  }
-}
-```
-
-返回：
-
-```json
-{
-  "result": {
-    "cameraId": "main",
-    "state": "focused",
-    "mode": "continuous_auto",
-    "position": 512,
-    "target": "center",
-    "confidence": 0.92,
-    "operationId": "af-42"
-  }
-}
-```
-
-字段规则：
-
-- `position` 可选；设备能读取镜头位置时返回。
-- `confidence` 可选，范围 `0.0..1.0`。
-- `target` 可选，表示最近一次或当前生效的 AF 目标。
-- 摄像头不可用时返回 `state=unavailable`，或直接返回 `UNAVAILABLE`。同一设备实现必须保持一致。
-
-## 16. 事件
-
-### 16.1 `camera.focusStateChanged`
-
-开始对焦：
+### 7.2 场景：AF 完成事件
 
 ```json
 {
   "event": "camera.focusStateChanged",
-  "params": {
+  "data": {
     "cameraId": "main",
-    "state": "focusing",
-    "mode": "one_shot_auto",
-    "target": "center",
-    "operationId": "af-42",
-    "reason": "trigger_auto_focus"
-  }
-}
-```
-
-对焦完成：
-
-```json
-{
-  "event": "camera.focusStateChanged",
-  "params": {
-    "cameraId": "main",
-    "state": "focused",
-    "mode": "one_shot_auto",
-    "position": 536,
-    "confidence": 0.94,
-    "operationId": "af-42",
+    "state": { "mode": "auto", "focusState": "focused", "confidence": 92 },
     "reason": "focus_completed"
   }
 }
 ```
 
-对焦失败：
+### 7.3 场景：手动位置模式冲突
 
 ```json
 {
-  "event": "camera.focusStateChanged",
-  "params": {
-    "cameraId": "main",
-    "state": "failed",
-    "mode": "one_shot_auto",
-    "operationId": "af-42",
-    "reason": "low_contrast"
+  "id": 2,
+  "status": {
+    "ok": false,
+    "code": 263,
+    "msg": "Device mode conflict.",
+    "details": { "field": "position", "requiredMode": "manual", "candidateError": "DEVICE_MODE_CONFLICT" }
   }
 }
 ```
 
-### 16.2 事件触发规则
+## 8. 错误
 
-- 上位机调用 `setFocusMode`、`setFocusPosition`、`setFocusRegion` 成功后，设备应发送对应 Changed 事件。
-- 设备本地 UI、物理按键、自动算法或固件策略改变对焦状态时，也应发送事件，`reason` 使用 `local_change`、`algorithm_update` 或更具体原因。
-- 对同一个 `operationId`，状态流应至少包含开始态和结束态。无法生成 `operationId` 的设备可以省略该字段。
+| 错误 | 适用场景 | 说明 |
+|---|---|---|
+| `NOT_SUPPORTED` | mode、target、manual move 不支持。 | 返回 capability detail。 |
+| `INVALID_ARGUMENT` | target 与 point/region 不匹配。 | 返回字段路径。 |
+| `OUT_OF_RANGE` | position 或 region 越界。 | 返回合法范围。 |
+| `DEVICE_MODE_CONFLICT` | 当前 mode 不允许该操作或资源被占用。 | 返回 required mode / owner。 |
+| `BUSY` | AF、jog 或 calibration 进行中。 | 稍后重试或 stop。 |
+| `TIMEOUT` | AF 超时。 | 可重试。 |
 
-## 17. 错误处理
+## 9. Legacy 映射
 
-使用现有 AXTP ErrorCode 命名：
+| legacy 项 | 候选映射 | 状态 | 说明 |
+|---|---|---|---|
+| `CommonSetAutoFocusState` / `CommonGetAutoFocusState` | `camera.setFocusMode` / `camera.getFocusState` | candidate | `EnableState` 枚举需确认。 |
+| `CommonSetManualFocusPosition` / `CommonGetManualFocusPosition` | `camera.setFocusPosition` / `camera.getFocusState` | candidate | position 为原生步进。 |
+| `CommonSetLensCenter` | `camera.triggerAutoFocus` 或 calibration | `[REVIEW-ASK]` | 名称可能是中心 AF、镜头归中或校准。 |
+| `Focus.SetMode` / `Focus.GetMode` | `camera.setFocusMode` / `camera.getFocusState` | candidate | VM33 mode 枚举需确认。 |
+| `Focus.Manual` | `camera.setFocusPosition` 或 `camera.startFocusMove` | candidate | 参数语义需确认。 |
+| `Focus.SetFocus` | `camera.setFocusPosition` 或 `camera.triggerAutoFocus` | `[REVIEW-ASK]` | 原文 `pos` 像绝对位置，但历史分类曾映射到 AF。 |
+| `Focus.SetFocusRegion` | `camera.setFocusRegion` / `camera.triggerAutoFocus` | candidate | 点选坐标归一化。 |
+| `Focus.*Zoom` | `camera.zoom` | out-of-scope | 不归 `camera.focus`。 |
 
-| 错误 | 场景 |
+## 10. Registry / Conformance 状态
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| registry | not generated | `registry/domains/camera/domain.yaml` 尚未包含 `camera.focus`。 |
+| generated | false | generated 文档无 camera focus 方法。 |
+| conformance | missing | 需覆盖 mode/position/region/AF/event/errors。 |
+
+## 11. 测试要点
+
+| 类型 | 要点 |
 |---|---|
-| `RPC_METHOD_NOT_FOUND` | 设备不支持该 focus 方法。 |
-| `RPC_PARAM_INVALID` | `mode` 非法、`position` 越界、坐标非法、速度越界。 |
-| `DEVICE_MODE_CONFLICT` | 当前模式不允许该操作，例如自动模式下直接设置位置。 |
-| `BUSY` | 正在执行互斥动作。 |
-| `DEVICE_RESOURCE_BUSY` | 摄像头资源被 PTZ、framing、calibration 或其他会话占用。 |
-| `UNAVAILABLE` | 摄像头未打开、视频链路不可用或设备处于不可服务状态。 |
+| happy path | 查询能力，触发 AF，收到 focusing/focused 事件。 |
+| error path | unsupported target、position 越界、mode conflict、busy、timeout。 |
+| boundary case | normalized point/region 边界，position min/max。 |
+| capability discovery | UI 根据 modes/targets/positionRange 启禁控件。 |
+| event | AF 开始/完成/失败、manual position 变化均同步。 |
 
-错误示例：
+## 12. 待确认问题
 
-```json
-{
-  "error": {
-    "code": "RPC_PARAM_INVALID",
-    "message": "focus position out of range",
-    "data": {
-      "field": "position",
-      "min": 0,
-      "max": 1478
-    }
-  }
-}
-```
-
-模式冲突示例：
-
-```json
-{
-  "error": {
-    "code": "DEVICE_MODE_CONFLICT",
-    "message": "manual focus position requires manual mode",
-    "data": {
-      "currentMode": "continuous_auto",
-      "requiredMode": "manual"
-    }
-  }
-}
-```
-
-## 18. Legacy 映射规则
-
-### 18.1 AXDP HID
-
-| Legacy 命令 | Legacy ID | 已知 payload | AXTP 映射 | 覆盖状态 | 说明 |
-|---|---|---|---|---|---|
-| `CommonSetAFCalibration` | `0xC004A / 0x004A -> 0x00CA` | 无 payload | `camera.startCalibration` 或 `diagnostic.*` | out-of-scope | AF calibration 不进入 `camera.focus`。 |
-| `CommonGetAFCalibration` | `0xC0066 / 0x0066 -> 0x00E6` | 无 payload | `camera.getCalibrationState` 或 `diagnostic.*` | out-of-scope | AF calibration 不进入 `camera.focus`。 |
-| `CommonSetLensCenter` | `0xC010E / 0x010E -> 0x018E` | `uint32 BE value` | 待确认 | `[REVIEW-ASK]` | 若语义是中心 AF，映射为 `camera.triggerAutoFocus(target="center")`；若是机械归中或标定，归 `camera.calibration` 或 `diagnostic.*`。 |
-| `CommonSetAutoFocusState` | `0xC0146 / 0x0146 -> 0x01C6` | `uint32 BE EnableState` | `camera.setFocusMode` | provisional | 建议先按 `0 -> manual`、`1 -> auto` 适配；多值含义未确认前不得写正式 `legacyRefs`。 |
-| `CommonGetAutoFocusState` | `0xC0147 / 0x0147 -> 0x01C7` | 无 payload | `camera.getFocusMode` | provisional | AXTP 返回 auto 类模式时，legacy adapter 可回填 `1`；`manual` 或 `fixed` 回填 `0`。 |
-| `CommonSetManualFocusPosition` | `0xC015F / 0x015F -> 0x01DF` | `uint32 BE position` | `camera.setFocusPosition` | confirmed | 响应侧旧实现把 result 转成 `EnableState`，AXTP 不继承该类型误差。 |
-| `CommonGetManualFocusPosition` | `0xC0160 / 0x0160 -> 0x01E0` | 无 payload | `camera.getFocusPosition` | confirmed | 返回 `position`，范围由 capabilities 给出。 |
-
-AXDP 适配注意：
-
-- legacy payload 的大小端、长度兼容由 adapter 处理，不进入 AXTP schema。
-- `CommonSetAutoFocusState` 的 `EnableState` 如果确认存在 `2/3/...` 等多值，应补充到本节并映射到 `continuous_auto`、`one_shot_auto` 或 vendor extension。
-- `CommonSetLensCenter` 不能仅凭名称写入正式 mapping；必须确认设备行为。
-
-### 18.2 VM33 HTTP JSON
-
-| Legacy 方法 | Legacy 参数 | AXTP 映射 | 覆盖状态 | 说明 |
-|---|---|---|---|---|
-| `Focus.SetMode` | `Mode: "Auto" / "Manual"` | `camera.setFocusMode` | confirmed | `"Auto"` 映射为 `auto` 或设备默认自动模式；`"Manual"` 映射为 `manual`。 |
-| `Focus.GetMode` | 无 | `camera.getFocusMode` | confirmed | legacy adapter 将 AXTP mode 回填为 `"Auto"` 或 `"Manual"`。 |
-| `Focus.Manual` | `Dir: "Near" / "Far"`、`Speed`、`Enable` | `camera.startFocusMove` / `camera.stopFocus` | confirmed | `Enable=true` 启动 jog；`Enable=false` 停止。不能映射为绝对 `setFocusPosition`，除非 adapter 能计算目标位置。 |
-| `Focus.SetFocus` | `pos: 0..1478` | `camera.setFocusPosition` | confirmed | 原分类中的 `triggerAutoFocus` 映射应修正。 |
-| `Focus.SetFocusRegion` | `x: 0..1`、`y: 0..1` | `camera.setFocusRegion(target="point")` | confirmed | 该旧接口描述为自动模式下生效的点选区域配置。 |
-| `Focus.GetZoomInfo` | 返回 `focusPos`、`digitalBase`、`opticsBase` 等 | `camera.getFocusPosition` + `camera.zoom.*` | partial | 仅 `focusPos` 属于 `camera.focus`，变倍字段归 `camera.zoom`。 |
-| `Focus.ManualZoom` | `Dir`、`Speed`、`Enable` | `camera.zoom` | out-of-scope | 不归 `camera.focus`。 |
-| `Focus.DigitalZoom` | `x`、`y`、`base` | `camera.zoom` | out-of-scope | 不归 `camera.focus`。 |
-| `Focus.OpticsZoom` | `base` | `camera.zoom` | out-of-scope | 不归 `camera.focus`。 |
-| `Focus.SetZoomSpeedMode` / `Focus.GetZoomSpeedMode` | `SpeedMode` | `camera.zoom` | out-of-scope | 不归 `camera.focus`。 |
-
-VM33 适配注意：
-
-- VM33 `Focus.Manual` 是方向移动，不是位置设置。本协议通过 `camera.startFocusMove` 覆盖该语义。
-- VM33 `Focus.SetFocusRegion` 只有点坐标，没有宽高，应使用 `target=point`。
-- VM33 `Focus.SetFocus` 的 `pos` 范围 `0..1478` 可作为该设备 `position.max` 的能力值。
-
-## 19. Capability 注册建议
-
-能力：
-
-```text
-camera.focus
-```
-
-建议关联方法：
-
-```text
-camera.getFocusCapabilities
-camera.setFocusMode
-camera.getFocusMode
-camera.setFocusPosition
-camera.getFocusPosition
-camera.setFocusRegion
-camera.getFocusRegion
-camera.triggerAutoFocus
-camera.startFocusMove
-camera.stopFocus
-camera.getFocusState
-```
-
-建议关联事件：
-
-```text
-camera.focusModeChanged
-camera.focusPositionChanged
-camera.focusRegionChanged
-camera.focusStateChanged
-```
-
-建议 schema 名称：
-
-```text
-CameraGetFocusCapabilitiesRequest
-CameraGetFocusCapabilitiesResponse
-CameraSetFocusModeRequest
-CameraSetFocusModeResponse
-CameraGetFocusModeRequest
-CameraGetFocusModeResponse
-CameraSetFocusPositionRequest
-CameraSetFocusPositionResponse
-CameraGetFocusPositionRequest
-CameraGetFocusPositionResponse
-CameraSetFocusRegionRequest
-CameraSetFocusRegionResponse
-CameraGetFocusRegionRequest
-CameraGetFocusRegionResponse
-CameraTriggerAutoFocusRequest
-CameraTriggerAutoFocusResponse
-CameraStartFocusMoveRequest
-CameraStartFocusMoveResponse
-CameraStopFocusRequest
-CameraStopFocusResponse
-CameraGetFocusStateRequest
-CameraGetFocusStateResponse
-CameraFocusStateChangedEvent
-CameraFocusModeChangedEvent
-CameraFocusPositionChangedEvent
-CameraFocusRegionChangedEvent
-```
-
-进入 registry 前必须确认：
-
-- `camera.*` methodId 是否沿用 specs 草案中的 `0x0707`、`0x0708`。
-- 新增 focus 方法的 methodId 与 `camera.zoom`、`camera.ptz` 不冲突。
-- `camera.focusStateChanged` 是否沿用 specs 草案中的 eventId `0x0704`。
-- AXDP `CommonSetLensCenter` 的真实语义。
-- AXDP `CommonSetAutoFocusState` / `CommonGetAutoFocusState` 的完整取值域。
-
-## 20. MVP 推荐
-
-第一阶段建议实现：
-
-```text
-camera.getFocusCapabilities
-camera.setFocusMode
-camera.getFocusMode
-camera.setFocusPosition
-camera.getFocusPosition
-camera.triggerAutoFocus
-camera.getFocusState
-camera.focusStateChanged
-```
-
-第二阶段按设备能力实现：
-
-```text
-camera.setFocusRegion
-camera.getFocusRegion
-camera.startFocusMove
-camera.stopFocus
-camera.focusModeChanged
-camera.focusPositionChanged
-camera.focusRegionChanged
-```
-
-最小固定焦设备可以只实现：
-
-```text
-camera.getFocusCapabilities
-camera.getFocusMode
-camera.getFocusState
-```
-
-并在能力中返回：
-
-```json
-{
-  "supported": true,
-  "modes": ["fixed"],
-  "defaultMode": "fixed",
-  "position": {
-    "supported": false
-  },
-  "triggerAutoFocus": {
-    "supported": false
-  }
-}
-```
+| 问题 | 影响 | 当前建议 | 状态 |
+|---|---|---|---|
+| `Focus.SetFocus` 真实语义是什么？ | 决定 legacy adapter 和正式方法映射。 | 先按绝对位置候选，保留 AF 可能性。 | `[REVIEW-ASK]` |
+| 是否需要独立 `camera.focusConfigChanged`？ | 影响事件数量。 | 推荐保留，避免把 config 变化塞进 state event。 | `[REVIEW-DRAFT]` |
+| `CommonSetLensCenter` 是否是 calibration？ | 避免误归 focus。 | 设备确认前不写 YAML。 | `[REVIEW-ASK]` |
