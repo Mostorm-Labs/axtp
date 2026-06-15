@@ -1,11 +1,11 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: network
 feature: network.ip
-registry:
-lastReviewed: 2026-06-13
+registry: ../../../registry/domains/network/domain.yaml
+lastReviewed: 2026-06-15
 ---
 
 # network.ip
@@ -15,11 +15,11 @@ lastReviewed: 2026-06-13
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 按设备返回的 `interfaceId` 查询或设置 IPv4/IPv6 DHCP/static 地址、网关、DNS，并报告有效地址变化。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。draft 阶段仅供评审；正式实现以 registry / generated 为准。 |
+| 当前状态 | generated；已写入 `../../../registry/domains/network/domain.yaml`，并已刷新到 `protocol/axtp.protocol.yaml` 与 `docs/generated/**`。 |
+| 是否可直接实现 | 是，但实现合同以 `protocol/axtp.protocol.yaml` / `docs/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
-| Registry readiness | candidate |
+| Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
 | Conformance | needed |
 | 主要未决问题 | IP ready 是否作为配对验收、AP DHCP Server 地址池归属、IPv6 是否进入 MVP。 |
 
@@ -655,10 +655,10 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| registry | not generated | 当前未写入 `registry/domains/network/domain.yaml`。 |
-| generated | false | `docs/generated/**` 未生成 `network.ip` 方法或事件。 |
-| protocol draft | draft | 本文是 Stage 20 草案，不能作为 runtime 合同。 |
-| registry readiness | candidate | DHCP/static 主路径已收敛；IPv6、AP DHCP Server 地址池和重连策略仍待确认。 |
+| registry | source adopted | 已写入 `../../../registry/domains/network/domain.yaml`。 |
+| generated | true | 已运行 `generate-axtp-protocol`，刷新 `protocol/axtp.protocol.yaml` 和 `docs/generated/**`。 |
+| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
+| registry readiness | ready | network.ip P0/confirmed subset 已写入 registry source；IPv6/AP DHCP Server 地址池等仍保留待确认。 |
 | conformance | needed | 采纳后需要覆盖 DHCP、static、disabled、事件去重、IP ready 和错误路径。 |
 
 ## 11. 测试要点

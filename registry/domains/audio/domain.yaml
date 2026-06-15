@@ -98,6 +98,123 @@ methods:
       - PERMISSION_DENIED
       - INTERNAL_ERROR
 
+  - id: 0x090F
+    name: audio.getStreamCapabilities
+    domain: audio
+    status: draft
+    bitOffset: 4
+    since: 1.0.0
+    description: Return real-time audio stream sources, codecs, stream profiles, and open-mode support.
+    rpc_op: request_response
+    request_schema: AudioGetStreamCapabilitiesParams
+    response_schema: AudioStreamCapabilities
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - audio.stream
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - PERMISSION_DENIED
+      - UNAVAILABLE
+
+  - id: 0x0910
+    name: audio.openStream
+    domain: audio
+    status: draft
+    bitOffset: 5
+    since: 1.0.0
+    description: Open a real-time audio STREAM and return the negotiated streamId and media metadata.
+    rpc_op: request_response
+    request_schema: AudioOpenStreamParams
+    response_schema: AudioOpenStreamResult
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - audio.stream
+    events:
+      - audio.streamStateChanged
+      - audio.streamSourceStateChanged
+    errors:
+      - SUCCESS
+      - INVALID_ARGUMENT
+      - BUSY
+      - RESOURCE_EXHAUSTED
+      - MEDIA_SOURCE_NOT_FOUND
+      - MEDIA_SOURCE_UNAVAILABLE
+      - MEDIA_CODEC_UNSUPPORTED
+      - MEDIA_STREAM_START_FAILED
+
+  - id: 0x0911
+    name: audio.closeStream
+    domain: audio
+    status: draft
+    bitOffset: 6
+    since: 1.0.0
+    description: Close a previously opened audio STREAM.
+    rpc_op: request_response
+    request_schema: AudioCloseStreamParams
+    response_schema: AudioCloseStreamResult
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - audio.stream
+    events:
+      - audio.streamStateChanged
+    errors:
+      - SUCCESS
+      - STREAM_NOT_FOUND
+      - STREAM_CLOSED
+      - INVALID_STATE
+      - MEDIA_STREAM_STOP_FAILED
+
+  - id: 0x0912
+    name: audio.getStreamState
+    domain: audio
+    status: draft
+    bitOffset: 7
+    since: 1.0.0
+    description: Return runtime state for an opened audio stream.
+    rpc_op: request_response
+    request_schema: AudioGetStreamStateParams
+    response_schema: AudioStreamState
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - audio.stream
+    errors:
+      - SUCCESS
+      - STREAM_NOT_FOUND
+      - PERMISSION_DENIED
+      - UNAVAILABLE
+
+  - id: 0x0913
+    name: audio.getStreamSourceState
+    domain: audio
+    status: draft
+    bitOffset: 8
+    since: 1.0.0
+    description: Return availability and receiving state for an audio stream source.
+    rpc_op: request_response
+    request_schema: AudioGetStreamSourceStateParams
+    response_schema: AudioStreamSourceState
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - audio.stream
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - MEDIA_SOURCE_NOT_FOUND
+      - UNAVAILABLE
+
 events:
   - id: 0x0901
     name: audio.algorithmConfigChanged
@@ -117,6 +234,54 @@ events:
       - device policy
     capabilities:
       - audio.algorithm
+
+  - id: 0x0902
+    name: audio.streamStateChanged
+    domain: audio
+    status: draft
+    bitOffset: 1
+    since: 1.0.0
+    description: Emitted when an audio stream enters opening, streaming, closed, or failed state.
+    event_schema: AudioStreamStateChangedEvent
+    severity: info
+    trigger:
+      - audio.openStream
+      - audio.closeStream
+      - source disconnected
+      - stream failure
+    capabilities:
+      - audio.stream
+
+  - id: 0x0903
+    name: audio.streamSourceStateChanged
+    domain: audio
+    status: draft
+    bitOffset: 2
+    since: 1.0.0
+    description: Emitted when an audio stream source availability or receiving state changes.
+    event_schema: AudioStreamSourceStateChangedEvent
+    severity: info
+    trigger:
+      - upstream source available
+      - upstream source receiving
+      - upstream source stopped
+    capabilities:
+      - audio.stream
+
+  - id: 0x0904
+    name: audio.streamStatsReported
+    domain: audio
+    status: draft
+    bitOffset: 3
+    since: 1.0.0
+    description: Emitted with bounded runtime statistics for an audio stream.
+    event_schema: AudioStreamStatsReportedEvent
+    severity: info
+    trigger:
+      - stream statistics interval
+      - diagnostic sampling
+    capabilities:
+      - audio.stream
 
 types:
   AudioAlgorithmCapability:
@@ -862,6 +1027,565 @@ types:
         max: 3
         description: Howling suppression strength.
 
+  AudioGetStreamCapabilitiesParams:
+    kind: object
+    description: Selector for real-time audio stream capability.
+    fields:
+      - id: 0x01
+        name: source
+        type: string
+        required: false
+        max_length: 128
+        description: Optional audio source identifier; omit to query all visible sources.
+      - id: 0x02
+        name: includeRuntimeState
+        type: bool
+        required: false
+        default: false
+        description: Whether to include current source runtime state.
+
+  AudioStreamCapabilities:
+    kind: object
+    description: Device-level audio.stream capability summary.
+    fields:
+      - id: 0x01
+        name: capability
+        type: string
+        required: true
+        max_length: 32
+        description: Fixed capability name audio.stream.
+      - id: 0x02
+        name: sources
+        type: bytes
+        required: true
+        max_length: 8192
+        description: JSON array of AudioStreamSource objects.
+      - id: 0x03
+        name: streamProfiles
+        type: bytes
+        required: true
+        max_length: 512
+        description: JSON array of supported stream profiles, normally media.audio.
+      - id: 0x04
+        name: openModes
+        type: bytes
+        required: true
+        max_length: 512
+        description: JSON array of supported open modes, such as producer_open and receiver_pull.
+      - id: 0x05
+        name: peerRoles
+        type: bytes
+        required: true
+        max_length: 512
+        description: JSON array of peer roles, such as receiver and transmitter.
+      - id: 0x06
+        name: supportsSourceStateEvent
+        type: bool
+        required: true
+        description: Whether audio.streamSourceStateChanged is supported.
+      - id: 0x07
+        name: supportsSyncGroup
+        type: bool
+        required: true
+        description: Whether audio streams can share a synchronization group with video streams.
+      - id: 0x08
+        name: flowControlManagedByRuntime
+        type: bool
+        required: true
+        description: Whether normal applications can rely on runtime-managed STREAM flow control.
+      - id: 0x09
+        name: aacTransportFormats
+        type: bytes
+        required: false
+        max_length: 512
+        description: Optional JSON array of AAC transport format strings; exact supported set remains product-confirmed.
+
+  AudioStreamSource:
+    kind: object
+    description: One real-time audio stream source.
+    fields:
+      - id: 0x01
+        name: source
+        type: string
+        required: true
+        max_length: 128
+        description: Source identifier such as wireless_cast_audio.
+      - id: 0x02
+        name: displayName
+        type: string
+        required: false
+        max_length: 128
+        description: User-visible source name.
+      - id: 0x03
+        name: codecs
+        type: bytes
+        required: true
+        max_length: 512
+        description: JSON array of supported audio codecs.
+      - id: 0x04
+        name: sampleRates
+        type: bytes
+        required: false
+        max_length: 512
+        description: JSON array of supported sample rates in Hz.
+      - id: 0x05
+        name: channels
+        type: bytes
+        required: false
+        max_length: 256
+        description: JSON array of supported channel counts.
+      - id: 0x06
+        name: state
+        type: enum
+        required: false
+        description: Runtime source state, such as available, receiving, stopped, or unavailable.
+
+  AudioOpenStreamParams:
+    kind: object
+    description: Request to open a real-time audio stream.
+    fields:
+      - id: 0x01
+        name: source
+        type: string
+        required: true
+        max_length: 128
+        description: Audio source identifier.
+      - id: 0x02
+        name: peerRole
+        type: enum
+        required: true
+        description: Requested peer media role; values include receiver and transmitter.
+      - id: 0x03
+        name: codec
+        type: enum
+        required: true
+        description: Requested audio codec, such as aac, opus, or pcm.
+      - id: 0x04
+        name: transportFormat
+        type: enum
+        required: false
+        description: Optional codec transport format, such as adts, latm, or raw_aac.
+      - id: 0x05
+        name: sampleRate
+        type: uint32
+        required: false
+        description: Requested sample rate in Hz.
+      - id: 0x06
+        name: channels
+        type: uint8
+        required: false
+        description: Requested channel count.
+      - id: 0x07
+        name: sampleFormat
+        type: enum
+        required: false
+        description: Requested sample format.
+      - id: 0x08
+        name: chunkDurationMs
+        type: uint32
+        required: false
+        description: Preferred chunk duration in milliseconds.
+      - id: 0x09
+        name: streamProfile
+        type: string
+        required: false
+        max_length: 64
+        default: media.audio
+        description: STREAM profile name.
+      - id: 0x0A
+        name: cursorUnit
+        type: enum
+        required: false
+        description: STREAM cursor unit, such as timestampUs or sampleIndex.
+      - id: 0x0B
+        name: syncGroupId
+        type: string
+        required: false
+        max_length: 128
+        description: Optional synchronization group identifier.
+      - id: 0x0C
+        name: castSessionId
+        type: string
+        required: false
+        max_length: 128
+        description: Optional cast session identifier.
+      - id: 0x0D
+        name: clockDomain
+        type: string
+        required: false
+        max_length: 128
+        description: Source media clock domain.
+      - id: 0x0E
+        name: receiverClockDomain
+        type: string
+        required: false
+        max_length: 128
+        description: Receiver clock domain.
+      - id: 0x0F
+        name: maxDataSize
+        type: uint32
+        required: false
+        description: Preferred maximum STREAM payload data size.
+
+  AudioOpenStreamResult:
+    kind: object
+    description: Result of opening a real-time audio stream.
+    fields:
+      - id: 0x01
+        name: streamId
+        type: uint32
+        required: true
+        description: STREAM data plane stream identifier.
+      - id: 0x02
+        name: state
+        type: enum
+        required: true
+        description: Initial state, normally opening or streaming.
+      - id: 0x03
+        name: source
+        type: string
+        required: true
+        max_length: 128
+        description: Bound source identifier.
+      - id: 0x04
+        name: peerRole
+        type: enum
+        required: true
+        description: Confirmed peer media role.
+      - id: 0x05
+        name: codec
+        type: enum
+        required: true
+        description: Negotiated codec.
+      - id: 0x06
+        name: transportFormat
+        type: enum
+        required: false
+        description: Negotiated transport format.
+      - id: 0x07
+        name: sampleRate
+        type: uint32
+        required: true
+        description: Negotiated sample rate in Hz.
+      - id: 0x08
+        name: channels
+        type: uint8
+        required: true
+        description: Negotiated channel count.
+      - id: 0x09
+        name: sampleFormat
+        type: enum
+        required: false
+        description: Negotiated sample format.
+      - id: 0x0A
+        name: streamProfile
+        type: string
+        required: true
+        max_length: 64
+        description: Normalized stream profile.
+      - id: 0x0B
+        name: cursorUnit
+        type: enum
+        required: true
+        description: STREAM cursor unit.
+      - id: 0x0C
+        name: syncGroupId
+        type: string
+        required: false
+        max_length: 128
+        description: Synchronization group identifier.
+      - id: 0x0D
+        name: castSessionId
+        type: string
+        required: false
+        max_length: 128
+        description: Cast session identifier.
+      - id: 0x0E
+        name: clockDomain
+        type: string
+        required: false
+        max_length: 128
+        description: Source media clock domain.
+      - id: 0x0F
+        name: receiverClockDomain
+        type: string
+        required: false
+        max_length: 128
+        description: Receiver clock domain.
+      - id: 0x10
+        name: maxDataSize
+        type: uint32
+        required: false
+        description: Negotiated maximum STREAM payload data size.
+
+  AudioCloseStreamParams:
+    kind: object
+    description: Request to close an audio stream.
+    fields:
+      - id: 0x01
+        name: streamId
+        type: uint32
+        required: true
+        description: STREAM data plane stream identifier.
+      - id: 0x02
+        name: peerRole
+        type: enum
+        required: false
+        description: Peer role in this stream.
+      - id: 0x03
+        name: reason
+        type: enum
+        required: false
+        description: Close reason.
+      - id: 0x04
+        name: finalCursor
+        type: uint64
+        required: false
+        description: Last processed cursor value.
+
+  AudioCloseStreamResult:
+    kind: object
+    description: Result of closing an audio stream.
+    fields:
+      - id: 0x01
+        name: streamId
+        type: uint32
+        required: true
+        description: Closed stream identifier.
+      - id: 0x02
+        name: state
+        type: enum
+        required: true
+        description: Close state, such as closing, closed, or failed.
+      - id: 0x03
+        name: reason
+        type: enum
+        required: false
+        description: Final close reason.
+      - id: 0x04
+        name: alreadyClosed
+        type: bool
+        required: false
+        default: false
+        description: Whether the stream was already terminal before this request.
+
+  AudioGetStreamStateParams:
+    kind: object
+    description: Selector for an audio stream state query.
+    fields:
+      - id: 0x01
+        name: streamId
+        type: uint32
+        required: true
+        description: STREAM data plane stream identifier.
+
+  AudioStreamState:
+    kind: object
+    description: Runtime state of one audio stream.
+    fields:
+      - id: 0x01
+        name: streamId
+        type: uint32
+        required: true
+        description: STREAM data plane stream identifier.
+      - id: 0x02
+        name: state
+        type: enum
+        required: true
+        description: Stream state, such as opening, streaming, closing, closed, or failed.
+      - id: 0x03
+        name: source
+        type: string
+        required: true
+        max_length: 128
+        description: Bound audio source.
+      - id: 0x04
+        name: peerRole
+        type: enum
+        required: false
+        description: Peer media role.
+      - id: 0x05
+        name: codec
+        type: enum
+        required: false
+        description: Negotiated audio codec.
+      - id: 0x06
+        name: streamProfile
+        type: string
+        required: false
+        max_length: 64
+        description: Stream profile.
+      - id: 0x07
+        name: syncGroupId
+        type: string
+        required: false
+        max_length: 128
+        description: Synchronization group identifier.
+      - id: 0x08
+        name: cursorUnit
+        type: enum
+        required: false
+        description: STREAM cursor unit.
+      - id: 0x09
+        name: lastCursor
+        type: uint64
+        required: false
+        description: Last known cursor value.
+      - id: 0x0A
+        name: failureReason
+        type: enum
+        required: false
+        description: Failure reason when state is failed.
+
+  AudioGetStreamSourceStateParams:
+    kind: object
+    description: Selector for audio source runtime state.
+    fields:
+      - id: 0x01
+        name: source
+        type: string
+        required: true
+        max_length: 128
+        description: Audio source identifier.
+
+  AudioStreamSourceState:
+    kind: object
+    description: Runtime state of an audio stream source.
+    fields:
+      - id: 0x01
+        name: source
+        type: string
+        required: true
+        max_length: 128
+        description: Audio source identifier.
+      - id: 0x02
+        name: mediaKind
+        type: enum
+        required: false
+        description: Media kind, normally audio.
+      - id: 0x03
+        name: state
+        type: enum
+        required: true
+        description: Source state, such as unavailable, available, receiving, stopped, or failed.
+      - id: 0x04
+        name: available
+        type: bool
+        required: false
+        description: Whether the source is available for openStream.
+      - id: 0x05
+        name: activeStreamId
+        type: uint32
+        required: false
+        description: Active downstream stream id, if any.
+      - id: 0x06
+        name: lastOpenRejectedReason
+        type: enum
+        required: false
+        description: Last open rejection reason.
+
+  AudioStreamStateChangedEvent:
+    kind: object
+    description: Event payload for audio stream state changes.
+    fields:
+      - id: 0x01
+        name: streamId
+        type: uint32
+        required: true
+        description: STREAM data plane stream identifier.
+      - id: 0x02
+        name: state
+        type: enum
+        required: true
+        description: New stream state.
+      - id: 0x03
+        name: source
+        type: string
+        required: true
+        max_length: 128
+        description: Bound audio source.
+      - id: 0x04
+        name: reason
+        type: enum
+        required: false
+        description: State change reason.
+      - id: 0x05
+        name: stats
+        type: AudioStreamStats
+        required: false
+        description: Optional bounded stream statistics.
+
+  AudioStreamSourceStateChangedEvent:
+    kind: object
+    description: Event payload for audio stream source state changes.
+    fields:
+      - id: 0x01
+        name: source
+        type: string
+        required: true
+        max_length: 128
+        description: Audio source identifier.
+      - id: 0x02
+        name: mediaKind
+        type: enum
+        required: false
+        description: Media kind, normally audio.
+      - id: 0x03
+        name: state
+        type: enum
+        required: true
+        description: New source state.
+      - id: 0x04
+        name: reason
+        type: enum
+        required: false
+        description: Source state change reason.
+      - id: 0x05
+        name: activeStreamId
+        type: uint32
+        required: false
+        description: Active downstream stream id, if any.
+
+  AudioStreamStatsReportedEvent:
+    kind: object
+    description: Event payload for audio stream statistics reports.
+    fields:
+      - id: 0x01
+        name: streamId
+        type: uint32
+        required: true
+        description: STREAM data plane stream identifier.
+      - id: 0x02
+        name: stats
+        type: AudioStreamStats
+        required: true
+        description: Bounded stream statistics.
+
+  AudioStreamStats:
+    kind: object
+    description: Bounded runtime statistics for an audio stream.
+    fields:
+      - id: 0x01
+        name: packets
+        type: uint64
+        required: false
+        description: Number of STREAM packets observed.
+      - id: 0x02
+        name: bytes
+        type: uint64
+        required: false
+        description: Number of STREAM payload bytes observed.
+      - id: 0x03
+        name: droppedPackets
+        type: uint64
+        required: false
+        description: Number of dropped packets.
+      - id: 0x04
+        name: jitterMs
+        type: uint32
+        required: false
+        description: Estimated jitter in milliseconds.
+
 capabilities:
   - id: 0x0901
     name: audio.algorithm
@@ -871,3 +1595,12 @@ capabilities:
     description: Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification.
     type: object
     schema: AudioAlgorithmCapability
+
+  - id: 0x0902
+    name: audio.stream
+    domain: audio
+    status: draft
+    since: 1.0.0
+    description: Device supports real-time audio STREAM setup, close, state, source state, and stats events.
+    type: object
+    schema: AudioStreamCapabilities

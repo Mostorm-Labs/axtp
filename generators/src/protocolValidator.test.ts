@@ -25,20 +25,20 @@ describe("protocol definition loader", () => {
   it("loads and validates the current protocol definition", async () => {
     const model = await loadCurrentProtocol();
     expect(model.protocol.name).toBe("AXTP");
-    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 4 methods checked");
+    expect(validateProtocolDefinition(model)).toContain(`[OK] protocol/axtp.protocol.yaml: ${model.methods.length} methods checked`);
   });
 });
 
 describe("protocol source pipeline", () => {
   it("loads registry/domain sources and builds a valid protocol definition", async () => {
     const sources = await loadProtocolSources(repoRoot);
-    expect(validateSpec(sources)).toContain("[OK] method_registry.yaml: 4 methods checked");
+    expect(validateSpec(sources)).toContain(`[OK] method_registry.yaml: ${sources.methods.length} methods checked`);
     expect(sources.methods.find((method) => method.name === "audio.setAlgorithmConfig")?.requestSchema).toBe("AudioSetAlgorithmConfigRequest");
     expect(sources.methods.find((method) => method.name === "audio.getAlgorithmCapabilities")?.responseSchema).toBe("AudioGetAlgorithmCapabilitiesResponse");
     const model = buildProtocolDefinition(sources);
     expect(model.methods.find((method) => method.name === "audio.getAlgorithmConfig")?.response.type).toBe("AudioAlgorithmConfig");
     expect(model.methods.find((method) => method.name === "audio.resetAlgorithmConfig")?.response.type).toBe("AudioSetAlgorithmConfigResponse");
-    expect(validateProtocolDefinition(model)).toContain("[OK] protocol/axtp.protocol.yaml: 4 methods checked");
+    expect(validateProtocolDefinition(model)).toContain(`[OK] protocol/axtp.protocol.yaml: ${model.methods.length} methods checked`);
   });
 
   it("rejects deprecated top-level domain YAML sources", async () => {
@@ -68,13 +68,15 @@ describe("protocol definition validator", () => {
 
   it("rejects non-contiguous method bitOffset values in the same domain", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    model.methods.find((method) => method.name === "audio.resetAlgorithmConfig")!.bitOffset = 8;
+    const maxAudioBitOffset = Math.max(...model.methods.filter((method) => method.domain === "audio").map((method) => method.bitOffset));
+    model.methods.find((method) => method.name === "audio.resetAlgorithmConfig")!.bitOffset = maxAudioBitOffset + 2;
     expect(() => validateProtocolDefinition(model)).toThrow(/bitOffset must be contiguous from 0/);
   });
 
   it("rejects non-contiguous event bitOffset values in the same domain", async () => {
     const model = cloneModel(await loadCurrentProtocol());
-    model.events.find((event) => event.name === "audio.algorithmConfigChanged")!.bitOffset = 3;
+    const maxAudioBitOffset = Math.max(...model.events.filter((event) => event.domain === "audio").map((event) => event.bitOffset));
+    model.events.find((event) => event.name === "audio.algorithmConfigChanged")!.bitOffset = maxAudioBitOffset + 2;
     expect(() => validateProtocolDefinition(model)).toThrow(/bitOffset must be contiguous from 0/);
   });
 

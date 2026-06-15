@@ -1,10 +1,11 @@
 ---
-status: draft
-contractState: drafted-only
+status: generated
+contract: true
+generated: true
 domain: firmware
 feature: firmware.update
-decision: Modify existing draft
-sourceFlow: docs/flows/device-firmware-update.md
+registry: ../../../registry/domains/firmware/domain.yaml
+lastReviewed: 2026-06-15
 ---
 
 # AXTP firmware.update 协议草案
@@ -26,8 +27,8 @@ Capability ID：`firmware.update`
 | 项目 | 内容 |
 |---|---|
 | 协议目的 | 让 PC Host 上传单 `.bin` 或多 `.bin` 固件文件；Host 上传完调用 `firmware.finishUpdate`，设备自主 md5 校验、安装和自动重启。 |
-| 当前状态 | Drafted only；`registry/**`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**` 尚未采纳 `firmware.update` 业务方法、事件和 schema。 |
-| Stage 20 决策 | Modify existing draft；保留 `firmware.update` 边界，但压缩为 P0 最小字段集。 |
+| 当前状态 | generated；已写入 `../../../registry/domains/firmware/domain.yaml`，并已刷新到 `protocol/axtp.protocol.yaml` 与 `docs/generated/**`。 |
+| Stage 50 生成 | P0 最小字段集已写入 registry source 并生成；P1/P2 reserved 与 legacy `[REVIEW-ASK]` 未采纳。 |
 | P0 主流程 | `getUpdateCapabilities` -> `beginUpdate` -> STREAM bytes -> `finishUpdate` -> state/progress events -> reconnect -> `firmware.getInfo`。 |
 | P0 方法 | `firmware.getUpdateCapabilities`, `firmware.beginUpdate`, `firmware.finishUpdate`, `firmware.getUpdateState`。 |
 | P0 事件 | `firmware.updateProgressReported`, `firmware.updateStateChanged`。 |
@@ -870,11 +871,11 @@ Response:
 
 | Item | Status |
 |---|---|
-| Implementation degree | Drafted only |
-| Registry YAML | Not adopted |
-| Generated protocol | Not generated |
+| Implementation degree | Generated P0 subset |
+| Registry YAML | Adopted in `../../../registry/domains/firmware/domain.yaml` |
+| Generated protocol | Generated in `protocol/axtp.protocol.yaml` and `docs/generated/**` |
 | Conformance tests | Not written |
-| Required adoption route | `docs/dev/skills/30-adopt-protocol-draft/SKILL.md` after human review |
+| Required next route | `docs/dev/skills/40-amend-adopted-protocol/SKILL.md` for semantic changes; `docs/dev/skills/50-generate-axtp-protocol/SKILL.md` after YAML changes |
 
 Registry 草案输入摘要：
 
@@ -919,7 +920,7 @@ Registry 草案输入摘要：
 | `[REVIEW-OK]` | P0 minimal fields | P0 仅保留闭环必要字段，扩展能力不提前展开。 |
 | `[REVIEW-OK]` | Security baseline | P0 md5，不强制签名。 |
 | `[REVIEW-OK]` | Reboot baseline | 设备自动重启，Host 等待重连。 |
-| `[REVIEW-FIX]` | Old P0 `commit/verify/install` | 不再作为 P0 主流程；降为 P1/advanced。 |
+| `[REVIEW-OK]` | Old P0 `commit/verify/install` | 已处理：不再作为 P0 主流程；降为 P1/advanced，未写入本次 registry source。 |
 | `[REVIEW-ASK]` | Device policy version | 需确认策略 version 是否必填。 |
 
 ## 附录 B. 协议决策记录
@@ -962,4 +963,5 @@ capabilities:
 - [ ] 确认 `streamLayout=file` 是否作为 P0 唯一 layout。
 - [ ] 确认 state enum 是否满足 UI 和测试。
 - [ ] 确认 legacy mappings 中可进入稳定 `legacyRefs` 的条目。
-- [ ] Stage 30 采纳时写入 registry YAML，并运行 Generator 刷新 generated artifacts。
+- [x] Stage 30 已写入 registry YAML，并通过 source validation。
+- [x] 已运行 `generate-axtp-protocol` 刷新 generated artifacts。

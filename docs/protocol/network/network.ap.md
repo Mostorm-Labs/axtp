@@ -1,11 +1,11 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: network
 feature: network.ap
-registry:
-lastReviewed: 2026-06-13
+registry: ../../../registry/domains/network/domain.yaml
+lastReviewed: 2026-06-15
 ---
 
 # network.ap
@@ -15,11 +15,11 @@ lastReviewed: 2026-06-13
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 管理设备自身 AP/SoftAP 的能力、SSID/安全配置、一次性凭据导出、运行状态和可选客户端列表。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。draft 阶段仅供评审；正式实现以 registry / generated 为准。 |
+| 当前状态 | generated；已写入 `../../../registry/domains/network/domain.yaml`，并已刷新到 `protocol/axtp.protocol.yaml` 与 `docs/generated/**`。 |
+| 是否可直接实现 | 是，但实现合同以 `protocol/axtp.protocol.yaml` / `docs/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
-| Registry readiness | candidate |
+| Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
 | Conformance | needed |
 | 主要未决问题 | AP 客户端列表是否作为强验收、DHCP Server 地址池归属、一次性凭据导出的有效期/重放策略。 |
 
@@ -1371,10 +1371,10 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| registry | not generated | 当前未写入 `registry/domains/network/domain.yaml`。 |
-| generated | false | `docs/generated/**` 未生成 `network.ap` 方法或事件。 |
-| protocol draft | draft | 本文是 Stage 20 草案，不能作为 runtime 合同。 |
-| registry readiness | candidate | 主路径 method/event/schema 已收敛；客户端列表和 DHCP Server 地址池仍待确认。 |
+| registry | source adopted | 已写入 `../../../registry/domains/network/domain.yaml`。 |
+| generated | true | 已运行 `generate-axtp-protocol`，刷新 `protocol/axtp.protocol.yaml` 和 `docs/generated/**`。 |
+| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
+| registry readiness | ready | network.ap P0/confirmed subset 已写入 registry source；客户端列表和 DHCP Server 地址池仍保留待确认。 |
 | conformance | needed | 采纳后需要覆盖凭据导出、配置写入、AP 默认开启、状态事件和敏感字段脱敏。 |
 
 ## 11. 测试要点

@@ -1,11 +1,11 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: network
 feature: network.interface
-registry:
-lastReviewed: 2026-06-13
+registry: ../../../registry/domains/network/domain.yaml
+lastReviewed: 2026-06-15
 ---
 
 # network.interface
@@ -15,11 +15,11 @@ lastReviewed: 2026-06-13
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 枚举设备网络接口，并提供 `network.ap`、`network.wifi`、`network.ip` 引用所需的 `interfaceId`、`roles` 和默认接口信息。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。draft 阶段仅供评审；正式实现以 registry / generated 为准。 |
+| 当前状态 | generated；已写入 `../../../registry/domains/network/domain.yaml`，并已刷新到 `protocol/axtp.protocol.yaml` 与 `docs/generated/**`。 |
+| 是否可直接实现 | 是，但实现合同以 `protocol/axtp.protocol.yaml` / `docs/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
-| Registry readiness | candidate |
+| Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
 | Conformance | needed |
 | 主要未决问题 | `interfaceId` 跨重启稳定性、MAC 脱敏规则、是否采纳受限接口配置方法。 |
 
@@ -585,10 +585,10 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| registry | not generated | 当前未写入 `registry/domains/network/domain.yaml`。 |
-| generated | false | `docs/generated/**` 未生成 `network.getInterfaces` / `network.interfaceStateChanged`。 |
-| protocol draft | draft | 本文是 Stage 20 草案，不能作为 runtime 合同。 |
-| registry readiness | candidate | method/event/schema 边界已基本收敛，仍需 ID、fieldId、legacyRefs 和 MAC 策略确认。 |
+| registry | source adopted | 已写入 `../../../registry/domains/network/domain.yaml`。 |
+| generated | true | 已运行 `generate-axtp-protocol`，刷新 `protocol/axtp.protocol.yaml` 和 `docs/generated/**`。 |
+| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
+| registry readiness | ready | network.interface P0/confirmed subset 已写入 registry source；MAC 策略和 legacyRefs 仍保留待确认。 |
 | conformance | needed | 采纳后需要覆盖接口发现、默认接口、事件去重和错误路径。 |
 
 ## 11. 测试要点

@@ -1,11 +1,11 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: video
 feature: video.stream
-registry:
-lastReviewed: 2026-06-13
+registry: ../../../registry/domains/video/domain.yaml
+lastReviewed: 2026-06-15
 ---
 
 # video.stream
@@ -15,11 +15,11 @@ lastReviewed: 2026-06-13
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 通过 `video.openStream` / `video.closeStream` 建立和关闭 AXTP 内部视频业务流，并用 STREAM 数据面承载视频 chunk。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。本文是协议草案；正式实现以 registry / generated 为准。 |
+| 当前状态 | generated；已写入 `../../../registry/domains/video/domain.yaml`，并已刷新到 `protocol/axtp.protocol.yaml` 与 `docs/generated/**`。 |
+| 是否可直接实现 | 是，但实现合同以 `protocol/axtp.protocol.yaml` / `docs/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
 | 主要交互 | RPC + EVENT + STREAM |
 | 是否使用 STREAM | 是。RPC 只负责建流、关流、状态和关键帧请求；视频数据走 `PayloadType=STREAM`。 |
-| Registry readiness | candidate |
+| Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
 | Conformance | needed |
 | 主要未决问题 | `peerRole` 字段命名、source state event 是否进入 MVP、legacy 映射细节和 streamId 复用策略仍需评审。 |
 
@@ -1336,10 +1336,10 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| registry | not generated | 尚未写入 `registry/domains/video/domain.yaml`。 |
-| generated | false | `docs/generated/protocol.md` 尚未包含 `video.stream` 方法/事件/schema。 |
-| protocol draft | draft | 本文为 Stage 20 草案。 |
-| registry readiness | candidate | 方法、事件、schema 和边界已有候选，但仍有 `[REVIEW-ASK]`。 |
+| registry | source adopted | 已写入 `../../../registry/domains/video/domain.yaml`。 |
+| generated | true | 已运行 `generate-axtp-protocol`，刷新 `protocol/axtp.protocol.yaml` 和 `docs/generated/**`。 |
+| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
+| registry readiness | ready | video.stream P0/confirmed subset 已写入 registry source；legacy 映射和部分 stream policy 仍保留待确认。 |
 | conformance | needed | 需覆盖 producer-open、receiver-pull、rejected fallback、close 解耦和 hard-disconnect。 |
 
 ## 11. 测试要点

@@ -1,11 +1,11 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: audio
 feature: audio.stream
-registry:
-lastReviewed: 2026-06-13
+registry: ../../../registry/domains/audio/domain.yaml
+lastReviewed: 2026-06-15
 ---
 
 # audio.stream
@@ -15,11 +15,11 @@ lastReviewed: 2026-06-13
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 通过 `audio.openStream` / `audio.closeStream` 建立和关闭 AXTP 实时音频业务流，并用 STREAM 数据面承载音频 chunk。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。本文是协议草案；正式实现以 registry / generated 为准。 |
+| 当前状态 | generated；已写入 `../../../registry/domains/audio/domain.yaml`，并已刷新到 `protocol/axtp.protocol.yaml` 与 `docs/generated/**`。 |
+| 是否可直接实现 | 是，但实现合同以 `protocol/axtp.protocol.yaml` / `docs/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
 | 主要交互 | RPC + EVENT + STREAM |
 | 是否使用 STREAM | 是。RPC 负责建流、关流和状态；音频数据走 `PayloadType=STREAM`。 |
-| Registry readiness | candidate |
+| Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
 | Conformance | needed |
 | 主要未决问题 | AAC 透传的 `transportFormat` 仍需确认；source state event、`peerRole` 命名和 retained source 策略需评审。 |
 
@@ -1232,10 +1232,10 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| registry | not generated | 尚未写入 `registry/domains/audio/domain.yaml` 的 `audio.stream` 事实。 |
-| generated | false | `docs/generated/protocol.md` 尚未包含 `audio.stream` 方法/事件/schema。 |
-| protocol draft | draft | 本文为 Stage 20 草案。 |
-| registry readiness | candidate | 方法、事件、schema 和边界已有候选，但仍有 `[REVIEW-ASK]`。 |
+| registry | source adopted | 已写入 `../../../registry/domains/audio/domain.yaml`。 |
+| generated | true | 已运行 `generate-axtp-protocol`，刷新 `protocol/axtp.protocol.yaml` 和 `docs/generated/**`。 |
+| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
+| registry readiness | ready | audio.stream P0/confirmed subset 已写入 registry source；AAC transportFormat 和 legacy 映射仍保留待确认。 |
 | conformance | needed | 需覆盖 producer-open、receiver-pull、rejected fallback、close 解耦、AAC 透传和 hard-disconnect。 |
 
 ## 11. 测试要点
