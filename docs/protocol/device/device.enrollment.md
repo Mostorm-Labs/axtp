@@ -5,12 +5,12 @@ generated: false
 domain: device
 feature: device.enrollment
 registry:
-lastReviewed: 2026-06-12
+lastReviewed: 2026-06-15
 ---
 
 # AXTP device.enrollment 协议草案
 
-版本：v0.6
+版本：v0.8
 
 归属域：`device`
 
@@ -22,13 +22,25 @@ Capability ID：`device.enrollment`
 
 ## 协议审核标记（人工复核）
 
-| 标记 | 条目 | 审核结论 | 后续动作 |
-|---|---|---|---|
-| `[REVIEW-DRAFT]` | `device.enrollment` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。替代已删除的 `device.binding` 草案。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-RESOLVED]` | 命名 | `device.enrollment` 比 `device.binding` 更准确描述"未入管设备成为后台管理对象"的语义。 | — |
-| `[REVIEW-RESOLVED]` | legacy 映射 | v0.3 已补齐 4 个 legacy 命令详细字段映射、adapter 转换说明和 generated 文件交叉引用。domain 从 `binding` 改为 `device.enrollment` 已在 9.6 标注。 | 采纳时同步更新 `legacy-to-axtp-map.generated.yaml` 和 `registry-patches.generated.yaml` 中的 domain 名称（`binding` → `device.enrollment`）。 |
+完整的审核标记（含 `[REVIEW-DRAFT]` / `[REVIEW-RESOLVED]` / `[REVIEW-ASK]` 条目、审核结论与后续动作）见 **附录 A**，本文以附录 A 为唯一权威源。开篇要点：
+
+- 本文是根据业务需求创建的协议草案，不是最终事实源（`[REVIEW-DRAFT]`）；替代已删除的 `device.binding` 草案。
+- 域命名采用 `device.enrollment`（比 `device.binding` 更准确描述"未入管设备成为后台管理对象"的语义），方法名为 `device.getPairingCode`。
+- Legacy 命令 `GetBindCode` / `GetBindConfig` / `SetBindConfig` / `OnBindState` 的逐字段映射见 **Section 9**；采纳时同步更新 generated legacy 文件中的 `binding` → `device.enrollment` 域名（见 9.6）。
 
 ---
+
+**v0.8 变更说明：**
+(1) 格式修正：变更说明版本顺序修正——v0.2/v0.3 原顺序颠倒（v0.2 排在 v0.3 前），调整为严格倒序（v0.3 在前），与 signage.playlist / software.config / software.updatePolicy 等标杆草案一致。
+(2) 同步 frontmatter `lastReviewed` 与标题版本号。
+(3) §7.3 读法补充 pending→enrolled 两步流程交叉引用（指向 §7.3c / §3.4 / §6.6 / §7.5a），增强可读性，不改语义。
+(4) 本次不改 schema（§6.1–6.8）、状态机转换表（§3.4）、错误码（§8）、方法/事件定义。
+
+**v0.7 变更说明：**
+(1) 结构去重与 flow 对齐，不改业务语义：将文件开头的"协议审核标记"简表收敛为指引段，完整审核标记统一以**附录 A** 为唯一权威源。
+(2) 删除 Section 10 的 9 项"采纳检查清单"子节（与附录 D 重复且不同步），完整采纳检查清单统一以**附录 D** 为唯一权威源。
+(3) Section 3.4 状态机末尾新增 flow 阶段3 序列图省略 `pending` 中间状态的交叉引用，消解 flow 序列图与状态机在 pending 路径上的观感差异。
+(4) 本次不改 schema（6.1–6.8）、状态机转换表（3.4）、错误码（Section 8）、JSON 示例（Section 7）。
 
 **v0.6 变更说明：**
 (1) 按 20-draft-business-protocol skill 要求补齐附录 A–D，对齐成熟草案（`signage.playlist`）结构标杆。
@@ -53,6 +65,11 @@ Capability ID：`device.enrollment`
 (2) 修正 JSON 示例 7.5 中 PERMISSION_DENIED 错误的 `"code": 261`（`0x0105`）为 `"code": 9`（`0x0009`）。
 (3) Section 6 Schemas 重组：新增 6.3–6.8 子节，将方法/事件小节内联定义的 `GetPairingCodeParams`、`PairingCodeInfo`、`GetEnrollmentStateParams`、`SetEnrollmentStateParams`、`SetEnrollmentStateResult`、`EnrollmentStateChangedEvent` 提升为 Section 6 独立 schema 定义；方法/事件小节保留内联字段表并增加 Section 6 交叉引用。
 
+**v0.3 变更说明：**
+(1) Section 9 "Legacy 待映射" 从 4 行简表扩展为 9.0-9.6 子节，包含逐命令字段映射表（GetBindCode / GetBindConfig / SetBindConfig / OnBindState）、adapter 转换说明和 generated legacy 文件交叉引用。
+(2) `PairingCodeInfo.expiresAt` 字段说明增加 legacy 类型变更注释（Unix timestamp integer → RFC 3339 string）。
+(3) 审核标记表 `legacy 映射` 行从 `[REVIEW-ASK]` 更新为 `[REVIEW-RESOLVED]`。
+
 **v0.2 变更说明：**
 (1) 将 `EnrollmentState` schema 重命名为 `EnrollmentInfo`，消除 schema 名与 `state` 字段枚举的命名冲突。
 (2) 新增 3.4 enrollment 状态机小节，包含状态定义和有效转换表。
@@ -62,11 +79,6 @@ Capability ID：`device.enrollment`
 (6) `EnrollmentStateChangedEvent` 新增 triggerMethod/triggerId 关联字段；`previousState` 明确为枚举值而非完整对象。
 (7) Capability 表新增 supportedPurposes/maxActivePairingCodes/pairingCodeLength；endpointTypes 解除 `[REVIEW-ASK]`。
 (8) JSON 示例新增 5 个缺失场景：refresh=true、NOT_SUPPORTED 错误、解绑、注册失败、includeEndpoint=false。
-
-**v0.3 变更说明：**
-(1) Section 9 "Legacy 待映射" 从 4 行简表扩展为 9.0-9.6 子节，包含逐命令字段映射表（GetBindCode / GetBindConfig / SetBindConfig / OnBindState）、adapter 转换说明和 generated legacy 文件交叉引用。
-(2) `PairingCodeInfo.expiresAt` 字段说明增加 legacy 类型变更注释（Unix timestamp integer → RFC 3339 string）。
-(3) 审核标记表 `legacy 映射` 行从 `[REVIEW-ASK]` 更新为 `[REVIEW-RESOLVED]`。
 
 ---
 
@@ -262,6 +274,8 @@ Capability ID：`device.enrollment`
 | `enrolled` | `failed` | 服务端侧注册失效（如工作空间删除） | `message` 必填 | 罕见：服务端撤销或数据损坏。 |
 
 > 无效转换（如 `unmanaged` → `enrolled` 跳过 `pending`）应返回 `INVALID_STATE`。
+
+> **与 flow 对齐说明**：`docs/flows/signage-device-management.md` Section 5 阶段3 序列图为可读性省略了 `pairing_available → pending` 中间状态，直接展示 `device.getPairingCode → device.setEnrollmentState(desiredState: "enrolled")`。实际状态转换以本节状态机为准；`pairing_available → pending` 转换可由服务端内部触发而不通知设备（服务端内部直接跳到 `enrolled`），见 7.3c。
 
 ---
 
@@ -692,7 +706,7 @@ Capability name: `device.enrollment`。
 }
 ```
 
-**读法**：Server → Device 方向设置 enrolled 状态，同时下发 endpoint 信息。设备保存后后续 room endpoint 操作可进入 `room.info`。
+**读法**：Server → Device 方向设置 enrolled 状态，同时下发 endpoint 信息。设备保存后后续 room endpoint 操作可进入 `room.info`。本示例假设设备已处于 `pending` 状态（先经 §7.3c：`pairing_available → pending`）；状态机要求 `enrolled` 仅从 `pending` 转入（见 §3.4 状态机与 §6.6 校验规则），从 `unmanaged`/`pairing_available` 直接设 `enrolled` 会返回 `INVALID_STATE`（见 §7.5a）。
 
 ### 7.3a 设置纳管状态（解绑）
 
@@ -1115,17 +1129,7 @@ Legacy Device → Server（**未研发**），事件 data `{ status, code, messa
 | Method / event IDs | `TBD after adoption` |
 | Conformance | 需覆盖 pairing code TTL、状态查询、状态变更事件、解绑权限、legacy `expiresInSeconds`。 |
 
-### 采纳检查清单
-
-- [ ] 01 已确认 domain.feature 粒度和 method/event 命名。
-- [ ] 02 已确认 `EnrollmentInfo` schema 重命名和 `state` 枚举首批值。
-- [ ] 03 已确认状态机转换表覆盖所有已知 legacy 场景。
-- [ ] 04 已确认 methodId、bitOffset、request/response schema。
-- [ ] 05 已确认 eventId、eventMasks bitOffset、event schema。
-- [ ] 06 已确认 errorCode 范围和错误归属（包括 `ENROLLMENT_CODE_EXPIRED`、`ENROLLMENT_CODE_ALREADY_USED`）。
-- [ ] 07 已确认 `endpointTypes` 枚举值和 `supportedPurposes`。
-- [ ] 08 已确认 schema fieldId、capabilityId、supportedMethods。
-- [ ] YAML 写入后 Generator 能完整生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+> 完整采纳检查清单（12 项，含 `getPairingCode` 命名偏好、`state` 枚举 P0 范围、`workspaceId` / `endpointId` 隐私策略、`binding` → `device.enrollment` generated 文件更新方案等）见 **附录 D**，本文以附录 D 为唯一权威源。
 
 ---
 

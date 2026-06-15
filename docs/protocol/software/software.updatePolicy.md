@@ -5,12 +5,12 @@ generated: false
 domain: software
 feature: software.updatePolicy
 registry:
-lastReviewed: 2026-06-12
+lastReviewed: 2026-06-15
 ---
 
 # AXTP software.updatePolicy 协议草案
 
-版本：v0.5
+版本：v0.7
 
 归属域：`software`
 
@@ -25,14 +25,31 @@ Capability ID：`software.updatePolicy`
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
 | `[REVIEW-DRAFT]` | `software.updatePolicy` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-ASK]` | `software` 域名 | `software` 不在 Taxonomy spec rule 2 的示例列表（但 rule 2 使用 "e.g." 措辞）。 | 采纳前确认是否需要 taxonomy amendment。 |
+| `[REVIEW-RESOLVED]` | `software` 域名 | Taxonomy spec rule 2 为 "e.g." 措辞（非穷举列表），rule 8 允许新增 domain 且 MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入（本草案已在 flow steps 9/21 使用）。 | 采纳时无需 taxonomy amendment。与 `software.config` v0.5 一致。 |
 | `[REVIEW-ASK]` | `target` 枚举值 | 完整的 target 枚举值列表需要产品和设备确认。 | 采纳前补齐 target enum baseline。 |
 | `[REVIEW-ASK]` | 与 `firmware.updatePolicy` 的关系 | `firmware.updatePolicy` 已回退为 v0.1 骨架。两者是共存还是统一到 `software.updatePolicy(target: "firmware")`？ | 采纳前确认边界。 |
 | `[REVIEW-DRAFT]` | legacy 映射 | 已完成 evidence-based 字段映射。`GetUpdateConfig` / `SetUpdateConfig` 映射到 `software.updatePolicy(target: "launcher")`。采纳前确认 Adapter 层实现计划和分类差异。 | 采纳前确认分类差异修正和 Adapter 层实现计划。 |
-| `[REVIEW-RESOLVED]` | flow step 21 响应描述 | Flow 文档 step 21 写"返回完整 SoftwareUpdatePolicy"但草案 `setUpdatePolicy` 仅返回 status 确认（无 result body），与 `software.config` pattern 一致。 | Flow 文档描述有误，由 flow 维护者单独修正。 |
+| `[REVIEW-RESOLVED]` | flow step 21 响应描述 | Flow 文档 step 21 原写"返回完整 SoftwareUpdatePolicy"，与草案 `setUpdatePolicy` 仅返回 status 确认（无 result body）不一致；flow step 16/19/21 现已统一修正为"返回标准成功响应（无 result body）；触发对应 *Changed 事件"。 | 已闭环，无需进一步动作。 |
 | `[REVIEW-ASK]` | Legacy classification 差异 | Legacy classification CSV 和 `firmware.md` 将 `GetUpdateConfig` / `SetUpdateConfig` 归入 `firmware.updatePolicy`；flow 文档 re-classified 到 `software.updatePolicy`（正确，因为这些是软件而非固件设置）。generated map 仍使用旧名 `update.getConfig` / `update.setConfig`。 | 分类修正和 generated map 更新需在采纳前处理。 |
+| `[REVIEW-RESOLVED]` | `software.config` §8 错误码 | sibling 草案 `software.config` 已修正至 v0.5，候选错误码现为正确 common 值（`0x0009` / `0x0004` / `0x000A`）。本草案 §8 Review 列同步对齐为 `—`（复用已采纳 common 码）。 | 无需进一步动作。 |
 
 ---
+
+**v0.7 变更说明：**
+(1) 统一 sibling 草案 `software.config` 版本引用为 v0.5（协议审核标记表、v0.6 变更说明第 1 条、§12 三处曾误记为 v0.4，与同草案另几处 v0.5 自相矛盾）。
+(2) 修正 §12 与协议审核标记表中 flow step 一致性条目的过时描述：flow 文档 step 16/19/21 现已修正为"返回标准成功响应（无 result body）；触发对应 *Changed 事件"；澄清原"Flow step 20"系笔误（实为 step 21）。两条记录改为闭环状态。
+(3) frontmatter `lastReviewed` 更新；标题版本升至 v0.7。
+(4) 配套修正 sibling flow 文档 `docs/flows/signage-device-management.md` 中跨午夜 schedule 语义"已确认"措辞为草案候选 `[REVIEW-ASK]`，并对齐全部 `software.updatePolicy` 版本引用至 v0.7。
+
+**v0.6 变更说明：**
+(1) §12 software.config 错误码条目从 `[REVIEW-FIX]` 更新为 `[REVIEW-RESOLVED]`：sibling 草案 `software.config` 已修正至 v0.5，§8 错误码现为正确值（`0x0009` / `0x0004` / `0x000A`）。
+(2) §8 候选 Errors Review 列对齐：`INVALID_ARGUMENT` / `PERMISSION_DENIED` / `INVALID_STATE` 从 `[REVIEW-DRAFT]` 改为 `—`，与同表 `NOT_SUPPORTED` 一致（均为 `registry/error/error_code.yaml` 中 `status: mvp` 的已采纳 common 码，非草案候选）。
+(3) §7 新增 `7.5d` `INVALID_ARGUMENT` 失败示例（`schedule` 时间格式非法 → `code: 10`）。
+(4) §6.2 末尾补 `signagePlayer` / `agent` target 字段集合说明（预期与 launcher 相同），与 `software.config` §6.2 对齐。
+(5) §3.3 `resetUpdatePolicy` 补"仅恢复策略、不触发软件/设备重启"说明，与 `software.config` §3.3 对齐。
+(6) frontmatter `lastReviewed` 更新；协议审核标记表新增一条 `[REVIEW-RESOLVED]` 记录。
+(7) 同步修正 sibling 草案 `software.config` §8 Review 列标注（见 `software.config` v0.5）。
+(8) 关闭 `software` domain `[REVIEW-ASK]`：基于 Taxonomy spec rule 8（新增 domain MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入；本草案已在 flow steps 9/21 使用）+ rule 2 "e.g." 非穷举措辞，采纳时无需 taxonomy amendment。与 sibling 草案 `software.config` v0.5 一致；并修正该草案 v0.5 中 rule 4 → rule 8 的引用错误（taxonomy rule 8 才是新增 domain 可追溯规则）。
 
 **v0.5 变更说明：**
 (1) §3.1 `software.getUpdatePolicy` 新增 per-method 候选错误表。
@@ -186,7 +203,7 @@ Capability ID：`software.updatePolicy`
 
 | 项 | 内容 |
 |---|---|
-| 目的 | 恢复指定软件对象的默认更新策略。 |
+| 目的 | 恢复指定软件对象的默认更新策略。`resetUpdatePolicy` 仅恢复更新策略到当前版本默认值，不触发软件重启或设备重启；系统级恢复出厂使用 `system.restoreFactorySettings`。 |
 | 调用类型 | command（request_response） |
 | Params Schema | `SoftwareResetUpdatePolicyParams` |
 | Result Schema | `SoftwareUpdatePolicy` |
@@ -318,6 +335,8 @@ Capability name: `software.updatePolicy`。
 > **null 语义**：`schedule: null` 等价于"不限制更新时间"；`conditions: null` 等价于"无前置条件"。两者均为合法持久值，`resetUpdatePolicy` 恢复的默认策略中二者均为 `null`。这与 omitted（未传）不同：omitted 在 `setUpdatePolicy` partial update 语义中表示"保持不变"，`null` 表示"显式清除"。
 
 > **字段间约束**：当 `updateMode` 为 `"manual"` 或 `"notify"` 时，`schedule` 仍可被设置和持久化，但设备不会在时间窗口内自动执行更新。`schedule` 的值不因 `updateMode` 变化而丢失。切换回 `"auto"` 后，原 `schedule` 继续生效。
+
+`[REVIEW-ASK]` 其他 target（`signagePlayer`、`agent`）的 policy 字段集合预期与 launcher 相同（`updateMode` / `schedule` / `channel` / `conditions`），采纳前与产品/设备确认 target 间是否存在字段差异或额外条件。与 `software.config` §6.2 处理方式一致。
 
 ### 6.3 `UpdateSchedule`
 
@@ -707,6 +726,47 @@ Capability name: `software.updatePolicy`。
 
 **读法**：`code: 4` 对应 `INVALID_STATE` (0x0004)。设备当前正在执行软件更新，策略修改需等待更新完成。
 
+### 7.5d 参数非法（INVALID_ARGUMENT）
+
+**场景**：运维人员设置的更新窗口时间格式不匹配 `HH:mm`（如 `"25:00"`，小时越界）。
+
+请求：
+
+```json
+{
+  "id": 10,
+  "method": "software.setUpdatePolicy",
+  "params": {
+    "target": "launcher",
+    "policy": {
+      "schedule": {
+        "start": "25:00",
+        "end": "06:00"
+      }
+    }
+  }
+}
+```
+
+响应：
+
+```json
+{
+  "id": 10,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "field": "policy.schedule.start",
+      "reason": "invalid_time_format"
+    }
+  }
+}
+```
+
+**读法**：`code: 10` 对应 `INVALID_ARGUMENT` (0x000A)。`schedule.start` 不匹配 `^([01]\d|2[0-3]):[0-5]\d$`，返回参数非法错误；设备策略保持不变。
+
 ---
 
 ## 8. 候选 Errors
@@ -714,9 +774,9 @@ Capability name: `software.updatePolicy`。
 | Error | 复用 / 候选 | 说明 | Review |
 |---|---|---|---|
 | `NOT_SUPPORTED` | common (0x0003) | target、channel 或 schedule 不支持。 | — |
-| `INVALID_ARGUMENT` | common (0x000A) | policy 字段值非法（如时间格式错误、channel 值无效）。 | `[REVIEW-DRAFT]` |
-| `PERMISSION_DENIED` | common (0x0009) | 无权修改更新策略。 | `[REVIEW-DRAFT]` |
-| `INVALID_STATE` | common (0x0004) | 软件正在升级中，不允许修改更新策略。 | `[REVIEW-DRAFT]` |
+| `INVALID_ARGUMENT` | common (0x000A) | policy 字段值非法（如时间格式错误、channel 值无效）。 | — |
+| `PERMISSION_DENIED` | common (0x0009) | 无权修改更新策略。 | — |
+| `INVALID_STATE` | common (0x0004) | 软件正在升级中，不允许修改更新策略。 | — |
 
 ---
 
@@ -907,12 +967,12 @@ AXTP 请求（Adapter 输出）：
 
 | Issue | Impact | Current recommendation | Status |
 |---|---|---|---|
-| `software` domain 未在 Taxonomy spec rule 2 示例列表中 | 采纳阻塞 | 采纳前确认是否需要 taxonomy amendment。 | `[REVIEW-ASK]` |
+| `software` domain 未在 Taxonomy spec rule 2 示例列表中 | （原）采纳阻塞 | rule 2 为 "e.g." 措辞（非穷举列表），rule 8 允许新增 domain 且 MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入（本草案见 flow steps 9/21）；采纳无需 taxonomy amendment。与 `software.config` v0.5 一致。 | `[REVIEW-RESOLVED]` |
 | `target` 枚举完整值列表 | schema 约束 | 当前草案列出 `launcher`、`signagePlayer`、`agent`；采纳前与产品和设备确认。 | `[REVIEW-ASK]` |
 | 与 `firmware.updatePolicy` 的边界 | domain 划分 | 固件 OTA 策略保留在 `firmware.updatePolicy`；软件策略使用 `software.updatePolicy`。是否未来统一到 `software.updatePolicy(target: "firmware")`？ | `[REVIEW-ASK]` |
 | `updateMode` 枚举首批值 | schema / conformance | `"auto"` 和 `"manual"` 确定需 P0；`"notify"` 是否纳入 P0？ | `[REVIEW-ASK]` |
 | 跨日 window（`end < start`）语义 | schema / tests | 先按跨日候选处理（`start` 当天到次日 `end`），采纳前确认。 | `[REVIEW-ASK]` |
 | `conditions` 是否包含标牌特有条件 | schema | 是否需要 `requirePlaybackIdle`（播放内容时暂停更新）？ | `[REVIEW-ASK]` |
 | Legacy classification 差异（`GetUpdateConfig` / `SetUpdateConfig`） | classification 准确性 | Classification CSV 归入 `firmware.updatePolicy`；flow 文档 re-classified 到 `software.updatePolicy`（正确）。需修正 classification 和 generated map。 | `[REVIEW-ASK]` |
-| Flow step 20 说"返回完整 SoftwareUpdatePolicy"但草案 `setUpdatePolicy` 仅返回 status 确认 | flow / draft 一致性 | Flow 文档描述有误（step 21 及 step 16、19 同类问题）。草案正确：`setUpdatePolicy` 仅返回 status 确认（无 result body），与 `software.config` pattern 一致。Flow 文档 step 21 的"返回"列应修正为"返回标准成功响应（无 result body）；触发 `software.updatePolicyChanged` 事件"。 | `[REVIEW-RESOLVED]` |
-| `software.config` v0.3 候选错误码有误 | 跨草案一致性 | `software.config` §8 中 `PERMISSION_DENIED` 标注为 `0x0105`（实际为 `DEVICE_OVER_TEMPERATURE`）、`INVALID_STATE` 标注为 `0x000E`（实际为 `INTERNAL_ERROR`）。正确值应分别为 `0x0009` 和 `0x0004`（与本文 §8 一致）。需同步修正 `software.config` 草案。 | `[REVIEW-FIX]` |
+| Flow step 21 响应描述（setUpdatePolicy 是否返回完整策略） | flow / draft 一致性 | Flow 文档 step 16/19/21 已修正为"返回标准成功响应（无 result body）；触发对应 *Changed 事件"，与草案 `setUpdatePolicy` status-only 设计一致（原 step 编号曾误记为 step 20，实为 step 21）。本条闭环。 | `[REVIEW-RESOLVED]` |
+| `software.config` §8 错误码 | 跨草案一致性 | sibling 草案 `software.config` 已修正至 v0.5，§8 中 `PERMISSION_DENIED` / `INVALID_STATE` / `INVALID_ARGUMENT` 现为正确值 `0x0009` / `0x0004` / `0x000A`（见 `software.config` v0.5 错误码修正说明）。本草案 §8 Review 列同步对齐为已采纳复用码（标 `—`）。 | `[REVIEW-RESOLVED]` |

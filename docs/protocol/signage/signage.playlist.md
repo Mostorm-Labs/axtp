@@ -5,12 +5,12 @@ generated: false
 domain: signage
 feature: signage.playlist
 registry:
-lastReviewed: 2026-06-12
+lastReviewed: 2026-06-15
 ---
 
 # AXTP signage.playlist 协议草案
 
-版本：v1.0
+版本：v1.2
 
 归属域：`signage`
 
@@ -34,15 +34,17 @@ Capability ID：`signage.playlist`
 
 **变更历史：**
 
+- **v1.2** — 格式修复与 per-method 结构补全：(1) 修复变更历史版本号顺序错乱，统一为倒序（原 v0.2–v0.7 为正序、v0.9/v0.8 为倒序，与顶部 v1.1/v1.0 倒序不一致）；(2) 为 `setPlaylistConfig` / `resetPlaylistConfig` 补 per-method「可能触发的事件」明细表，对齐标准 per-method 结构；(3) 统一 `setPlaylistConfig` 的 Result Schema 表述为「无 result body，仅返回标准 success status」。
+- **v1.1** — 完善内部一致性与播放语义：(1) §5 capability 描述符表补 `supportsReset`，与 `PlaylistCapabilitiesResult`（§3.1/§6.3）三处字段对齐；(2) §8 增补 `NOT_FOUND`（0x000C）common 码与「错误码双轨制说明」，澄清候选业务码与 JSON 示例借用 common 码的对应关系；(3) 新增 §2.1「播放调度语义」，定义 default/scheduled 共存优先级、scheduled 重叠冲突与空状态；(4) §6.5 补 `duration = 0` 与 `sort` 重复排序语义；(5) §6.5 website `ignoreCertificateError` 加安全敏感 `[REVIEW-ASK]`；(6) 新增 §7.14 `SIGNAGE_PLAYLIST_URL_EXPIRED` 失败示例；(7) §4.1 说明事件 payload schema 与 flow 文档表述差异；(8) §12 补本次新增 `[REVIEW-ASK]` 项。
 - **v1.0** — 结构完善：(1) 标题后新增元数据块（版本、归属域、Capability ID、适用范围），对齐 `device.enrollment` / `software.config` 等成熟草案模式；(2) 新增顶层"协议审核标记（人工复核）"节，提供快速概览；(3) 修复 §6.5 `Playlist` schema 条件必填规则块中断表格的格式问题。
-- **v0.2** — 新增 `signage.getPlaylistItemUrl` 方法（原 `signage.media` URL 刷新功能），补充候选 schemas 和 JSON 示例。
-- **v0.3** — 播放项类型新增 `unsplash`（Unsplash 图库幻灯片），新增 `UnsplashPhoto` schema；`signage.getPlaylistItemUrl` 返回结果新增 `photos` 字段。
-- **v0.4** — `GetPlaylistItemUrlResult` 从顶层互斥字段（`url` / `urls` / `photos`）模式重构为 `type` + `settings` 显式类型判别模式，与 `PlaylistItem` 结构统一。
-- **v0.5** — 关闭三个核心设计决策：(1) 播放列表全量替换确认为硬替换，不引入版本号或 soft-delete；(2) Unsplash 等带过期时间播放项的 URL 刷新确认为设备端主动 Pull 模式；(3) `clock` 类型播放项调用 `getPlaylistItemUrl` 时服务端返回 `NOT_SUPPORTED`（0x0003）。
-- **v0.6** — 关闭 `scheduled` 类型时间区间约束决策——采用分条件约束。
-- **v0.7** — 按 20-draft-business-protocol skill 规范重组全文：添加 frontmatter 和速读结论；补齐缺失 schema（`PlaylistCapabilitiesParams`/`Result`、`GetPlaylistConfigParams`、`PlaylistConfigResult`、`ResetPlaylistConfigParams`、`PlaylistConfigChangedEvent`）；新增 per-method detail blocks 和 per-event detail block；新增 Capability 字段表；扩展 Legacy 映射为 9.0-9.5 逐命令字段映射模式；补充 8 个 JSON 示例场景。`setPlaylistConfig` 响应简化为仅返回成功 status（无 result body）；`resetPlaylistConfig` 响应改为返回重置后的 `PlaylistConfigResult`；废弃 `slideshow` 播放项类型，Adapter 映射为 `image`。
 - **v0.9** — Schema 精度提升：(1) `Playlist` schema 条件必填字段（`startDate`/`endDate`/`startTime`/`endTime`/`days`）从 prose 注释升级为正式条件必填规则块（与 `device.enrollment` 模式一致）；(2) `PlaylistItem.settings` 类型列从 `object` 更正为 `PlaylistItemSettings`。Legacy 映射改进：(3) §9.1 `SetPlaylistConfig` 新增 `slideshow` → `image` settings 字段级转换子表；(4) §9.3 `GetPlaylistItemUrl` 新增 `unsplash` AXTP-only 标注和 `slideshow` 响应转换细节；(5) §9.4 adapter 模式表新增 `GetPlaylistItemUrl` 和 `slideshow` → `image` 字段转换示例表。
 - **v0.8** — 对齐仓库错误约定：业务语义校验错误由 `RPC_PARAM_INVALID`（曾误标 0x0002）统一改为 `INVALID_ARGUMENT`（0x000A，common），与 audio/software/device 草案一致；补全 §8 错误总表（新增 `INTERNAL_ERROR`、`PERMISSION_DENIED`，标注业务错误落点 0x0600-0x15FF）；为 `setPlaylistConfig` / `getPlaylistItemUrl` 增补方法级错误表；Legacy §9.0 标注 AXTP-only 新增能力、§9.3 细化各类型 URL 刷新分支。
+- **v0.7** — 按 20-draft-business-protocol skill 规范重组全文：添加 frontmatter 和速读结论；补齐缺失 schema（`PlaylistCapabilitiesParams`/`Result`、`GetPlaylistConfigParams`、`PlaylistConfigResult`、`ResetPlaylistConfigParams`、`PlaylistConfigChangedEvent`）；新增 per-method detail blocks 和 per-event detail block；新增 Capability 字段表；扩展 Legacy 映射为 9.0-9.5 逐命令字段映射模式；补充 8 个 JSON 示例场景。`setPlaylistConfig` 响应简化为仅返回成功 status（无 result body）；`resetPlaylistConfig` 响应改为返回重置后的 `PlaylistConfigResult`；废弃 `slideshow` 播放项类型，Adapter 映射为 `image`。
+- **v0.6** — 关闭 `scheduled` 类型时间区间约束决策——采用分条件约束。
+- **v0.5** — 关闭三个核心设计决策：(1) 播放列表全量替换确认为硬替换，不引入版本号或 soft-delete；(2) Unsplash 等带过期时间播放项的 URL 刷新确认为设备端主动 Pull 模式；(3) `clock` 类型播放项调用 `getPlaylistItemUrl` 时服务端返回 `NOT_SUPPORTED`（0x0003）。
+- **v0.4** — `GetPlaylistItemUrlResult` 从顶层互斥字段（`url` / `urls` / `photos`）模式重构为 `type` + `settings` 显式类型判别模式，与 `PlaylistItem` 结构统一。
+- **v0.3** — 播放项类型新增 `unsplash`（Unsplash 图库幻灯片），新增 `UnsplashPhoto` schema；`signage.getPlaylistItemUrl` 返回结果新增 `photos` 字段。
+- **v0.2** — 新增 `signage.getPlaylistItemUrl` 方法（原 `signage.media` URL 刷新功能），补充候选 schemas 和 JSON 示例。
 
 ---
 
@@ -89,6 +91,18 @@ Capability ID：`signage.playlist`
 | 不包含 | 系统调度（`system.lifecycle`）—— 定时重启/关机归系统生命周期域。 |
 | 数据面 | 不使用 STREAM；所有操作都是 RPC request/response + event。 |
 
+### 2.1 播放调度语义
+
+`signage.playlist` 负责**下发与存储**播放列表配置，**不定义运行时播放控制**（播放/暂停/跳转归 `signage.playback` 域）。但配置层面的调度语义影响设备在多播放列表共存时的选择，需明确：
+
+| 场景 | 推荐默认行为 | 状态 |
+|---|---|---|
+| `default` 与 `scheduled` 共存 | `scheduled` 命中当前时间窗口（日期 + 星期 + 时段）时优先播放；无 `scheduled` 命中时回落 `default`。 | `[REVIEW-ASK]` 产品确认调度优先级。 |
+| 多个 `scheduled` 时间区间重叠 | 行为未定义；建议设备择一播放（按 `Playlist.id` 或数组顺序稳定选择），冲突不视为错误、不返回 `INVALID_ARGUMENT`。 | `[REVIEW-ASK]` 产品确认冲突策略。 |
+| 无任何播放列表 | 设备显示空状态（黑屏或出厂画面），不报错。 | `[REVIEW-ASK]` 产品确认空状态呈现。 |
+
+> `default` 类型播放列表的 `startDate`/`endDate`/`startTime`/`endTime`/`days` 字段不可设置（见 §6.5 条件必填规则），即 `default` 始终生效、不参与时间窗口匹配。
+
 ---
 
 ## 3. 方法
@@ -101,7 +115,7 @@ Capability ID：`signage.playlist`
 |---|---|---|---|---|---|---|
 | `signage.getPlaylistCapabilities` | query | 查询播放列表能力范围。 | `PlaylistCapabilitiesParams` | `PlaylistCapabilitiesResult` | 否 | [REVIEW-DRAFT] |
 | `signage.getPlaylistConfig` | query | 查询当前播放列表配置。 | `GetPlaylistConfigParams` | `PlaylistConfigResult` | 否 | [REVIEW-DRAFT] |
-| `signage.setPlaylistConfig` | command | 全量替换播放列表配置。 | `SetPlaylistConfigParams` | *(无 result，仅 status)* | 是：`playlistConfigChanged` | [REVIEW-DRAFT] |
+| `signage.setPlaylistConfig` | command | 全量替换播放列表配置。 | `SetPlaylistConfigParams` | *(无 result body，仅返回标准 success status)* | 是：`playlistConfigChanged` | [REVIEW-DRAFT] |
 | `signage.resetPlaylistConfig` | action | 恢复默认播放列表配置。 | `ResetPlaylistConfigParams` | `PlaylistConfigResult` | 是：`playlistConfigChanged` | [REVIEW-DRAFT] |
 | `signage.getPlaylistItemUrl` | query | 按播放项 ID 获取最新资源 URL（URL 刷新）。 | `GetPlaylistItemUrlParams` | `GetPlaylistItemUrlResult` | 否 | [REVIEW-DRAFT] |
 
@@ -165,7 +179,7 @@ Capability ID：`signage.playlist`
 | 说明 | 全量替换播放列表配置。服务端是唯一权威，设备不编辑播放列表。第二次全量下发删除旧配置中未出现的播放项。 |
 | 调用类型 | command |
 | params | `SetPlaylistConfigParams` |
-| result | *(无 result，仅返回标准 success status)* |
+| result | *(无 result body，仅返回标准 success status)* |
 | 触发事件 | 成功后触发 `playlistConfigChanged`。 |
 | 幂等性 | 连续相同参数调用产生相同终态；每次调用仍是硬替换。 |
 | 错误 | `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `SIGNAGE_PLAYLIST_EMPTY` |
@@ -185,6 +199,12 @@ Capability ID：`signage.playlist`
 | `SIGNAGE_PLAYLIST_EMPTY` | TBD | `playlists` 为空数组，或某播放列表 `items` 为空。 |
 | `NOT_SUPPORTED` | 0x0003 | 设备不支持 `signage.playlist` 能力或当前模式不可写。 |
 | `PERMISSION_DENIED` | 0x0009 | 调用方无权修改播放列表配置。 |
+
+#### 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `signage.playlistConfigChanged` | `setPlaylistConfig` 全量替换成功。 | `PlaylistConfigChangedEvent` | 标记本地播放列表缓存失效；需要完整配置时调用 `signage.getPlaylistConfig` 校准。 |
 
 ### 3.4 `signage.resetPlaylistConfig`
 
@@ -209,6 +229,12 @@ Capability ID：`signage.playlist`
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `playlists` | `Playlist[]` | yes | see `Playlist` | none | 重置后的默认播放列表配置数组。 |
+
+#### 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `signage.playlistConfigChanged` | `resetPlaylistConfig` 恢复默认成功。 | `PlaylistConfigChangedEvent` | payload `reason` 为 `reset_config`；标记本地缓存失效，按需调用 `signage.getPlaylistConfig` 校准。 |
 
 ### 3.5 `signage.getPlaylistItemUrl`
 
@@ -278,6 +304,8 @@ Capability ID：`signage.playlist`
 | `reason` | string (enum) | yes | `set_config`, `reset_config` | none | 变更原因。`set_config` 由 `setPlaylistConfig` 触发；`reset_config` 由 `resetPlaylistConfig` 触发。 |
 | `playlists` | `Playlist[]` | no | see `Playlist` schema | omitted | 变更后的完整播放列表。设备可选择省略以减小 payload，客户端调用 `getPlaylistConfig` 获取。`[REVIEW-ASK]` 是否总是携带完整 playlists 需产品确认。 |
 
+> **事件 payload schema 说明**：本草案为 `playlistConfigChanged` 定义独立 payload schema `PlaylistConfigChangedEvent`（含 `reason` + 可选 `playlists`）。`docs/flows/signage-device-management.md` §7 将该事件 payload 记为 `PlaylistConfigResult` 属场景级简化表述；**正式 payload schema 以本草案为准**。如需同步 flow 文档表述，转 10-plan-protocol-flow（不在 20-draft-business-protocol 边界内）。
+
 ---
 
 ## 5. Capability
@@ -292,6 +320,7 @@ Capability name: `signage.playlist`。
 | `maxItemsPerPlaylist` | uint32 | no | product-defined | 每个播放列表最大播放项数量。 |
 | `supportsScheduledPlaylist` | boolean | yes | `true`, `false` | 是否支持 `scheduled` 类型播放列表。 |
 | `supportsUrlRefresh` | boolean | yes | `true`, `false` | 是否支持播放项资源 URL 刷新。 |
+| `supportsReset` | boolean | yes | `true`, `false` | 是否支持恢复默认播放列表（`resetPlaylistConfig`）。 |
 
 ---
 
@@ -395,8 +424,8 @@ Capability name: `signage.playlist`。
 |---|---|---:|---|---|---|
 | `id` | string (UUID) | yes | UUID format | none | 播放项唯一标识。 |
 | `type` | enum | yes | `image`, `website`, `video`, `clock`, `unsplash` | none | 播放项类型。 |
-| `duration` | uint32 | yes | 0-86400 | 60 | 播放时长（秒）。 |
-| `sort` | uint32 | yes | 非负整数 | 0 | 播放顺序。 |
+| `duration` | uint32 | yes | 0-86400（`0` 语义见说明） | 60 | 单次播放时长（秒）。`0` 语义未定义——推荐禁止 `0`（要求 `> 0`），或允许 `0` 表示「直到下一次列表循环或切换」。`[REVIEW-ASK]` 采纳前确认。 |
+| `sort` | uint32 | yes | 非负整数 | 0 | 播放顺序，按 `sort` 升序排列。相同 `sort` 值时的相对顺序未定义——建议按 `PlaylistItem.id` 稳定排序。`[REVIEW-ASK]` 采纳前确认。 |
 | `settings` | `PlaylistItemSettings` | yes | see `PlaylistItemSettings` | none | 播放项设置。按 `type` 不同结构不同。 |
 
 #### `PlaylistItemSettings`（按 type 区分）
@@ -422,7 +451,7 @@ Capability name: `signage.playlist`。
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `url` | string | yes | valid URL | none | 网站 URL。 |
-| `ignoreCertificateError` | boolean | no | `true`, `false` | `false` | 忽略证书错误。 |
+| `ignoreCertificateError` | boolean | no | `true`, `false` | `false` | 忽略 TLS 证书错误。`[REVIEW-ASK]` 安全敏感字段——允许跳过证书校验有中间人风险，需明确何时允许、调用方权限要求与默认策略；采纳前由安全/架构确认。 |
 | `refreshIntervalSecs` | uint32 | no | > 0 | `null` | 刷新间隔秒数。`null` 表示不刷新。 |
 
 **clock 类型：**
@@ -937,6 +966,26 @@ unsplash 类型响应：
 }
 ```
 
+### 7.14 失败：资源 URL 已过期且无法刷新
+
+**场景**：`getPlaylistItemUrl` 刷新时，服务端发现资源 URL 已不可用且无法签发新 URL（如源资源被删除或授权失效）。
+
+```json
+{
+  "id": 14,
+  "status": {
+    "ok": false,
+    "code": 12,
+    "msg": "Playlist item URL has expired and cannot be refreshed.",
+    "details": {
+      "candidateError": "SIGNAGE_PLAYLIST_URL_EXPIRED"
+    }
+  }
+}
+```
+
+**读法**：候选业务码 `SIGNAGE_PLAYLIST_URL_EXPIRED` 尚未分配数值，示例借用 common `NOT_FOUND`（0x000C，`code: 12`）并写入 `candidateError`（见 §8 双轨制说明）。设备收到此错误应停止对该 `itemId` 重试，并通过重新 `getPlaylistConfig` 或等待 `playlistConfigChanged` 获取更新后的配置。
+
 ---
 
 ## 8. 错误
@@ -947,11 +996,14 @@ unsplash 类型响应：
 | `NOT_SUPPORTED` | 0x0003 | common | 操作不支持当前播放项类型（如 `clock` 调用 `getPlaylistItemUrl`）或设备不支持 `signage.playlist` 能力。 | [REVIEW-DRAFT] |
 | `PERMISSION_DENIED` | 0x0009 | common | 调用方无权修改播放列表配置（`setPlaylistConfig`）。 | [REVIEW-DRAFT] |
 | `INTERNAL_ERROR` | 0x000E | common | 设备内部错误（`getPlaylistCapabilities` / `getPlaylistConfig` / `resetPlaylistConfig` 执行失败）。 | [REVIEW-DRAFT] |
+| `NOT_FOUND` | 0x000C | common | 指定资源不存在。可复用于播放项不存在场景（§7.10 JSON 示例使用 `code: 12` + `candidateError`）。 | [REVIEW-DRAFT] |
 | `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` | TBD | business | 指定的播放项 ID 不存在于当前播放列表中。 | [REVIEW-DRAFT] |
 | `SIGNAGE_PLAYLIST_EMPTY` | TBD | business | 播放列表数组为空或播放项数组为空。 | [REVIEW-DRAFT] |
 | `SIGNAGE_PLAYLIST_URL_EXPIRED` | TBD | business | 刷新 URL 时发现资源已不可用。 | [REVIEW-DRAFT] |
 
 > 通用错误码数值取自 `registry/error/error_code.yaml`。业务域错误 `SIGNAGE_PLAYLIST_*` 落点在业务域区段 `0x0600-0x15FF`，编号 `TBD after adoption`，由 registry 采纳时分配。
+
+> **错误码双轨制说明**：上表 `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` / `SIGNAGE_PLAYLIST_EMPTY` / `SIGNAGE_PLAYLIST_URL_EXPIRED` 为**候选业务错误码**，数值 `TBD after adoption`。在候选码尚未分配数值前，本文 JSON 示例（§7.10 / §7.13 / §7.14）按 20-draft-business-protocol 约定借用**语义最近的 common 错误码**（`NOT_FOUND` 0x000C、`INVALID_ARGUMENT` 0x000A），并将候选名写入 `status.details.candidateError`。采纳阶段需对每个候选码做二选一决定：**新增为独立业务码**（落入 `0x0600-0x15FF`），还是**直接复用对应 common 码**（减少 registry 膨胀）。见 §12 待确认问题。
 
 ---
 
@@ -1143,6 +1195,12 @@ Legacy Device → Server，请求 `{ itemId }`，响应 `{ url / urls, expiresAt
 | `PlaylistCapabilitiesResult` 应包含哪些能力字段？ | schema / capability | 建议包含 `supportedItemTypes`、`maxPlaylists`、`maxItemsPerPlaylist`、`supportsScheduledPlaylist`、`supportsUrlRefresh`、`supportsReset`。 | open |
 | `ResetPlaylistConfigParams` 是否支持 scoped reset（如只重置 scheduled 播放列表）？ | schema / method | 当前建议无参数，全量恢复默认。 | open |
 | `PlaylistConfigChangedEvent` 是否应总是携带完整 `playlists`？还是仅通知变更？ | event payload | 建议可选携带 playlists，客户端可调用 `getConfig` 获取完整配置。 | open |
+| `default` 与 `scheduled` 播放列表共存的调度优先级？ | behavior | 建议 scheduled 命中时间窗口时优先，无命中回落 default。 | open |
+| 多个 `scheduled` 时间区间重叠的冲突处理？ | behavior | 建议行为未定义，设备按 id/顺序稳定择一，不视为错误。 | open |
+| `PlaylistItem.duration = 0` 的语义？ | schema | 建议禁止 0（要求 `> 0`），或允许 0 表示「直到循环/切换」。 | open |
+| `PlaylistItem.sort` 相同值时的排序规则？ | schema | 建议相同 sort 时按 id 稳定排序。 | open |
+| `website.ignoreCertificateError` 的安全策略与权限要求？ | security | 允许跳过 TLS 校验有 MITM 风险，需明确默认策略与调用方权限。 | open |
+| 候选业务码 `SIGNAGE_PLAYLIST_*` 是否复用 common 码（`NOT_FOUND`/`INVALID_ARGUMENT`）以减少 registry 膨胀？ | error registry | 草案阶段两套并存（候选业务码 TBD + JSON 借 common 码）；采纳时二选一。 | open |
 
 ### 已解决问题
 

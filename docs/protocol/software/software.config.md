@@ -5,12 +5,12 @@ generated: false
 domain: software
 feature: software.config
 registry:
-lastReviewed: 2026-06-12
+lastReviewed: 2026-06-15
 ---
 
 # AXTP software.config 协议草案
 
-版本：v0.4
+版本：v0.6
 
 归属域：`software`
 
@@ -25,12 +25,24 @@ Capability ID：`software.config`
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
 | `[REVIEW-DRAFT]` | `software.config` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-ASK]` | `software` 域名 | `software` 不在 Taxonomy spec rule 2 的示例列表（但 rule 2 使用 "e.g." 措辞）。 | 采纳前确认是否需要 taxonomy amendment。 |
+| `[REVIEW-RESOLVED]` | `software` 域名 | Taxonomy spec rule 2 为 "e.g." 措辞（非穷举列表），rule 8 允许新增 domain 且 MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入；本草案已在 `docs/flows/signage-device-management.md` steps 8/16/19/23 使用。 | 采纳时无需 taxonomy amendment。 |
 | `[REVIEW-ASK]` | `target` 枚举值 | 完整的 target 枚举值列表需要产品和设备确认。 | 采纳前补齐 target enum baseline。 |
 | `[REVIEW-DRAFT]` | legacy 映射 | 已完成 evidence-based 字段映射。`GetAppearanceConfig` / `SetAppearanceConfig` / `SetDeviceName` 映射到 `software.config`；`ResetConfig` 映射到 `system.restoreFactorySettings`。 | 采纳前确认 Adapter 层实现计划。 |
-| `[REVIEW-ASK]` | `displayName` 归属 | `displayName` 在 `device.info` 中为只读，在 `software.config` 中提供写入路径。同一数据两个协议暴露可能引起困惑。 | 采纳前确认是保留此设计还是将写入路径归入 `device.info` 扩展。 |
+| `[REVIEW-RESOLVED]` | `displayName` 归属 | `device.info.md`（line 185）确认 `displayName` 本轮只读返回、不提供写入接口；flow 文档 §11 已 REVIEW-RESOLVED。两草案一致：写入在 `software.config`、只读在 `device.info`。 | 采纳前最终确认。 |
 
 ---
+
+**v0.6 变更说明：**
+(1) 补齐 per-method 候选错误表：§3.1 `software.getConfig` 新增候选错误表（`NOT_SUPPORTED` / `INVALID_ARGUMENT`）；§3.3 `software.resetConfig` 新增候选错误表（`NOT_SUPPORTED` / `PERMISSION_DENIED` / `INVALID_STATE`）。与兄弟草案 `software.updatePolicy` v0.6 的 per-method 错误表结构对齐。
+(2) §7 新增 3 个失败示例：7.5b `PERMISSION_DENIED`（`code: 9`）、7.5c `INVALID_STATE`（`code: 4`）、7.5d `INVALID_ARGUMENT`（`code: 10`，`autoHideDelay ≤ 0` 场景），使 §8 候选 Errors 的 4 个错误均有对应示例。
+(3) §12 最后一条修正滞后描述：flow step 16/19（line 218/221）现已修正为"返回标准成功响应（无 result body）；触发 `software.configChanged` 事件"，与草案 `setConfig` 一致；Flow 与草案已对齐，本条闭合。
+(4) frontmatter `lastReviewed` 同步至 2026-06-15；§7.2b 示例 `id: 201` 改为 `5` 消除跳号。
+
+**v0.5 变更说明：**
+(1) 基于 Taxonomy spec rule 2（"e.g." 措辞，非穷举列表）与 rule 8（新增 domain MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入；本草案已在 `docs/flows/signage-device-management.md` steps 8/16/19/23 使用），关闭 `software` domain `[REVIEW-ASK]`：采纳时无需 taxonomy amendment。
+(2) 基于 `device.info.md`（line 185，`displayName` 本轮只读返回、不提供写入接口）与 flow 文档 §11（已 REVIEW-RESOLVED），同步关闭 `displayName` 归属 `[REVIEW-ASK]`：写入路径在 `software.config`、只读返回在 `device.info`。
+(3) 同步 `lastReviewed`。
+(4) §8 候选 Errors Review 列对齐：`INVALID_ARGUMENT` / `PERMISSION_DENIED` / `INVALID_STATE` 从 `[REVIEW-DRAFT]` 改为 `—`，与同表 `NOT_SUPPORTED` 一致——三者均为 `registry/error/error_code.yaml` 中 `status: mvp` 的已采纳 common 码，非草案候选。与 sibling 草案 `software.updatePolicy` v0.6 一致。
 
 **v0.4 变更说明：**
 (1) 修正 §8 候选 Errors 中 `INVALID_STATE` 和 `PERMISSION_DENIED` 的错误码：`INVALID_STATE` 从错误的 `0x000E` 更正为 `0x0004`；`PERMISSION_DENIED` 从错误的 `0x0105` 更正为 `0x0009`（`0x000E` 实际为 `INTERNAL_ERROR`，`0x0105` 实际为 `DEVICE_OVER_TEMPERATURE`）。与兄弟草案 `software.updatePolicy` v0.4 对齐。
@@ -52,7 +64,7 @@ Capability ID：`software.config`
 | 是否使用 STREAM | 否 |
 | Registry readiness | candidate |
 | Conformance | needed |
-| 主要未决问题 | `target` 枚举完整值列表、`values` 是否需要按 target 展开强类型 schema、`displayName` 归属 `software.config` 还是 `device.info`、`displayName` 最大长度约束。legacy `ResetConfig` 已确认映射到 `system.restoreFactorySettings`（见 Section 9）。 |
+| 主要未决问题 | `target` 枚举完整值列表（`signagePlayer`/`agent` 配置字段无证据，待产品）、`values` 是否需要按 target 展开强类型 schema、`displayName` 最大长度约束。`software` domain taxonomy 与 `displayName` 归属已关闭（见 §协议审核标记 / §12）。legacy `ResetConfig` 已确认映射到 `system.restoreFactorySettings`（见 Section 9）。 |
 
 ---
 
@@ -115,6 +127,13 @@ Capability ID：`software.config`
 #### 返回结果 Result：`SoftwareConfig`
 
 字段见 6.1。
+
+#### `software.getConfig` 候选错误
+
+| Error | 类别 | 说明 |
+|---|---|---|
+| `NOT_SUPPORTED` | common | target 不支持。 |
+| `INVALID_ARGUMENT` | common | target 值非法。 |
 
 ### 3.2 `software.setConfig`
 
@@ -188,6 +207,14 @@ Capability ID：`software.config`
 | Event | 条件 |
 |---|---|
 | `software.configChanged` | 配置实际变化时触发。reason 为 `restore_default`。 |
+
+#### `software.resetConfig` 候选错误
+
+| Error | 类别 | 说明 |
+|---|---|---|
+| `NOT_SUPPORTED` | common | target 不支持。 |
+| `PERMISSION_DENIED` | common | 无权重置配置。 |
+| `INVALID_STATE` | common | 软件正在升级或恢复中。 |
 
 ---
 
@@ -279,7 +306,7 @@ Capability name: `software.config`。
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `displayName` | string | no | non-empty, max 64 chars `[REVIEW-ASK]` | omitted（使用设备出厂名称） | 用户可见的设备显示名称。设置后覆盖 `device.info` 返回的 `product.displayName`。`[REVIEW-ASK]` 此字段是否应归 `device.info` 而非 `software.config` 管理。 |
+| `displayName` | string | no | non-empty, max 64 chars `[REVIEW-ASK]` | omitted（使用设备出厂名称） | 用户可见的设备显示名称。设置后覆盖 `device.info` 返回的 `product.displayName`。归属已确认：写入路径在 `software.config`，`device.info`（line 185）只读返回同值（采纳前最终确认）。 |
 | `appearance` | object | no | 见 6.3 | omitted（使用设备默认值） | 外观配置。 |
 
 `[REVIEW-ASK]` 其他 target（`signagePlayer`, `agent`）的配置字段待产品和设备确认后补充。
@@ -435,7 +462,7 @@ Capability name: `software.config`。
 
 ```json
 {
-  "id": 201,
+  "id": 5,
   "method": "software.setConfig",
   "params": {
     "target": "launcher",
@@ -450,7 +477,7 @@ Capability name: `software.config`。
 
 ```json
 {
-  "id": 201,
+  "id": 5,
   "status": {
     "ok": true,
     "code": 0
@@ -543,6 +570,87 @@ Capability name: `software.config`。
 }
 ```
 
+### 7.5b 权限不足
+
+**场景**：操作者无权修改该 target 的配置。
+
+```json
+{
+  "id": 6,
+  "status": {
+    "ok": false,
+    "code": 9,
+    "msg": "Permission denied.",
+    "details": {
+      "field": "target"
+    }
+  }
+}
+```
+
+**读法**：`code: 9` 对应 `PERMISSION_DENIED` (0x0009)。操作者对指定 target 无修改权限。
+
+### 7.5c 软件升级中
+
+**场景**：软件正在升级或恢复中，不允许配置变更。
+
+```json
+{
+  "id": 7,
+  "status": {
+    "ok": false,
+    "code": 4,
+    "msg": "Operation not allowed in current state.",
+    "details": {
+      "reason": "software_updating"
+    }
+  }
+}
+```
+
+**读法**：`code: 4` 对应 `INVALID_STATE` (0x0004)。设备当前正在执行软件更新，配置修改需等待更新完成。
+
+### 7.5d 参数非法（INVALID_ARGUMENT）
+
+**场景**：运维人员将自动隐藏延迟设为 `0`，违反 `autoHideDelay > 0` 约束。
+
+请求：
+
+```json
+{
+  "id": 8,
+  "method": "software.setConfig",
+  "params": {
+    "target": "launcher",
+    "config": {
+      "appearance": {
+        "autoHidePanel": true,
+        "autoHideDelay": 0
+      }
+    }
+  }
+}
+```
+
+响应：
+
+```json
+{
+  "id": 8,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "field": "config.appearance.autoHideDelay",
+      "reason": "must_be_positive"
+    }
+  }
+}
+```
+
+**读法**：`code: 10` 对应 `INVALID_ARGUMENT` (0x000A)。`autoHideDelay` 必须 `> 0`，传 `0` 返回参数非法；设备配置保持不变。
+
 ---
 
 ## 8. 候选 Errors
@@ -550,9 +658,9 @@ Capability name: `software.config`。
 | Error | 复用 / 候选 | 说明 | Review |
 |---|---|---|---|
 | `NOT_SUPPORTED` | common (0x0003) | target 不支持或 config 字段不支持。 | — |
-| `INVALID_ARGUMENT` | common (0x000A) | config 字段值非法（如 autoHideDelay ≤ 0）。 | `[REVIEW-DRAFT]` |
-| `PERMISSION_DENIED` | common (0x0009) | 无权修改该 target 的配置。 | `[REVIEW-DRAFT]` |
-| `INVALID_STATE` | common (0x0004) | 软件正在升级或恢复中，不允许配置变更。 | `[REVIEW-DRAFT]` |
+| `INVALID_ARGUMENT` | common (0x000A) | config 字段值非法（如 autoHideDelay ≤ 0）。 | — |
+| `PERMISSION_DENIED` | common (0x0009) | 无权修改该 target 的配置。 | — |
+| `INVALID_STATE` | common (0x0004) | 软件正在升级或恢复中，不允许配置变更。 | — |
 
 ---
 
@@ -786,12 +894,12 @@ AXTP 请求（Adapter 输出，对应 `software.setConfig` params）：
 
 | Issue | Impact | Current recommendation | Status |
 |---|---|---|---|
-| `software` domain 未在 Taxonomy spec rule 2 示例列表中 | 采纳阻塞 | 采纳前确认是否需要 taxonomy amendment。 | `[REVIEW-ASK]` |
+| `software` domain 未在 Taxonomy spec rule 2 示例列表中 | （原）采纳阻塞 | rule 2 为 "e.g." 措辞（非穷举列表），rule 8 允许新增 domain 且 MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入（本草案见 flow steps 8/16/19/23）；采纳无需 taxonomy amendment。 | `[REVIEW-RESOLVED]` |
 | `target` 枚举完整值列表 | schema 约束 | 当前草案列出 `launcher`、`signagePlayer`、`agent`；采纳前与产品和设备确认。 | `[REVIEW-ASK]` |
 | legacy `ResetConfig` 真实 scope | legacy mapping | 已确认为系统级出厂恢复（设备重启）。映射到 `system.restoreFactorySettings`，不映射到 `software.resetConfig`。见 Section 9.4。 | `[REVIEW-RESOLVED]` |
 | 其他 target 的配置字段 | schema / adoption | `target: "signagePlayer"` 和 `target: "agent"` 的配置字段待产品和设备确认后补充。 | `[REVIEW-ASK]` |
-| `displayName` 归属：`software.config` vs `device.info` | schema / 语义边界 | 推荐在 `software.config` 写入，`device.info` 只读返回。同一个值两个协议暴露。 | `[REVIEW-ASK]` |
+| `displayName` 归属：`software.config` vs `device.info` | schema / 语义边界 | `device.info`（line 185）确认只读、flow §11 已 resolved：写入在 `software.config`、只读在 `device.info`。 | `[REVIEW-RESOLVED]` |
 | `displayName` 最大长度和格式约束 | schema / 校验 | 推荐 64 字符，非空。采纳前与产品确认。 | `[REVIEW-ASK]` |
 | `resetConfig` 是否重置 `displayName` | 语义 / UX | 推荐 resetConfig 重置所有 launcher 配置包括 displayName；但设备显示名恢复出厂可能影响设备识别。 | `[REVIEW-ASK]` |
 | Adapter flat→nested 变换 | adapter 实现 | Legacy 外观配置为 flat 结构，AXTP 为 `config.appearance.*` 嵌套结构。Adapter 层负责包装/展平变换。Legacy `SetAppearanceConfig` 全量覆盖语义与 AXTP partial update 语义的差异由 Adapter 兼容。 | `[REVIEW-DRAFT]` |
-| Flow step 16/19 vs 草案 setConfig 响应 | flow / draft 一致性 | Flow 文档描述有误（step 16/19 及同类 step 21）。草案正确：`software.setConfig` 仅返回 status 确认（无 result body），与 `software.updatePolicy` pattern 一致。Flow 文档 step 16 和 step 19 的"Response / state result"列应修正为"返回标准成功响应（无 result body）；触发 `software.configChanged` 事件"。 | `[REVIEW-RESOLVED]` |
+| Flow step 16/19 vs 草案 setConfig 响应 | flow / draft 一致性 | Flow step 16/19（line 218/221）现已修正为"返回标准成功响应（无 result body）；触发 `software.configChanged` 事件"，与草案 `software.setConfig`（仅返回 status 确认、无 result body）一致。Flow 与草案已对齐，本条闭合。（同类 step 21 属 `software.updatePolicy`，见该草案。） | `[REVIEW-RESOLVED]` |
