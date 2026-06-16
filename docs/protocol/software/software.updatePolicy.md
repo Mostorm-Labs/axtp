@@ -5,12 +5,12 @@ generated: false
 domain: software
 feature: software.updatePolicy
 registry:
-lastReviewed: 2026-06-15
+lastReviewed: 2026-06-16
 ---
 
 # AXTP software.updatePolicy 协议草案
 
-版本：v0.7
+版本：v0.8
 
 归属域：`software`
 
@@ -22,18 +22,22 @@ Capability ID：`software.updatePolicy`
 
 ## 协议审核标记（人工复核）
 
-| 标记 | 条目 | 审核结论 | 后续动作 |
-|---|---|---|---|
-| `[REVIEW-DRAFT]` | `software.updatePolicy` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-RESOLVED]` | `software` 域名 | Taxonomy spec rule 2 为 "e.g." 措辞（非穷举列表），rule 8 允许新增 domain 且 MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入（本草案已在 flow steps 9/21 使用）。 | 采纳时无需 taxonomy amendment。与 `software.config` v0.5 一致。 |
-| `[REVIEW-ASK]` | `target` 枚举值 | 完整的 target 枚举值列表需要产品和设备确认。 | 采纳前补齐 target enum baseline。 |
-| `[REVIEW-ASK]` | 与 `firmware.updatePolicy` 的关系 | `firmware.updatePolicy` 已回退为 v0.1 骨架。两者是共存还是统一到 `software.updatePolicy(target: "firmware")`？ | 采纳前确认边界。 |
-| `[REVIEW-DRAFT]` | legacy 映射 | 已完成 evidence-based 字段映射。`GetUpdateConfig` / `SetUpdateConfig` 映射到 `software.updatePolicy(target: "launcher")`。采纳前确认 Adapter 层实现计划和分类差异。 | 采纳前确认分类差异修正和 Adapter 层实现计划。 |
-| `[REVIEW-RESOLVED]` | flow step 21 响应描述 | Flow 文档 step 21 原写"返回完整 SoftwareUpdatePolicy"，与草案 `setUpdatePolicy` 仅返回 status 确认（无 result body）不一致；flow step 16/19/21 现已统一修正为"返回标准成功响应（无 result body）；触发对应 *Changed 事件"。 | 已闭环，无需进一步动作。 |
-| `[REVIEW-ASK]` | Legacy classification 差异 | Legacy classification CSV 和 `firmware.md` 将 `GetUpdateConfig` / `SetUpdateConfig` 归入 `firmware.updatePolicy`；flow 文档 re-classified 到 `software.updatePolicy`（正确，因为这些是软件而非固件设置）。generated map 仍使用旧名 `update.getConfig` / `update.setConfig`。 | 分类修正和 generated map 更新需在采纳前处理。 |
-| `[REVIEW-RESOLVED]` | `software.config` §8 错误码 | sibling 草案 `software.config` 已修正至 v0.5，候选错误码现为正确 common 值（`0x0009` / `0x0004` / `0x000A`）。本草案 §8 Review 列同步对齐为 `—`（复用已采纳 common 码）。 | 无需进一步动作。 |
+完整的审核标记（含 `[REVIEW-DRAFT]` / `[REVIEW-RESOLVED]` / `[REVIEW-ASK]` 条目、审核结论与后续动作）见 **附录 A**，本文以附录 A 为唯一权威源。开篇要点：
+
+- 本文是根据业务需求创建的协议草案，不是最终事实源（`[REVIEW-DRAFT]`）；产品/架构/研发确认后进入 `adopt-protocol-draft`。
+- 落实 signage flow 中 legacy `GetUpdateConfig` / `SetUpdateConfig` 的最终定域：这些配置面向 Launcher / signagePlayer / agent 软件，不属于固件 OTA 策略；固件更新策略保留在 `firmware.updatePolicy`。
+- Legacy classification CSV / `firmware.md` 将上述命令归入 `firmware.updatePolicy`，flow 文档 re-classified 到 `software.updatePolicy`（正确）；classification 与 generated map 的同步待采纳阶段处理（见 §9.3）。
 
 ---
+
+**v0.8 变更说明：**
+对齐 20-draft-business-protocol skill 与 `protocol-draft-template.md` 的 JSON 示例约定（业务语义、schema、错误码、legacy 映射均不变）：
+(1) 在 §0 速读结论后新增 `## JSON 示例约定` 节（RPC envelope 速查 + op=6/7/8 表，声明示例默认 `APP_READY`、后续只展示 RPC `d` block、禁止 JSON-RPC 2.0 外层格式）。
+(2) 将原集中式第 7 节 12 个 JSON 示例迁移到各 method/event 小节：每个 method 补齐 Request / Success Response / Error Response `d block` 内联示例 + 错误表 + `规则`；event 补齐 Event `d block` 示例 + 客户端处理建议 + `规则`。method/event 子标题改为带编号风格（`3.x.1`…`4.1.1`…），示例标题统一标注 `op=7` / `op=8` / `op=6`。
+(3) 第 7 节改为 `## 7. 交互流程示例 Flow Examples`，只保留端到端 flow（查询→修改→事件校准 / 恢复默认→事件 / 失败请求不触发事件 / 跨午夜与 null 清除）。
+(4) 补齐附录 A–D（协议审核标记 / 决策记录 / Registry 草案输入 / 采纳检查清单），文件顶部「协议审核标记」表收敛为指引段、完整记录迁入附录 A。
+(5) 同步 sibling flow 文档 `docs/flows/signage-device-management.md` 中 `software.updatePolicy` 版本引用 v0.7 → v0.8。
+本次不改 schema 定义（6.0–6.8）、错误码（§8 数值已核实全部正确：`NOT_SUPPORTED` 0x0003 / `INVALID_STATE` 0x0004 / `PERMISSION_DENIED` 0x0009 / `INVALID_ARGUMENT` 0x000A，均 `status: mvp`）、legacy 映射（9.1–9.4）；JSON 示例的业务内容（字段值、错误码、placeholder）原样迁移，只改位置、标题与「d block」称谓。
 
 **v0.7 变更说明：**
 (1) 统一 sibling 草案 `software.config` 版本引用为 v0.5（协议审核标记表、v0.6 变更说明第 1 条、§12 三处曾误记为 v0.4，与同草案另几处 v0.5 自相矛盾）。
@@ -84,6 +88,28 @@ Capability ID：`software.updatePolicy`
 | Registry readiness | candidate |
 | Conformance | needed |
 | 主要未决问题 | `updateMode` 枚举首批值、跨日 window 语义、`conditions` 是否包含标牌特有条件。 |
+
+---
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id`（取 `1`–`10` 等示例值）、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
 
 ---
 
@@ -138,7 +164,7 @@ Capability ID：`software.updatePolicy`
 | 幂等性 | 是 |
 | 常见错误 | `NOT_SUPPORTED`（target 不支持） |
 
-#### 请求参数 Params：`SoftwareGetUpdatePolicyParams`
+#### 3.1.1 请求参数 Params：`SoftwareGetUpdatePolicyParams`
 
 字段见 6.5。
 
@@ -146,15 +172,90 @@ Capability ID：`software.updatePolicy`
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` `[REVIEW-ASK]` | none | 要查询策略的软件对象。 |
 
-#### 返回结果 Result：`SoftwareUpdatePolicy`
+#### 3.1.2 Request d block Example (op=7)
 
-字段见 6.1。
+```json
+{
+  "id": 1,
+  "method": "software.getUpdatePolicy",
+  "params": {
+    "target": "launcher"
+  }
+}
+```
 
-#### `software.getUpdatePolicy` 候选错误
+读法：查询 Launcher 当前的自动更新策略。`target` 标识要查询的软件对象；当前草案仅定义了 `target: "launcher"` 的 policy 字段（见 6.2）。
+
+#### 3.1.3 返回结果 Result：`SoftwareUpdatePolicy`
+
+字段见 6.1（`policy` 为 target-specific 动态对象，`target: "launcher"` 时字段见 6.2）。`schedule` / `conditions` 可为 `null`（显式清除）或 omitted（保持不变），null 语义见 6.2。
+
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 1,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "target": "launcher",
+    "policy": {
+      "updateMode": "auto",
+      "schedule": {
+        "start": "02:00",
+        "end": "06:00"
+      },
+      "channel": "release",
+      "conditions": {
+        "requireIdle": true,
+        "requireWifi": false
+      }
+    }
+  }
+}
+```
+
+读法：Launcher 配置为全自动更新，凌晨 2:00-6:00 执行，使用稳定通道，要求设备空闲。
+
+#### 3.1.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.1.6 错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
 | `NOT_SUPPORTED` | common | target 不支持。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 1,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Update policy is not supported for this target.",
+    "details": {
+      "field": "target"
+    }
+  }
+}
+```
+
+读法：`NOT_SUPPORTED`（0x0003），设备不支持指定 `target` 的更新策略查询，客户端应回退到默认策略或隐藏更新策略 UI。
+
+#### 3.1.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`。
+- query method MUST NOT 因查询本身触发状态变化事件。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ### 3.2 `software.setUpdatePolicy`
 
@@ -166,9 +267,9 @@ Capability ID：`software.updatePolicy`
 | Result Schema | 标准成功响应（无 result body） |
 | 事件触发 | 策略实际变化后触发 `software.updatePolicyChanged`。 |
 | 幂等性 | 否（写入操作） |
-| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED` |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `INVALID_STATE` |
 
-#### 请求参数 Params：`SoftwareSetUpdatePolicyParams`
+#### 3.2.1 请求参数 Params：`SoftwareSetUpdatePolicyParams`
 
 字段见 6.6。
 
@@ -177,20 +278,82 @@ Capability ID：`software.updatePolicy`
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
 | `policy` | object | yes | target-specific fields | none | 要设置的策略片段。未出现的字段保持不变。 |
 
-#### 返回结果
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 2,
+  "method": "software.setUpdatePolicy",
+  "params": {
+    "target": "launcher",
+    "policy": {
+      "updateMode": "auto",
+      "schedule": {
+        "start": "03:00",
+        "end": "05:00",
+        "timezone": "Asia/Shanghai"
+      },
+      "channel": "beta"
+    }
+  }
+}
+```
+
+读法：partial update 语义——只传需要修改的字段。本例将 Launcher 切换为 Beta 通道并设置更新窗口；`updateMode` / `conditions` 等未出现的字段保持不变（单字段 partial 更新见 §7.1，跨午夜 / null 清除见 §7.4）。`target: "launcher"` 时 policy 字段见 6.2。
+
+#### 3.2.3 返回结果 Result
 
 `software.setUpdatePolicy` 返回标准成功响应（无 `result` 字段）。调用者如需确认策略变化，可通过以下方式：
 
 1. 等待 `software.updatePolicyChanged` 事件获取变化后的完整策略。
 2. 调用 `software.getUpdatePolicy` 主动查询最新策略。
 
-#### 可能的事件
+#### 3.2.4 Success Response d block Example (op=8)
 
-| Event | 条件 |
-|---|---|
-| `software.updatePolicyChanged` | 策略实际变化时触发。 |
+```json
+{
+  "id": 2,
+  "status": {
+    "ok": true,
+    "code": 0
+  }
+}
+```
 
-#### `software.setUpdatePolicy` 候选错误
+读法：setUpdatePolicy 仅返回成功确认，不回传完整策略。策略变化通过 `software.updatePolicyChanged` 事件或后续 `software.getUpdatePolicy` 查询确认。
+
+#### 3.2.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `software.updatePolicyChanged` | 策略实际变化时触发。 | `SoftwareUpdatePolicyChangedEvent` | 刷新更新策略页面；必要时调用 `software.getUpdatePolicy` 校准（完整事件定义见 §4.1）。 |
+
+```json
+{
+  "event": "software.updatePolicyChanged",
+  "intent": 1,
+  "data": {
+    "target": "launcher",
+    "policy": {
+      "updateMode": "auto",
+      "schedule": {
+        "start": "03:00",
+        "end": "05:00",
+        "timezone": "Asia/Shanghai"
+      },
+      "channel": "beta",
+      "conditions": {
+        "requireIdle": true,
+        "requireWifi": false
+      }
+    },
+    "changedFields": ["schedule", "channel"],
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.2.6 错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
@@ -198,6 +361,33 @@ Capability ID：`software.updatePolicy`
 | `INVALID_ARGUMENT` | common | policy 字段值非法（如时间格式错误）。 |
 | `PERMISSION_DENIED` | common | 无权修改更新策略。 |
 | `INVALID_STATE` | common | 软件正在升级中，不允许修改更新策略。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 4,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Not supported.",
+    "details": {
+      "field": "policy.channel"
+    }
+  }
+}
+```
+
+读法：`NOT_SUPPORTED`（0x0003），设备不支持 Beta 通道，策略保持不变、不触发事件。其他失败码：参数非法（时间格式 `code: 10`）、权限不足（`code: 9`）、软件升级中（`code: 4`），见 §7.3。
+
+#### 3.2.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`。
+- 策略实际变化后 SHOULD 触发 `software.updatePolicyChanged`（op=6）；状态未变化时 MAY 成功返回且 MAY 不触发事件。
+- partial update 语义：未出现的字段保持不变；`schedule: null` / `conditions: null` 表示显式清除（见 6.2 null 语义）。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ### 3.3 `software.resetUpdatePolicy`
 
@@ -211,7 +401,7 @@ Capability ID：`software.updatePolicy`
 | 幂等性 | 是 |
 | 常见错误 | `NOT_SUPPORTED`, `PERMISSION_DENIED` |
 
-#### 请求参数 Params：`SoftwareResetUpdatePolicyParams`
+#### 3.3.1 请求参数 Params：`SoftwareResetUpdatePolicyParams`
 
 字段见 6.7。
 
@@ -219,23 +409,107 @@ Capability ID：`software.updatePolicy`
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 要恢复默认策略的软件对象。 |
 
-#### 返回结果 Result：`SoftwareUpdatePolicy`
+#### 3.3.2 Request d block Example (op=7)
 
-返回重置后的完整策略，省去额外 round-trip。字段见 6.1。
+```json
+{
+  "id": 3,
+  "method": "software.resetUpdatePolicy",
+  "params": {
+    "target": "launcher"
+  }
+}
+```
 
-#### 可能的事件
+读法：恢复 Launcher 出厂默认更新策略。reset 仅作用于更新策略本身，不影响软件/设备运行状态，也不等于系统级恢复出厂。
 
-| Event | 条件 |
-|---|---|
-| `software.updatePolicyChanged` | 策略实际变化时触发。reason 为 `restore_default`。 |
+#### 3.3.3 返回结果 Result：`SoftwareUpdatePolicy`
 
-#### `software.resetUpdatePolicy` 候选错误
+返回重置后的完整策略，省去额外 round-trip。字段见 6.1（`target: "launcher"` 时 policy 字段见 6.2）。
+
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 3,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "target": "launcher",
+    "policy": {
+      "updateMode": "auto",
+      "schedule": null,
+      "channel": "release",
+      "conditions": null
+    }
+  }
+}
+```
+
+读法：resetUpdatePolicy 返回重置后的完整策略（默认为自动更新、无时间窗口、稳定通道、无条件约束）。
+
+#### 3.3.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `software.updatePolicyChanged` | 策略实际变化时触发。reason 为 `restore_default`。 | `SoftwareUpdatePolicyChangedEvent` | 直接更新 UI；完整事件定义见 §4.1。 |
+
+```json
+{
+  "event": "software.updatePolicyChanged",
+  "intent": 1,
+  "data": {
+    "target": "launcher",
+    "policy": {
+      "updateMode": "auto",
+      "schedule": null,
+      "channel": "release",
+      "conditions": null
+    },
+    "changedFields": ["updateMode", "schedule", "channel", "conditions"],
+    "reason": "restore_default"
+  }
+}
+```
+
+读法：reset 触发的事件 reason 为 `"restore_default"`，`changedFields` 包含所有被重置的字段路径。
+
+#### 3.3.6 错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
 | `NOT_SUPPORTED` | common | target 不支持。 |
 | `PERMISSION_DENIED` | common | 无权重置更新策略。 |
 | `INVALID_STATE` | common | 软件正在升级中，不允许重置更新策略。 |
+
+#### 3.3.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 3,
+  "status": {
+    "ok": false,
+    "code": 9,
+    "msg": "Permission denied.",
+    "details": {
+      "field": "target"
+    }
+  }
+}
+```
+
+读法：`PERMISSION_DENIED`（0x0009），操作者对指定 `target` 无重置权限，策略保持不变、不触发事件。
+
+#### 3.3.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`。
+- 策略实际变化后 SHOULD 触发 `software.updatePolicyChanged`（op=6），reason 为 `"restore_default"`；状态未变化时 MAY 成功返回且 MAY 不触发事件。
+- `resetUpdatePolicy` 仅恢复更新策略，不触发软件重启或设备重启；系统级恢复出厂使用 `system.restoreFactorySettings`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ---
 
@@ -249,13 +523,18 @@ Capability ID：`software.updatePolicy`
 
 ### 4.1 `software.updatePolicyChanged`
 
+**触发条件**：
+
+- 更新策略被 `software.setUpdatePolicy` 修改。
+- 更新策略被 `software.resetUpdatePolicy` 重置（reason 为 `restore_default`，见 §3.3.5）。
+- 设备内部策略修改（reason 为 `device_policy`）。
+
 | 项 | 内容 |
 |---|---|
-| 触发条件 | 更新策略被 `software.setUpdatePolicy`、`software.resetUpdatePolicy` 或设备内部策略修改。 |
 | Payload Schema | `SoftwareUpdatePolicyChangedEvent` |
 | 客户端处理建议 | 局部更新 UI；必要时调用 `software.getUpdatePolicy` 获取完整策略校准。 |
 
-#### Payload：`SoftwareUpdatePolicyChangedEvent`
+#### 4.1.1 Payload：`SoftwareUpdatePolicyChangedEvent`
 
 字段见 6.8。
 
@@ -265,6 +544,53 @@ Capability ID：`software.updatePolicy`
 | `policy` | object | yes | target-specific fields | none | 变化后的完整策略。 |
 | `changedFields` | string[] | no | field paths（dot-notation） | omitted | 变化的字段路径列表。字段路径使用点号分隔嵌套层级，如 `"schedule.start"` 表示 `policy.schedule.start` 字段变化。 |
 | `reason` | string | no | `"user_request"`, `"restore_default"`, `"device_policy"`, `"unknown"` | `"unknown"` | 变化原因。 |
+
+#### 4.1.2 Event d block Example (op=6)
+
+```json
+{
+  "event": "software.updatePolicyChanged",
+  "intent": 1,
+  "data": {
+    "target": "launcher",
+    "policy": {
+      "updateMode": "auto",
+      "schedule": {
+        "start": "03:00",
+        "end": "05:00",
+        "timezone": "Asia/Shanghai"
+      },
+      "channel": "beta",
+      "conditions": {
+        "requireIdle": true,
+        "requireWifi": false
+      }
+    },
+    "changedFields": ["schedule", "channel"],
+    "reason": "user_request"
+  }
+}
+```
+
+读法：`policy` 为变化后的完整策略；`changedFields` 列出实际变化的字段路径（dot-notation）；`reason` 区分用户请求（`user_request`）、恢复默认（`restore_default`，见 §3.3.5）和设备内部策略（`device_policy`）。客户端可直接用 `policy` 更新 UI，事件丢失时调用 `software.getUpdatePolicy` 校准。
+
+#### 4.1.3 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| payload 是完整策略 | 可直接更新更新策略 UI 或本地缓存。 |
+| `changedFields` 指向部分字段 | 可局部刷新；需要完整状态时调用 `software.getUpdatePolicy` 校准。 |
+| event 丢失或重连 | 重连后主动调用 `software.getUpdatePolicy` 校准。 |
+| 多端同时控制 | 以事件 `policy` 为权威；冲突时以 `software.getUpdatePolicy` 校准。 |
+| `reason: "device_policy"` | 设备内部策略变化，UI 应同步展示。 |
+
+#### 4.1.4 规则
+
+- Event MUST 使用 `op=6`。
+- Event MUST NOT 携带 `d.id`。
+- Event payload MUST 放在 `d.data` 中。
+- `policy` 为变化后的完整策略（非片段）；`changedFields` 标注实际变化字段，便于客户端局部刷新。
+- 草案阶段不得分配正式 eventId 或 eventMasks bitOffset。
 
 ---
 
@@ -387,13 +713,15 @@ Capability name: `software.updatePolicy`。
 
 ---
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
-### 7.1 查询 Launcher 更新策略
+本章只展示多个 method/event 组成的端到端业务流程。单个 method 的 Request / Success Response / Error Response 示例见第 3 章；单个 event 的 Event 示例见第 4 章。每个 flow 引用 §3/§4 的 `d` block，点明调用顺序与状态变化。
 
-**场景**：运维人员查询 Launcher 当前的自动更新策略。
+### 7.1 场景：运维查询并修改 Launcher 更新策略
 
-请求：
+运维查询当前策略，按需做单字段 partial 更新（切换到 Beta 通道），通过事件校准。对应 `docs/flows/signage-device-management.md` 阶段 2/4。
+
+#### Step 1. software.getUpdatePolicy：Request d block (op=7)
 
 ```json
 {
@@ -405,16 +733,46 @@ Capability name: `software.updatePolicy`。
 }
 ```
 
-响应：
+#### Step 2. software.getUpdatePolicy：Success Response d block (op=8)
+
+完整成功响应见 §3.1.4（`updateMode: "auto"`、`channel: "release"`、凌晨窗口）。运维比对差异后决定仅切换通道。
+
+#### Step 3. software.setUpdatePolicy（partial 更新通道）：Request d block (op=7)
 
 ```json
 {
-  "id": 1,
+  "id": 5,
+  "method": "software.setUpdatePolicy",
+  "params": {
+    "target": "launcher",
+    "policy": {
+      "channel": "beta"
+    }
+  }
+}
+```
+
+读法：partial update 语义——只传需要修改的 `channel` 字段，`updateMode`、`schedule` 和 `conditions` 保持不变。
+
+#### Step 4. software.setUpdatePolicy：Success Response d block (op=8)
+
+```json
+{
+  "id": 5,
   "status": {
     "ok": true,
     "code": 0
-  },
-  "result": {
+  }
+}
+```
+
+#### Step 5. software.updatePolicyChanged：Event d block (op=6)
+
+```json
+{
+  "event": "software.updatePolicyChanged",
+  "intent": 1,
+  "data": {
     "target": "launcher",
     "policy": {
       "updateMode": "auto",
@@ -422,165 +780,25 @@ Capability name: `software.updatePolicy`。
         "start": "02:00",
         "end": "06:00"
       },
-      "channel": "release",
+      "channel": "beta",
       "conditions": {
         "requireIdle": true,
         "requireWifi": false
       }
-    }
+    },
+    "changedFields": ["channel"],
+    "reason": "user_request"
   }
 }
 ```
 
-**读法**：Launcher 配置为全自动更新，凌晨 2:00-6:00 执行，使用稳定通道，要求设备空闲。
+读法：set 成功后仅返回 status 确认（无 result body）；客户端通过此事件或后续 `software.getUpdatePolicy` 确认 `channel` 已切到 `"beta"`，其余字段保持不变。
 
-### 7.2 设置 Launcher 更新策略
+### 7.2 场景：恢复默认更新策略
 
-**场景**：运维人员将 Launcher 切换为 Beta 通道，设置更新窗口。
+运维将 Launcher 更新策略恢复为出厂默认，对应"重置策略"场景。
 
-请求：
-
-```json
-{
-  "id": 2,
-  "method": "software.setUpdatePolicy",
-  "params": {
-    "target": "launcher",
-    "policy": {
-      "updateMode": "auto",
-      "schedule": {
-        "start": "03:00",
-        "end": "05:00",
-        "timezone": "Asia/Shanghai"
-      },
-      "channel": "beta"
-    }
-  }
-}
-```
-
-响应：
-
-```json
-{
-  "id": 2,
-  "status": {
-    "ok": true,
-    "code": 0
-  }
-}
-```
-
-**读法**：setUpdatePolicy 仅返回成功确认，不回传完整策略。策略变化通过 `software.updatePolicyChanged` 事件或后续 `software.getUpdatePolicy` 查询确认。
-
-### 7.2b 部分更新（仅修改通道）
-
-**场景**：运维人员仅将更新通道从 `"release"` 切换到 `"beta"`，不修改其他策略字段。
-
-请求：
-
-```json
-{
-  "id": 5,
-  "method": "software.setUpdatePolicy",
-  "params": {
-    "target": "launcher",
-    "policy": {
-      "channel": "beta"
-    }
-  }
-}
-```
-
-响应：
-
-```json
-{
-  "id": 5,
-  "status": {
-    "ok": true,
-    "code": 0
-  }
-}
-```
-
-**读法**：partial update 语义——只传需要修改的 `channel` 字段，`updateMode`、`schedule` 和 `conditions` 保持不变。设置成功后可通过 `software.updatePolicyChanged` 事件或 `software.getUpdatePolicy` 确认策略变化。
-
-### 7.2c 跨午夜 schedule
-
-**场景**：运维人员将更新窗口设置为夜间 22:00 到次日 06:00（跨午夜）。
-
-请求：
-
-```json
-{
-  "id": 6,
-  "method": "software.setUpdatePolicy",
-  "params": {
-    "target": "launcher",
-    "policy": {
-      "schedule": {
-        "start": "22:00",
-        "end": "06:00"
-      }
-    }
-  }
-}
-```
-
-响应：
-
-```json
-{
-  "id": 6,
-  "status": {
-    "ok": true,
-    "code": 0
-  }
-}
-```
-
-**读法**：`end < start` 表示跨午夜窗口（22:00 当天到次日 06:00）。仅修改 `schedule`，其余策略字段保持不变。跨午夜语义采纳前仍需确认。`[REVIEW-ASK]`
-
-### 7.2d 显式 null 清除
-
-**场景**：运维人员显式清除更新时间窗口并移除所有前置条件。
-
-请求：
-
-```json
-{
-  "id": 7,
-  "method": "software.setUpdatePolicy",
-  "params": {
-    "target": "launcher",
-    "policy": {
-      "schedule": null,
-      "conditions": null
-    }
-  }
-}
-```
-
-响应：
-
-```json
-{
-  "id": 7,
-  "status": {
-    "ok": true,
-    "code": 0
-  }
-}
-```
-
-**读法**：`schedule: null` 显式清除时间窗口（不限制更新时间）；`conditions: null` 显式清除所有前置条件。`null` 与 omitted 不同：omitted 表示"保持不变"，`null` 表示"显式清除"。设置成功后 `software.getUpdatePolicy` 应返回 `schedule: null` 和 `conditions: null`。
-
-### 7.3 恢复 Launcher 默认更新策略
-
-**场景**：运维人员恢复 Launcher 出厂默认策略。
-
-请求：
+#### Step 1. software.resetUpdatePolicy：Request d block (op=7)
 
 ```json
 {
@@ -592,145 +810,25 @@ Capability name: `software.updatePolicy`。
 }
 ```
 
-响应：
+#### Step 2. software.resetUpdatePolicy：Success Response d block (op=8)
 
-```json
-{
-  "id": 3,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "target": "launcher",
-    "policy": {
-      "updateMode": "auto",
-      "schedule": null,
-      "channel": "release",
-      "conditions": null
-    }
-  }
-}
-```
+完整成功响应见 §3.3.4（`updateMode: "auto"`、`schedule: null`、`channel: "release"`、`conditions: null`）。
 
-**读法**：resetUpdatePolicy 返回重置后的完整策略（默认为自动更新、无时间窗口、稳定通道、无条件约束）。
+#### Step 3. software.updatePolicyChanged：Event d block (op=6)
 
-### 7.3b 恢复默认策略触发事件
+完整事件见 §3.3.5（`reason: "restore_default"`，`changedFields` 含全部被重置字段）。
 
-**场景**：`software.resetUpdatePolicy` 成功后触发 `software.updatePolicyChanged` 事件。
+读法：reset 返回重置后的完整策略（省去额外 round-trip），并触发 reason 为 `"restore_default"` 的事件。reset 仅作用于更新策略，不触发软件/设备重启；系统级恢复出厂使用 `system.restoreFactorySettings`。权限不足时返回 `PERMISSION_DENIED`（见 §3.3.7）。
 
-```json
-{
-  "event": "software.updatePolicyChanged",
-  "intent": 1,
-  "data": {
-    "target": "launcher",
-    "policy": {
-      "updateMode": "auto",
-      "schedule": null,
-      "channel": "release",
-      "conditions": null
-    },
-    "changedFields": ["updateMode", "schedule", "channel", "conditions"],
-    "reason": "restore_default"
-  }
-}
-```
+### 7.3 场景：失败请求不触发事件
 
-**读法**：reset 触发的事件 reason 为 `"restore_default"`，`changedFields` 包含所有被重置的字段路径。
+设置请求失败时，策略保持不变且不触发 `software.updatePolicyChanged` 事件。
 
-### 7.4 策略变化事件
+#### Step 1. software.setUpdatePolicy 参数非法（INVALID_ARGUMENT）：Request + Error d block
 
-**场景**：云端通过 setPolicy 修改了 Launcher 更新策略。
+请求（`schedule.start` 小时越界）见 §3.2.6 错误表对应场景；完整 Request/Response：
 
-```json
-{
-  "event": "software.updatePolicyChanged",
-  "intent": 1,
-  "data": {
-    "target": "launcher",
-    "policy": {
-      "updateMode": "auto",
-      "schedule": {
-        "start": "03:00",
-        "end": "05:00",
-        "timezone": "Asia/Shanghai"
-      },
-      "channel": "beta",
-      "conditions": {
-        "requireIdle": true,
-        "requireWifi": false
-      }
-    },
-    "changedFields": ["schedule", "channel"],
-    "reason": "user_request"
-  }
-}
-```
-
-### 7.5 失败响应
-
-**场景**：不支持 Beta 通道。
-
-```json
-{
-  "id": 4,
-  "status": {
-    "ok": false,
-    "code": 3,
-    "msg": "Not supported.",
-    "details": {
-      "field": "policy.channel"
-    }
-  }
-}
-```
-
-### 7.5b 权限不足
-
-**场景**：操作者无权修改更新策略。
-
-```json
-{
-  "id": 8,
-  "status": {
-    "ok": false,
-    "code": 9,
-    "msg": "Permission denied.",
-    "details": {
-      "field": "target"
-    }
-  }
-}
-```
-
-**读法**：`code: 9` 对应 `PERMISSION_DENIED` (0x0009)。操作者对指定 target 无修改权限。
-
-### 7.5c 软件升级中
-
-**场景**：软件正在升级中，不允许修改更新策略。
-
-```json
-{
-  "id": 9,
-  "status": {
-    "ok": false,
-    "code": 4,
-    "msg": "Operation not allowed in current state.",
-    "details": {
-      "reason": "software_updating"
-    }
-  }
-}
-```
-
-**读法**：`code: 4` 对应 `INVALID_STATE` (0x0004)。设备当前正在执行软件更新，策略修改需等待更新完成。
-
-### 7.5d 参数非法（INVALID_ARGUMENT）
-
-**场景**：运维人员设置的更新窗口时间格式不匹配 `HH:mm`（如 `"25:00"`，小时越界）。
-
-请求：
+Request d block (op=7)：
 
 ```json
 {
@@ -748,7 +846,7 @@ Capability name: `software.updatePolicy`。
 }
 ```
 
-响应：
+Error Response d block (op=8)：
 
 ```json
 {
@@ -765,7 +863,115 @@ Capability name: `software.updatePolicy`。
 }
 ```
 
-**读法**：`code: 10` 对应 `INVALID_ARGUMENT` (0x000A)。`schedule.start` 不匹配 `^([01]\d|2[0-3]):[0-5]\d$`，返回参数非法错误；设备策略保持不变。
+读法：`code: 10` 对应 `INVALID_ARGUMENT`（0x000A），`schedule.start` 不匹配 `^([01]\d|2[0-3]):[0-5]\d$`，返回参数非法错误；设备策略保持不变，不触发事件。
+
+#### Step 2. software.setUpdatePolicy 权限不足（PERMISSION_DENIED）：Error d block (op=8)
+
+```json
+{
+  "id": 8,
+  "status": {
+    "ok": false,
+    "code": 9,
+    "msg": "Permission denied.",
+    "details": {
+      "field": "target"
+    }
+  }
+}
+```
+
+读法：`code: 9` 对应 `PERMISSION_DENIED`（0x0009），操作者对指定 `target` 无修改权限；策略不变，不触发事件。
+
+#### Step 3. software.setUpdatePolicy 软件升级中（INVALID_STATE）：Error d block (op=8)
+
+```json
+{
+  "id": 9,
+  "status": {
+    "ok": false,
+    "code": 4,
+    "msg": "Operation not allowed in current state.",
+    "details": {
+      "reason": "software_updating"
+    }
+  }
+}
+```
+
+读法：`code: 4` 对应 `INVALID_STATE`（0x0004），设备当前正在执行软件更新，策略修改需等待更新完成；策略不变，不触发事件。
+
+读法（本场景总结）：三类失败（参数非法 / 权限不足 / 升级中）均返回非零 `code`、不携带业务 `result`，且 MUST NOT 触发 `software.updatePolicyChanged` 事件。`NOT_SUPPORTED`（如不支持 Beta 通道，见 §3.2.7）同理。
+
+### 7.4 场景：跨午夜 schedule 与显式 null 清除
+
+schedule 边界场景：跨午夜时间窗口，以及显式清除时间窗口与前置条件。
+
+#### Step 1. software.setUpdatePolicy 跨午夜 schedule：Request + Success d block
+
+Request d block (op=7)：
+
+```json
+{
+  "id": 6,
+  "method": "software.setUpdatePolicy",
+  "params": {
+    "target": "launcher",
+    "policy": {
+      "schedule": {
+        "start": "22:00",
+        "end": "06:00"
+      }
+    }
+  }
+}
+```
+
+Success Response d block (op=8)：
+
+```json
+{
+  "id": 6,
+  "status": {
+    "ok": true,
+    "code": 0
+  }
+}
+```
+
+读法：`end < start` 表示跨午夜窗口（22:00 当天到次日 06:00）。仅修改 `schedule`，其余策略字段保持不变。跨午夜语义采纳前仍需确认。`[REVIEW-ASK]`
+
+#### Step 2. software.setUpdatePolicy 显式 null 清除：Request + Success d block
+
+Request d block (op=7)：
+
+```json
+{
+  "id": 7,
+  "method": "software.setUpdatePolicy",
+  "params": {
+    "target": "launcher",
+    "policy": {
+      "schedule": null,
+      "conditions": null
+    }
+  }
+}
+```
+
+Success Response d block (op=8)：
+
+```json
+{
+  "id": 7,
+  "status": {
+    "ok": true,
+    "code": 0
+  }
+}
+```
+
+读法：`schedule: null` 显式清除时间窗口（不限制更新时间）；`conditions: null` 显式清除所有前置条件。`null` 与 omitted 不同：omitted 表示"保持不变"，`null` 表示"显式清除"。设置成功后 `software.getUpdatePolicy` 应返回 `schedule: null` 和 `conditions: null`。
 
 ---
 
@@ -940,6 +1146,8 @@ AXTP 请求（Adapter 输出）：
 | Method / event IDs | `TBD after adoption` |
 | Conformance | 需覆盖 get/set/reset 一致性、target 不支持、非法 channel、跨日 window、事件校准。 |
 
+> 完整采纳检查清单见 **附录 D**，本文以附录 D 为唯一权威源。
+
 ---
 
 ## 11. Test Notes
@@ -976,3 +1184,110 @@ AXTP 请求（Adapter 输出）：
 | Legacy classification 差异（`GetUpdateConfig` / `SetUpdateConfig`） | classification 准确性 | Classification CSV 归入 `firmware.updatePolicy`；flow 文档 re-classified 到 `software.updatePolicy`（正确）。需修正 classification 和 generated map。 | `[REVIEW-ASK]` |
 | Flow step 21 响应描述（setUpdatePolicy 是否返回完整策略） | flow / draft 一致性 | Flow 文档 step 16/19/21 已修正为"返回标准成功响应（无 result body）；触发对应 *Changed 事件"，与草案 `setUpdatePolicy` status-only 设计一致（原 step 编号曾误记为 step 20，实为 step 21）。本条闭环。 | `[REVIEW-RESOLVED]` |
 | `software.config` §8 错误码 | 跨草案一致性 | sibling 草案 `software.config` 已修正至 v0.5，§8 中 `PERMISSION_DENIED` / `INVALID_STATE` / `INVALID_ARGUMENT` 现为正确值 `0x0009` / `0x0004` / `0x000A`（见 `software.config` v0.5 错误码修正说明）。本草案 §8 Review 列同步对齐为已采纳复用码（标 `—`）。 | `[REVIEW-RESOLVED]` |
+
+---
+
+## 附录 A. 协议审核标记
+
+| 标记 | 条目 | 审核结论 | 后续动作 |
+|---|---|---|---|
+| `[REVIEW-DRAFT]` | `software.updatePolicy` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
+| `[REVIEW-RESOLVED]` | `software` 域名 | Taxonomy spec rule 2 为 "e.g." 措辞（非穷举列表），rule 8 允许新增 domain 且 MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入（本草案已在 flow steps 9/21 使用）。 | 采纳时无需 taxonomy amendment。与 `software.config` v0.5 一致。 |
+| `[REVIEW-ASK]` | `target` 枚举值 | 完整的 target 枚举值列表需要产品和设备确认。 | 采纳前补齐 target enum baseline。 |
+| `[REVIEW-ASK]` | 与 `firmware.updatePolicy` 的关系 | `firmware.updatePolicy` 已回退为 v0.1 骨架。两者是共存还是统一到 `software.updatePolicy(target: "firmware")`？ | 采纳前确认边界。 |
+| `[REVIEW-DRAFT]` | legacy 映射 | 已完成 evidence-based 字段映射。`GetUpdateConfig` / `SetUpdateConfig` 映射到 `software.updatePolicy(target: "launcher")`。采纳前确认 Adapter 层实现计划和分类差异。 | 采纳前确认分类差异修正和 Adapter 层实现计划。 |
+| `[REVIEW-RESOLVED]` | flow step 21 响应描述 | Flow 文档 step 21 原写"返回完整 SoftwareUpdatePolicy"，与草案 `setUpdatePolicy` 仅返回 status 确认（无 result body）不一致；flow step 16/19/21 现已统一修正为"返回标准成功响应（无 result body）；触发对应 *Changed 事件"。 | 已闭环，无需进一步动作。 |
+| `[REVIEW-ASK]` | Legacy classification 差异 | Legacy classification CSV 和 `firmware.md` 将 `GetUpdateConfig` / `SetUpdateConfig` 归入 `firmware.updatePolicy`；flow 文档 re-classified 到 `software.updatePolicy`（正确，因为这些是软件而非固件设置）。generated map 仍使用旧名 `update.getConfig` / `update.setConfig`。 | 分类修正和 generated map 更新需在采纳前处理。 |
+| `[REVIEW-RESOLVED]` | `software.config` §8 错误码 | sibling 草案 `software.config` 已修正至 v0.5，候选错误码现为正确 common 值（`0x0009` / `0x0004` / `0x000A`）。本草案 §8 Review 列同步对齐为 `—`（复用已采纳 common 码）。 | 无需进一步动作。 |
+
+## 附录 B. 协议决策
+
+| 决策点 | 结论 | 理由 |
+|---|---|---|
+| 新增/修改/复用 | Modify | 扩展现有 v0.x 草案；feature 边界正确，仅按 skill 规范对齐结构与补附录。 |
+| 域与命名 | `software.updatePolicy` | 落实 signage flow 对 legacy `GetUpdateConfig` / `SetUpdateConfig` 的最终定域：面向 Launcher / signagePlayer / agent 软件更新设置，非固件 OTA；固件策略保留 `firmware.updatePolicy`。 |
+| target 维度 | `target: "launcher"`（首批）/ `"signagePlayer"` / `"agent"` | 通过 target 区分软件对象，每个对象独立策略；完整枚举采纳前确认（见 §12）。 |
+| `setUpdatePolicy` 返回 | status-only（无 result body） | 与 `software.setConfig` pattern 一致；调用者通过 `software.updatePolicyChanged` 事件或后续 `getUpdatePolicy` 确认变化。 |
+| 更新语义 | partial update（未出现字段保持不变） | 精细化修改；与 legacy `SetUpdateConfig` 全量覆盖的差异由 Adapter 层处理（见 §9.2 / §9.4）。 |
+| null 语义 | `schedule: null` / `conditions: null` 显式清除；omitted 保持不变 | 与 omitted 区分；reset 默认策略二者均为 `null`。 |
+| `updateMode` | enum（`auto` / `manual` / `notify`） | 升级 legacy `autoUpdate`(bool)；覆盖"仅下载 / 仅通知"中间态。 |
+| 跨午夜窗口 | `end < start` 表示跨日（候选） | 采纳前确认（见 §12）。 |
+| `resetUpdatePolicy` 范围 | 仅恢复更新策略，不触发软件/设备重启 | 与系统级 `system.restoreFactorySettings` 区分。 |
+| 控制面 / 数据面 | RPC method/event；不使用 STREAM | 业务控制不进入 Frame Header；`PayloadType` 不编码业务语义。 |
+| WebSocket | RPC-only | `AXTP-WS-CLOUD-REVERSE` / `AXTP-WS-JSON` 不承载 STREAM。 |
+| 文档结构 | v0.8 对齐 skill + 模板 + 补附录 A–D | 与 `device.enrollment` / `signage.playlist` 金标准一致。 |
+
+## 附录 C. Registry 草案输入
+
+采纳本文后，`registry/domains/software/domain.yaml` 至少应包含（所有 numeric ID 为 `TBD after adoption`，不在此分配）：
+
+```yaml
+capabilities:
+  - name: software.updatePolicy
+    status: draft
+
+methods:
+  - name: software.getUpdatePolicy
+    id: TBD after adoption
+    bitOffset: TBD after adoption
+    rpc_op: request_response
+    requestSchema: SoftwareGetUpdatePolicyParams
+    responseSchema: SoftwareUpdatePolicy
+    capabilities:
+      - software.updatePolicy
+    errors:
+      - NOT_SUPPORTED
+  - name: software.setUpdatePolicy
+    id: TBD after adoption
+    bitOffset: TBD after adoption
+    rpc_op: request_response
+    requestSchema: SoftwareSetUpdatePolicyParams
+    # status-only：无 responseSchema
+    capabilities:
+      - software.updatePolicy
+    events:
+      - software.updatePolicyChanged
+    errors:
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - PERMISSION_DENIED
+      - INVALID_STATE
+  - name: software.resetUpdatePolicy
+    id: TBD after adoption
+    bitOffset: TBD after adoption
+    rpc_op: request_response
+    requestSchema: SoftwareResetUpdatePolicyParams
+    responseSchema: SoftwareUpdatePolicy
+    capabilities:
+      - software.updatePolicy
+    events:
+      - software.updatePolicyChanged
+    errors:
+      - NOT_SUPPORTED
+      - PERMISSION_DENIED
+      - INVALID_STATE
+
+events:
+  - name: software.updatePolicyChanged
+    id: TBD after adoption
+    schema: SoftwareUpdatePolicyChangedEvent
+    capabilities:
+      - software.updatePolicy
+```
+
+> software 域候选业务错误（若需 feature-specific errorCode）落点为 `registry/error/error_code.yaml` 中 software 域区段，编号 `TBD after adoption`；当前本草案全部复用已采纳 common 码（`NOT_SUPPORTED` / `INVALID_ARGUMENT` / `PERMISSION_DENIED` / `INVALID_STATE`），未引入候选业务错误。
+
+## 附录 D. 采纳检查清单
+
+- [ ] 01 已确认 `software.updatePolicy` domain.feature 边界（与 `firmware.updatePolicy` / `software.config` / `software.update` 的划分）。
+- [ ] 02 已确认 `target` 枚举完整值列表（`launcher` / `signagePlayer` / `agent` 是否够）。
+- [ ] 03 已确认 `updateMode` 枚举首批 P0 范围（`"auto"` / `"manual"` 必需，`"notify"` 是否纳入 P0）。
+- [ ] 04 已确认 methodId、bitOffset、request/response schema（`getUpdatePolicy` / `setUpdatePolicy` status-only / `resetUpdatePolicy`）。
+- [ ] 05 已确认 eventId、eventMasks bitOffset、`SoftwareUpdatePolicyChangedEvent` schema。
+- [ ] 06 已确认 errorCode 范围和错误归属（当前全部复用 common 码，无 feature-specific 候选）。
+- [ ] 07 已确认 `updateMode` 为 `manual` / `notify` 时 `schedule` 持久化语义。
+- [ ] 08 已确认 `schedule` 跨午夜（`end < start`）语义。
+- [ ] 09 已确认 `conditions` 是否需要标牌特有条件（如 `requirePlaybackIdle`）。
+- [ ] 10 已确认 schema fieldId、capabilityId、`supportedChannels` / `supportsSchedule` / `supportsReset`。
+- [ ] 11 已确认 Legacy classification 差异修正方案（CSV / firmware.md / generated map → `software.updatePolicy`）。
+- [ ] 12 YAML 写入后 Generator 能完整生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。

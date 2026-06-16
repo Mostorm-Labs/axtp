@@ -5,12 +5,12 @@ generated: false
 domain: software
 feature: software.config
 registry:
-lastReviewed: 2026-06-15
+lastReviewed: 2026-06-16
 ---
 
 # AXTP software.config 协议草案
 
-版本：v0.6
+版本：v0.7
 
 归属域：`software`
 
@@ -31,6 +31,13 @@ Capability ID：`software.config`
 | `[REVIEW-RESOLVED]` | `displayName` 归属 | `device.info.md`（line 185）确认 `displayName` 本轮只读返回、不提供写入接口；flow 文档 §11 已 REVIEW-RESOLVED。两草案一致：写入在 `software.config`、只读在 `device.info`。 | 采纳前最终确认。 |
 
 ---
+
+**v0.7 变更说明：**
+对齐 20-draft-business-protocol skill 与 `protocol-draft-template.md` 的 JSON 示例约定（业务语义、schema、错误码、legacy 映射、审核标记均不变），与已对齐的兄弟草案 `device.enrollment` v0.9 / `signage.playlist` v1.3 结构一致：
+(1) 在 §0 速读结论后新增 `## JSON 示例约定` 节（RPC envelope 速查 + op=6/7/8 表，声明示例默认 `APP_READY`、后续只展示 RPC `d` block、禁止 JSON-RPC 2.0 外层格式）。
+(2) 将原集中式第 7 节 9 个 JSON 示例迁移到各 method/event 小节：每个 method 补齐 Request / Success Response / Error Response `d block` 内联示例 + `错误` 小节 + `规则`；event 补齐 Event `d block` 示例 + 客户端处理建议 + `规则`。method/event 子标题改为带编号风格（`3.x.1`…`4.1.1`…），示例标题统一标注 `op=7` / `op=8` / `op=6`。
+(3) 第 7 节改为 `## 7. 交互流程示例 Flow Examples`，只保留端到端 flow（查询→修改→事件确认；恢复默认→事件）。
+(4) 本次不改 schema 定义（§6）、错误码（§8 数值已核实正确）、legacy 映射（§9）、能力边界（§2）、Capability（§5）、审核标记表；JSON 示例的业务内容（字段值、错误码、placeholder）原样迁移，只改位置、标题与「d block」称谓。
 
 **v0.6 变更说明：**
 (1) 补齐 per-method 候选错误表：§3.1 `software.getConfig` 新增候选错误表（`NOT_SUPPORTED` / `INVALID_ARGUMENT`）；§3.3 `software.resetConfig` 新增候选错误表（`NOT_SUPPORTED` / `PERMISSION_DENIED` / `INVALID_STATE`）。与兄弟草案 `software.updatePolicy` v0.6 的 per-method 错误表结构对齐。
@@ -65,6 +72,28 @@ Capability ID：`software.config`
 | Registry readiness | candidate |
 | Conformance | needed |
 | 主要未决问题 | `target` 枚举完整值列表（`signagePlayer`/`agent` 配置字段无证据，待产品）、`values` 是否需要按 target 展开强类型 schema、`displayName` 最大长度约束。`software` domain taxonomy 与 `displayName` 归属已关闭（见 §协议审核标记 / §12）。legacy `ResetConfig` 已确认映射到 `system.restoreFactorySettings`（见 Section 9）。 |
+
+---
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id`（取 `1`–`9` 等示例值）、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
 
 ---
 
@@ -116,7 +145,7 @@ Capability ID：`software.config`
 | 幂等性 | 是 |
 | 常见错误 | `NOT_SUPPORTED`（target 不支持），`INVALID_ARGUMENT` |
 
-#### 请求参数 Params：`SoftwareGetConfigParams`
+#### 3.1.1 请求参数 Params：`SoftwareGetConfigParams`
 
 字段见 6.4。
 
@@ -124,16 +153,87 @@ Capability ID：`software.config`
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` `[REVIEW-ASK]` | none | 要读取配置的软件对象。 |
 
-#### 返回结果 Result：`SoftwareConfig`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 1,
+  "method": "software.getConfig",
+  "params": {
+    "target": "launcher"
+  }
+}
+```
+
+读法：`target` 指定要读取的软件对象；本例查询 Launcher 配置（`displayName` + `appearance`）。
+
+#### 3.1.3 返回结果 Result：`SoftwareConfig`
 
 字段见 6.1。
 
-#### `software.getConfig` 候选错误
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 1,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "target": "launcher",
+    "config": {
+      "displayName": "Meeting Room A",
+      "appearance": {
+        "panelLayout": "sidebar",
+        "autoHidePanel": false,
+        "autoHideDelay": 5
+      }
+    }
+  }
+}
+```
+
+读法：`result.config` 为该 target 的完整配置片段（见 §6.1）；`displayName` 与 `device.info` 的 `product.displayName` 返回同值。
+
+#### 3.1.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 配置变化由 `software.configChanged` 表达（见 §4.1）。 |
+
+#### 3.1.6 错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
 | `NOT_SUPPORTED` | common | target 不支持。 |
 | `INVALID_ARGUMENT` | common | target 值非法。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 4,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Not supported.",
+    "details": {
+      "field": "target"
+    }
+  }
+}
+```
+
+读法：`NOT_SUPPORTED`（0x0003），设备不支持该 target（如 `"agent"` 尚未实现）；客户端应隐藏对应配置入口或回退到只读展示。
+
+#### 3.1.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`。
+- query method SHOULD NOT 因查询本身触发状态变化事件；配置变化由 `software.setConfig` / `software.resetConfig` 驱动（见 §3.2 / §3.3）。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ### 3.2 `software.setConfig`
 
@@ -147,7 +247,7 @@ Capability ID：`software.config`
 | 幂等性 | 否（写入操作） |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED` |
 
-#### 请求参数 Params：`SoftwareSetConfigParams`
+#### 3.2.1 请求参数 Params：`SoftwareSetConfigParams`
 
 字段见 6.5。
 
@@ -156,20 +256,77 @@ Capability ID：`software.config`
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
 | `config` | object | yes | target-specific fields | none | 要设置的配置片段。未出现的字段保持不变。 |
 
-#### 返回结果
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 2,
+  "method": "software.setConfig",
+  "params": {
+    "target": "launcher",
+    "config": {
+      "appearance": {
+        "panelLayout": "focus",
+        "autoHidePanel": true,
+        "autoHideDelay": 10
+      }
+    }
+  }
+}
+```
+
+读法：partial update 语义——只传需要修改的 `appearance` 字段，`displayName` 保持不变。仅修改 `displayName` 时传 `config: { "displayName": "Lobby Display" }`（见 §7.1 flow 与 §9.3 legacy 映射）；`appearance` 子对象字段含义见 §6.3。
+
+#### 3.2.3 返回结果 Result
 
 `software.setConfig` 返回标准成功响应（无 `result` 字段）。调用者如需确认配置变化，可通过以下方式：
 
 1. 等待 `software.configChanged` 事件获取变化后的完整配置。
 2. 调用 `software.getConfig` 主动查询最新配置。
 
-#### 可能的事件
+#### 3.2.4 Success Response d block Example (op=8)
 
-| Event | 条件 |
-|---|---|
-| `software.configChanged` | 配置实际变化时触发。 |
+```json
+{
+  "id": 2,
+  "status": {
+    "ok": true,
+    "code": 0
+  }
+}
+```
 
-#### `software.setConfig` 候选错误
+读法：成功响应仅含 status，无业务 result body；配置实际变化后由 `software.configChanged`（op=6）推送完整配置（见 §3.2.5）。
+
+#### 3.2.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `software.configChanged` | 配置实际变化时触发。 | `SoftwareConfigChangedEvent` | 可直接更新 UI；需要完整配置时调用 `software.getConfig` 校准（完整事件定义见 §4.1）。 |
+
+```json
+{
+  "event": "software.configChanged",
+  "intent": 1,
+  "data": {
+    "target": "launcher",
+    "config": {
+      "displayName": "Meeting Room A",
+      "appearance": {
+        "panelLayout": "focus",
+        "autoHidePanel": true,
+        "autoHideDelay": 10
+      }
+    },
+    "changedFields": ["appearance.panelLayout", "appearance.autoHidePanel", "appearance.autoHideDelay"],
+    "reason": "user_request"
+  }
+}
+```
+
+读法：本事件对应 §3.2.2 的 setConfig 调用（仅 `appearance` 变化），`displayName` 未变故不在 `changedFields` 中；`changedFields` 用点号路径标明变化的字段，`config` 为变化后的完整片段。多字段同时变化的事件形态见 §4.1.2。
+
+#### 3.2.6 错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
@@ -177,6 +334,50 @@ Capability ID：`software.config`
 | `INVALID_ARGUMENT` | common | config 字段值非法。 |
 | `PERMISSION_DENIED` | common | 无权修改配置。 |
 | `INVALID_STATE` | common | 软件正在升级或恢复中。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 8,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "field": "config.appearance.autoHideDelay",
+      "reason": "must_be_positive"
+    }
+  }
+}
+```
+
+读法：`INVALID_ARGUMENT`（0x000A），`autoHideDelay` 必须 `> 0`，传 `0` 返回参数非法；设备配置保持不变（见 §6.3 校验规则）。
+
+软件正在升级或恢复中时返回 `INVALID_STATE`（0x0004 / `code: 4`），`status.details.reason` 为 `"software_updating"`，配置修改需等待更新完成：
+
+```json
+{
+  "id": 7,
+  "status": {
+    "ok": false,
+    "code": 4,
+    "msg": "Operation not allowed in current state.",
+    "details": {
+      "reason": "software_updating"
+    }
+  }
+}
+```
+
+#### 3.2.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`。
+- 配置实际变化后 SHOULD 触发 `software.configChanged`（op=6）；配置未变化时 MAY 成功返回且 MAY 不触发事件（no-op）。
+- `config` 使用 partial update 语义：未出现的字段保持不变，`config` 对象本身不支持 `null`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ### 3.3 `software.resetConfig`
 
@@ -190,7 +391,7 @@ Capability ID：`software.config`
 | 幂等性 | 是（重复调用结果一致） |
 | 常见错误 | `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INVALID_STATE` |
 
-#### 请求参数 Params：`SoftwareResetConfigParams`
+#### 3.3.1 请求参数 Params：`SoftwareResetConfigParams`
 
 字段见 6.6。
 
@@ -198,23 +399,89 @@ Capability ID：`software.config`
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 要恢复默认配置的软件对象。 |
 
-#### 返回结果 Result：`SoftwareConfig`
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 3,
+  "method": "software.resetConfig",
+  "params": {
+    "target": "launcher"
+  }
+}
+```
+
+读法：仅恢复指定 target 的运行配置到当前版本默认值，不影响其他软件对象、系统配置或设备身份，不触发设备重启（系统级出厂恢复使用 `system.restoreFactorySettings`，见 §9.4）。
+
+#### 3.3.3 返回结果 Result：`SoftwareConfig`
 
 返回重置后的完整配置，省去额外 round-trip。字段见 6.1。
 
-#### 可能的事件
+#### 3.3.4 Success Response d block Example (op=8)
 
-| Event | 条件 |
-|---|---|
-| `software.configChanged` | 配置实际变化时触发。reason 为 `restore_default`。 |
+```json
+{
+  "id": 3,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "target": "launcher",
+    "config": {
+      "displayName": "NearHub Display Controller",
+      "appearance": {
+        "panelLayout": "sidebar",
+        "autoHidePanel": false,
+        "autoHideDelay": 5
+      }
+    }
+  }
+}
+```
 
-#### `software.resetConfig` 候选错误
+读法：`resetConfig` 恢复所有配置到出厂默认值（`displayName` 恢复为设备出厂名称、`appearance` 恢复为默认值），返回完整配置。`[REVIEW-ASK]` resetConfig 是否也重置 `displayName`。
+
+#### 3.3.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `software.configChanged` | 配置实际变化时触发，`reason` 为 `restore_default`。 | `SoftwareConfigChangedEvent` | 用 result 或事件 payload 更新 UI（完整事件定义见 §4.1）。 |
+
+#### 3.3.6 错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
 | `NOT_SUPPORTED` | common | target 不支持。 |
 | `PERMISSION_DENIED` | common | 无权重置配置。 |
 | `INVALID_STATE` | common | 软件正在升级或恢复中。 |
+
+#### 3.3.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 6,
+  "status": {
+    "ok": false,
+    "code": 9,
+    "msg": "Permission denied.",
+    "details": {
+      "field": "target"
+    }
+  }
+}
+```
+
+读法：`PERMISSION_DENIED`（0x0009），操作者对指定 target 无重置权限；软件升级或恢复中时返回 `INVALID_STATE`（0x0004 / `code: 4`）。
+
+#### 3.3.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`。
+- 配置实际变化后 SHOULD 触发 `software.configChanged`（op=6），`reason` 为 `restore_default`；已是默认配置时 MAY 成功返回且 MAY 不触发事件。
+- `software.resetConfig` 仅恢复指定 target 运行配置，MUST NOT 触发设备重启；系统级出厂恢复走 `system.restoreFactorySettings`（见 §9.4）。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ---
 
@@ -228,13 +495,18 @@ Capability ID：`software.config`
 
 ### 4.1 `software.configChanged`
 
+**触发条件**：
+
+- `software.setConfig` 导致配置实际变化（partial update，见 §3.2）。
+- `software.resetConfig` 恢复默认配置（`reason` 为 `restore_default`，见 §3.3）。
+- 设备内部策略修改软件配置（`reason` 为 `device_policy`）。
+
 | 项 | 内容 |
 |---|---|
-| 触发条件 | 软件配置被 `software.setConfig`、`software.resetConfig` 或设备内部策略修改。 |
 | Payload Schema | `SoftwareConfigChangedEvent` |
 | 客户端处理建议 | 局部更新 UI；必要时调用 `software.getConfig` 获取完整配置校准。 |
 
-#### Payload：`SoftwareConfigChangedEvent`
+#### 4.1.1 Payload：`SoftwareConfigChangedEvent`
 
 字段见 6.7。
 
@@ -244,6 +516,48 @@ Capability ID：`software.config`
 | `config` | object | yes | target-specific fields | none | 变化后的完整配置片段。 |
 | `changedFields` | string[] | no | field paths | omitted | 变化的字段路径列表。字段路径使用点号分隔嵌套层级，如 `"appearance.panelLayout"` 表示 `config.appearance.panelLayout` 字段变化。 |
 | `reason` | string | no | `"user_request"`, `"restore_default"`, `"device_policy"`, `"unknown"` | `"unknown"` | 变化原因。 |
+
+#### 4.1.2 Event d block Example (op=6)
+
+```json
+{
+  "event": "software.configChanged",
+  "intent": 1,
+  "data": {
+    "target": "launcher",
+    "config": {
+      "displayName": "Lobby Display",
+      "appearance": {
+        "panelLayout": "focus",
+        "autoHidePanel": true,
+        "autoHideDelay": 10
+      }
+    },
+    "changedFields": ["displayName", "appearance.panelLayout", "appearance.autoHidePanel", "appearance.autoHideDelay"],
+    "reason": "user_request"
+  }
+}
+```
+
+读法：本示例展示 `displayName` + `appearance` 同时变化的多字段 `changedFields`（对应一次同时修改两者的 `software.setConfig`）；`config` 为变化后的完整片段，`changedFields` 用点号路径标明具体变化字段。仅 `appearance` 变化的事件形态见 §3.2.5。
+
+#### 4.1.3 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| `config` 为完整片段 | 可直接更新对应 target 的 UI 或本地缓存。 |
+| 需要确认其他 target | 事件只覆盖 `target` 指定的对象；其他 target 调用 `software.getConfig` 校准。 |
+| event 丢失或重连 | 重连后主动调用 `software.getConfig` 校准。 |
+| 多端同时控制 | 以事件 `config` 为权威；冲突时以 `software.getConfig` 校准，用 `changedFields` 去重。 |
+
+#### 4.1.4 规则
+
+- Event MUST 使用 `op=6`。
+- Event MUST NOT 携带 `d.id`。
+- Event payload MUST 放在 `d.data` 中。
+- `config` 为变化后的完整配置片段（非变化 patch）；`changedFields` 用点号路径标明具体变化字段（如 `"appearance.panelLayout"`）。
+- `software.setConfig` 触发时 `reason` 为 `"user_request"`；`software.resetConfig` 触发时 `reason` 为 `"restore_default"`；设备内部策略触发时 `reason` 为 `"device_policy"`。
+- 草案阶段不得分配正式 eventId 或 eventMasks bitOffset。
 
 ---
 
@@ -374,13 +688,15 @@ Capability name: `software.config`。
 
 ---
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
-### 7.1 查询 Launcher 配置
+本章只展示多个 method/event 组成的端到端业务流程。单个 method 的 Request / Success Response / Error Response 示例见第 3 章；单个 event 的 Event 示例见第 4 章。每个 flow 引用 §3/§4 的 `d` block，点明调用顺序与状态变化。
 
-**场景**：运维人员查询当前 Launcher 外观配置。
+### 7.1 场景：查询外观 → 修改外观 → 事件确认
 
-请求：
+运维人员查询当前 Launcher 配置，切换面板布局为专注模式并启用自动隐藏，通过事件确认配置生效。对应 `docs/flows/signage-device-management.md` 阶段 2（配置同步）与阶段 4（设备管理）。
+
+#### Step 1. software.getConfig：Request d block (op=7)
 
 ```json
 {
@@ -392,36 +708,11 @@ Capability name: `software.config`。
 }
 ```
 
-响应：
+设备返回当前配置（完整成功响应见 §3.1.4）：`displayName: "Meeting Room A"`，`appearance: { panelLayout: "sidebar", autoHidePanel: false, autoHideDelay: 5 }`。
 
-```json
-{
-  "id": 1,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "target": "launcher",
-    "config": {
-      "displayName": "Meeting Room A",
-      "appearance": {
-        "panelLayout": "sidebar",
-        "autoHidePanel": false,
-        "autoHideDelay": 5
-      }
-    }
-  }
-}
-```
+#### Step 2. software.setConfig：Request d block (op=7)
 
-**读法**：target 为 `launcher`，设备显示名称为 "Meeting Room A"，当前使用侧边栏布局，面板不自动隐藏。`displayName` 与 `device.info` 的 `product.displayName` 返回相同值。
-
-### 7.2 设置 Launcher 外观配置
-
-**场景**：运维人员将面板布局切换为专注模式，并启用自动隐藏。
-
-请求：
+运维人员只修改 `appearance`（partial update，`displayName` 保持不变）：
 
 ```json
 {
@@ -440,58 +731,41 @@ Capability name: `software.config`。
 }
 ```
 
-响应：
+设备返回标准成功响应（完整响应见 §3.2.4，无 result body）。
+
+#### Step 3. software.configChanged：Event d block (op=6)
+
+配置实际变化触发事件（完整事件定义见 §4.1，本场景事件形态见 §3.2.5）：
 
 ```json
 {
-  "id": 2,
-  "status": {
-    "ok": true,
-    "code": 0
-  }
-}
-```
-
-**读法**：partial update 语义——只传需要修改的 `appearance` 字段，`displayName` 保持不变。设置成功后可调用 `software.getConfig` 获取最新配置，或等待 `software.configChanged` 事件。
-
-### 7.2b 设置 Launcher 设备显示名称
-
-**场景**：运维人员修改设备显示名称，不影响外观配置。
-
-请求：
-
-```json
-{
-  "id": 5,
-  "method": "software.setConfig",
-  "params": {
+  "event": "software.configChanged",
+  "intent": 1,
+  "data": {
     "target": "launcher",
     "config": {
-      "displayName": "Lobby Display"
-    }
+      "displayName": "Meeting Room A",
+      "appearance": {
+        "panelLayout": "focus",
+        "autoHidePanel": true,
+        "autoHideDelay": 10
+      }
+    },
+    "changedFields": ["appearance.panelLayout", "appearance.autoHidePanel", "appearance.autoHideDelay"],
+    "reason": "user_request"
   }
 }
 ```
 
-响应：
+读法：`changedFields` 仅含 `appearance.*`（`displayName` 未变）；客户端可直接用 `config` 更新 UI，或调用 `software.getConfig` 校准。多字段同时变化（含 `displayName`）的事件形态见 §4.1.2。
 
-```json
-{
-  "id": 5,
-  "status": {
-    "ok": true,
-    "code": 0
-  }
-}
-```
+> 若仅修改设备显示名称，Step 2 传 `config: { "displayName": "Lobby Display" }`（见 §9.3 legacy `SetDeviceName` 映射），事件 `changedFields` 为 `["displayName"]`，且 `device.info` 的 `product.displayName` 查询返回新值（跨 capability 同步）。
 
-**读法**：仅修改 `displayName`，`appearance` 保持不变。修改 `displayName` 后触发 `software.configChanged` 事件（`changedFields` 包含 `"displayName"`），同时 `device.info` 的 `product.displayName` 查询也返回新值。
+### 7.2 场景：恢复默认配置
 
-### 7.3 恢复 Launcher 默认配置
+运维人员恢复 Launcher 出厂默认配置，通过 result 和事件确认。对应 `docs/flows/signage-device-management.md` 阶段 4 步骤 23。
 
-**场景**：运维人员恢复 Launcher 出厂默认配置。
-
-请求：
+#### Step 1. software.resetConfig：Request d block (op=7)
 
 ```json
 {
@@ -503,7 +777,9 @@ Capability name: `software.config`。
 }
 ```
 
-响应：
+#### Step 2. software.resetConfig：Success Response d block (op=8)
+
+设备返回重置后的完整配置（见 §3.3.4）：
 
 ```json
 {
@@ -526,11 +802,11 @@ Capability name: `software.config`。
 }
 ```
 
-**读法**：resetConfig 恢复所有配置到出厂默认值（包括 `displayName` 恢复为设备出厂名称），返回完整配置，省去额外 round-trip。`[REVIEW-ASK]` resetConfig 是否也重置 `displayName`。
+读法：`resetConfig` 返回完整配置，省去额外 round-trip；`displayName` 恢复为设备出厂名称、`appearance` 恢复默认值。`[REVIEW-ASK]` resetConfig 是否也重置 `displayName`。
 
-### 7.4 配置变化事件
+#### Step 3. software.configChanged：Event d block (op=6)
 
-**场景**：云端通过 setConfig 修改了 Launcher 配置。
+配置实际变化触发事件，`reason` 为 `restore_default`（见 §3.3.5 / §4.1）：
 
 ```json
 {
@@ -539,117 +815,20 @@ Capability name: `software.config`。
   "data": {
     "target": "launcher",
     "config": {
-      "displayName": "Lobby Display",
+      "displayName": "NearHub Display Controller",
       "appearance": {
-        "panelLayout": "focus",
-        "autoHidePanel": true,
-        "autoHideDelay": 10
+        "panelLayout": "sidebar",
+        "autoHidePanel": false,
+        "autoHideDelay": 5
       }
     },
     "changedFields": ["displayName", "appearance.panelLayout", "appearance.autoHidePanel", "appearance.autoHideDelay"],
-    "reason": "user_request"
+    "reason": "restore_default"
   }
 }
 ```
 
-### 7.5 失败响应
-
-**场景**：target 不支持。
-
-```json
-{
-  "id": 4,
-  "status": {
-    "ok": false,
-    "code": 3,
-    "msg": "Not supported.",
-    "details": {
-      "field": "target"
-    }
-  }
-}
-```
-
-### 7.5b 权限不足
-
-**场景**：操作者无权修改该 target 的配置。
-
-```json
-{
-  "id": 6,
-  "status": {
-    "ok": false,
-    "code": 9,
-    "msg": "Permission denied.",
-    "details": {
-      "field": "target"
-    }
-  }
-}
-```
-
-**读法**：`code: 9` 对应 `PERMISSION_DENIED` (0x0009)。操作者对指定 target 无修改权限。
-
-### 7.5c 软件升级中
-
-**场景**：软件正在升级或恢复中，不允许配置变更。
-
-```json
-{
-  "id": 7,
-  "status": {
-    "ok": false,
-    "code": 4,
-    "msg": "Operation not allowed in current state.",
-    "details": {
-      "reason": "software_updating"
-    }
-  }
-}
-```
-
-**读法**：`code: 4` 对应 `INVALID_STATE` (0x0004)。设备当前正在执行软件更新，配置修改需等待更新完成。
-
-### 7.5d 参数非法（INVALID_ARGUMENT）
-
-**场景**：运维人员将自动隐藏延迟设为 `0`，违反 `autoHideDelay > 0` 约束。
-
-请求：
-
-```json
-{
-  "id": 8,
-  "method": "software.setConfig",
-  "params": {
-    "target": "launcher",
-    "config": {
-      "appearance": {
-        "autoHidePanel": true,
-        "autoHideDelay": 0
-      }
-    }
-  }
-}
-```
-
-响应：
-
-```json
-{
-  "id": 8,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid argument.",
-    "details": {
-      "field": "config.appearance.autoHideDelay",
-      "reason": "must_be_positive"
-    }
-  }
-}
-```
-
-**读法**：`code: 10` 对应 `INVALID_ARGUMENT` (0x000A)。`autoHideDelay` 必须 `> 0`，传 `0` 返回参数非法；设备配置保持不变。
+读法：客户端可用 Step 2 的 result 或本事件 payload 更新 UI。注意 `software.resetConfig` 仅恢复软件配置，不触发设备重启；系统级出厂恢复（含重启）走 `system.restoreFactorySettings`（见 §9.4）。
 
 ---
 

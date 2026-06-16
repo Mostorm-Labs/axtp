@@ -5,12 +5,12 @@ generated: false
 domain: signage
 feature: signage.playlist
 registry:
-lastReviewed: 2026-06-15
+lastReviewed: 2026-06-16
 ---
 
 # AXTP signage.playlist 协议草案
 
-版本：v1.2
+版本：v1.3
 
 归属域：`signage`
 
@@ -34,6 +34,7 @@ Capability ID：`signage.playlist`
 
 **变更历史：**
 
+- **v1.3** — 对齐 20-draft-business-protocol skill 与 `system.lifecycle.md` 范式（业务语义、schema、错误码、legacy 映射均不变）：(1) 在 §0 速读结论后新增 `## JSON 示例约定` 节（RPC envelope 速查 + op=6/7/8 表）；(2) 将原集中式第 7 节 14 个 JSON 示例迁移到各 method/event 小节，每个 method 补齐 Request / Success Response / Error Response `d block` 内联示例 + 错误表 + 规则，每个 event 补齐 Event `d block` 示例 + 客户端处理建议表 + 规则；(3) 第 7 节改为 `## 7. 交互流程示例 Flow Examples`，只保留端到端 flow；(4) method/event 子标题改为带编号风格（`3.x.1`…`4.1.1`…）。Item 标题统一标注 `op=7` / `op=8` / `op=6`。
 - **v1.2** — 格式修复与 per-method 结构补全：(1) 修复变更历史版本号顺序错乱，统一为倒序（原 v0.2–v0.7 为正序、v0.9/v0.8 为倒序，与顶部 v1.1/v1.0 倒序不一致）；(2) 为 `setPlaylistConfig` / `resetPlaylistConfig` 补 per-method「可能触发的事件」明细表，对齐标准 per-method 结构；(3) 统一 `setPlaylistConfig` 的 Result Schema 表述为「无 result body，仅返回标准 success status」。
 - **v1.1** — 完善内部一致性与播放语义：(1) §5 capability 描述符表补 `supportsReset`，与 `PlaylistCapabilitiesResult`（§3.1/§6.3）三处字段对齐；(2) §8 增补 `NOT_FOUND`（0x000C）common 码与「错误码双轨制说明」，澄清候选业务码与 JSON 示例借用 common 码的对应关系；(3) 新增 §2.1「播放调度语义」，定义 default/scheduled 共存优先级、scheduled 重叠冲突与空状态；(4) §6.5 补 `duration = 0` 与 `sort` 重复排序语义；(5) §6.5 website `ignoreCertificateError` 加安全敏感 `[REVIEW-ASK]`；(6) 新增 §7.14 `SIGNAGE_PLAYLIST_URL_EXPIRED` 失败示例；(7) §4.1 说明事件 payload schema 与 flow 文档表述差异；(8) §12 补本次新增 `[REVIEW-ASK]` 项。
 - **v1.0** — 结构完善：(1) 标题后新增元数据块（版本、归属域、Capability ID、适用范围），对齐 `device.enrollment` / `software.config` 等成熟草案模式；(2) 新增顶层"协议审核标记（人工复核）"节，提供快速概览；(3) 修复 §6.5 `Playlist` schema 条件必填规则块中断表格的格式问题。
@@ -60,6 +61,28 @@ Capability ID：`signage.playlist`
 | Registry readiness | candidate |
 | Conformance | needed |
 | 主要未决问题 | `PlaylistConfigChangedEvent` payload 是否携带完整 playlists、`ResetPlaylistConfigParams` 是否支持 scoped reset。 |
+
+---
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id`（取 `1`–`14` 等示例值）、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
 
 ---
 
@@ -121,23 +144,36 @@ Capability ID：`signage.playlist`
 
 ### 3.1 `signage.getPlaylistCapabilities`
 
+**用途**：查询 `signage.playlist` 能力范围，包括支持的播放项类型、数量限制和功能开关。
+
 | 项 | 内容 |
 |---|---|
-| 说明 | 查询 `signage.playlist` 能力范围，包括支持的播放项类型、数量限制和功能开关。 |
 | 调用类型 | query |
-| params | `PlaylistCapabilitiesParams` |
-| result | `PlaylistCapabilitiesResult` |
-| 触发事件 | 无 |
-| 幂等性 | 幂等只读查询。 |
-| 错误 | `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR` |
+| Params Schema | `PlaylistCapabilitiesParams` |
+| Result Schema | `PlaylistCapabilitiesResult` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前能力快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INTERNAL_ERROR` |
 
-#### 请求参数 Params：`PlaylistCapabilitiesParams`
+#### 3.1.1 请求参数 Params：`PlaylistCapabilitiesParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | *(无必填参数)* | | | | | 读取完整能力范围，无需过滤参数。 |
 
-#### 返回结果 Result：`PlaylistCapabilitiesResult`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 1,
+  "method": "signage.getPlaylistCapabilities",
+  "params": {}
+}
+```
+
+读法：请求为空，返回设备支持的播放项类型集合、数量限制与功能开关。`id` 由调用方分配且非零。
+
+#### 3.1.3 返回结果 Result：`PlaylistCapabilitiesResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -148,49 +184,389 @@ Capability ID：`signage.playlist`
 | `supportsUrlRefresh` | boolean | yes | `true`, `false` | none | 是否支持播放项资源 URL 刷新（`getPlaylistItemUrl`）。 |
 | `supportsReset` | boolean | yes | `true`, `false` | none | 是否支持恢复默认播放列表（`resetPlaylistConfig`）。 |
 
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 1,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "supportedItemTypes": ["image", "website", "video", "clock", "unsplash"],
+    "maxPlaylists": 10,
+    "maxItemsPerPlaylist": 50,
+    "supportsScheduledPlaylist": true,
+    "supportsUrlRefresh": true,
+    "supportsReset": true
+  }
+}
+```
+
+读法：`supportedItemTypes` 告诉调用方该设备支持哪些播放项类型；`supportsUrlRefresh: true` 表示设备会主动调用 `getPlaylistItemUrl` 刷新过期 URL。
+
+#### 3.1.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.1.6 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持 `signage.playlist` 能力。 | 返回 unsupported capability。 |
+| `INTERNAL_ERROR` | 设备读取能力信息失败。 | 返回内部错误，调用方可稍后重试。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 1,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "signage.playlist capability is not supported."
+  }
+}
+```
+
+读法：失败响应使用 `op=8`，`id` 回显请求 `id`，`status.ok=false` 且不携带业务 `result`。`code: 3` 对应 common `NOT_SUPPORTED`（0x0003）。
+
+#### 3.1.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
 ### 3.2 `signage.getPlaylistConfig`
+
+**用途**：查询当前播放列表配置。返回设备当前持有的完整播放列表数组。
 
 | 项 | 内容 |
 |---|---|
-| 说明 | 查询当前播放列表配置。返回设备当前持有的完整播放列表数组。 |
 | 调用类型 | query |
-| params | `GetPlaylistConfigParams` |
-| result | `PlaylistConfigResult` |
-| 触发事件 | 无 |
-| 幂等性 | 幂等只读查询。 |
-| 错误 | `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR` |
+| Params Schema | `GetPlaylistConfigParams` |
+| Result Schema | `PlaylistConfigResult` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前配置快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INTERNAL_ERROR` |
 
-#### 请求参数 Params：`GetPlaylistConfigParams`
+#### 3.2.1 请求参数 Params：`GetPlaylistConfigParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | *(无必填参数)* | | | | | 读取完整配置，无需过滤参数。 |
 
-#### 返回结果 Result：`PlaylistConfigResult`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 2,
+  "method": "signage.getPlaylistConfig",
+  "params": {}
+}
+```
+
+读法：请求为空，返回设备当前持有的完整 `playlists` 数组（含所有 `default` / `scheduled` 列表及其播放项）。
+
+#### 3.2.3 返回结果 Result：`PlaylistConfigResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `playlists` | `Playlist[]` | yes | see `Playlist` schema | none | 当前播放列表配置数组。空数组表示无播放列表。 |
 
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 2,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "playlists": []
+  }
+}
+```
+
+读法：空 `playlists` 表示设备当前无播放列表（显示空状态），不视为错误。
+
+#### 3.2.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.2.6 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持 `signage.playlist` 能力。 | 返回 unsupported capability。 |
+| `INTERNAL_ERROR` | 设备读取播放列表配置失败。 | 返回内部错误，调用方可稍后重试。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 2,
+  "status": {
+    "ok": false,
+    "code": 14,
+    "msg": "Failed to read playlist config."
+  }
+}
+```
+
+读法：`code: 14` 对应 common `INTERNAL_ERROR`（0x000E）。失败响应不携带业务 `result`。
+
+#### 3.2.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
 ### 3.3 `signage.setPlaylistConfig`
+
+**用途**：全量替换播放列表配置。服务端是唯一权威，设备不编辑播放列表。第二次全量下发删除旧配置中未出现的播放项。
 
 | 项 | 内容 |
 |---|---|
-| 说明 | 全量替换播放列表配置。服务端是唯一权威，设备不编辑播放列表。第二次全量下发删除旧配置中未出现的播放项。 |
 | 调用类型 | command |
-| params | `SetPlaylistConfigParams` |
-| result | *(无 result body，仅返回标准 success status)* |
-| 触发事件 | 成功后触发 `playlistConfigChanged`。 |
-| 幂等性 | 连续相同参数调用产生相同终态；每次调用仍是硬替换。 |
-| 错误 | `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `SIGNAGE_PLAYLIST_EMPTY` |
+| Params Schema | `SetPlaylistConfigParams` |
+| Result Schema | *(无 result body，仅返回标准 success status)* |
+| 是否触发事件 | 是，全量替换成功后触发 `signage.playlistConfigChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；连续相同参数调用产生相同终态，可不重复触发事件。每次调用仍是硬替换。 |
+| 常见错误 | `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `SIGNAGE_PLAYLIST_EMPTY` |
 
-#### 请求参数 Params：`SetPlaylistConfigParams`
+#### 3.3.1 请求参数 Params：`SetPlaylistConfigParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `playlists` | `Playlist[]` | yes | see `Playlist` schema | none | 播放列表配置数组。非空。 |
 
-#### 方法错误
+#### 3.3.2 Request d block Example (op=7)
+
+主示例（`default` 类型播放列表，含 image / video / website / unsplash 四种播放项）：
+
+```json
+{
+  "id": 3,
+  "method": "signage.setPlaylistConfig",
+  "params": {
+    "playlists": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "default",
+        "items": [
+          {
+            "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "type": "image",
+            "duration": 60,
+            "sort": 0,
+            "settings": {
+              "urls": ["https://example.com/resource/file-1.jpg", "https://example.com/resource/file-2.jpg"],
+              "delaySeconds": 5,
+              "expiresAt": 1704067200
+            }
+          },
+          {
+            "id": "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
+            "type": "video",
+            "duration": 120,
+            "sort": 1,
+            "settings": {
+              "url": "https://example.com/resource/video-1",
+              "expiresAt": 1704153600,
+              "muted": false
+            }
+          },
+          {
+            "id": "6ba7b812-9dad-11d1-80b4-00c04fd430c8",
+            "type": "website",
+            "duration": 300,
+            "sort": 2,
+            "settings": {
+              "url": "https://example.com",
+              "ignoreCertificateError": false,
+              "refreshIntervalSecs": 300
+            }
+          },
+          {
+            "id": "6ba7b813-9dad-11d1-80b4-00c04fd430c8",
+            "type": "unsplash",
+            "duration": 60,
+            "sort": 3,
+            "settings": {
+              "photos": [
+                {
+                  "url": "https://images.unsplash.example.com/photo-1",
+                  "user": { "name": "Alice Photographer", "link": "https://unsplash.example.com/@alice" }
+                },
+                {
+                  "url": "https://images.unsplash.example.com/photo-2",
+                  "user": { "name": "Bob Photographer", "link": "https://unsplash.example.com/@bob" }
+                }
+              ],
+              "delaySeconds": 10,
+              "expiresAt": 1704240000
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+补充 Request 示例 A — `default` + `scheduled` 共存，展示 scheduled 时间约束（周一到周五 09:00–18:00）：
+
+```json
+{
+  "id": 4,
+  "method": "signage.setPlaylistConfig",
+  "params": {
+    "playlists": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "default",
+        "items": [
+          {
+            "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "type": "image",
+            "duration": 60,
+            "sort": 0,
+            "settings": {
+              "urls": ["https://example.com/resource/default-bg.jpg"],
+              "delaySeconds": 5,
+              "expiresAt": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "660e8400-e29b-41d4-a716-446655440001",
+        "type": "scheduled",
+        "startDate": "2026-01-01",
+        "endDate": "2026-12-31",
+        "startTime": "09:00:00",
+        "endTime": "18:00:00",
+        "days": [1, 2, 3, 4, 5],
+        "items": [
+          {
+            "id": "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "type": "video",
+            "duration": 300,
+            "sort": 0,
+            "settings": {
+              "url": "https://example.com/resource/work-hours-content.mp4",
+              "expiresAt": 1735689600,
+              "muted": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+读法：`startDate` < `endDate`，`startTime < endTime` 落在同一天内（不跨午夜）；`days` 指定周一到周五生效。`scheduled` 命中时间窗口时优先播放，否则回落 `default`（见 §2.1）。
+
+补充 Request 示例 B — `clock` 类型播放项（无远程 URL 资源，`settings` 只含 `clocks`）：
+
+```json
+{
+  "id": 5,
+  "method": "signage.setPlaylistConfig",
+  "params": {
+    "playlists": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "default",
+        "items": [
+          {
+            "id": "8ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "type": "clock",
+            "duration": 600,
+            "sort": 0,
+            "settings": {
+              "clocks": [
+                { "timezone": "Asia/Shanghai", "label": "北京" },
+                { "timezone": "America/New_York", "label": "纽约" },
+                { "timezone": "Europe/London", "label": "伦敦" }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+读法：`clock` 类型不依赖远程 URL，`getPlaylistItemUrl` 对 `clock` 返回 `NOT_SUPPORTED`。
+
+#### 3.3.3 返回结果 Result
+
+全量替换成功后**无 result body**，仅返回标准 success status。设备随后触发 `signage.playlistConfigChanged`。
+
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 3,
+  "status": {
+    "ok": true,
+    "code": 0
+  }
+}
+```
+
+读法：成功响应只有 `status`，不携带业务 `result`；调用方通过 `getPlaylistConfig` 或等待 `playlistConfigChanged` 事件确认落地。
+
+#### 3.3.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `signage.playlistConfigChanged` | `setPlaylistConfig` 全量替换成功。 | `PlaylistConfigChangedEvent` | 标记本地播放列表缓存失效；需要完整配置时调用 `signage.getPlaylistConfig` 校准。 |
+
+该方法成功后 SHOULD 触发 `signage.playlistConfigChanged`，事件 `d` block 示例（`reason: "set_config"`）：
+
+```json
+{
+  "event": "signage.playlistConfigChanged",
+  "intent": 1,
+  "data": {
+    "reason": "set_config",
+    "playlists": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "default",
+        "items": [
+          {
+            "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "type": "image",
+            "duration": 60,
+            "sort": 0,
+            "settings": {
+              "urls": ["https://example.com/resource/file-1.jpg"],
+              "delaySeconds": 5,
+              "expiresAt": 1704067200
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+读法：`reason` 标明变更由 `setPlaylistConfig` 触发。`playlists` 可选携带变更后完整配置，客户端可直接使用，也可省略后通过 `getPlaylistConfig` 获取（见 §4.1）。
+
+#### 3.3.6 错误
 
 | Error | Code | 触发条件 |
 |---|---|---|
@@ -200,61 +576,188 @@ Capability ID：`signage.playlist`
 | `NOT_SUPPORTED` | 0x0003 | 设备不支持 `signage.playlist` 能力或当前模式不可写。 |
 | `PERMISSION_DENIED` | 0x0009 | 调用方无权修改播放列表配置。 |
 
-#### 可能触发的事件
+#### 3.3.7 Error Response d block Example (op=8)
 
-| Event | 触发条件 | Payload Schema | 客户端处理建议 |
-|---|---|---|---|
-| `signage.playlistConfigChanged` | `setPlaylistConfig` 全量替换成功。 | `PlaylistConfigChangedEvent` | 标记本地播放列表缓存失效；需要完整配置时调用 `signage.getPlaylistConfig` 校准。 |
+失败示例 A — `scheduled` 时间约束违反（`startDate == endDate` 但 `startTime > endTime`）：
+
+```json
+{
+  "id": 12,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid scheduled time range: startTime must be <= endTime when startDate equals endDate.",
+    "details": {
+      "field": "playlists[1].startTime"
+    }
+  }
+}
+```
+
+失败示例 B — `playlists` 为空数组（候选业务码 `SIGNAGE_PLAYLIST_EMPTY`，示例借用 common `INVALID_ARGUMENT` 并写入 `candidateError`，见 §8 双轨制说明）：
+
+```json
+{
+  "id": 13,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Playlists array must not be empty.",
+    "details": {
+      "candidateError": "SIGNAGE_PLAYLIST_EMPTY"
+    }
+  }
+}
+```
+
+读法：失败响应使用 `op=8` 且不携带业务 `result`；校验失败不落地、不触发事件。`code: 10` 对应 common `INVALID_ARGUMENT`（0x000A）。
+
+#### 3.3.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`；校验失败不触发 `playlistConfigChanged`。
+- 状态未实际变化时，method MAY 成功返回且 MAY 不重复触发事件。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ### 3.4 `signage.resetPlaylistConfig`
 
+**用途**：恢复默认播放列表配置。成功后设备回到出厂默认播放列表状态。
+
 | 项 | 内容 |
 |---|---|
-| 说明 | 恢复默认播放列表配置。成功后设备回到出厂默认播放列表状态。 |
 | 调用类型 | action |
-| params | `ResetPlaylistConfigParams` |
-| result | `PlaylistConfigResult` |
-| 触发事件 | 成功后触发 `playlistConfigChanged`。 |
-| 幂等性 | 每次重置到相同默认状态。 |
-| 错误 | `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR` |
+| Params Schema | `ResetPlaylistConfigParams` |
+| Result Schema | `PlaylistConfigResult` |
+| 是否触发事件 | 是，恢复默认成功后触发 `signage.playlistConfigChanged`（`reason: "reset_config"`）。 |
+| 幂等性 / 异步性 | 幂等；重复执行重置到相同默认状态。 |
+| 常见错误 | `NOT_SUPPORTED`, `INTERNAL_ERROR` |
 
-#### 请求参数 Params：`ResetPlaylistConfigParams`
+#### 3.4.1 请求参数 Params：`ResetPlaylistConfigParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | *(无必填参数)* | | | | | 恢复默认配置。`[REVIEW-ASK]` 是否支持 scoped reset（如只重置 scheduled 播放列表）需产品确认。 |
 
-#### 返回结果 Result：`PlaylistConfigResult`
+#### 3.4.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 6,
+  "method": "signage.resetPlaylistConfig",
+  "params": {}
+}
+```
+
+读法：请求为空，设备恢复出厂默认播放列表配置（本例默认为空播放列表，由产品定义）。
+
+#### 3.4.3 返回结果 Result：`PlaylistConfigResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `playlists` | `Playlist[]` | yes | see `Playlist` | none | 重置后的默认播放列表配置数组。 |
 
-#### 可能触发的事件
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 6,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "playlists": []
+  }
+}
+```
+
+读法：`resetPlaylistConfig` 返回重置后的默认播放列表配置（此处为空数组，表示出厂默认无播放列表）。
+
+#### 3.4.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `signage.playlistConfigChanged` | `resetPlaylistConfig` 恢复默认成功。 | `PlaylistConfigChangedEvent` | payload `reason` 为 `reset_config`；标记本地缓存失效，按需调用 `signage.getPlaylistConfig` 校准。 |
 
+该方法成功后 SHOULD 触发 `signage.playlistConfigChanged`，事件 `d` block 示例（`reason: "reset_config"`）：
+
+```json
+{
+  "event": "signage.playlistConfigChanged",
+  "intent": 1,
+  "data": {
+    "reason": "reset_config",
+    "playlists": []
+  }
+}
+```
+
+读法：客户端收到 `reason: "reset_config"` 后应丢弃本地播放列表缓存，用返回的 `playlists` 或重新 `getPlaylistConfig` 校准。
+
+#### 3.4.6 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持 `signage.playlist` 能力，或 capability `supportsReset: false`。 | 返回 unsupported capability / operation。 |
+| `INTERNAL_ERROR` | 设备恢复默认失败。 | 返回内部错误，调用方可稍后重试。 |
+
+#### 3.4.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 6,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Reset is not supported on this device."
+  }
+}
+```
+
+读法：`code: 3` 对应 common `NOT_SUPPORTED`（0x0003）。失败时不改变配置、不触发事件。
+
+#### 3.4.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`；失败不触发 `playlistConfigChanged`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
 ### 3.5 `signage.getPlaylistItemUrl`
+
+**用途**：按播放项 ID 获取最新资源 URL（URL 刷新）。设备检测到资源 URL 即将过期时主动调用此方法。`clock` 类型播放项无 URL 资源，调用此方法返回 `NOT_SUPPORTED`。
 
 | 项 | 内容 |
 |---|---|
-| 说明 | 按播放项 ID 获取最新资源 URL（URL 刷新）。设备检测到资源 URL 即将过期时主动调用此方法。`clock` 类型播放项无 URL 资源，调用此方法返回 `NOT_SUPPORTED`。 |
 | 调用类型 | query |
-| params | `GetPlaylistItemUrlParams` |
-| result | `GetPlaylistItemUrlResult` |
-| 触发事件 | 无 |
-| 幂等性 | 返回当前有效 URL；同一 itemId 在有效期内返回相同结果。 |
-| 错误 | `SUCCESS`, `NOT_SUPPORTED`, `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND`, `SIGNAGE_PLAYLIST_URL_EXPIRED` |
+| Params Schema | `GetPlaylistItemUrlParams` |
+| Result Schema | `GetPlaylistItemUrlResult` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；返回当前有效 URL，同一 itemId 在有效期内返回相同结果。 |
+| 常见错误 | `NOT_SUPPORTED`, `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND`, `SIGNAGE_PLAYLIST_URL_EXPIRED` |
 
-#### 请求参数 Params：`GetPlaylistItemUrlParams`
+#### 3.5.1 请求参数 Params：`GetPlaylistItemUrlParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `itemId` | string (UUID) | yes | UUID format | none | 播放项唯一标识。 |
 
-#### 返回结果 Result：`GetPlaylistItemUrlResult`
+#### 3.5.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 7,
+  "method": "signage.getPlaylistItemUrl",
+  "params": {
+    "itemId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+  }
+}
+```
+
+读法：设备检测到 `itemId` 对应播放项的 URL 即将过期时主动调用，用返回的 `settings` 替换本地缓存。
+
+#### 3.5.3 返回结果 Result：`GetPlaylistItemUrlResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -270,7 +773,87 @@ Capability ID：`signage.playlist`
 | `website` | `url`, `ignoreCertificateError`, `refreshIntervalSecs` |
 | `unsplash` | `photos`, `delaySeconds`, `expiresAt` |
 
-#### 方法错误
+#### 3.5.4 Success Response d block Example (op=8)
+
+主示例（`image` 类型）：
+
+```json
+{
+  "id": 7,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "type": "image",
+    "settings": {
+      "urls": ["https://example.com/resource/file-1-new.jpg"],
+      "delaySeconds": 5,
+      "expiresAt": 1704153600
+    }
+  }
+}
+```
+
+补充 Success 示例（video / website / unsplash 类型）：
+
+```json
+{
+  "id": 8,
+  "status": { "ok": true, "code": 0 },
+  "result": {
+    "type": "video",
+    "settings": {
+      "url": "https://example.com/resource/video-1-new.mp4",
+      "expiresAt": 1704153600,
+      "muted": false
+    }
+  }
+}
+```
+
+```json
+{
+  "id": 9,
+  "status": { "ok": true, "code": 0 },
+  "result": {
+    "type": "website",
+    "settings": {
+      "url": "https://example.com/page",
+      "ignoreCertificateError": false,
+      "refreshIntervalSecs": 300
+    }
+  }
+}
+```
+
+```json
+{
+  "id": 10,
+  "status": { "ok": true, "code": 0 },
+  "result": {
+    "type": "unsplash",
+    "settings": {
+      "photos": [
+        { "url": "https://images.unsplash.example.com/photo-1-new", "user": { "name": "Alice Photographer", "link": "https://unsplash.example.com/@alice" } },
+        { "url": "https://images.unsplash.example.com/photo-2-new", "user": { "name": "Bob Photographer", "link": "https://unsplash.example.com/@bob" } }
+      ],
+      "delaySeconds": 10,
+      "expiresAt": 1704326400
+    }
+  }
+}
+```
+
+读法：设备用返回的 `settings` 直接替换本地缓存的该 item `settings`；不同 `type` 对应不同字段集合（见上方子集表）。
+
+#### 3.5.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.5.6 错误
 
 | Error | Code | 触发条件 |
 |---|---|---|
@@ -278,6 +861,62 @@ Capability ID：`signage.playlist`
 | `NOT_SUPPORTED` | 0x0003 | 播放项类型为 `clock`（无远程 URL 资源）。 |
 | `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` | TBD | `itemId` 不存在于当前播放列表中。 |
 | `SIGNAGE_PLAYLIST_URL_EXPIRED` | TBD | 资源 URL 已不可用且无法刷新。 |
+
+#### 3.5.7 Error Response d block Example (op=8)
+
+失败示例 A — `clock` 类型不支持 URL 刷新：
+
+```json
+{
+  "id": 11,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "URL refresh is not supported for clock type playlist items."
+  }
+}
+```
+
+失败示例 B — `itemId` 不存在（候选业务码 `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND`，示例借用 common `NOT_FOUND` 并写入 `candidateError`）：
+
+```json
+{
+  "id": 7,
+  "status": {
+    "ok": false,
+    "code": 12,
+    "msg": "Playlist item not found.",
+    "details": {
+      "candidateError": "SIGNAGE_PLAYLIST_ITEM_NOT_FOUND"
+    }
+  }
+}
+```
+
+失败示例 C — 资源 URL 已过期且无法刷新（候选业务码 `SIGNAGE_PLAYLIST_URL_EXPIRED`，示例借用 common `NOT_FOUND` 并写入 `candidateError`）：
+
+```json
+{
+  "id": 14,
+  "status": {
+    "ok": false,
+    "code": 12,
+    "msg": "Playlist item URL has expired and cannot be refreshed.",
+    "details": {
+      "candidateError": "SIGNAGE_PLAYLIST_URL_EXPIRED"
+    }
+  }
+}
+```
+
+读法：设备收到 `SIGNAGE_PLAYLIST_URL_EXPIRED` 类错误应停止对该 `itemId` 重试，并通过重新 `getPlaylistConfig` 或等待 `playlistConfigChanged` 获取更新后的配置。`code: 12` 对应 common `NOT_FOUND`（0x000C）。失败响应不携带业务 `result`。
+
+#### 3.5.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- `clock` 类型调用此方法 MUST 返回 `NOT_SUPPORTED`，不返回 `settings`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ---
 
@@ -291,18 +930,66 @@ Capability ID：`signage.playlist`
 
 ### 4.1 `signage.playlistConfigChanged`
 
-| 项 | 内容 |
-|---|---|
-| 说明 | 播放列表配置发生变更时发出。由 `setPlaylistConfig` 或 `resetPlaylistConfig` 成功操作触发。 |
-| Payload Schema | `PlaylistConfigChangedEvent` |
-| 客户端处理建议 | 收到事件后，如本地缓存了播放列表配置应标记为失效。如需获取最新完整配置，调用 `signage.getPlaylistConfig`。 |
+**触发条件**：
 
-#### Payload：`PlaylistConfigChangedEvent`
+- `setPlaylistConfig` 全量替换成功。
+- `resetPlaylistConfig` 恢复默认成功。
+
+#### 4.1.1 Payload：`PlaylistConfigChangedEvent`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `reason` | string (enum) | yes | `set_config`, `reset_config` | none | 变更原因。`set_config` 由 `setPlaylistConfig` 触发；`reset_config` 由 `resetPlaylistConfig` 触发。 |
 | `playlists` | `Playlist[]` | no | see `Playlist` schema | omitted | 变更后的完整播放列表。设备可选择省略以减小 payload，客户端调用 `getPlaylistConfig` 获取。`[REVIEW-ASK]` 是否总是携带完整 playlists 需产品确认。 |
+
+#### 4.1.2 Event d block Example (op=6)
+
+```json
+{
+  "event": "signage.playlistConfigChanged",
+  "intent": 1,
+  "data": {
+    "reason": "set_config",
+    "playlists": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "default",
+        "items": [
+          {
+            "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+            "type": "image",
+            "duration": 60,
+            "sort": 0,
+            "settings": {
+              "urls": ["https://example.com/resource/file-1.jpg"],
+              "delaySeconds": 5,
+              "expiresAt": 1704067200
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+读法：`reason` 标明变更来源；`playlists` 为变更后完整配置，客户端可直接使用，也可省略后通过 `getPlaylistConfig` 获取。
+
+#### 4.1.3 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| payload 携带完整 `playlists` | 可直接更新 UI 或本地缓存。 |
+| payload 省略 `playlists` | 调用 `signage.getPlaylistConfig` 校准完整配置。 |
+| event 丢失或重连 | 重连后主动调用 `signage.getPlaylistConfig` 校准。 |
+| 多端同时控制 | 以最新一次 `setPlaylistConfig` 为权威；本地缓存按事件失效后重新拉取。 |
+
+#### 4.1.4 规则
+
+- Event MUST 使用 `op=6`。
+- Event MUST NOT 携带 `d.id`。
+- Event payload MUST 放在 `d.data` 中。
+- 失败的 `setPlaylistConfig` / `resetPlaylistConfig` MUST NOT 触发本事件。
 
 > **事件 payload schema 说明**：本草案为 `playlistConfigChanged` 定义独立 payload schema `PlaylistConfigChangedEvent`（含 `reason` + 可选 `playlists`）。`docs/flows/signage-device-management.md` §7 将该事件 payload 记为 `PlaylistConfigResult` 属场景级简化表述；**正式 payload schema 以本草案为准**。如需同步 flow 文档表述，转 10-plan-protocol-flow（不在 20-draft-business-protocol 边界内）。
 
@@ -486,302 +1173,45 @@ Capability name: `signage.playlist`。
 
 ---
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
-示例用于评审 request/response/event 语义，不是 generated 事实源。JSON 示例只写 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。
+本章只展示多个 method/event 组成的端到端业务流程。单个 method 的 Request / Success Response / Error Response 示例见第 3 章；单个 event 的 Event 示例见第 4 章。
 
-### 7.1 查询播放列表能力
+### 7.1 场景：能力发现 → 全量同步 → 配置变更事件
 
-**场景**：设备上线后，云端查询设备支持的播放列表能力。
+设备上线（RPC Session 已 `APP_READY`）后，云端先查询能力，再全量下发播放列表；设备成功落地后发出配置变更事件，调用方据此刷新本地缓存。
 
-请求：
+#### Step 1. 能力发现：`signage.getPlaylistCapabilities` Request d block (op=7)
 
 ```json
 {
-  "id": 1,
+  "id": 201,
   "method": "signage.getPlaylistCapabilities",
   "params": {}
 }
 ```
 
-响应：
+#### Step 2. 能力发现：Success Response d block (op=8)
 
 ```json
 {
-  "id": 1,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
+  "id": 201,
+  "status": { "ok": true, "code": 0 },
   "result": {
     "supportedItemTypes": ["image", "website", "video", "clock", "unsplash"],
-    "maxPlaylists": 10,
-    "maxItemsPerPlaylist": 50,
-    "supportsScheduledPlaylist": true,
     "supportsUrlRefresh": true,
     "supportsReset": true
   }
 }
 ```
 
-**读法**：`supportedItemTypes` 告诉云端该设备支持哪些播放项类型。`maxPlaylists` / `maxItemsPerPlaylist` 是产品级限制。`supportsUrlRefresh: true` 表示设备会主动调用 `getPlaylistItemUrl` 刷新过期 URL。
-
-### 7.2 查询当前播放列表
-
-**场景**：云端查询设备当前持有的播放列表配置。
-
-请求：
+#### Step 3. 全量同步：`signage.setPlaylistConfig` Request d block (op=7)
 
 ```json
 {
-  "id": 2,
-  "method": "signage.getPlaylistConfig",
-  "params": {}
-}
-```
-
-响应（空列表）：
-
-```json
-{
-  "id": 2,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "playlists": []
-  }
-}
-```
-
-### 7.3 全量同步播放列表（default 类型，含 4 种 item）
-
-**场景**：云端下发自定义播放列表，包含 image、video、website、unsplash 四种播放项。
-
-请求：
-
-```json
-{
-  "id": 3,
+  "id": 202,
   "method": "signage.setPlaylistConfig",
   "params": {
-    "playlists": [
-      {
-        "id": "550e8400-e29b-41d4-a716-446655440000",
-        "type": "default",
-        "items": [
-          {
-            "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-            "type": "image",
-            "duration": 60,
-            "sort": 0,
-            "settings": {
-              "urls": ["https://example.com/resource/file-1.jpg", "https://example.com/resource/file-2.jpg"],
-              "delaySeconds": 5,
-              "expiresAt": 1704067200
-            }
-          },
-          {
-            "id": "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
-            "type": "video",
-            "duration": 120,
-            "sort": 1,
-            "settings": {
-              "url": "https://example.com/resource/video-1",
-              "expiresAt": 1704153600,
-              "muted": false
-            }
-          },
-          {
-            "id": "6ba7b812-9dad-11d1-80b4-00c04fd430c8",
-            "type": "website",
-            "duration": 300,
-            "sort": 2,
-            "settings": {
-              "url": "https://example.com",
-              "ignoreCertificateError": false,
-              "refreshIntervalSecs": 300
-            }
-          },
-          {
-            "id": "6ba7b813-9dad-11d1-80b4-00c04fd430c8",
-            "type": "unsplash",
-            "duration": 60,
-            "sort": 3,
-            "settings": {
-              "photos": [
-                {
-                  "url": "https://images.unsplash.example.com/photo-1",
-                  "user": { "name": "Alice Photographer", "link": "https://unsplash.example.com/@alice" }
-                },
-                {
-                  "url": "https://images.unsplash.example.com/photo-2",
-                  "user": { "name": "Bob Photographer", "link": "https://unsplash.example.com/@bob" }
-                }
-              ],
-              "delaySeconds": 10,
-              "expiresAt": 1704240000
-            }
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-响应：
-
-```json
-{
-  "id": 3,
-  "status": {
-    "ok": true,
-    "code": 0
-  }
-}
-```
-
-### 7.4 全量同步播放列表（scheduled 类型，含时间约束）
-
-**场景**：云端下发定时播放列表，设置周一到周五上午 9:00 到下午 18:00 播放。
-
-请求：
-
-```json
-{
-  "id": 4,
-  "method": "signage.setPlaylistConfig",
-  "params": {
-    "playlists": [
-      {
-        "id": "550e8400-e29b-41d4-a716-446655440000",
-        "type": "default",
-        "items": [
-          {
-            "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-            "type": "image",
-            "duration": 60,
-            "sort": 0,
-            "settings": {
-              "urls": ["https://example.com/resource/default-bg.jpg"],
-              "delaySeconds": 5,
-              "expiresAt": null
-            }
-          }
-        ]
-      },
-      {
-        "id": "660e8400-e29b-41d4-a716-446655440001",
-        "type": "scheduled",
-        "startDate": "2026-01-01",
-        "endDate": "2026-12-31",
-        "startTime": "09:00:00",
-        "endTime": "18:00:00",
-        "days": [1, 2, 3, 4, 5],
-        "items": [
-          {
-            "id": "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
-            "type": "video",
-            "duration": 300,
-            "sort": 0,
-            "settings": {
-              "url": "https://example.com/resource/work-hours-content.mp4",
-              "expiresAt": 1735689600,
-              "muted": true
-            }
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-**读法**：`startDate` < `endDate`，时间跨度为多日，`startTime < endTime` 落在同一天内（不跨午夜）。`days` 指定周一到周五生效。
-
-### 7.5 全量同步播放列表（含 clock 类型 item）
-
-**场景**：播放列表包含 clock 类型播放项，展示多个时区时钟。
-
-请求（摘录 items 部分）：
-
-```json
-{
-  "id": 5,
-  "method": "signage.setPlaylistConfig",
-  "params": {
-    "playlists": [
-      {
-        "id": "550e8400-e29b-41d4-a716-446655440000",
-        "type": "default",
-        "items": [
-          {
-            "id": "8ba7b810-9dad-11d1-80b4-00c04fd430c8",
-            "type": "clock",
-            "duration": 600,
-            "sort": 0,
-            "settings": {
-              "clocks": [
-                { "timezone": "Asia/Shanghai", "label": "北京" },
-                { "timezone": "America/New_York", "label": "纽约" },
-                { "timezone": "Europe/London", "label": "伦敦" }
-              ]
-            }
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-**读法**：`clock` 类型不需要远程 URL 资源，`settings` 只包含 `clocks` 数组。调用 `getPlaylistItemUrl` 对 clock 类型返回 `NOT_SUPPORTED`。
-
-### 7.6 恢复默认播放列表
-
-**场景**：云端恢复设备出厂默认播放列表。
-
-请求：
-
-```json
-{
-  "id": 6,
-  "method": "signage.resetPlaylistConfig",
-  "params": {}
-}
-```
-
-响应：
-
-```json
-{
-  "id": 6,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "playlists": []
-  }
-}
-```
-
-**读法**：`resetPlaylistConfig` 返回重置后的默认播放列表配置（此处为空数组，表示出厂默认无播放列表）。
-
-### 7.7 播放列表配置变更事件
-
-**场景**：`setPlaylistConfig` 成功后，设备发出配置变更事件。
-
-事件：
-
-```json
-{
-  "event": "signage.playlistConfigChanged",
-  "intent": 1,
-  "data": {
-    "reason": "set_config",
     "playlists": [
       {
         "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -805,17 +1235,38 @@ Capability name: `signage.playlist`。
 }
 ```
 
-**读法**：`reason` 标明变更由 `setPlaylistConfig` 触发。`playlists` 携带变更后的完整配置，客户端可直接使用，也可省略后通过 `getPlaylistConfig` 获取。
-
-### 7.8 刷新播放项 URL（image 类型）
-
-**场景**：设备检测到 image 类型播放项的 URL 即将过期，主动请求刷新。
-
-请求：
+#### Step 4. 全量同步：Success Response d block (op=8)
 
 ```json
 {
-  "id": 7,
+  "id": 202,
+  "status": { "ok": true, "code": 0 }
+}
+```
+
+#### Step 5. 配置落地通知：`signage.playlistConfigChanged` Event d block (op=6)
+
+```json
+{
+  "event": "signage.playlistConfigChanged",
+  "intent": 1,
+  "data": {
+    "reason": "set_config"
+  }
+}
+```
+
+读法：`setPlaylistConfig` 成功仅返回 success status（无 result body），调用方通过本事件确认落地；若事件 payload 省略 `playlists`，调用方应调用 `signage.getPlaylistConfig` 校准。校验失败（如 §3.3.7 scheduled 约束 / 空列表）不会走到 Step 4/5，直接返回错误且不触发事件。
+
+### 7.2 场景：资源 URL 即将过期，设备主动 Pull 刷新
+
+设备检测到某 image 播放项 URL 即将过期，主动调用 `signage.getPlaylistItemUrl` 拉取新 URL；若资源已不可用，设备改走全量校准。
+
+#### Step 1. URL 刷新：`signage.getPlaylistItemUrl` Request d block (op=7)
+
+```json
+{
+  "id": 203,
   "method": "signage.getPlaylistItemUrl",
   "params": {
     "itemId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
@@ -823,15 +1274,12 @@ Capability name: `signage.playlist`。
 }
 ```
 
-响应：
+#### Step 2. URL 刷新：Success Response d block (op=8)
 
 ```json
 {
-  "id": 7,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
+  "id": 203,
+  "status": { "ok": true, "code": 0 },
   "result": {
     "type": "image",
     "settings": {
@@ -843,136 +1291,11 @@ Capability name: `signage.playlist`。
 }
 ```
 
-**读法**：设备用返回的 `settings` 直接替换本地缓存的该 item `settings`。
-
-### 7.9 刷新播放项 URL（video / website / unsplash 类型）
-
-video 类型响应：
+#### Step 3（失败分支）. 资源已过期：Error Response d block (op=8)
 
 ```json
 {
-  "id": 8,
-  "status": { "ok": true, "code": 0 },
-  "result": {
-    "type": "video",
-    "settings": {
-      "url": "https://example.com/resource/video-1-new.mp4",
-      "expiresAt": 1704153600,
-      "muted": false
-    }
-  }
-}
-```
-
-website 类型响应：
-
-```json
-{
-  "id": 9,
-  "status": { "ok": true, "code": 0 },
-  "result": {
-    "type": "website",
-    "settings": {
-      "url": "https://example.com/page",
-      "ignoreCertificateError": false,
-      "refreshIntervalSecs": 300
-    }
-  }
-}
-```
-
-unsplash 类型响应：
-
-```json
-{
-  "id": 10,
-  "status": { "ok": true, "code": 0 },
-  "result": {
-    "type": "unsplash",
-    "settings": {
-      "photos": [
-        { "url": "https://images.unsplash.example.com/photo-1-new", "user": { "name": "Alice Photographer", "link": "https://unsplash.example.com/@alice" } },
-        { "url": "https://images.unsplash.example.com/photo-2-new", "user": { "name": "Bob Photographer", "link": "https://unsplash.example.com/@bob" } }
-      ],
-      "delaySeconds": 10,
-      "expiresAt": 1704326400
-    }
-  }
-}
-```
-
-### 7.10 失败：播放项不存在
-
-```json
-{
-  "id": 7,
-  "status": {
-    "ok": false,
-    "code": 12,
-    "msg": "Playlist item not found.",
-    "details": {
-      "candidateError": "SIGNAGE_PLAYLIST_ITEM_NOT_FOUND"
-    }
-  }
-}
-```
-
-### 7.11 失败：clock 类型不支持 URL 刷新
-
-```json
-{
-  "id": 11,
-  "status": {
-    "ok": false,
-    "code": 3,
-    "msg": "URL refresh is not supported for clock type playlist items."
-  }
-}
-```
-
-### 7.12 失败：scheduled 时间约束违反
-
-**场景**：`setPlaylistConfig` 中 scheduled 播放列表 `startDate == endDate` 但 `startTime > endTime`。
-
-```json
-{
-  "id": 12,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid scheduled time range: startTime must be <= endTime when startDate equals endDate.",
-    "details": {
-      "field": "playlists[1].startTime"
-    }
-  }
-}
-```
-
-### 7.13 失败：空播放列表
-
-**场景**：`setPlaylistConfig` 传入空 playlists 数组。
-
-```json
-{
-  "id": 13,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Playlists array must not be empty.",
-    "details": {
-      "candidateError": "SIGNAGE_PLAYLIST_EMPTY"
-    }
-  }
-}
-```
-
-### 7.14 失败：资源 URL 已过期且无法刷新
-
-**场景**：`getPlaylistItemUrl` 刷新时，服务端发现资源 URL 已不可用且无法签发新 URL（如源资源被删除或授权失效）。
-
-```json
-{
-  "id": 14,
+  "id": 203,
   "status": {
     "ok": false,
     "code": 12,
@@ -984,7 +1307,7 @@ unsplash 类型响应：
 }
 ```
 
-**读法**：候选业务码 `SIGNAGE_PLAYLIST_URL_EXPIRED` 尚未分配数值，示例借用 common `NOT_FOUND`（0x000C，`code: 12`）并写入 `candidateError`（见 §8 双轨制说明）。设备收到此错误应停止对该 `itemId` 重试，并通过重新 `getPlaylistConfig` 或等待 `playlistConfigChanged` 获取更新后的配置。
+读法：成功时设备用返回的 `settings` 替换本地缓存继续播放；失败时设备停止对该 `itemId` 重试，改为调用 `signage.getPlaylistConfig`（或等待 `playlistConfigChanged`）获取云端最新配置。`code: 12` 借用 common `NOT_FOUND`（0x000C），候选业务码 `SIGNAGE_PLAYLIST_URL_EXPIRED` 采纳时二选一（见 §8）。
 
 ---
 
@@ -996,14 +1319,14 @@ unsplash 类型响应：
 | `NOT_SUPPORTED` | 0x0003 | common | 操作不支持当前播放项类型（如 `clock` 调用 `getPlaylistItemUrl`）或设备不支持 `signage.playlist` 能力。 | [REVIEW-DRAFT] |
 | `PERMISSION_DENIED` | 0x0009 | common | 调用方无权修改播放列表配置（`setPlaylistConfig`）。 | [REVIEW-DRAFT] |
 | `INTERNAL_ERROR` | 0x000E | common | 设备内部错误（`getPlaylistCapabilities` / `getPlaylistConfig` / `resetPlaylistConfig` 执行失败）。 | [REVIEW-DRAFT] |
-| `NOT_FOUND` | 0x000C | common | 指定资源不存在。可复用于播放项不存在场景（§7.10 JSON 示例使用 `code: 12` + `candidateError`）。 | [REVIEW-DRAFT] |
+| `NOT_FOUND` | 0x000C | common | 指定资源不存在。可复用于播放项不存在场景（§3.5.7 JSON 示例使用 `code: 12` + `candidateError`）。 | [REVIEW-DRAFT] |
 | `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` | TBD | business | 指定的播放项 ID 不存在于当前播放列表中。 | [REVIEW-DRAFT] |
 | `SIGNAGE_PLAYLIST_EMPTY` | TBD | business | 播放列表数组为空或播放项数组为空。 | [REVIEW-DRAFT] |
 | `SIGNAGE_PLAYLIST_URL_EXPIRED` | TBD | business | 刷新 URL 时发现资源已不可用。 | [REVIEW-DRAFT] |
 
 > 通用错误码数值取自 `registry/error/error_code.yaml`。业务域错误 `SIGNAGE_PLAYLIST_*` 落点在业务域区段 `0x0600-0x15FF`，编号 `TBD after adoption`，由 registry 采纳时分配。
 
-> **错误码双轨制说明**：上表 `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` / `SIGNAGE_PLAYLIST_EMPTY` / `SIGNAGE_PLAYLIST_URL_EXPIRED` 为**候选业务错误码**，数值 `TBD after adoption`。在候选码尚未分配数值前，本文 JSON 示例（§7.10 / §7.13 / §7.14）按 20-draft-business-protocol 约定借用**语义最近的 common 错误码**（`NOT_FOUND` 0x000C、`INVALID_ARGUMENT` 0x000A），并将候选名写入 `status.details.candidateError`。采纳阶段需对每个候选码做二选一决定：**新增为独立业务码**（落入 `0x0600-0x15FF`），还是**直接复用对应 common 码**（减少 registry 膨胀）。见 §12 待确认问题。
+> **错误码双轨制说明**：上表 `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` / `SIGNAGE_PLAYLIST_EMPTY` / `SIGNAGE_PLAYLIST_URL_EXPIRED` 为**候选业务错误码**，数值 `TBD after adoption`。在候选码尚未分配数值前，本文 JSON 示例（§3.3.7 / §3.5.7）按 20-draft-business-protocol 约定借用**语义最近的 common 错误码**（`NOT_FOUND` 0x000C、`INVALID_ARGUMENT` 0x000A），并将候选名写入 `status.details.candidateError`。采纳阶段需对每个候选码做二选一决定：**新增为独立业务码**（落入 `0x0600-0x15FF`），还是**直接复用对应 common 码**（减少 registry 膨胀）。见 §12 待确认问题。
 
 ---
 

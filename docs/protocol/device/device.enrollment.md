@@ -5,12 +5,12 @@ generated: false
 domain: device
 feature: device.enrollment
 registry:
-lastReviewed: 2026-06-15
+lastReviewed: 2026-06-16
 ---
 
 # AXTP device.enrollment 协议草案
 
-版本：v0.8
+版本：v0.9
 
 归属域：`device`
 
@@ -29,6 +29,13 @@ Capability ID：`device.enrollment`
 - Legacy 命令 `GetBindCode` / `GetBindConfig` / `SetBindConfig` / `OnBindState` 的逐字段映射见 **Section 9**；采纳时同步更新 generated legacy 文件中的 `binding` → `device.enrollment` 域名（见 9.6）。
 
 ---
+
+**v0.9 变更说明：**
+对齐 20-draft-business-protocol skill 与 `protocol-draft-template.md` 的 JSON 示例约定（业务语义、schema、状态机、错误码、legacy 映射均不变）：
+(1) 在 §0 速读结论后新增 `## JSON 示例约定` 节（RPC envelope 速查 + op=6/7/8 表，声明示例默认 `APP_READY`、后续只展示 RPC `d` block、禁止 JSON-RPC 2.0 外层格式）。
+(2) 将原集中式第 7 节 12 个 JSON 示例迁移到各 method/event 小节：每个 method 补齐 Request / Success Response / Error Response `d block` 内联示例 + 错误表 + `规则`；event 补齐 Event `d block` 示例 + 客户端处理建议 + `规则`。method/event 子标题改为带编号风格（`3.x.1`…`4.1.1`…），示例标题统一标注 `op=7` / `op=8` / `op=6`。
+(3) 第 7 节改为 `## 7. 交互流程示例 Flow Examples`，只保留端到端 flow（首次注册 / 解绑 / 重连后状态校准）。
+(4) 本次不改 schema 定义（6.1–6.8）、状态机（3.4）、错误码（§8 数值已核实全部正确）、legacy 映射（9.0–9.6）、附录 A–D；JSON 示例的业务内容（字段值、错误码、placeholder）原样迁移，只改位置、标题与「d block」称谓。
 
 **v0.8 变更说明：**
 (1) 格式修正：变更说明版本顺序修正——v0.2/v0.3 原顺序颠倒（v0.2 排在 v0.3 前），调整为严格倒序（v0.3 在前），与 signage.playlist / software.config / software.updatePolicy 等标杆草案一致。
@@ -97,6 +104,28 @@ Capability ID：`device.enrollment`
 
 ---
 
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id`（取 `1`–`9` 等示例值）、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
+---
+
 ## 1. 功能说明
 
 `device.enrollment` 用于设备注册、pairing code 获取、纳管状态查询和变更。它描述"未入管设备成为后台管理对象"的过程，不属于认证会话（`auth.*`），也不属于 room 业务域（`room.*`）。
@@ -142,7 +171,7 @@ Capability ID：`device.enrollment`
 | 幂等 / 异步 | `refresh=false` 时返回当前有效 code；`refresh=true` 生成新 code 并使旧 code 失效。 |
 | 常见错误 | `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INTERNAL_ERROR` |
 
-#### 请求参数 Params：`GetPairingCodeParams`
+#### 3.1.1 请求参数 Params：`GetPairingCodeParams`
 
 字段见 6.3。
 
@@ -151,7 +180,22 @@ Capability ID：`device.enrollment`
 | `refresh` | boolean | no | `true` / `false` | `false` | 是否强制刷新 pairing code。 |
 | `purpose` | string | no | `"initial_enrollment"`, `"re_enrollment"`, `"service_repair"` | `"initial_enrollment"` | code 使用场景。`"initial_enrollment"`：首次注册新设备；`"re_enrollment"`：重新注册（如工作空间迁移）；`"service_repair"`：维修配对，可能有不同 TTL 或权限。`[REVIEW-DRAFT]` 不支持的 purpose 返回 `NOT_SUPPORTED`。 |
 
-#### 返回结果 Result：`PairingCodeInfo`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 1,
+  "method": "device.getPairingCode",
+  "params": {
+    "refresh": false,
+    "purpose": "initial_enrollment"
+  }
+}
+```
+
+读法：`refresh` 默认 `false`，返回当前有效 code；置 `true` 时服务端生成新 code 并使旧 code 失效（见 §3.1.4 读法）。`purpose` 默认 `"initial_enrollment"`，设备首次纳管最常见场景。
+
+#### 3.1.3 返回结果 Result：`PairingCodeInfo`
 
 字段见 6.4。
 
@@ -164,13 +208,63 @@ Capability ID：`device.enrollment`
 
 > **时间戳优先级**：当 `expiresAt` 和 `expiresInSeconds` 同时存在时，`expiresAt` 为权威时间；`expiresInSeconds` 保留用于 legacy device-sdk 兼容（实测值 1800）。客户端应优先使用 `expiresAt`。
 
-#### `device.getPairingCode` 候选错误
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 1,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "code": "ABC123",
+    "expiresAt": "2026-06-11T10:30:00Z",
+    "expiresInSeconds": 1800,
+    "state": "available"
+  }
+}
+```
+
+读法：`expiresInSeconds` 来自 legacy device-sdk 实测证据（`src/sdk.spec.ts` 断言差异暴露），草案必须保留。设备展示 `code` 和倒计时；用户在云端管理系统输入此 code。`refresh=true` 时返回新 code（如 `XYZ789`）和新的过期时间，旧 code 失效。
+
+#### 3.1.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query / action method 不应因获取 code 本身触发状态变化事件。 | none | pairing code 被使用或过期导致状态变化时由 `device.enrollmentStateChanged` 表达（见 §4.1）。 |
+
+#### 3.1.6 错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
 | `NOT_SUPPORTED` | common | 设备或服务端不支持 pairing code。 |
 | `PERMISSION_DENIED` | common | 无权获取 pairing code。 |
 | `INTERNAL_ERROR` | common | 服务端无法生成 code。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 1,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Pairing code is not supported on this device."
+  }
+}
+```
+
+读法：`NOT_SUPPORTED`（0x0003），客户端应隐藏注册码入口或引导用户使用其他纳管方式。服务端无法生成 code 时返回 `INTERNAL_ERROR`（0x000E / `code: 14`），客户端应提示用户稍后重试。
+
+#### 3.1.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`。
+- query / action method SHOULD NOT 因获取 code 本身触发状态变化事件；状态变化由后续 `device.setEnrollmentState` 或服务端同步驱动。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
 
 ### 3.2 `device.getEnrollmentState`
 
@@ -184,7 +278,7 @@ Capability ID：`device.enrollment`
 | 幂等性 | 是 |
 | 常见错误 | `NOT_SUPPORTED` |
 
-#### 请求参数 Params：`GetEnrollmentStateParams`
+#### 3.2.1 请求参数 Params：`GetEnrollmentStateParams`
 
 字段见 6.5。
 
@@ -192,9 +286,104 @@ Capability ID：`device.enrollment`
 |---|---|---:|---|---|---|
 | `includeEndpoint` | boolean | no | `true` / `false` | `true` | 是否返回 enrollment 后的 endpoint 摘要。默认 `true` 因为最常见调用方（云端管理后台）需要 endpoint 信息；轻量轮询或已缓存 endpoint 时设为 `false`。 |
 
-#### 返回结果 Result：`EnrollmentInfo`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 2,
+  "method": "device.getEnrollmentState",
+  "params": {
+    "includeEndpoint": true
+  }
+}
+```
+
+读法：`includeEndpoint` 默认 `true`，云端管理后台需要 endpoint 信息；轻量轮询或已缓存 endpoint 时设为 `false`。
+
+#### 3.2.3 返回结果 Result：`EnrollmentInfo`
 
 字段见 6.1。
+
+#### 3.2.4 Success Response d block Example (op=8)
+
+已纳管时（含 endpoint）：
+
+```json
+{
+  "id": 2,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": "enrolled",
+    "deviceId": "<DEVICE_ID>",
+    "workspaceId": "<WORKSPACE_ID>",
+    "endpoint": {
+      "endpointId": "<ROOM_ENDPOINT_ID>",
+      "type": "room",
+      "displayName": "Boardroom A",
+      "profileId": "<PROFILE_ID>"
+    },
+    "enrolledAt": "2026-06-10T08:30:00Z",
+    "updatedAt": "2026-06-11T10:02:00Z"
+  }
+}
+```
+
+未纳管时：
+
+```json
+{
+  "id": 2,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": "unmanaged",
+    "deviceId": "<DEVICE_ID>"
+  }
+}
+```
+
+读法：`state` 为 `enrolled` / `unenrolling` 时填充 `workspaceId` / `endpoint` / `enrolledAt`；`unmanaged` 等中间状态省略这些字段。`includeEndpoint=false` 时省略 `endpoint` 字段，适用于已缓存 endpoint 的轻量轮询场景。
+
+#### 3.2.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.2.6 错误
+
+| Error | 类别 | 说明 |
+|---|---|---|
+| `NOT_SUPPORTED` | common | 设备不支持纳管状态查询。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 2,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Enrollment state query is not supported on this device."
+  }
+}
+```
+
+读法：`NOT_SUPPORTED`（0x0003），设备不支持纳管状态查询时返回，客户端应回退到默认假设（如 `unmanaged`）或隐藏纳管相关 UI。
+
+#### 3.2.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`。
+- query method MUST NOT 因查询本身触发状态变化事件。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
 
 ### 3.3 `device.setEnrollmentState`
 
@@ -208,7 +397,7 @@ Capability ID：`device.enrollment`
 | 幂等 / 异步 | 对同一 `desiredState` + `reason` 可幂等；解绑可能异步。 |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `PERMISSION_DENIED` |
 
-#### 请求参数 Params：`SetEnrollmentStateParams`
+#### 3.3.1 请求参数 Params：`SetEnrollmentStateParams`
 
 字段见 6.6。
 
@@ -221,7 +410,28 @@ Capability ID：`device.enrollment`
 
 > **校验规则**：见 6.6。
 
-#### 返回结果 Result：`SetEnrollmentStateResult`
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 3,
+  "method": "device.setEnrollmentState",
+  "params": {
+    "desiredState": "enrolled",
+    "reason": "pairing_code_used",
+    "endpoint": {
+      "endpointId": "<ROOM_ENDPOINT_ID>",
+      "type": "room",
+      "displayName": "Boardroom A",
+      "profileId": "<PROFILE_ID>"
+    }
+  }
+}
+```
+
+读法：Server → Device 方向设置 `enrolled` 状态，同时下发 endpoint 信息。设备保存后后续 room endpoint 操作可进入 `room.info`。本示例假设设备已处于 `pending` 状态（先经 §3.3.4 读法中的 `pairing_available → pending` 转换）；状态机要求 `enrolled` 仅从 `pending` 转入（见 §3.4 状态机与 §6.6 校验规则），从 `unmanaged` / `pairing_available` 直接设 `enrolled` 会返回 `INVALID_STATE`（见 §3.3.7 读法）。
+
+#### 3.3.3 返回结果 Result：`SetEnrollmentStateResult`
 
 字段见 6.7。
 
@@ -230,20 +440,105 @@ Capability ID：`device.enrollment`
 | `state` | `EnrollmentInfo` | yes | see schema | none | 操作后的纳管状态。 |
 | `disconnectExpected` | boolean | no | `true` / `false` | `false` | 解绑或重置是否预期导致连接变化。`true` 仅在 `desiredState = "unmanaged"` 且设备需要关闭管理 session 时。其余转换均为 `false`。 |
 
-#### 可能的事件
+#### 3.3.4 Success Response d block Example (op=8)
 
-| Event | 条件 |
-|---|---|
-| `device.enrollmentStateChanged` | 状态实际变化时触发。 |
+```json
+{
+  "id": 3,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": {
+      "state": "enrolled",
+      "deviceId": "<DEVICE_ID>",
+      "workspaceId": "<WORKSPACE_ID>",
+      "endpoint": {
+        "endpointId": "<ROOM_ENDPOINT_ID>",
+        "type": "room",
+        "displayName": "Boardroom A",
+        "profileId": "<PROFILE_ID>"
+      },
+      "enrolledAt": "2026-06-11T10:02:00Z"
+    },
+    "disconnectExpected": false
+  }
+}
+```
 
-#### `device.setEnrollmentState` 候选错误
+读法：`result.state` 为操作后的完整 `EnrollmentInfo`。不同 `desiredState` 的差异：
+- `desiredState: "pending"`：设备进入 `pending`，表示 pairing code 已在云端提交、注册进行中（`pairing_available → pending` 中间转换，见 §3.4）。
+- `desiredState: "unmanaged"`：触发解绑，设备进入 `unenrolling` 异步清理，`disconnectExpected` 可能为 `true`（见 Flow 7.2）。
+- `desiredState: "failed"`：服务端通知注册失败，`state.message` 必填，用于展示失败原因。
+
+#### 3.3.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `device.enrollmentStateChanged` | 状态实际变化时触发。 | `EnrollmentStateChangedEvent` | 更新纳管页面、设备列表和后续 room endpoint 操作门禁；事件丢失时调用 `device.getEnrollmentState` 校准（完整事件定义见 §4.1）。 |
+
+```json
+{
+  "event": "device.enrollmentStateChanged",
+  "intent": 1,
+  "data": {
+    "previousState": "pending",
+    "reason": "pairing_code_used",
+    "state": {
+      "state": "enrolled",
+      "deviceId": "<DEVICE_ID>",
+      "workspaceId": "<WORKSPACE_ID>",
+      "endpoint": {
+        "endpointId": "<ROOM_ENDPOINT_ID>",
+        "type": "room",
+        "displayName": "Boardroom A",
+        "profileId": "<PROFILE_ID>"
+      },
+      "enrolledAt": "2026-06-11T10:02:00Z",
+      "updatedAt": "2026-06-11T10:02:00Z"
+    }
+  }
+}
+```
+
+#### 3.3.6 错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
 | `NOT_SUPPORTED` | common | 设备不支持状态变更。 |
 | `INVALID_ARGUMENT` | common | desiredState 或 endpoint 字段非法。 |
-| `INVALID_STATE` | common | 当前状态不允许变更（如未纳管设备请求解绑）。 |
+| `INVALID_STATE` | common | 当前状态不允许变更（如未纳管设备请求解绑、跳过 `pending` 直接设 `enrolled`）。 |
 | `PERMISSION_DENIED` | common | 无权执行此操作。 |
+
+#### 3.3.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 4,
+  "status": {
+    "ok": false,
+    "code": 9,
+    "msg": "Permission denied.",
+    "details": {
+      "candidateError": "ENROLLMENT_PERMISSION_DENIED"
+    }
+  }
+}
+```
+
+读法：`PERMISSION_DENIED`（0x0009），无权执行解绑 / 纳管操作；候选业务错误 `ENROLLMENT_PERMISSION_DENIED` 落点 `0x0100–0x01FF`，编号 `TBD after adoption`，故 JSON 示例用最近通用码 `9` 并在 `details.candidateError` 放候选名。状态转换违规（如从 `unmanaged` 直接设 `enrolled`）返回 `INVALID_STATE`（0x0004 / `code: 4`），客户端应引导用户先获取 pairing code 经由 `pending` 转入。
+
+#### 3.3.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`。
+- 状态实际变化后 SHOULD 触发 `device.enrollmentStateChanged`（op=6）；状态未变化时 MAY 成功返回且 MAY 不触发事件。
+- 状态转换 MUST 符合 §3.4 状态机表；违反转换路径返回 `INVALID_STATE`。
+- `desiredState: "enrolled"` 时 `endpoint` 必填且 `reason` 必填；`type = "room"` 时 `endpoint.profileId` 必填（见 §6.2 / §6.6 校验规则）。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
 
 ### 3.4 Enrollment 状态机
 
@@ -275,7 +570,7 @@ Capability ID：`device.enrollment`
 
 > 无效转换（如 `unmanaged` → `enrolled` 跳过 `pending`）应返回 `INVALID_STATE`。
 
-> **与 flow 对齐说明**：`docs/flows/signage-device-management.md` Section 5 阶段3 序列图为可读性省略了 `pairing_available → pending` 中间状态，直接展示 `device.getPairingCode → device.setEnrollmentState(desiredState: "enrolled")`。实际状态转换以本节状态机为准；`pairing_available → pending` 转换可由服务端内部触发而不通知设备（服务端内部直接跳到 `enrolled`），见 7.3c。
+> **与 flow 对齐说明**：`docs/flows/signage-device-management.md` Section 5 阶段3 序列图为可读性省略了 `pairing_available → pending` 中间状态，直接展示 `device.getPairingCode → device.setEnrollmentState(desiredState: "enrolled")`。实际状态转换以本节状态机为准；`pairing_available → pending` 转换可由服务端内部触发而不通知设备（服务端内部直接跳到 `enrolled`），见 §3.3（`desiredState: "pending"` 转换）与 Flow 7.1。
 
 ---
 
@@ -289,13 +584,19 @@ Capability ID：`device.enrollment`
 
 ### 4.1 `device.enrollmentStateChanged`
 
+**触发条件**：
+
+- pairing code 被使用（注册成功）。
+- 纳管成功 / 失败（服务端确认或拒绝）。
+- 解绑（`desiredState: "unmanaged"` 触发 `unenrolling`）。
+- 服务端同步状态（如 code 过期回退、服务端撤销注册）。
+
 | 项 | 内容 |
 |---|---|
-| 触发条件 | pairing code 被使用、纳管成功/失败、解绑、服务端同步状态。 |
 | Payload Schema | `EnrollmentStateChangedEvent` |
 | 客户端处理建议 | 状态变为 `enrolled` 且 `endpoint.type=room` 时，后续 room endpoint 操作才可进入 `room.info`。事件丢失时调用 `device.getEnrollmentState` 校准。 |
 
-#### Payload：`EnrollmentStateChangedEvent`
+#### 4.1.1 Payload：`EnrollmentStateChangedEvent`
 
 字段见 6.8。
 
@@ -306,6 +607,54 @@ Capability ID：`device.enrollment`
 | `reason` | string | no | `"pairing_code_used"`, `"server_claimed"`, `"user_unenrolled"`, `"admin_reset"`, `"unknown"` | `"unknown"` | 变化原因。 |
 | `triggerMethod` | string | no | `"setEnrollmentState"`, `"getPairingCode"`, `"server_sync"` | omitted | 触发此状态变化的操作类型。`"setEnrollmentState"` 为显式调用触发；`"server_sync"` 为服务端内部操作触发（如 code 过期导致状态回退、服务端撤销注册等）。`"getPairingCode"` 不直接触发此事件（见 3.1），保留用于 code 过期后状态回退的间接关联场景。`[REVIEW-DRAFT]` |
 | `triggerId` | string | no | RPC request id | omitted | 触发操作的 RPC 请求 `id`。`triggerMethod` 为 `"server_sync"` 时此字段 omitted。`[REVIEW-DRAFT]` |
+
+#### 4.1.2 Event d block Example (op=6)
+
+```json
+{
+  "event": "device.enrollmentStateChanged",
+  "intent": 1,
+  "data": {
+    "previousState": "pending",
+    "reason": "pairing_code_used",
+    "state": {
+      "state": "enrolled",
+      "deviceId": "<DEVICE_ID>",
+      "workspaceId": "<WORKSPACE_ID>",
+      "endpoint": {
+        "endpointId": "<ROOM_ENDPOINT_ID>",
+        "type": "room",
+        "displayName": "Boardroom A",
+        "profileId": "<PROFILE_ID>"
+      },
+      "enrolledAt": "2026-06-11T10:02:00Z",
+      "updatedAt": "2026-06-11T10:02:00Z"
+    }
+  }
+}
+```
+
+读法：`previousState` 为变化前状态枚举值（非完整对象）；`state` 为变化后的完整 `EnrollmentInfo`。示例省略可选的 `triggerMethod` / `triggerId`；当状态变化由显式 RPC 调用驱动时，`triggerMethod` 为 `"setEnrollmentState"` 且 `triggerId` 匹配该请求 `id`；服务端内部驱动时 `triggerMethod` 为 `"server_sync"` 且 `triggerId` omitted。
+
+#### 4.1.3 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| `state` 变为 `enrolled` 且 `endpoint.type=room` | 后续 room endpoint 操作可进入 `room.info`；更新设备列表纳管状态 UI。 |
+| `state` 变为 `unenrolling` | 预期可能断连（`disconnectExpected`）；UI 提示解绑进行中。 |
+| `state` 变为 `failed` | 展示 `reason` / `message`；允许用户重试或重置。 |
+| event 丢失或重连 | 重连后主动调用 `device.getEnrollmentState` 校准。 |
+| 多端同时控制 | 以事件 `state` 为权威；冲突时以 `device.getEnrollmentState` 校准。 |
+
+#### 4.1.4 规则
+
+- Event MUST 使用 `op=6`。
+- Event MUST NOT 携带 `d.id`。
+- Event payload MUST 放在 `d.data` 中。
+- `previousState` 为枚举值字符串，非完整 `EnrollmentInfo` 对象。
+- `triggerMethod` 为 `"server_sync"` 时 MUST 省略 `triggerId`。
+- 草案阶段不得分配正式 eventId 或 eventMasks bitOffset。
+
 
 ---
 
@@ -448,13 +797,17 @@ Capability name: `device.enrollment`。
 
 ---
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
-### 7.1 获取 pairing code
+本章只展示多个 method/event 组成的端到端业务流程。单个 method 的 Request / Success Response / Error Response 示例见第 3 章；单个 event 的 Event 示例见第 4 章。每个 flow 引用 §3/§4 的 `d` block，点明调用顺序与状态变化。
 
-**场景**：设备向云端请求注册码，设备展示给用户输入。
+### 7.1 场景：首次注册（unmanaged → enrolled）
 
-请求（Device → Server）：
+设备首次纳管的完整流程，对应 `docs/flows/signage-device-management.md` 阶段 3。
+
+#### Step 1. device.getPairingCode：Request d block (op=7)
+
+设备向云端请求注册码（Device → Server），状态 `unmanaged` → `pairing_available`：
 
 ```json
 {
@@ -467,200 +820,31 @@ Capability name: `device.enrollment`。
 }
 ```
 
-响应：
+设备收到 code 后展示给用户（完整成功响应见 §3.1.4）。
+
+#### Step 2. 用户在云端管理系统输入注册码
+
+非协议步骤：用户读取设备展示的 code，在云端管理后台提交。服务端验证 code 后开始处理注册。
+
+#### Step 3. device.setEnrollmentState(pending)：Request d block (op=7)
+
+服务端通知设备 code 已提交、注册进行中（Server → Device）。状态 `pairing_available` → `pending`：
 
 ```json
 {
-  "id": 1,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "code": "ABC123",
-    "expiresAt": "2026-06-11T10:30:00Z",
-    "expiresInSeconds": 1800,
-    "state": "available"
-  }
-}
-```
-
-**读法**：`expiresInSeconds` 来自 legacy device-sdk 实测证据（`src/sdk.spec.ts` 断言差异暴露），草案必须保留。设备展示 `code` 和倒计时；用户在云端管理系统输入此 code。
-
-### 7.1a 刷新 pairing code（refresh=true）
-
-**场景**：设备已有有效 code 但用户反馈不可读，设备主动刷新。
-
-请求（Device → Server）：
-
-```json
-{
-  "id": 1,
-  "method": "device.getPairingCode",
+  "id": 8,
+  "method": "device.setEnrollmentState",
   "params": {
-    "refresh": true,
-    "purpose": "initial_enrollment"
+    "desiredState": "pending"
   }
 }
 ```
 
-响应：
+> 此中间转换可能由服务端内部触发而不通知设备（服务端内部直接从 `pairing_available` 跳到 `enrolled`），视实现而定（`[REVIEW-DRAFT]`，见 §3.4）。
 
-```json
-{
-  "id": 1,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "code": "XYZ789",
-    "expiresAt": "2026-06-11T11:00:00Z",
-    "expiresInSeconds": 1800,
-    "state": "available"
-  }
-}
-```
+#### Step 4. device.setEnrollmentState(enrolled)：Request d block (op=7)
 
-**读法**：`refresh=true` 使旧 code（`ABC123`）失效，服务端生成新 code（`XYZ789`）和新的过期时间。
-
-### 7.1b 获取 pairing code 错误（NOT_SUPPORTED）
-
-**场景**：设备不支持 pairing code 方式纳管。
-
-响应：
-
-```json
-{
-  "id": 1,
-  "status": {
-    "ok": false,
-    "code": 3,
-    "msg": "Pairing code is not supported on this device."
-  }
-}
-```
-
-**读法**：设备或服务端返回 `NOT_SUPPORTED`（0x0003），客户端应隐藏注册码入口或引导用户使用其他纳管方式。
-
-### 7.1c 获取 pairing code 错误（INTERNAL_ERROR）
-
-**场景**：服务端内部错误，无法生成 pairing code。
-
-响应：
-
-```json
-{
-  "id": 1,
-  "status": {
-    "ok": false,
-    "code": 14,
-    "msg": "Failed to generate pairing code."
-  }
-}
-```
-
-**读法**：`INTERNAL_ERROR`（0x000E），服务端无法生成 pairing code（如随机源不可用、数据库写入失败等）。客户端应提示用户稍后重试。
-
-### 7.2 查询纳管状态
-
-**场景**：云端查询设备是否已注册。
-
-请求：
-
-```json
-{
-  "id": 2,
-  "method": "device.getEnrollmentState",
-  "params": {
-    "includeEndpoint": true
-  }
-}
-```
-
-未纳管时响应：
-
-```json
-{
-  "id": 2,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "state": "unmanaged",
-    "deviceId": "<DEVICE_ID>"
-  }
-}
-```
-
-已纳管时响应：
-
-```json
-{
-  "id": 2,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "state": "enrolled",
-    "deviceId": "<DEVICE_ID>",
-    "workspaceId": "<WORKSPACE_ID>",
-    "endpoint": {
-      "endpointId": "<ROOM_ENDPOINT_ID>",
-      "type": "room",
-      "displayName": "Boardroom A",
-      "profileId": "<PROFILE_ID>"
-    },
-    "enrolledAt": "2026-06-10T08:30:00Z",
-    "updatedAt": "2026-06-11T10:02:00Z"
-  }
-}
-```
-
-### 7.2a 查询纳管状态（includeEndpoint=false）
-
-**场景**：轻量轮询，不需要 endpoint 详情。
-
-请求：
-
-```json
-{
-  "id": 7,
-  "method": "device.getEnrollmentState",
-  "params": {
-    "includeEndpoint": false
-  }
-}
-```
-
-已纳管时响应（不含 endpoint）：
-
-```json
-{
-  "id": 7,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "state": "enrolled",
-    "deviceId": "<DEVICE_ID>",
-    "workspaceId": "<WORKSPACE_ID>",
-    "enrolledAt": "2026-06-10T08:30:00Z",
-    "updatedAt": "2026-06-11T10:02:00Z"
-  }
-}
-```
-
-**读法**：`includeEndpoint=false` 时省略 `endpoint` 字段，适用于已缓存 endpoint 的轻量轮询场景。
-
-### 7.3 设置纳管状态（注册成功）
-
-**场景**：用户在云端输入注册码后，云端通知设备注册成功。
-
-请求（Server → Device）：
+注册成功，服务端下发 endpoint（Server → Device）。状态 `pending` → `enrolled`：
 
 ```json
 {
@@ -679,158 +863,11 @@ Capability name: `device.enrollment`。
 }
 ```
 
-响应：
+完整成功响应见 §3.3.4。
 
-```json
-{
-  "id": 3,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "state": {
-      "state": "enrolled",
-      "deviceId": "<DEVICE_ID>",
-      "workspaceId": "<WORKSPACE_ID>",
-      "endpoint": {
-        "endpointId": "<ROOM_ENDPOINT_ID>",
-        "type": "room",
-        "displayName": "Boardroom A",
-        "profileId": "<PROFILE_ID>"
-      },
-      "enrolledAt": "2026-06-11T10:02:00Z"
-    },
-    "disconnectExpected": false
-  }
-}
-```
+#### Step 5. device.enrollmentStateChanged：Event d block (op=6)
 
-**读法**：Server → Device 方向设置 enrolled 状态，同时下发 endpoint 信息。设备保存后后续 room endpoint 操作可进入 `room.info`。本示例假设设备已处于 `pending` 状态（先经 §7.3c：`pairing_available → pending`）；状态机要求 `enrolled` 仅从 `pending` 转入（见 §3.4 状态机与 §6.6 校验规则），从 `unmanaged`/`pairing_available` 直接设 `enrolled` 会返回 `INVALID_STATE`（见 §7.5a）。
-
-### 7.3a 设置纳管状态（解绑）
-
-**场景**：管理员重置设备，将其从工作空间解绑。
-
-请求（Server → Device）：
-
-```json
-{
-  "id": 5,
-  "method": "device.setEnrollmentState",
-  "params": {
-    "desiredState": "unmanaged",
-    "reason": "admin_reset",
-    "message": "Device reassigned to different workspace."
-  }
-}
-```
-
-响应：
-
-```json
-{
-  "id": 5,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "state": {
-      "state": "unenrolling",
-      "deviceId": "<DEVICE_ID>",
-      "message": "Device reassigned to different workspace.",
-      "updatedAt": "2026-06-11T12:00:00Z"
-    },
-    "disconnectExpected": true
-  }
-}
-```
-
-**读法**：`desiredState: "unmanaged"` 触发解绑流程，设备进入 `unenrolling` 状态异步清理。`disconnectExpected: true` 表示设备完成清理后可能断开当前管理连接。
-
-### 7.3b 设置纳管状态（注册失败）
-
-**场景**：服务端通知设备注册失败（如工作空间配额已满）。
-
-请求（Server → Device）：
-
-```json
-{
-  "id": 6,
-  "method": "device.setEnrollmentState",
-  "params": {
-    "desiredState": "failed",
-    "reason": "server_claimed",
-    "message": "Workspace enrollment quota exceeded. Contact administrator."
-  }
-}
-```
-
-响应：
-
-```json
-{
-  "id": 6,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "state": {
-      "state": "failed",
-      "deviceId": "<DEVICE_ID>",
-      "message": "Workspace enrollment quota exceeded. Contact administrator.",
-      "updatedAt": "2026-06-11T12:05:00Z"
-    },
-    "disconnectExpected": false
-  }
-}
-```
-
-**读法**：`desiredState: "failed"` 是 Server → Device 方向，用于通知设备注册未成功。`message` 在此场景下必填，用于展示失败原因。
-
-### 7.3c 设置纳管状态（pairing_available → pending）
-
-**场景**：用户在云端输入注册码后，服务端通知设备 code 已提交，注册进行中。
-
-请求（Server → Device）：
-
-```json
-{
-  "id": 8,
-  "method": "device.setEnrollmentState",
-  "params": {
-    "desiredState": "pending"
-  }
-}
-```
-
-响应：
-
-```json
-{
-  "id": 8,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "state": {
-      "state": "pending",
-      "deviceId": "<DEVICE_ID>",
-      "updatedAt": "2026-06-11T10:01:00Z"
-    },
-    "disconnectExpected": false
-  }
-}
-```
-
-**读法**：`pairing_available → pending` 是注册流程的中间转换，表示 pairing code 已在云端提交、服务端开始处理注册。此转换可能由服务端内部触发而不通知设备（服务端内部直接从 `pairing_available` 跳到 `enrolled`），视具体实现而定。`[REVIEW-DRAFT]`
-
-### 7.4 纳管状态变化事件
-
-**场景**：pairing code 被使用后，设备收到状态变化事件。
+状态变化触发事件：
 
 ```json
 {
@@ -856,76 +893,97 @@ Capability name: `device.enrollment`。
 }
 ```
 
-### 7.5 失败响应（权限不足）
+读法：客户端收到事件后更新纳管状态 UI；`state` 为 `enrolled` 且 `endpoint.type=room` 时后续 room endpoint 操作可进入 `room.info`。客户端也可在 Step 4 响应后直接用 `result.state` 更新，事件作为异步确认。跳过 `pending` 直接从 `unmanaged` 设 `enrolled` 会返回 `INVALID_STATE`（见 §3.3.7 读法）。
 
-**场景**：无权解绑设备。
+### 7.2 场景：解绑（enrolled → unmanaged）
 
-请求：
+管理员将设备从工作空间解绑，对应"设备重置 / 工作空间迁移"场景。
+
+#### Step 1. device.setEnrollmentState(unmanaged)：Request d block (op=7)
 
 ```json
 {
-  "id": 4,
+  "id": 5,
   "method": "device.setEnrollmentState",
   "params": {
     "desiredState": "unmanaged",
-    "reason": "user_unenrolled"
+    "reason": "admin_reset",
+    "message": "Device reassigned to different workspace."
   }
 }
 ```
 
-响应：
+#### Step 2. Success Response d block (op=8)
 
 ```json
 {
-  "id": 4,
+  "id": 5,
   "status": {
-    "ok": false,
-    "code": 9,
-    "msg": "Permission denied.",
-    "details": {
-      "candidateError": "ENROLLMENT_PERMISSION_DENIED"
-    }
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": {
+      "state": "unenrolling",
+      "deviceId": "<DEVICE_ID>",
+      "message": "Device reassigned to different workspace.",
+      "updatedAt": "2026-06-11T12:00:00Z"
+    },
+    "disconnectExpected": true
   }
 }
 ```
 
-### 7.5a 失败响应（INVALID_STATE — 状态转换违规）
+#### Step 3. device.enrollmentStateChanged：Event d block (op=6)
 
-**场景**：尝试从 `unmanaged` 状态直接设为 `enrolled`，跳过 `pending` 中间状态。
+设备异步清理完成后状态由 `unenrolling` → `unmanaged`，触发事件（`previousState: "unenrolling"`、`state.state: "unmanaged"`）。
 
-请求：
+读法：`disconnectExpected: true` 表示设备完成清理后可能断开当前管理连接，客户端应预期重连。解绑**不隐式清除**播放列表 / 网络配置 / 软件配置（跨域副作用），需显式调用对应域（`signage.playlist` / `network.*` / `software.config`）。权限不足时返回 `PERMISSION_DENIED`（code 9，见 §3.3.7）。
+
+### 7.3 场景：重连后状态校准
+
+事件丢失或设备重连后，客户端通过 query 校准当前纳管状态。
+
+#### Step 1. device.getEnrollmentState：Request d block (op=7)
 
 ```json
 {
-  "id": 9,
-  "method": "device.setEnrollmentState",
+  "id": 2,
+  "method": "device.getEnrollmentState",
   "params": {
-    "desiredState": "enrolled",
-    "reason": "pairing_code_used",
+    "includeEndpoint": true
+  }
+}
+```
+
+#### Step 2. Success Response d block (op=8)
+
+已纳管设备返回完整状态（未纳管返回 `state: "unmanaged"`，见 §3.2.4）：
+
+```json
+{
+  "id": 2,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": "enrolled",
+    "deviceId": "<DEVICE_ID>",
+    "workspaceId": "<WORKSPACE_ID>",
     "endpoint": {
       "endpointId": "<ROOM_ENDPOINT_ID>",
       "type": "room",
       "displayName": "Boardroom A",
       "profileId": "<PROFILE_ID>"
-    }
+    },
+    "enrolledAt": "2026-06-10T08:30:00Z",
+    "updatedAt": "2026-06-11T10:02:00Z"
   }
 }
 ```
 
-响应：
-
-```json
-{
-  "id": 9,
-  "status": {
-    "ok": false,
-    "code": 4,
-    "msg": "Invalid state transition: cannot go from 'unmanaged' to 'enrolled' directly."
-  }
-}
-```
-
-**读法**：`INVALID_STATE`（0x0004），状态机要求必须经由 `pairing_available → pending → enrolled` 路径。直接跳转返回此错误，客户端应引导用户先获取 pairing code。
+读法：客户端重连或 `device.enrollmentStateChanged` 事件丢失时，主动调用 `device.getEnrollmentState` 以 `state` 为权威校准本地缓存与 UI。轻量轮询可设 `includeEndpoint: false` 省略 endpoint（见 §3.2.4 读法）。
 
 ---
 
