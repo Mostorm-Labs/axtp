@@ -23,6 +23,27 @@ lastReviewed: 2026-06-10
 | Conformance | needed |
 | 主要未决问题 | legacy 默认值读写、算法授权、AI 线程控制和 DOA/beam 实时结果归属仍需确认。 |
 
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 ## 1. 功能说明
 
 `audio.algorithm` 用于管理设备运行时音频算法的能力发现、配置查询、配置更新、默认值恢复和配置变化通知。
@@ -75,26 +96,120 @@ lastReviewed: 2026-06-10
 | 字段表 | 见 6.2「查询类请求」。 |
 | 备注 | `items` 省略表示查询全部支持的算法对象。 |
 
-#### 3.1.2 返回结果 Result：`AudioGetAlgorithmCapabilitiesResponse`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "audio.getAlgorithmCapabilities",
+  "params": {
+    "items": [
+      "noiseSuppression",
+      "echoCancellation",
+      "autoGainControl"
+    ]
+  }
+}
+```
+
+读法：`items` 用于选择要查询的算法对象。省略 `items` 表示查询全部支持对象；示例只展示 RPC `d` block，不重复外层 `sid/op/d` envelope。
+
+#### 3.1.3 返回结果 Result：`AudioGetAlgorithmCapabilitiesResponse`
 
 | 字段定义 | 内容 |
 |---|---|
 | 顶层字段表 | 见 6.2「能力查询结果」。 |
 | 嵌套 capability 字段 | 见 6.3「Capability Schemas」。 |
 
-#### 3.1.3 可能触发的事件
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "capability": "audio.algorithm",
+    "updatePolicy": {
+      "partialUpdateSupported": true,
+      "multiAlgorithmUpdateSupported": true,
+      "atomicUpdateSupported": true
+    },
+    "algorithms": {
+      "noiseSuppression": {
+        "supported": true,
+        "displayName": "Noise suppression",
+        "enabled": {
+          "type": "boolean",
+          "defaultBool": true
+        },
+        "level": {
+          "type": "uint8",
+          "defaultInt32": 2,
+          "min": 0,
+          "max": 3,
+          "step": 1
+        }
+      },
+      "echoCancellation": {
+        "supported": true,
+        "displayName": "Echo cancellation",
+        "enabled": {
+          "type": "boolean",
+          "defaultBool": true
+        },
+        "tailLengthMs": {
+          "type": "uint32",
+          "defaultInt32": 128,
+          "min": 64,
+          "max": 512,
+          "step": 1,
+          "unit": "ms",
+          "requiresAudioRestart": true
+        }
+      }
+    }
+  }
+}
+```
+
+读法：客户端可用 `algorithms.<object>.<field>` 下的 `type/min/max/step/default*` 渲染 UI，并用 `requiresAudioRestart` 提示修改风险。
+
+#### 3.1.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发配置变化事件。 | none | 无需处理。 |
 
-#### 3.1.4 错误
+#### 3.1.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 `audio.algorithm` 或不支持指定 selector。 | 返回 unsupported feature 或 selector。 |
 | `INVALID_ARGUMENT` | `items` 中包含非法算法对象名。 | 返回具体非法 item。 |
 | `INTERNAL_ERROR` | 读取能力描述失败。 | 返回内部错误摘要。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "items[0]",
+      "reason": "unsupported algorithm object"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`id` 回显请求 `id`。失败时不得携带业务 `result`。
 
 ### 3.2 `audio.getAlgorithmConfig`
 
@@ -116,26 +231,86 @@ lastReviewed: 2026-06-10
 | 字段表 | 见 6.2「查询类请求」。 |
 | 备注 | `items` 省略表示查询全部支持的算法对象；响应可只包含被选择或被设备支持的算法对象。 |
 
-#### 3.2.2 返回结果 Result：`AudioAlgorithmConfig`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "audio.getAlgorithmConfig",
+  "params": {
+    "items": [
+      "noiseSuppression",
+      "echoCancellation"
+    ]
+  }
+}
+```
+
+读法：`items` 省略表示读取全部支持对象；带 `items` 时，响应可以只返回被选中的对象。
+
+#### 3.2.3 返回结果 Result：`AudioAlgorithmConfig`
 
 | 字段定义 | 内容 |
 |---|---|
 | 总结构 | 见 6.4「Config 总结构：`AudioAlgorithmConfig`」。 |
 | 各算法对象字段 | 见 6.5「各算法对象配置字段」。 |
 
-#### 3.2.3 可能触发的事件
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "noiseSuppression": {
+      "enabled": true,
+      "level": 2
+    },
+    "echoCancellation": {
+      "enabled": true,
+      "tailLengthMs": 128,
+      "nlpLevel": 2
+    }
+  }
+}
+```
+
+读法：`result` 本身就是 `AudioAlgorithmConfig`。不支持或未选择的算法对象可以省略。
+
+#### 3.2.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发配置变化事件。 | none | 无需处理。 |
 
-#### 3.2.4 错误
+#### 3.2.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 `audio.algorithm` 或不支持指定算法对象。 | 返回 unsupported feature 或 item。 |
 | `INVALID_ARGUMENT` | selector 结构或对象名非法。 | 返回具体字段路径。 |
 | `INTERNAL_ERROR` | 读取当前配置失败。 | 返回内部错误摘要。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "items[1]",
+      "reason": "unknown algorithm object"
+    }
+  }
+}
+```
 
 ### 3.3 `audio.setAlgorithmConfig`
 
@@ -158,20 +333,96 @@ lastReviewed: 2026-06-10
 | 配置对象 | 见 6.4 和 6.5。 |
 | 备注 | 请求必须符合 `updatePolicy`；如果校验失败，不应部分应用失败请求。 |
 
-#### 3.3.2 返回结果 Result：`AudioSetAlgorithmConfigResponse`
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "audio.setAlgorithmConfig",
+  "params": {
+    "config": {
+      "noiseSuppression": {
+        "level": 3
+      },
+      "echoCancellation": {
+        "tailLengthMs": 256
+      }
+    }
+  }
+}
+```
+
+读法：这是部分更新请求。未出现在 `config` 中的算法对象和字段保持不变；如果 `atomicUpdateSupported=true`，校验失败时不应部分应用。
+
+#### 3.3.3 返回结果 Result：`AudioSetAlgorithmConfigResponse`
 
 | 字段定义 | 内容 |
 |---|---|
 | 字段表 | 见 6.2「更新 / reset 结果：`AudioSetAlgorithmConfigResponse`」。 |
 | 配置对象 | `config` 字段使用 `AudioAlgorithmConfig`，见 6.4 和 6.5。 |
 
-#### 3.3.3 可能触发的事件
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "applyState": "pending_restart",
+    "requiresAudioRestart": true,
+    "config": {
+      "noiseSuppression": {
+        "enabled": true,
+        "level": 3
+      },
+      "echoCancellation": {
+        "enabled": true,
+        "tailLengthMs": 256,
+        "nlpLevel": 2
+      }
+    }
+  }
+}
+```
+
+读法：`config` 返回本次受影响对象的最终状态，而不是只回显请求字段。`pending_restart` 表示等待音频链路重启后完全生效。
+
+#### 3.3.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `audio.algorithmConfigChanged` | 配置实际发生变化。 | `AudioAlgorithmConfigChangedEvent` | 可用变化片段更新 UI；如需完整算法配置，调用 `audio.getAlgorithmConfig` 校准。 |
 
-#### 3.3.4 错误
+#### 3.3.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.algorithmConfigChanged",
+  "intent": 1,
+  "data": {
+    "reason": "user_request",
+    "applyState": "pending_restart",
+    "requiresAudioRestart": true,
+    "config": {
+      "noiseSuppression": {
+        "level": 3
+      },
+      "echoCancellation": {
+        "tailLengthMs": 256
+      }
+    },
+    "changedFields": [
+      "noiseSuppression.level",
+      "echoCancellation.tailLengthMs"
+    ]
+  }
+}
+```
+
+#### 3.3.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -182,6 +433,27 @@ lastReviewed: 2026-06-10
 | `BUSY` | DSP 或音频 pipeline 正忙。 | 建议客户端稍后重试。 |
 | `PERMISSION_DENIED` | 调用方没有权限。 | 返回权限错误。 |
 | `INTERNAL_ERROR` | 应用配置失败。 | 返回内部错误摘要。 |
+
+#### 3.3.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 11,
+    "msg": "Value is outside the supported range.",
+    "details": {
+      "field": "noiseSuppression.level",
+      "actual": 5,
+      "min": 0,
+      "max": 3
+    }
+  }
+}
+```
+
+读法：失败请求不得部分应用，也不得触发 `audio.algorithmConfigChanged`。
 
 ### 3.4 `audio.resetAlgorithmConfig`
 
@@ -204,20 +476,95 @@ lastReviewed: 2026-06-10
 | selector 写法 | 支持 `"all"`、算法对象名数组、或 `{ algorithm: [field] }`，详见 6.2 的 `items` 写法表。 |
 | 备注 | reset 是恢复当前运行时配置，不表示写入新的设备默认 profile。 |
 
-#### 3.4.2 返回结果 Result：`AudioSetAlgorithmConfigResponse`
+#### 3.4.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 104,
+  "method": "audio.resetAlgorithmConfig",
+  "params": {
+    "items": {
+      "noiseSuppression": [
+        "level"
+      ],
+      "echoCancellation": [
+        "nlpLevel"
+      ]
+    }
+  }
+}
+```
+
+读法：该请求只恢复指定字段到 capability 声明的默认值，不关闭算法对象，也不写入新的设备默认 profile。
+
+#### 3.4.3 返回结果 Result：`AudioSetAlgorithmConfigResponse`
 
 | 字段定义 | 内容 |
 |---|---|
 | 字段表 | 见 6.2「更新 / reset 结果：`AudioSetAlgorithmConfigResponse`」。 |
 | 配置对象 | `config` 字段使用 `AudioAlgorithmConfig`，见 6.4 和 6.5。 |
 
-#### 3.4.3 可能触发的事件
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "applyState": "applied",
+    "requiresAudioRestart": false,
+    "config": {
+      "noiseSuppression": {
+        "enabled": true,
+        "level": 2
+      },
+      "echoCancellation": {
+        "enabled": true,
+        "nlpLevel": 2
+      }
+    }
+  }
+}
+```
+
+读法：reset 的目标是 capability 中声明的默认值。响应中的 `config` 是受影响对象的最终状态。
+
+#### 3.4.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `audio.algorithmConfigChanged` | reset 后配置实际发生变化。 | `AudioAlgorithmConfigChangedEvent` | 可用变化片段更新 UI；如需完整算法配置，调用 `audio.getAlgorithmConfig` 校准。 |
 
-#### 3.4.4 错误
+#### 3.4.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.algorithmConfigChanged",
+  "intent": 1,
+  "data": {
+    "reason": "reset_to_default",
+    "applyState": "applied",
+    "requiresAudioRestart": false,
+    "config": {
+      "noiseSuppression": {
+        "level": 2
+      },
+      "echoCancellation": {
+        "nlpLevel": 2
+      }
+    },
+    "changedFields": [
+      "noiseSuppression.level",
+      "echoCancellation.nlpLevel"
+    ]
+  }
+}
+```
+
+#### 3.4.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -228,6 +575,24 @@ lastReviewed: 2026-06-10
 | `BUSY` | DSP 或音频 pipeline 正忙。 | 建议客户端稍后重试。 |
 | `PERMISSION_DENIED` | 调用方没有权限。 | 返回权限错误。 |
 | `INTERNAL_ERROR` | 恢复默认值失败。 | 返回内部错误摘要。 |
+
+#### 3.4.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "items.echoCancellation[0]",
+      "reason": "unknown reset field"
+    }
+  }
+}
+```
 
 ## 4. 事件 Events
 
@@ -254,6 +619,34 @@ lastReviewed: 2026-06-10
 | Payload Schema | `AudioAlgorithmConfigChangedEvent` |
 | 字段表 | 见 6.2「事件 Payload：`AudioAlgorithmConfigChangedEvent`」。 |
 | 配置对象 | `config` 字段使用 `AudioAlgorithmConfig`，见 6.4 和 6.5。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.algorithmConfigChanged",
+  "intent": 1,
+  "data": {
+    "reason": "user_request",
+    "applyState": "pending_restart",
+    "requiresAudioRestart": true,
+    "config": {
+      "noiseSuppression": {
+        "level": 3
+      },
+      "echoCancellation": {
+        "tailLengthMs": 256
+      }
+    },
+    "changedFields": [
+      "noiseSuppression.level",
+      "echoCancellation.tailLengthMs"
+    ]
+  }
+}
+```
+
+读法：事件中的 `config` 可以是变化片段，不一定是完整配置。客户端需要完整状态时，应调用 `audio.getAlgorithmConfig` 校准。
 
 #### 客户端处理建议
 
@@ -523,336 +916,18 @@ AudioAlgorithmConfig
 | `enabled` | bool | no | `true`, `false` | capability declared | 是否启用啸叫抑制。 |
 | `level` | uint8 | no | 0..3 | capability declared | 啸叫抑制强度。 |
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
-示例只展示 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。`audio.algorithm` 的正式字段以 registry/generated 为准。
+本章只展示多个 method/event 组成的端到端流程。单个 method 的 Request / Success Response / Error Response 示例见第 3 章；单个 event 的 Event 示例见第 4 章。
 
-### 7.1 查询能力：客户端准备渲染算法设置页
+### 7.1 场景：渲染算法页并修改降噪强度
 
-客户端想知道设备支持哪些算法、每个字段怎么渲染 UI、哪些值越界。请求省略 `items` 时，表示查询全部支持对象。
+1. 客户端先调用 `audio.getAlgorithmCapabilities`，根据 `algorithms.*` 的字段范围渲染 UI。
+2. 客户端调用 `audio.getAlgorithmConfig`，读取当前运行时配置。
+3. 用户修改 `noiseSuppression.level` 后，客户端调用 `audio.setAlgorithmConfig`。
+4. 设备返回 `AudioSetAlgorithmConfigResponse`；如配置实际变化，随后发送 `audio.algorithmConfigChanged`。
 
-```json
-{
-  "id": 1,
-  "method": "audio.getAlgorithmCapabilities",
-  "params": {}
-}
-```
-
-下面的响应展示了三类典型字段：
-
-- `enabled` 是 boolean 开关。
-- `level` 是 0..3 的强度档位。
-- `tailLengthMs` 是带单位和重启要求的时间参数。
-
-```json
-{
-  "id": 1,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "capability": "audio.algorithm",
-    "updatePolicy": {
-      "partialUpdateSupported": true,
-      "multiAlgorithmUpdateSupported": true,
-      "atomicUpdateSupported": true
-    },
-    "algorithms": {
-      "noiseSuppression": {
-        "supported": true,
-        "displayName": "Noise suppression",
-        "enabled": {
-          "type": "boolean",
-          "defaultBool": true
-        },
-        "level": {
-          "type": "uint8",
-          "defaultInt32": 2,
-          "min": 0,
-          "max": 3,
-          "step": 1
-        }
-      },
-      "echoCancellation": {
-        "supported": true,
-        "displayName": "Echo cancellation",
-        "enabled": {
-          "type": "boolean",
-          "defaultBool": true
-        },
-        "tailLengthMs": {
-          "type": "uint32",
-          "defaultInt32": 128,
-          "min": 64,
-          "max": 512,
-          "step": 1,
-          "unit": "ms",
-          "requiresAudioRestart": true
-        },
-        "nlpLevel": {
-          "type": "uint8",
-          "defaultInt32": 2,
-          "min": 0,
-          "max": 3,
-          "step": 1
-        }
-      },
-      "autoGainControl": {
-        "supported": true,
-        "displayName": "Auto gain control",
-        "enabled": {
-          "type": "boolean",
-          "defaultBool": true
-        },
-        "targetLevelDb": {
-          "type": "int32",
-          "defaultInt32": -18,
-          "min": -36,
-          "max": -6,
-          "step": 1,
-          "unit": "dB"
-        },
-        "maxGainDb": {
-          "type": "uint8",
-          "defaultInt32": 24,
-          "min": 0,
-          "max": 36,
-          "step": 1,
-          "unit": "dB"
-        }
-      }
-    }
-  }
-}
-```
-
-读法：客户端可以根据 `algorithms.noiseSuppression.level.min/max/step` 渲染 0..3 的 slider，也可以根据 `echoCancellation.tailLengthMs.requiresAudioRestart` 在 UI 上提示“修改后需要重启音频链路”。
-
-### 7.2 查询当前配置：完整配置响应示例
-
-客户端要展示当前算法页时，调用 `audio.getAlgorithmConfig`。下面示例故意展示完整 `AudioAlgorithmConfig` 形状，方便看清每个算法对象在 JSON 中的层级。
-
-```json
-{
-  "id": 2,
-  "method": "audio.getAlgorithmConfig",
-  "params": {}
-}
-```
-
-```json
-{
-  "id": 2,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "noiseSuppression": {
-      "enabled": true,
-      "level": 2
-    },
-    "echoCancellation": {
-      "enabled": true,
-      "tailLengthMs": 128,
-      "nlpLevel": 2
-    },
-    "autoGainControl": {
-      "enabled": true,
-      "targetLevelDb": -18,
-      "maxGainDb": 24,
-      "attackTimeMs": 20,
-      "releaseTimeMs": 500
-    },
-    "beamforming": {
-      "enabled": true,
-      "lookDirectionDeg": 0,
-      "beamWidthDeg": 60
-    },
-    "dereverberation": {
-      "enabled": true,
-      "level": 1
-    },
-    "voiceActivityDetection": {
-      "enabled": true,
-      "sensitivity": 2,
-      "hangoverMs": 300
-    },
-    "directionOfArrival": {
-      "enabled": true,
-      "reportingEnabled": true,
-      "reportIntervalMs": 200,
-      "smoothingMs": 500
-    },
-    "howlingSuppression": {
-      "enabled": false,
-      "level": 1
-    }
-  }
-}
-```
-
-读法：`result` 本身就是 `AudioAlgorithmConfig`。如果某个设备不支持 `howlingSuppression`，它可以不返回该对象；如果请求带了 `items`，响应也可以只返回被选中的对象。
-
-### 7.3 部分更新：只改降噪和回声消除
-
-客户端只想把降噪调到 3，并把回声尾长改为 256ms。没有出现在请求里的算法对象和字段保持不变。
-
-```json
-{
-  "id": 3,
-  "method": "audio.setAlgorithmConfig",
-  "params": {
-    "config": {
-      "noiseSuppression": {
-        "level": 3
-      },
-      "echoCancellation": {
-        "tailLengthMs": 256
-      }
-    }
-  }
-}
-```
-
-```json
-{
-  "id": 3,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "applyState": "pending_restart",
-    "requiresAudioRestart": true,
-    "config": {
-      "noiseSuppression": {
-        "enabled": true,
-        "level": 3
-      },
-      "echoCancellation": {
-        "enabled": true,
-        "tailLengthMs": 256,
-        "nlpLevel": 2
-      }
-    }
-  }
-}
-```
-
-读法：`noiseSuppression.level` 可以立即生效，但 `echoCancellation.tailLengthMs` 可能需要重启音频链路，所以响应是 `pending_restart`。`config` 返回本次受影响对象的最终状态，而不是只回显请求字段。
-
-### 7.4 恢复默认值：只恢复部分字段
-
-客户端只想把降噪强度和回声消除强度恢复默认，不想关闭算法。
-
-```json
-{
-  "id": 4,
-  "method": "audio.resetAlgorithmConfig",
-  "params": {
-    "items": {
-      "noiseSuppression": ["level"],
-      "echoCancellation": ["nlpLevel"]
-    }
-  }
-}
-```
-
-```json
-{
-  "id": 4,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "applyState": "applied",
-    "requiresAudioRestart": false,
-    "config": {
-      "noiseSuppression": {
-        "enabled": true,
-        "level": 2
-      },
-      "echoCancellation": {
-        "enabled": true,
-        "nlpLevel": 2
-      }
-    }
-  }
-}
-```
-
-读法：reset 的目标是 capability 中声明的默认值。它恢复当前运行时配置，不表示写入新的设备默认 profile。
-
-### 7.5 配置变化事件：一次更新触发一个事件
-
-当 set/reset 成功改变配置后，设备发送 `audio.algorithmConfigChanged`。如果一次操作改了多个字段，建议用一个事件合并上报。
-
-```json
-{
-  "event": "audio.algorithmConfigChanged",
-  "intent": 1,
-  "data": {
-    "reason": "user_request",
-    "applyState": "pending_restart",
-    "requiresAudioRestart": true,
-    "config": {
-      "noiseSuppression": {
-        "level": 3
-      },
-      "echoCancellation": {
-        "tailLengthMs": 256
-      }
-    },
-    "changedFields": [
-      "noiseSuppression.level",
-      "echoCancellation.tailLengthMs"
-    ]
-  }
-}
-```
-
-读法：事件中的 `config` 是变化片段，不一定是完整配置。客户端如果需要完整状态，可以再调用 `audio.getAlgorithmConfig`。
-
-### 7.6 失败响应：字段值越界
-
-客户端把 `noiseSuppression.level` 设置为 5，但 capability 声明范围是 0..3。
-
-```json
-{
-  "id": 5,
-  "method": "audio.setAlgorithmConfig",
-  "params": {
-    "config": {
-      "noiseSuppression": {
-        "level": 5
-      }
-    }
-  }
-}
-```
-
-```json
-{
-  "id": 5,
-  "status": {
-    "ok": false,
-    "code": 11,
-    "msg": "Value is outside the supported range.",
-    "details": {
-      "field": "noiseSuppression.level",
-      "actual": 5,
-      "min": 0,
-      "max": 3
-    }
-  }
-}
-```
-
-读法：失败请求不得部分应用，也不得触发 `audio.algorithmConfigChanged`。
+读法：如果 `audio.algorithmConfigChanged.data.config` 只是变化片段，客户端可以局部更新 UI；如果需要完整状态，调用 `audio.getAlgorithmConfig` 校准。失败响应不得部分应用，也不得触发配置变化事件。
 
 ## 8. 错误
 

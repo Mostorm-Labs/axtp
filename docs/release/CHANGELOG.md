@@ -2,6 +2,48 @@
 
 This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATCH` tags.
 
+## spec/v0.6.0
+
+Business registry expansion and generated protocol refresh release.
+
+### Protocol
+
+- Expands the generated Protocol IR from the previously adopted audio algorithm surface to 38 methods, 17 events, 154 errors, 135 schemas, and 2 profiles.
+- Generates newly adopted business protocol surfaces for `device.info`, `network.interface`, `network.ip`, `network.wifi`, `network.ap`, `audio.stream`, `video.stream`, and the P0 subset of `firmware.update`.
+- Refreshes `protocol/axtp.protocol.yaml`, `docs/generated/protocol.md`, `docs/generated/protocol.json`, generated registry markdown, MCP JSON registry artifacts, and generator snapshots from registry/domain YAML sources.
+- Keeps AXTP core wire semantics unchanged from `spec/v0.5.1`, including Big-Endian / network byte order.
+
+### Registry
+
+- Adds domain registry source files for `device`, `network`, `video`, and `firmware`.
+- Extends the existing `audio` domain registry with `audio.stream` methods, events, schemas, and capability metadata.
+- Marks the adopted protocol drafts as generated while preserving unresolved `[REVIEW-ASK]` items as non-contract review notes.
+- Keeps legacy mappings unadopted where field-level behavior remains unconfirmed.
+
+### Schemas
+
+- Adds generated schema coverage for device information snapshots, network interface/IP/Wi-Fi/AP configuration and state, audio/video stream control, stream state events, and firmware update sessions.
+- Adds capability descriptors for `device.info`, `network.interface`, `network.ip`, `network.wifi`, `network.ap`, `audio.stream`, `video.stream`, and `firmware.update`.
+- Keeps advanced firmware update flows such as cancel, resume, URL update, rollback, and external verify/install out of the generated P0 contract.
+
+### Conformance
+
+- Updates generator tests and protocol snapshots so validation tracks the expanded generated protocol model.
+- Source and generated protocol validation now pass against the 38-method / 17-event registry model.
+- No new hand-written conformance cases are added in this release; domain-specific conformance suites should follow the generated facts.
+
+### Migration
+
+- Preserves legacy review notes in the adopted protocol drafts but does not promote unconfirmed legacy aliases into stable registry mappings.
+- Keeps adapter-only or uncertain legacy behavior outside the generated implementation contract.
+
+### Runtime Impact
+
+- Runtime and SDK teams should bind to `spec/v0.6.0`, regenerate from `protocol/axtp.protocol.yaml` or `docs/generated/protocol.json`, and update method/event/capability registries accordingly.
+- Existing `spec/v0.5.1` core wire behavior remains compatible; this release primarily expands generated business registry facts.
+- Implementations should treat generated `draft` business methods as adopted registry facts for this snapshot, while using capability discovery before invoking optional device/network/stream/firmware features.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.5.1
 
 Wire byte order metadata and runtime release hotfix.

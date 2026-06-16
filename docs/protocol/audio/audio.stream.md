@@ -1,11 +1,11 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: audio
 feature: audio.stream
-registry:
-lastReviewed: 2026-06-13
+registry: ../../../registry/domains/audio/domain.yaml
+lastReviewed: 2026-06-15
 ---
 
 # audio.stream
@@ -15,13 +15,34 @@ lastReviewed: 2026-06-13
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 通过 `audio.openStream` / `audio.closeStream` 建立和关闭 AXTP 实时音频业务流，并用 STREAM 数据面承载音频 chunk。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。本文是协议草案；正式实现以 registry / generated 为准。 |
+| 当前状态 | generated；已写入 `../../../registry/domains/audio/domain.yaml`，并已刷新到 `protocol/axtp.protocol.yaml` 与 `docs/generated/**`。 |
+| 是否可直接实现 | 是，但实现合同以 `protocol/axtp.protocol.yaml` / `docs/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
 | 主要交互 | RPC + EVENT + STREAM |
 | 是否使用 STREAM | 是。RPC 负责建流、关流和状态；音频数据走 `PayloadType=STREAM`。 |
-| Registry readiness | candidate |
+| Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
 | Conformance | needed |
 | 主要未决问题 | AAC 透传的 `transportFormat` 仍需确认；source state event、`peerRole` 命名和 retained source 策略需评审。 |
+
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
 
 ## 1. 功能说明
 
@@ -79,7 +100,22 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `source` | string | no | source id | omitted | 可选按 source 查询；省略表示返回全部可见音频 source。 |
 | `includeRuntimeState` | bool | no | `true`, `false` | `false` | 是否同时返回 source 当前 `available/receiving` 状态。 |
 
-#### 3.1.2 返回结果 Result：`AudioStreamCapabilities`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "audio.getStreamCapabilities",
+  "params": {
+    "source": "wireless_cast_audio",
+    "includeRuntimeState": true
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `AudioGetStreamCapabilitiesParams`，省略字段按上表默认值处理。
+
+#### 3.1.3 返回结果 Result：`AudioStreamCapabilities`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -92,18 +128,78 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `supportsSyncGroup` | bool | yes | `true`, `false` | none | 是否支持与视频流共享同步组。 |
 | `flowControlManagedByRuntime` | bool | yes | `true`, `false` | `true` | 普通业务 App 是否无需直接调用 `stream.flowControl`。 |
 
-#### 3.1.3 可能触发的事件
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "capability": "audio.stream",
+    "sources": [
+      {
+        "source": "wireless_cast_audio",
+        "codecs": [
+          "aac"
+        ],
+        "state": "receiving"
+      }
+    ],
+    "streamProfiles": [
+      "media.audio"
+    ],
+    "openModes": [
+      "producer_open",
+      "receiver_pull"
+    ],
+    "peerRoles": [
+      "receiver",
+      "transmitter"
+    ],
+    "supportsSourceStateEvent": true,
+    "supportsSyncGroup": true,
+    "flowControlManagedByRuntime": true
+  }
+}
+```
+
+读法：`result` 是 `AudioStreamCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.1.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不应改变状态。 | none | 无需处理。 |
 
-#### 3.1.4 错误
+#### 3.1.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 `audio.stream`。 | 返回 unsupported feature。 |
 | `INVALID_ARGUMENT` | `source` 字段格式非法。 | 返回字段路径和合法 source 约束。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "source",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `audio.openStream`
 
@@ -147,7 +243,23 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `receiverClockDomain` | string | no | `na20_receive_clock`, receiver-defined | omitted | NA20 接收时钟域，用于 jitter/诊断。 |
 | `maxDataSize` | uint32 | no | transport/profile limit | omitted | 单个 STREAM payload data 最大大小建议。 |
 
-#### 3.2.2 返回结果 Result：`AudioOpenStreamResult`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "audio.openStream",
+  "params": {
+    "source": "wireless_cast_audio",
+    "peerRole": "receiver",
+    "codec": "aac"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `AudioOpenStreamParams`，省略字段按上表默认值处理。
+
+#### 3.2.3 返回结果 Result：`AudioOpenStreamResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -168,14 +280,61 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `receiverClockDomain` | string | no | receiver-defined | omitted | 接收时钟域。 |
 | `maxDataSize` | uint32 | no | negotiated limit | omitted | 每个 STREAM chunk data 最大长度。 |
 
-#### 3.2.3 可能触发的事件
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "streamId": 4097,
+    "state": "streaming",
+    "source": "wireless_cast_audio",
+    "peerRole": "receiver",
+    "codec": "aac",
+    "sampleRate": 48000,
+    "channels": 2,
+    "streamProfile": "media.audio",
+    "cursorUnit": "timestampUs"
+  }
+}
+```
+
+读法：`result` 是 `AudioOpenStreamResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.2.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `audio.streamStateChanged` | stream 进入 `opening`、`streaming`、`closed` 或 `failed`。 | `AudioStreamStateChangedEvent` | 更新音频 decoder/jitter buffer；必要时调用 `audio.getStreamState` 校准。 |
 | `audio.streamSourceStateChanged` | producer-open 被拒后 source 仍可用，或 source lifecycle 变化。 | `AudioStreamSourceStateChangedEvent` | 缓存 source 状态；receiver ready 后可主动 `audio.openStream`。 |
 
-#### 3.2.4 错误
+#### 3.2.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.streamStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "streamId": 4097,
+      "state": "streaming",
+      "source": "wireless_cast_audio"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.2.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -184,6 +343,26 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `MEDIA_CODEC_UNSUPPORTED` | 请求 codec、AAC 封装或 PCM fallback 不支持。 | 返回支持的 codec/format 线索。 |
 | `BUSY` / `RESOURCE_EXHAUSTED` | 同一 source/mediaKind 已有 active downstream stream 或资源不足。 | 返回可重试提示；不得发送 STREAM。 |
 | `MEDIA_STREAM_START_FAILED` | 建立 stream context 或 producer 绑定失败。 | 返回失败原因；可触发 `audio.streamStateChanged(state=failed)`。 |
+
+#### 3.2.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "MEDIA_SOURCE_NOT_FOUND",
+      "field": "source",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `audio.closeStream`
 
@@ -207,7 +386,22 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `reason` | enum | no | `receiver_closed`, `user_stop`, `not_needed`, `source_disconnected`, `producer_stopped`, `session_lost`, `receiver_timeout`, `error` | `user_stop` | 关闭原因。 |
 | `finalCursor` | uint64 | no | cursorUnit-defined | omitted | 调用方最后处理到的 cursor。 |
 
-#### 3.3.2 返回结果 Result：`AudioCloseStreamResult`
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "audio.closeStream",
+  "params": {
+    "streamId": 4097,
+    "reason": "user_request"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `AudioCloseStreamParams`，省略字段按上表默认值处理。
+
+#### 3.3.3 返回结果 Result：`AudioCloseStreamResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -216,19 +410,80 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `reason` | enum | no | same as params | omitted | 最终关闭原因。 |
 | `alreadyClosed` | bool | no | `true`, `false` | `false` | 是否此前已经进入 terminal state。 |
 
-#### 3.3.3 可能触发的事件
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "streamId": 4097,
+    "state": "streaming",
+    "alreadyClosed": false
+  }
+}
+```
+
+读法：`result` 是 `AudioCloseStreamResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.3.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `audio.streamStateChanged` | stream 关闭、失败或重复 close 收敛。 | `AudioStreamStateChangedEvent` | 释放 decoder、buffer 和音频播放状态。 |
 
-#### 3.3.4 错误
+#### 3.3.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.streamStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "streamId": 4097,
+      "state": "streaming",
+      "source": "wireless_cast_audio"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.3.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `STREAM_NOT_FOUND` | streamId 不属于当前 AXTP session。 | 调用方本地清理旧 context。 |
 | `STREAM_CLOSED` | stream 已关闭且实现选择返回错误。 | 也可返回 `alreadyClosed=true` 的成功结果。 |
 | `MEDIA_STREAM_STOP_FAILED` | 设备无法停止 producer。 | 返回 typed error，并尽快进入 `failed` terminal state。 |
+
+#### 3.3.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "STREAM_NOT_FOUND",
+      "field": "streamId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.4 `audio.getStreamState`
 
@@ -249,7 +504,21 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 |---|---|---:|---|---|---|
 | `streamId` | uint32 | yes | stream id | none | 查询目标 stream。 |
 
-#### 3.4.2 返回结果 Result：`AudioStreamState`
+#### 3.4.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 104,
+  "method": "audio.getStreamState",
+  "params": {
+    "streamId": 4097
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `AudioGetStreamStateParams`，省略字段按上表默认值处理。
+
+#### 3.4.3 返回结果 Result：`AudioStreamState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -266,17 +535,58 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `lastCursor` | uint64 | no | cursorUnit-defined | omitted | 最近 cursor。 |
 | `reason` | string | no | state reason | omitted | terminal 或异常原因。 |
 
-#### 3.4.3 可能触发的事件
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "streamId": 4097,
+    "state": "streaming",
+    "source": "wireless_cast_audio",
+    "codec": "aac",
+    "streamProfile": "media.audio"
+  }
+}
+```
+
+读法：`result` 是 `AudioStreamState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.4.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.4.4 错误
+#### 3.4.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `STREAM_NOT_FOUND` | streamId 不存在或已随 session lost 失效。 | 释放本地 context。 |
+
+#### 3.4.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "STREAM_NOT_FOUND",
+      "field": "streamId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.5 `audio.getStreamSourceState`
 
@@ -297,7 +607,21 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 |---|---|---:|---|---|---|
 | `source` | string | yes | source id | none | 查询目标 source。 |
 
-#### 3.5.2 返回结果 Result：`AudioStreamSourceState`
+#### 3.5.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 105,
+  "method": "audio.getStreamSourceState",
+  "params": {
+    "source": "wireless_cast_audio"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `AudioGetStreamSourceStateParams`，省略字段按上表默认值处理。
+
+#### 3.5.3 返回结果 Result：`AudioStreamSourceState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -312,17 +636,56 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `lastOpenRejectedReason` | string | no | reason enum/string | omitted | 最近一次 producer-open 被拒原因。 |
 | `receiverTimestampUs` | uint64 | no | microseconds | omitted | NA20 接收时钟时间戳。 |
 
-#### 3.5.3 可能触发的事件
+#### 3.5.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "source": "wireless_cast_audio",
+    "state": "receiving",
+    "available": true
+  }
+}
+```
+
+读法：`result` 是 `AudioStreamSourceState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.5.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.5.4 错误
+#### 3.5.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `MEDIA_SOURCE_NOT_FOUND` | source 不存在。 | 清理 source cache。 |
+
+#### 3.5.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "MEDIA_SOURCE_NOT_FOUND",
+      "field": "source",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -358,6 +721,23 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `lastSeqId` | uint32 | no | uint32 | omitted | 最近 seq。 |
 | `lastCursor` | uint64 | no | cursorUnit-defined | omitted | 最近 cursor。 |
 
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.streamStateChanged",
+  "intent": 1,
+  "data": {
+    "streamId": 4097,
+    "state": "streaming",
+    "source": "wireless_cast_audio",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
 #### 客户端处理建议
 
 | 场景 | 建议 |
@@ -391,6 +771,24 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `lastOpenRejectedReason` | string | no | `receiver_not_ready`, `policy_rejected`, `resource_exhausted`, `unsupported`, `unknown` | omitted | producer-open 被拒原因。 |
 | `receiverTimestampUs` | uint64 | no | microseconds | omitted | NA20 接收时钟时间。 |
 
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.streamSourceStateChanged",
+  "intent": 1,
+  "data": {
+    "source": "wireless_cast_audio",
+    "mediaKind": "audio",
+    "state": "streaming",
+    "reason": "user_request",
+    "lastOpenRejectedReason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
 #### 客户端处理建议
 
 | 场景 | 建议 |
@@ -419,6 +817,21 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `jitterUs` | uint32 | no | microseconds | omitted | jitter 估计。 |
 | `lastSeqId` | uint32 | no | uint32 | omitted | 最近 seq。 |
 | `lastCursor` | uint64 | no | cursorUnit-defined | omitted | 最近 cursor。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.streamStatsReported",
+  "intent": 1,
+  "data": {
+    "streamId": 4097,
+    "state": "streaming"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 
@@ -819,10 +1232,10 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| registry | not generated | 尚未写入 `registry/domains/audio/domain.yaml` 的 `audio.stream` 事实。 |
-| generated | false | `docs/generated/protocol.md` 尚未包含 `audio.stream` 方法/事件/schema。 |
-| protocol draft | draft | 本文为 Stage 20 草案。 |
-| registry readiness | candidate | 方法、事件、schema 和边界已有候选，但仍有 `[REVIEW-ASK]`。 |
+| registry | source adopted | 已写入 `../../../registry/domains/audio/domain.yaml`。 |
+| generated | true | 已运行 `generate-axtp-protocol`，刷新 `protocol/axtp.protocol.yaml` 和 `docs/generated/**`。 |
+| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
+| registry readiness | ready | audio.stream P0/confirmed subset 已写入 registry source；AAC transportFormat 和 legacy 映射仍保留待确认。 |
 | conformance | needed | 需覆盖 producer-open、receiver-pull、rejected fallback、close 解耦、AAC 透传和 hard-disconnect。 |
 
 ## 11. 测试要点

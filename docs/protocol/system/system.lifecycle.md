@@ -5,791 +5,1479 @@ generated: false
 domain: system
 feature: system.lifecycle
 registry: ""
-lastReviewed: 2026-06-10（新增 NearHub Launcher Signage legacy 映射条目）
+lastReviewed: 2026-06-15
 ---
 
-# AXTP system.lifecycle 协议草案
+# system.lifecycle
 
-版本：v0.8
+## 0. 速读结论
 
-归属域：`system`
+| 项目 | 内容 |
+|---|---|
+| 这个能力做什么 | 系统立即重启、计划重启、graceful shutdown、计划关机、生命周期状态读取和生命周期状态变化通知。 |
+| 当前状态 | draft |
+| 是否可直接实现 | 否。本文是 protocol draft；正式实现以 registry / generated 为准。 |
+| 主要交互 | RPC + EVENT |
+| 是否使用 STREAM | 否 |
+| Registry readiness | partial |
+| Conformance | needed |
+| 主要未决问题 | schema 字段、错误模型、legacy 映射和 conformance case 仍需人工确认。 |
 
-Capability ID：`system.lifecycle`
+## JSON 示例约定
 
-适用范围：系统立即重启、计划重启、graceful shutdown、计划关机、生命周期状态读取和生命周期状态变化通知。
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
 
----
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
 
-## 协议审核标记（人工复核）
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
 
-| 标记 | 条目 | 审核结论 | 后续动作 |
-|---|---|---|---|
-| `[REVIEW-OK]` | domain.feature | `system.lifecycle` 表达系统生命周期动作和状态，属于 system 层。 | 可作为 `registry/domains/system/domain.yaml` 草案输入。 |
-| `[REVIEW-OK]` | reboot/shutdown | `system.reboot` 和 `system.shutdown` 是立即动作型方法，不使用配置型方法表达这些动作。 | 进入候选方法。 |
-| `[REVIEW-OK]` | typed schedule get/set/cancel | 计划重启和计划关机按类型拆分读取、写入和取消；不保留总括计划接口。 | 使用 `getRebootSchedule` / `setRebootSchedule` / `cancelRebootSchedule` 与 `getShutdownSchedule` / `setShutdownSchedule` / `cancelShutdownSchedule`。 |
-| `[REVIEW-OK]` | shutdown / power-off 边界 | 原 power-off 候选与 `system.shutdown` 重复；软件关机/下电统一由 `system.shutdown` 表达。 | 不再保留独立 system power 草案。 |
-| `[REVIEW-OK]` | reboot schedule 边界 | 计划重启是 lifecycle schedule，归 `system.getRebootSchedule` / `system.setRebootSchedule` / `system.cancelRebootSchedule`。 | 采纳前确认一次性/周期性计划策略。 |
-| `[REVIEW-OK]` | shutdown schedule 边界 | 计划关机是 planned graceful shutdown schedule，归 `system.getShutdownSchedule` / `system.setShutdownSchedule` / `system.cancelShutdownSchedule`。 | 不再引入硬件/固件级 power schedule。 |
-| `[REVIEW-DRAFT]` | transition event | `system.lifecycleStateChanged` 表达 rebooting、shutting_down、ready 等状态。 | 采纳前确认断连前事件可靠性和重连校准策略。 |
-| `[REVIEW-ASK]` | legacy 映射 | AXDP / VM33 / Signage 的 reboot/shutdown/keepalive 字段需字段级映射。 | 采纳前补 legacyRefs。 |
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
 
----
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
 
-## 1. 文档定位
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
 
-本文是 `docs/flows/device-system-info.md` 的 Stage 20 协议草案输入，不是最终协议事实源。采纳后，稳定事实必须写入 `registry/domains/system/domain.yaml` 或相关 registry YAML，再由 Generator 生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
 
-当前 generated 协议没有 adopted `system.lifecycle` 方法；本文中的方法名和字段均为草案候选，数值 ID 使用 `TBD after adoption`。
+## 1. 功能说明
 
-## 2. 业务需求
+`system.lifecycle` 用于系统立即重启、计划重启、graceful shutdown、计划关机、生命周期状态读取和生命周期状态变化通知。
+
+本文是 `docs/protocol` 下的协议草案或可读说明，不是新的机器事实源。draft / review-ok 阶段不得作为 runtime 实现合同；正式实现必须以 `registry/**/*.yaml`、`protocol/axtp.protocol.yaml`、`docs/generated/**` 和 conformance case 为准。
+
+## 2. 能力边界
+
+| 类型 | 内容 |
+|---|---|
+| 包含 | system.lifecycle 的能力发现、状态查询、配置或动作控制。 |
+| 包含 | 与 system.lifecycle 直接相关的 method/event/schema 草案。 |
+| 不包含 | 不承载其他 capability feature 的业务语义；跨域关系通过 schema 字段、引用或数据面 stream/file 表达。 |
+| 不包含 | method/event 数值 ID 分配；数值以 registry/generated 为准。 |
+| 数据面 | 本 feature 默认不定义 STREAM payload，所有操作均通过 RPC method/event 完成。 |
+
+## 3. 方法 Methods
+
+方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。不要在草案中分配正式 ID。
+
+### 3.0 方法速览
+
+| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
+|---|---|---|---|---|---|---|
+| `system.getRebootSchedule` | query | 原草案中出现的候选方法 | `GetRebootScheduleParams` | `LifecycleScheduleList` | 否 | draft |
+| `system.setRebootSchedule` | command | 原草案中出现的候选方法 | `SetRebootScheduleParams` | `SetLifecycleScheduleResult` | 是，`system.lifecycleStateChanged` | draft |
+| `system.cancelRebootSchedule` | action | 原草案中出现的候选方法 | `CancelRebootScheduleParams` | `CancelScheduleResult` | 是，`system.lifecycleStateChanged` | draft |
+| `system.getShutdownSchedule` | query | 原草案中出现的候选方法 | `GetShutdownScheduleParams` | `LifecycleScheduleList` | 否 | draft |
+| `system.setShutdownSchedule` | command | 原草案中出现的候选方法 | `SetShutdownScheduleParams` | `SetLifecycleScheduleResult` | 是，`system.lifecycleStateChanged` | draft |
+| `system.cancelShutdownSchedule` | action | 原草案中出现的候选方法 | `CancelShutdownScheduleParams` | `CancelScheduleResult` | 是，`system.lifecycleStateChanged` | draft |
+| `system.getLifecycleState` | query | 原草案中出现的候选方法 | `GetLifecycleStateParams` | `LifecycleState` | 否 | draft |
+| `system.reboot` | action | 原草案示例中出现的候选方法 | `RebootParams` | `LifecycleActionResult` | 是，`system.lifecycleStateChanged` | draft |
+| `system.shutdown` | action | 原草案示例中出现的候选方法 | `ShutdownParams` | `LifecycleActionResult` | 是，`system.lifecycleStateChanged` | draft |
+
+### 3.1 `system.getRebootSchedule`
+
+**用途**：原草案中出现的候选方法。
 
 | 项 | 内容 |
 |---|---|
-| 需求来源 | `docs/flows/device-system-info.md`、计划重启/计划关机新增场景、legacy reboot/shutdown/keepalive 线索。 |
-| 目标用户 | App / PC host / cloud console / device management service。 |
-| 目标行为 | 用户触发立即重启、graceful shutdown、计划重启或计划关机后，设备返回接受状态；App 可分别读取当前重启计划和关机计划，并通过生命周期事件或断连/重连更新 UI。 |
-| 当前实现程度 | Drafted only；原草案已从泛配置型模板调整为动作和状态协议。 |
+| 调用类型 | query |
+| Params Schema | `GetRebootScheduleParams` |
+| Result Schema | `LifecycleScheduleList` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-## 3. Domain 边界
+#### 3.1.1 请求参数 Params：`GetRebootScheduleParams`
 
-| 项 | 决策 |
-|---|---|
-| Domain | `system` |
-| Feature | `system.lifecycle` |
-| Capability | `system.lifecycle` |
-| 负责 | lifecycle state、immediate reboot、shutdown、typed reboot/shutdown schedules、scheduled reboot、scheduled shutdown、lifecycle transition event。 |
-| 不属于本文 | CPU/内存、运行时状态变化和运行时状态恢复属于 `system.state`；健康/告警/fault 判定由业务端基于 `system.stateChanged` 自行实现；restore-default/factory reset 属于 `system.reset` 或 `system.initialization`；外部 PDU/继电器硬断电不属于本设备 AXTP 软件协议。 |
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
+| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
 
-## 4. 协议决策
-
-| 决策点 | 结论 | 理由 |
-|---|---|---|
-| 新增/修改/复用 | Modify existing draft | 复用 `system.lifecycle` capability，但替换配置型模板。 |
-| 状态查询 | `system.getLifecycleState` | App 可在重连后校准当前生命周期状态。 |
-| 立即动作 | `system.reboot` / `system.shutdown` | 符合动作型 feature 模板。 |
-| 计划任务 | `system.getRebootSchedule` / `system.setRebootSchedule` / `system.cancelRebootSchedule`；`system.getShutdownSchedule` / `system.setShutdownSchedule` / `system.cancelShutdownSchedule` | 计划重启和计划关机是持久化 schedule，需要按类型可读、可写、可取消；不再拆分硬件电源计划，也不保留总括 schedule 接口。 |
-| Event | `system.lifecycleStateChanged` | 请求 accepted 后的状态变化不替代 RPC response。 |
-
-## 5. 候选 Capability
-
-| Capability | 状态 | 说明 |
-|---|---|---|
-| `system.lifecycle` | draft | 系统生命周期状态、立即重启、graceful shutdown、按类型读取/设置/取消计划重启和计划关机。 |
-
-## 6. 候选 Methods
-
-| Method | Params Schema | Result Schema | 说明 | Review |
-|---|---|---|---|---|
-| `system.getLifecycleState` | `GetLifecycleStateParams` | `LifecycleState` | 查询当前生命周期状态。 | `[REVIEW-DRAFT]` |
-| `system.reboot` | `RebootParams` | `LifecycleActionResult` | 请求设备重启。 | `[REVIEW-OK]` |
-| `system.shutdown` | `ShutdownParams` | `LifecycleActionResult` | 请求 graceful shutdown；覆盖原 power off 软件下电诉求。 | `[REVIEW-OK]` |
-| `system.getRebootSchedule` | `GetRebootScheduleParams` | `LifecycleScheduleList` | 查询当前计划重启任务。 | `[REVIEW-OK]` |
-| `system.setRebootSchedule` | `SetRebootScheduleParams` | `SetLifecycleScheduleResult` | 创建或更新一次性/周期性计划重启。 | `[REVIEW-OK]` |
-| `system.cancelRebootSchedule` | `CancelRebootScheduleParams` | `CancelScheduleResult` | 取消计划重启任务。 | `[REVIEW-DRAFT]` |
-| `system.getShutdownSchedule` | `GetShutdownScheduleParams` | `LifecycleScheduleList` | 查询当前计划关机任务。 | `[REVIEW-OK]` |
-| `system.setShutdownSchedule` | `SetShutdownScheduleParams` | `SetLifecycleScheduleResult` | 创建或更新一次性/周期性计划关机。 | `[REVIEW-DRAFT]` |
-| `system.cancelShutdownSchedule` | `CancelShutdownScheduleParams` | `CancelScheduleResult` | 取消计划关机任务。 | `[REVIEW-DRAFT]` |
-
-## 7. 候选 Events
-
-| Event | Schema | 触发时机 | Review |
-|---|---|---|---|
-| `system.lifecycleStateChanged` | `LifecycleStateChangedEvent` | ready、reboot_scheduled、shutdown_scheduled、rebooting、shutting_down、restarting、error 等生命周期状态变化。 | `[REVIEW-DRAFT]` |
-
-## 8. 候选 Schemas
-
-### `GetLifecycleStateParams`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `includeLastAction` | boolean | no | 是否返回最近一次 lifecycle action 摘要；默认 `true`。 | `[REVIEW-DRAFT]` |
-
-### `LifecycleState`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `state` | string enum | yes | `ready` / `reboot_scheduled` / `shutdown_scheduled` / `rebooting` / `shutting_down` / `restarting` / `starting` / `error` / `unknown`。 | `[REVIEW-ASK]` |
-| `lastAction` | string enum | no | `reboot` / `schedule_reboot` / `schedule_shutdown` / `shutdown` / `none`。 | `[REVIEW-DRAFT]` |
-| `lastActionId` | string | no | 最近一次动作 ID。 | `[REVIEW-DRAFT]` |
-| `rebootSchedules` | `LifecycleSchedule[]` | no | 当前计划重启摘要列表；可由 `system.getRebootSchedule` 获取完整信息。 | `[REVIEW-DRAFT]` |
-| `shutdownSchedules` | `LifecycleSchedule[]` | no | 当前计划关机摘要列表；可由 `system.getShutdownSchedule` 获取完整信息。 | `[REVIEW-DRAFT]` |
-| `disconnectExpected` | boolean | no | 当前 transition 是否预期断连。 | `[REVIEW-DRAFT]` |
-| `updatedAt` | string timestamp | no | 状态更新时间。 | `[REVIEW-DRAFT]` |
-
-### `RebootParams`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `reason` | string | no | 调用方给出的原因。 | `[REVIEW-DRAFT]` |
-| `delaySeconds` | uint32 | no | 延迟执行秒数；默认 `0`。 | `[REVIEW-DRAFT]` |
-| `force` | boolean | no | 请求强制重启；平台可拒绝。 | `[REVIEW-ASK]` |
-| `confirmationToken` | string | no | 危险操作确认 token。 | `[REVIEW-ASK]` |
-
-### `GetRebootScheduleParams`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `includeDisabled` | boolean | no | 是否返回已禁用计划；默认 `true`。 | `[REVIEW-DRAFT]` |
-
-### `GetShutdownScheduleParams`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `includeDisabled` | boolean | no | 是否返回已禁用计划；默认 `true`。 | `[REVIEW-DRAFT]` |
-
-### `LifecycleScheduleList`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `type` | string enum | yes | `reboot` / `shutdown`。 | `[REVIEW-OK]` |
-| `schedules` | `LifecycleSchedule[]` | yes | 当前配置的该类型计划任务。 | `[REVIEW-OK]` |
-| `timezone` | string | no | 默认计划时区。 | `[REVIEW-DRAFT]` |
-| `version` | string | no | 该类型计划集合版本，用于 set/cancel 的乐观锁。 | `[REVIEW-DRAFT]` |
-
-### `SetRebootScheduleParams`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `scheduleId` | string | no | 要更新的计划 ID；省略表示创建或替换默认重启计划。 | `[REVIEW-ASK]` |
-| `enabled` | boolean | no | 是否启用计划；默认 `true`。 | `[REVIEW-DRAFT]` |
-| `mode` | string enum | yes | `once` / `daily` / `weekly` / `custom`。 | `[REVIEW-ASK]` |
-| `runAt` | string timestamp | no | 一次性重启时间；`mode=once` 时使用。 | `[REVIEW-DRAFT]` |
-| `timeOfDay` | string | no | 周期性重启的本地时间，例如 `03:30:00`。 | `[REVIEW-DRAFT]` |
-| `daysOfWeek` | string[] | no | 周期性重启星期规则，例如 `mon` / `wed` / `sun`。 | `[REVIEW-ASK]` |
-| `timezone` | string | no | 计划使用的时区，例如 `Asia/Shanghai`。 | `[REVIEW-DRAFT]` |
-| `reason` | string | no | 调用方给出的原因。 | `[REVIEW-DRAFT]` |
-| `replaceExisting` | boolean | no | 是否替换已有默认重启计划；默认策略待确认。 | `[REVIEW-ASK]` |
-| `confirmationToken` | string | no | 危险操作确认 token。 | `[REVIEW-ASK]` |
-| `expectedVersion` | string | no | 可选乐观锁版本。 | `[REVIEW-DRAFT]` |
-
-### `SetLifecycleScheduleResult`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `scheduled` | boolean | yes | 是否已保存计划。 | `[REVIEW-OK]` |
-| `schedule` | `LifecycleSchedule` | yes | 保存后的计划。 | `[REVIEW-DRAFT]` |
-| `changedFields` | string[] | no | 变化字段路径。 | `[REVIEW-DRAFT]` |
-| `version` | string | no | 计划集合新版本。 | `[REVIEW-DRAFT]` |
-
-### `SetShutdownScheduleParams`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `scheduleId` | string | no | 要更新的计划 ID；省略表示创建或替换默认关机计划。 | `[REVIEW-ASK]` |
-| `enabled` | boolean | no | 是否启用计划；默认 `true`。 | `[REVIEW-DRAFT]` |
-| `mode` | string enum | yes | `once` / `daily` / `weekly` / `custom`。 | `[REVIEW-ASK]` |
-| `runAt` | string timestamp | no | 一次性关机时间；`mode=once` 时使用。 | `[REVIEW-DRAFT]` |
-| `timeOfDay` | string | no | 周期性关机的本地时间，例如 `23:30:00`。 | `[REVIEW-DRAFT]` |
-| `daysOfWeek` | string[] | no | 周期性关机星期规则，例如 `mon` / `fri` / `sun`。 | `[REVIEW-ASK]` |
-| `timezone` | string | no | 计划使用的时区，例如 `Asia/Shanghai`。 | `[REVIEW-DRAFT]` |
-| `reason` | string | no | 调用方给出的原因。 | `[REVIEW-DRAFT]` |
-| `replaceExisting` | boolean | no | 是否替换已有默认关机计划；默认策略待确认。 | `[REVIEW-ASK]` |
-| `confirmationToken` | string | no | 危险操作确认 token。 | `[REVIEW-ASK]` |
-| `expectedVersion` | string | no | 可选乐观锁版本。 | `[REVIEW-DRAFT]` |
-
-### `CancelRebootScheduleParams`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `scheduleId` | string | no | 要取消的重启计划 ID；省略表示默认重启计划。 | `[REVIEW-DRAFT]` |
-| `reason` | string | no | 调用方给出的原因。 | `[REVIEW-DRAFT]` |
-| `confirmationToken` | string | no | 危险操作确认 token。 | `[REVIEW-ASK]` |
-| `expectedVersion` | string | no | 可选乐观锁版本。 | `[REVIEW-DRAFT]` |
-
-### `CancelShutdownScheduleParams`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `scheduleId` | string | no | 要取消的关机计划 ID；省略表示默认关机计划。 | `[REVIEW-DRAFT]` |
-| `reason` | string | no | 调用方给出的原因。 | `[REVIEW-DRAFT]` |
-| `confirmationToken` | string | no | 危险操作确认 token。 | `[REVIEW-ASK]` |
-| `expectedVersion` | string | no | 可选乐观锁版本。 | `[REVIEW-DRAFT]` |
-
-### `CancelScheduleResult`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `cancelled` | boolean | yes | 是否已取消计划。 | `[REVIEW-OK]` |
-| `scheduleId` | string | yes | 被取消的计划 ID。 | `[REVIEW-DRAFT]` |
-| `type` | string enum | no | 被取消的计划类型：`reboot` / `shutdown`。 | `[REVIEW-DRAFT]` |
-| `changedFields` | string[] | no | 变化字段路径。 | `[REVIEW-DRAFT]` |
-| `version` | string | no | 计划集合新版本。 | `[REVIEW-DRAFT]` |
-
-### `LifecycleSchedule`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `scheduleId` | string | yes | 计划 ID。 | `[REVIEW-DRAFT]` |
-| `type` | string enum | yes | `reboot` / `shutdown`。 | `[REVIEW-OK]` |
-| `enabled` | boolean | yes | 是否启用。 | `[REVIEW-DRAFT]` |
-| `mode` | string enum | yes | `once` / `daily` / `weekly` / `custom`。 | `[REVIEW-ASK]` |
-| `runAt` | string timestamp | no | 一次性计划时间。 | `[REVIEW-DRAFT]` |
-| `timeOfDay` | string | no | 周期性计划的本地时间。 | `[REVIEW-DRAFT]` |
-| `daysOfWeek` | string[] | no | 周期性星期规则。 | `[REVIEW-ASK]` |
-| `timezone` | string | no | 计划时区。 | `[REVIEW-DRAFT]` |
-| `nextRunAt` | string timestamp | no | 下一次预计执行时间。 | `[REVIEW-DRAFT]` |
-| `reason` | string | no | 设置原因。 | `[REVIEW-DRAFT]` |
-| `version` | string | no | 计划版本。 | `[REVIEW-DRAFT]` |
-
-### `ShutdownParams`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `reason` | string | no | 调用方给出的原因。 | `[REVIEW-DRAFT]` |
-| `delaySeconds` | uint32 | no | 延迟执行秒数；默认 `0`。 | `[REVIEW-DRAFT]` |
-| `force` | boolean | no | 请求强制 shutdown；平台可拒绝。 | `[REVIEW-ASK]` |
-| `confirmationToken` | string | no | 危险操作确认 token。 | `[REVIEW-ASK]` |
-
-### `LifecycleActionResult`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `accepted` | boolean | yes | 是否接受动作。 | `[REVIEW-OK]` |
-| `actionId` | string | no | 动作 ID。 | `[REVIEW-DRAFT]` |
-| `state` | string enum | yes | 接受后的状态，例如 `rebooting`。 | `[REVIEW-DRAFT]` |
-| `disconnectExpected` | boolean | yes | 是否预期连接断开。 | `[REVIEW-OK]` |
-| `estimatedDelaySeconds` | uint32 | no | 预估执行延迟。 | `[REVIEW-DRAFT]` |
-
-### `LifecycleStateChangedEvent`
-
-| Field | Type | Required | 说明 | Review |
-|---|---|---:|---|---|
-| `state` | `LifecycleState` | yes | 变化后的生命周期状态。 | `[REVIEW-DRAFT]` |
-| `actionId` | string | no | 关联动作 ID。 | `[REVIEW-DRAFT]` |
-| `reason` | string enum | no | `user_request` / `scheduled_reboot` / `scheduled_shutdown` / `policy` / `system` / `error`。 | `[REVIEW-ASK]` |
-
-## 9. JSON 示例
-
-示例只写 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。
-
-### `system.reboot` request
+#### 3.1.2 Request d block Example (op=7)
 
 ```json
 {
-  "id": 50,
-  "method": "system.reboot",
-  "params": {
-    "reason": "user_request",
-    "delaySeconds": 0,
-    "confirmationToken": "TOKEN-REDACTED"
-  }
-}
-```
-
-### `system.reboot` response
-
-```json
-{
-  "id": 50,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "accepted": true,
-    "actionId": "act-REDACTED",
-    "state": "rebooting",
-    "disconnectExpected": true,
-    "estimatedDelaySeconds": 5
-  }
-}
-```
-
-### `system.getRebootSchedule` request
-
-```json
-{
-  "id": 52,
+  "id": 101,
   "method": "system.getRebootSchedule",
   "params": {
-    "includeDisabled": true
+    "target": "default",
+    "sections": [
+      "summary"
+    ]
   }
 }
 ```
 
-### `system.getRebootSchedule` response
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.1.3 返回结果 Result：`LifecycleScheduleList`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+
+#### 3.1.4 Success Response d block Example (op=8)
 
 ```json
 {
-  "id": 52,
+  "id": 101,
   "status": {
     "ok": true,
     "code": 0
   },
   "result": {
-    "type": "reboot",
-    "schedules": [
-      {
-        "scheduleId": "reboot-default",
-        "type": "reboot",
-        "enabled": true,
-        "mode": "weekly",
-        "timeOfDay": "03:30:00",
-        "daysOfWeek": ["sun"],
-        "timezone": "Asia/Shanghai",
-        "nextRunAt": "2026-06-14T03:30:00+08:00",
-        "reason": "maintenance_window",
-        "version": "2026-06-09T10:30:00Z"
-      }
-    ],
-    "timezone": "Asia/Shanghai",
-    "version": "2026-06-09T10:30:00Z"
-  }
-}
-```
-
-### `system.getShutdownSchedule` request
-
-```json
-{
-  "id": 56,
-  "method": "system.getShutdownSchedule",
-  "params": {
-    "includeDisabled": true
-  }
-}
-```
-
-### `system.getShutdownSchedule` response
-
-```json
-{
-  "id": 56,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "type": "shutdown",
-    "schedules": [
-      {
-        "scheduleId": "shutdown-default",
-        "type": "shutdown",
-        "enabled": true,
-        "mode": "daily",
-        "timeOfDay": "23:30:00",
-        "timezone": "Asia/Shanghai",
-        "nextRunAt": "2026-06-09T23:30:00+08:00",
-        "reason": "store_closed",
-        "version": "2026-06-09T10:30:00Z"
-      }
-    ],
-    "timezone": "Asia/Shanghai",
-    "version": "2026-06-09T10:30:00Z"
-  }
-}
-```
-
-### `system.setRebootSchedule` request
-
-```json
-{
-  "id": 53,
-  "method": "system.setRebootSchedule",
-  "params": {
-    "mode": "weekly",
-    "timeOfDay": "03:30:00",
-    "daysOfWeek": ["sun"],
-    "timezone": "Asia/Shanghai",
-    "reason": "maintenance_window",
-    "replaceExisting": true,
-    "expectedVersion": "2026-06-09T10:30:00Z",
-    "confirmationToken": "TOKEN-REDACTED"
-  }
-}
-```
-
-### `system.setRebootSchedule` response
-
-```json
-{
-  "id": 53,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "scheduled": true,
-    "schedule": {
-      "scheduleId": "reboot-default",
-      "type": "reboot",
-      "enabled": true,
-      "mode": "weekly",
-      "timeOfDay": "03:30:00",
-      "daysOfWeek": ["sun"],
-      "timezone": "Asia/Shanghai",
-      "nextRunAt": "2026-06-14T03:30:00+08:00",
-      "reason": "maintenance_window",
-      "version": "2026-06-09T10:30:00Z"
-    },
-    "changedFields": ["rebootSchedules"],
-    "version": "2026-06-09T10:30:01Z"
-  }
-}
-```
-
-### `system.lifecycleStateChanged` scheduled reboot event
-
-```json
-{
-  "event": "system.lifecycleStateChanged",
-  "intent": 1,
-  "data": {
-    "reason": "scheduled_reboot",
     "state": {
-      "state": "reboot_scheduled",
-      "lastAction": "schedule_reboot",
-      "rebootSchedules": [
-        {
-          "scheduleId": "reboot-default",
-          "type": "reboot",
-          "enabled": true,
-          "mode": "weekly",
-          "nextRunAt": "2026-06-14T03:30:00+08:00"
-        }
-      ],
-      "disconnectExpected": false,
-      "updatedAt": "2026-06-09T10:30:00Z"
+      "target": "default",
+      "status": "ok"
     }
   }
 }
 ```
 
-### `system.cancelRebootSchedule` request
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.1.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.1.6 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
 
 ```json
 {
-  "id": 57,
-  "method": "system.cancelRebootSchedule",
-  "params": {
-    "scheduleId": "reboot-default",
-    "reason": "schedule_removed",
-    "expectedVersion": "2026-06-09T10:30:01Z",
-    "confirmationToken": "TOKEN-REDACTED"
-  }
-}
-```
-
-### `system.cancelRebootSchedule` response
-
-```json
-{
-  "id": 57,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "cancelled": true,
-    "scheduleId": "reboot-default",
-    "type": "reboot",
-    "changedFields": ["rebootSchedules"],
-    "version": "2026-06-09T10:30:02Z"
-  }
-}
-```
-
-### `system.setShutdownSchedule` request
-
-```json
-{
-  "id": 54,
-  "method": "system.setShutdownSchedule",
-  "params": {
-    "mode": "daily",
-    "timeOfDay": "23:30:00",
-    "timezone": "Asia/Shanghai",
-    "reason": "store_closed",
-    "replaceExisting": true,
-    "expectedVersion": "2026-06-09T10:30:01Z",
-    "confirmationToken": "TOKEN-REDACTED"
-  }
-}
-```
-
-### `system.setShutdownSchedule` response
-
-```json
-{
-  "id": 54,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "scheduled": true,
-    "schedule": {
-      "scheduleId": "shutdown-default",
-      "type": "shutdown",
-      "enabled": true,
-      "mode": "daily",
-      "timeOfDay": "23:30:00",
-      "timezone": "Asia/Shanghai",
-      "nextRunAt": "2026-06-09T23:30:00+08:00",
-      "reason": "store_closed",
-      "version": "2026-06-09T10:30:00Z"
-    },
-    "changedFields": ["shutdownSchedules"],
-    "version": "2026-06-09T10:30:02Z"
-  }
-}
-```
-
-### `system.lifecycleStateChanged` scheduled shutdown event
-
-```json
-{
-  "event": "system.lifecycleStateChanged",
-  "intent": 1,
-  "data": {
-    "reason": "scheduled_shutdown",
-    "state": {
-      "state": "shutdown_scheduled",
-      "lastAction": "schedule_shutdown",
-      "shutdownSchedules": [
-        {
-          "scheduleId": "shutdown-default",
-          "type": "shutdown",
-          "enabled": true,
-          "mode": "daily",
-          "nextRunAt": "2026-06-09T23:30:00+08:00"
-        }
-      ],
-      "disconnectExpected": false,
-      "updatedAt": "2026-06-09T10:30:00Z"
-    }
-  }
-}
-```
-
-### `system.cancelShutdownSchedule` request
-
-```json
-{
-  "id": 55,
-  "method": "system.cancelShutdownSchedule",
-  "params": {
-    "scheduleId": "shutdown-default",
-    "reason": "schedule_removed",
-    "expectedVersion": "2026-06-09T10:30:02Z",
-    "confirmationToken": "TOKEN-REDACTED"
-  }
-}
-```
-
-### `system.cancelShutdownSchedule` response
-
-```json
-{
-  "id": 55,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "cancelled": true,
-    "scheduleId": "shutdown-default",
-    "type": "shutdown",
-    "changedFields": ["shutdownSchedules"],
-    "version": "2026-06-09T10:30:03Z"
-  }
-}
-```
-
-### `system.shutdown` request
-
-```json
-{
-  "id": 51,
-  "method": "system.shutdown",
-  "params": {
-    "reason": "maintenance",
-    "delaySeconds": 30,
-    "confirmationToken": "TOKEN-REDACTED"
-  }
-}
-```
-
-### `system.lifecycleStateChanged` event
-
-```json
-{
-  "event": "system.lifecycleStateChanged",
-  "intent": 1,
-  "data": {
-    "actionId": "act-REDACTED",
-    "reason": "user_request",
-    "state": {
-      "state": "rebooting",
-      "lastAction": "reboot",
-      "lastActionId": "act-REDACTED",
-      "disconnectExpected": true,
-      "updatedAt": "2026-06-09T10:30:00Z"
-    }
-  }
-}
-```
-
-### failure response
-
-```json
-{
-  "id": 50,
+  "id": 101,
   "status": {
     "ok": false,
-    "code": 5,
-    "msg": "Busy.",
+    "code": 10,
+    "msg": "Invalid argument.",
     "details": {
-      "candidateError": "SYSTEM_LIFECYCLE_BUSY"
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
     }
   }
 }
 ```
 
-## 10. 候选 Errors
+#### 3.1.8 规则
 
-| Error | 类别 | 说明 | Review |
-|---|---|---|---|
-| `SYSTEM_LIFECYCLE_PERMISSION_DENIED` | system | 无权执行立即重启、计划重启、计划关机或关机；JSON 示例使用通用 `PERMISSION_DENIED`。 | `[REVIEW-DRAFT]` |
-| `SYSTEM_LIFECYCLE_BUSY` | system | 已有 lifecycle 动作进行中；JSON 示例使用通用 `BUSY`。 | `[REVIEW-DRAFT]` |
-| `SYSTEM_LIFECYCLE_INVALID_STATE` | system | 当前状态不允许 reboot/shutdown 或 schedule get/set/cancel；JSON 示例使用通用 `INVALID_STATE`。 | `[REVIEW-DRAFT]` |
-| `SYSTEM_LIFECYCLE_INVALID_SCHEDULE` | system | 计划重启/计划关机时间、时区或重复规则非法；JSON 示例可使用 `INVALID_ARGUMENT` / `OUT_OF_RANGE`。 | `[REVIEW-DRAFT]` |
-| `SYSTEM_LIFECYCLE_SCHEDULE_NOT_FOUND` | system | 查询或取消的计划不存在；JSON 示例可使用通用 `NOT_FOUND`。 | `[REVIEW-DRAFT]` |
-| `SYSTEM_LIFECYCLE_CONFIRMATION_REQUIRED` | system | 缺少危险操作确认；采纳时确认是否使用通用 `PERMISSION_DENIED` 或新增业务错误。 | `[REVIEW-ASK]` |
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
-## 11. Legacy 待映射
+### 3.2 `system.setRebootSchedule`
 
-| 来源 | 旧协议条目 | 候选映射 | 状态 | 说明 |
-|---|---|---|---|---|
-| AXDP | `CommonSetReboot` | `system.reboot` | `[REVIEW-ASK]` | 参数和结果状态需确认。 |
-| VM33 | `DevicePwr.Reboot` | `system.reboot` | `[REVIEW-ASK]` | 旧命名含 `DevicePwr`，新语义仍归 lifecycle。 |
-| VM33 | `DevicePwr.ShutDown` | `system.shutdown` | `[REVIEW-OK]` | 软件关机/下电统一映射到 shutdown。 |
-| Rooms / Signage / VM33 | `KeepAlive` / `SetLive` / `UnConnect` | core heartbeat / local session policy / optional lifecycle state event | `[REVIEW-ASK]` | 可能是连接保活，不进入泛配置方法。 |
-| AXDP / VM33 | `RebootInterval` | `system.getRebootSchedule` / `system.setRebootSchedule` / `system.cancelRebootSchedule` | `[REVIEW-ASK]` | 需要确认旧字段是周期性重启、重启间隔，还是设备本地策略。 |
-| AXDP / VM33 | `AutoShutDown` | `system.getShutdownSchedule` / `system.setShutdownSchedule` / `system.cancelShutdownSchedule` | `[REVIEW-DRAFT]` | 本轮按 planned graceful shutdown schedule 处理；硬件/固件电源计划不进入 system feature。 |
-| AXDP / VM33 | `AutoPower` | out of scope / adapter-private | `[REVIEW-ASK]` | 自动上电/外部电源控制不进入本轮 `system.lifecycle` 或独立 system power feature。 |
-| NearHub Launcher Signage | `GetScheduleConfig` | `system.getRebootSchedule` + `system.getShutdownSchedule` | `[REVIEW-DRAFT]` | Legacy 返回 `{ shutdown: {enabled, time, days}, reboot: {enabled, time, days} }` 作为单一响应。AXTP 拆分为按类型独立查询。字段映射：`enabled` → `LifecycleSchedule.enabled`，`time`(HH:mm) → `LifecycleSchedule.timeOfDay`，`days`(1-7, 1=周一) → `LifecycleSchedule.daysOfWeek`([mon..sun])。旧指令状态为"已研发"。**Adapter days 转换表：** legacy 数字 → AXTP 字符串：`1`→`"mon"`, `2`→`"tue"`, `3`→`"wed"`, `4`→`"thu"`, `5`→`"fri"`, `6`→`"sat"`, `7`→`"sun"`。此转换属于 adapter 级映射，不影响 AXTP 协议定义。 |
-| NearHub Launcher Signage | `SetScheduleConfig` | `system.setRebootSchedule` + `system.setShutdownSchedule` | `[REVIEW-DRAFT]` | Legacy 合并发送 shutdown+reboot；AXTP 拆分为两个独立 set 调用。字段映射同 get。方向 Server → Device, Device → Server。旧指令状态为"已研发"。 |
+**用途**：原草案中出现的候选方法。
 
-## 12. Registry 草案输入
+| 项 | 内容 |
+|---|---|
+| 调用类型 | command |
+| Params Schema | `SetRebootScheduleParams` |
+| Result Schema | `SetLifecycleScheduleResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `system.lifecycleStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
 
-```yaml
-capabilities:
-  - id: system.lifecycle
-    name: system.lifecycle capability
-    status: draft
-    methods:
-      - system.getLifecycleState
-      - system.reboot
-      - system.shutdown
-      - system.getRebootSchedule
-      - system.setRebootSchedule
-      - system.cancelRebootSchedule
-      - system.getShutdownSchedule
-      - system.setShutdownSchedule
-      - system.cancelShutdownSchedule
-    events:
-      - system.lifecycleStateChanged
+#### 3.2.1 请求参数 Params：`SetRebootScheduleParams`
 
-methods:
-  - name: system.getLifecycleState
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    requestSchema: GetLifecycleStateParams
-    responseSchema: LifecycleState
-    capabilities:
-      - system.lifecycle
-  - name: system.reboot
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    requestSchema: RebootParams
-    responseSchema: LifecycleActionResult
-    capabilities:
-      - system.lifecycle
-  - name: system.getRebootSchedule
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    requestSchema: GetRebootScheduleParams
-    responseSchema: LifecycleScheduleList
-    capabilities:
-      - system.lifecycle
-  - name: system.setRebootSchedule
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    requestSchema: SetRebootScheduleParams
-    responseSchema: SetLifecycleScheduleResult
-    capabilities:
-      - system.lifecycle
-  - name: system.cancelRebootSchedule
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    requestSchema: CancelRebootScheduleParams
-    responseSchema: CancelScheduleResult
-    capabilities:
-      - system.lifecycle
-  - name: system.getShutdownSchedule
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    requestSchema: GetShutdownScheduleParams
-    responseSchema: LifecycleScheduleList
-    capabilities:
-      - system.lifecycle
-  - name: system.setShutdownSchedule
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    requestSchema: SetShutdownScheduleParams
-    responseSchema: SetLifecycleScheduleResult
-    capabilities:
-      - system.lifecycle
-  - name: system.cancelShutdownSchedule
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    requestSchema: CancelShutdownScheduleParams
-    responseSchema: CancelScheduleResult
-    capabilities:
-      - system.lifecycle
-  - name: system.shutdown
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    requestSchema: ShutdownParams
-    responseSchema: LifecycleActionResult
-    capabilities:
-      - system.lifecycle
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 设置对象；具体 target 集合由 capability 声明。 |
+| `config` | object | yes | see schema | none | 目标配置或状态片段；字段需在采纳前确认。 |
 
-events:
-  - name: system.lifecycleStateChanged
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    domain: system
-    eventSchema: LifecycleStateChangedEvent
-    capabilities:
-      - system.lifecycle
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "system.setRebootSchedule",
+  "params": {
+    "target": "default",
+    "config": {
+      "enabled": true
+    }
+  }
+}
 ```
 
-## 13. 采纳检查清单
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
-- [ ] 08 已确认 `system.lifecycle` 覆盖软件 shutdown/power-off 诉求，且不再保留独立 system power 草案。
-- [ ] 10 已确认 getLifecycleState/reboot/shutdown、reboot schedule get/set/cancel、shutdown schedule get/set/cancel 是否进入 P0。
-- [ ] 11 已确认 lifecycle event 的 eventId、eventMasks bitOffset 和断连前发送策略。
-- [ ] 12 已确认权限、busy、confirmation required 的错误码策略。
-- [ ] 13 已确认 enum、actionId、dangerous action confirmation schema。
-- [ ] legacy RebootInterval 已确定是否进入 `system.getRebootSchedule` / `system.setRebootSchedule` / `system.cancelRebootSchedule`，AutoShutdown 已确定是否进入 `system.getShutdownSchedule` / `system.setShutdownSchedule` / `system.cancelShutdownSchedule`，KeepAlive/AutoPower 已确定是否进入 core/session telemetry、adapter-private，或未来其他 capability。
+#### 3.2.3 返回结果 Result：`SetLifecycleScheduleResult`
 
-## 14. 待确认问题
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受并应用请求。 |
+| `state` | object | no | see schema | omitted | 设置后的状态或配置快照。 |
 
-1. `confirmationToken` 的生成、有效期和权限模型归哪个 domain？
-2. reboot schedule 和 shutdown schedule 是否允许各自多个计划并存，还是每种类型只维护一个默认计划？
-3. typed cancel 是否需要保留 `scheduleId`，还是每种类型固定取消默认计划即可？
-4. `force` 是否进入 P0，还是只保留 graceful reboot/shutdown？
-5. 断连前 event 是否必须发送，还是只作为 best effort？
-6. KeepAlive 是否应留在 AXTP session/transport 层，而不是业务 lifecycle 方法？
-7. AutoPower/硬件自动上电是否完全作为 adapter-private，还是未来另建非 system 的外部电源控制 capability？
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.2.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `system.lifecycleStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `LifecycleStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.2.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.2.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.2.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.2.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.3 `system.cancelRebootSchedule`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `CancelRebootScheduleParams` |
+| Result Schema | `CancelScheduleResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `system.lifecycleStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.3.1 请求参数 Params：`CancelRebootScheduleParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
+
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "system.cancelRebootSchedule",
+  "params": {
+    "target": "default",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.3.3 返回结果 Result：`CancelScheduleResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.3.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `system.lifecycleStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `LifecycleStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.3.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.3.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.3.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.3.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.4 `system.getShutdownSchedule`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | query |
+| Params Schema | `GetShutdownScheduleParams` |
+| Result Schema | `LifecycleScheduleList` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
+
+#### 3.4.1 请求参数 Params：`GetShutdownScheduleParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
+| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+
+#### 3.4.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 104,
+  "method": "system.getShutdownSchedule",
+  "params": {
+    "target": "default",
+    "sections": [
+      "summary"
+    ]
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.4.3 返回结果 Result：`LifecycleScheduleList`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": {
+      "target": "default",
+      "status": "ok"
+    }
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.4.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.4.6 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.4.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.4.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.5 `system.setShutdownSchedule`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | command |
+| Params Schema | `SetShutdownScheduleParams` |
+| Result Schema | `SetLifecycleScheduleResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `system.lifecycleStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.5.1 请求参数 Params：`SetShutdownScheduleParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 设置对象；具体 target 集合由 capability 声明。 |
+| `config` | object | yes | see schema | none | 目标配置或状态片段；字段需在采纳前确认。 |
+
+#### 3.5.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 105,
+  "method": "system.setShutdownSchedule",
+  "params": {
+    "target": "default",
+    "config": {
+      "enabled": true
+    }
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.5.3 返回结果 Result：`SetLifecycleScheduleResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受并应用请求。 |
+| `state` | object | no | see schema | omitted | 设置后的状态或配置快照。 |
+
+#### 3.5.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.5.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `system.lifecycleStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `LifecycleStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.5.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.5.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.5.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 105,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.5.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.6 `system.cancelShutdownSchedule`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `CancelShutdownScheduleParams` |
+| Result Schema | `CancelScheduleResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `system.lifecycleStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.6.1 请求参数 Params：`CancelShutdownScheduleParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
+
+#### 3.6.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 106,
+  "method": "system.cancelShutdownSchedule",
+  "params": {
+    "target": "default",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.6.3 返回结果 Result：`CancelScheduleResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.6.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 106,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.6.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `system.lifecycleStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `LifecycleStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.6.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.6.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.6.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 106,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.6.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+
+### 3.8 `system.getLifecycleState`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | query |
+| Params Schema | `GetLifecycleStateParams` |
+| Result Schema | `LifecycleState` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
+
+#### 3.8.1 请求参数 Params：`GetLifecycleStateParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
+| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+
+#### 3.8.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 108,
+  "method": "system.getLifecycleState",
+  "params": {
+    "target": "default",
+    "sections": [
+      "summary"
+    ]
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.8.3 返回结果 Result：`LifecycleState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+
+#### 3.8.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 108,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": {
+      "target": "default",
+      "status": "ok"
+    }
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.8.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.8.6 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.8.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 108,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.8.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.9 `system.reboot`
+
+**用途**：原草案示例中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `RebootParams` |
+| Result Schema | `LifecycleActionResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `system.lifecycleStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.9.1 请求参数 Params：`RebootParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
+
+#### 3.9.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 109,
+  "method": "system.reboot",
+  "params": {
+    "target": "default",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.9.3 返回结果 Result：`LifecycleActionResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.9.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 109,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.9.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `system.lifecycleStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `LifecycleStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.9.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.9.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.9.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 109,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.9.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.10 `system.shutdown`
+
+**用途**：原草案示例中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `ShutdownParams` |
+| Result Schema | `LifecycleActionResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `system.lifecycleStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.10.1 请求参数 Params：`ShutdownParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
+
+#### 3.10.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 110,
+  "method": "system.shutdown",
+  "params": {
+    "target": "default",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.10.3 返回结果 Result：`LifecycleActionResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.10.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 110,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.10.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `system.lifecycleStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `LifecycleStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.10.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.10.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.10.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 110,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.10.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+## 4. 事件 Events
+
+### 4.0 事件速览
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
+|---|---|---|---|---|
+| `system.lifecycleStateChanged` | 原草案中出现的候选事件 | `LifecycleStateChangedEvent` | 更新 UI 或调用对应 get method 校准 | draft |
+| `system.stateChanged` | 原草案中出现的候选事件 | `StateChangedEvent` | 更新 UI 或调用对应 get method 校准 | draft |
+
+### 4.1 `system.lifecycleStateChanged`
+
+**触发条件**：原草案中出现的候选事件。
+
+#### 4.1.1 Payload：`LifecycleStateChangedEvent`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `changedFields` | string[] | no | field path array | omitted | 变化字段路径。 |
+| `state` | object | no | see schema | omitted | 变化后的状态、配置或摘要。 |
+| `source` | string enum | no | `remoteApp`, `localPanel`, `devicePolicy`, `adapter`, `unknown` | `unknown` | 状态变化来源。 |
+| `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
+| `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
+
+#### 4.1.2 Event d block Example (op=6)
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "source": "remoteApp",
+    "reason": "user_request",
+    "stateRevision": 1
+  }
+}
+```
+
+#### 4.1.3 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| payload 是完整状态 | 可直接更新 UI 或本地缓存。 |
+| payload 是变化片段 | 调用对应 get method 校准完整状态。 |
+| event 丢失或重连 | 重连后主动调用 get method 校准。 |
+
+#### 4.1.4 规则
+
+- Event MUST 使用 `op=6`。
+- Event MUST NOT 携带 `d.id`。
+- Event payload MUST 放在 `d.data` 中。
+
+### 4.2 `system.stateChanged`
+
+**触发条件**：原草案中出现的候选事件。
+
+#### 4.2.1 Payload：`StateChangedEvent`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `changedFields` | string[] | no | field path array | omitted | 变化字段路径。 |
+| `state` | object | no | see schema | omitted | 变化后的状态、配置或摘要。 |
+| `source` | string enum | no | `remoteApp`, `localPanel`, `devicePolicy`, `adapter`, `unknown` | `unknown` | 状态变化来源。 |
+| `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
+| `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
+
+#### 4.2.2 Event d block Example (op=6)
+
+```json
+{
+  "event": "system.stateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "source": "remoteApp",
+    "reason": "user_request",
+    "stateRevision": 1
+  }
+}
+```
+
+#### 4.2.3 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| payload 是完整状态 | 可直接更新 UI 或本地缓存。 |
+| payload 是变化片段 | 调用对应 get method 校准完整状态。 |
+| event 丢失或重连 | 重连后主动调用 get method 校准。 |
+
+#### 4.2.4 规则
+
+- Event MUST 使用 `op=6`。
+- Event MUST NOT 携带 `d.id`。
+- Event payload MUST 放在 `d.data` 中。
+
+## 5. Capability
+
+Capability name: `system.lifecycle`。
+
+设备通过 capability 声明是否支持该 feature，以及支持哪些范围、模式、对象或约束。Capability 字段只描述“设备能做什么”，不得混入 method params/result 或 event payload。
+
+| 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `capability` | string | yes | fixed `system.lifecycle` | none | capability 名称。 |
+| `supportedMethods` | string[] | no | method name array | omitted | 支持的 method 列表；采纳后应由 capability discovery 或 registry/generated 表达。 |
+| `supportedEvents` | string[] | no | event name array | omitted | 支持的 event 列表；采纳后应由 capability discovery 或 registry/generated 表达。 |
+| `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
+| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
+
+## 6. 字段 / Schemas
+
+### 6.1 Schema 层级速览
+
+本草案采用保守 schema 展开方式：method/event 小节给出 Params / Result / Payload 字段表和 JSON `d` block 示例；本章作为 schema 索引，避免在草案阶段重复维护大量未确认字段。
+
+```text
+LifecycleCapability
+  capability / supportedMethods / supportedEvents / supportedTargets / constraints
+LifecycleState
+  target / status / sampledAt
+LifecycleChangedEvent
+  changedFields / state / source / reason / stateRevision
+```
+
+### 6.2 请求与响应 Schemas
+
+| Schema | 用途 | 字段定义 |
+|---|---|---|
+| `GetRebootScheduleParams` | `system.getRebootSchedule` request params | 见 `system.getRebootSchedule` 方法小节。 |
+| `LifecycleScheduleList` | `system.getRebootSchedule` result | 见 `system.getRebootSchedule` 方法小节。 |
+| `SetRebootScheduleParams` | `system.setRebootSchedule` request params | 见 `system.setRebootSchedule` 方法小节。 |
+| `SetLifecycleScheduleResult` | `system.setRebootSchedule` result | 见 `system.setRebootSchedule` 方法小节。 |
+| `CancelRebootScheduleParams` | `system.cancelRebootSchedule` request params | 见 `system.cancelRebootSchedule` 方法小节。 |
+| `CancelScheduleResult` | `system.cancelRebootSchedule` result | 见 `system.cancelRebootSchedule` 方法小节。 |
+| `GetShutdownScheduleParams` | `system.getShutdownSchedule` request params | 见 `system.getShutdownSchedule` 方法小节。 |
+| `LifecycleScheduleList` | `system.getShutdownSchedule` result | 见 `system.getShutdownSchedule` 方法小节。 |
+| `SetShutdownScheduleParams` | `system.setShutdownSchedule` request params | 见 `system.setShutdownSchedule` 方法小节。 |
+| `SetLifecycleScheduleResult` | `system.setShutdownSchedule` result | 见 `system.setShutdownSchedule` 方法小节。 |
+| `CancelShutdownScheduleParams` | `system.cancelShutdownSchedule` request params | 见 `system.cancelShutdownSchedule` 方法小节。 |
+| `CancelScheduleResult` | `system.cancelShutdownSchedule` result | 见 `system.cancelShutdownSchedule` 方法小节。 |
+| `GetLifecycleStateParams` | `system.getLifecycleState` request params | 见 `system.getLifecycleState` 方法小节。 |
+| `LifecycleState` | `system.getLifecycleState` result | 见 `system.getLifecycleState` 方法小节。 |
+| `RebootParams` | `system.reboot` request params | 见 `system.reboot` 方法小节。 |
+| `LifecycleActionResult` | `system.reboot` result | 见 `system.reboot` 方法小节。 |
+| `ShutdownParams` | `system.shutdown` request params | 见 `system.shutdown` 方法小节。 |
+| `LifecycleActionResult` | `system.shutdown` result | 见 `system.shutdown` 方法小节。 |
+
+### 6.3 Capability Schemas
+
+Capability 字段见第 5 章。复杂 capability 对象在 registry review 前需要拆成独立字段表。
+
+### 6.4 Event Schemas
+
+| Schema | Event | 字段定义 |
+|---|---|---|
+| `LifecycleStateChangedEvent` | `system.lifecycleStateChanged` | 见 `system.lifecycleStateChanged` 事件小节。 |
+| `StateChangedEvent` | `system.stateChanged` | 见 `system.stateChanged` 事件小节。 |
+
+### 6.5 State / Config / Object Schemas
+
+| Schema | 用途 | 状态 |
+|---|---|---|
+| `LifecycleState` | 表达 `system.lifecycle` 的当前状态、配置或摘要。 | `[REVIEW-ASK]` |
+| `LifecycleConfig` | 表达 `system.lifecycle` 的可写配置。 | `[REVIEW-ASK]` |
+
+## 7. 交互流程示例 Flow Examples
+
+本章只展示多个 method/event 组成的端到端业务流程。单个 method 的 Request / Success Response / Error Response 示例见第 3 章；单个 event 的 Event 示例见第 4 章。
+
+### 7.1 场景：读取或修改 `system.lifecycle`
+
+#### Step 1. 调用 method：Request d block (op=7)
+
+```json
+{
+  "id": 201,
+  "method": "system.getRebootSchedule",
+  "params": {}
+}
+```
+
+#### Step 2. 接收响应：Success Response d block (op=8)
+
+```json
+{
+  "id": 201,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+
+#### Step 3. 订阅事件：Event d block (op=6)
+
+```json
+{
+  "event": "system.lifecycleStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    }
+  }
+}
+```
+
+读法：客户端应先通过 capability discovery 判断 feature/method 是否支持；如果事件 payload 不完整或重连后状态不确定，应主动调用 query method 校准。
+
+## 8. 错误
+
+错误处理语义见 `docs/specs/1-core/09-Error-Model.md`；错误注册规则见 `docs/specs/2-registry/04-Errors-Registry.md`。草案不得随意分配正式 numeric errorCode。
+
+| 错误 | 适用场景 | 说明 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持 feature、method、target、scope 或 section。 | 优先复用通用错误。 |
+| `INVALID_ARGUMENT` | 参数非法、枚举非法、范围非法。 | 应指出具体字段。 |
+| `INVALID_STATE` | 当前状态不允许执行。 | 如 lifecycle/reset/initialization 冲突。 |
+| `BUSY` | 设备或资源繁忙。 | 如已有动作执行中。 |
+| `PERMISSION_DENIED` | 调用方权限不足。 | 危险操作或敏感信息读取。 |
+| `<FEATURE_SPECIFIC_ERROR>` | 候选业务错误。 | `[REVIEW-DRAFT]`；采纳前确认是否需要 feature-specific errorCode。 |
+
+JSON 示例中的 `status.code` 如果 registry 尚未采纳，可以使用 `10` 作为占位示例，并在 `status.details.candidateError` 中放候选错误名。正式 numeric code 必须由 registry 采纳时分配。
+
+## 9. Legacy 映射
+
+Legacy 映射是迁移证据，不是 runtime 合同。当前映射仍需从 `docs/legacy-migration/classification/` 和旧协议证据中按 `system.lifecycle` 人工确认。
+
+| legacy 项 | 候选映射 | 状态 | 说明 |
+|---|---|---|---|
+| AXDP / Rooms / VM33 / Signage legacy command or field | `system.lifecycle` | `[REVIEW-ASK]` | 采纳前补齐确定的旧协议命令、字段路径、状态码和覆盖范围。 |
+
+## 10. Registry / Conformance 状态
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| registry | not generated | 尚未写入正式 registry YAML。 |
+| generated | false | 是否已进入 protocol IR / docs/generated。 |
+| protocol draft | draft | 当前草案状态。 |
+| registry readiness | partial | 是否可进入 registry review。 |
+| conformance | needed | 是否已有测试用例。 |
+
+## 11. 测试要点
+
+| 类型 | 要点 |
+|---|---|
+| happy path | capability discovery 后调用主要 query/command/action method，返回成功响应。 |
+| event path | 会改变状态的 method 成功后，按需产生 changed/progress/state event；客户端可更新 UI 或调用 get 校准。 |
+| boundary case | 省略可选字段、非法 target、非法枚举、越界值、空列表和最大对象数量。 |
+| error case | unsupported feature/method、permission denied、busy、invalid argument、version/capability mismatch。 |
+| compatibility | 新旧 App / 设备组合下，未知可选字段可忽略，未知必填语义必须返回标准错误。 |
+
+## 12. 待确认问题
+
+| 问题 | 影响 | 当前建议 | 状态 |
+|---|---|---|---|
+| `system.lifecycle` 的 MVP 字段范围是否完整？ | schema / conformance | 进入 registry review 前由产品、设备实现和测试共同确认。 | open |
+| method/event 命名是否需要与已有 generated 事实合并？ | registry | 采纳前搜索 registry/generated，避免重复定义。 | open |
+| legacy 命令和字段是否全部映射清楚？ | legacy | 未确认条目保持 `[REVIEW-ASK]`，不得写入正式 YAML。 | open |

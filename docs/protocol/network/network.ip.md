@@ -1,11 +1,11 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: network
 feature: network.ip
-registry:
-lastReviewed: 2026-06-13
+registry: ../../../registry/domains/network/domain.yaml
+lastReviewed: 2026-06-15
 ---
 
 # network.ip
@@ -15,13 +15,34 @@ lastReviewed: 2026-06-13
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 按设备返回的 `interfaceId` 查询或设置 IPv4/IPv6 DHCP/static 地址、网关、DNS，并报告有效地址变化。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。draft 阶段仅供评审；正式实现以 registry / generated 为准。 |
+| 当前状态 | generated；已写入 `../../../registry/domains/network/domain.yaml`，并已刷新到 `protocol/axtp.protocol.yaml` 与 `docs/generated/**`。 |
+| 是否可直接实现 | 是，但实现合同以 `protocol/axtp.protocol.yaml` / `docs/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
-| Registry readiness | candidate |
+| Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
 | Conformance | needed |
 | 主要未决问题 | IP ready 是否作为配对验收、AP DHCP Server 地址池归属、IPv6 是否进入 MVP。 |
+
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
 
 ## 1. 功能说明
 
@@ -76,7 +97,21 @@ lastReviewed: 2026-06-13
 | `interfaceId` | string | yes | device-returned id | none | 目标接口，来自 `network.interface`。 |
 | `family` | `NetworkIpFamily` | no | `ipv4`, `ipv6` | `ipv4` | 地址族。 |
 
-#### 3.1.2 返回结果 Result：`NetworkIpConfig`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "network.getIpConfig",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkGetIpConfigParams`，省略字段按上表默认值处理。
+
+#### 3.1.3 返回结果 Result：`NetworkIpConfig`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -90,18 +125,61 @@ lastReviewed: 2026-06-13
 | `source` | string enum | no | `static`, `dhcp`, `system_policy`, `runtime` | omitted | 当前有效配置来源。 |
 | `effective` | boolean | yes | bool | none | 返回内容是否为当前已生效配置。 |
 
-#### 3.1.3 可能触发的事件
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "interfaceId": "wlan0",
+    "mode": "dhcp",
+    "address": "192.0.2.10",
+    "gateway": "192.0.2.1",
+    "dns": [
+      "192.0.2.1"
+    ]
+  }
+}
+```
+
+读法：`result` 是 `NetworkIpConfig` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.1.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.1.4 错误
+#### 3.1.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_FOUND` | 指定接口不存在或不支持 IP 配置。 | 使用 adopted numeric code `12`。 |
 | `NOT_SUPPORTED` | 地址族或 feature 不支持。 | 使用 adopted numeric code `3`。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 12,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_FOUND",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `network.setIpConfig`
 
@@ -129,7 +207,24 @@ lastReviewed: 2026-06-13
 | `dnsServers` | string[] | no | IP address array | omitted | DNS 服务器。 |
 | `apply` | `NetworkConfigApplyPolicy` | no | `immediate`, `on_reconnect`, `on_reboot` | `immediate` | 生效策略。 |
 
-#### 3.2.2 返回结果 Result：`NetworkSetIpConfigResult`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "network.setIpConfig",
+  "params": {
+    "interfaceId": "wlan0",
+    "mode": "auto",
+    "address": "192.0.2.10",
+    "prefixLength": 1
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `NetworkSetIpConfigParams`，省略字段按上表默认值处理。
+
+#### 3.2.3 返回结果 Result：`NetworkSetIpConfigResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -139,19 +234,82 @@ lastReviewed: 2026-06-13
 | `requiresReconnect` | boolean | no | bool | omitted | 是否可能导致当前 AXTP 会话断开或需要客户端重连。 |
 | `requiresReboot` | boolean | no | bool | omitted | 是否需要设备重启。 |
 
-#### 3.2.3 可能触发的事件
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "interfaceId": "wlan0",
+    "mode": "dhcp",
+    "address": "192.0.2.10",
+    "gateway": "192.0.2.1",
+    "dns": [
+      "192.0.2.1"
+    ]
+  }
+}
+```
+
+读法：`result` 是 `NetworkSetIpConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+
+#### 3.2.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.ipConfigChanged` | 配置或有效地址实际变化。 | `NetworkIpConfigChangedEvent` | 更新 IP 缓存；配对验收可在有效地址出现时通过。 |
 
-#### 3.2.4 错误
+#### 3.2.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "network.ipConfigChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "config"
+    ],
+    "config": {
+      "mode": "auto"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.2.7 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `INVALID_ARGUMENT` | static 模式缺少 `address` 或 `prefixLength`。 | 使用 adopted numeric code `10`，details 指出字段路径。 |
 | `OUT_OF_RANGE` | `prefixLength` 超出地址族范围。 | 使用 adopted numeric code `11`。 |
 | `INVALID_STATE` | 当前接口状态不允许立即应用配置。 | 使用 adopted numeric code `4`。 |
+
+#### 3.2.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "interfaceId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -181,6 +339,40 @@ lastReviewed: 2026-06-13
 | `config` | `NetworkIpConfig` | yes | object | none | 变化后的 IP 配置。 |
 | `previousConfig` | `NetworkIpConfig` | no | object | omitted | 变化前配置。 |
 | `reason` | string enum | no | `user_request`, `dhcp_updated`, `lease_expired`, `link_lost`, `system_policy`, `apply_failed`, `unknown` | `unknown` | 变化原因。 |
+
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "network.ipConfigChanged",
+  "intent": 1,
+  "data": {
+    "interfaceId": "wlan0",
+    "family": "ipv4",
+    "config": {
+      "interfaceId": "wlan0",
+      "mode": "dhcp",
+      "address": "192.0.2.10",
+      "gateway": "192.0.2.1",
+      "dns": [
+        "192.0.2.1"
+      ]
+    },
+    "previousConfig": {
+      "interfaceId": "wlan0",
+      "mode": "dhcp",
+      "address": "192.0.2.10",
+      "gateway": "192.0.2.1",
+      "dns": [
+        "192.0.2.1"
+      ]
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 
@@ -463,10 +655,10 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| registry | not generated | 当前未写入 `registry/domains/network/domain.yaml`。 |
-| generated | false | `docs/generated/**` 未生成 `network.ip` 方法或事件。 |
-| protocol draft | draft | 本文是 Stage 20 草案，不能作为 runtime 合同。 |
-| registry readiness | candidate | DHCP/static 主路径已收敛；IPv6、AP DHCP Server 地址池和重连策略仍待确认。 |
+| registry | source adopted | 已写入 `../../../registry/domains/network/domain.yaml`。 |
+| generated | true | 已运行 `generate-axtp-protocol`，刷新 `protocol/axtp.protocol.yaml` 和 `docs/generated/**`。 |
+| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
+| registry readiness | ready | network.ip P0/confirmed subset 已写入 registry source；IPv6/AP DHCP Server 地址池等仍保留待确认。 |
 | conformance | needed | 采纳后需要覆盖 DHCP、static、disabled、事件去重、IP ready 和错误路径。 |
 
 ## 11. 测试要点

@@ -5,7 +5,7 @@ generated: false
 domain: audio
 feature: audio.volume
 registry:
-lastReviewed: 2026-06-10
+lastReviewed: 2026-06-15
 ---
 
 # audio.volume
@@ -21,432 +21,751 @@ lastReviewed: 2026-06-10
 | 是否使用 STREAM | 否 |
 | Registry readiness | candidate |
 | Conformance | needed |
-| 主要未决问题 | `State` / `Config` 最终命名、target 集合、range/unit/default 语义仍需确认。 |
+| 主要未决问题 | schema 字段、错误模型、legacy 映射和 conformance case 仍需人工确认。 |
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 
 ## 1. 功能说明
 
-`audio.volume` 用于管理用户可感知的输出音量和静音状态，包括能力发现、当前状态查询、设置音量/静音、恢复默认状态和音量变化通知。
+`audio.volume` 用于管理用户可感知的输出音量、静音状态和音量变化通知。
 
-本文是 registry-review-ready 草案。runtime 不得把本文当作实现合同；正式合同必须来自 registry YAML、protocol IR 和 generated 文档。
+本文是 `docs/protocol` 下的协议草案或可读说明，不是新的机器事实源。draft / review-ok 阶段不得作为 runtime 实现合同；正式实现必须以 `registry/**/*.yaml`、`protocol/axtp.protocol.yaml`、`docs/generated/**` 和 conformance case 为准。
 
 ## 2. 能力边界
 
 | 类型 | 内容 |
 |---|---|
-| 包含 | 用户能感知的 master volume、speaker volume、line-out volume、headphone volume。 |
-| 包含 | 音量范围、步进、单位、默认音量、是否支持 mute、当前 mute 状态。 |
-| 包含 | 物理按键、HID report、设备策略、restore/factory reset 引起的音量/静音变化事件。 |
-| 不包含 | Line-in preGain、input gain；这些归 `audio.input`。 |
-| 不包含 | mixer bus gain、per-source gain、matrix gain、channel gain；这些归 `audio.mixer`。 |
-| 不包含 | AGC target/max gain；这些归 `audio.algorithm`。 |
-| 不包含 | EQ band gain；这些归 `audio.eq`。 |
-| 不包含 | output port inventory、routing graph；这些归后续 `audio.output` 或 `audio.routing` 评审。 |
-| 数据面 | 不定义 STREAM payload；volume 是 RPC 控制面状态。 |
+| 包含 | audio.volume 的能力发现、状态查询、配置或动作控制。 |
+| 包含 | 与 audio.volume 直接相关的 method/event/schema 草案。 |
+| 不包含 | 不承载其他 capability feature 的业务语义；跨域关系通过 schema 字段、引用或数据面 stream/file 表达。 |
+| 不包含 | method/event 数值 ID 分配；数值以 registry/generated 为准。 |
+| 数据面 | 本 feature 默认不定义 STREAM payload，所有操作均通过 RPC method/event 完成。 |
 
-## 3. 方法
+## 3. 方法 Methods
 
-方法 ID、event ID 和 fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。
+方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。不要在草案中分配正式 ID。
 
-命名说明：本草案使用 `State`，因为音量/静音是运行时可感知状态；若后续 registry review 选择 `Config` 命名，语义边界仍应保持为用户可感知 volume/mute。
+### 3.0 方法速览
 
-| method | 调用类型 | 说明 | params | result | 错误 | 状态 |
+| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
 |---|---|---|---|---|---|---|
-| `audio.getVolumeCapabilities` | query | 查询支持的音量 target、范围、单位、mute 能力、默认值和更新策略。 | `AudioGetVolumeCapabilitiesRequest` | `AudioGetVolumeCapabilitiesResponse` | `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INTERNAL_ERROR` | candidate |
-| `audio.getVolumeState` | query | 查询当前生效的音量和静音状态。 | `AudioGetVolumeStateRequest` | `AudioVolumeState` | `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INTERNAL_ERROR` | candidate |
-| `audio.setVolumeState` | command | 设置一个或多个 target 的音量和/或静音状态。 | `AudioSetVolumeStateRequest` | `AudioSetVolumeStateResponse` | `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `INTERNAL_ERROR` | candidate |
-| `audio.resetVolumeState` | action | 将指定 target 或字段恢复到能力声明的默认值。 | `AudioResetVolumeStateRequest` | `AudioSetVolumeStateResponse` | `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `INTERNAL_ERROR` | candidate |
+| `audio.getVolumeCapabilities` | query | 查询支持的音量 target、范围、单位、mute 能力、默认值和更新策略 | `AudioGetVolumeCapabilitiesRequest` | `AudioGetVolumeCapabilitiesResponse` | 否 | candidate |
+| `audio.getVolumeState` | query | 查询当前生效的音量和静音状态 | `AudioGetVolumeStateRequest` | `AudioVolumeState` | 否 | candidate |
+| `audio.setVolumeState` | command | 设置一个或多个 target 的音量和/或静音状态 | `AudioSetVolumeStateRequest` | `AudioSetVolumeStateResponse` | 是，`audio.volumeStateChanged` | candidate |
+| `audio.resetVolumeState` | action | 将指定 target 或字段恢复到能力声明的默认值 | `AudioResetVolumeStateRequest` | `AudioSetVolumeStateResponse` | 是，`audio.volumeStateChanged` | candidate |
 
-### `audio.getVolumeCapabilities`
+### 3.1 `audio.getVolumeCapabilities`
+
+**用途**：查询支持的音量 target、范围、单位、mute 能力、默认值和更新策略。
 
 | 项 | 内容 |
 |---|---|
-| 说明 | 查询设备有哪些用户可感知音量 target，以及各 target 的范围、单位、默认值和 mute 能力。 |
 | 调用类型 | query |
-| 备注 | `targets` 省略表示查询全部支持或已知 target。 |
+| Params Schema | `AudioGetVolumeCapabilitiesRequest` |
+| Result Schema | `AudioGetVolumeCapabilitiesResponse` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-#### Params 字段
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `targets` | string[] | no | `master`, `speaker`, `lineOut`, `headphone`, registry-reviewed product target | omitted | 选择要查询的音量 target。 |
-
-#### Result 字段
+#### 3.1.1 请求参数 Params：`AudioGetVolumeCapabilitiesRequest`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `capability` | string | yes | fixed `audio.volume` | none | capability 名称。 |
-| `targets` | `AudioVolumeTargetCapability[]` | yes | see schema | none | 支持的音量 target 及限制。 |
-| `updatePolicy` | `AudioVolumeUpdatePolicy` | yes | see schema | none | 部分更新、多 target 原子更新和字段级 reset 策略。 |
-| `configSchemaVersion` | string | no | max length TBD | omitted | volume schema 版本标签。 |
+| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
+| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
 
-### `audio.getVolumeState`
-
-| 项 | 内容 |
-|---|---|
-| 说明 | 查询当前音量和 mute 状态。 |
-| 调用类型 | query |
-| 备注 | target 省略表示查询全部支持 target。 |
-
-#### Params 字段
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `targets` | string[] | no | capability declared target | omitted | 选择要查询的 target。 |
-
-#### Result 字段
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `targets` | `AudioVolumeTargetState[]` | yes | unique target | none | 当前 target 状态。 |
-| `revision` | uint32 | no | 0..uint32 max | omitted | 可选状态版本，用于事件去重或客户端刷新。 |
-
-### `audio.setVolumeState`
-
-| 项 | 内容 |
-|---|---|
-| 说明 | 设置音量 level、mute，或两者同时设置。 |
-| 调用类型 | command |
-| 备注 | `muted = true` 不应强制改写 `level`；取消静音时通常保留原有 level，除非设备策略另有说明。 |
-
-#### Params 字段
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `state` | `AudioVolumeStatePatch` | yes | see schema | none | 要更新的 target 和字段；省略字段表示不变。 |
-
-#### Result 字段
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `applyState` | enum | yes | `applied`, `pending_restart` | none | 变更是否已生效。 |
-| `state` | `AudioVolumeState` | yes | see schema | none | 最终生效状态。 |
-| `revision` | uint32 | no | 0..uint32 max | omitted | 可选状态版本。 |
-
-### `audio.resetVolumeState`
-
-| 项 | 内容 |
-|---|---|
-| 说明 | 将音量 level 和/或 mute 恢复到 capability 声明的默认值。 |
-| 调用类型 | action |
-| 备注 | reset 当前状态不等同于写入新的设备默认 profile。 |
-
-#### Params 字段
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `targets` | string[] | no | capability declared target | omitted | 指定恢复哪些 target；和 `items` 互斥。 |
-| `items` | `map<string, string[]>` | no | fields: `level`, `muted`, `all` | omitted | 指定恢复 target 内哪些字段；和 `targets` 互斥。 |
-
-#### Result 字段
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `applyState` | enum | yes | `applied`, `pending_restart` | none | 变更是否已生效。 |
-| `state` | `AudioVolumeState` | yes | see schema | none | 恢复后的最终状态。 |
-| `revision` | uint32 | no | 0..uint32 max | omitted | 可选状态版本。 |
-
-## 4. 事件
-
-| event | 触发条件 | payload | 客户端处理建议 | 状态 |
-|---|---|---|---|---|
-| `audio.volumeStateChanged` | `set`/`reset` 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。 | `AudioVolumeStateChangedEvent` | 可用变化片段更新 UI；如需完整状态，调用 `audio.getVolumeState` 校准。失败请求不得触发该事件。 | candidate |
-
-### Event payload 字段
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `reason` | enum | yes | `user_request`, `physical_control`, `hid_report`, `reset_to_default`, `factory_reset`, `profile_changed`, `device_policy`, `restore_config`, `unknown` | none | 状态变化原因。 |
-| `state` | `AudioVolumeState` | yes | see schema | none | 已变化或受影响的状态。 |
-| `changedFields` | string[] | no | field path 数组 | omitted | 变化字段路径。 |
-| `revision` | uint32 | no | 0..uint32 max | omitted | 可选状态版本。 |
-
-## 5. Capability
-
-Capability name: `audio.volume`。
-
-| 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 说明 |
-|---|---|---:|---|---|
-| `capability` | string | yes | fixed `audio.volume` | capability 名称。 |
-| `targets` | `AudioVolumeTargetCapability[]` | yes | see schema | 支持的用户可感知音量 target。 |
-| `updatePolicy` | `AudioVolumeUpdatePolicy` | yes | see schema | 部分更新、多 target 原子更新和字段级 reset 策略。 |
-| `configSchemaVersion` | string | no | max length TBD | volume schema 版本标签。 |
-
-### `AudioVolumeTargetCapability`
-
-| 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 说明 |
-|---|---|---:|---|---|
-| `target` | string enum | yes | `master`, `speaker`, `lineOut`, `headphone`, registry-reviewed product target | 被控制的用户可感知音量 target。 |
-| `supported` | bool | yes | `true`, `false` | 该 target 是否支持音量控制。 |
-| `displayName` | string | no | device-defined | UI 展示名。 |
-| `levelRange` | `AudioVolumeRange` | yes | see schema | level 范围、步进和单位。 |
-| `unit` | enum | yes | `percent`, `dB` | target 默认单位；面向用户的 target 推荐 `percent`。 |
-| `muteSupported` | bool | yes | `true`, `false` | 是否支持静音。 |
-| `defaultLevel` | number | no | within `levelRange` | reset 使用的默认 level。 |
-| `defaultMuted` | bool | no | `true`, `false` | reset 使用的默认 mute 状态。 |
-| `requiresAudioRestart` | bool | no | `true`, `false` | 音量/静音变化通常应为 `false`。 |
-
-### target 边界
-
-| 概念 | 归属 | 原因 |
-|---|---|---|
-| `master` / `speaker` / `lineOut` / `headphone` volume | `audio.volume` | 用户感知 loudness。 |
-| output mute | `audio.volume` | 用户感知静音。 |
-| line-in preGain | `audio.input` | 输入侧校准，不是输出 loudness。 |
-| mixer item/bus/channel gain | `audio.mixer` | 内部混音平衡，不是用户 master volume。 |
-| AGC target/max gain | `audio.algorithm` | DSP 算法参数。 |
-| EQ band gain | `audio.eq` | 滤波曲线参数。 |
-
-## 6. 字段 / Schemas
-
-### 枚举
-
-| 枚举 | 值 | 说明 |
-|---|---|---|
-| `AudioVolumeUnit` | `percent`, `dB` | `percent` 推荐用于用户可感知音量；`dB` 仅用于产品明确暴露 dB 的场景。 |
-| `AudioVolumeApplyState` | `applied`, `pending_restart` | 应用状态。 |
-| `AudioVolumeChangeReason` | `user_request`, `physical_control`, `hid_report`, `reset_to_default`, `factory_reset`, `profile_changed`, `device_policy`, `restore_config`, `unknown` | 事件原因。 |
-
-### `AudioVolumeState`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `targets` | `AudioVolumeTargetState[]` | yes | unique target | none | 一组 target 状态。 |
-| `revision` | uint32 | no | 0..uint32 max | omitted | 可选状态版本。 |
-
-### `AudioVolumeTargetState`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `target` | string enum | yes | capability declared target | none | 被查询或被设置的 target。 |
-| `level` | number | no | `AudioVolumeRange` | unchanged / default | 音量值。 |
-| `unit` | enum | no | `percent`, `dB` | target default unit | `level` 的单位。 |
-| `muted` | bool | no | `true`, `false` | unchanged / default | 静音状态。 |
-
-### `AudioVolumeRange`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `min` | number | yes | number | none | 最小 level。 |
-| `max` | number | yes | number | none | 最大 level。 |
-| `step` | number | yes | positive number | none | level 步进。 |
-| `unit` | enum | yes | `percent`, `dB` | none | 范围单位。 |
-
-### `AudioVolumeUpdatePolicy`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `partialUpdateSupported` | bool | yes | `true`, `false` | none | 是否允许只更新 `level` 或 `muted`。 |
-| `atomicMultiTargetSupported` | bool | yes | `true`, `false` | none | 是否支持多 target 原子更新。 |
-| `fieldResetSupported` | bool | yes | `true`, `false` | none | 是否支持字段级 reset。 |
-
-## 7. JSON 示例
-
-示例只展示 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。字段和 ID 在采纳前均为草案。
-
-### 查询音量能力
+#### 3.1.2 Request d block Example (op=7)
 
 ```json
 {
-  "id": 1,
+  "id": 101,
   "method": "audio.getVolumeCapabilities",
   "params": {
-    "targets": ["master", "lineOut"]
-  }
-}
-```
-
-```json
-{
-  "id": 1,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "capability": "audio.volume",
-    "configSchemaVersion": "1.0",
-    "updatePolicy": {
-      "partialUpdateSupported": true,
-      "atomicMultiTargetSupported": false,
-      "fieldResetSupported": true
-    },
-    "targets": [
-      {
-        "target": "master",
-        "supported": true,
-        "displayName": "Master volume",
-        "levelRange": {
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "percent"
-        },
-        "unit": "percent",
-        "muteSupported": true,
-        "defaultLevel": 60,
-        "defaultMuted": false,
-        "requiresAudioRestart": false
-      }
+    "target": "default",
+    "sections": [
+      "summary"
     ]
   }
 }
 ```
 
-### 设置音量和静音
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.1.3 返回结果 Result：`AudioGetVolumeCapabilitiesResponse`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+
+#### 3.1.4 Success Response d block Example (op=8)
 
 ```json
 {
-  "id": 2,
-  "method": "audio.setVolumeState",
-  "params": {
-    "state": {
-      "targets": [
-        {
-          "target": "master",
-          "level": 42,
-          "unit": "percent",
-          "muted": false
-        }
-      ]
-    }
-  }
-}
-```
-
-```json
-{
-  "id": 2,
+  "id": 101,
   "status": {
     "ok": true,
     "code": 0
   },
   "result": {
-    "applyState": "applied",
-    "revision": 8,
     "state": {
-      "targets": [
-        {
-          "target": "master",
-          "level": 42,
-          "unit": "percent",
-          "muted": false
-        }
-      ]
+      "target": "default",
+      "status": "ok"
     }
   }
 }
 ```
 
-### 只设置静音
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.1.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.1.6 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
 
 ```json
 {
-  "id": 3,
-  "method": "audio.setVolumeState",
-  "params": {
-    "state": {
-      "targets": [
-        {
-          "target": "master",
-          "muted": true
-        }
-      ]
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
     }
   }
 }
 ```
 
-### 音量变化事件
+#### 3.1.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.2 `audio.getVolumeState`
+
+**用途**：查询当前生效的音量和静音状态。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | query |
+| Params Schema | `AudioGetVolumeStateRequest` |
+| Result Schema | `AudioVolumeState` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
+
+#### 3.2.1 请求参数 Params：`AudioGetVolumeStateRequest`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
+| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "audio.getVolumeState",
+  "params": {
+    "target": "default",
+    "sections": [
+      "summary"
+    ]
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.2.3 返回结果 Result：`AudioVolumeState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": {
+      "target": "default",
+      "status": "ok"
+    }
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.2.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.2.6 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.2.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.3 `audio.setVolumeState`
+
+**用途**：设置一个或多个 target 的音量和/或静音状态。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | command |
+| Params Schema | `AudioSetVolumeStateRequest` |
+| Result Schema | `AudioSetVolumeStateResponse` |
+| 是否触发事件 | 是，状态实际变化后触发 `audio.volumeStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.3.1 请求参数 Params：`AudioSetVolumeStateRequest`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 设置对象；具体 target 集合由 capability 声明。 |
+| `config` | object | yes | see schema | none | 目标配置或状态片段；字段需在采纳前确认。 |
+
+#### 3.3.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "audio.setVolumeState",
+  "params": {
+    "target": "default",
+    "config": {
+      "enabled": true
+    }
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.3.3 返回结果 Result：`AudioSetVolumeStateResponse`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受并应用请求。 |
+| `state` | object | no | see schema | omitted | 设置后的状态或配置快照。 |
+
+#### 3.3.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.3.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `audio.volumeStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
 ```json
 {
   "event": "audio.volumeStateChanged",
   "intent": 1,
   "data": {
-    "reason": "physical_control",
-    "revision": 9,
+    "changedFields": [
+      "state"
+    ],
     "state": {
-      "targets": [
-        {
-          "target": "master",
-          "level": 43,
-          "unit": "percent",
-          "muted": false
-        }
-      ]
+      "target": "default",
+      "status": "ok"
     },
-    "changedFields": ["targets[master].level"]
+    "reason": "user_request"
   }
 }
 ```
 
-### 失败响应
+#### 3.3.6 Event d block Example (op=6)
 
 ```json
 {
-  "id": 4,
+  "event": "audio.volumeStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.3.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.3.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
   "status": {
     "ok": false,
-    "code": 11,
-    "msg": "Value is outside the supported range.",
+    "code": 10,
+    "msg": "Invalid argument.",
     "details": {
-      "target": "master",
-      "field": "level",
-      "min": 0,
-      "max": 100,
-      "step": 1
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
     }
   }
 }
 ```
 
+#### 3.3.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+### 3.4 `audio.resetVolumeState`
+
+**用途**：将指定 target 或字段恢复到能力声明的默认值。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `AudioResetVolumeStateRequest` |
+| Result Schema | `AudioSetVolumeStateResponse` |
+| 是否触发事件 | 是，状态实际变化后触发 `audio.volumeStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.4.1 请求参数 Params：`AudioResetVolumeStateRequest`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
+
+#### 3.4.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 104,
+  "method": "audio.resetVolumeState",
+  "params": {
+    "target": "default",
+    "reason": "user_request"
+  }
+}
+```
+
+读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
+
+#### 3.4.3 返回结果 Result：`AudioSetVolumeStateResponse`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.4.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。
+
+#### 3.4.5 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| `audio.volumeStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+
+```json
+{
+  "event": "audio.volumeStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.4.6 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.volumeStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "state": "active"
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
+#### 3.4.7 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+#### 3.4.8 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "unsupported target"
+    }
+  }
+}
+```
+
+#### 3.4.9 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
+
+## 4. 事件 Events
+
+### 4.0 事件速览
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
+|---|---|---|---|---|
+| `audio.volumeStateChanged` | AudioVolumeStateChangedEvent | `set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。` | 更新 UI 或调用对应 get method 校准 | candidate |
+
+### 4.1 `audio.volumeStateChanged`
+
+**触发条件**：AudioVolumeStateChangedEvent。
+
+#### 4.1.1 Payload：`set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `changedFields` | string[] | no | field path array | omitted | 变化字段路径。 |
+| `state` | object | no | see schema | omitted | 变化后的状态、配置或摘要。 |
+| `source` | string enum | no | `remoteApp`, `localPanel`, `devicePolicy`, `adapter`, `unknown` | `unknown` | 状态变化来源。 |
+| `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
+| `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
+
+#### 4.1.2 Event d block Example (op=6)
+
+```json
+{
+  "event": "audio.volumeStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    },
+    "source": "remoteApp",
+    "reason": "user_request",
+    "stateRevision": 1
+  }
+}
+```
+
+#### 4.1.3 客户端处理建议
+
+| 场景 | 建议 |
+|---|---|
+| payload 是完整状态 | 可直接更新 UI 或本地缓存。 |
+| payload 是变化片段 | 调用对应 get method 校准完整状态。 |
+| event 丢失或重连 | 重连后主动调用 get method 校准。 |
+
+#### 4.1.4 规则
+
+- Event MUST 使用 `op=6`。
+- Event MUST NOT 携带 `d.id`。
+- Event payload MUST 放在 `d.data` 中。
+
+## 5. Capability
+
+Capability name: `audio.volume`。
+
+设备通过 capability 声明是否支持该 feature，以及支持哪些范围、模式、对象或约束。Capability 字段只描述“设备能做什么”，不得混入 method params/result 或 event payload。
+
+| 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `capability` | string | yes | fixed `audio.volume` | none | capability 名称。 |
+| `supportedMethods` | string[] | no | method name array | omitted | 支持的 method 列表；采纳后应由 capability discovery 或 registry/generated 表达。 |
+| `supportedEvents` | string[] | no | event name array | omitted | 支持的 event 列表；采纳后应由 capability discovery 或 registry/generated 表达。 |
+| `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
+| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
+
+## 6. 字段 / Schemas
+
+### 6.1 Schema 层级速览
+
+本草案采用保守 schema 展开方式：method/event 小节给出 Params / Result / Payload 字段表和 JSON `d` block 示例；本章作为 schema 索引，避免在草案阶段重复维护大量未确认字段。
+
+```text
+VolumeCapability
+  capability / supportedMethods / supportedEvents / supportedTargets / constraints
+VolumeState
+  target / status / sampledAt
+VolumeChangedEvent
+  changedFields / state / source / reason / stateRevision
+```
+
+### 6.2 请求与响应 Schemas
+
+| Schema | 用途 | 字段定义 |
+|---|---|---|
+| `AudioGetVolumeCapabilitiesRequest` | `audio.getVolumeCapabilities` request params | 见 `audio.getVolumeCapabilities` 方法小节。 |
+| `AudioGetVolumeCapabilitiesResponse` | `audio.getVolumeCapabilities` result | 见 `audio.getVolumeCapabilities` 方法小节。 |
+| `AudioGetVolumeStateRequest` | `audio.getVolumeState` request params | 见 `audio.getVolumeState` 方法小节。 |
+| `AudioVolumeState` | `audio.getVolumeState` result | 见 `audio.getVolumeState` 方法小节。 |
+| `AudioSetVolumeStateRequest` | `audio.setVolumeState` request params | 见 `audio.setVolumeState` 方法小节。 |
+| `AudioSetVolumeStateResponse` | `audio.setVolumeState` result | 见 `audio.setVolumeState` 方法小节。 |
+| `AudioResetVolumeStateRequest` | `audio.resetVolumeState` request params | 见 `audio.resetVolumeState` 方法小节。 |
+| `AudioSetVolumeStateResponse` | `audio.resetVolumeState` result | 见 `audio.resetVolumeState` 方法小节。 |
+
+### 6.3 Capability Schemas
+
+Capability 字段见第 5 章。复杂 capability 对象在 registry review 前需要拆成独立字段表。
+
+### 6.4 Event Schemas
+
+| Schema | Event | 字段定义 |
+|---|---|---|
+| `set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。` | `audio.volumeStateChanged` | 见 `audio.volumeStateChanged` 事件小节。 |
+
+### 6.5 State / Config / Object Schemas
+
+| Schema | 用途 | 状态 |
+|---|---|---|
+| `VolumeState` | 表达 `audio.volume` 的当前状态、配置或摘要。 | `[REVIEW-ASK]` |
+| `VolumeConfig` | 表达 `audio.volume` 的可写配置。 | `[REVIEW-ASK]` |
+
+## 7. 交互流程示例 Flow Examples
+
+本章只展示多个 method/event 组成的端到端业务流程。单个 method 的 Request / Success Response / Error Response 示例见第 3 章；单个 event 的 Event 示例见第 4 章。
+
+### 7.1 场景：读取或修改 `audio.volume`
+
+#### Step 1. 调用 method：Request d block (op=7)
+
+```json
+{
+  "id": 201,
+  "method": "audio.getVolumeCapabilities",
+  "params": {}
+}
+```
+
+#### Step 2. 接收响应：Success Response d block (op=8)
+
+```json
+{
+  "id": 201,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "accepted": true
+  }
+}
+```
+
+
+#### Step 3. 订阅事件：Event d block (op=6)
+
+```json
+{
+  "event": "audio.volumeStateChanged",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "state"
+    ],
+    "state": {
+      "target": "default",
+      "status": "ok"
+    }
+  }
+}
+```
+
+读法：客户端应先通过 capability discovery 判断 feature/method 是否支持；如果事件 payload 不完整或重连后状态不确定，应主动调用 query method 校准。
+
 ## 8. 错误
 
-本草案优先复用现有 ErrorCode，不分配 feature-specific errorCode。
+错误处理语义见 `docs/specs/1-core/09-Error-Model.md`；错误注册规则见 `docs/specs/2-registry/04-Errors-Registry.md`。草案不得随意分配正式 numeric errorCode。
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
-| `NOT_SUPPORTED` | 设备不支持 `audio.volume`、指定 target、mute 或多 target 原子更新。 | 合法请求但设备能力不支持。 |
-| `INVALID_ARGUMENT` | target 名称非法、请求结构错误、unit 非法、`targets` 和 `items` 同时出现。 | 请求结构错误时不应应用状态。 |
-| `OUT_OF_RANGE` | `level` 超出范围或不符合 step。 | 需要返回 target、field、min/max/step。 |
-| `INVALID_STATE` | 当前模式锁定音量修改。 | 例如设备策略或会议模式限制。 |
-| `BUSY` | 音频 pipeline 或设备资源正忙。 | 客户端可重试。 |
-| `PERMISSION_DENIED` | 调用方无权限。 | 权限由 session/runtime 决定。 |
-| `INTERNAL_ERROR` | 读取或应用音量状态失败。 | 设备内部错误。 |
+| `NOT_SUPPORTED` | 设备不支持 feature、method、target、scope 或 section。 | 优先复用通用错误。 |
+| `INVALID_ARGUMENT` | 参数非法、枚举非法、范围非法。 | 应指出具体字段。 |
+| `INVALID_STATE` | 当前状态不允许执行。 | 如 lifecycle/reset/initialization 冲突。 |
+| `BUSY` | 设备或资源繁忙。 | 如已有动作执行中。 |
+| `PERMISSION_DENIED` | 调用方权限不足。 | 危险操作或敏感信息读取。 |
+| `<FEATURE_SPECIFIC_ERROR>` | 候选业务错误。 | `[REVIEW-DRAFT]`；采纳前确认是否需要 feature-specific errorCode。 |
+
+JSON 示例中的 `status.code` 如果 registry 尚未采纳，可以使用 `10` 作为占位示例，并在 `status.details.candidateError` 中放候选错误名。正式 numeric code 必须由 registry 采纳时分配。
 
 ## 9. Legacy 映射
 
-Legacy 映射是迁移证据，不是 runtime 合同。旧命令中的 Line-out、HID report、mute light 等概念不得直接成为 AXTP 一等 feature。
+Legacy 映射是迁移证据，不是 runtime 合同。当前映射仍需从 `docs/legacy-migration/classification/` 和旧协议证据中按 `audio.volume` 人工确认。
 
 | legacy 项 | 候选映射 | 状态 | 说明 |
 |---|---|---|---|
-| `SetLineOutVolume` | `audio.setVolumeState` target `lineOut`, field `level` | candidate | 需要确认旧范围和单位。 |
-| `GetLineOutVolume` | `audio.getVolumeState` target `lineOut` | candidate | 如果设备只有一个输出 target，adapter 可映射为 `master`。 |
-| `Config.Set:Volume` / `Config.Get:Volume` | `audio.setVolumeState` / `audio.getVolumeState` target `master` 或产品默认 target | candidate | 默认 target 需要产品确认。 |
-| `CommonSetAudioMuteState` / `CommonGetAudioMuteState` | `audio.setVolumeState` / `audio.getVolumeState` field `muted` | candidate | mute 不应改写 level，除非旧协议明确如此。 |
-| HID volume reports | `audio.volumeStateChanged` | candidate | adapter 把 report ID/payload 转成事件 payload。 |
-| `CommonSetDefaultVolume` / `CommonGetDefaultVolume` | `AudioVolumeTargetCapability.defaultLevel` 或 future default-profile feature | unresolved | 读默认值可作为 capability metadata；写默认值不是 reset 当前状态。 |
-| `CommonGetMuteLightEnhancement` / `CommonSetMuteLightEnhancement` | adapter-only / future indicator feature | unresolved | 可能是指示灯行为，不是 audio mute 本身。 |
-| `SetLineInPreGain` / `GetLineInPreGain` | `audio.input` | adapter-only for volume | 输入 preGain 明确不属于 `audio.volume`。 |
-| `AudioMix` / mixer item gain | `audio.mixer` | adapter-only for volume | mixer gain 明确不属于 `audio.volume`。 |
+| AXDP / Rooms / VM33 / Signage legacy command or field | `audio.volume` | `[REVIEW-ASK]` | 采纳前补齐确定的旧协议命令、字段路径、状态码和覆盖范围。 |
 
 ## 10. Registry / Conformance 状态
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| registry | not generated | 当前 [registry/domains/audio/domain.yaml](../../../registry/domains/audio/domain.yaml) 未包含 `audio.volume`。 |
-| generated | false | `docs/generated/**` 未生成 `audio.volume` method/event/capability。 |
-| protocol draft | review-ok | 边界已收敛到用户可感知音量/静音；input preGain、mixer gain、AGC gain、EQ gain 已排除。 |
-| registry readiness | partial / candidate | 仍需确认最终命名是 `State` 还是 `Config`，确认 target set、range/unit、legacy default 语义。 |
-| conformance | missing | 采纳后需要新增 `audio.volume` 专项 cases。 |
+| registry | not generated | 尚未写入正式 registry YAML。 |
+| generated | false | 是否已进入 protocol IR / docs/generated。 |
+| protocol draft | review-ok | 当前草案状态。 |
+| registry readiness | candidate | 是否可进入 registry review。 |
+| conformance | needed | 是否已有测试用例。 |
 
 ## 11. 测试要点
 
 | 类型 | 要点 |
 |---|---|
-| happy path | 查询能力；查询状态；设置 level；设置 mute；同时设置 level+mute；reset target。 |
-| error path | 不支持 target、不支持 mute、非法 unit、无权限、BUSY、当前状态禁止修改。 |
-| boundary case | level min/max；step 对齐；只 mute 不改变 level；多 target 原子更新不支持时必须拒绝而非部分应用。 |
-| capability discovery | `audio.volume` capability 暴露 targets、range、unit、muteSupported、defaultLevel、updatePolicy。 |
-| event | 成功 set/reset 或物理/HID 改变后发 `audio.volumeStateChanged`；失败请求不发事件。 |
-| adoption | 采纳前不得分配正式 ID；不得把 input preGain、mixer gain、AGC gain、EQ gain 合并进本 feature。 |
+| happy path | capability discovery 后调用主要 query/command/action method，返回成功响应。 |
+| event path | 会改变状态的 method 成功后，按需产生 changed/progress/state event；客户端可更新 UI 或调用 get 校准。 |
+| boundary case | 省略可选字段、非法 target、非法枚举、越界值、空列表和最大对象数量。 |
+| error case | unsupported feature/method、permission denied、busy、invalid argument、version/capability mismatch。 |
+| compatibility | 新旧 App / 设备组合下，未知可选字段可忽略，未知必填语义必须返回标准错误。 |
+
+## 12. 待确认问题
+
+| 问题 | 影响 | 当前建议 | 状态 |
+|---|---|---|---|
+| `audio.volume` 的 MVP 字段范围是否完整？ | schema / conformance | 进入 registry review 前由产品、设备实现和测试共同确认。 | open |
+| method/event 命名是否需要与已有 generated 事实合并？ | registry | 采纳前搜索 registry/generated，避免重复定义。 | open |
+| legacy 命令和字段是否全部映射清楚？ | legacy | 未确认条目保持 `[REVIEW-ASK]`，不得写入正式 YAML。 | open |

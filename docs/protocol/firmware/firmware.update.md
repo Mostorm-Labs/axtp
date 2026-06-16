@@ -1,10 +1,11 @@
 ---
-status: draft
-contractState: drafted-only
+status: generated
+contract: true
+generated: true
 domain: firmware
 feature: firmware.update
-decision: Modify existing draft
-sourceFlow: docs/flows/device-firmware-update.md
+registry: ../../../registry/domains/firmware/domain.yaml
+lastReviewed: 2026-06-15
 ---
 
 # AXTP firmware.update 协议草案
@@ -26,8 +27,8 @@ Capability ID：`firmware.update`
 | 项目 | 内容 |
 |---|---|
 | 协议目的 | 让 PC Host 上传单 `.bin` 或多 `.bin` 固件文件；Host 上传完调用 `firmware.finishUpdate`，设备自主 md5 校验、安装和自动重启。 |
-| 当前状态 | Drafted only；`registry/**`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**` 尚未采纳 `firmware.update` 业务方法、事件和 schema。 |
-| Stage 20 决策 | Modify existing draft；保留 `firmware.update` 边界，但压缩为 P0 最小字段集。 |
+| 当前状态 | generated；已写入 `../../../registry/domains/firmware/domain.yaml`，并已刷新到 `protocol/axtp.protocol.yaml` 与 `docs/generated/**`。 |
+| Stage 50 生成 | P0 最小字段集已写入 registry source 并生成；P1/P2 reserved 与 legacy `[REVIEW-ASK]` 未采纳。 |
 | P0 主流程 | `getUpdateCapabilities` -> `beginUpdate` -> STREAM bytes -> `finishUpdate` -> state/progress events -> reconnect -> `firmware.getInfo`。 |
 | P0 方法 | `firmware.getUpdateCapabilities`, `firmware.beginUpdate`, `firmware.finishUpdate`, `firmware.getUpdateState`。 |
 | P0 事件 | `firmware.updateProgressReported`, `firmware.updateStateChanged`。 |
@@ -38,7 +39,28 @@ Capability ID：`firmware.update`
 | 字段收敛 | `[REVIEW-OK]` P0 去掉 `policy`、`completion`、`finishId`、`hostActionAfterFinish`、`phase`、`timestampMs`、`windowSize`、`resume*`、`missingRanges`、外部 verify/install 字段。 |
 | 未决问题 | `devicePolicyVersion` 是否必填、manifest 来源、`firmware.info` 与 `device.info` 边界、A/B confirm/rollback 是否进入 P1。 |
 
-## 1. 功能描述
+
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
+## 1. 功能说明
 
 `firmware.update` 定义一次固件更新会话的最小业务控制面：
 
@@ -50,7 +72,7 @@ Capability ID：`firmware.update`
 
 P0 不让 Host 统一编排设备内部流程。不同设备可以在 `finishUpdate` 之后使用自己的校验、分区、写入、切槽和重启策略，只需要暴露状态和错误。
 
-## 2. Capability 边界
+## 2. 能力边界
 
 ### 2.1 Included
 
@@ -87,7 +109,7 @@ firmware.getInfo after reconnect, from firmware.info
 
 STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fileId`、`target`、`size`、`md5` 来自 manifest 和 `beginUpdate` 返回的 stream binding。
 
-## 3. Methods
+## 3. 方法 Methods
 
 ### 3.0 方法速览
 
@@ -118,9 +140,56 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 |---|---|---:|---|---|---|
 | none | - | - | - | - | P0 不需要请求参数。 |
 
+#### Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "firmware.getUpdateCapabilities",
+  "params": {}
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `EmptyParams`，省略字段按上表默认值处理。
+
 返回结果 Result：`FirmwareUpdateCapabilities`
 
 见 [5. Capability Schema](#5-capability-schema)。
+
+#### Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 3,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_SUPPORTED",
+      "field": "params",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
+
+#### Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {}
+}
+```
+
+读法：`result` 是 `FirmwareUpdateCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
 
 ### 3.2 `firmware.beginUpdate`
 
@@ -140,6 +209,31 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 |---|---|---:|---|---|---|
 | `manifest` | `FirmwareUpdateManifest` | yes | object | none | 固件包最小摘要。 |
 
+#### Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "firmware.beginUpdate",
+  "params": {
+    "manifest": {
+      "packageId": "pkg_20260615_001",
+      "version": "1.2.3",
+      "files": [
+        {
+          "fileId": "app",
+          "target": "main",
+          "size": 1048576,
+          "md5": "0123456789abcdef0123456789abcdef"
+        }
+      ]
+    }
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `BeginUpdateParams`，省略字段按上表默认值处理。
+
 返回结果 Result：`BeginUpdateResult`
 
 | Field | Type | Required | Range/Enum | Default | Description |
@@ -148,6 +242,51 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 | `state` | string | yes | `receiving` | none | begin 成功后的状态。 |
 | `streams` | array<`FirmwareUpdateStreamBinding`> | yes | non-empty | none | `fileId` 到 `streamId` 的绑定。 |
 | `chunkSize` | uint32 | no | bytes | device default | 建议 Host 使用的 chunk size。 |
+
+#### Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "manifest",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
+
+#### Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "updateSessionId": "upd_20260615_001",
+    "state": "receiving",
+    "streams": [
+      {
+        "fileId": "app",
+        "streamId": 4097
+      }
+    ],
+    "chunkSize": 131072
+  }
+}
+```
+
+读法：`result` 是 `BeginUpdateResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
 
 ### 3.3 `firmware.finishUpdate`
 
@@ -167,6 +306,20 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 |---|---|---:|---|---|---|
 | `updateSessionId` | string | yes | opaque | none | 更新会话 ID。 |
 
+#### Request d block Example (op=7)
+
+```json
+{
+  "id": 103,
+  "method": "firmware.finishUpdate",
+  "params": {
+    "updateSessionId": "upd_20260615_001"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `FinishUpdateParams`，省略字段按上表默认值处理。
+
 返回结果 Result：`FinishUpdateResult`
 
 | Field | Type | Required | Range/Enum | Default | Description |
@@ -174,6 +327,45 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 | `updateSessionId` | string | yes | opaque | none | 更新会话 ID。 |
 | `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受 finish 并接管后续流程。 |
 | `state` | string | yes | state enum | none | 通常为 `verifying` 或 `failed`。 |
+
+#### Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 11,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "INVALID_STATE",
+      "field": "updateSessionId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
+
+#### Success Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "updateSessionId": "upd_20260615_001",
+    "accepted": true,
+    "state": "receiving"
+  }
+}
+```
+
+读法：`result` 是 `FinishUpdateResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
 
 finish 规则：
 
@@ -200,9 +392,62 @@ finish 规则：
 |---|---|---:|---|---|---|
 | `updateSessionId` | string | yes | opaque | none | 更新会话 ID。 |
 
+#### Request d block Example (op=7)
+
+```json
+{
+  "id": 104,
+  "method": "firmware.getUpdateState",
+  "params": {
+    "updateSessionId": "upd_20260615_001"
+  }
+}
+```
+
+读法：请求只展示 RPC `d` block；`params` 对应 `GetUpdateStateParams`，省略字段按上表默认值处理。
+
 返回结果 Result：`FirmwareUpdateState`
 
 见 [6.3 运行态状态 schema](#63-运行态状态-schema)。
+
+#### Error Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": false,
+    "code": 12,
+    "msg": "Request failed.",
+    "details": {
+      "candidateError": "NOT_FOUND",
+      "field": "updateSessionId",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
+
+#### Success Response d block Example (op=8)
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "updateSessionId": "upd_20260615_001",
+    "state": "receiving",
+    "progress": 42
+  }
+}
+```
+
+读法：`result` 是 `FirmwareUpdateState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
 
 ### 3.5 P1/P2 reserved methods
 
@@ -219,7 +464,7 @@ finish 规则：
 | `firmware.rollbackUpdate` | P1 | 回滚到上一可用版本。 |
 | `firmware.uploadUpdateChunk` | P2 | 无 STREAM 的 legacy adapter 兼容路径。 |
 
-## 4. Events
+## 4. 事件 Events
 
 ### 4.0 事件速览
 
@@ -244,6 +489,22 @@ Payload：`FirmwareUpdateProgressEvent`
 | `progress` | uint8 | no | `0..100` | 整体进度。 |
 | `fileId` | string | no | manifest fileId | 当前文件；没有文件粒度时省略。 |
 
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "firmware.updateProgressReported",
+  "intent": 1,
+  "data": {
+    "updateSessionId": "upd_20260615_001",
+    "state": "receiving",
+    "progress": 42
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
 客户端处理建议：事件只用于 UI 更新，不作为唯一事实源；Host 可用 `getUpdateState` 校准。
 
 ### 4.2 `firmware.updateStateChanged`
@@ -262,9 +523,24 @@ Payload：`FirmwareUpdateStateChangedEvent`
 | `state` | string | yes | state enum | 新状态。 |
 | `error` | `FirmwareUpdateErrorInfo` | no | object | 失败详情。 |
 
+#### Event d block Example (op=6)
+
+```json
+{
+  "event": "firmware.updateStateChanged",
+  "intent": 1,
+  "data": {
+    "updateSessionId": "upd_20260615_001",
+    "state": "receiving"
+  }
+}
+```
+
+读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
+
 客户端处理建议：当 `state=failed` 时显示 `error`；当 `state=rebooting` 时提示保持供电并等待设备断连/重连。
 
-## 5. Capability Schema
+## 5. Capability
 
 Capability：`FirmwareUpdateCapabilities`
 
@@ -280,7 +556,7 @@ Capability：`FirmwareUpdateCapabilities`
 
 P0 约定：manifest 必填、finish 必填、不要求签名、不要求 resume、不要求 parallel transfer。为减少字段数量，这些固定规则不再重复放入 capability 字段。
 
-## 6. Schemas
+## 6. 字段 / Schemas
 
 ### 6.1 Schema hierarchy
 
@@ -352,7 +628,7 @@ Schema：`FirmwareUpdateErrorInfo`
 | `confirmed` | 新版本已启动或设备确认升级完成。 |
 | `failed` | 失败。 |
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
 本节示例只写 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。成功 `status.code=0`；`FW_HASH_MISMATCH=1034` (`0x040A`)；`STREAM_CHUNK_MISSING=1290` (`0x050A`)。
 
@@ -561,7 +837,7 @@ Response:
 
 读法：P0 不要求设备返回 `missingRanges`；Host 可重新发送当前文件或重新开始会话。
 
-## 8. Candidate Errors
+## 8. 错误
 
 | 场景 | 推荐错误码 | 状态 |
 |---|---|---|
@@ -591,15 +867,15 @@ Response:
 | Rooms / Signage / VM33 | `UpgradeProgress`, `CloudProgress` | `firmware.getUpdateState` or progress/state events | `[REVIEW-DRAFT]` 主动查询和事件订阅均可表达。 |
 | VM33 | `Upgrade.Version` | `firmware.getInfo` in `firmware.info` | `[REVIEW-ASK]` 与 `device.info` 边界需确认。 |
 
-## 10. Registry / conformance status
+## 10. Registry / Conformance 状态
 
 | Item | Status |
 |---|---|
-| Implementation degree | Drafted only |
-| Registry YAML | Not adopted |
-| Generated protocol | Not generated |
+| Implementation degree | Generated P0 subset |
+| Registry YAML | Adopted in `../../../registry/domains/firmware/domain.yaml` |
+| Generated protocol | Generated in `protocol/axtp.protocol.yaml` and `docs/generated/**` |
 | Conformance tests | Not written |
-| Required adoption route | `docs/dev/skills/30-adopt-protocol-draft/SKILL.md` after human review |
+| Required next route | `docs/dev/skills/40-amend-adopted-protocol/SKILL.md` for semantic changes; `docs/dev/skills/50-generate-axtp-protocol/SKILL.md` after YAML changes |
 
 Registry 草案输入摘要：
 
@@ -613,7 +889,7 @@ Registry 草案输入摘要：
 | events `updateProgressReported`, `updateStateChanged` | P0 | 最小进度和状态观察。 |
 | advanced methods | P1/P2 | 不进入 P0 字段集。 |
 
-## 11. Test notes
+## 11. 测试要点
 
 | Case | Given | When | Then |
 |---|---|---|---|
@@ -644,7 +920,7 @@ Registry 草案输入摘要：
 | `[REVIEW-OK]` | P0 minimal fields | P0 仅保留闭环必要字段，扩展能力不提前展开。 |
 | `[REVIEW-OK]` | Security baseline | P0 md5，不强制签名。 |
 | `[REVIEW-OK]` | Reboot baseline | 设备自动重启，Host 等待重连。 |
-| `[REVIEW-FIX]` | Old P0 `commit/verify/install` | 不再作为 P0 主流程；降为 P1/advanced。 |
+| `[REVIEW-OK]` | Old P0 `commit/verify/install` | 已处理：不再作为 P0 主流程；降为 P1/advanced，未写入本次 registry source。 |
 | `[REVIEW-ASK]` | Device policy version | 需确认策略 version 是否必填。 |
 
 ## 附录 B. 协议决策记录
@@ -687,4 +963,5 @@ capabilities:
 - [ ] 确认 `streamLayout=file` 是否作为 P0 唯一 layout。
 - [ ] 确认 state enum 是否满足 UI 和测试。
 - [ ] 确认 legacy mappings 中可进入稳定 `legacyRefs` 的条目。
-- [ ] Stage 30 采纳时写入 registry YAML，并运行 Generator 刷新 generated artifacts。
+- [x] Stage 30 已写入 registry YAML，并通过 source validation。
+- [x] 已运行 `generate-axtp-protocol` 刷新 generated artifacts。

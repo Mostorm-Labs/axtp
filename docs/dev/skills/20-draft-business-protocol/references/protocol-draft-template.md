@@ -30,6 +30,26 @@ lastReviewed: YYYY-MM-DD
 | Conformance | none / needed / ready |
 | 主要未决问题 | <一句话列出，若无则写“暂无”> |
 
+## JSON 示例约定
+
+本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
+
+示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
+
+```json
+{ "sid": "12345678", "op": 7, "d": {} }
+```
+
+| op | 名称 | 用途 |
+|---:|---|---|
+| `6` | Event | 设备向客户端推送事件。 |
+| `7` | Request | 客户端调用业务 method。 |
+| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
+
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+
+业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+
 ## 1. 功能说明
 
 用 3-5 句话说明这个 feature 解决什么问题、面向哪些调用方、适用于哪些设备或场景。
@@ -74,24 +94,82 @@ lastReviewed: YYYY-MM-DD
 |---|---|---:|---|---|---|
 | `<field>` | `<type>` | yes/no | <range or enum> | <default or omitted> | <说明> |
 
-#### 3.1.2 返回结果 Result：`XxxState`
+#### 3.1.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "<domain.feature>.get",
+  "params": {
+    "<field>": "<value>"
+  }
+}
+```
+
+读法：<用 1-3 句话解释调用方如何理解这个请求，特别说明默认值、target、scope 或省略字段语义。>
+
+#### 3.1.3 返回结果 Result：`XxxState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `<field>` | `<type>` | yes/no | <range or enum> | <default or omitted> | <说明> |
 
-#### 3.1.3 可能触发的事件
+#### 3.1.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "<field>": "<value>"
+  }
+}
+```
+
+读法：<解释 result 是完整状态、配置快照、变化片段，还是 accepted 状态。>
+
+#### 3.1.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.1.4 错误
+#### 3.1.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持该 feature、method 或 target。 | 返回 unsupported feature/method/target。 |
 | `INVALID_ARGUMENT` | 请求字段非法。 | 返回具体字段路径和合法范围。 |
+
+#### 3.1.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "<field>",
+      "reason": "<reason>"
+    }
+  }
+}
+```
+
+读法：失败响应仍然使用 `op=8`，`d.id` 必须匹配原 Request。`status.ok=false` 或非零 `code` 时不得携带业务 `result`。
+
+#### 3.1.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- query method SHOULD NOT 因查询本身触发状态变化事件。
+- <补充本 method 的协议约束。>
 
 ### 3.2 `<domain.feature>.set`
 
@@ -112,24 +190,97 @@ lastReviewed: YYYY-MM-DD
 |---|---|---:|---|---|---|
 | `<field>` | `<type>` | yes/no | <range or enum> | <default or omitted> | <说明> |
 
-#### 3.2.2 返回结果 Result：`XxxState`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 102,
+  "method": "<domain.feature>.set",
+  "params": {
+    "<field>": "<value>"
+  }
+}
+```
+
+读法：<说明这是完整替换、局部 patch、目标状态设置，还是异步动作请求。>
+
+#### 3.2.3 返回结果 Result：`XxxState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `<field>` | `<type>` | yes/no | <range or enum> | <default or omitted> | <说明> |
 
-#### 3.2.3 可能触发的事件
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "<field>": "<value>"
+  }
+}
+```
+
+读法：<解释 result 是设置后的完整状态、accepted 状态，还是最终状态。>
+
+#### 3.2.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `<domain.feature>.changed` | 状态实际发生变化。 | `XxxChangedEvent` | 可直接更新 UI；需要完整状态时调用 get 校准。 |
 
-#### 3.2.4 错误
+如果该方法成功后 SHOULD / MUST 触发事件，请在本节直接给出事件 `d` block 示例：
+
+```json
+{
+  "event": "<domain.feature>.changed",
+  "intent": 1,
+  "data": {
+    "<field>": "<value>"
+  }
+}
+```
+
+读法：<解释事件 payload 是完整状态还是变化片段，以及客户端是否需要再调用 get。>
+
+#### 3.2.6 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `OUT_OF_RANGE` | 字段超出 capability 声明范围。 | 返回合法范围。 |
 | `BUSY` | 设备正在处理冲突操作。 | 稍后重试。 |
+
+#### 3.2.7 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "OUT_OF_RANGE",
+      "field": "<field>",
+      "min": 0,
+      "max": 100
+    }
+  }
+}
+```
+
+读法：<解释错误为什么发生、请求是否部分生效、是否会触发事件。>
+
+#### 3.2.8 规则
+
+- Request MUST 使用 `op=7`。
+- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
+- 失败响应 MUST NOT 携带业务 `result`。
+- 状态未实际变化时，method MAY 成功返回且 MAY 不触发 changed event。
 
 ## 4. 事件 Events
 
@@ -137,35 +288,64 @@ lastReviewed: YYYY-MM-DD
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|
-| `<domain.featureChanged>` | <触发条件> | `<EventPayload>` | <直接更新 UI / 调用 get 校准 / 可忽略等> | draft / review-ok |
+| `<domain.feature>.changed` | <触发条件> | `XxxChangedEvent` | <直接更新 UI / 调用 get 校准 / 可忽略等> | draft / review-ok |
 
-### 4.1 `<domain.featureChanged>`
+### 4.1 `<domain.feature>.changed`
 
 **触发条件**：
 
 - RPC 设置导致状态或配置实际变化。
-- 本地按键、设备策略、profile、restore 或 factory reset 导致状态变化。
+- 本地按键、设备策略、profile、restore、factory reset 或自动算法导致状态变化。
 - 设备上报来自外部系统的同步变化。
 
-#### Payload：`XxxChangedEvent`
+#### 4.1.1 Payload：`XxxChangedEvent`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `<field>` | `<type>` | yes/no | <range or enum> | <default or omitted> | <说明> |
+| `source` | string enum | no | `remoteApp`, `localPanel`, `hardwareKey`, `autoAlgorithm`, `devicePolicy`, `preset`, `cloud`, `unknown` | `unknown` | 状态变化来源。 |
+| `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
+| `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 客户端处理建议
+#### 4.1.2 Event d block Example (op=6)
+
+```json
+{
+  "event": "<domain.feature>.changed",
+  "intent": 1,
+  "data": {
+    "<field>": "<value>",
+    "source": "remoteApp",
+    "reason": "user_request",
+    "stateRevision": 1025
+  }
+}
+```
+
+读法：<解释该事件 payload 是完整状态还是变化片段，以及客户端如何更新 UI 或缓存。>
+
+#### 4.1.3 客户端处理建议
 
 | 场景 | 建议 |
 |---|---|
 | payload 是完整状态 | 可直接更新 UI 或本地缓存。 |
 | payload 是变化片段 | 调用对应 get method 校准完整状态。 |
 | event 丢失或重连 | 重连后主动调用 get method 校准。 |
+| 多端同时控制 | 使用 `stateRevision` 或后续 get 结果解决冲突。 |
+
+#### 4.1.4 规则
+
+- Event MUST 使用 `op=6`。
+- Event MUST NOT 携带 `d.id`。
+- Event payload MUST 放在 `d.data` 中。
+- 如果事件表示状态变化，SHOULD 包含 `source`、`reason` 或 `stateRevision`。
+- 如果 event payload 是部分变化，文档必须明确客户端是否需要调用 get method 校准。
 
 ## 5. Capability
 
 Capability name: `<domain.feature>`。
 
-设备通过 capability 声明是否支持该 feature，以及支持哪些范围、模式、对象或约束。
+设备通过 capability 声明是否支持该 feature，以及支持哪些范围、模式、对象或约束。Capability 字段只描述“设备能做什么”，不得混入 method params/result 或 event payload。
 
 | 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -181,9 +361,9 @@ Capability name: `<domain.feature>`。
 Schema 展开模式必须二选一：
 
 - 简单 feature：method/event 章节已经直接展开 Params / Result / Payload 字段表，本章只保留 schema 索引，避免重复。
-- 复杂 feature：method/event 章节只写 schema 名称和本章链接，本章集中定义完整字段表；method/event 下必须明确写“字段见 6.x”，不能让读者自己猜。
+- 复杂 feature：method/event 章节必须给出关键字段和 JSON `d` block 示例；本章集中展开复杂对象；method/event 小节必须明确引用第 6.x 节，不能让读者自己猜。
 
-Capability 字段始终放在第 5 章；不要混入 method params/result 或 event payload。
+禁止出现 method 小节只有 schema 名称，而字段表和示例都被丢到后文的写法。
 
 ```text
 XxxState
@@ -223,83 +403,60 @@ XxxChangedEvent
 
 如存在状态对象、配置对象、数组元素对象，在这里展开。对象字段较多时，每个对象单独成表。
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
-示例只展示 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。字段和 ID 在采纳前均为草案。
+本章只展示多个 method/event 组成的端到端业务流程，不再承担单个 method/event 的 API 契约示例。
 
-每个 feature 至少提供：
+单个 method 的 Request / Success Response / Error Response 示例必须写在对应 method 小节中。单个 event 的 Event 示例必须写在对应 event 小节中。
 
-- 一个 query 示例，如果存在 query method。
-- 一个 command/action 示例，如果存在 set/action method。
-- 一个 event 示例，如果存在 event。
-- 一个 failure 示例，如果有重要错误。
+每个 flow example 应展示：
 
-示例下方请加“读法”，用 1-3 句话解释调用方应该如何理解结果。
+- 调用顺序；
+- 每一步使用哪个 method/event；
+- 关键 `d` block；
+- 客户端如何更新状态；
+- 出错时是否会触发事件。
 
 ### 7.1 场景：<客户端要完成什么>
 
-#### request
+#### Step 1. <method request>：Request d block (op=7)
 
 ```json
 {
-  "id": 1,
-  "method": "<domain.method>",
-  "params": {
-    "<field>": "<value>"
-  }
+  "id": 101,
+  "method": "<domain.feature>.get",
+  "params": {}
 }
 ```
 
-#### response
+#### Step 2. <method response>：Success Response d block (op=8)
 
 ```json
 {
-  "id": 1,
+  "id": 101,
   "status": {
     "ok": true,
     "code": 0
   },
-  "result": {
-    "<field>": "<value>"
-  }
+  "result": {}
 }
 ```
 
-读法：<解释 result 中关键字段如何对应 schema、capability、默认值、范围、事件或后续动作。>
-
-### 7.2 场景：事件通知
+#### Step 3. <event if any>：Event d block (op=6)
 
 ```json
 {
-  "event": "<domain.featureChanged>",
+  "event": "<domain.feature>.changed",
   "intent": 1,
-  "data": {
-    "<field>": "<value>"
-  }
+  "data": {}
 }
 ```
 
-读法：<解释 event payload 是完整状态还是变化片段，以及客户端是否需要再 get。>
-
-### 7.3 场景：失败响应
-
-```json
-{
-  "id": 1,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid argument.",
-    "details": {
-      "candidateError": "<FEATURE_SPECIFIC_ERROR>"
-    }
-  }
-}
-```
-
-读法：<解释这个错误为什么发生、请求是否会部分生效、是否会触发事件。>
+读法：<说明这个流程中的状态变化、客户端缓存更新、事件订阅和异常处理。>
 
 ## 8. 错误
+
+错误处理语义见 `docs/specs/1-core/09-Error-Model.md`；错误注册规则见 `docs/specs/2-registry/04-Errors-Registry.md`。草案不得随意分配正式 numeric errorCode。
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
@@ -309,6 +466,8 @@ XxxChangedEvent
 | `BUSY` | 设备或资源繁忙。 | 如已有动作执行中。 |
 | `PERMISSION_DENIED` | 调用方权限不足。 | 危险操作或敏感信息读取。 |
 | `<FEATURE_SPECIFIC_ERROR>` | 候选业务错误。 | `[REVIEW-DRAFT]`；采纳前确认是否需要 feature-specific errorCode。 |
+
+JSON 示例中的 `status.code` 如果 registry 尚未采纳，可以使用 `10` 作为占位示例，并在 `status.details.candidateError` 中放候选错误名。正式 numeric code 必须由 registry 采纳时分配。
 
 ## 9. Legacy 映射
 
@@ -375,7 +534,7 @@ reset / factory restore、firmware.ota、security/auth、network.config、storag
 - [ ] conformance cases 已规划。
 ````
 
-## 示例片段：audio.volume 的 method / event 层级
+## 示例片段：audio.volume 的 method / event `d` block 层级
 
 下面只展示层级样式，不表示正式 registry 命名或 ID。
 
@@ -410,7 +569,21 @@ reset / factory restore、firmware.ota、security/auth、network.config、storag
 | `level` | integer | no | `0..100` | omitted | 目标音量。 |
 | `muted` | boolean | no | `true`, `false` | omitted | 目标静音状态。 |
 
-#### 3.2.2 返回结果 Result：`AudioVolumeState`
+#### 3.2.2 Request d block Example (op=7)
+
+```json
+{
+  "id": 101,
+  "method": "audio.volume.set",
+  "params": {
+    "target": "master",
+    "level": 42,
+    "muted": false
+  }
+}
+```
+
+#### 3.2.3 返回结果 Result：`AudioVolumeState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -418,11 +591,65 @@ reset / factory restore、firmware.ota、security/auth、network.config、storag
 | `level` | integer | yes | `0..100` | none | 设置后的当前音量。 |
 | `muted` | boolean | yes | `true`, `false` | none | 设置后的静音状态。 |
 
-#### 3.2.3 可能触发的事件
+#### 3.2.4 Success Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "target": "master",
+    "level": 42,
+    "muted": false
+  }
+}
+```
+
+#### 3.2.5 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `audio.volume.changed` | 音量或静音实际变化。 | `AudioVolumeChangedEvent` | 可直接更新 UI；需要完整状态时调用 `audio.volume.get` 校准。 |
+
+```json
+{
+  "event": "audio.volume.changed",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "level"
+    ],
+    "state": {
+      "target": "master",
+      "level": 42,
+      "muted": false
+    },
+    "reason": "user_request"
+  }
+}
+```
+
+#### 3.2.6 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "OUT_OF_RANGE",
+      "field": "level",
+      "min": 0,
+      "max": 100
+    }
+  }
+}
+```
 
 ## 4. 事件 Events
 
@@ -434,12 +661,6 @@ reset / factory restore、firmware.ota、security/auth、network.config、storag
 
 ### 4.1 `audio.volume.changed`
 
-**触发条件**：
-
-- RPC 设置导致音量或静音变化。
-- 本地按键或 HID report 导致音量变化。
-- 设备策略、restore 或 factory reset 改变音量。
-
 #### Payload：`AudioVolumeChangedEvent`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
@@ -448,11 +669,23 @@ reset / factory restore、firmware.ota、security/auth、network.config、storag
 | `state` | `AudioVolumeState` | yes | see schema | none | 变化后的音量状态。 |
 | `reason` | string enum | no | `user_request`, `physical_control`, `device_policy`, `unknown` | `unknown` | 变化原因。 |
 
-#### 客户端处理建议
+#### Event d block Example (op=6)
 
-| 场景 | 建议 |
-|---|---|
-| payload 是完整状态 | 可直接更新 UI。 |
-| payload 是部分状态 | 调用 `audio.volume.get` 校准。 |
-| event 丢失风险 | 客户端应在重连后主动 get。 |
+```json
+{
+  "event": "audio.volume.changed",
+  "intent": 1,
+  "data": {
+    "changedFields": [
+      "muted"
+    ],
+    "state": {
+      "target": "master",
+      "level": 42,
+      "muted": true
+    },
+    "reason": "physical_control"
+  }
+}
+```
 ```

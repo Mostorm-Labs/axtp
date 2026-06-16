@@ -1,0 +1,300 @@
+domain: device
+description: Device identity, inventory, enrollment, and local hardware control capabilities.
+
+methods:
+  - id: 0x0101
+    name: device.getInfo
+    domain: device
+    status: draft
+    bitOffset: 0
+    since: 1.0.0
+    description: Return the current endpoint main device identity, product, hardware, OS, software, AXTP runtime, and optional capability summary.
+    rpc_op: request_response
+    request_schema: GetDeviceInfoParams
+    response_schema: DeviceInfo
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - device.info
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - PERMISSION_DENIED
+      - INTERNAL_ERROR
+
+types:
+  GetDeviceInfoParams:
+    kind: object
+    description: Optional selector for the read-only device information snapshot.
+    fields:
+      - id: 0x01
+        name: includeCapabilitySummary
+        type: bool
+        required: false
+        default: true
+        description: Whether to include the lightweight DeviceCapabilitySummary block.
+
+  DeviceInfo:
+    kind: object
+    description: Read-only information snapshot for the current AXTP endpoint main device.
+    fields:
+      - id: 0x01
+        name: identity
+        type: DeviceIdentity
+        required: true
+        description: Stable device identity fields.
+      - id: 0x02
+        name: product
+        type: DeviceProduct
+        required: true
+        description: Brand, product type, model, and display information.
+      - id: 0x03
+        name: hardware
+        type: DeviceHardware
+        required: false
+        description: Hardware summary.
+      - id: 0x04
+        name: os
+        type: DeviceOs
+        required: false
+        description: Operating system summary.
+      - id: 0x05
+        name: software
+        type: DeviceSoftware
+        required: false
+        description: Installed or hosted software component summary.
+      - id: 0x06
+        name: runtime
+        type: DeviceAxtpRuntime
+        required: false
+        description: AXTP runtime summary.
+      - id: 0x07
+        name: capability
+        type: DeviceCapabilitySummary
+        required: false
+        description: Lightweight modeling summary; not a complete capability registry.
+
+  DeviceIdentity:
+    kind: object
+    description: Stable identity fields for the current main device.
+    fields:
+      - id: 0x01
+        name: deviceId
+        type: string
+        required: true
+        max_length: 128
+        description: Stable AXTP or business device identifier.
+      - id: 0x02
+        name: serialNumber
+        type: string
+        required: false
+        max_length: 128
+        description: Vendor serial number; may be omitted by permission policy.
+      - id: 0x03
+        name: vendorId
+        type: string
+        required: false
+        max_length: 64
+        description: Vendor identifier.
+      - id: 0x04
+        name: productId
+        type: string
+        required: false
+        max_length: 64
+        description: Product identifier.
+
+  DeviceProduct:
+    kind: object
+    description: Product and user-visible model information.
+    fields:
+      - id: 0x01
+        name: brand
+        type: string
+        required: false
+        max_length: 64
+        description: Product brand.
+      - id: 0x02
+        name: productType
+        type: enum
+        required: true
+        description: Product type; candidate values include windowsDevice, androidDevice, embeddedDevice, rtosDevice, cameraDevice, displayDevice, and unknown.
+      - id: 0x03
+        name: model
+        type: string
+        required: true
+        max_length: 128
+        description: Hardware or whole-product model.
+      - id: 0x04
+        name: displayName
+        type: string
+        required: false
+        max_length: 128
+        description: User-visible display name; this feature exposes it as read-only.
+
+  DeviceHardware:
+    kind: object
+    description: Hardware summary.
+    fields:
+      - id: 0x01
+        name: revision
+        type: string
+        required: false
+        max_length: 32
+        description: Hardware revision.
+      - id: 0x02
+        name: cpuArch
+        type: enum
+        required: false
+        description: CPU architecture; candidate values include x86_64, arm64, armv7, riscv64, and unknown.
+      - id: 0x03
+        name: memoryBytes
+        type: uint64
+        required: false
+        description: Physical memory capacity in bytes.
+
+  DeviceOs:
+    kind: object
+    description: Operating system summary.
+    fields:
+      - id: 0x01
+        name: type
+        type: enum
+        required: true
+        description: OS type; candidate values include windows, android, linux, rtos, and unknown.
+      - id: 0x02
+        name: name
+        type: string
+        required: false
+        max_length: 128
+        description: OS display name.
+      - id: 0x03
+        name: version
+        type: string
+        required: false
+        max_length: 64
+        description: OS version string.
+      - id: 0x04
+        name: arch
+        type: enum
+        required: false
+        description: OS architecture; candidate values include x86_64, arm64, armv7, riscv64, and unknown.
+
+  DeviceSoftware:
+    kind: object
+    description: Software component summary.
+    fields:
+      - id: 0x01
+        name: components
+        type: bytes
+        required: false
+        max_length: 4096
+        description: JSON array of SoftwareComponent objects.
+
+  SoftwareComponent:
+    kind: object
+    description: One software component running on or hosted by the device.
+    fields:
+      - id: 0x01
+        name: id
+        type: string
+        required: true
+        max_length: 64
+        description: Component identifier.
+      - id: 0x02
+        name: name
+        type: string
+        required: false
+        max_length: 128
+        description: Component display name.
+      - id: 0x03
+        name: version
+        type: string
+        required: false
+        max_length: 64
+        description: Component version.
+      - id: 0x04
+        name: role
+        type: enum
+        required: false
+        description: Component role, such as axtpHost, launcher, signagePlayer, agent, or unknown.
+
+  DeviceAxtpRuntime:
+    kind: object
+    description: AXTP runtime summary.
+    fields:
+      - id: 0x01
+        name: axtpRuntime
+        type: string
+        required: false
+        max_length: 128
+        description: AXTP runtime implementation name.
+      - id: 0x02
+        name: axtpRuntimeVersion
+        type: string
+        required: false
+        max_length: 64
+        description: AXTP runtime implementation version.
+      - id: 0x03
+        name: hostAppId
+        type: string
+        required: false
+        max_length: 64
+        description: Host application identifier.
+
+  DeviceCapabilitySummary:
+    kind: object
+    description: Lightweight capability modeling summary returned by device.getInfo.
+    fields:
+      - id: 0x01
+        name: domains
+        type: bytes
+        required: false
+        max_length: 1024
+        description: JSON array of domain names represented by the device.
+      - id: 0x02
+        name: features
+        type: bytes
+        required: false
+        max_length: 4096
+        description: JSON array of domain.feature names represented by the device.
+      - id: 0x03
+        name: profiles
+        type: bytes
+        required: false
+        max_length: 1024
+        description: JSON array of profile names or product profile hints.
+
+  DeviceInfoCapability:
+    kind: object
+    description: Capability descriptor for device.info.
+    fields:
+      - id: 0x01
+        name: readOnly
+        type: bool
+        required: true
+        default: true
+        description: device.info currently exposes only read-only information.
+      - id: 0x02
+        name: supportsCapabilitySummary
+        type: bool
+        required: false
+        default: true
+        description: Whether device.getInfo can include DeviceCapabilitySummary.
+      - id: 0x03
+        name: identityMerged
+        type: bool
+        required: false
+        default: true
+        description: Whether device.identity has been merged into device.info.
+
+capabilities:
+  - id: 0x0101
+    name: device.info
+    domain: device
+    status: draft
+    since: 1.0.0
+    description: Device supports read-only device information discovery.
+    type: object
+    schema: DeviceInfoCapability
