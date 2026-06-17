@@ -101,6 +101,18 @@
       "idHex": "0x0902"
     },
     {
+      "id": 3329,
+      "name": "signage.playlist",
+      "domain": "signage",
+      "status": "draft",
+      "description": "Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, and playlist config change notification.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "SignagePlaylistCapability",
+      "idHex": "0x0D01"
+    },
+    {
       "id": 3585,
       "name": "network.interface",
       "domain": "network",

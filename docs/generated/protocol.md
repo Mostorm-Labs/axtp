@@ -15,11 +15,13 @@
   - [device Methods](#device-methods)
   - [firmware Methods](#firmware-methods)
   - [network Methods](#network-methods)
+  - [signage Methods](#signage-methods)
   - [video Methods](#video-methods)
 - [Events](#events)
   - [audio Events](#audio-events)
   - [firmware Events](#firmware-events)
   - [network Events](#network-events)
+  - [signage Events](#signage-events)
   - [video Events](#video-events)
 - [Additional Types](#additional-types)
 - [Errors Reference](#errors-reference)
@@ -33,6 +35,7 @@
 | device | 1 | 0 |
 | firmware | 4 | 2 |
 | network | 18 | 8 |
+| signage | 5 | 1 |
 | video | 6 | 3 |
 
 ## Overview
@@ -178,6 +181,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | device | 0: device.getInfo |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
+| signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl |
 | video | 1: video.openStream<br>2: video.closeStream<br>3: video.getStreamState<br>0: video.getStreamCapabilities<br>4: video.getStreamSourceState<br>5: video.requestKeyFrame |
 
 # Methods
@@ -1426,6 +1430,176 @@ Type: `NetworkApClients`
 
 ---
 
+## signage Methods
+
+### Methods in this domain
+
+- [signage.getPlaylistCapabilities](#signagegetplaylistcapabilities)
+- [signage.getPlaylistConfig](#signagegetplaylistconfig)
+- [signage.setPlaylistConfig](#signagesetplaylistconfig)
+- [signage.resetPlaylistConfig](#signageresetplaylistconfig)
+- [signage.getPlaylistItemUrl](#signagegetplaylistitemurl)
+
+---
+
+### signage.getPlaylistCapabilities
+
+Return the signage.playlist capability scope, including supported playlist item types, quantity limits, and feature toggles.
+
+- Method ID: `0x0D01`
+- Domain: `signage`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `SignagePlaylistCapabilitiesResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supportedItemTypes | Bytes | 0x01 | JSON array of supported playlist item type strings; candidate values include image, website, video, clock, and unsplash. | maxLength=256 | N/A |
+| ?maxPlaylists | UInt32 | 0x02 | Maximum number of playlists; product-defined. | None | Omit if not used. |
+| ?maxItemsPerPlaylist | UInt32 | 0x03 | Maximum number of playlist items per playlist; product-defined. | None | Omit if not used. |
+| supportsScheduledPlaylist | Boolean | 0x04 | Whether scheduled playlists are supported. | None | N/A |
+| supportsUrlRefresh | Boolean | 0x05 | Whether playlist item URL refresh (getPlaylistItemUrl) is supported. | None | N/A |
+| supportsReset | Boolean | 0x06 | Whether resetting the playlist to default (resetPlaylistConfig) is supported. | None | N/A |
+
+---
+
+### signage.getPlaylistConfig
+
+Return the current playlist configuration held by the device as the complete playlists array.
+
+- Method ID: `0x0D02`
+- Domain: `signage`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `SignagePlaylistConfigResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| playlists | Bytes | 0x01 | JSON array of SignagePlaylist objects. An empty array means no playlist is configured and is not an error. | maxLength=65536 | N/A |
+
+---
+
+### signage.setPlaylistConfig
+
+Fully replace the playlist configuration. The server is the single source of truth; a second full sync removes playlist items absent from the new payload.
+
+- Method ID: `0x0D03`
+- Domain: `signage`
+- bitOffset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `signage.playlistConfigChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `PERMISSION_DENIED`
+
+#### Request Fields
+
+Type: `SignageSetPlaylistConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| playlists | Bytes | 0x01 | JSON array of SignagePlaylist objects. MUST be non-empty; an empty array returns INVALID_ARGUMENT. | maxLength=65536 | N/A |
+
+#### Response Fields
+
+Type: `Empty`
+
+No fields.
+
+---
+
+### signage.resetPlaylistConfig
+
+Restore the playlist configuration to the factory default state.
+
+- Method ID: `0x0D04`
+- Domain: `signage`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `signage.playlistConfigChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `SignagePlaylistConfigResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| playlists | Bytes | 0x01 | JSON array of SignagePlaylist objects. An empty array means no playlist is configured and is not an error. | maxLength=65536 | N/A |
+
+---
+
+### signage.getPlaylistItemUrl
+
+Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and return NOT_SUPPORTED.
+
+- Method ID: `0x0D05`
+- Domain: `signage`
+- bitOffset: `4`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `NOT_FOUND`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `SignageGetPlaylistItemUrlParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| itemId | String | 0x01 | Playlist item unique identifier (UUID). | maxLength=64 | N/A |
+
+#### Response Fields
+
+Type: `SignageGetPlaylistItemUrlResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| type | Enum | 0x01 | Playlist item type used to discriminate the settings structure; candidate values include image, video, website, and unsplash. Clock is excluded from URL refresh. | None | N/A |
+| settings | SignagePlaylistItemSettings | 0x02 | Refreshed complete settings; the device may replace the locally cached settings with this value. | None | N/A |
+
+---
+
 ## video Methods
 
 ### Methods in this domain
@@ -2080,6 +2254,38 @@ Type: `NetworkApClientChangedEvent`
 | change | Enum | 0x01 | Client change type; candidate values include joined, left, and updated. | None | N/A |
 | client | NetworkApClientInfo | 0x02 | Client summary. | None | N/A |
 | ?reason | Enum | 0x03 | Change reason. | None | Omit if not used. |
+
+---
+
+## signage Events
+
+### Events in this domain
+
+- [signage.playlistConfigChanged](#signageplaylistconfigchanged)
+
+---
+
+### signage.playlistConfigChanged
+
+Emitted after setPlaylistConfig or resetPlaylistConfig successfully changes the playlist configuration.
+
+- Event ID: `0x0D01`
+- Domain: `signage`
+- bitOffset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `signage.setPlaylistConfig`, `signage.resetPlaylistConfig`
+- Required Capabilities: `signage.playlist`
+
+#### Payload Fields
+
+Type: `SignagePlaylistConfigChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| reason | Enum | 0x01 | Change reason; candidate values include set_config (triggered by setPlaylistConfig) and reset_config (triggered by resetPlaylistConfig). | None | N/A |
+| ?playlists | Bytes | 0x02 | Optional JSON array of SignagePlaylist objects representing the full post-change configuration. The device MAY omit it to shrink the payload; when omitted the client MUST call signage.getPlaylistConfig to reconcile. | maxLength=65536 | Omit if not used. |
 
 ---
 
@@ -2764,6 +2970,93 @@ One Wi-Fi scan result.
 | ?channel | UInt16 | 0x04 | Channel number. | None | Omit if not used. |
 | ?rssi | Int32 | 0x05 | RSSI in dBm. | None | Omit if not used. |
 | ?securityType | Enum | 0x06 | Security type. | None | Omit if not used. |
+
+---
+
+## SignagePlaylist
+
+One playlist definition.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| id | String | 0x01 | Playlist unique identifier (UUID). | maxLength=64 | N/A |
+| type | Enum | 0x02 | Playlist type; candidate values include default (always-on default playlist) and scheduled (time-windowed playlist). | None | N/A |
+| ?startDate | String | 0x03 | Start date (YYYY-MM-DD). Required only when type is scheduled; MUST satisfy startDate <= endDate. | maxLength=16 | Omit if not used. |
+| ?endDate | String | 0x04 | End date (YYYY-MM-DD). Required only when type is scheduled; MUST satisfy startDate <= endDate. | maxLength=16 | Omit if not used. |
+| ?startTime | String | 0x05 | Start time (HH:mm:ss). Required only when type is scheduled. When startDate equals endDate, startTime MUST be <= endTime; when startDate < endDate, crossing midnight is allowed (startTime > endTime means D-day startTime to D+1 endTime). | maxLength=16 | Omit if not used. |
+| ?endTime | String | 0x06 | End time (HH:mm:ss). Required only when type is scheduled; see startTime for the cross-midnight rule. | maxLength=16 | Omit if not used. |
+| ?days | Bytes | 0x07 | Optional JSON array of active weekday numbers (1-7, 1=Monday). Required only when type is scheduled and MUST be non-empty. | maxLength=16 | Omit if not used. |
+| items | Bytes | 0x08 | JSON array of SignagePlaylistItem objects. MUST be non-empty; an empty items array returns INVALID_ARGUMENT. | maxLength=32768 | N/A |
+
+---
+
+## SignagePlaylistCapability
+
+Capability descriptor for signage.playlist.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supportedItemTypes | Bytes | 0x01 | JSON array of supported playlist item type strings; candidate values include image, website, video, clock, and unsplash. | maxLength=256 | N/A |
+| ?maxPlaylists | UInt32 | 0x02 | Maximum number of playlists; product-defined. | None | Omit if not used. |
+| ?maxItemsPerPlaylist | UInt32 | 0x03 | Maximum number of playlist items per playlist; product-defined. | None | Omit if not used. |
+| supportsScheduledPlaylist | Boolean | 0x04 | Whether scheduled playlists are supported. | None | N/A |
+| supportsUrlRefresh | Boolean | 0x05 | Whether playlist item URL refresh is supported. | None | N/A |
+| supportsReset | Boolean | 0x06 | Whether resetting the playlist to default is supported. | None | N/A |
+
+---
+
+## SignagePlaylistClockEntry
+
+One clock entry for the clock item type.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| timezone | String | 0x01 | IANA timezone identifier. | maxLength=64 | N/A |
+| label | String | 0x02 | City label for the clock. | maxLength=64 | N/A |
+
+---
+
+## SignagePlaylistItem
+
+One playlist item.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| id | String | 0x01 | Playlist item unique identifier (UUID). | maxLength=64 | N/A |
+| type | Enum | 0x02 | Playlist item type; candidate values include image, website, video, clock, and unsplash. | None | N/A |
+| duration | UInt32 | 0x03 | Single playback duration in seconds; MUST be greater than 0. | min=1, max=86400 | N/A |
+| sort | UInt32 | 0x04 | Playback order, ascending by sort. The sort value MUST be unique within the same playlist; duplicate sort values return INVALID_ARGUMENT. | None | N/A |
+| settings | SignagePlaylistItemSettings | 0x05 | Playlist item settings; structure varies by type. | None | N/A |
+
+---
+
+## SignagePlaylistItemSettings
+
+Aggregated playlist item settings spanning all item types. Only the subset matching the enclosing item type is meaningful; see the per-type rules in the signage.playlist draft.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?urls | Bytes | 0x01 | image type: non-empty JSON array of image URLs. | maxLength=8192 | Omit if not used. |
+| ?delaySeconds | UInt32 | 0x02 | image and unsplash types: per-image display interval in seconds. | min=1 | Omit if not used. |
+| ?expiresAt | UInt64 | 0x03 | image, video, and unsplash types: Unix timestamp URL expiry. 0 or absent means never expires. | None | Omit if not used. |
+| ?url | String | 0x04 | video and website types: media or page URL. | maxLength=2048 | Omit if not used. |
+| ?muted | Boolean | 0x05 | video type: whether to play muted. | None | Omit if not used. |
+| ?ignoreCertificateError | Boolean | 0x06 | website type: whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined. | None | Omit if not used. |
+| ?refreshIntervalSecs | UInt32 | 0x07 | website type: page refresh interval in seconds. 0 or absent means no refresh. | min=1 | Omit if not used. |
+| ?clocks | Bytes | 0x08 | clock type: non-empty JSON array of SignagePlaylistClockEntry objects. | maxLength=2048 | Omit if not used. |
+| ?photos | Bytes | 0x09 | unsplash type: non-empty JSON array of SignagePlaylistUnsplashPhoto objects. | maxLength=16384 | Omit if not used. |
+
+---
+
+## SignagePlaylistUnsplashPhoto
+
+One Unsplash photo entry, including photographer attribution.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| url | String | 0x01 | Photo URL. | maxLength=2048 | N/A |
+| userName | String | 0x02 | Photographer name. | maxLength=128 | N/A |
+| userLink | String | 0x03 | Photographer Unsplash profile link. | maxLength=2048 | N/A |
 
 ---
 

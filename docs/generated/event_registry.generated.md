@@ -11,6 +11,7 @@
 | `0x0902` | `audio.streamStateChanged` | audio | draft | AudioStreamStateChangedEvent |
 | `0x0903` | `audio.streamSourceStateChanged` | audio | draft | AudioStreamSourceStateChangedEvent |
 | `0x0904` | `audio.streamStatsReported` | audio | draft | AudioStreamStatsReportedEvent |
+| `0x0D01` | `signage.playlistConfigChanged` | signage | draft | SignagePlaylistConfigChangedEvent |
 | `0x0E01` | `network.interfaceStateChanged` | network | draft | NetworkInterfaceStateChangedEvent |
 | `0x0E02` | `network.ipConfigChanged` | network | draft | NetworkIpConfigChangedEvent |
 | `0x0E03` | `network.wifiConfigChanged` | network | draft | NetworkWifiConfigChangedEvent |

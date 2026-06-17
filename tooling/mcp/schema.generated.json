@@ -4748,6 +4748,514 @@
       ]
     },
     {
+      "name": "SignageGetPlaylistCapabilitiesParams",
+      "type": "object",
+      "description": "Empty request for signage.getPlaylistCapabilities; reads the full capability scope.",
+      "fields": []
+    },
+    {
+      "name": "SignageGetPlaylistConfigParams",
+      "type": "object",
+      "description": "Empty request for signage.getPlaylistConfig; reads the full configuration.",
+      "fields": []
+    },
+    {
+      "name": "SignageResetPlaylistConfigParams",
+      "type": "object",
+      "description": "Empty request for signage.resetPlaylistConfig; restores the full default configuration.",
+      "fields": []
+    },
+    {
+      "name": "SignageSetPlaylistConfigResult",
+      "type": "object",
+      "description": "Empty success result for signage.setPlaylistConfig; carries only the standard success status. Callers confirm landing via getPlaylistConfig or the playlistConfigChanged event.",
+      "fields": []
+    },
+    {
+      "name": "SignagePlaylistCapabilitiesResult",
+      "type": "object",
+      "description": "Capability scope for signage.playlist.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "supportedItemTypes",
+          "type": "bytes",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 256,
+          "description": "JSON array of supported playlist item type strings; candidate values include image, website, video, clock, and unsplash."
+        },
+        {
+          "id": 2,
+          "name": "maxPlaylists",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Maximum number of playlists; product-defined."
+        },
+        {
+          "id": 3,
+          "name": "maxItemsPerPlaylist",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Maximum number of playlist items per playlist; product-defined."
+        },
+        {
+          "id": 4,
+          "name": "supportsScheduledPlaylist",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether scheduled playlists are supported."
+        },
+        {
+          "id": 5,
+          "name": "supportsUrlRefresh",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether playlist item URL refresh (getPlaylistItemUrl) is supported."
+        },
+        {
+          "id": 6,
+          "name": "supportsReset",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether resetting the playlist to default (resetPlaylistConfig) is supported."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistConfigResult",
+      "type": "object",
+      "description": "Current playlist configuration snapshot.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "playlists",
+          "type": "bytes",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 65536,
+          "description": "JSON array of SignagePlaylist objects. An empty array means no playlist is configured and is not an error."
+        }
+      ]
+    },
+    {
+      "name": "SignageSetPlaylistConfigParams",
+      "type": "object",
+      "description": "Full replacement payload for signage.setPlaylistConfig.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "playlists",
+          "type": "bytes",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 65536,
+          "description": "JSON array of SignagePlaylist objects. MUST be non-empty; an empty array returns INVALID_ARGUMENT."
+        }
+      ]
+    },
+    {
+      "name": "SignageGetPlaylistItemUrlParams",
+      "type": "object",
+      "description": "Request to refresh a playlist item URL by itemId.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "itemId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "Playlist item unique identifier (UUID)."
+        }
+      ]
+    },
+    {
+      "name": "SignageGetPlaylistItemUrlResult",
+      "type": "object",
+      "description": "Refreshed playlist item URL result. The internal structure of settings depends on type.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "description": "Playlist item type used to discriminate the settings structure; candidate values include image, video, website, and unsplash. Clock is excluded from URL refresh."
+        },
+        {
+          "id": 2,
+          "name": "settings",
+          "type": "SignagePlaylistItemSettings",
+          "required": true,
+          "deprecated": false,
+          "description": "Refreshed complete settings; the device may replace the locally cached settings with this value."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistConfigChangedEvent",
+      "type": "object",
+      "description": "Event payload emitted when the playlist configuration changes.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "reason",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "description": "Change reason; candidate values include set_config (triggered by setPlaylistConfig) and reset_config (triggered by resetPlaylistConfig)."
+        },
+        {
+          "id": 2,
+          "name": "playlists",
+          "type": "bytes",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 65536,
+          "description": "Optional JSON array of SignagePlaylist objects representing the full post-change configuration. The device MAY omit it to shrink the payload; when omitted the client MUST call signage.getPlaylistConfig to reconcile."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylist",
+      "type": "object",
+      "description": "One playlist definition.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "Playlist unique identifier (UUID)."
+        },
+        {
+          "id": 2,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "description": "Playlist type; candidate values include default (always-on default playlist) and scheduled (time-windowed playlist)."
+        },
+        {
+          "id": 3,
+          "name": "startDate",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 16,
+          "description": "Start date (YYYY-MM-DD). Required only when type is scheduled; MUST satisfy startDate <= endDate."
+        },
+        {
+          "id": 4,
+          "name": "endDate",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 16,
+          "description": "End date (YYYY-MM-DD). Required only when type is scheduled; MUST satisfy startDate <= endDate."
+        },
+        {
+          "id": 5,
+          "name": "startTime",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 16,
+          "description": "Start time (HH:mm:ss). Required only when type is scheduled. When startDate equals endDate, startTime MUST be <= endTime; when startDate < endDate, crossing midnight is allowed (startTime > endTime means D-day startTime to D+1 endTime)."
+        },
+        {
+          "id": 6,
+          "name": "endTime",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 16,
+          "description": "End time (HH:mm:ss). Required only when type is scheduled; see startTime for the cross-midnight rule."
+        },
+        {
+          "id": 7,
+          "name": "days",
+          "type": "bytes",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 16,
+          "description": "Optional JSON array of active weekday numbers (1-7, 1=Monday). Required only when type is scheduled and MUST be non-empty."
+        },
+        {
+          "id": 8,
+          "name": "items",
+          "type": "bytes",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 32768,
+          "description": "JSON array of SignagePlaylistItem objects. MUST be non-empty; an empty items array returns INVALID_ARGUMENT."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistItem",
+      "type": "object",
+      "description": "One playlist item.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "Playlist item unique identifier (UUID)."
+        },
+        {
+          "id": 2,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "description": "Playlist item type; candidate values include image, website, video, clock, and unsplash."
+        },
+        {
+          "id": 3,
+          "name": "duration",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "min": 1,
+          "max": 86400,
+          "default": 60,
+          "description": "Single playback duration in seconds; MUST be greater than 0."
+        },
+        {
+          "id": 4,
+          "name": "sort",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "default": 0,
+          "description": "Playback order, ascending by sort. The sort value MUST be unique within the same playlist; duplicate sort values return INVALID_ARGUMENT."
+        },
+        {
+          "id": 5,
+          "name": "settings",
+          "type": "SignagePlaylistItemSettings",
+          "required": true,
+          "deprecated": false,
+          "description": "Playlist item settings; structure varies by type."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistItemSettings",
+      "type": "object",
+      "description": "Aggregated playlist item settings spanning all item types. Only the subset matching the enclosing item type is meaningful; see the per-type rules in the signage.playlist draft.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "urls",
+          "type": "bytes",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 8192,
+          "description": "image type: non-empty JSON array of image URLs."
+        },
+        {
+          "id": 2,
+          "name": "delaySeconds",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "default": 5,
+          "description": "image and unsplash types: per-image display interval in seconds."
+        },
+        {
+          "id": 3,
+          "name": "expiresAt",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "image, video, and unsplash types: Unix timestamp URL expiry. 0 or absent means never expires."
+        },
+        {
+          "id": 4,
+          "name": "url",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 2048,
+          "description": "video and website types: media or page URL."
+        },
+        {
+          "id": 5,
+          "name": "muted",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "default": false,
+          "description": "video type: whether to play muted."
+        },
+        {
+          "id": 6,
+          "name": "ignoreCertificateError",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "default": false,
+          "description": "website type: whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined."
+        },
+        {
+          "id": 7,
+          "name": "refreshIntervalSecs",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "description": "website type: page refresh interval in seconds. 0 or absent means no refresh."
+        },
+        {
+          "id": 8,
+          "name": "clocks",
+          "type": "bytes",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 2048,
+          "description": "clock type: non-empty JSON array of SignagePlaylistClockEntry objects."
+        },
+        {
+          "id": 9,
+          "name": "photos",
+          "type": "bytes",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 16384,
+          "description": "unsplash type: non-empty JSON array of SignagePlaylistUnsplashPhoto objects."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistClockEntry",
+      "type": "object",
+      "description": "One clock entry for the clock item type.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "timezone",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "IANA timezone identifier."
+        },
+        {
+          "id": 2,
+          "name": "label",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "City label for the clock."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistUnsplashPhoto",
+      "type": "object",
+      "description": "One Unsplash photo entry, including photographer attribution.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "url",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 2048,
+          "description": "Photo URL."
+        },
+        {
+          "id": 2,
+          "name": "userName",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Photographer name."
+        },
+        {
+          "id": 3,
+          "name": "userLink",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 2048,
+          "description": "Photographer Unsplash profile link."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistCapability",
+      "type": "object",
+      "description": "Capability descriptor for signage.playlist.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "supportedItemTypes",
+          "type": "bytes",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 256,
+          "description": "JSON array of supported playlist item type strings; candidate values include image, website, video, clock, and unsplash."
+        },
+        {
+          "id": 2,
+          "name": "maxPlaylists",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Maximum number of playlists; product-defined."
+        },
+        {
+          "id": 3,
+          "name": "maxItemsPerPlaylist",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Maximum number of playlist items per playlist; product-defined."
+        },
+        {
+          "id": 4,
+          "name": "supportsScheduledPlaylist",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether scheduled playlists are supported."
+        },
+        {
+          "id": 5,
+          "name": "supportsUrlRefresh",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether playlist item URL refresh is supported."
+        },
+        {
+          "id": 6,
+          "name": "supportsReset",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether resetting the playlist to default is supported."
+        }
+      ]
+    },
+    {
       "name": "VideoGetStreamCapabilitiesParams",
       "type": "object",
       "description": "Selector for video stream capability.",

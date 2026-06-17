@@ -612,6 +612,147 @@
       "idHex": "0x0913"
     },
     {
+      "id": 3329,
+      "bitOffset": 0,
+      "name": "signage.getPlaylistCapabilities",
+      "domain": "signage",
+      "status": "draft",
+      "description": "Return the signage.playlist capability scope, including supported playlist item types, quantity limits, and feature toggles.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "SignageGetPlaylistCapabilitiesParams",
+      "responseSchema": "SignagePlaylistCapabilitiesResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INTERNAL_ERROR"
+      ],
+      "idHex": "0x0D01"
+    },
+    {
+      "id": 3330,
+      "bitOffset": 1,
+      "name": "signage.getPlaylistConfig",
+      "domain": "signage",
+      "status": "draft",
+      "description": "Return the current playlist configuration held by the device as the complete playlists array.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "SignageGetPlaylistConfigParams",
+      "responseSchema": "SignagePlaylistConfigResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INTERNAL_ERROR"
+      ],
+      "idHex": "0x0D02"
+    },
+    {
+      "id": 3331,
+      "bitOffset": 2,
+      "name": "signage.setPlaylistConfig",
+      "domain": "signage",
+      "status": "draft",
+      "description": "Fully replace the playlist configuration. The server is the single source of truth; a second full sync removes playlist items absent from the new payload.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "SignageSetPlaylistConfigParams",
+      "responseSchema": "SignageSetPlaylistConfigResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [
+        "signage.playlistConfigChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED"
+      ],
+      "idHex": "0x0D03"
+    },
+    {
+      "id": 3332,
+      "bitOffset": 3,
+      "name": "signage.resetPlaylistConfig",
+      "domain": "signage",
+      "status": "draft",
+      "description": "Restore the playlist configuration to the factory default state.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "SignageResetPlaylistConfigParams",
+      "responseSchema": "SignagePlaylistConfigResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [
+        "signage.playlistConfigChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INTERNAL_ERROR"
+      ],
+      "idHex": "0x0D04"
+    },
+    {
+      "id": 3333,
+      "bitOffset": 4,
+      "name": "signage.getPlaylistItemUrl",
+      "domain": "signage",
+      "status": "draft",
+      "description": "Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and return NOT_SUPPORTED.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "SignageGetPlaylistItemUrlParams",
+      "responseSchema": "SignageGetPlaylistItemUrlResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "INTERNAL_ERROR"
+      ],
+      "idHex": "0x0D05"
+    },
+    {
       "id": 3586,
       "bitOffset": 2,
       "name": "network.getIpConfig",

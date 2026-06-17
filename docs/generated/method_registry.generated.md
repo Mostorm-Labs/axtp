@@ -22,6 +22,11 @@
 | `0x0911` | `audio.closeStream` | audio | draft | AudioCloseStreamParams | AudioCloseStreamResult | - |
 | `0x0912` | `audio.getStreamState` | audio | draft | AudioGetStreamStateParams | AudioStreamState | - |
 | `0x0913` | `audio.getStreamSourceState` | audio | draft | AudioGetStreamSourceStateParams | AudioStreamSourceState | - |
+| `0x0D01` | `signage.getPlaylistCapabilities` | signage | draft | SignageGetPlaylistCapabilitiesParams | SignagePlaylistCapabilitiesResult | - |
+| `0x0D02` | `signage.getPlaylistConfig` | signage | draft | SignageGetPlaylistConfigParams | SignagePlaylistConfigResult | - |
+| `0x0D03` | `signage.setPlaylistConfig` | signage | draft | SignageSetPlaylistConfigParams | SignageSetPlaylistConfigResult | - |
+| `0x0D04` | `signage.resetPlaylistConfig` | signage | draft | SignageResetPlaylistConfigParams | SignagePlaylistConfigResult | - |
+| `0x0D05` | `signage.getPlaylistItemUrl` | signage | draft | SignageGetPlaylistItemUrlParams | SignageGetPlaylistItemUrlResult | - |
 | `0x0E02` | `network.getIpConfig` | network | draft | NetworkGetIpConfigParams | NetworkIpConfig | - |
 | `0x0E03` | `network.setIpConfig` | network | draft | NetworkSetIpConfigParams | NetworkSetIpConfigResult | - |
 | `0x0E04` | `network.getWifiConfig` | network | draft | NetworkGetWifiConfigParams | NetworkWifiConfig | - |

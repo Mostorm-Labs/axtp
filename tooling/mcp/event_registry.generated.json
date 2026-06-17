@@ -198,6 +198,26 @@
       "idHex": "0x0904"
     },
     {
+      "id": 3329,
+      "bitOffset": 0,
+      "name": "signage.playlistConfigChanged",
+      "domain": "signage",
+      "status": "draft",
+      "description": "Emitted after setPlaylistConfig or resetPlaylistConfig successfully changes the playlist configuration.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "eventSchema": "SignagePlaylistConfigChangedEvent",
+      "severity": "info",
+      "trigger": [
+        "signage.setPlaylistConfig",
+        "signage.resetPlaylistConfig"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "idHex": "0x0D01"
+    },
+    {
       "id": 3585,
       "bitOffset": 0,
       "name": "network.interfaceStateChanged",

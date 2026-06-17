@@ -11,6 +11,7 @@
 | `0x0801` | `video.stream` | video | draft | object | VideoStreamCapabilities |
 | `0x0901` | `audio.algorithm` | audio | stable | object | AudioAlgorithmCapability |
 | `0x0902` | `audio.stream` | audio | draft | object | AudioStreamCapabilities |
+| `0x0D01` | `signage.playlist` | signage | draft | object | SignagePlaylistCapability |
 | `0x0E01` | `network.interface` | network | draft | object | NetworkInterfaceCapability |
 | `0x0E02` | `network.ip` | network | draft | object | NetworkIpCapability |
 | `0x0E03` | `network.wifi` | network | draft | object | NetworkWifiCapabilities |
