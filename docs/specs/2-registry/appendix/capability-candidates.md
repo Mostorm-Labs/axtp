@@ -75,6 +75,7 @@ CapabilityId 使用 `uint16`，按 `docs/specs/4-tooling/01-YAML-Mapping.md`§9 
 0x1300-0x13FF  传感器能力
 0x1400-0x14FF  认证能力
 0x1500-0x15FF  隐私能力
+0x1600-0x16FF  软件对象能力
 0x7000-0x7FFF  厂商私有能力
 0x8000-0xFFFF  保留
 ```
@@ -192,6 +193,7 @@ Binary: 00 01 07  06 01 01  04 01 03
 | `0x13` | `0x1300-0x13FF` | `sensor.*` |
 | `0x14` | `0x1400-0x14FF` | `auth.*` |
 | `0x15` | `0x1500-0x15FF` | `privacy.*` |
+| `0x16` | `0x1600-0x16FF` | `software.*` |
 
 **C++ 解析（O(1) 安全寻址）**：
 
@@ -493,6 +495,14 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 | `0x1501` | `privacy.cover` | object | draft | 隐私盖能力 |
 | `0x1502` | `privacy.mode` | object | draft | 隐私模式能力 |
 | `0x1503` | `privacy.state` | object | draft | 隐私状态能力 |
+
+---
+
+### 26b. 软件对象能力注册表
+
+| capabilityId | name | 类型 | 状态 | 说明 |
+|---:| --- |---| --- |---|
+| `0x1601` | `software.config` | object | draft | 软件对象运行配置能力（读取、设置、恢复默认、配置变化通知） |
 
 ---
 

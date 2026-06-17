@@ -180,7 +180,8 @@ function allowedErrorCategories(code: number): string[] {
     0x12: "diagnostic",
     0x13: "sensor",
     0x14: "auth",
-    0x15: "privacy"
+    0x15: "privacy",
+    0x16: "software"
   };
   if (code <= 0x00ff) return ["common", "frame", "control", "rpc"];
   const highByte = code >> 8;

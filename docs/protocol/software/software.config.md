@@ -5,16 +5,16 @@ generated: false
 domain: software
 feature: software.config
 registry:
-lastReviewed: 2026-06-16
+lastReviewed: 2026-06-17
 ---
 
 # AXTP software.config 协议草案
 
-版本：v0.7
+版本：v0.8（已采纳）
 
-归属域：`software`
+归属域：`software`（DomainId `0x16`）
 
-Capability ID：`software.config`
+Capability ID：`software.config`（capability `0x1601`）
 
 适用范围：设备上运行的软件对象（Launcher、signagePlayer、agent 等）的运行配置读取、设置和恢复默认。
 
@@ -24,13 +24,18 @@ Capability ID：`software.config`
 
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
-| `[REVIEW-DRAFT]` | `software.config` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
+| `[REVIEW-ADOPTED]` | `software.config` capability | 本文已采纳（见下方「采纳记录 (Adoption)」），machine 事实源为 `registry/domains/software/domain.yaml`。 | generated 产物由 `docs/dev/skills/50-generate-axtp-protocol` 重跑生效。 |
 | `[REVIEW-RESOLVED]` | `software` 域名 | Taxonomy spec rule 2 为 "e.g." 措辞（非穷举列表），rule 8 允许新增 domain 且 MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入；本草案已在 `docs/flows/signage-device-management.md` steps 8/16/19/23 使用。 | 采纳时无需 taxonomy amendment。 |
 | `[REVIEW-ASK]` | `target` 枚举值 | 完整的 target 枚举值列表需要产品和设备确认。 | 采纳前补齐 target enum baseline。 |
 | `[REVIEW-DRAFT]` | legacy 映射 | 已完成 evidence-based 字段映射。`GetAppearanceConfig` / `SetAppearanceConfig` / `SetDeviceName` 映射到 `software.config`；`ResetConfig` 映射到 `system.restoreFactorySettings`。 | 采纳前确认 Adapter 层实现计划。 |
 | `[REVIEW-RESOLVED]` | `displayName` 归属 | `device.info.md`（line 185）确认 `displayName` 本轮只读返回、不提供写入接口；flow 文档 §11 已 REVIEW-RESOLVED。两草案一致：写入在 `software.config`、只读在 `device.info`。 | 采纳前最终确认。 |
 
 ---
+
+**v0.8 变更说明（采纳）：**
+经 `adopt-protocol-draft` skill 采纳，machine 事实源落地为 `registry/domains/software/domain.yaml`（新增 software domain，DomainId `0x16`）。本草案冻结为正式提案，审核标记表第 1 行 `[REVIEW-DRAFT]` → `[REVIEW-ADOPTED]`，标题区补 DomainId/capabilityId，并新增「采纳记录 (Adoption)」节记录已分配正式 ID、错误码决策、Schema 名映射、限定采纳范围与后续约束。§0/§3.0/§4.0/§10 同步标注已采纳状态与 ID。
+本次为**局部采纳**：仅固化 `target: "launcher"` 的配置字段（`displayName` + `appearance`）为强类型 schema；`signagePlayer`/`agent` 的配置字段保留为开放 `string` target（待产品补充后再 re-adopt）。`resetConfig` 语义确认为「重置所有 launcher 配置含 `displayName`（恢复设备出厂名）」，§12 该项 `[REVIEW-ASK]` → `[REVIEW-RESOLVED]`。
+本次不新增业务错误码（4 个 common 码已覆盖）；不落地 legacy mapping 到 registry（与 `signage.playlist` 采纳一致，legacy 映射作为草案 §9 记录保留）；不改 MVP profile。Generator 源码（`generators/src/validator.ts`、`protocolValidator.ts`、`protocolBuilder.ts` 三处 `domainByHighByte`）已补 `0x16: "software"`，`validate:sources` 通过。generated 产物（`protocol/axtp.protocol.yaml`、`docs/generated/*`、`tooling/mcp/*`）由 Stage 50 重生成。
 
 **v0.7 变更说明：**
 对齐 20-draft-business-protocol skill 与 `protocol-draft-template.md` 的 JSON 示例约定（业务语义、schema、错误码、legacy 映射、审核标记均不变），与已对齐的兄弟草案 `device.enrollment` v0.9 / `signage.playlist` v1.3 结构一致：
@@ -60,18 +65,86 @@ Capability ID：`software.config`
 
 ---
 
+## 采纳记录 (Adoption)
+
+本文于 2026-06-17 经 `adopt-protocol-draft` skill（`docs/dev/skills/30-adopt-protocol-draft`）采纳。machine 事实源为 `registry/domains/software/domain.yaml`；本草案为正式提案，YAML 与 generated 产物不一致时以 registry YAML 为准。
+
+### A.1 已分配正式 ID
+
+DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已补，`validate:sources` 通过）。
+
+| 条目 | ID | bitOffset | 备注 |
+|---|---|---:|---|
+| DomainId (software) | `0x16` | — | 下一个空闲高字节（0x15 privacy 之后） |
+| method `software.getConfig` | `0x1601` | 0 | request `SoftwareGetConfigParams` / response `SoftwareConfig` |
+| method `software.setConfig` | `0x1602` | 1 | request `SoftwareSetConfigParams` / response `SoftwareSetConfigResult`（命名空，IR 归一化为 `Empty`） |
+| method `software.resetConfig` | `0x1603` | 2 | request `SoftwareResetConfigParams` / response `SoftwareConfig` |
+| event `software.configChanged` | `0x1601` | 0 | payload `SoftwareConfigChangedEvent`；trigger `setConfig` / `resetConfig` |
+| capability `software.config` | `0x1601` | — | schema `SoftwareConfigCapability` |
+
+低字节计数惯例（与 `signage.playlist` 一致）：method / event / capability 各自独立从 `0x01` 起编号，三者可同号共存（不同命名空间）。
+
+### A.2 Schema 名映射（草案 → registry）
+
+本草案 schema 名已带 `Software` / `Launcher` 前缀，与 registry 1:1，无需重映射。
+
+| 草案 schema 名（§6） | registry schema 名 | 说明 |
+|---|---|---|
+| `SoftwareConfig`（§6.1） | `SoftwareConfig` | response / event 共用；`config` 字段 `type: bytes` 承载 target-specific JSON |
+| `LauncherAppearance`（§6.3） | `LauncherAppearance` | 旁定义强类型，供 SDK 生成 |
+| `SoftwareGetConfigParams`（§6.4） | `SoftwareGetConfigParams` | |
+| `SoftwareSetConfigParams`（§6.5） | `SoftwareSetConfigParams` | |
+| `SoftwareResetConfigParams`（§6.6） | `SoftwareConfigChangedEvent` | |
+| `SoftwareConfigChangedEvent`（§6.7） | `SoftwareConfigChangedEvent` | |
+| —（新增） | `LauncherConfig` | 旁定义：`displayName` + `appearance`，承载 `config` bytes 的 launcher 结构 |
+| —（新增） | `SoftwareSetConfigResult` | 命名空 schema（`fields: []`），IR 归一化为 `Empty`，对齐 `signage.setPlaylistConfig` |
+| 草案 §5 capability 字段 | `SoftwareConfigCapability` | `supportedTargets` / `supportsReset` / `resetMayRestartSoftware` |
+
+**编码方式**（与 `signage.playlist` 对齐）：`SoftwareConfig.config`、`SoftwareSetConfigParams.config`、`SoftwareConfigChangedEvent.config` 统一用 `type: bytes` + `max_length: 8192` + description 承载 target-specific 动态 JSON；`target: "launcher"` 的结构由旁定义的 `LauncherConfig` / `LauncherAppearance` 强类型 schema 表达，SDK 可据此生成结构化类型。
+
+### A.3 错误码决策
+
+| Error | 复用 common 码 | 数值 | 用于 |
+|---|---|---|---|
+| `NOT_SUPPORTED` | ✓ mvp | `0x0003` | getConfig / setConfig / resetConfig（target 不支持） |
+| `INVALID_ARGUMENT` | ✓ mvp | `0x000A` | getConfig / setConfig（字段值非法，如 `autoHideDelay ≤ 0`、`displayName` 空或超长） |
+| `PERMISSION_DENIED` | ✓ mvp | `0x0009` | setConfig / resetConfig（无权修改） |
+| `INVALID_STATE` | ✓ mvp | `0x0004` | setConfig / resetConfig（软件升级或恢复中） |
+
+**未新增** software 业务错误码。draft §8 候选 Errors 表的 4 个码均已在 v0.5 确认为 common mvp 码（非候选），本次直接复用。software domain 的错误码段（`0x1600`-`0x16FF`）保持空。
+
+### A.4 限定采纳范围
+
+本次为**局部采纳**，仅固化 `target: "launcher"` 的事实：
+
+- ✅ **采纳**：`target` 字段类型为开放 `string`（不强制枚举），description 注明「当前定义 `launcher`；`signagePlayer` / `agent` 保留为开放值，其配置字段待产品补充」。
+- ✅ **采纳**：`target: "launcher"` 的配置字段——`displayName`（string, max 64, non-empty）和 `appearance`（`LauncherAppearance`：`panelLayout` enum focus/sidebar、`autoHidePanel` bool、`autoHideDelay` uint32 min:1 default:5）——固化为强类型 schema。
+- ✅ **采纳**：`resetConfig(target: "launcher")` 重置**所有** launcher 配置含 `displayName`（恢复设备出厂名），与 §7.2 flow 示例一致。§12 该项 `[REVIEW-ASK]` → `[REVIEW-RESOLVED]`。
+- ⏸ **保留**：`signagePlayer` / `agent` 的具体配置字段（草案 §12 两条 `[REVIEW-ASK]`）保持开放，待产品/设备确认字段后**先更新本草案再 re-adopt**。
+- ⏸ **保留**：`displayName` 64 字符上限（草案标注 `[REVIEW-ASK]`）作为当前 registry 约束写入，产品若调整需走 amend。
+
+`supportedTargets` capability 字段由设备返回实际支持的 target 列表，不在此预设。
+
+### A.5 后续约束
+
+- 本草案已采纳部分（launcher target 的 method/event/schema/capability/错误码）的**语义变更**，必须走 `docs/dev/skills/40-amend-adopted-protocol/SKILL.md`，不得直接改 `registry/domains/software/domain.yaml` 而不更新草案。
+- 未采纳部分（`signagePlayer` / `agent` 配置字段）补充后，必须**先更新本草案**（补 §6.X schema 表、关闭对应 `[REVIEW-ASK]`），再走 `30-adopt-protocol-draft` re-adopt 增量事实到 `registry/domains/software/domain.yaml`。
+- `docs/generated/*`、`protocol/axtp.protocol.yaml`、`tooling/mcp/*` 等 generated 产物由 Stage 50（`docs/dev/skills/50-generate-axtp-protocol/SKILL.md`）重生成，**不得手改**。
+
+---
+
 ## 0. 速读结论
 
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 读取、设置、恢复设备上软件对象的运行配置（如 Launcher 面板布局、自动隐藏等）。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。本文是 protocol draft；正式实现以 registry / generated 为准。 |
+| 当前状态 | draft（已采纳） |
+| 是否可直接实现 | 是。machine 事实源为 `registry/domains/software/domain.yaml`。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
-| Registry readiness | candidate |
+| Registry readiness | adopted |
 | Conformance | needed |
-| 主要未决问题 | `target` 枚举完整值列表（`signagePlayer`/`agent` 配置字段无证据，待产品）、`values` 是否需要按 target 展开强类型 schema、`displayName` 最大长度约束。`software` domain taxonomy 与 `displayName` 归属已关闭（见 §协议审核标记 / §12）。legacy `ResetConfig` 已确认映射到 `system.restoreFactorySettings`（见 Section 9）。 |
+| 主要未决问题 | 本次局部采纳仅固化 `target: "launcher"`；`signagePlayer` / `agent` 的配置字段保留为开放 target（待产品补充后 re-adopt）。`software` domain taxonomy 与 `displayName` 归属已关闭（见 §协议审核标记 / §12）。legacy `ResetConfig` 已确认映射到 `system.restoreFactorySettings`（见 Section 9）。 |
 
 ---
 
@@ -127,11 +200,11 @@ Capability ID：`software.config`
 
 ### 3.0 方法速览
 
-| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
-|---|---|---|---|---|---|---|
-| `software.getConfig` | query | 读取软件配置。 | `SoftwareGetConfigParams` | `SoftwareConfig` | 否 | draft |
-| `software.setConfig` | command | 设置软件配置。 | `SoftwareSetConfigParams` | —（仅 status 确认） | 是，变化后触发 `software.configChanged`。 | draft |
-| `software.resetConfig` | command | 恢复软件默认配置。 | `SoftwareResetConfigParams` | `SoftwareConfig` | 是，变化后触发 `software.configChanged`。 | draft |
+| Method | methodId | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
+|---|---|---|---|---|---|---|---|
+| `software.getConfig` | `0x1601` | query | 读取软件配置。 | `SoftwareGetConfigParams` | `SoftwareConfig` | 否 | `[REVIEW-ADOPTED]` |
+| `software.setConfig` | `0x1602` | command | 设置软件配置。 | `SoftwareSetConfigParams` | —（仅 status 确认） | 是，变化后触发 `software.configChanged`。 | `[REVIEW-ADOPTED]` |
+| `software.resetConfig` | `0x1603` | command | 恢复软件默认配置。 | `SoftwareResetConfigParams` | `SoftwareConfig` | 是，变化后触发 `software.configChanged`。 | `[REVIEW-ADOPTED]` |
 
 ### 3.1 `software.getConfig`
 
@@ -489,9 +562,9 @@ Capability ID：`software.config`
 
 ### 4.0 事件速览
 
-| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
-|---|---|---|---|---|
-| `software.configChanged` | 软件配置被 set、reset 或设备策略修改。 | `SoftwareConfigChangedEvent` | 局部更新 UI；必要时调用 getConfig 校准。 | draft |
+| Event | eventId | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
+|---|---|---|---|---|---|
+| `software.configChanged` | `0x1601` | 软件配置被 set、reset 或设备策略修改。 | `SoftwareConfigChangedEvent` | 局部更新 UI；必要时调用 getConfig 校准。 | `[REVIEW-ADOPTED]` |
 
 ### 4.1 `software.configChanged`
 
@@ -1040,9 +1113,9 @@ AXTP 请求（Adapter 输出，对应 `software.setConfig` params）：
 
 | 项 | 状态 |
 |---|---|
-| Registry YAML | not written |
-| Generated docs | not generated |
-| Method / event IDs | `TBD after adoption` |
+| Registry YAML | adopted（`registry/domains/software/domain.yaml`） |
+| Generated docs | not generated（待 Stage 50 重生成） |
+| Method / event IDs | 已分配（见「采纳记录」A.1） |
 | Conformance | 需覆盖 get/set/reset 一致性、target 不支持、字段值校验、配置变化事件。 |
 
 ---
@@ -1074,11 +1147,11 @@ AXTP 请求（Adapter 输出，对应 `software.setConfig` params）：
 | Issue | Impact | Current recommendation | Status |
 |---|---|---|---|
 | `software` domain 未在 Taxonomy spec rule 2 示例列表中 | （原）采纳阻塞 | rule 2 为 "e.g." 措辞（非穷举列表），rule 8 允许新增 domain 且 MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入（本草案见 flow steps 8/16/19/23）；采纳无需 taxonomy amendment。 | `[REVIEW-RESOLVED]` |
-| `target` 枚举完整值列表 | schema 约束 | 当前草案列出 `launcher`、`signagePlayer`、`agent`；采纳前与产品和设备确认。 | `[REVIEW-ASK]` |
+| `target` 枚举完整值列表 | schema 约束 | 本次采纳：`target` 字段类型为开放 `string`（不强制枚举），仅固化 `launcher`；`signagePlayer`/`agent` 保留为开放值，待产品确认字段后 re-adopt。 | `[REVIEW-ADOPTED-SCOPED]` |
 | legacy `ResetConfig` 真实 scope | legacy mapping | 已确认为系统级出厂恢复（设备重启）。映射到 `system.restoreFactorySettings`，不映射到 `software.resetConfig`。见 Section 9.4。 | `[REVIEW-RESOLVED]` |
-| 其他 target 的配置字段 | schema / adoption | `target: "signagePlayer"` 和 `target: "agent"` 的配置字段待产品和设备确认后补充。 | `[REVIEW-ASK]` |
+| 其他 target 的配置字段 | schema / adoption | 本次局部采纳未覆盖；`target: "signagePlayer"` 和 `target: "agent"` 的配置字段保留为开放 target，待产品和设备确认后**先更新本草案再 re-adopt**。 | `[REVIEW-ASK]` |
 | `displayName` 归属：`software.config` vs `device.info` | schema / 语义边界 | `device.info`（line 185）确认只读、flow §11 已 resolved：写入在 `software.config`、只读在 `device.info`。 | `[REVIEW-RESOLVED]` |
-| `displayName` 最大长度和格式约束 | schema / 校验 | 推荐 64 字符，非空。采纳前与产品确认。 | `[REVIEW-ASK]` |
-| `resetConfig` 是否重置 `displayName` | 语义 / UX | 推荐 resetConfig 重置所有 launcher 配置包括 displayName；但设备显示名恢复出厂可能影响设备识别。 | `[REVIEW-ASK]` |
+| `displayName` 最大长度和格式约束 | schema / 校验 | 本次采纳写入 registry：max 64 chars，non-empty（前后空格 trimmed）。产品若调整需走 amend。 | `[REVIEW-ADOPTED]` |
+| `resetConfig` 是否重置 `displayName` | 语义 / UX | 本次采纳确认：resetConfig 重置**所有** launcher 配置含 `displayName`（恢复设备出厂名）。理由见「采纳记录」A.4。与 §7.2 flow 示例一致。 | `[REVIEW-RESOLVED]` |
 | Adapter flat→nested 变换 | adapter 实现 | Legacy 外观配置为 flat 结构，AXTP 为 `config.appearance.*` 嵌套结构。Adapter 层负责包装/展平变换。Legacy `SetAppearanceConfig` 全量覆盖语义与 AXTP partial update 语义的差异由 Adapter 兼容。 | `[REVIEW-DRAFT]` |
 | Flow step 16/19 vs 草案 setConfig 响应 | flow / draft 一致性 | Flow step 16/19（line 218/221）现已修正为"返回标准成功响应（无 result body）；触发 `software.configChanged` 事件"，与草案 `software.setConfig`（仅返回 status 确认、无 result body）一致。Flow 与草案已对齐，本条闭合。（同类 step 21 属 `software.updatePolicy`，见该草案。） | `[REVIEW-RESOLVED]` |

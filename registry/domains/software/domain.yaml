@@ -1,0 +1,245 @@
+domain: software
+description: Runtime configuration read, set, and reset for software objects running on the device, such as the Launcher.
+
+methods:
+  - id: 0x1601
+    name: software.getConfig
+    domain: software
+    status: draft
+    bitOffset: 0
+    since: 1.0.0
+    description: Read the current runtime configuration of a software object identified by target.
+    rpc_op: request_response
+    request_schema: SoftwareGetConfigParams
+    response_schema: SoftwareConfig
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - software.config
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+
+  - id: 0x1602
+    name: software.setConfig
+    domain: software
+    status: draft
+    bitOffset: 1
+    since: 1.0.0
+    description: Set a configuration fragment of a software object using partial update semantics; fields absent from the payload are left unchanged.
+    rpc_op: request_response
+    request_schema: SoftwareSetConfigParams
+    response_schema: SoftwareSetConfigResult
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - software.config
+    events:
+      - software.configChanged
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - PERMISSION_DENIED
+      - INVALID_STATE
+
+  - id: 0x1603
+    name: software.resetConfig
+    domain: software
+    status: draft
+    bitOffset: 2
+    since: 1.0.0
+    description: Restore the runtime configuration of a software object to the current-version defaults for the given target. Only resets the specified software object; system-level factory reset is handled by system.restoreFactorySettings and does not trigger a device reboot.
+    rpc_op: request_response
+    request_schema: SoftwareResetConfigParams
+    response_schema: SoftwareConfig
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - software.config
+    events:
+      - software.configChanged
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - PERMISSION_DENIED
+      - INVALID_STATE
+
+events:
+  - id: 0x1601
+    name: software.configChanged
+    domain: software
+    status: draft
+    bitOffset: 0
+    since: 1.0.0
+    description: Emitted after software.setConfig or software.resetConfig successfully changes a software object configuration, or after a device-internal policy modifies it.
+    event_schema: SoftwareConfigChangedEvent
+    severity: info
+    trigger:
+      - software.setConfig
+      - software.resetConfig
+    capabilities:
+      - software.config
+
+types:
+  SoftwareGetConfigParams:
+    kind: object
+    description: Request for software.getConfig; selects the software object to read by target.
+    fields:
+      - id: 0x01
+        name: target
+        type: string
+        required: true
+        max_length: 64
+        description: Software object to read. Currently defined value is launcher; other values such as signagePlayer and agent are reserved for future adoption and their config fields are not defined in this version.
+
+  SoftwareConfig:
+    kind: object
+    description: Runtime configuration snapshot of a software object. config is a target-specific dynamic JSON object; for target launcher it carries the LauncherConfig structure (displayName and appearance).
+    fields:
+      - id: 0x01
+        name: target
+        type: string
+        required: true
+        max_length: 64
+        description: Software object this configuration belongs to.
+      - id: 0x02
+        name: config
+        type: bytes
+        required: true
+        max_length: 8192
+        description: JSON object holding the target-specific configuration fragment. For target launcher the structure is LauncherConfig (displayName plus appearance); see the LauncherConfig and LauncherAppearance schemas. Field set is determined by target.
+
+  SoftwareSetConfigParams:
+    kind: object
+    description: Request for software.setConfig; applies a partial update to the target software object. Fields absent from config are left unchanged; config itself must be a valid object and does not accept null.
+    fields:
+      - id: 0x01
+        name: target
+        type: string
+        required: true
+        max_length: 64
+        description: Software object to configure.
+      - id: 0x02
+        name: config
+        type: bytes
+        required: true
+        max_length: 8192
+        description: JSON object holding the target-specific configuration fragment to apply (partial update). For target launcher the structure is LauncherConfig; see SoftwareConfig.config and LauncherAppearance.
+
+  SoftwareResetConfigParams:
+    kind: object
+    description: Request for software.resetConfig; restores the specified software object to its current-version defaults.
+    fields:
+      - id: 0x01
+        name: target
+        type: string
+        required: true
+        max_length: 64
+        description: Software object to reset.
+
+  SoftwareSetConfigResult:
+    kind: object
+    description: Empty success result for software.setConfig; carries only the standard success status. Callers confirm landing via software.getConfig or the software.configChanged event.
+    fields: []
+
+  SoftwareConfigChangedEvent:
+    kind: object
+    description: Event payload emitted when a software object configuration changes.
+    fields:
+      - id: 0x01
+        name: target
+        type: string
+        required: true
+        max_length: 64
+        description: Software object whose configuration changed.
+      - id: 0x02
+        name: config
+        type: bytes
+        required: true
+        max_length: 8192
+        description: Full post-change configuration fragment (not a patch). For target launcher the structure is LauncherConfig; see SoftwareConfig.config.
+      - id: 0x03
+        name: changedFields
+        type: bytes
+        required: false
+        max_length: 1024
+        description: Optional JSON array of changed field paths using dot notation for nested levels, e.g. appearance.panelLayout. Omitted when the device cannot compute the diff.
+      - id: 0x04
+        name: reason
+        type: enum
+        required: false
+        description: Change reason; candidate values include user_request (triggered by setConfig), restore_default (triggered by resetConfig), device_policy (triggered by device-internal policy), and unknown (default when the reason is not reported).
+
+  LauncherConfig:
+    kind: object
+    description: Configuration fragment for target launcher. Referenced by SoftwareConfig.config, SoftwareSetConfigParams.config, and SoftwareConfigChangedEvent.config when target is launcher.
+    fields:
+      - id: 0x01
+        name: displayName
+        type: string
+        required: false
+        max_length: 64
+        description: User-visible device display name. Overrides the device factory name returned read-only by device.info product.displayName. MUST be non-empty; an empty string or value exceeding the max length returns INVALID_ARGUMENT. Omitted means keep current value on set, or the device factory name on get/reset.
+      - id: 0x02
+        name: appearance
+        type: LauncherAppearance
+        required: false
+        description: Appearance configuration for the launcher panel.
+
+  LauncherAppearance:
+    kind: object
+    description: Appearance configuration for the launcher panel, nested under LauncherConfig.appearance.
+    fields:
+      - id: 0x01
+        name: panelLayout
+        type: enum
+        required: false
+        description: Panel layout mode; candidate values are focus (focus mode) and sidebar (sidebar mode, default).
+      - id: 0x02
+        name: autoHidePanel
+        type: bool
+        required: false
+        description: Whether to auto-hide the panel. Default is false.
+      - id: 0x03
+        name: autoHideDelay
+        type: uint32
+        required: false
+        min: 1
+        default: 5
+        description: Auto-hide delay in seconds; MUST be greater than 0. Only effective when autoHidePanel is true. The value is preserved and persisted even when autoHidePanel is false and takes effect again once autoHidePanel switches back to true.
+
+  SoftwareConfigCapability:
+    kind: object
+    description: Capability descriptor for software.config.
+    fields:
+      - id: 0x01
+        name: supportedTargets
+        type: bytes
+        required: true
+        max_length: 256
+        description: JSON array of supported software object target strings; candidate values include launcher, signagePlayer, and agent.
+      - id: 0x02
+        name: supportsReset
+        type: bool
+        required: false
+        description: Whether restoring defaults via resetConfig is supported.
+      - id: 0x03
+        name: resetMayRestartSoftware
+        type: bool
+        required: false
+        description: Whether reset may restart the software object (not the device). System-level factory reset is handled by system.restoreFactorySettings.
+
+capabilities:
+  - id: 0x1601
+    name: software.config
+    domain: software
+    status: draft
+    since: 1.0.0
+    description: Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications.
+    type: object
+    schema: SoftwareConfigCapability

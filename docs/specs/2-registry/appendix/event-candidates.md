@@ -90,6 +90,7 @@ EventId 使用 `uint16`，按与 MethodId 相同的 domain 分段分配。Event 
 | `0x1300-0x13FF` | `sensor.*` | 传感器事件 |
 | `0x1400-0x14FF` | `auth.*` | 认证事件 |
 | `0x1500-0x15FF` | `privacy.*` | 隐私事件 |
+| `0x1600-0x16FF` | `software.*` | 软件对象事件 |
 | `0x7000-0x7FFF` | `vendor.*` | 厂商私有事件 |
 | `0x8000-0xFFFF` | reserved | 保留 |
 
