@@ -5,16 +5,16 @@ generated: false
 domain: software
 feature: software.updatePolicy
 registry:
-lastReviewed: 2026-06-16
+lastReviewed: 2026-06-17
 ---
 
 # AXTP software.updatePolicy 协议草案
 
-版本：v0.8
+版本：v0.9（已采纳）
 
-归属域：`software`
+归属域：`software`（DomainId `0x16`）
 
-Capability ID：`software.updatePolicy`
+Capability ID：`software.updatePolicy`（capability `0x1602`）
 
 适用范围：设备上运行的软件对象（Launcher、signagePlayer、agent 等）的自动更新策略配置。
 
@@ -24,11 +24,16 @@ Capability ID：`software.updatePolicy`
 
 完整的审核标记（含 `[REVIEW-DRAFT]` / `[REVIEW-RESOLVED]` / `[REVIEW-ASK]` 条目、审核结论与后续动作）见 **附录 A**，本文以附录 A 为唯一权威源。开篇要点：
 
-- 本文是根据业务需求创建的协议草案，不是最终事实源（`[REVIEW-DRAFT]`）；产品/架构/研发确认后进入 `adopt-protocol-draft`。
+- 本文已采纳（见下方「采纳记录 (Adoption)」），machine 事实源为 `registry/domains/software/domain.yaml`。
 - 落实 signage flow 中 legacy `GetUpdateConfig` / `SetUpdateConfig` 的最终定域：这些配置面向 Launcher / signagePlayer / agent 软件，不属于固件 OTA 策略；固件更新策略保留在 `firmware.updatePolicy`。
-- Legacy classification CSV / `firmware.md` 将上述命令归入 `firmware.updatePolicy`，flow 文档 re-classified 到 `software.updatePolicy`（正确）；classification 与 generated map 的同步待采纳阶段处理（见 §9.3）。
+- Legacy classification CSV / `firmware.md` 将上述命令归入 `firmware.updatePolicy`，flow 文档 re-classified 到 `software.updatePolicy`（正确）；classification 与 generated map 的同步未纳入本次采纳 scope，待 legacy-migration 专项处理（见 §9.3）。
 
 ---
+
+**v0.9 变更说明（采纳）：**
+经 `adopt-protocol-draft` skill 采纳，machine 事实源落地为 `registry/domains/software/domain.yaml`（追加到已存在的 software domain，DomainId `0x16`）。本草案冻结为正式提案，审核标记表第 1 行 `[REVIEW-DRAFT]` → `[REVIEW-ADOPTED]`，标题区补 DomainId/capabilityId，并新增「采纳记录 (Adoption)」节记录已分配正式 ID、错误码决策、Schema 名映射、限定采纳范围与后续约束。§0/§3.0/§4.0/§10 同步标注已采纳状态与 ID。
+本次为**局部采纳**：仅固化 `target: "launcher"` 的更新策略字段（`updateMode` / `schedule` / `channel` / `conditions`）为强类型 schema；`signagePlayer`/`agent` 的 policy 字段保留为开放 `string` target（待产品补充后再 re-adopt）。`updateMode` 枚举写入 `auto`/`manual`/`notify`（`notify` 待 P0 确认，变更走 amend）；`schedule` 跨午夜（`end < start`）按候选语义写入 description；`conditions` 仅含 `requireIdle`/`requireWifi`（标牌特有条件如 `requirePlaybackIdle` 保留）。§12 的 5 条 `[REVIEW-ASK]` 标注为 `[REVIEW-ADOPTED-SCOPED]`。
+本次不新增业务错误码（4 个 common 码已覆盖）；不落地 legacy mapping 到 registry（与 `software.config` / `signage.playlist` 采纳一致，legacy 映射作为草案 §9 记录保留）；不改 MVP profile。Generator 源码（`generators/src/validator.ts`、`protocolValidator.ts`、`protocolBuilder.ts` 三处 `domainByHighByte`）已在 `software.config` 采纳时补 `0x16: "software"`，无需再改，`validate:sources` 通过。generated 产物（`protocol/axtp.protocol.yaml`、`docs/generated/*`、`tooling/mcp/*`）由 Stage 50 重生成。
 
 **v0.8 变更说明：**
 对齐 20-draft-business-protocol skill 与 `protocol-draft-template.md` 的 JSON 示例约定（业务语义、schema、错误码、legacy 映射均不变）：
@@ -76,18 +81,91 @@ Capability ID：`software.updatePolicy`
 
 ---
 
+## 采纳记录 (Adoption)
+
+本文于 2026-06-17 经 `adopt-protocol-draft` skill（`docs/dev/skills/30-adopt-protocol-draft`）采纳。machine 事实源为 `registry/domains/software/domain.yaml`；本草案为正式提案，YAML 与 generated 产物不一致时以 registry YAML 为准。
+
+### A.1 已分配正式 ID
+
+DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已在 `software.config` 采纳时补，`validate:sources` 通过）。
+
+| 条目 | ID | bitOffset | 备注 |
+|---|---|---:|---|
+| method `software.getUpdatePolicy` | `0x1604` | 3 | request `SoftwareGetUpdatePolicyParams` / response `SoftwareUpdatePolicy` |
+| method `software.setUpdatePolicy` | `0x1605` | 4 | request `SoftwareSetUpdatePolicyParams` / response `SoftwareSetUpdatePolicyResult`（命名空，IR 归一化为 `Empty`） |
+| method `software.resetUpdatePolicy` | `0x1606` | 5 | request `SoftwareResetUpdatePolicyParams` / response `SoftwareUpdatePolicy` |
+| event `software.updatePolicyChanged` | `0x1602` | 1 | payload `SoftwareUpdatePolicyChangedEvent`；trigger `setUpdatePolicy` / `resetUpdatePolicy` |
+| capability `software.updatePolicy` | `0x1602` | — | schema `SoftwareUpdatePolicyCapability` |
+
+低字节计数惯例（与 `software.config` / `signage.playlist` 一致）：method / event / capability 各自独立从 `0x01` 起编号，三者可同号共存（不同命名空间）。method bitOffset 续编 `software.config`（0/1/2）之后为 3/4/5；event bitOffset 续编 `software.configChanged`（0）之后为 1；均满足 generator `assertDomainBitOffsets` 从 0 起连续要求。
+
+### A.2 Schema 名映射（草案 → registry）
+
+本草案 schema 名已带 `Software` / `Launcher` 前缀，与 registry 1:1，无需重映射。
+
+| 草案 schema 名（§6） | registry schema 名 | 说明 |
+|---|---|---|
+| `SoftwareUpdatePolicy`（§6.1） | `SoftwareUpdatePolicy` | response / event 共用；`policy` 字段 `type: bytes` 承载 target-specific JSON |
+| `SoftwareGetUpdatePolicyParams`（§6.5） | `SoftwareGetUpdatePolicyParams` | |
+| `SoftwareSetUpdatePolicyParams`（§6.6） | `SoftwareSetUpdatePolicyParams` | |
+| `SoftwareResetUpdatePolicyParams`（§6.7） | `SoftwareResetUpdatePolicyParams` | |
+| `SoftwareUpdatePolicyChangedEvent`（§6.8） | `SoftwareUpdatePolicyChangedEvent` | |
+| `UpdateSchedule`（§6.3） | `UpdateSchedule` | 旁定义强类型，供 SDK 生成 |
+| `UpdateConditions`（§6.4） | `UpdateConditions` | 旁定义强类型，供 SDK 生成 |
+| —（新增） | `LauncherUpdatePolicy` | 旁定义：`updateMode` + `schedule` + `channel` + `conditions`，承载 `policy` bytes 的 launcher 结构 |
+| —（新增） | `SoftwareSetUpdatePolicyResult` | 命名空 schema（`fields: []`），IR 归一化为 `Empty`，对齐 `software.setConfig` |
+| 草案 §5 capability 字段 | `SoftwareUpdatePolicyCapability` | `supportedTargets` / `supportedChannels` / `supportsSchedule` / `supportsReset` |
+
+**编码方式**（与 `software.config` 对齐）：`SoftwareUpdatePolicy.policy`、`SoftwareSetUpdatePolicyParams.policy`、`SoftwareUpdatePolicyChangedEvent.policy` 统一用 `type: bytes` + `max_length: 8192` + description 承载 target-specific 动态 JSON；`target: "launcher"` 的结构由旁定义的 `LauncherUpdatePolicy` / `UpdateSchedule` / `UpdateConditions` 强类型 schema 表达，SDK 可据此生成结构化类型。
+
+**null 语义保留**：草案 §6.2 的 `schedule: null`（显式清除时间窗口）与 `conditions: null`（显式清除所有前置条件）语义在 `LauncherUpdatePolicy` schema description 中保留；`null` 与 omitted（保持不变）的区分在 `SoftwareSetUpdatePolicyParams.policy` description 中说明。
+
+### A.3 错误码决策
+
+| Error | 复用 common 码 | 数值 | 用于 |
+|---|---|---|---|
+| `NOT_SUPPORTED` | ✓ mvp | `0x0003` | getUpdatePolicy / setUpdatePolicy / resetUpdatePolicy（target、channel 或 schedule 不支持） |
+| `INVALID_ARGUMENT` | ✓ mvp | `0x000A` | setUpdatePolicy（policy 字段值非法，如时间格式错误、channel 值无效） |
+| `PERMISSION_DENIED` | ✓ mvp | `0x0009` | setUpdatePolicy / resetUpdatePolicy（无权修改） |
+| `INVALID_STATE` | ✓ mvp | `0x0004` | setUpdatePolicy / resetUpdatePolicy（软件升级中） |
+
+**未新增** software 业务错误码。draft §8 候选 Errors 表的 4 个码均已在 v0.6 确认为 common mvp 码（非候选），本次直接复用。software domain 的错误码段（`0x1600`-`0x16FF`）保持空。
+
+### A.4 限定采纳范围
+
+本次为**局部采纳**，仅固化 `target: "launcher"` 的事实：
+
+- ✅ **采纳**：`target` 字段类型为开放 `string`（不强制枚举），description 注明「当前定义 `launcher`；`signagePlayer` / `agent` 保留为开放值，其 policy 字段待产品补充」。
+- ✅ **采纳**：`target: "launcher"` 的更新策略字段——`updateMode`（enum `auto`/`manual`/`notify`）、`schedule`（`UpdateSchedule`：`start`/`end` HH:mm、`timezone` IANA ID，nullable）、`channel`（enum `release`/`beta`/`alpha`）、`conditions`（`UpdateConditions`：`requireIdle`/`requireWifi`，nullable）——固化为强类型 schema。
+- ✅ **采纳（scoped）**：`updateMode` 枚举写入 `auto`/`manual`/`notify`；`notify` 是否纳入 P0 待产品确认，确认后走 amend。
+- ✅ **采纳（scoped）**：`schedule` 跨午夜语义按候选 `end < start`（start 当天到次日 end）写入 description；采纳前确认仍为 `[REVIEW-ASK]`，本次按候选固化，确认后走 amend。
+- ✅ **采纳（scoped）**：`conditions` 仅含 `requireIdle`/`requireWifi`；标牌特有条件（如 `requirePlaybackIdle`）保留。
+- ⏸ **保留**：`signagePlayer` / `agent` 的具体 policy 字段保持开放，待产品/设备确认字段后**先更新本草案再 re-adopt**。
+- ⏸ **保留**：与 `firmware.updatePolicy` 的边界统一（是否未来统一到 `software.updatePolicy(target: "firmware")`）。
+
+`supportedTargets` / `supportedChannels` capability 字段由设备返回实际支持列表，不在此预设。
+
+### A.5 后续约束
+
+- 本草案已采纳部分（launcher target 的 method/event/schema/capability/错误码）的**语义变更**，必须走 `docs/dev/skills/40-amend-adopted-protocol/SKILL.md`，不得直接改 `registry/domains/software/domain.yaml` 而不更新草案。
+- 未采纳部分（`signagePlayer` / `agent` policy 字段、`notify` P0 范围、跨午夜最终语义、标牌特有 conditions、firmware 边界统一）确认后，必须**先更新本草案**（补 §6.X schema 表、关闭对应 `[REVIEW-ASK]`），再走 `30-adopt-protocol-draft` re-adopt 增量事实到 `registry/domains/software/domain.yaml`。
+- `docs/generated/*`、`protocol/axtp.protocol.yaml`、`tooling/mcp/*` 等 generated 产物由 Stage 50（`docs/dev/skills/50-generate-axtp-protocol/SKILL.md`）重生成，**不得手改**。
+- Legacy mapping（§9 `GetUpdateConfig` / `SetUpdateConfig`）不落地 registry；§9.3 classification 差异（CSV / `firmware.md` 错归 `firmware.updatePolicy`、generated map 用旧名 `update.getConfig`/`update.setConfig`）由 legacy-migration 专项处理。
+
+---
+
 ## 0. 速读结论
 
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 配置 Launcher / signagePlayer / agent 等软件对象的自动更新行为模式、时间窗口、通道和前置条件。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。本文是 protocol draft；正式实现以 registry / generated 为准。 |
+| 当前状态 | draft（已采纳） |
+| 是否可直接实现 | 是。machine 事实源为 `registry/domains/software/domain.yaml`。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
-| Registry readiness | candidate |
+| Registry readiness | adopted |
 | Conformance | needed |
-| 主要未决问题 | `updateMode` 枚举首批值、跨日 window 语义、`conditions` 是否包含标牌特有条件。 |
+| 主要未决问题 | 本次局部采纳仅固化 `target: "launcher"`；`updateMode` 的 `notify` 是否 P0、跨午夜 `schedule` 语义、标牌特有 `conditions`、`signagePlayer`/`agent` policy 字段、与 `firmware.updatePolicy` 边界统一均保留为 scoped（见「采纳记录」A.4）。`software` domain taxonomy 已关闭（见 §协议审核标记 / §12）。legacy mapping 不落地 registry，§9.3 classification 差异待 legacy-migration 专项处理。 |
 
 ---
 
@@ -146,11 +224,11 @@ Capability ID：`software.updatePolicy`
 
 ### 3.0 方法速览
 
-| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
-|---|---|---|---|---|---|---|
-| `software.getUpdatePolicy` | query | 查询当前软件更新策略。 | `SoftwareGetUpdatePolicyParams` | `SoftwareUpdatePolicy` | 否 | draft |
-| `software.setUpdatePolicy` | command | 设置软件更新策略。 | `SoftwareSetUpdatePolicyParams` | 标准成功响应（无 result body） | 是，变化后触发 `software.updatePolicyChanged`。 | draft |
-| `software.resetUpdatePolicy` | command | 恢复软件默认更新策略。 | `SoftwareResetUpdatePolicyParams` | `SoftwareUpdatePolicy` | 是，变化后触发 `software.updatePolicyChanged`。 | draft |
+| Method | methodId | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
+|---|---|---|---|---|---|---|---|
+| `software.getUpdatePolicy` | `0x1604` | query | 查询当前软件更新策略。 | `SoftwareGetUpdatePolicyParams` | `SoftwareUpdatePolicy` | 否 | `[REVIEW-ADOPTED]` |
+| `software.setUpdatePolicy` | `0x1605` | command | 设置软件更新策略。 | `SoftwareSetUpdatePolicyParams` | —（仅 status 确认） | 是，变化后触发 `software.updatePolicyChanged`。 | `[REVIEW-ADOPTED]` |
+| `software.resetUpdatePolicy` | `0x1606` | command | 恢复软件默认更新策略。 | `SoftwareResetUpdatePolicyParams` | `SoftwareUpdatePolicy` | 是，变化后触发 `software.updatePolicyChanged`。 | `[REVIEW-ADOPTED]` |
 
 ### 3.1 `software.getUpdatePolicy`
 
@@ -517,9 +595,9 @@ Capability ID：`software.updatePolicy`
 
 ### 4.0 事件速览
 
-| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
-|---|---|---|---|---|
-| `software.updatePolicyChanged` | 策略被 set、reset 或设备策略修改。 | `SoftwareUpdatePolicyChangedEvent` | 刷新更新策略页面；必要时调用 getUpdatePolicy 校准。 | draft |
+| Event | eventId | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
+|---|---|---|---|---|---|
+| `software.updatePolicyChanged` | `0x1602` | 策略被 set、reset 或设备策略修改。 | `SoftwareUpdatePolicyChangedEvent` | 刷新更新策略页面；必要时调用 getUpdatePolicy 校准。 | `[REVIEW-ADOPTED]` |
 
 ### 4.1 `software.updatePolicyChanged`
 
@@ -1141,9 +1219,9 @@ AXTP 请求（Adapter 输出）：
 
 | 项 | 状态 |
 |---|---|
-| Registry YAML | not written |
-| Generated docs | not generated |
-| Method / event IDs | `TBD after adoption` |
+| Registry YAML | adopted（`registry/domains/software/domain.yaml`） |
+| Generated docs | not generated（待 Stage 50 重生成） |
+| Method / event IDs | 已分配（见「采纳记录」A.1） |
 | Conformance | 需覆盖 get/set/reset 一致性、target 不支持、非法 channel、跨日 window、事件校准。 |
 
 > 完整采纳检查清单见 **附录 D**，本文以附录 D 为唯一权威源。
@@ -1176,12 +1254,12 @@ AXTP 请求（Adapter 输出）：
 | Issue | Impact | Current recommendation | Status |
 |---|---|---|---|
 | `software` domain 未在 Taxonomy spec rule 2 示例列表中 | （原）采纳阻塞 | rule 2 为 "e.g." 措辞（非穷举列表），rule 8 允许新增 domain 且 MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入（本草案见 flow steps 9/21）；采纳无需 taxonomy amendment。与 `software.config` v0.5 一致。 | `[REVIEW-RESOLVED]` |
-| `target` 枚举完整值列表 | schema 约束 | 当前草案列出 `launcher`、`signagePlayer`、`agent`；采纳前与产品和设备确认。 | `[REVIEW-ASK]` |
-| 与 `firmware.updatePolicy` 的边界 | domain 划分 | 固件 OTA 策略保留在 `firmware.updatePolicy`；软件策略使用 `software.updatePolicy`。是否未来统一到 `software.updatePolicy(target: "firmware")`？ | `[REVIEW-ASK]` |
-| `updateMode` 枚举首批值 | schema / conformance | `"auto"` 和 `"manual"` 确定需 P0；`"notify"` 是否纳入 P0？ | `[REVIEW-ASK]` |
-| 跨日 window（`end < start`）语义 | schema / tests | 先按跨日候选处理（`start` 当天到次日 `end`），采纳前确认。 | `[REVIEW-ASK]` |
-| `conditions` 是否包含标牌特有条件 | schema | 是否需要 `requirePlaybackIdle`（播放内容时暂停更新）？ | `[REVIEW-ASK]` |
-| Legacy classification 差异（`GetUpdateConfig` / `SetUpdateConfig`） | classification 准确性 | Classification CSV 归入 `firmware.updatePolicy`；flow 文档 re-classified 到 `software.updatePolicy`（正确）。需修正 classification 和 generated map。 | `[REVIEW-ASK]` |
+| `target` 枚举完整值列表 | schema 约束 | 本次采纳：`target` 字段类型为开放 `string`（不强制枚举），仅固化 `launcher`；`signagePlayer`/`agent` 保留为开放值，待产品确认字段后 re-adopt。 | `[REVIEW-ADOPTED-SCOPED]` |
+| 与 `firmware.updatePolicy` 的边界 | domain 划分 | 本次采纳确认共存：固件 OTA 策略保留在 `firmware.updatePolicy`，软件策略使用 `software.updatePolicy`。是否未来统一到 `software.updatePolicy(target: "firmware")` 保留为后续问题，变更走 amend。 | `[REVIEW-ADOPTED-SCOPED]` |
+| `updateMode` 枚举首批值 | schema / conformance | 本次采纳写入 `auto`/`manual`/`notify` 三值。`auto`/`manual` 为必需；`notify` 是否纳入 P0 待产品确认，确认后走 amend。 | `[REVIEW-ADOPTED-SCOPED]` |
+| 跨日 window（`end < start`）语义 | schema / tests | 本次采纳按候选语义固化：`end < start` 表示跨日窗口（`start` 当天到次日 `end`），已写入 `UpdateSchedule.end` description。采纳前最终确认仍保留，确认后走 amend。 | `[REVIEW-ADOPTED-SCOPED]` |
+| `conditions` 是否包含标牌特有条件 | schema | 本次采纳仅含 `requireIdle`/`requireWifi`；标牌特有条件（如 `requirePlaybackIdle`）保留，待产品确认后走 amend。 | `[REVIEW-ADOPTED-SCOPED]` |
+| Legacy classification 差异（`GetUpdateConfig` / `SetUpdateConfig`） | classification 准确性 | Classification CSV 归入 `firmware.updatePolicy`；flow 文档 re-classified 到 `software.updatePolicy`（正确）。本次采纳不纳入 scope（legacy mapping 不落地 registry）；classification CSV / `firmware.md` / generated map 的修正由 legacy-migration 专项处理。 | `[REVIEW-ASK]` |
 | Flow step 21 响应描述（setUpdatePolicy 是否返回完整策略） | flow / draft 一致性 | Flow 文档 step 16/19/21 已修正为"返回标准成功响应（无 result body）；触发对应 *Changed 事件"，与草案 `setUpdatePolicy` status-only 设计一致（原 step 编号曾误记为 step 20，实为 step 21）。本条闭环。 | `[REVIEW-RESOLVED]` |
 | `software.config` §8 错误码 | 跨草案一致性 | sibling 草案 `software.config` 已修正至 v0.5，§8 中 `PERMISSION_DENIED` / `INVALID_STATE` / `INVALID_ARGUMENT` 现为正确值 `0x0009` / `0x0004` / `0x000A`（见 `software.config` v0.5 错误码修正说明）。本草案 §8 Review 列同步对齐为已采纳复用码（标 `—`）。 | `[REVIEW-RESOLVED]` |
 
@@ -1219,7 +1297,7 @@ AXTP 请求（Adapter 输出）：
 
 ## 附录 C. Registry 草案输入
 
-采纳本文后，`registry/domains/software/domain.yaml` 至少应包含（所有 numeric ID 为 `TBD after adoption`，不在此分配）：
+本文已采纳，machine 事实源为 `registry/domains/software/domain.yaml`。下列为采纳前的草案输入（numeric ID 当时为 `TBD after adoption`）；**正式 ID 见「采纳记录」A.1**，以下 YAML 草案仅作历史参考：
 
 ```yaml
 capabilities:
@@ -1279,15 +1357,15 @@ events:
 
 ## 附录 D. 采纳检查清单
 
-- [ ] 01 已确认 `software.updatePolicy` domain.feature 边界（与 `firmware.updatePolicy` / `software.config` / `software.update` 的划分）。
-- [ ] 02 已确认 `target` 枚举完整值列表（`launcher` / `signagePlayer` / `agent` 是否够）。
-- [ ] 03 已确认 `updateMode` 枚举首批 P0 范围（`"auto"` / `"manual"` 必需，`"notify"` 是否纳入 P0）。
-- [ ] 04 已确认 methodId、bitOffset、request/response schema（`getUpdatePolicy` / `setUpdatePolicy` status-only / `resetUpdatePolicy`）。
-- [ ] 05 已确认 eventId、eventMasks bitOffset、`SoftwareUpdatePolicyChangedEvent` schema。
-- [ ] 06 已确认 errorCode 范围和错误归属（当前全部复用 common 码，无 feature-specific 候选）。
-- [ ] 07 已确认 `updateMode` 为 `manual` / `notify` 时 `schedule` 持久化语义。
-- [ ] 08 已确认 `schedule` 跨午夜（`end < start`）语义。
-- [ ] 09 已确认 `conditions` 是否需要标牌特有条件（如 `requirePlaybackIdle`）。
-- [ ] 10 已确认 schema fieldId、capabilityId、`supportedChannels` / `supportsSchedule` / `supportsReset`。
-- [ ] 11 已确认 Legacy classification 差异修正方案（CSV / firmware.md / generated map → `software.updatePolicy`）。
-- [ ] 12 YAML 写入后 Generator 能完整生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+- [x] 01 已确认 `software.updatePolicy` domain.feature 边界（与 `firmware.updatePolicy` / `software.config` / `software.update` 的划分）。
+- [x] 02 已确认 `target` 枚举完整值列表（本次局部采纳：开放 `string`，仅固化 `launcher`；`signagePlayer`/`agent` 保留，待 re-adopt）。
+- [x] 03 已确认 `updateMode` 枚举首批 P0 范围（写入 `auto`/`manual`/`notify`；`notify` 待 P0 确认走 amend）。
+- [x] 04 已确认 methodId、bitOffset、request/response schema（`getUpdatePolicy` / `setUpdatePolicy` status-only / `resetUpdatePolicy`）。
+- [x] 05 已确认 eventId、eventMasks bitOffset、`SoftwareUpdatePolicyChangedEvent` schema。
+- [x] 06 已确认 errorCode 范围和错误归属（当前全部复用 common 码，无 feature-specific 候选）。
+- [x] 07 已确认 `updateMode` 为 `manual` / `notify` 时 `schedule` 持久化语义（值保留，不自动执行）。
+- [x] 08 已确认 `schedule` 跨午夜（`end < start`）语义（按候选固化，最终确认走 amend）。
+- [x] 09 已确认 `conditions` 是否需要标牌特有条件（本次仅 `requireIdle`/`requireWifi`，标牌特有条件保留）。
+- [x] 10 已确认 schema fieldId、capabilityId、`supportedChannels` / `supportsSchedule` / `supportsReset`。
+- [ ] 11 已确认 Legacy classification 差异修正方案（CSV / firmware.md / generated map → `software.updatePolicy`）。— 本次采纳不纳入 scope，由 legacy-migration 专项处理。
+- [ ] 12 YAML 写入后 Generator 能完整生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。— `validate:sources` 已通过；完整生成由 Stage 50 执行。

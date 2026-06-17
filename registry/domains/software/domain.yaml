@@ -69,6 +69,72 @@ methods:
       - PERMISSION_DENIED
       - INVALID_STATE
 
+  - id: 0x1604
+    name: software.getUpdatePolicy
+    domain: software
+    status: draft
+    bitOffset: 3
+    since: 1.0.0
+    description: Read the current automatic update policy of a software object identified by target.
+    rpc_op: request_response
+    request_schema: SoftwareGetUpdatePolicyParams
+    response_schema: SoftwareUpdatePolicy
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - software.updatePolicy
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+
+  - id: 0x1605
+    name: software.setUpdatePolicy
+    domain: software
+    status: draft
+    bitOffset: 4
+    since: 1.0.0
+    description: Set an update policy fragment of a software object using partial update semantics; fields absent from the payload are left unchanged.
+    rpc_op: request_response
+    request_schema: SoftwareSetUpdatePolicyParams
+    response_schema: SoftwareSetUpdatePolicyResult
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - software.updatePolicy
+    events:
+      - software.updatePolicyChanged
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - PERMISSION_DENIED
+      - INVALID_STATE
+
+  - id: 0x1606
+    name: software.resetUpdatePolicy
+    domain: software
+    status: draft
+    bitOffset: 5
+    since: 1.0.0
+    description: Restore the update policy of a software object to the current-version defaults for the given target. Only resets the update policy; it does not trigger a software or device reboot. System-level factory reset is handled by system.restoreFactorySettings.
+    rpc_op: request_response
+    request_schema: SoftwareResetUpdatePolicyParams
+    response_schema: SoftwareUpdatePolicy
+    recommended_encoding:
+      - json
+      - tlv
+    capabilities:
+      - software.updatePolicy
+    events:
+      - software.updatePolicyChanged
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - PERMISSION_DENIED
+      - INVALID_STATE
+
 events:
   - id: 0x1601
     name: software.configChanged
@@ -84,6 +150,21 @@ events:
       - software.resetConfig
     capabilities:
       - software.config
+
+  - id: 0x1602
+    name: software.updatePolicyChanged
+    domain: software
+    status: draft
+    bitOffset: 1
+    since: 1.0.0
+    description: Emitted after software.setUpdatePolicy or software.resetUpdatePolicy successfully changes a software object update policy, or after a device-internal policy modifies it.
+    event_schema: SoftwareUpdatePolicyChangedEvent
+    severity: info
+    trigger:
+      - software.setUpdatePolicy
+      - software.resetUpdatePolicy
+    capabilities:
+      - software.updatePolicy
 
 types:
   SoftwareGetConfigParams:
@@ -234,6 +315,184 @@ types:
         required: false
         description: Whether reset may restart the software object (not the device). System-level factory reset is handled by system.restoreFactorySettings.
 
+  SoftwareGetUpdatePolicyParams:
+    kind: object
+    description: Request for software.getUpdatePolicy; selects the software object to read by target.
+    fields:
+      - id: 0x01
+        name: target
+        type: string
+        required: true
+        max_length: 64
+        description: Software object to read the update policy of. Currently defined value is launcher; other values such as signagePlayer and agent are reserved for future adoption and their policy fields are not defined in this version.
+
+  SoftwareUpdatePolicy:
+    kind: object
+    description: Update policy snapshot of a software object. policy is a target-specific dynamic JSON object; for target launcher it carries the LauncherUpdatePolicy structure (updateMode, schedule, channel, conditions). When target is launcher, schedule and conditions may be null to explicitly clear the time window or prerequisites; null is distinct from omitted.
+    fields:
+      - id: 0x01
+        name: target
+        type: string
+        required: true
+        max_length: 64
+        description: Software object this update policy belongs to.
+      - id: 0x02
+        name: policy
+        type: bytes
+        required: true
+        max_length: 8192
+        description: JSON object holding the target-specific update policy fragment. For target launcher the structure is LauncherUpdatePolicy (updateMode plus schedule, channel, conditions); see the LauncherUpdatePolicy, UpdateSchedule, and UpdateConditions schemas. Field set is determined by target.
+
+  SoftwareSetUpdatePolicyParams:
+    kind: object
+    description: Request for software.setUpdatePolicy; applies a partial update to the target software object. Fields absent from policy are left unchanged; policy itself must be a valid object and does not accept null. Within the launcher policy fragment, schedule null explicitly clears the time window and conditions null explicitly clears all prerequisites; omitted means keep current value.
+    fields:
+      - id: 0x01
+        name: target
+        type: string
+        required: true
+        max_length: 64
+        description: Software object to configure the update policy of.
+      - id: 0x02
+        name: policy
+        type: bytes
+        required: true
+        max_length: 8192
+        description: JSON object holding the target-specific update policy fragment to apply (partial update). For target launcher the structure is LauncherUpdatePolicy; see SoftwareUpdatePolicy.policy. Within the fragment, schedule null or conditions null explicitly clears those sub-objects while omitted keeps them unchanged.
+
+  SoftwareResetUpdatePolicyParams:
+    kind: object
+    description: Request for software.resetUpdatePolicy; restores the specified software object update policy to its current-version defaults.
+    fields:
+      - id: 0x01
+        name: target
+        type: string
+        required: true
+        max_length: 64
+        description: Software object to reset the update policy of.
+
+  SoftwareSetUpdatePolicyResult:
+    kind: object
+    description: Empty success result for software.setUpdatePolicy; carries only the standard success status. Callers confirm landing via software.getUpdatePolicy or the software.updatePolicyChanged event.
+    fields: []
+
+  SoftwareUpdatePolicyChangedEvent:
+    kind: object
+    description: Event payload emitted when a software object update policy changes.
+    fields:
+      - id: 0x01
+        name: target
+        type: string
+        required: true
+        max_length: 64
+        description: Software object whose update policy changed.
+      - id: 0x02
+        name: policy
+        type: bytes
+        required: true
+        max_length: 8192
+        description: Full post-change update policy fragment (not a patch). For target launcher the structure is LauncherUpdatePolicy; see SoftwareUpdatePolicy.policy.
+      - id: 0x03
+        name: changedFields
+        type: bytes
+        required: false
+        max_length: 1024
+        description: Optional JSON array of changed field paths using dot notation for nested levels, e.g. schedule.start. Omitted when the device cannot compute the diff.
+      - id: 0x04
+        name: reason
+        type: enum
+        required: false
+        description: Change reason; candidate values include user_request (triggered by setUpdatePolicy), restore_default (triggered by resetUpdatePolicy), device_policy (triggered by device-internal policy), and unknown (default when the reason is not reported).
+
+  LauncherUpdatePolicy:
+    kind: object
+    description: Update policy fragment for target launcher. Referenced by SoftwareUpdatePolicy.policy, SoftwareSetUpdatePolicyParams.policy, and SoftwareUpdatePolicyChangedEvent.policy when target is launcher. schedule null means no update time restriction (any time) and conditions null means no prerequisites; both are valid persisted values and the reset default sets both to null. When updateMode is manual or notify, schedule may still be set and persisted but the device does not automatically perform updates in the window; the schedule value is preserved across updateMode changes.
+    fields:
+      - id: 0x01
+        name: updateMode
+        type: enum
+        required: true
+        description: Update behavior mode; candidate values are auto (fully automatic download and install), manual (manual trigger only), and notify (notify only when an update is available).
+      - id: 0x02
+        name: schedule
+        type: UpdateSchedule
+        required: false
+        description: Automatic update time window. Only effective when updateMode is auto. null means no time restriction (any time of day). In setUpdatePolicy partial update, null explicitly clears the window while omitted keeps the current value. See UpdateSchedule.
+      - id: 0x03
+        name: channel
+        type: enum
+        required: true
+        description: Update channel; candidate values are release (stable), beta (test), and alpha (development).
+      - id: 0x04
+        name: conditions
+        type: UpdateConditions
+        required: false
+        description: Automatic update prerequisites. null means no prerequisites (no restriction). In setUpdatePolicy partial update, null explicitly clears all conditions while omitted keeps the current value. See UpdateConditions.
+
+  UpdateSchedule:
+    kind: object
+    description: Automatic update time window, nested under LauncherUpdatePolicy.schedule.
+    fields:
+      - id: 0x01
+        name: start
+        type: string
+        required: true
+        description: Window start time in local time, matching the regex ^([01]\d|2[0-3]):[0-5]\d$ (HH:mm). A value that does not match returns INVALID_ARGUMENT.
+      - id: 0x02
+        name: end
+        type: string
+        required: true
+        description: Window end time in local time, matching the regex ^([01]\d|2[0-3]):[0-5]\d$ (HH:mm). A value that does not match returns INVALID_ARGUMENT. When end is earlier than start it denotes a cross-midnight window (from start on the current day to end on the next day).
+      - id: 0x03
+        name: timezone
+        type: string
+        required: false
+        description: IANA timezone ID. Omitted means the device local timezone.
+
+  UpdateConditions:
+    kind: object
+    description: Automatic update prerequisites, nested under LauncherUpdatePolicy.conditions.
+    fields:
+      - id: 0x01
+        name: requireIdle
+        type: bool
+        required: false
+        default: true
+        description: Whether the device must be idle before performing an update.
+      - id: 0x02
+        name: requireWifi
+        type: bool
+        required: false
+        default: false
+        description: Whether updates may only be downloaded over a Wi-Fi network.
+
+  SoftwareUpdatePolicyCapability:
+    kind: object
+    description: Capability descriptor for software.updatePolicy.
+    fields:
+      - id: 0x01
+        name: supportedTargets
+        type: bytes
+        required: true
+        max_length: 256
+        description: JSON array of supported software object target strings; candidate values include launcher, signagePlayer, and agent.
+      - id: 0x02
+        name: supportedChannels
+        type: bytes
+        required: false
+        max_length: 256
+        description: Optional JSON array of supported update channel strings; candidate values include release, beta, and alpha.
+      - id: 0x03
+        name: supportsSchedule
+        type: bool
+        required: false
+        description: Whether configuring an update time window via schedule is supported.
+      - id: 0x04
+        name: supportsReset
+        type: bool
+        required: false
+        description: Whether restoring defaults via resetUpdatePolicy is supported.
+
 capabilities:
   - id: 0x1601
     name: software.config
@@ -243,3 +502,12 @@ capabilities:
     description: Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications.
     type: object
     schema: SoftwareConfigCapability
+
+  - id: 0x1602
+    name: software.updatePolicy
+    domain: software
+    status: draft
+    since: 1.0.0
+    description: Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications.
+    type: object
+    schema: SoftwareUpdatePolicyCapability

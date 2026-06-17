@@ -14,14 +14,14 @@
 | 项目 | 内容 |
 |---|---|
 | Flow 目标 | NearHub Launcher 数字标牌设备管理全流程协议覆盖 — 设备上线、配置同步、注册纳管、管理配置四阶段。 |
-| 当前协议覆盖 | **partial** — 全部业务指令已有 draft 覆盖，但无正式 adopted/generated domain（仅 `audio` domain 在 registry 中）。 |
+| 当前协议覆盖 | **partial** — 全部业务指令已有 draft 覆盖；`software` domain（`software.config` / `software.updatePolicy`）已采纳进 registry，其余业务 domain 仍 draft-only，待 generated 产物由 Stage 50 重生成。 |
 | 涉及 domain.feature | `device.info`, `device.enrollment`, `network.interface` / `network.ip` / `network.wifi`, `signage.playlist`, `software.config`, `software.updatePolicy`, `system.lifecycle` |
 | 已有 adopted/generated | AXTP Core session / transport / heartbeat / RPC envelope (`docs/generated/protocol.md`)。 |
 | 缺口 | 7 个业务 domain 仍 draft-only，未进入 registry adoption。 |
 | 是否需要新增协议草案 | no — 全部缺口已有成熟 draft 覆盖。 |
 | 是否涉及 Legacy | yes — 15 个 legacy Device SDK 指令需 AXTP adapter 迁移。 |
 | 是否涉及 STREAM | no |
-| 下一步 | 6 个 domain.feature（`device.enrollment`, `signage.playlist`, `software.config`, `software.updatePolicy`, `system.lifecycle`, `device.info`）转 Stage 30 `adopt-protocol-draft`；`network.*` 待 draft 成熟后补齐。 |
+| 下一步 | `software.config` / `software.updatePolicy` 已采纳（`registry/domains/software/domain.yaml`）；`device.enrollment`, `signage.playlist`, `system.lifecycle`, `device.info` 转或续 Stage 30 `adopt-protocol-draft`；已采纳 domain 的 generated 产物由 Stage 50 重生成；`network.*` 待 draft 成熟后补齐。 |
 
 ## 1. Story Summary
 
@@ -53,7 +53,7 @@
 | 注册码页面 | 设备获取并展示注册码（含过期时间），用户在云端输入注册码。 | Legacy `GetBindCode` → draft `device.enrollment` v0.8；`GetBindConfig` / `SetBindConfig` → `device.getEnrollmentState` / `device.setEnrollmentState`。 |
 | 播放列表管理 | 服务端全量同步播放列表，设备读取当前列表，资源 URL 即将过期时设备请求刷新。 | Legacy `SetPlaylistConfig` / `GetPlaylistConfig` / `GetPlaylistItemUrl` → draft `signage.playlist` v1.3。废弃 `slideshow` 类型，Adapter 映射为 `image`。 |
 | 外观设置 | 管理 `panelLayout`、`autoHidePanel`、`autoHideDelay`。 | Legacy `GetAppearanceConfig` / `SetAppearanceConfig` → draft `software.config` v0.7（target: `"launcher"`，`appearance` 子对象）。 |
-| 更新策略设置 | 管理自动更新开关、时间窗口和通道。 | Legacy `GetUpdateConfig` / `SetUpdateConfig` → draft `software.updatePolicy` v0.8（target: `"launcher"`，`updateMode` 枚举 + `schedule` + `channel` + `conditions`）。 |
+| 更新策略设置 | 管理自动更新开关、时间窗口和通道。 | Legacy `GetUpdateConfig` / `SetUpdateConfig` → draft `software.updatePolicy` v0.9（已采纳）（target: `"launcher"`，`updateMode` 枚举 + `schedule` + `channel` + `conditions`）。 |
 | 计划任务设置 | 管理定时关机和定时重启（enabled、time、days）。 | Legacy `GetScheduleConfig` / `SetScheduleConfig` → draft `system.lifecycle`。 |
 | UI prototype image | `[REVIEW-ASK]` 本轮没有 UI 图或产品原型；页面布局、按钮确认弹窗和失败文案需产品/UI 确认。 | 不新增协议，只影响 App 呈现和交互细节。 |
 
@@ -107,7 +107,7 @@
 | 播放列表查询 | Drafted only | `signage.playlist` | `docs/protocol/signage/signage.playlist.md` v1.3 | set/get 结构一致。转 Stage 30 采纳。 |
 | 播放项 URL 刷新 | Drafted only | `signage.playlist` | `docs/protocol/signage/signage.playlist.md` v1.3 | URL refresh 重构为 `type` + `settings` 显式类型判别模式。转 Stage 30 采纳。 |
 | 外观/面板配置 | Drafted only | `software.config`（target: `"launcher"`） | `docs/protocol/software/software.config.md` v0.7 | target 枚举列出 `"launcher"`/`"signagePlayer"`/`"agent"`；外观字段嵌套为 `appearance` 子对象。`[REVIEW-ASK]` target 完整枚举确认后转 Stage 30 采纳。 |
-| 软件更新策略 | Drafted only | `software.updatePolicy`（target: `"launcher"`） | `docs/protocol/software/software.updatePolicy.md` v0.8 | `updateMode` 枚举已定义（`auto`/`manual`/`notify`）；跨午夜 `schedule` 语义草案候选中（`end < start` 表示跨日），采纳前确认 `[REVIEW-ASK]`。转 Stage 30 采纳。 |
+| 软件更新策略 | Adopted | `software.updatePolicy`（target: `"launcher"`） | `docs/protocol/software/software.updatePolicy.md` v0.9 | `updateMode` 枚举已定义（`auto`/`manual`/`notify`）；跨午夜 `schedule` 语义按候选（`end < start` 表示跨日）采纳，scoped 保留 `[REVIEW-ASK]`。已采纳（局部，固化 launcher），machine 事实源 `registry/domains/software/domain.yaml`。 |
 | 重启关机计划 | Drafted only | `system.lifecycle` | `docs/protocol/system/system.lifecycle.md` | system.lifecycle v0.8 已覆盖 reboot/shutdown schedule；legacy 字段映射已完成。转 Stage 30 采纳。 |
 
 ## 5. End-To-End Sequence
@@ -141,7 +141,7 @@ sequenceDiagram
         Device-->>Cloud: 当前播放列表
         Cloud->>Device: software.getConfig(target: "launcher") (draft software.config v0.7)
         Device-->>Cloud: displayName, panelLayout, autoHidePanel, autoHideDelay
-        Cloud->>Device: software.getUpdatePolicy(target: "launcher") (draft software.updatePolicy v0.8)
+        Cloud->>Device: software.getUpdatePolicy(target: "launcher") (software.updatePolicy v0.9 已采纳)
         Device-->>Cloud: updateMode, schedule, channel, conditions
         Cloud->>Device: GetScheduleConfig (draft system.lifecycle)
         Device-->>Cloud: shutdown/reboot enabled, time, days
@@ -208,7 +208,7 @@ sequenceDiagram
 | 6 | P2 | Cloud / Device | 查询播放列表能力。 | Draft `signage.playlist` v1.3 | `signage.getPlaylistCapabilities`；请求为空。 | 返回支持的播放项类型、数量限制、功能开关。 | 设备不支持时返回 `NOT_SUPPORTED`。 |
 | 7 | P2 | Cloud / Device | 查询播放列表配置。 | Draft `signage.playlist` v1.3 | `signage.getPlaylistConfig`；请求为空。 | 返回当前完整 playlist config。 | 保持 set/get 结构一致。 |
 | 8 | P2 | Cloud / Device | 查询外观配置。 | Draft `software.config` v0.7（target: `"launcher"`） | `software.getConfig(target: "launcher")`。 | displayName, appearance: { panelLayout, autoHidePanel, autoHideDelay }。 | target 枚举列出 `"launcher"`/`"signagePlayer"`/`"agent"`。 |
-| 9 | P2 | Cloud / Device | 查询更新策略。 | Draft `software.updatePolicy` v0.8（target: `"launcher"`） | `software.getUpdatePolicy(target: "launcher")`。 | updateMode（`auto`/`manual`/`notify`）, schedule（含 timezone）, channel, conditions。 | `updateMode` 枚举已定义；`schedule.end < schedule.start` 表示跨日。 |
+| 9 | P2 | Cloud / Device | 查询更新策略。 | Draft `software.updatePolicy` v0.9（已采纳）（target: `"launcher"`） | `software.getUpdatePolicy(target: "launcher")`。 | updateMode（`auto`/`manual`/`notify`）, schedule（含 timezone）, channel, conditions。 | `updateMode` 枚举已定义；`schedule.end < schedule.start` 表示跨日。 |
 | 10 | P2 | Cloud / Device | 查询计划任务配置。 | Draft `system.lifecycle` v0.8 | 请求为空。 | shutdown/reboot enabled, time, days。 | system.lifecycle v0.8 已有 get/setRebootSchedule 和 get/setShutdownSchedule。 |
 | 11 | P2 | Cloud | 比对配置差异，按需下发更新。 | 非 protocol — Cloud 本地逻辑 | 比对查询结果与云端存储。 | 决定是否需要下发 set 操作。 | 差异下发走对应 set 方法。 |
 | 12 | P3 | Device / Cloud | 设备请求注册码。 | Draft `device.enrollment` v0.8 — `device.getPairingCode` | `{ refresh: false, purpose: "initial_enrollment" }`；方向 Device → Server。 | `{ code, expiresAt, expiresInSeconds: 1800, state: "available" }`。 | `expiresInSeconds` 来自 legacy 实测不可省略。 |
@@ -220,10 +220,10 @@ sequenceDiagram
 | 18 | P4 | Device / Cloud | 刷新播放项资源 URL。 | Draft `signage.playlist` v1.3 | `signage.getPlaylistItemUrl`：`{ itemId }`；返回 `type` + `settings` 显式类型判别。 | 设备获得新资源 URL（含 expiresAt）；`clock` 类型返回 `NOT_SUPPORTED`。 | URL refresh 重构为 type+settings 模式。 |
 | 19 | P4 | User / Console / Cloud / Device | 设置外观配置。 | Draft `software.config` v0.7（target: `"launcher"`） | `software.setConfig(target: "launcher", config: { appearance: { panelLayout, autoHidePanel, autoHideDelay } })`。partial update 语义。 | 返回标准成功响应（无 result body）；触发 `software.configChanged` 事件，通过 `getConfig` 确认。 | 外观字段包裹在 `appearance` 子对象中。 |
 | 20 | P4 | User / Console / Cloud / Device | 设置重启关机计划。 | Draft `system.lifecycle` v0.8 | `system.setRebootSchedule` / `system.setShutdownSchedule`：enabled, time, days。 | 设备计划保存。 | system.lifecycle v0.8 已有 schedule 方法。 |
-| 21 | P4 | User / Console / Cloud / Device | 设置软件更新策略。 | Draft `software.updatePolicy` v0.8（target: `"launcher"`） | `software.setUpdatePolicy(target: "launcher", policy: { updateMode, schedule, channel, conditions })`。partial update 语义。 | 返回标准成功响应（无 result body）；触发 `software.updatePolicyChanged` 事件，通过 `getUpdatePolicy` 确认。 | `updateMode` 枚举（`auto`/`manual`/`notify`）；跨午夜 `schedule` 语义草案候选中，采纳前确认 `[REVIEW-ASK]`。 |
+| 21 | P4 | User / Console / Cloud / Device | 设置软件更新策略。 | `software.updatePolicy` v0.9（已采纳）（target: `"launcher"`） | `software.setUpdatePolicy(target: "launcher", policy: { updateMode, schedule, channel, conditions })`。partial update 语义。 | 返回标准成功响应（无 result body）；触发 `software.updatePolicyChanged` 事件，通过 `getUpdatePolicy` 确认。 | `updateMode` 枚举（`auto`/`manual`/`notify`）；跨午夜 `schedule` 语义按候选采纳（`end < start` 表示跨日），scoped 保留 `[REVIEW-ASK]`。 |
 | 22 | P4 | User / Console / Cloud / Device | 恢复默认播放列表。 | Draft `signage.playlist` v1.3 | `signage.resetPlaylistConfig`；请求为空。 | 返回重置后的 `PlaylistConfigResult`。 | 不影响系统配置。 |
 | 23 | P4 | User / Console / Cloud / Device | 恢复默认软件配置。 | Draft `software.config` v0.7 | `software.resetConfig(target: "launcher")`；请求含 target。 | 返回重置后的完整 `SoftwareConfig`。 | 仅恢复软件配置，不触发设备重启；legacy `ResetConfig` 映射到 `system.restoreFactorySettings`。 |
-| 24 | P4 | User / Console / Cloud / Device | 恢复默认更新策略。 | Draft `software.updatePolicy` v0.8 | `software.resetUpdatePolicy(target: "launcher")`；请求含 target。 | 返回重置后的完整 `SoftwareUpdatePolicy`。 | 不影响固件更新策略。 |
+| 24 | P4 | User / Console / Cloud / Device | 恢复默认更新策略。 | Draft `software.updatePolicy` v0.9（已采纳） | `software.resetUpdatePolicy(target: "launcher")`；请求含 target。 | 返回重置后的完整 `SoftwareUpdatePolicy`。 | 不影响固件更新策略。 |
 
 ## 7. State Changes And Events
 
@@ -232,7 +232,7 @@ sequenceDiagram
 | Enrollment state 变化 | `device.setEnrollmentState` 调用成功 | `device.enrollmentStateChanged` | EnrollmentState + endpoint + enrolledAt + previousState | Cloud 更新设备注册状态 UI | draft |
 | 播放列表配置变更 | `signage.setPlaylistConfig` 或 `signage.resetPlaylistConfig` 成功 | `signage.playlistConfigChanged` | `PlaylistConfigChangedEvent`（payload schema，见 `signage.playlist` v1.3 §4.1：`reason` + 可选 `playlists`） | Cloud 更新播放列表状态；设备端播放器应用新配置 | draft |
 | 软件配置变更 | `software.setConfig` 或 `software.resetConfig` 成功 | `software.configChanged` | target + 完整 SoftwareConfig | Cloud 更新设备配置 UI | draft |
-| 更新策略变更 | `software.setUpdatePolicy` 或 `software.resetUpdatePolicy` 成功 | `software.updatePolicyChanged` | target + 完整 SoftwareUpdatePolicy | Cloud 更新策略 UI | draft |
+| 更新策略变更 | `software.setUpdatePolicy` 或 `software.resetUpdatePolicy` 成功 | `software.updatePolicyChanged` | target + 完整 SoftwareUpdatePolicy | Cloud 更新策略 UI | adopted |
 | 重启/关机计划变更 | `system.setRebootSchedule` / `system.setShutdownSchedule` 成功 | 无独立事件（system.lifecycle draft 未定义 scheduleChanged 事件） | — | Cloud 通过 get 方法验证 | draft |
 
 ## 8. Protocol Details
@@ -256,7 +256,7 @@ sequenceDiagram
 | `device.enrollment` | `GetBindCode`, `GetBindConfig`, `SetBindConfig` | `device.getPairingCode` / `device.getEnrollmentState` / `device.setEnrollmentState` / `device.enrollmentStateChanged` | `docs/protocol/device/device.enrollment.md` v0.8 |
 | `signage.playlist` | `SetPlaylistConfig`, `GetPlaylistConfig` | `signage.getPlaylistCapabilities` / `signage.getPlaylistConfig` / `signage.setPlaylistConfig` / `signage.resetPlaylistConfig` / `signage.getPlaylistItemUrl` / `signage.playlistConfigChanged` | `docs/protocol/signage/signage.playlist.md` v1.3 |
 | `software.config`（target: `"launcher"`） | `GetAppearanceConfig`, `SetAppearanceConfig`, `SetDeviceName` | `software.getConfig` / `software.setConfig` / `software.resetConfig` / `software.configChanged` | `docs/protocol/software/software.config.md` v0.7 |
-| `software.updatePolicy`（target: `"launcher"`） | `GetUpdateConfig`, `SetUpdateConfig` | `software.getUpdatePolicy` / `software.setUpdatePolicy` / `software.resetUpdatePolicy` / `software.updatePolicyChanged` | `docs/protocol/software/software.updatePolicy.md` v0.8 |
+| `software.updatePolicy`（target: `"launcher"`） | `GetUpdateConfig`, `SetUpdateConfig` | `software.getUpdatePolicy` / `software.setUpdatePolicy` / `software.resetUpdatePolicy` / `software.updatePolicyChanged` | `docs/protocol/software/software.updatePolicy.md` v0.9 |
 | `system.lifecycle` | `GetScheduleConfig`, `SetScheduleConfig` | `system.get/setRebootSchedule` / `system.get/setShutdownSchedule` | `docs/protocol/system/system.lifecycle.md` v0.8 |
 
 ### 8.3 Legacy Mapping Checklist
@@ -276,8 +276,8 @@ sequenceDiagram
 | `GetPlaylistItemUrl` | Device -> Server | `signage.getPlaylistItemUrl` | Drafted only | 草案 `signage.playlist` v1.3；重构为 `type` + `settings` 显式类型判别模式；`clock` 类型返回 `NOT_SUPPORTED`。 |
 | `GetAppearanceConfig` | Server <-> Device | `software.getConfig(target: "launcher")` | Drafted only | 草案 `software.config` v0.7；字段嵌套为 `config.appearance.*`。 |
 | `SetAppearanceConfig` | Server <-> Device | `software.setConfig(target: "launcher")` | Drafted only | 草案 `software.config` v0.7；旧 flat 字段需 adapter 包装为 `config.appearance.*`。 |
-| `GetUpdateConfig` | Server <-> Device | `software.getUpdatePolicy(target: "launcher")` | Drafted only | 草案 `software.updatePolicy` v0.8；旧 `autoUpdate`(bool) → `updateMode`(enum: `auto`/`manual`/`notify`)。 |
-| `SetUpdateConfig` | Server <-> Device | `software.setUpdatePolicy(target: "launcher")` | Drafted only | 草案 `software.updatePolicy` v0.8；旧 `true` → `"auto"`，`false` → `"manual"`。新增 `timezone` 和 `conditions` 字段。 |
+| `GetUpdateConfig` | Server <-> Device | `software.getUpdatePolicy(target: "launcher")` | Drafted only | 草案 `software.updatePolicy` v0.9（已采纳）；旧 `autoUpdate`(bool) → `updateMode`(enum: `auto`/`manual`/`notify`)。 |
+| `SetUpdateConfig` | Server <-> Device | `software.setUpdatePolicy(target: "launcher")` | Drafted only | 草案 `software.updatePolicy` v0.9（已采纳）；旧 `true` → `"auto"`，`false` → `"manual"`。新增 `timezone` 和 `conditions` 字段。 |
 | `GetScheduleConfig` | Server <-> Device | `system.getRebootSchedule` / `system.getShutdownSchedule` | Drafted only | system.lifecycle v0.8 已覆盖；补 legacy 字段映射。 |
 | `SetScheduleConfig` | Server <-> Device | `system.setRebootSchedule` / `system.setShutdownSchedule` | Drafted only | system.lifecycle v0.8 已覆盖；补 legacy 字段映射。 |
 
@@ -292,7 +292,7 @@ sequenceDiagram
 | Schedule 定域已解决 | `system.lifecycle` v0.8 | get/setRebootSchedule + get/setShutdownSchedule | `adopt-protocol-draft` | `[REVIEW-RESOLVED]` 关机/重启调度已定域 `system.lifecycle` v0.8；`signage.schedule` 草案可删除。 |
 | 播放项 URL 刷新已定域 | `signage.playlist` v1.3 | `signage.getPlaylistItemUrl` | `adopt-protocol-draft` | `[REVIEW-RESOLVED]` URL 刷新是播放项级操作，已归属 `signage.playlist`；`signage.media` 草案已删除，功能已合并。 |
 | Launcher 外观/面板配置 | `software.config` v0.7（target: `"launcher"`） | `software.getConfig` / `software.setConfig` / `software.resetConfig` / `software.configChanged` | `adopt-protocol-draft` | `[REVIEW-RESOLVED]` 旧草案 `device.appearance` 已删除；外观配置实为 Launcher 软件配置，迁入 `software.config` 统一管理。 |
-| 软件更新策略 | `software.updatePolicy` v0.8（target: `"launcher"`） | `software.getUpdatePolicy` / `software.setUpdatePolicy` / `software.resetUpdatePolicy` / `software.updatePolicyChanged` | `adopt-protocol-draft` | `[REVIEW-RESOLVED]` 旧草案 `firmware.updatePolicy` 已回退为骨架；更新策略迁入 `software.updatePolicy`，通过 target 区分组件。 |
+| 软件更新策略 | `software.updatePolicy` v0.9（已采纳）（target: `"launcher"`） | `software.getUpdatePolicy` / `software.setUpdatePolicy` / `software.resetUpdatePolicy` / `software.updatePolicyChanged` | `adopt-protocol-draft` | `[REVIEW-RESOLVED]` 旧草案 `firmware.updatePolicy` 已回退为骨架；更新策略迁入 `software.updatePolicy`，通过 target 区分组件。 |
 
 ## 9. Test / Conformance Notes
 

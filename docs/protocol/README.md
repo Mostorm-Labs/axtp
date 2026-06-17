@@ -164,7 +164,7 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 
 ## Domain 状态矩阵
 
-> 最后更新：2026-06-10（每次 domain 状态变更后手动更新此日期）
+> 最后更新：2026-06-17（每次 domain 状态变更后手动更新此日期）
 > 更新规则：新增、删除、采纳、废弃 domain 草案或 registry domain 后，必须同步本矩阵的 Drafts、Review、Generated 和 Next Step。
 > 验证方式：只有 `registry/domains/<domain>/domain.yaml` 存在，并且 `pnpm --dir generators validate:sources` / `validate:protocol` 通过，才算 generated/adopted；其余为草案状态。
 
@@ -188,6 +188,7 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 | privacy | 3 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | room | 5 | ASK | 0 | P7 | 补产品/设备/legacy 确认。 |
 | signage | 2 | ASK | 0 | P7 | 补产品/设备/legacy 确认。`signage.media`/`signage.osd`/`signage.schedule` 已合并到其他域。 |
+| software | 2 | ADOPTED | 0 | P2 | `software.config` / `software.updatePolicy` 已采纳（`registry/domains/software/domain.yaml`，DomainId `0x16`）；generated 产物待 Stage 50 重生成。 |
 | storage | 6 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | stream | 2 | ASK | 0 | P0 data-plane plumbing | Phase 1 需要通用 STREAM open/data/close 语义支撑 audio/video；具体业务参数仍由 audio/video profile 定义。 |
 | system | 6 | ASK | 0 | P1 | 补产品/设备/legacy 确认，优先进入采纳批次。 |

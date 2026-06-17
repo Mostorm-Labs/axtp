@@ -503,6 +503,7 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
 | capabilityId | name | 类型 | 状态 | 说明 |
 |---:| --- |---| --- |---|
 | `0x1601` | `software.config` | object | draft | 软件对象运行配置能力（读取、设置、恢复默认、配置变化通知） |
+| `0x1602` | `software.updatePolicy` | object | draft | 软件对象自动更新策略能力（读取、设置、恢复默认、策略变化通知） |
 
 ---
 
