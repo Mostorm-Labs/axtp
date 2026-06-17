@@ -3,6 +3,9 @@
 | methodId | name | domain | status | request | response | legacy |
 |---:|---|---|---|---|---|---|
 | `0x0101` | `device.getInfo` | device | draft | GetDeviceInfoParams | DeviceInfo | - |
+| `0x0102` | `device.getPairingCode` | device | draft | DeviceGetPairingCodeParams | DevicePairingCodeInfo | - |
+| `0x0103` | `device.getEnrollmentState` | device | draft | DeviceGetEnrollmentStateParams | DeviceEnrollmentInfo | - |
+| `0x0104` | `device.setEnrollmentState` | device | draft | DeviceSetEnrollmentStateParams | DeviceSetEnrollmentStateResult | - |
 | `0x0401` | `firmware.getUpdateCapabilities` | firmware | draft | Empty | FirmwareUpdateCapabilities | - |
 | `0x0402` | `firmware.beginUpdate` | firmware | draft | BeginUpdateParams | BeginUpdateResult | - |
 | `0x0408` | `firmware.getUpdateState` | firmware | draft | GetUpdateStateParams | FirmwareUpdateState | - |
@@ -45,3 +48,9 @@
 | `0x0E12` | `network.getWifiCapabilities` | network | draft | NetworkGetWifiCapabilitiesParams | NetworkWifiCapabilities | - |
 | `0x0E13` | `network.getApCapabilities` | network | draft | NetworkGetApCapabilitiesParams | NetworkApCapabilities | - |
 | `0x0E14` | `network.getApClients` | network | draft | NetworkGetApConfigParams | NetworkApClients | - |
+| `0x1601` | `software.getConfig` | software | draft | SoftwareGetConfigParams | SoftwareConfig | - |
+| `0x1602` | `software.setConfig` | software | draft | SoftwareSetConfigParams | SoftwareSetConfigResult | - |
+| `0x1603` | `software.resetConfig` | software | draft | SoftwareResetConfigParams | SoftwareConfig | - |
+| `0x1604` | `software.getUpdatePolicy` | software | draft | SoftwareGetUpdatePolicyParams | SoftwareUpdatePolicy | - |
+| `0x1605` | `software.setUpdatePolicy` | software | draft | SoftwareSetUpdatePolicyParams | SoftwareSetUpdatePolicyResult | - |
+| `0x1606` | `software.resetUpdatePolicy` | software | draft | SoftwareResetUpdatePolicyParams | SoftwareUpdatePolicy | - |

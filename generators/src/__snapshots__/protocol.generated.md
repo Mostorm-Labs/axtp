@@ -15,11 +15,16 @@
   - [device Methods](#device-methods)
   - [firmware Methods](#firmware-methods)
   - [network Methods](#network-methods)
+  - [signage Methods](#signage-methods)
+  - [software Methods](#software-methods)
   - [video Methods](#video-methods)
 - [Events](#events)
   - [audio Events](#audio-events)
+  - [device Events](#device-events)
   - [firmware Events](#firmware-events)
   - [network Events](#network-events)
+  - [signage Events](#signage-events)
+  - [software Events](#software-events)
   - [video Events](#video-events)
 - [Additional Types](#additional-types)
 - [Errors Reference](#errors-reference)
@@ -30,9 +35,11 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
-| device | 1 | 0 |
+| device | 4 | 1 |
 | firmware | 4 | 2 |
 | network | 18 | 8 |
+| signage | 5 | 1 |
+| software | 6 | 2 |
 | video | 6 | 3 |
 
 ## Overview
@@ -175,9 +182,11 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | Domain | Methods |
 | ---- | ---- |
 | audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
-| device | 0: device.getInfo |
+| device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
+| signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl |
+| software | 0: software.getConfig<br>1: software.setConfig<br>2: software.resetConfig<br>3: software.getUpdatePolicy<br>4: software.setUpdatePolicy<br>5: software.resetUpdatePolicy |
 | video | 1: video.openStream<br>2: video.closeStream<br>3: video.getStreamState<br>0: video.getStreamCapabilities<br>4: video.getStreamSourceState<br>5: video.requestKeyFrame |
 
 # Methods
@@ -562,6 +571,9 @@ Type: `AudioStreamSourceState`
 ### Methods in this domain
 
 - [device.getInfo](#devicegetinfo)
+- [device.getPairingCode](#devicegetpairingcode)
+- [device.getEnrollmentState](#devicegetenrollmentstate)
+- [device.setEnrollmentState](#devicesetenrollmentstate)
 
 ---
 
@@ -600,6 +612,116 @@ Type: `DeviceInfo`
 | ?software | DeviceSoftware | 0x05 | Installed or hosted software component summary. | None | Omit if not used. |
 | ?runtime | DeviceAxtpRuntime | 0x06 | AXTP runtime summary. | None | Omit if not used. |
 | ?capability | DeviceCapabilitySummary | 0x07 | Lightweight modeling summary; not a complete capability registry. | None | Omit if not used. |
+
+---
+
+### device.getPairingCode
+
+Return a pairing code for on-site or backend-claimed device enrollment. With refresh=false (default) the current valid code is returned; with refresh=true the server generates a new code and invalidates the previous one.
+
+- Method ID: `0x0102`
+- Domain: `device`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `device.enrollment`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `DeviceGetPairingCodeParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?refresh | Boolean | 0x01 | Whether to force a fresh pairing code. false (default) returns the current valid code; true generates a new code and invalidates the previous one. | None | Omit if not used. |
+| ?purpose | Enum | 0x02 | Pairing code usage scenario; candidate values include initial_enrollment (first-time enrollment of a new device, default), re_enrollment (re-enrollment such as workspace migration), and service_repair (service/repair pairing, may have a different TTL or permission). Unsupported purpose returns NOT_SUPPORTED. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `DevicePairingCodeInfo`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| code | String | 0x01 | Displayable pairing code, 6-8 uppercase alphanumeric characters excluding confusable characters (0/O, 1/I/L); MUST match the regex ^[A-HJ-NP-Z2-9]{6,8}$. | maxLength=8 | N/A |
+| ?expiresAt | String | 0x02 | Absolute expiry time as an RFC 3339 timestamp. Authoritative when present. Legacy GetBindCode returned a Unix timestamp integer here; the adapter MUST convert integer to RFC 3339 string. | None | Omit if not used. |
+| ?expiresInSeconds | UInt32 | 0x03 | Relative expiry in seconds, retained for legacy device-sdk compatibility (observed value 1800). MUST be greater than 0 when present. | min=1 | Omit if not used. |
+| ?state | Enum | 0x04 | Pairing code lifecycle state; candidate values include available (default), expired (TTL reached), used (consumed by the cloud), and disabled (revoked by the server). | None | Omit if not used. |
+
+---
+
+### device.getEnrollmentState
+
+Query whether the device is enrolled and return the associated backend object summary when enrolled.
+
+- Method ID: `0x0103`
+- Domain: `device`
+- bitOffset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `device.enrollment`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`
+
+#### Request Fields
+
+Type: `DeviceGetEnrollmentStateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeEndpoint | Boolean | 0x01 | Whether to include the post-enrollment endpoint summary. Defaults to true since the most common caller (the cloud management backend) needs endpoint info; set to false for lightweight polling or when the endpoint is already cached. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `DeviceEnrollmentInfo`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | Enum | 0x01 | Current enrollment state; candidate values include unmanaged, pairing_available, pending, enrolled, failed, and unenrolling. Valid transitions follow the enrollment state machine; invalid transitions return INVALID_STATE. | None | N/A |
+| ?deviceId | String | 0x02 | Server-assigned device identifier, stable across sessions. | maxLength=128 | Omit if not used. |
+| ?workspaceId | String | 0x03 | Enrolled workspace identifier. Populated only when state is enrolled or unenrolling. Privacy-sensitive; exposure policy to be confirmed. [REVIEW-ADOPTED-SCOPED] 待确认后走 amend | maxLength=128 | Omit if not used. |
+| ?endpoint | DeviceEnrollmentEndpointSummary | 0x04 | Post-enrollment backend endpoint. Populated only when state is enrolled or unenrolling and subject to includeEndpoint. | None | Omit if not used. |
+| ?enrolledAt | String | 0x05 | RFC 3339 timestamp of when the state became enrolled. Present only when state is enrolled or unenrolling. [REVIEW-ADOPTED-SCOPED] | None | Omit if not used. |
+| ?updatedAt | String | 0x06 | RFC 3339 timestamp of the most recent state update. | None | Omit if not used. |
+| ?message | String | 0x07 | Human-readable detail, populated when state is failed or pending, optional when unenrolling. | maxLength=512 | Omit if not used. |
+
+---
+
+### device.setEnrollmentState
+
+Set the enrollment state (bind success, unbind, clear failure, or sync server claim). State transitions must follow the enrollment state machine; an invalid transition returns INVALID_STATE. Emitted after the state actually changes by the device.enrollmentStateChanged event.
+
+- Method ID: `0x0104`
+- Domain: `device`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `device.enrollment`
+- Possible Events: `device.enrollmentStateChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `PERMISSION_DENIED`
+
+#### Request Fields
+
+Type: `DeviceSetEnrollmentStateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| desiredState | Enum | 0x01 | Target state; candidate values include enrolled, unmanaged, failed, and pending. | None | N/A |
+| ?reason | Enum | 0x02 | Change reason; candidate values include pairing_code_used, server_claimed, user_unenrolled, admin_reset, and unknown (default). | None | Omit if not used. |
+| ?endpoint | DeviceEnrollmentEndpointSummary | 0x03 | Endpoint summary associated with a successful enrollment. Required when desiredState is enrolled. | None | Omit if not used. |
+| ?message | String | 0x04 | Failure, unbind, or repair detail. Required when desiredState is failed. | maxLength=512 | Omit if not used. |
+
+#### Response Fields
+
+Type: `DeviceSetEnrollmentStateResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | DeviceEnrollmentInfo | 0x01 | Enrollment state after the operation. | None | N/A |
+| ?disconnectExpected | Boolean | 0x02 | Whether the unbind or reset is expected to cause a connection change. true only when desiredState is unmanaged and the device needs to close the management session; false for all other transitions. | None | Omit if not used. |
 
 ---
 
@@ -1426,6 +1548,383 @@ Type: `NetworkApClients`
 
 ---
 
+## signage Methods
+
+### Methods in this domain
+
+- [signage.getPlaylistCapabilities](#signagegetplaylistcapabilities)
+- [signage.getPlaylistConfig](#signagegetplaylistconfig)
+- [signage.setPlaylistConfig](#signagesetplaylistconfig)
+- [signage.resetPlaylistConfig](#signageresetplaylistconfig)
+- [signage.getPlaylistItemUrl](#signagegetplaylistitemurl)
+
+---
+
+### signage.getPlaylistCapabilities
+
+Return the signage.playlist capability scope, including supported playlist item types, quantity limits, and feature toggles.
+
+- Method ID: `0x0D01`
+- Domain: `signage`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `SignagePlaylistCapabilitiesResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supportedItemTypes | Bytes | 0x01 | JSON array of supported playlist item type strings; candidate values include image, website, video, clock, and unsplash. | maxLength=256 | N/A |
+| ?maxPlaylists | UInt32 | 0x02 | Maximum number of playlists; product-defined. | None | Omit if not used. |
+| ?maxItemsPerPlaylist | UInt32 | 0x03 | Maximum number of playlist items per playlist; product-defined. | None | Omit if not used. |
+| supportsScheduledPlaylist | Boolean | 0x04 | Whether scheduled playlists are supported. | None | N/A |
+| supportsUrlRefresh | Boolean | 0x05 | Whether playlist item URL refresh (getPlaylistItemUrl) is supported. | None | N/A |
+| supportsReset | Boolean | 0x06 | Whether resetting the playlist to default (resetPlaylistConfig) is supported. | None | N/A |
+
+---
+
+### signage.getPlaylistConfig
+
+Return the current playlist configuration held by the device as the complete playlists array.
+
+- Method ID: `0x0D02`
+- Domain: `signage`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `SignagePlaylistConfigResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| playlists | Bytes | 0x01 | JSON array of SignagePlaylist objects. An empty array means no playlist is configured and is not an error. | maxLength=65536 | N/A |
+
+---
+
+### signage.setPlaylistConfig
+
+Fully replace the playlist configuration. The server is the single source of truth; a second full sync removes playlist items absent from the new payload.
+
+- Method ID: `0x0D03`
+- Domain: `signage`
+- bitOffset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `signage.playlistConfigChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `PERMISSION_DENIED`
+
+#### Request Fields
+
+Type: `SignageSetPlaylistConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| playlists | Bytes | 0x01 | JSON array of SignagePlaylist objects. MUST be non-empty; an empty array returns INVALID_ARGUMENT. | maxLength=65536 | N/A |
+
+#### Response Fields
+
+Type: `Empty`
+
+No fields.
+
+---
+
+### signage.resetPlaylistConfig
+
+Restore the playlist configuration to the factory default state.
+
+- Method ID: `0x0D04`
+- Domain: `signage`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `signage.playlistConfigChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `SignagePlaylistConfigResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| playlists | Bytes | 0x01 | JSON array of SignagePlaylist objects. An empty array means no playlist is configured and is not an error. | maxLength=65536 | N/A |
+
+---
+
+### signage.getPlaylistItemUrl
+
+Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and return NOT_SUPPORTED.
+
+- Method ID: `0x0D05`
+- Domain: `signage`
+- bitOffset: `4`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `NOT_FOUND`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `SignageGetPlaylistItemUrlParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| itemId | String | 0x01 | Playlist item unique identifier (UUID). | maxLength=64 | N/A |
+
+#### Response Fields
+
+Type: `SignageGetPlaylistItemUrlResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| type | Enum | 0x01 | Playlist item type used to discriminate the settings structure; candidate values include image, video, website, and unsplash. Clock is excluded from URL refresh. | None | N/A |
+| settings | SignagePlaylistItemSettings | 0x02 | Refreshed complete settings; the device may replace the locally cached settings with this value. | None | N/A |
+
+---
+
+## software Methods
+
+### Methods in this domain
+
+- [software.getConfig](#softwaregetconfig)
+- [software.setConfig](#softwaresetconfig)
+- [software.resetConfig](#softwareresetconfig)
+- [software.getUpdatePolicy](#softwaregetupdatepolicy)
+- [software.setUpdatePolicy](#softwaresetupdatepolicy)
+- [software.resetUpdatePolicy](#softwareresetupdatepolicy)
+
+---
+
+### software.getConfig
+
+Read the current runtime configuration of a software object identified by target.
+
+- Method ID: `0x1601`
+- Domain: `software`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `software.config`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`
+
+#### Request Fields
+
+Type: `SoftwareGetConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to read. Currently defined value is launcher; other values such as signagePlayer and agent are reserved for future adoption and their config fields are not defined in this version. | maxLength=64 | N/A |
+
+#### Response Fields
+
+Type: `SoftwareConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object this configuration belongs to. | maxLength=64 | N/A |
+| config | Bytes | 0x02 | JSON object holding the target-specific configuration fragment. For target launcher the structure is LauncherConfig (displayName plus appearance); see the LauncherConfig and LauncherAppearance schemas. Field set is determined by target. | maxLength=8192 | N/A |
+
+---
+
+### software.setConfig
+
+Set a configuration fragment of a software object using partial update semantics; fields absent from the payload are left unchanged.
+
+- Method ID: `0x1602`
+- Domain: `software`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `software.config`
+- Possible Events: `software.configChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `INVALID_STATE`
+
+#### Request Fields
+
+Type: `SoftwareSetConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to configure. | maxLength=64 | N/A |
+| config | Bytes | 0x02 | JSON object holding the target-specific configuration fragment to apply (partial update). For target launcher the structure is LauncherConfig; see SoftwareConfig.config and LauncherAppearance. | maxLength=8192 | N/A |
+
+#### Response Fields
+
+Type: `Empty`
+
+No fields.
+
+---
+
+### software.resetConfig
+
+Restore the runtime configuration of a software object to the current-version defaults for the given target. Only resets the specified software object; system-level factory reset is handled by system.restoreFactorySettings and does not trigger a device reboot.
+
+- Method ID: `0x1603`
+- Domain: `software`
+- bitOffset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `software.config`
+- Possible Events: `software.configChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INVALID_STATE`
+
+#### Request Fields
+
+Type: `SoftwareResetConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to reset. | maxLength=64 | N/A |
+
+#### Response Fields
+
+Type: `SoftwareConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object this configuration belongs to. | maxLength=64 | N/A |
+| config | Bytes | 0x02 | JSON object holding the target-specific configuration fragment. For target launcher the structure is LauncherConfig (displayName plus appearance); see the LauncherConfig and LauncherAppearance schemas. Field set is determined by target. | maxLength=8192 | N/A |
+
+---
+
+### software.getUpdatePolicy
+
+Read the current automatic update policy of a software object identified by target.
+
+- Method ID: `0x1604`
+- Domain: `software`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `software.updatePolicy`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`
+
+#### Request Fields
+
+Type: `SoftwareGetUpdatePolicyParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to read the update policy of. Currently defined value is launcher; other values such as signagePlayer and agent are reserved for future adoption and their policy fields are not defined in this version. | maxLength=64 | N/A |
+
+#### Response Fields
+
+Type: `SoftwareUpdatePolicy`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object this update policy belongs to. | maxLength=64 | N/A |
+| policy | Bytes | 0x02 | JSON object holding the target-specific update policy fragment. For target launcher the structure is LauncherUpdatePolicy (updateMode plus schedule, channel, conditions); see the LauncherUpdatePolicy, UpdateSchedule, and UpdateConditions schemas. Field set is determined by target. | maxLength=8192 | N/A |
+
+---
+
+### software.setUpdatePolicy
+
+Set an update policy fragment of a software object using partial update semantics; fields absent from the payload are left unchanged.
+
+- Method ID: `0x1605`
+- Domain: `software`
+- bitOffset: `4`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `software.updatePolicy`
+- Possible Events: `software.updatePolicyChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `INVALID_STATE`
+
+#### Request Fields
+
+Type: `SoftwareSetUpdatePolicyParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to configure the update policy of. | maxLength=64 | N/A |
+| policy | Bytes | 0x02 | JSON object holding the target-specific update policy fragment to apply (partial update). For target launcher the structure is LauncherUpdatePolicy; see SoftwareUpdatePolicy.policy. Within the fragment, schedule null or conditions null explicitly clears those sub-objects while omitted keeps them unchanged. | maxLength=8192 | N/A |
+
+#### Response Fields
+
+Type: `Empty`
+
+No fields.
+
+---
+
+### software.resetUpdatePolicy
+
+Restore the update policy of a software object to the current-version defaults for the given target. Only resets the update policy; it does not trigger a software or device reboot. System-level factory reset is handled by system.restoreFactorySettings.
+
+- Method ID: `0x1606`
+- Domain: `software`
+- bitOffset: `5`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `software.updatePolicy`
+- Possible Events: `software.updatePolicyChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INVALID_STATE`
+
+#### Request Fields
+
+Type: `SoftwareResetUpdatePolicyParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to reset the update policy of. | maxLength=64 | N/A |
+
+#### Response Fields
+
+Type: `SoftwareUpdatePolicy`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object this update policy belongs to. | maxLength=64 | N/A |
+| policy | Bytes | 0x02 | JSON object holding the target-specific update policy fragment. For target launcher the structure is LauncherUpdatePolicy (updateMode plus schedule, channel, conditions); see the LauncherUpdatePolicy, UpdateSchedule, and UpdateConditions schemas. Field set is determined by target. | maxLength=8192 | N/A |
+
+---
+
 ## video Methods
 
 ### Methods in this domain
@@ -1803,6 +2302,41 @@ Type: `AudioStreamStatsReportedEvent`
 
 ---
 
+## device Events
+
+### Events in this domain
+
+- [device.enrollmentStateChanged](#deviceenrollmentstatechanged)
+
+---
+
+### device.enrollmentStateChanged
+
+Emitted after device.setEnrollmentState actually changes the enrollment state, or after a device-internal policy modifies it (e.g. pairing code expiry fallback, server-side revoke).
+
+- Event ID: `0x0102`
+- Domain: `device`
+- bitOffset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `device.setEnrollmentState`
+- Required Capabilities: `device.enrollment`
+
+#### Payload Fields
+
+Type: `DeviceEnrollmentStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | DeviceEnrollmentInfo | 0x01 | Enrollment state after the change. | None | N/A |
+| ?previousState | Enum | 0x02 | State enum value (not a full object) before the change; candidate values are the same DeviceEnrollmentInfo.state set. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Change reason; candidate values include pairing_code_used, server_claimed, user_unenrolled, admin_reset, and unknown (default). | None | Omit if not used. |
+| ?triggerMethod | Enum | 0x04 | Operation type that triggered the change; candidate values include setEnrollmentState (explicit call), getPairingCode (indirect, for code-expiry fallback), and server_sync (device-internal such as code-expiry rollback or server-side revoke). triggerId MUST be omitted when triggerMethod is server_sync. [REVIEW-ADOPTED-SCOPED] | None | Omit if not used. |
+| ?triggerId | String | 0x05 | RPC request id of the triggering operation. Omitted when triggerMethod is server_sync. [REVIEW-ADOPTED-SCOPED] | maxLength=64 | Omit if not used. |
+
+---
+
 ## firmware Events
 
 ### Events in this domain
@@ -2080,6 +2614,99 @@ Type: `NetworkApClientChangedEvent`
 | change | Enum | 0x01 | Client change type; candidate values include joined, left, and updated. | None | N/A |
 | client | NetworkApClientInfo | 0x02 | Client summary. | None | N/A |
 | ?reason | Enum | 0x03 | Change reason. | None | Omit if not used. |
+
+---
+
+## signage Events
+
+### Events in this domain
+
+- [signage.playlistConfigChanged](#signageplaylistconfigchanged)
+
+---
+
+### signage.playlistConfigChanged
+
+Emitted after setPlaylistConfig or resetPlaylistConfig successfully changes the playlist configuration.
+
+- Event ID: `0x0D01`
+- Domain: `signage`
+- bitOffset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `signage.setPlaylistConfig`, `signage.resetPlaylistConfig`
+- Required Capabilities: `signage.playlist`
+
+#### Payload Fields
+
+Type: `SignagePlaylistConfigChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| reason | Enum | 0x01 | Change reason; candidate values include set_config (triggered by setPlaylistConfig) and reset_config (triggered by resetPlaylistConfig). | None | N/A |
+| ?playlists | Bytes | 0x02 | Optional JSON array of SignagePlaylist objects representing the full post-change configuration. The device MAY omit it to shrink the payload; when omitted the client MUST call signage.getPlaylistConfig to reconcile. | maxLength=65536 | Omit if not used. |
+
+---
+
+## software Events
+
+### Events in this domain
+
+- [software.configChanged](#softwareconfigchanged)
+- [software.updatePolicyChanged](#softwareupdatepolicychanged)
+
+---
+
+### software.configChanged
+
+Emitted after software.setConfig or software.resetConfig successfully changes a software object configuration, or after a device-internal policy modifies it.
+
+- Event ID: `0x1601`
+- Domain: `software`
+- bitOffset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `software.setConfig`, `software.resetConfig`
+- Required Capabilities: `software.config`
+
+#### Payload Fields
+
+Type: `SoftwareConfigChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object whose configuration changed. | maxLength=64 | N/A |
+| config | Bytes | 0x02 | Full post-change configuration fragment (not a patch). For target launcher the structure is LauncherConfig; see SoftwareConfig.config. | maxLength=8192 | N/A |
+| ?changedFields | Bytes | 0x03 | Optional JSON array of changed field paths using dot notation for nested levels, e.g. appearance.panelLayout. Omitted when the device cannot compute the diff. | maxLength=1024 | Omit if not used. |
+| ?reason | Enum | 0x04 | Change reason; candidate values include user_request (triggered by setConfig), restore_default (triggered by resetConfig), device_policy (triggered by device-internal policy), and unknown (default when the reason is not reported). | None | Omit if not used. |
+
+---
+
+### software.updatePolicyChanged
+
+Emitted after software.setUpdatePolicy or software.resetUpdatePolicy successfully changes a software object update policy, or after a device-internal policy modifies it.
+
+- Event ID: `0x1602`
+- Domain: `software`
+- bitOffset: `1`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `software.setUpdatePolicy`, `software.resetUpdatePolicy`
+- Required Capabilities: `software.updatePolicy`
+
+#### Payload Fields
+
+Type: `SoftwareUpdatePolicyChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object whose update policy changed. | maxLength=64 | N/A |
+| policy | Bytes | 0x02 | Full post-change update policy fragment (not a patch). For target launcher the structure is LauncherUpdatePolicy; see SoftwareUpdatePolicy.policy. | maxLength=8192 | N/A |
+| ?changedFields | Bytes | 0x03 | Optional JSON array of changed field paths using dot notation for nested levels, e.g. schedule.start. Omitted when the device cannot compute the diff. | maxLength=1024 | Omit if not used. |
+| ?reason | Enum | 0x04 | Change reason; candidate values include user_request (triggered by setUpdatePolicy), restore_default (triggered by resetUpdatePolicy), device_policy (triggered by device-internal policy), and unknown (default when the reason is not reported). | None | Omit if not used. |
 
 ---
 
@@ -2528,6 +3155,36 @@ Lightweight capability modeling summary returned by device.getInfo.
 
 ---
 
+## DeviceEnrollmentCapability
+
+Capability descriptor for device.enrollment.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?supportsPairingCode | Boolean | 0x01 | Whether pairing code is supported. | None | Omit if not used. |
+| ?pairingCodeTtlSeconds | UInt32 | 0x02 | Default code TTL in seconds; MUST be greater than 0. | None | Omit if not used. |
+| ?supportsUnenroll | Boolean | 0x03 | Whether remote unbind or enrollment state clear is supported. | None | Omit if not used. |
+| ?endpointTypes | Bytes | 0x04 | JSON array of endpoint type strings that enrollment may produce; candidate values include room, device, and asset. P0 only requires room. [REVIEW-ADOPTED-SCOPED] | maxLength=256 | Omit if not used. |
+| ?supportedPurposes | Bytes | 0x05 | JSON array of supported pairing code purpose strings; candidate values include initial_enrollment, re_enrollment, and service_repair. Omission means only initial_enrollment is supported. [REVIEW-ADOPTED-SCOPED] | maxLength=256 | Omit if not used. |
+| ?maxActivePairingCodes | UInt32 | 0x06 | Maximum number of simultaneously valid pairing codes. Default 1. [REVIEW-ADOPTED-SCOPED] | None | Omit if not used. |
+| ?pairingCodeLength | UInt32 | 0x07 | Pairing code character length. Default 6. [REVIEW-ADOPTED-SCOPED] | min=6, max=8 | Omit if not used. |
+
+---
+
+## DeviceEnrollmentEndpointSummary
+
+Backend endpoint summary associated with enrollment. Nested in DeviceEnrollmentInfo and DeviceSetEnrollmentStateParams. When type is room, profileId is required.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| endpointId | String | 0x01 | Backend endpoint identifier. | maxLength=128 | N/A |
+| type | Enum | 0x02 | Endpoint type; candidate values include room, device, and asset. Operations such as room.setName only allow type=room. | None | N/A |
+| ?displayName | String | 0x03 | Endpoint display name, non-empty and trimmed. Max length aligned with device.info product.displayName (128) as a scoped default. [REVIEW-ADOPTED-SCOPED] 待产品确认后走 amend | maxLength=128 | Omit if not used. |
+| ?profileId | String | 0x04 | Room profile or business profile identifier. MUST be present when type is room; other types allow omission. | maxLength=128 | Omit if not used. |
+| ?workspaceId | String | 0x05 | Endpoint workspace identifier. Takes precedence over the parent DeviceEnrollmentInfo.workspaceId when both are present. [REVIEW-ADOPTED-SCOPED] | maxLength=128 | Omit if not used. |
+
+---
+
 ## DeviceHardware
 
 Hardware summary.
@@ -2650,6 +3307,42 @@ Binding between a manifest file and a STREAM streamId.
 
 ---
 
+## LauncherAppearance
+
+Appearance configuration for the launcher panel, nested under LauncherConfig.appearance.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?panelLayout | Enum | 0x01 | Panel layout mode; candidate values are focus (focus mode) and sidebar (sidebar mode, default). | None | Omit if not used. |
+| ?autoHidePanel | Boolean | 0x02 | Whether to auto-hide the panel. Default is false. | None | Omit if not used. |
+| ?autoHideDelay | UInt32 | 0x03 | Auto-hide delay in seconds; MUST be greater than 0. Only effective when autoHidePanel is true. The value is preserved and persisted even when autoHidePanel is false and takes effect again once autoHidePanel switches back to true. | min=1 | Omit if not used. |
+
+---
+
+## LauncherConfig
+
+Configuration fragment for target launcher. Referenced by SoftwareConfig.config, SoftwareSetConfigParams.config, and SoftwareConfigChangedEvent.config when target is launcher.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?displayName | String | 0x01 | User-visible device display name. Overrides the device factory name returned read-only by device.info product.displayName. MUST be non-empty; an empty string or value exceeding the max length returns INVALID_ARGUMENT. Omitted means keep current value on set, or the device factory name on get/reset. | maxLength=64 | Omit if not used. |
+| ?appearance | LauncherAppearance | 0x02 | Appearance configuration for the launcher panel. | None | Omit if not used. |
+
+---
+
+## LauncherUpdatePolicy
+
+Update policy fragment for target launcher. Referenced by SoftwareUpdatePolicy.policy, SoftwareSetUpdatePolicyParams.policy, and SoftwareUpdatePolicyChangedEvent.policy when target is launcher. schedule null means no update time restriction (any time) and conditions null means no prerequisites; both are valid persisted values and the reset default sets both to null. When updateMode is manual or notify, schedule may still be set and persisted but the device does not automatically perform updates in the window; the schedule value is preserved across updateMode changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateMode | Enum | 0x01 | Update behavior mode; candidate values are auto (fully automatic download and install), manual (manual trigger only), and notify (notify only when an update is available). | None | N/A |
+| ?schedule | UpdateSchedule | 0x02 | Automatic update time window. Only effective when updateMode is auto. null means no time restriction (any time of day). In setUpdatePolicy partial update, null explicitly clears the window while omitted keeps the current value. See UpdateSchedule. | None | Omit if not used. |
+| channel | Enum | 0x03 | Update channel; candidate values are release (stable), beta (test), and alpha (development). | None | N/A |
+| ?conditions | UpdateConditions | 0x04 | Automatic update prerequisites. null means no prerequisites (no restriction). In setUpdatePolicy partial update, null explicitly clears all conditions while omitted keeps the current value. See UpdateConditions. | None | Omit if not used. |
+
+---
+
 ## NetworkApClientInfo
 
 One AP client summary.
@@ -2767,6 +3460,93 @@ One Wi-Fi scan result.
 
 ---
 
+## SignagePlaylist
+
+One playlist definition.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| id | String | 0x01 | Playlist unique identifier (UUID). | maxLength=64 | N/A |
+| type | Enum | 0x02 | Playlist type; candidate values include default (always-on default playlist) and scheduled (time-windowed playlist). | None | N/A |
+| ?startDate | String | 0x03 | Start date (YYYY-MM-DD). Required only when type is scheduled; MUST satisfy startDate <= endDate. | maxLength=16 | Omit if not used. |
+| ?endDate | String | 0x04 | End date (YYYY-MM-DD). Required only when type is scheduled; MUST satisfy startDate <= endDate. | maxLength=16 | Omit if not used. |
+| ?startTime | String | 0x05 | Start time (HH:mm:ss). Required only when type is scheduled. When startDate equals endDate, startTime MUST be <= endTime; when startDate < endDate, crossing midnight is allowed (startTime > endTime means D-day startTime to D+1 endTime). | maxLength=16 | Omit if not used. |
+| ?endTime | String | 0x06 | End time (HH:mm:ss). Required only when type is scheduled; see startTime for the cross-midnight rule. | maxLength=16 | Omit if not used. |
+| ?days | Bytes | 0x07 | Optional JSON array of active weekday numbers (1-7, 1=Monday). Required only when type is scheduled and MUST be non-empty. | maxLength=16 | Omit if not used. |
+| items | Bytes | 0x08 | JSON array of SignagePlaylistItem objects. MUST be non-empty; an empty items array returns INVALID_ARGUMENT. | maxLength=32768 | N/A |
+
+---
+
+## SignagePlaylistCapability
+
+Capability descriptor for signage.playlist.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supportedItemTypes | Bytes | 0x01 | JSON array of supported playlist item type strings; candidate values include image, website, video, clock, and unsplash. | maxLength=256 | N/A |
+| ?maxPlaylists | UInt32 | 0x02 | Maximum number of playlists; product-defined. | None | Omit if not used. |
+| ?maxItemsPerPlaylist | UInt32 | 0x03 | Maximum number of playlist items per playlist; product-defined. | None | Omit if not used. |
+| supportsScheduledPlaylist | Boolean | 0x04 | Whether scheduled playlists are supported. | None | N/A |
+| supportsUrlRefresh | Boolean | 0x05 | Whether playlist item URL refresh is supported. | None | N/A |
+| supportsReset | Boolean | 0x06 | Whether resetting the playlist to default is supported. | None | N/A |
+
+---
+
+## SignagePlaylistClockEntry
+
+One clock entry for the clock item type.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| timezone | String | 0x01 | IANA timezone identifier. | maxLength=64 | N/A |
+| label | String | 0x02 | City label for the clock. | maxLength=64 | N/A |
+
+---
+
+## SignagePlaylistItem
+
+One playlist item.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| id | String | 0x01 | Playlist item unique identifier (UUID). | maxLength=64 | N/A |
+| type | Enum | 0x02 | Playlist item type; candidate values include image, website, video, clock, and unsplash. | None | N/A |
+| duration | UInt32 | 0x03 | Single playback duration in seconds; MUST be greater than 0. | min=1, max=86400 | N/A |
+| sort | UInt32 | 0x04 | Playback order, ascending by sort. The sort value MUST be unique within the same playlist; duplicate sort values return INVALID_ARGUMENT. | None | N/A |
+| settings | SignagePlaylistItemSettings | 0x05 | Playlist item settings; structure varies by type. | None | N/A |
+
+---
+
+## SignagePlaylistItemSettings
+
+Aggregated playlist item settings spanning all item types. Only the subset matching the enclosing item type is meaningful; see the per-type rules in the signage.playlist draft.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?urls | Bytes | 0x01 | image type: non-empty JSON array of image URLs. | maxLength=8192 | Omit if not used. |
+| ?delaySeconds | UInt32 | 0x02 | image and unsplash types: per-image display interval in seconds. | min=1 | Omit if not used. |
+| ?expiresAt | UInt64 | 0x03 | image, video, and unsplash types: Unix timestamp URL expiry. 0 or absent means never expires. | None | Omit if not used. |
+| ?url | String | 0x04 | video and website types: media or page URL. | maxLength=2048 | Omit if not used. |
+| ?muted | Boolean | 0x05 | video type: whether to play muted. | None | Omit if not used. |
+| ?ignoreCertificateError | Boolean | 0x06 | website type: whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined. | None | Omit if not used. |
+| ?refreshIntervalSecs | UInt32 | 0x07 | website type: page refresh interval in seconds. 0 or absent means no refresh. | min=1 | Omit if not used. |
+| ?clocks | Bytes | 0x08 | clock type: non-empty JSON array of SignagePlaylistClockEntry objects. | maxLength=2048 | Omit if not used. |
+| ?photos | Bytes | 0x09 | unsplash type: non-empty JSON array of SignagePlaylistUnsplashPhoto objects. | maxLength=16384 | Omit if not used. |
+
+---
+
+## SignagePlaylistUnsplashPhoto
+
+One Unsplash photo entry, including photographer attribution.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| url | String | 0x01 | Photo URL. | maxLength=2048 | N/A |
+| userName | String | 0x02 | Photographer name. | maxLength=128 | N/A |
+| userLink | String | 0x03 | Photographer Unsplash profile link. | maxLength=2048 | N/A |
+
+---
+
 ## SoftwareComponent
 
 One software component running on or hosted by the device.
@@ -2777,6 +3557,54 @@ One software component running on or hosted by the device.
 | ?name | String | 0x02 | Component display name. | maxLength=128 | Omit if not used. |
 | ?version | String | 0x03 | Component version. | maxLength=64 | Omit if not used. |
 | ?role | Enum | 0x04 | Component role, such as axtpHost, launcher, signagePlayer, agent, or unknown. | None | Omit if not used. |
+
+---
+
+## SoftwareConfigCapability
+
+Capability descriptor for software.config.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supportedTargets | Bytes | 0x01 | JSON array of supported software object target strings; candidate values include launcher, signagePlayer, and agent. | maxLength=256 | N/A |
+| ?supportsReset | Boolean | 0x02 | Whether restoring defaults via resetConfig is supported. | None | Omit if not used. |
+| ?resetMayRestartSoftware | Boolean | 0x03 | Whether reset may restart the software object (not the device). System-level factory reset is handled by system.restoreFactorySettings. | None | Omit if not used. |
+
+---
+
+## SoftwareUpdatePolicyCapability
+
+Capability descriptor for software.updatePolicy.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supportedTargets | Bytes | 0x01 | JSON array of supported software object target strings; candidate values include launcher, signagePlayer, and agent. | maxLength=256 | N/A |
+| ?supportedChannels | Bytes | 0x02 | Optional JSON array of supported update channel strings; candidate values include release, beta, and alpha. | maxLength=256 | Omit if not used. |
+| ?supportsSchedule | Boolean | 0x03 | Whether configuring an update time window via schedule is supported. | None | Omit if not used. |
+| ?supportsReset | Boolean | 0x04 | Whether restoring defaults via resetUpdatePolicy is supported. | None | Omit if not used. |
+
+---
+
+## UpdateConditions
+
+Automatic update prerequisites, nested under LauncherUpdatePolicy.conditions.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?requireIdle | Boolean | 0x01 | Whether the device must be idle before performing an update. | None | Omit if not used. |
+| ?requireWifi | Boolean | 0x02 | Whether updates may only be downloaded over a Wi-Fi network. | None | Omit if not used. |
+
+---
+
+## UpdateSchedule
+
+Automatic update time window, nested under LauncherUpdatePolicy.schedule.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| start | String | 0x01 | Window start time in local time, matching the regex ^([01]\d\|2[0-3]):[0-5]\d$ (HH:mm). A value that does not match returns INVALID_ARGUMENT. | None | N/A |
+| end | String | 0x02 | Window end time in local time, matching the regex ^([01]\d\|2[0-3]):[0-5]\d$ (HH:mm). A value that does not match returns INVALID_ARGUMENT. When end is earlier than start it denotes a cross-midnight window (from start on the current day to end on the next day). | None | N/A |
+| ?timezone | String | 0x03 | IANA timezone ID. Omitted means the device local timezone. | None | Omit if not used. |
 
 ---
 
@@ -2880,6 +3708,8 @@ Bounded runtime statistics for a video stream.
 | 0x0107 | DEVICE_MODE_CONFLICT | device | error | No | stable | Device mode conflicts with the requested operation. |
 | 0x0108 | DEVICE_RESOURCE_BUSY | device | warning | Yes | stable | Device resource is busy. |
 | 0x0109 | DEVICE_HARDWARE_FAILURE | device | error | No | draft | Device hardware failure. |
+| 0x010A | ENROLLMENT_CODE_EXPIRED | device | warning | Yes | draft | Pairing code has expired. |
+| 0x010B | ENROLLMENT_CODE_ALREADY_USED | device | error | No | draft | Pairing code has already been used. |
 | 0x0201 | CAPABILITY_NOT_FOUND | capability | error | No | stable | Capability does not exist. |
 | 0x0202 | CAPABILITY_DOMAIN_NOT_FOUND | capability | error | No | stable | Capability domain does not exist. |
 | 0x0203 | CAPABILITY_METHOD_UNSUPPORTED | capability | error | No | stable | Method capability is not supported. |

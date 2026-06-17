@@ -7,6 +7,7 @@
 | `0x0003` | `protocol.payload.stream` | protocol | mvp | bool | - |
 | `0x0009` | `protocol.reservedRequestIdWidth` | protocol | reserved | reserved | - |
 | `0x0101` | `device.info` | device | draft | object | DeviceInfoCapability |
+| `0x0102` | `device.enrollment` | device | draft | object | DeviceEnrollmentCapability |
 | `0x0401` | `firmware.update` | firmware | draft | object | FirmwareUpdateCapabilities |
 | `0x0801` | `video.stream` | video | draft | object | VideoStreamCapabilities |
 | `0x0901` | `audio.algorithm` | audio | stable | object | AudioAlgorithmCapability |
@@ -16,3 +17,5 @@
 | `0x0E02` | `network.ip` | network | draft | object | NetworkIpCapability |
 | `0x0E03` | `network.wifi` | network | draft | object | NetworkWifiCapabilities |
 | `0x0E04` | `network.ap` | network | draft | object | NetworkApCapabilities |
+| `0x1601` | `software.config` | software | draft | object | SoftwareConfigCapability |
+| `0x1602` | `software.updatePolicy` | software | draft | object | SoftwareUpdatePolicyCapability |

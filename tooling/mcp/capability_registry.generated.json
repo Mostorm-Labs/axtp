@@ -53,6 +53,18 @@
       "idHex": "0x0101"
     },
     {
+      "id": 258,
+      "name": "device.enrollment",
+      "domain": "device",
+      "status": "draft",
+      "description": "Device supports pairing-code-based enrollment into backend management, enrollment state query and change, and enrollment state change notifications.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "DeviceEnrollmentCapability",
+      "idHex": "0x0102"
+    },
+    {
       "id": 1025,
       "name": "firmware.update",
       "domain": "firmware",
@@ -159,6 +171,30 @@
       "type": "object",
       "schema": "NetworkApCapabilities",
       "idHex": "0x0E04"
+    },
+    {
+      "id": 5633,
+      "name": "software.config",
+      "domain": "software",
+      "status": "draft",
+      "description": "Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "SoftwareConfigCapability",
+      "idHex": "0x1601"
+    },
+    {
+      "id": 5634,
+      "name": "software.updatePolicy",
+      "domain": "software",
+      "status": "draft",
+      "description": "Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "SoftwareUpdatePolicyCapability",
+      "idHex": "0x1602"
     }
   ]
 }
