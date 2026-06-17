@@ -10,11 +10,11 @@ lastReviewed: 2026-06-16
 
 # AXTP signage.playlist 协议草案
 
-版本：v1.3
+版本：v1.4（已采纳）
 
-归属域：`signage`
+归属域：`signage`（DomainId `0x0D`）
 
-Capability ID：`signage.playlist`
+Capability ID：`signage.playlist`（capability `0x0D01`）
 
 适用范围：数字标牌播放列表全量同步、查询、恢复默认和播放项资源 URL 刷新。
 
@@ -24,7 +24,7 @@ Capability ID：`signage.playlist`
 
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
-| `[REVIEW-DRAFT]` | `signage.playlist` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
+| `[REVIEW-ADOPTED]` | `signage.playlist` capability | 本文已采纳（见下方「采纳记录」），machine 事实源为 `registry/domains/signage/domain.yaml`。 | generated 产物由 `50-generate-axtp-protocol` 重跑生效。 |
 | `[REVIEW-RESOLVED]` | Legacy `slideshow` 类型废弃 | AXTP 不保留 `slideshow`，Adapter 映射为 `image`。 | — |
 | `[REVIEW-RESOLVED]` | `signage.media` 合并 | 播放项 URL 刷新已从 `signage.media` 合并到本草案。 | — |
 | `[REVIEW-ASK]` | `PlaylistConfigChangedEvent` payload | 是否总是携带完整 playlists 需产品确认。 | 采纳前确认。 |
@@ -32,8 +32,80 @@ Capability ID：`signage.playlist`
 
 ---
 
+## 采纳记录 (Adoption)
+
+采纳状态：**已采纳（Stage 30 adopt-protocol-draft）**。采纳日期 2026-06-17，采纳版本 v1.3。本文业务语义、schema、错误码与 legacy 映射已冻结为正式提案；machine 事实源为 `registry/domains/signage/domain.yaml`，由 `50-generate-axtp-protocol` 生成 `protocol/axtp.protocol.yaml` 与 `docs/generated/*`。
+
+### 已分配的正式 ID
+
+| 类别 | ID | 名称 |
+|---|---|---|
+| capability | `0x0D01` | `signage.playlist` |
+| method | `0x0D01` | `signage.getPlaylistCapabilities` |
+| method | `0x0D02` | `signage.getPlaylistConfig` |
+| method | `0x0D03` | `signage.setPlaylistConfig` |
+| method | `0x0D04` | `signage.resetPlaylistConfig` |
+| method | `0x0D05` | `signage.getPlaylistItemUrl` |
+| event | `0x0D01` | `signage.playlistConfigChanged` |
+
+signage domain 区段 `0x0D00-0x0DFF`（DomainId `0x0D`）；method/event/capability 各自独立 ID 命名空间；bitOffset 在 signage domain 内各自从 0 连续（methods 0–4，events 0）。
+
+### 错误码决策（复用 common）
+
+采纳决策：**候选业务码 `SIGNAGE_PLAYLIST_*` 不新增为独立业务码，统一复用 common 错误码**。
+
+| 草案候选业务码 | 采纳后的正式错误码 | 说明 |
+|---|---|---|
+| `SIGNAGE_PLAYLIST_EMPTY` | `INVALID_ARGUMENT`（0x000A） | 空播放列表 / 空播放项数组 → 参数非法。 |
+| `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` | `NOT_FOUND`（0x000C） | itemId 不存在。 |
+| `SIGNAGE_PLAYLIST_URL_EXPIRED` | `NOT_FOUND`（0x000C） | 资源 URL 已过期不可刷新。 |
+
+signage domain 错误码区段 `0x0D00-0x0DFF` 保持空，未来如需细粒度业务码走 `40-amend-adopted-protocol`。
+
+### 其他固化决策
+
+- `PlaylistConfigChangedEvent.playlists` 保持 optional（设备可省略以减小 payload，客户端省略时调 `getPlaylistConfig` 校准）。
+- `PlaylistItem.sort` 在同一 playlist 内**强制唯一**，重复值由 `setPlaylistConfig` 返回 `INVALID_ARGUMENT`。
+- `PlaylistItem.duration` 强制 `> 0`（`min: 1`）。
+- `ResetPlaylistConfigParams` 无参（全量恢复默认）。
+- 调度优先级/冲突/空状态属运行时播放行为，归 `signage.playback` 域，不进 playlist 配置 schema。
+
+### Schema 名映射
+
+registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一（与 `AudioAlgorithmConfig`、`DeviceInfo` 等既有命名一致）。草案正文的 schema 名（裸名）与 registry schema 名对应关系：
+
+| 草案 schema 名 | registry schema 名 |
+|---|---|
+| `PlaylistCapabilitiesParams` | `SignageGetPlaylistCapabilitiesParams` |
+| `PlaylistCapabilitiesResult` | `SignagePlaylistCapabilitiesResult` |
+| `GetPlaylistConfigParams` | `SignageGetPlaylistConfigParams` |
+| `PlaylistConfigResult` | `SignagePlaylistConfigResult` |
+| `SetPlaylistConfigParams` | `SignageSetPlaylistConfigParams` |
+| `ResetPlaylistConfigParams` | `SignageResetPlaylistConfigParams` |
+| `GetPlaylistItemUrlParams` | `SignageGetPlaylistItemUrlParams` |
+| `GetPlaylistItemUrlResult` | `SignageGetPlaylistItemUrlResult` |
+| `PlaylistConfigChangedEvent` | `SignagePlaylistConfigChangedEvent` |
+| `Playlist` | `SignagePlaylist` |
+| `PlaylistItem` | `SignagePlaylistItem` |
+| `PlaylistItemSettings` | `SignagePlaylistItemSettings` |
+| `ClockEntry` | `SignagePlaylistClockEntry` |
+| `UnsplashPhoto` | `SignagePlaylistUnsplashPhoto` |
+
+### 命名与附录差异说明
+
+`docs/specs/2-registry/appendix/method-candidates.md` §6.13 与 `event-candidates.md` §5.14 为非规范性占位规划，其中 signage 条目（如 `0x0D01`=`signage.listMedia`、`signage.playlistChanged`）与本文评审后的正式名不一致。已采纳正式名以本文 `domain.feature` 治理为准；附录将在 `50-generate-axtp-protocol` 阶段同步刷新。
+
+### 后续约束
+
+- 未来未采纳事实必须先更新本草案，再重新运行 adoption。
+- 已采纳语义变更（ID/schema/错误码/字段语义）必须走 `40-amend-adopted-protocol`，不得直接改 registry。
+- generated 产物（`protocol/axtp.protocol.yaml`、`docs/generated/*`、legacy `registry-patches.generated.yaml`）不在本阶段手改，由 `50-generate-axtp-protocol` 重跑生效。
+
+---
+
 **变更历史：**
 
+- **v1.4** — Stage 30 adopt-protocol-draft 采纳冻结（业务语义、schema、错误码、legacy 映射均不变）：(1) 新增 `## 采纳记录 (Adoption)` 节，记录已分配 ID（capability `0x0D01` / methods `0x0D01-0x0D05` / event `0x0D01`）、schema 名映射、命名与附录差异说明、后续约束；(2) 错误码决策——候选业务码 `SIGNAGE_PLAYLIST_*` 不新增，统一复用 common（`INVALID_ARGUMENT` / `NOT_FOUND`），signage 错误区段 `0x0D00-0x0DFF` 保持空；(3) 固化 `playlists` 可选、`sort` 同 playlist 内唯一、`duration > 0`、reset 无参；(4) 方法/事件速览表补 methodId/eventId 列并标记 `[REVIEW-ADOPTED]`，§8 错误表、§0/§10 readiness 同步更新；(5) registry YAML 已写入 `registry/domains/signage/domain.yaml`，generated 产物待 `50-generate-axtp-protocol` 重跑。
 - **v1.3** — 对齐 20-draft-business-protocol skill 与 `system.lifecycle.md` 范式（业务语义、schema、错误码、legacy 映射均不变）：(1) 在 §0 速读结论后新增 `## JSON 示例约定` 节（RPC envelope 速查 + op=6/7/8 表）；(2) 将原集中式第 7 节 14 个 JSON 示例迁移到各 method/event 小节，每个 method 补齐 Request / Success Response / Error Response `d block` 内联示例 + 错误表 + 规则，每个 event 补齐 Event `d block` 示例 + 客户端处理建议表 + 规则；(3) 第 7 节改为 `## 7. 交互流程示例 Flow Examples`，只保留端到端 flow；(4) method/event 子标题改为带编号风格（`3.x.1`…`4.1.1`…）。Item 标题统一标注 `op=7` / `op=8` / `op=6`。
 - **v1.2** — 格式修复与 per-method 结构补全：(1) 修复变更历史版本号顺序错乱，统一为倒序（原 v0.2–v0.7 为正序、v0.9/v0.8 为倒序，与顶部 v1.1/v1.0 倒序不一致）；(2) 为 `setPlaylistConfig` / `resetPlaylistConfig` 补 per-method「可能触发的事件」明细表，对齐标准 per-method 结构；(3) 统一 `setPlaylistConfig` 的 Result Schema 表述为「无 result body，仅返回标准 success status」。
 - **v1.1** — 完善内部一致性与播放语义：(1) §5 capability 描述符表补 `supportsReset`，与 `PlaylistCapabilitiesResult`（§3.1/§6.3）三处字段对齐；(2) §8 增补 `NOT_FOUND`（0x000C）common 码与「错误码双轨制说明」，澄清候选业务码与 JSON 示例借用 common 码的对应关系；(3) 新增 §2.1「播放调度语义」，定义 default/scheduled 共存优先级、scheduled 重叠冲突与空状态；(4) §6.5 补 `duration = 0` 与 `sort` 重复排序语义；(5) §6.5 website `ignoreCertificateError` 加安全敏感 `[REVIEW-ASK]`；(6) 新增 §7.14 `SIGNAGE_PLAYLIST_URL_EXPIRED` 失败示例；(7) §4.1 说明事件 payload schema 与 flow 文档表述差异；(8) §12 补本次新增 `[REVIEW-ASK]` 项。
@@ -54,13 +126,13 @@ Capability ID：`signage.playlist`
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 数字标牌播放列表全量同步、查询、恢复默认和播放项资源 URL 刷新。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。本文是 protocol draft；正式实现以 registry / generated 为准。 |
+| 当前状态 | draft（已采纳；见下方「采纳记录」） |
+| 是否可直接实现 | 是（采纳后）。machine 事实源为 `registry/domains/signage/domain.yaml`，实现以 generated 为准。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
-| Registry readiness | candidate |
+| Registry readiness | adopted |
 | Conformance | needed |
-| 主要未决问题 | `PlaylistConfigChangedEvent` payload 是否携带完整 playlists、`ResetPlaylistConfigParams` 是否支持 scoped reset。 |
+| 主要未决问题 | 调度优先级/冲突/空状态（归 `signage.playback` 域，不进 playlist schema）；`ignoreCertificateError` 安全策略为产品定义。 |
 
 ---
 
@@ -134,13 +206,13 @@ Capability ID：`signage.playlist`
 
 ### 3.0 方法速览
 
-| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
-|---|---|---|---|---|---|---|
-| `signage.getPlaylistCapabilities` | query | 查询播放列表能力范围。 | `PlaylistCapabilitiesParams` | `PlaylistCapabilitiesResult` | 否 | [REVIEW-DRAFT] |
-| `signage.getPlaylistConfig` | query | 查询当前播放列表配置。 | `GetPlaylistConfigParams` | `PlaylistConfigResult` | 否 | [REVIEW-DRAFT] |
-| `signage.setPlaylistConfig` | command | 全量替换播放列表配置。 | `SetPlaylistConfigParams` | *(无 result body，仅返回标准 success status)* | 是：`playlistConfigChanged` | [REVIEW-DRAFT] |
-| `signage.resetPlaylistConfig` | action | 恢复默认播放列表配置。 | `ResetPlaylistConfigParams` | `PlaylistConfigResult` | 是：`playlistConfigChanged` | [REVIEW-DRAFT] |
-| `signage.getPlaylistItemUrl` | query | 按播放项 ID 获取最新资源 URL（URL 刷新）。 | `GetPlaylistItemUrlParams` | `GetPlaylistItemUrlResult` | 否 | [REVIEW-DRAFT] |
+| Method | methodId | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
+|---|---|---|---|---|---|---|---|
+| `signage.getPlaylistCapabilities` | `0x0D01` | query | 查询播放列表能力范围。 | `PlaylistCapabilitiesParams` | `PlaylistCapabilitiesResult` | 否 | [REVIEW-ADOPTED] |
+| `signage.getPlaylistConfig` | `0x0D02` | query | 查询当前播放列表配置。 | `GetPlaylistConfigParams` | `PlaylistConfigResult` | 否 | [REVIEW-ADOPTED] |
+| `signage.setPlaylistConfig` | `0x0D03` | command | 全量替换播放列表配置。 | `SetPlaylistConfigParams` | *(无 result body，仅返回标准 success status)* | 是：`playlistConfigChanged` | [REVIEW-ADOPTED] |
+| `signage.resetPlaylistConfig` | `0x0D04` | action | 恢复默认播放列表配置。 | `ResetPlaylistConfigParams` | `PlaylistConfigResult` | 是：`playlistConfigChanged` | [REVIEW-ADOPTED] |
+| `signage.getPlaylistItemUrl` | `0x0D05` | query | 按播放项 ID 获取最新资源 URL（URL 刷新）。 | `GetPlaylistItemUrlParams` | `GetPlaylistItemUrlResult` | 否 | [REVIEW-ADOPTED] |
 
 ### 3.1 `signage.getPlaylistCapabilities`
 
@@ -924,9 +996,9 @@ Capability ID：`signage.playlist`
 
 ### 4.0 事件速览
 
-| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
-|---|---|---|---|---|
-| `signage.playlistConfigChanged` | `setPlaylistConfig` 或 `resetPlaylistConfig` 成功改变播放列表配置后发出。 | `PlaylistConfigChangedEvent` | 用事件通知触发 UI 刷新或本地缓存更新；如需完整配置，调用 `getPlaylistConfig` 校准。 | [REVIEW-DRAFT] |
+| Event | eventId | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
+|---|---|---|---|---|---|
+| `signage.playlistConfigChanged` | `0x0D01` | `setPlaylistConfig` 或 `resetPlaylistConfig` 成功改变播放列表配置后发出。 | `PlaylistConfigChangedEvent` | 用事件通知触发 UI 刷新或本地缓存更新；如需完整配置，调用 `getPlaylistConfig` 校准。 | [REVIEW-ADOPTED] |
 
 ### 4.1 `signage.playlistConfigChanged`
 
@@ -1315,14 +1387,13 @@ Capability name: `signage.playlist`。
 
 | Error | Code | 类别 | 说明 | Review |
 |---|---|---|---|---|
-| `INVALID_ARGUMENT` | 0x000A | common | 参数校验失败（如 scheduled 时间约束违反、播放项 `settings` 字段非法）。 | [REVIEW-DRAFT] |
-| `NOT_SUPPORTED` | 0x0003 | common | 操作不支持当前播放项类型（如 `clock` 调用 `getPlaylistItemUrl`）或设备不支持 `signage.playlist` 能力。 | [REVIEW-DRAFT] |
-| `PERMISSION_DENIED` | 0x0009 | common | 调用方无权修改播放列表配置（`setPlaylistConfig`）。 | [REVIEW-DRAFT] |
-| `INTERNAL_ERROR` | 0x000E | common | 设备内部错误（`getPlaylistCapabilities` / `getPlaylistConfig` / `resetPlaylistConfig` 执行失败）。 | [REVIEW-DRAFT] |
-| `NOT_FOUND` | 0x000C | common | 指定资源不存在。可复用于播放项不存在场景（§3.5.7 JSON 示例使用 `code: 12` + `candidateError`）。 | [REVIEW-DRAFT] |
-| `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` | TBD | business | 指定的播放项 ID 不存在于当前播放列表中。 | [REVIEW-DRAFT] |
-| `SIGNAGE_PLAYLIST_EMPTY` | TBD | business | 播放列表数组为空或播放项数组为空。 | [REVIEW-DRAFT] |
-| `SIGNAGE_PLAYLIST_URL_EXPIRED` | TBD | business | 刷新 URL 时发现资源已不可用。 | [REVIEW-DRAFT] |
+| `INVALID_ARGUMENT` | 0x000A | common | 参数校验失败：scheduled 时间约束违反、播放项 `settings` 字段非法、播放列表数组为空、播放项数组为空、`sort` 在同一 playlist 内重复。 | [REVIEW-ADOPTED] |
+| `NOT_SUPPORTED` | 0x0003 | common | 操作不支持当前播放项类型（如 `clock` 调用 `getPlaylistItemUrl`）或设备不支持 `signage.playlist` 能力。 | [REVIEW-ADOPTED] |
+| `PERMISSION_DENIED` | 0x0009 | common | 调用方无权修改播放列表配置（`setPlaylistConfig`）。 | [REVIEW-ADOPTED] |
+| `INTERNAL_ERROR` | 0x000E | common | 设备内部错误（`getPlaylistCapabilities` / `getPlaylistConfig` / `resetPlaylistConfig` 执行失败）。 | [REVIEW-ADOPTED] |
+| `NOT_FOUND` | 0x000C | common | 指定资源不存在：`itemId` 不存在于当前播放列表、资源 URL 已过期且无法刷新。 | [REVIEW-ADOPTED] |
+
+> 采纳决策：候选业务码 `SIGNAGE_PLAYLIST_EMPTY` / `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` / `SIGNAGE_PLAYLIST_URL_EXPIRED` **不新增为独立业务码，统一复用 common 错误码**（见上方「采纳记录」错误码决策表）。signage domain 错误码区段 `0x0D00-0x0DFF` 保持空；§3.3.7 / §3.5.7 JSON 示例中的 `candidateError` 占位以 common 码为准（空列表→`INVALID_ARGUMENT`，item 不存在/URL 过期→`NOT_FOUND`）。
 
 > 通用错误码数值取自 `registry/error/error_code.yaml`。业务域错误 `SIGNAGE_PLAYLIST_*` 落点在业务域区段 `0x0600-0x15FF`，编号 `TBD after adoption`，由 registry 采纳时分配。
 
@@ -1489,10 +1560,10 @@ Legacy Device → Server，请求 `{ itemId }`，响应 `{ url / urls, expiresAt
 
 | 项 | 状态 |
 |---|---|
-| Registry YAML | not written — `registry/domains/signage/` 目录存在但为空 |
-| Generated docs | not generated |
-| Method / event IDs | `TBD after adoption` |
-| Conformance | 采纳后需覆盖：全量同步、查询、恢复默认、URL 刷新（4 种类型）、clock 类型 NOT_SUPPORTED、scheduled 时间约束、空列表错误、事件触发。 |
+| Registry YAML | **adopted** — `registry/domains/signage/domain.yaml` 已写入（capability `0x0D01` / methods `0x0D01-0x0D05` / event `0x0D01`） |
+| Generated docs | 待生成（由 `50-generate-axtp-protocol` 重跑 `protocol/axtp.protocol.yaml` 与 `docs/generated/*`） |
+| Method / event IDs | 已分配：见上方「采纳记录」 |
+| Conformance | 采纳后需覆盖：全量同步、查询、恢复默认、URL 刷新（4 种类型）、clock 类型 NOT_SUPPORTED、scheduled 时间约束、空列表 / `sort` 重复 / item 不存在错误、事件触发。 |
 
 ---
 
@@ -1541,7 +1612,7 @@ Legacy Device → Server，请求 `{ itemId }`，响应 `{ url / urls, expiresAt
 
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
-| `[REVIEW-DRAFT]` | `signage.playlist` capability | 本文是按 Naming and Taxonomy spec 创建的单 feature 治理草案。 | 人工确认业务语义、schema 和 legacyRefs 后进入 `registry/domains/signage/domain.yaml`。 |
+| `[REVIEW-ADOPTED]` | `signage.playlist` capability | 本文已采纳（见「采纳记录」），按 Naming and Taxonomy spec 完成单 feature 治理。事实源为 `registry/domains/signage/domain.yaml`。 | generated 产物由 `50-generate-axtp-protocol` 重跑生效；后续语义变更走 `40-amend-adopted-protocol`。 |
 | `[REVIEW-RESOLVED]` | Legacy `slideshow` 类型废弃 | AXTP 不保留 `slideshow`，Adapter 映射为 `image`（`url` → `urls` 单元素数组）。 | — |
 | `[REVIEW-RESOLVED]` | `signage.media` 合并 | 播放项 URL 刷新功能已从 `signage.media` 合并到本草案。`signage.media` 草案可删除。 | — |
 
@@ -1557,7 +1628,9 @@ Legacy Device → Server，请求 `{ itemId }`，响应 `{ url / urls, expiresAt
 
 ## 附录 C. Registry 草案输入
 
-采纳本文后，domain YAML 至少应包含：
+> **采纳状态**：本附录原为采纳前的草案输入占位。本文已于 v1.4 完成采纳，正式 domain YAML 已写入 `registry/domains/signage/domain.yaml`（含完整 method/event/error/capability/type 条目）。以下保留草案输入仅作审计对照；以 registry YAML 为 machine 事实源，schema 名映射见上方「采纳记录」。原草案输入中的候选业务码 `SIGNAGE_PLAYLIST_*` 与 `TBD after adoption` 已被「复用 common」决策与已分配 ID 取代。
+
+草案输入（采纳前占位，已过时）：
 
 ```yaml
 capabilities:
@@ -1572,55 +1645,19 @@ methods:
     responseSchema: PlaylistCapabilitiesResult
     capabilities:
       - signage.playlist
-  - name: signage.getPlaylistConfig
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    requestSchema: GetPlaylistConfigParams
-    responseSchema: PlaylistConfigResult
-    capabilities:
-      - signage.playlist
-  - name: signage.setPlaylistConfig
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    requestSchema: SetPlaylistConfigParams
-    # responseSchema: 无 result body，仅标准 success status
-    capabilities:
-      - signage.playlist
-  - name: signage.resetPlaylistConfig
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    requestSchema: ResetPlaylistConfigParams
-    responseSchema: PlaylistConfigResult
-    capabilities:
-      - signage.playlist
-  - name: signage.getPlaylistItemUrl
-    id: TBD after adoption
-    bitOffset: TBD after adoption
-    requestSchema: GetPlaylistItemUrlParams
-    responseSchema: GetPlaylistItemUrlResult
-    capabilities:
-      - signage.playlist
-    errors:
-      - NOT_SUPPORTED
-      - SIGNAGE_PLAYLIST_ITEM_NOT_FOUND
-      - SIGNAGE_PLAYLIST_URL_EXPIRED
-
-events:
-  - name: signage.playlistConfigChanged
-    id: TBD after adoption
-    schema: PlaylistConfigChangedEvent
-    capabilities:
-      - signage.playlist
+  # ... 其余 method 见 registry/domains/signage/domain.yaml
 ```
 
 ## 附录 D. 采纳检查清单
 
-- [ ] 已确认 domain.feature 粒度和 method/event 命名。
-- [ ] 已确认 Domain/ID 规划和生成链路。
-- [ ] 已确认 methodId、bitOffset、request/response schema。
-- [ ] 已确认 eventId、eventMasks bitOffset、event schema。
-- [ ] 已确认 errorCode 范围和错误归属。
-- [ ] 已确认 schema fieldId、capabilityId、supportedMethods。
-- [ ] 已确认 `PlaylistCapabilitiesResult`、`PlaylistConfigResult`、`ResetPlaylistConfigParams`、`PlaylistConfigChangedEvent` 的 schema 字段。
-- [ ] 已确认 Legacy `slideshow` 类型已废弃，Adapter 映射为 `image`。
-- [ ] YAML 写入后 Generator 能完整生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+采纳日期：2026-06-17（Stage 30 adopt-protocol-draft）。
+
+- [x] 已确认 domain.feature 粒度和 method/event 命名。
+- [x] 已确认 Domain/ID 规划和生成链路。（signage DomainId `0x0D`；capability/method/event ID 已分配）
+- [x] 已确认 methodId、bitOffset、request/response schema。（method `0x0D01-0x0D05`，bitOffset 0–4）
+- [x] 已确认 eventId、eventMasks bitOffset、event schema。（event `0x0D01`，bitOffset 0）
+- [x] 已确认 errorCode 范围和错误归属。（复用 common：INVALID_ARGUMENT / NOT_SUPPORTED / PERMISSION_DENIED / INTERNAL_ERROR / NOT_FOUND；signage 区段保持空）
+- [x] 已确认 schema fieldId、capabilityId、supportedMethods。
+- [x] 已确认 `PlaylistCapabilitiesResult`、`PlaylistConfigResult`、`ResetPlaylistConfigParams`、`PlaylistConfigChangedEvent` 的 schema 字段。
+- [x] 已确认 Legacy `slideshow` 类型已废弃，Adapter 映射为 `image`。
+- [ ] YAML 写入后 Generator 能完整生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。（待 50-generate-axtp-protocol）
