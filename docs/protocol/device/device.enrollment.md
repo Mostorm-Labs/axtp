@@ -10,11 +10,11 @@ lastReviewed: 2026-06-16
 
 # AXTP device.enrollment 协议草案
 
-版本：v0.9
+版本：v0.10（已采纳）
 
-归属域：`device`
+归属域：`device`（DomainId `0x01`）
 
-Capability ID：`device.enrollment`
+Capability ID：`device.enrollment`（capability `0x0102`）
 
 适用范围：未入管设备通过 pairing code 完成注册纳管、纳管状态查询和变更、纳管状态变化事件。
 
@@ -24,11 +24,117 @@ Capability ID：`device.enrollment`
 
 完整的审核标记（含 `[REVIEW-DRAFT]` / `[REVIEW-RESOLVED]` / `[REVIEW-ASK]` 条目、审核结论与后续动作）见 **附录 A**，本文以附录 A 为唯一权威源。开篇要点：
 
-- 本文是根据业务需求创建的协议草案，不是最终事实源（`[REVIEW-DRAFT]`）；替代已删除的 `device.binding` 草案。
+- 本文已采纳（见下方「采纳记录 (Adoption)」），machine 事实源为 `registry/domains/device/domain.yaml`（DomainId `0x01`）；YAML 与 generated 产物不一致时以 registry YAML 为准。
 - 域命名采用 `device.enrollment`（比 `device.binding` 更准确描述"未入管设备成为后台管理对象"的语义），方法名为 `device.getPairingCode`。
-- Legacy 命令 `GetBindCode` / `GetBindConfig` / `SetBindConfig` / `OnBindState` 的逐字段映射见 **Section 9**；采纳时同步更新 generated legacy 文件中的 `binding` → `device.enrollment` 域名（见 9.6）。
+- Legacy 命令 `GetBindCode` / `GetBindConfig` / `SetBindConfig` / `OnBindState` 的逐字段映射见 **Section 9**；binding → device.enrollment 的 generated legacy 文件更新本次不落地，留待 legacy-migration 专项处理（见 9.6 / 采纳记录 A.5）。
 
 ---
+
+## 采纳记录 (Adoption)
+
+本文于 2026-06-17 经 `adopt-protocol-draft` skill（`docs/dev/skills/30-adopt-protocol-draft`）采纳。machine 事实源为 `registry/domains/device/domain.yaml` 与 `registry/error/error_code.yaml`；本草案为正式提案，YAML 与 generated 产物不一致时以 registry YAML 为准。
+
+### A.1 已分配正式 ID
+
+DomainId `0x01` = `device`（device 域已存在并被 `device.getInfo` 使用，generator `domainByHighByte` 无需补充）。
+
+| 条目 | ID | bitOffset | 备注 |
+|---|---|---:|---|
+| method `device.getPairingCode` | `0x0102` | 1 | request `DeviceGetPairingCodeParams` / response `DevicePairingCodeInfo` |
+| method `device.getEnrollmentState` | `0x0103` | 2 | request `DeviceGetEnrollmentStateParams` / response `DeviceEnrollmentInfo` |
+| method `device.setEnrollmentState` | `0x0104` | 3 | request `DeviceSetEnrollmentStateParams` / response `DeviceSetEnrollmentStateResult`；触发 event |
+| event `device.enrollmentStateChanged` | `0x0102` | 0 | payload `DeviceEnrollmentStateChangedEvent`；trigger `device.setEnrollmentState`（device 域首个 event） |
+| capability `device.enrollment` | `0x0102` | — | type `object`；schema `DeviceEnrollmentCapability` |
+
+低字节计数惯例（与 `software.config` / `software.updatePolicy` / `signage.playlist` 一致）：method / event / capability 各自独立从 `0x01` 起编号，三者可同号共存（不同命名空间）。method bitOffset 续编 `device.getInfo`（0）之后为 1/2/3；device 域原无 event，event bitOffset 从 0 起；均满足 generator `assertDomainBitOffsets` 从 0 起连续要求。
+
+### A.2 Schema 名映射（草案 → registry）
+
+本草案 §6 schema 名在 registry 中统一加 `Device` 前缀（与 `device.info` 的 `DeviceInfo` / `DeviceIdentity` 惯例一致，保证 schema 名全局唯一）：
+
+| 草案 schema 名（§6） | registry schema 名 | 说明 |
+|---|---|---|
+| `EnrollmentInfo`（§6.1） | `DeviceEnrollmentInfo` | getEnrollmentState result / SetEnrollmentStateResult.state / event.state 共用 |
+| `EnrollmentEndpointSummary`（§6.2） | `DeviceEnrollmentEndpointSummary` | 嵌套于 DeviceEnrollmentInfo 与 DeviceSetEnrollmentStateParams |
+| `GetPairingCodeParams`（§6.3） | `DeviceGetPairingCodeParams` | |
+| `PairingCodeInfo`（§6.4） | `DevicePairingCodeInfo` | `code` pattern `^[A-HJ-NP-Z2-9]{6,8}---
+status: draft
+contract: false
+generated: false
+domain: device
+feature: device.enrollment
+registry:
+lastReviewed: 2026-06-16
+---
+
+# AXTP device.enrollment 协议草案
+
+版本：v0.10（已采纳）
+
+归属域：`device`（DomainId `0x01`）
+
+Capability ID：`device.enrollment`（capability `0x0102`）
+
+适用范围：未入管设备通过 pairing code 完成注册纳管、纳管状态查询和变更、纳管状态变化事件。
+
+---
+
+## 协议审核标记（人工复核）
+
+ 写入 description |
+| `GetEnrollmentStateParams`（§6.5） | `DeviceGetEnrollmentStateParams` | |
+| `SetEnrollmentStateParams`（§6.6） | `DeviceSetEnrollmentStateParams` | 校验规则（enrolled 需 endpoint+reason 等）写入 description |
+| `SetEnrollmentStateResult`（§6.7） | `DeviceSetEnrollmentStateResult` | |
+| `EnrollmentStateChangedEvent`（§6.8） | `DeviceEnrollmentStateChangedEvent` | |
+| 草案 §5 capability 字段 | `DeviceEnrollmentCapability` | `supportsPairingCode` 等 7 字段 |
+
+枚举值统一用 `candidate values include ...` 开放措辞（对齐 `device.info` 标杆），不写死枚举集合；`maxActivePairingCodes` / `pairingCodeLength` 用 `default` 表达默认值。
+
+### A.3 错误码决策
+
+method 复用 common mvp 码：
+
+| Error | 复用 common 码 | 数值 | 用于 |
+|---|---|---|---|
+| `NOT_SUPPORTED` | ✓ mvp | `0x0003` | getPairingCode / getEnrollmentState / setEnrollmentState |
+| `INVALID_ARGUMENT` | ✓ mvp | `0x000A` | setEnrollmentState（字段非法） |
+| `INVALID_STATE` | ✓ mvp | `0x0004` | setEnrollmentState（状态机转换违规） |
+| `PERMISSION_DENIED` | ✓ mvp | `0x0009` | getPairingCode / setEnrollmentState |
+| `INTERNAL_ERROR` | ✓ mvp | `0x000E` | getPairingCode（服务端无法生成 code） |
+
+新增 device 域业务错误码（pairing code 过期/已用是 enrollment 独有、客户端需精确区分的语义；连号追加在 device 段已占用区末尾 `0x0109` 之后）：
+
+| Error | 数值 | retryable | 说明 |
+|---|---|---|---|
+| `ENROLLMENT_CODE_EXPIRED` | `0x010A` | true | pairing code 已过期 |
+| `ENROLLMENT_CODE_ALREADY_USED` | `0x010B` | false | pairing code 已使用 |
+
+### A.4 限定采纳范围
+
+本次为**局部采纳（scoped）**，核心事实（3 method / 1 event / 8 schema / 状态机 / capability 主体）全部采纳；`[REVIEW-ASK]` 事实用安全默认值写入 YAML，标注 `[REVIEW-ADOPTED-SCOPED]`，确认后走 `amend-adopted-protocol`（Stage 40）：
+
+- ✅ **采纳**：3 个 method（`getPairingCode` / `getEnrollmentState` / `setEnrollmentState`）、1 个 event（`enrollmentStateChanged`）、8 个 schema、§3.4 状态机转换表、capability 主体字段。
+- ⏸ **scoped 默认值**：`DeviceEnrollmentEndpointSummary.displayName` `max_length: 128`（与 `device.info` 的 `product.displayName` 对齐，待产品确认）。
+- ⏸ **scoped 默认值**：`workspaceId` / `endpointId` 作为 `required: false` 摘要字段写入，隐私暴露策略待产品/安全确认。
+- ⏸ **scoped 保留**：`enrolledAt`、`triggerMethod` / `triggerId`、capability 的 `endpointTypes` / `supportedPurposes` / `maxActivePairingCodes` / `pairingCodeLength` 字段以开放措辞写入，待产品确认 P0 范围与具体上限。
+- ⏸ **scoped 保留**：`desiredState: "pending"` 方向维持 Server → Device（服务端通知设备 code 已提交）；设备是否可自行转入 pending 待确认。
+- ⏸ **保留**：是否需要独立 `device.revokeEnrollment` 方法——当前用 `setEnrollmentState(desiredState: "unmanaged")` 替代解绑；如需独立权限或流程则另建方法。
+- ⏸ **保留**：pairing code 生成方向（Device → Server 拉取，服务端 handler 生成）缓存策略待确认；`getPairingCode` 命名偏好（pairing code vs enrollment code）待产品最终确认。
+
+### A.5 后续约束
+
+- 上述 scoped 项确认后走 `docs/dev/skills/40-amend-adopted-protocol`（Stage 40）正式变更，不再重跑 Stage 30。
+- generated 产物（`protocol/axtp.protocol.yaml`、`docs/generated/*`、`tooling/mcp/*`）由 `docs/dev/skills/50-generate-axtp-protocol`（Stage 50）重跑生成；本次不手改任何 generated 文件。
+- legacy mapping（binding → device.enrollment，§9.6）本次不落地到 `registry/legacy/legacy_mapping.yaml`，与 `software.config` / `software.updatePolicy` / `signage.playlist` 三个 sibling 采纳一致；generated legacy 文件更新留待 legacy-migration 专项处理。
+
+---
+
+**v0.10 变更说明（采纳）：**
+经 `adopt-protocol-draft` skill 采纳，machine 事实源落地为 `registry/domains/device/domain.yaml`（追加到已存在的 device domain，DomainId `0x01`）与 `registry/error/error_code.yaml`。本草案冻结为正式提案，标题区补 DomainId/capabilityId，并新增「采纳记录 (Adoption)」节记录已分配正式 ID、Schema 名映射、错误码决策、限定采纳范围与后续约束。
+本次为**局部采纳（scoped）**：核心事实（3 method / 1 event / 8 schema / §3.4 状态机 / capability 主体）全部采纳；`[REVIEW-ASK]` 事实用安全默认值写入 YAML 并标 `[REVIEW-ADOPTED-SCOPED]`，确认后走 `amend-adopted-protocol`。具体 scoped 默认值：`DeviceEnrollmentEndpointSummary.displayName` `max_length: 128`（对齐 `device.info` `product.displayName`）；`workspaceId` / `endpointId` 为 `required: false` 摘要字段。
+ID 分配（低字节计数惯例，与 `software.config` / `signage.playlist` 一致）：method `0x0102`/`0x0103`/`0x0104`、event `0x0102`、capability `0x0102`；method bitOffset 续编 device.getInfo 之后为 1/2/3，device 域首个 event bitOffset 从 0 起。
+Schema 名加 `Device` 前缀（`EnrollmentInfo` → `DeviceEnrollmentInfo` 等），与 `device.info` 的 `Device` 前缀惯例一致，保证全局唯一。错误码：4 个 method 复用 common mvp 码；新增 2 个 device 业务码 `ENROLLMENT_CODE_EXPIRED`(`0x010A`) / `ENROLLMENT_CODE_ALREADY_USED`(`0x010B`)，连号追加在 device 段已占用区末尾。
+本次不新增 legacy mapping 到 `registry/legacy/`（与三个 sibling 采纳一致），binding → device.enrollment 的 generated 文件更新留待 legacy-migration 专项；不改 MVP profile；不改 §3.4 状态机、§6 schema 业务语义、§7 flow 示例、§9 legacy 映射记录。generated 产物由 Stage 50 重生成。
 
 **v0.9 变更说明：**
 对齐 20-draft-business-protocol skill 与 `protocol-draft-template.md` 的 JSON 示例约定（业务语义、schema、状态机、错误码、legacy 映射均不变）：
@@ -94,12 +200,12 @@ Capability ID：`device.enrollment`
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 让未入管设备通过 pairing code / enrollment state 成为后台可管理对象。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。本文是 protocol draft；正式实现以 registry / generated 为准。 |
+| 当前状态 | draft（已采纳局部 / scoped，见「采纳记录 (Adoption)」） |
+| 是否可直接实现 | 否（草案为提案，未生成）；machine 事实源为 `registry/domains/device/domain.yaml`，generated 产物待 Stage 50 重生成。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
-| Registry readiness | candidate |
-| Conformance | needed |
+| Registry readiness | adopted（scoped）— YAML 已写入 |
+| Conformance | needed（待 Stage 50 generated 后补 conformance cases） |
 | 主要未决问题 | pairing code 生成方向、endpoint 关联字段、解绑语义和跨域副作用仍需确认。 |
 
 ---
@@ -155,9 +261,11 @@ Capability ID：`device.enrollment`
 
 | Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
 |---|---|---|---|---|---|---|
-| `device.getPairingCode` | query / action | 获取或刷新设备纳管 pairing code。 | `GetPairingCodeParams` | `PairingCodeInfo` | 否 | draft |
-| `device.getEnrollmentState` | query | 查询当前纳管状态。 | `GetEnrollmentStateParams` | `EnrollmentInfo` | 否 | draft |
-| `device.setEnrollmentState` | command | 设置纳管状态（绑定成功、解绑等）。 | `SetEnrollmentStateParams` | `SetEnrollmentStateResult` | 是，状态变化后触发 `device.enrollmentStateChanged`。 | draft |
+| `device.getPairingCode` (`0x0102`) | query / action | 获取或刷新设备纳管 pairing code。 | `GetPairingCodeParams` | `PairingCodeInfo` | 否 | adopted(scoped) |
+| `device.getEnrollmentState` (`0x0103`) | query | 查询当前纳管状态。 | `GetEnrollmentStateParams` | `EnrollmentInfo` | 否 | adopted(scoped) |
+| `device.setEnrollmentState` (`0x0104`) | command | 设置纳管状态（绑定成功、解绑等）。 | `SetEnrollmentStateParams` | `SetEnrollmentStateResult` | 是，状态变化后触发 `device.enrollmentStateChanged`。 | adopted(scoped) |
+
+> 已采纳（局部）。methodId / bitOffset 已分配，见「采纳记录 A.1」；registry schema 名加 `Device` 前缀（`GetPairingCodeParams` → `DeviceGetPairingCodeParams` 等），见 A.2。
 
 ### 3.1 `device.getPairingCode`
 
@@ -580,7 +688,9 @@ Capability ID：`device.enrollment`
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|
-| `device.enrollmentStateChanged` | pairing code 被使用、纳管成功、解绑、纳管失败或状态被服务端同步。 | `EnrollmentStateChangedEvent` | 更新纳管页面、设备列表和后续 room endpoint 操作门禁。 | draft |
+| `device.enrollmentStateChanged` (`0x0102`) | pairing code 被使用、纳管成功、解绑、纳管失败或状态被服务端同步。 | `EnrollmentStateChangedEvent` | 更新纳管页面、设备列表和后续 room endpoint 操作门禁。 | adopted(scoped) |
+
+> 已采纳（局部）。eventId `0x0102` / bitOffset `0`，device 域首个 event；payload `DeviceEnrollmentStateChangedEvent`（registry 名），见「采纳记录 A.1 / A.2」。
 
 ### 4.1 `device.enrollmentStateChanged`
 
@@ -660,7 +770,7 @@ Capability ID：`device.enrollment`
 
 ## 5. Capability
 
-Capability name: `device.enrollment`。
+Capability name: `device.enrollment`（capability `0x0102`，schema `DeviceEnrollmentCapability`）。
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 说明 |
 |---|---|---:|---|---|
@@ -992,14 +1102,14 @@ Capability name: `device.enrollment`。
 | Error | 复用 / 候选 | 说明 | Review |
 |---|---|---|---|
 | `NOT_SUPPORTED` | common (0x0003) | 设备或服务端不支持 pairing code 或状态变更。 | — |
-| `INVALID_ARGUMENT` | common (0x000A) | desiredState 或 endpoint 字段非法。 | `[REVIEW-DRAFT]` |
-| `INVALID_STATE` | common (0x0004) | 当前状态不允许变更（如未纳管设备请求解绑）。 | `[REVIEW-DRAFT]` |
-| `PERMISSION_DENIED` | common (0x0009) | 无权生成 code、纳管或解绑。 | `[REVIEW-DRAFT]` |
-| `INTERNAL_ERROR` | common (0x000E) | 服务端内部错误（如无法生成 pairing code）。 | `[REVIEW-DRAFT]` |
-| `ENROLLMENT_CODE_EXPIRED` | candidate | pairing code 已过期。 | `[REVIEW-DRAFT]` |
-| `ENROLLMENT_CODE_ALREADY_USED` | candidate | pairing code 已使用。 | `[REVIEW-DRAFT]` |
+| `INVALID_ARGUMENT` | common (0x000A) | desiredState 或 endpoint 字段非法。 | adopted |
+| `INVALID_STATE` | common (0x0004) | 当前状态不允许变更（如未纳管设备请求解绑）。 | adopted |
+| `PERMISSION_DENIED` | common (0x0009) | 无权生成 code、纳管或解绑。 | adopted |
+| `INTERNAL_ERROR` | common (0x000E) | 服务端内部错误（如无法生成 pairing code）。 | adopted |
+| `ENROLLMENT_CODE_EXPIRED` | device (0x010A) | pairing code 已过期。 | adopted |
+| `ENROLLMENT_CODE_ALREADY_USED` | device (0x010B) | pairing code 已使用。 | adopted |
 
-> 通用错误码数值取自 `registry/error/error_code.yaml`。业务域候选错误 `ENROLLMENT_CODE_EXPIRED` / `ENROLLMENT_CODE_ALREADY_USED` 落点在设备域区段 `0x0100–0x01FF`（当前已占用至 0x0109），编号 `TBD after adoption`。
+> 通用错误码数值取自 `registry/error/error_code.yaml`。业务域错误 `ENROLLMENT_CODE_EXPIRED` (`0x010A`) / `ENROLLMENT_CODE_ALREADY_USED` (`0x010B`) 已新增写入设备域区段 `0x0100–0x01FF`，连号追加在已占用区末尾 `0x0109` 之后（见「采纳记录 A.3」）。
 
 ---
 
@@ -1182,10 +1292,10 @@ Legacy Device → Server（**未研发**），事件 data `{ status, code, messa
 
 | 项 | 状态 |
 |---|---|
-| Registry YAML | not written |
-| Generated docs | not generated |
-| Method / event IDs | `TBD after adoption` |
-| Conformance | 需覆盖 pairing code TTL、状态查询、状态变更事件、解绑权限、legacy `expiresInSeconds`。 |
+| Registry YAML | written（局部采纳 / scoped，见「采纳记录」） |
+| Generated docs | not generated（待 Stage 50 `generate-axtp-protocol` 重生成） |
+| Method / event IDs | 已分配：method `0x0102`/`0x0103`/`0x0104`、event `0x0102`、capability `0x0102` |
+| Conformance | 需覆盖 pairing code TTL、状态查询、状态变更事件、解绑权限、legacy `expiresInSeconds`（待 generated 后补 conformance cases）。 |
 
 > 完整采纳检查清单（12 项，含 `getPairingCode` 命名偏好、`state` 枚举 P0 范围、`workspaceId` / `endpointId` 隐私策略、`binding` → `device.enrollment` generated 文件更新方案等）见 **附录 D**，本文以附录 D 为唯一权威源。
 
@@ -1226,15 +1336,15 @@ Legacy Device → Server（**未研发**），事件 data `{ status, code, messa
 
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
-| `[REVIEW-DRAFT]` | `device.enrollment` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。替代已删除的 `device.binding` 草案。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`（Stage 30）。 |
+| `[REVIEW-ADOPTED]` | `device.enrollment` capability | 本文已于 2026-06-17 经 Stage 30 局部采纳，machine 事实源落地为 `registry/domains/device/domain.yaml` + `registry/error/error_code.yaml`；替代已删除的 `device.binding` 草案。 | scoped 待确认项走 `amend-adopted-protocol`（见「采纳记录 A.4 / A.5」）。 |
 | `[REVIEW-RESOLVED]` | 域命名 `device.enrollment` | `device.enrollment` 比 `device.binding` 更准确描述"未入管设备成为后台管理对象"的语义。 | — |
 | `[REVIEW-RESOLVED]` | 方法命名 `getPairingCode` | 草案方法名为 `device.getPairingCode`（非 `device.getEnrollmentCode`），消解 flow 第 296 行 Open Question 的命名歧义。 | 待产品最终确认"pairing code" vs "enrollment code"命名偏好；采纳前统一。 |
 | `[REVIEW-RESOLVED]` | Legacy 映射 | 9.0–9.6 已补齐 4 个 legacy 命令详细字段映射、adapter 转换示例和 generated 文件交叉引用。domain 从 `binding` 改为 `device.enrollment` 已在 9.6 标注。 | Stage 30 采纳时同步更新 `legacy-to-axtp-map.generated.yaml` 和 `registry-patches.generated.yaml` 中的 domain 名称（`binding` → `device.enrollment`）。 |
-| `[REVIEW-ASK]` | pairing code 生成方向 | 方法方向已确认 Device → Server（设备主动拉取），同时允许服务端 handler 生成。缓存策略待确认。 | 采纳前与服务端确认。 |
-| `[REVIEW-ASK]` | `workspaceId` / `endpointId` 隐私 | 这两个 ID 是否都能暴露给设备尚未确认，当前作为 optional 摘要字段。 | 采纳前与产品和安全确认。 |
-| `[REVIEW-ASK]` | `EnrollmentEndpointSummary.displayName` 最大长度 | 6.2 校验规则标注 `max length TBD`；影响客户端 UI 布局和设备存储。 | 采纳前需产品确认具体上限。 |
-| `[REVIEW-ASK]` | `desiredState: "pending"` 方向 | 当前设计为 Server → Device（服务端通知设备 code 已提交）。设备是否可自行转入 pending 尚未确认。 | 采纳前与服务端/设备确认。 |
-| `[REVIEW-ASK]` | 是否需要独立 `device.revokeEnrollment` 方法 | 当前用 `setEnrollmentState(desiredState: "unmanaged")` 替代解绑。 | 如果需要独立权限或流程则另建方法，采纳前确认。 |
+| `[REVIEW-ASK]` | pairing code 生成方向 | 方法方向已确认 Device → Server（设备主动拉取），同时允许服务端 handler 生成。缓存策略待确认。 | scoped 采纳，默认值见「采纳记录 A.4」；缓存策略确认后走 amend。 |
+| `[REVIEW-ASK]` | `workspaceId` / `endpointId` 隐私 | 这两个 ID 是否都能暴露给设备尚未确认，当前作为 optional 摘要字段。 | scoped 采纳（`required: false` 写入），确认后走 amend，见「采纳记录 A.4」。 |
+| `[REVIEW-ASK]` | `EnrollmentEndpointSummary.displayName` 最大长度 | 6.2 校验规则标注 `max length TBD`；影响客户端 UI 布局和设备存储。 | scoped 采纳（`max_length: 128`，对齐 `device.info` `product.displayName`），见「采纳记录 A.4」。 |
+| `[REVIEW-ASK]` | `desiredState: "pending"` 方向 | 当前设计为 Server → Device（服务端通知设备 code 已提交）。设备是否可自行转入 pending 尚未确认。 | scoped 采纳（维持 Server → Device），确认后走 amend，见「采纳记录 A.4」。 |
+| `[REVIEW-ASK]` | 是否需要独立 `device.revokeEnrollment` 方法 | 当前用 `setEnrollmentState(desiredState: "unmanaged")` 替代解绑。 | scoped 采纳（暂不另建方法），见「采纳记录 A.4」。 |
 
 ## 附录 B. 协议决策
 
@@ -1311,26 +1421,28 @@ events:
       - device.enrollment
 ```
 
-候选 device 域 errors（落点 `0x0100–0x01FF`，当前已占用至 `0x0109`，编号 `TBD after adoption`）：
+候选 device 域 errors（落点 `0x0100–0x01FF`，本次已连号分配 `0x010A` / `0x010B`）：
 
 | Error | 说明 | Review |
 |---|---|---|
-| `ENROLLMENT_CODE_EXPIRED` | pairing code 已过期。 | `[REVIEW-DRAFT]` |
-| `ENROLLMENT_CODE_ALREADY_USED` | pairing code 已使用。 | `[REVIEW-DRAFT]` |
+| `ENROLLMENT_CODE_EXPIRED` (`0x010A`) | pairing code 已过期。 | adopted |
+| `ENROLLMENT_CODE_ALREADY_USED` (`0x010B`) | pairing code 已使用。 | adopted |
 
-> **ID 说明**：`docs/legacy-migration/generated/registry-patches.generated.yaml` 当前为旧 `binding` 域分配了 method ID `0x1301`–`0x1303`（见 9.6）。这些是 generated 文件中 `binding` 域的既有占用，**不是**本文为 `device.enrollment` 分配的新 ID。Stage 30 采纳时随 domain 改名（`binding` → `device.enrollment`）一并处理，是否复用 `0x1301`–`0x1303` 由 Stage 30 决定。
+> **ID 说明（已采纳）**：本次 Stage 30 **不复用** legacy `binding` 域的 `0x1301`–`0x1303`（binding 属 DomainId `0x13`，与 `device`（`0x01`）不同域；且 binding 域 registry YAML 尚未创建，仅存在于 generated 候选补丁中）。`device.enrollment` 按 device 域低字节计数惯例分配 method `0x0102`/`0x0103`/`0x0104`、event/capability `0x0102`，见「采纳记录 A.1」。binding → device.enrollment 的 generated 文件更新留待 legacy-migration 专项处理（见 A.5）。
 
 ## 附录 D. 采纳检查清单
 
-- [ ] 01 已确认 domain.feature 粒度和 method/event 命名（含 `getPairingCode` 命名偏好）。
-- [ ] 02 已确认 `EnrollmentInfo` schema 与 `state` 枚举 6 值首批纳入 P0 范围。
-- [ ] 03 已确认 Section 3.4 状态机转换表覆盖所有已知 legacy 场景。
-- [ ] 04 已确认 methodId、bitOffset、request/response schema（`getPairingCode` / `getEnrollmentState` / `setEnrollmentState`）。
-- [ ] 05 已确认 eventId、eventMasks bitOffset、`EnrollmentStateChangedEvent` schema。
-- [ ] 06 已确认 errorCode 范围和错误归属（含 `ENROLLMENT_CODE_EXPIRED` / `ENROLLMENT_CODE_ALREADY_USED` 落点 `0x0100–0x01FF`）。
-- [ ] 07 已确认 `endpointTypes` 枚举值、`supportedPurposes`、`maxActivePairingCodes`、`pairingCodeLength`。
-- [ ] 08 已确认 schema fieldId、capabilityId、supportedMethods。
-- [ ] 09 已确认 `EnrollmentEndpointSummary.displayName` 最大长度。
-- [ ] 10 已确认 `workspaceId` / `endpointId` 隐私暴露策略。
-- [ ] 11 已确认 `binding` → `device.enrollment` 的 generated legacy 文件（9.6）更新方案。
-- [ ] 12 YAML 写入后 Generator 能完整生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`。
+- [~] 01 已确认 domain.feature 粒度和 method/event 命名（`getPairingCode` 命名偏好 scoped，见 A.4）。
+- [~] 02 `EnrollmentInfo` schema 与 `state` 枚举 6 值已采纳；P0 范围 scoped，见 A.4。
+- [x] 03 Section 3.4 状态机转换表覆盖所有已知 legacy 场景。
+- [x] 04 methodId（`0x0102`/`0x0103`/`0x0104`）、bitOffset（1/2/3）、request/response schema 已分配（A.1）。
+- [x] 05 eventId（`0x0102`）、bitOffset（0）、`DeviceEnrollmentStateChangedEvent` schema 已分配（A.1）。
+- [x] 06 errorCode 已分配：common 码复用 + `ENROLLMENT_CODE_EXPIRED`(`0x010A`) / `ENROLLMENT_CODE_ALREADY_USED`(`0x010B`)（A.3）。
+- [~] 07 capability 字段以开放措辞写入；枚举值/默认值 scoped，见 A.4。
+- [x] 08 schema fieldId（从 `0x01` 起）、capabilityId（`0x0102`）已分配。
+- [~] 09 `displayName` `max_length: 128`（对齐 `device.info`），scoped 待产品确认，见 A.4。
+- [~] 10 `workspaceId` / `endpointId` 作为 `required: false` 摘要字段写入；隐私暴露策略 scoped，见 A.4。
+- [ ] 11 `binding` → `device.enrollment` 的 generated legacy 文件（9.6）更新——本次不落地，留待 legacy-migration 专项（A.5）。
+- [ ] 12 Generator 完整生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`——待 Stage 50 重跑（A.5）。
+
+> `[x]` 已落实；`[~]` scoped 采纳（默认值已写入，确认后走 amend）；`[ ]` 留待后续阶段（Stage 50 / legacy-migration 专项）。
