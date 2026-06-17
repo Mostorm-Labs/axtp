@@ -136,11 +136,11 @@ Compact / HID-64 / BLE / UART 不作为当前 MVP 必选实现，进入 `docs/sp
 | fieldId | Name | Type | 用途 |
 |---:| --- |---| --- |
 | `0x01` | `sessionId` | `uint32` | 会话 ID |
-| `0x02` | `protocolVersion` | `uint8` | 协议版本 |
+| `0x02` | `protocolVersion` | `uint8` | Deprecated/Transition；v1 新实现省略 |
 | `0x03` | `reserved` | - | 历史 `headerProfile`，v1 不得使用 |
-| `0x04` | `maxFrameSize` | `uint16` | 最大 Frame |
-| `0x05` | `maxPayloadSize` | `uint16` | 最大 Payload |
-| `0x06` | `mtu` | `uint16` | 传输 MTU |
+| `0x04` | `maxFrameSize` | `uint16` | 最大 Standard Frame 总字节数 |
+| `0x05` | `maxPayloadSize` | `uint16` | Deprecated/Reserved；由 `maxFrameSize - 14` 推导 |
+| `0x06` | `mtu` | `uint16` | Profile-specific Optional 传输 MTU |
 | `0x07` | `supportedPayloadTypes` | `bitmap32` | 支持的 PayloadType |
 | `0x08` | `supportedRpcEncodings` | `bitmap32` | 支持的 RPC Encoding |
 | `0x09` | `reserved` | - | 历史 `supportedStreamProfiles`，新实现不得使用 |

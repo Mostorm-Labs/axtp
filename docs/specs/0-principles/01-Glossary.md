@@ -198,7 +198,7 @@ opcode(1) + controlId(2) + statusCode(2) + TLV body(N)
 
 ### Framed Link Context
 
-**Framed Link Context** 是 Standard Framed transport 在 CONTROL OPEN / ACCEPT 后建立的 AXTP 链路上下文，保存 negotiated payload types、rpc encodings、MTU、heartbeatInterval、ackMode 等运行时参数。
+**Framed Link Context** 是 Standard Framed transport 在 CONTROL OPEN / ACCEPT 后建立的 AXTP 链路上下文，保存 negotiated payload types、rpc encodings、maxFrameSize、可选 profile MTU、heartbeatInterval、ackMode 等运行时参数。
 
 WebSocket Unframed JSON 没有 CONTROL OPEN / ACCEPT，因此没有 Standard Framed Link Context。
 

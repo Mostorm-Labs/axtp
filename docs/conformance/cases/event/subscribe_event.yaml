@@ -15,8 +15,8 @@ steps:
       sid: ""
       op: IDENTIFY
       d:
-        rpcVersion: 1
-        eventMasks: "0901"
+        randomSeed: 305419896
+        eventMasks: "090101"
 
   - direction: server_to_client
     expect:

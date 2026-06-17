@@ -2,7 +2,7 @@
 
 > 状态： 规范性 runtime 实现规范
 > 规范版本： 1.0.0-rc1
-> 变更策略： v1.0.0 前仅允许澄清性修改
+> 变更策略： v1.0.0 前允许冻结候选收敛；影响 wire/必填字段语义的修改需遵循版本治理
 > 本文的规范范围：`PayloadType=CONTROL` payload 结构、CONTROL opcode registry、TLV 字段、framed link 启动、心跳、关闭和 CONTROL 校验。
 > 本文不定义：业务 capability discovery、RPC method 调用、事件订阅、STREAM 数据 payload、methodId/eventId registry 或 WebSocket JSON 启动流程。
 > Runtime 实现状态：Standard Framed profile 必需实现；ACK/NACK、RESUME、SESSION_RESET、WINDOW_UPDATE、PING/PONG、GOAWAY 和 VENDOR 属于可选/未来能力。
@@ -83,9 +83,7 @@ Runtime MUST 解析并校验：
 
 | TLV type | 名称 | 类型 | 必需用途 |
 |---:|---|---|---|
-| `0x02` | `protocolVersion` | uint8 | OPEN / ACCEPT |
 | `0x04` | `maxFrameSize` | uint16/uint32 | OPEN / ACCEPT |
-| `0x06` | `mtu` | uint16 | OPEN / ACCEPT |
 | `0x07` | `supportedPayloadTypes` | bitmap | OPEN / ACCEPT |
 | `0x08` | `supportedRpcEncodings` | bitmap | OPEN |
 | `0x0A` | `heartbeatIntervalMs` | uint16/uint32 | OPEN / ACCEPT |
@@ -94,6 +92,43 @@ Runtime MUST 解析并校验：
 | `0x1E` | `selectedRpcEncoding` | uint8 | ACCEPT |
 
 `sessionId(0x01)` MAY 被解析并保存用于 tracing/future resume，但 MUST NOT 用作 RPC/STREAM 业务 session routing。
+
+### CONTROL 版本字段职责
+
+AXTP v1 不要求在 CONTROL OPEN / ACCEPT 中使用独立 `protocolVersion` 协商。版本边界按层分工：
+
+| 字段 | 所在层 | 实际作用 | CONTROL 结论 |
+|---|---|---|---|
+| Frame Header `Version` | Frame | 保护 12B Standard Frame header 布局、CRC 覆盖范围和 PayloadType 编码 | 必需；不支持时拒绝或关闭 |
+| RPC Hello `axtpVersion` | RPC Session | 表达 AXTP spec/release 快照兼容性 | 作为 AXTP v1 主兼容判断 |
+| CONTROL `protocolVersion` | CONTROL TLV | 早期草案中的 link/control 版本字段 | Deprecated/Transition；新实现 SHOULD 省略 |
+
+规则：
+
+- 新实现 SHOULD 省略 CONTROL `protocolVersion(0x02)`。
+- Runtime MUST NOT 因为 OPEN/ACCEPT 缺少 `protocolVersion` 而拒绝 otherwise valid 的 v1 CONTROL 握手。
+- 为兼容早期 rc1 草案，接收端 MAY 接受 `protocolVersion=1`。
+- 接收端在未声明未来扩展规范时 MUST 拒绝非 `1` 的 `protocolVersion`，避免形成与 Frame Header `Version` 和 RPC `axtpVersion` 并行的第三套兼容状态。
+- 对 CONTROL header、TLV 编码、opcode 含义或必填字段语义的不兼容变更，MUST 走版本治理，并优先通过新的 Frame Header `Version`、新的 profile 或新 TLV/opcode 表达。
+
+### CONTROL 尺寸字段职责
+
+AXTP v1 的 CONTROL 握手只需要一个必填尺寸字段：`maxFrameSize`。它描述接收端愿意接受的单个 Standard Frame 线上总字节数上限，包含 12B Frame Header、Payload 和 2B CRC。`Frame.payloadLength` 的有效上限可由 `maxFrameSize - 14` 推导。
+
+| 字段 | v1 状态 | 实际作用 | 结论 |
+|---|---|---|---|
+| `maxFrameSize` | Required | 限制单个 Standard Frame 总字节数和接收端内存分配；用于 Frame parser 校验 `PayloadLength + 14 <= maxFrameSize` | 保留 |
+| `maxPayloadSize` | Deprecated/Reserved | 与 `maxFrameSize - 14` 重复，且不同 payload 还有 CONTROL/RPC/STREAM 自己的内部 header | 新实现 MUST NOT 发送；接收端 MAY 忽略 |
+| `mtu` | Profile-specific Optional | 表达 transport packet/report 的建议承载单元，例如小 MTU profile 的分片策略输入 | 不作为 v1 Core 必填；需要时由 transport/profile 约束 |
+
+规则：
+
+- `maxFrameSize` MUST 大于等于 `19`，以容纳最小 CONTROL payload：12B Frame Header + 5B CONTROL header + 2B CRC。
+- `maxFrameSize` MUST NOT 超过本地接收缓冲、重组缓冲或安全策略允许值。
+- `maxPayloadSize` MUST NOT 作为独立协商结果参与 v1 Core 校验；若收到该 TLV，接收端 MAY 校验 length 后忽略，或在 strict mode 下拒绝。
+- `mtu` 只描述 transport 层单次 packet/report/write 的建议大小；Frame 层 MUST NOT 把 `mtu` 当作业务 payload 大小。
+- 对 TCP 等 byte-stream transport，runtime SHOULD 省略 `mtu`，并只使用 `maxFrameSize` 作为 AXTP frame 上限。
+- 对 USB HID、BLE、UART 或其他 packet-bound profile，profile MAY 规定 `mtu`，并 MAY 要求发送端使单个 Standard Frame 或低带宽 outer frame 不超过该值。
 
 ## v1 可选 / Profile 特定
 
@@ -106,9 +141,11 @@ v1 中可选或 profile 特定的内容：
 | `READY(0x03)` | 可选/保留 | MAY 忽略；MUST NOT 要求作为 handshake 第三步 |
 | `ACK(0x06)` / `NACK(0x07)` | 可选/未来 | 为可靠 frame/message/stream/control 确认保留 |
 | `sessionId(0x01)` TLV | 可选 | 仅用于 trace/future resume |
+| `protocolVersion(0x02)` | Deprecated/Transition | 早期 rc1 兼容接收；新实现 SHOULD 省略 |
 | Control payload fragmentation | 可选 | SHOULD 避免；parser 可拒绝过大的 control payload |
 | Extended TLV length `0xFF` | parser 需能识别 | Runtime MAY 将不支持的 extended length 作为 malformed 拒绝 |
-| `maxPayloadSize(0x05)` | P1 | 可选协商字段 |
+| `maxPayloadSize(0x05)` | Deprecated/Reserved | 与 `maxFrameSize - 14` 重复；新实现 MUST NOT 发送 |
+| `mtu(0x06)` | Profile-specific Optional | 仅在 transport/profile 需要声明 packet/report 单元时使用 |
 | `windowSize(0x0C)` | P1 | 可选 flow-control 字段 |
 
 ## 保留 / 未来
@@ -230,7 +267,9 @@ Control parser MUST 校验：
 - strict mode 下非 repeated TLV field 不重复出现；
 - OPEN 只出现在合法启动状态；
 - ACCEPT response 对应一个 pending OPEN；
-- 协商出的 `protocolVersion`、`maxFrameSize`、`mtu`、`supportedPayloadTypes`、`supportedRpcEncodings`、`heartbeatIntervalMs` 和 `ackMode` 被本地接受；
+- 协商出的 `maxFrameSize`、`supportedPayloadTypes`、`supportedRpcEncodings`、`heartbeatIntervalMs` 和 `ackMode` 被本地接受；
+- 如果出现 `protocolVersion`，其值符合过渡兼容规则；
+- 如果 profile 使用 `mtu`，协商出的 `mtu` 被本地 transport 接受；
 - unknown TLV 只有在 length 校验成功后才跳过。
 
 协商失败映射：
@@ -240,7 +279,7 @@ Control parser MUST 校验：
 | Header Version 不支持 | `FRAME_VERSION_UNSUPPORTED` | 返回非零 status 的 ACCEPT，然后关闭 |
 | PayloadType 无交集 | `CONTROL_NEGOTIATION_FAILED` | 返回非零 status 的 ACCEPT |
 | rpcEncoding 无交集 | `CONTROL_NEGOTIATION_FAILED` | 返回非零 status 的 ACCEPT |
-| MTU 过小 | `CONTROL_NEGOTIATION_FAILED` | 返回非零 status 的 ACCEPT |
+| Profile 要求的 MTU 过小 | `CONTROL_NEGOTIATION_FAILED` | 返回非零 status 的 ACCEPT |
 | Malformed OPEN | `CONTROL_PAYLOAD_INVALID` 或不响应直接关闭 | 不进入 FRAMING_READY |
 | OPEN 被策略拒绝 | `CONTROL_OPEN_REJECTED` | 返回非零 status 的 ACCEPT |
 
@@ -279,11 +318,11 @@ extended:  type(1B) + length(0xFF) + extendedLength(uint16) + value(N)
 | TLV | 名称 | 类型 | 状态 |
 |---:|---|---|---|
 | `0x01` | `sessionId` | uint32 | Optional |
-| `0x02` | `protocolVersion` | uint8 | Required |
+| `0x02` | `protocolVersion` | uint8 | Deprecated/Transition |
 | `0x03` | `reserved` | - | 历史 headerProfile 保留 |
 | `0x04` | `maxFrameSize` | uint16/uint32 | Required |
-| `0x05` | `maxPayloadSize` | uint16 | P1 |
-| `0x06` | `mtu` | uint16 | Required |
+| `0x05` | `maxPayloadSize` | uint16 | Deprecated/Reserved |
+| `0x06` | `mtu` | uint16 | Profile-specific Optional |
 | `0x07` | `supportedPayloadTypes` | bitmap | Required |
 | `0x08` | `supportedRpcEncodings` | bitmap | Required |
 | `0x09` | `reserved` | - | 历史字段保留 |
@@ -362,24 +401,20 @@ maxHeartbeatIntervalMs <= 60000
 最小 OPEN TLV body：
 
 ```text
-02 01 01        // protocolVersion = 1
-04 02 00 10     // maxFrameSize = 4096
-06 02 C4 09     // mtu = 2500
+04 02 10 00     // maxFrameSize = 4096
 07 01 07        // supportedPayloadTypes = CONTROL/RPC/STREAM
 08 01 09        // supportedRpcEncodings = JSON + JSON_BINARY
-0A 02 E8 03     // heartbeatIntervalMs = 1000
+0A 02 03 E8     // heartbeatIntervalMs = 1000
 0B 01 00        // ackMode = NONE
 ```
 
 最小 ACCEPT 成功 TLV body：
 
 ```text
-02 01 01        // protocolVersion = 1
-04 02 00 10     // maxFrameSize = 4096
-06 02 C4 09     // mtu = 2500
+04 02 10 00     // maxFrameSize = 4096
 07 01 07        // payloadTypes = CONTROL/RPC/STREAM
 1E 01 01        // selectedRpcEncoding = JSON
-0A 02 E8 03     // heartbeatIntervalMs = 1000
+0A 02 03 E8     // heartbeatIntervalMs = 1000
 0B 01 00        // ackMode = NONE
 ```
 

@@ -71,7 +71,7 @@ export AXTP_SPEC_PATH=/Users/qing/Desktop/sources/gitee/axtp
 | 失败现象 | 优先检查 |
 |---|---|
 | Hello 后不能进入 session | Logical Server / Logical Client 方向是否反了。 |
-| Identify 被拒绝 | 是否等待 Hello；`rpcVersion` 是否存在且兼容；认证字段是否符合 Hello 要求。 |
+| Identify 被拒绝 | 是否等待 Hello；`randomSeed:uint32` 是否存在且合法；认证字段是否符合 Hello 要求。 |
 | `requestId` 对不上 | Response 是否复用了请求的 `d.id`，并且未完成请求没有复用 id。 |
 | `sid` 被拒绝 | JSON `sid` 是否固定 8 位 hex string；新建 session 是否使用 `sid=""`。 |
 | Framed CRC 失败 | CRC 是否覆盖 Header + Payload；payloadLength 是否只算 Payload。 |

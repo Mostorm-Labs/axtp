@@ -3,7 +3,7 @@ rpc_ops:
     name: HELLO
     domain: rpc
     status: mvp
-    description: Server hello and RPC version/authentication challenge.
+    description: Server hello with AXTP version and optional authentication challenge.
   - id: 0x01
     name: HELLO_ACK
     domain: rpc
@@ -13,7 +13,7 @@ rpc_ops:
     name: IDENTIFY
     domain: rpc
     status: mvp
-    description: Client identity, version and authentication response.
+    description: Client identity, randomSeed uint32, subscriptions and optional authentication response.
   - id: 0x03
     name: IDENTIFIED
     domain: rpc

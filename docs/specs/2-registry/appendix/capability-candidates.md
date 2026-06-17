@@ -23,7 +23,7 @@ Capability 是对设备能力、协议能力、传输能力和业务功能的声
 
 | 机制 | 职责 |
 | --- |---|
-| `CONTROL OPEN / ACCEPT` | 协议运行时参数协商（protocolVersion、maxFrameSize、maxPayloadSize、mtu、supportedPayloadTypes、supportedRpcEncodings、heartbeatIntervalMs、ackMode、windowSize） |
+| `CONTROL OPEN / ACCEPT` | 协议运行时参数协商（maxFrameSize、supportedPayloadTypes、supportedRpcEncodings、heartbeatIntervalMs、ackMode、windowSize，以及 profile-specific mtu） |
 | `RPC capability.*` | 业务能力查询（display brightness、firmware.update、video stream、methodId 支持、eventId 支持、文件类型） |
 
 规则：
@@ -40,7 +40,7 @@ Capability 是对设备能力、协议能力、传输能力和业务功能的声
 | 类别 | 说明 | 发现方式 |
 | --- |---| --- |
 | protocol capability | 协议版本、PayloadType、Frame Profile | CONTROL OPEN + RPC |
-| transport capability | MTU、最大包长、窗口、ACK 模式 | CONTROL OPEN + RPC |
+| transport capability | 最大 Frame、profile-specific MTU、窗口、ACK 模式 | CONTROL OPEN + RPC |
 | rpc capability | RPC 编码、bodyEncoding、methodId 支持 | CONTROL OPEN + RPC |
 | stream capability | Stream Profile ID、窗口、断点续传、CRC | RPC |
 | business capability | display、firmware、file、video 等业务能力 | RPC |
@@ -208,7 +208,7 @@ bool isCapabilitySupported(const uint8_t* bitmask, uint8_t maskLen, uint8_t bitO
 
 ### 5. 协议 / 通用能力注册表
 
-`0x0000-0x00FF` 只用于协议级、通用或历史保留 capability，不作为业务域。传输 MTU、RPC 编码、窗口等运行时参数优先通过 `CONTROL OPEN / ACCEPT` 协商；如果后续需要以 CapabilityId 暴露，也必须继续分配在 `0x00xx`。
+`0x0000-0x00FF` 只用于协议级、通用或历史保留 capability，不作为业务域。最大 Frame、profile-specific MTU、RPC 编码、窗口等运行时参数优先通过 `CONTROL OPEN / ACCEPT` 协商；如果后续需要以 CapabilityId 暴露，也必须继续分配在 `0x00xx`。
 
 | capabilityId | name | 类型 | 状态 | 说明 |
 |---:| --- |---| --- |---|
@@ -549,9 +549,8 @@ Stream Profile 是具体可建流协议档案，存在于 Registry/Capability/St
   },
   "transport": {
     "type": "USB_HID",
-    "mtu": 1024,
     "maxFrameSize": 1024,
-    "maxPayloadSize": 1008,
+    "mtu": 1024,
     "ackMode": "MESSAGE_ACK",
     "windowSize": 1
   },

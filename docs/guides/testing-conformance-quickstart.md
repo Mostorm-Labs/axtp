@@ -63,7 +63,7 @@ flowchart TD
 | 用例 | 通过标准 |
 |---|---|
 | Hello | WebSocket open 后，Logical Server 发送 `op=0`、`sid=""`。 |
-| Identify | Client 发送 `op=2`、`sid=""`、`rpcVersion=1`。 |
+| Identify | Client 发送 `op=2`、`sid=""`、`randomSeed:uint32`。 |
 | Identified | Server 返回 `op=3` 和固定 8 位 hex `sid`，例如 `"12345678"`。 |
 | Request | Client 使用 generated method，`d.id` 在未完成前不复用。 |
 | Response | Server 返回相同 `d.id`，成功 `status.ok=true`。 |
@@ -77,7 +77,7 @@ flowchart TD
   "sid": "",
   "op": 2,
   "d": {
-    "rpcVersion": 1,
+    "randomSeed": 305419896,
     "eventMasks": ""
   }
 }

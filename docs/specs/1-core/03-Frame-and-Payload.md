@@ -84,7 +84,7 @@ PayloadType MUST 只选择下一级 parser。它 MUST NOT 编码 `VIDEO`、`AUDI
 
 ## v1 可选 / Profile 特定
 
-分片是 Standard Frame 的一部分；当逻辑 message 超过 transport MTU 时 MAY 使用。
+分片是 Standard Frame 的一部分；当逻辑 message 超过协商 `maxFrameSize`，或超过 profile-specific transport MTU 时 MAY 使用。
 
 Profile 特定行为：
 
@@ -155,7 +155,7 @@ Standard Frame parser MUST 校验：
 - Magic bytes 等于 `0x41 0x58`；
 - Header `Version` 受支持；
 - `PayloadType` 是 `0x01`、`0x02`、`0x03` 之一；
-- `PayloadLength` 不超过本地和协商出的最大 frame size；
+- `PayloadLength + 14` 不超过本地和协商出的 `maxFrameSize`；
 - `FrameCount >= 1`;
 - `FrameIndex < FrameCount`;
 - CRC16 与 Header(12B) + Payload 匹配；

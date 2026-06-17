@@ -2,6 +2,43 @@
 
 This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATCH` tags.
 
+## spec/v0.6.1
+
+Core session field cleanup and CONTROL negotiation clarification release.
+
+### Protocol
+
+- Makes RPC `axtpVersion` the AXTP v1 compatibility authority and demotes `rpcVersion` / `negotiatedRpcVersion` to rc1 transition compatibility only.
+- Adds required Identify `randomSeed:uint32` so devices without reliable clocks or hardware RNG can mix caller-provided entropy into RPC `sid` generation.
+- Clarifies CONTROL `protocolVersion` as Deprecated/Transition and keeps Frame Header `Version` plus RPC `axtpVersion` as the primary version boundaries.
+- Clarifies CONTROL sizing: `maxFrameSize` is the complete Standard Frame size limit, while `maxPayloadSize` is deprecated/reserved and `mtu` is profile-specific optional.
+
+### Registry
+
+- Updates core RPC op descriptions and protocol lifecycle metadata to reference `randomSeed` and AXTP version semantics.
+- Updates CONTROL schema facts so `protocolVersion` is optional/deprecated, `mtu` is optional, and `maxFrameSize` has the minimum needed for the smallest CONTROL payload.
+
+### Schemas
+
+- Refreshes `protocol/axtp.protocol.yaml`, generated protocol references, MCP schema output, and generator snapshots from the updated registry and schema facts.
+- Keeps deprecated transition fields represented in generated artifacts for compatibility while removing them from new minimal handshake examples.
+
+### Conformance
+
+- Updates session and event conformance cases to require Identify `randomSeed:uint32`.
+- Refreshes guides and testing quickstarts so WebSocket JSON and Standard Framed examples use the current Hello / Identify / Identified shape.
+
+### Migration
+
+- Updates legacy migration planning notes and cast receiver flow examples to use `randomSeed` and the revised RPC session startup shape.
+- Leaves historical legacy evidence unchanged.
+
+### Runtime Impact
+
+- Runtime and SDK teams should bind to `spec/v0.6.1`, accept missing `rpcVersion` in AXTP v1 handshakes, require `randomSeed:uint32` in Identify, and generate `sid` by mixing that seed with local state.
+- Standard Framed runtimes should treat `maxFrameSize` as the peer receive limit for complete frames and should not require CONTROL `protocolVersion`, `maxPayloadSize`, or core `mtu` in new v1 handshakes.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.6.0
 
 Business registry expansion and generated protocol refresh release.

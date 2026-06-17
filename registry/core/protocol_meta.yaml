@@ -54,11 +54,11 @@ architecture:
     - step: Hello
       from: Server
       to: Client
-      description: Announce RPC session rules, protocol version and authentication requirements.
+      description: Announce RPC session rules, AXTP version and authentication requirements.
     - step: Identify
       from: Client
       to: Server
-      description: Submit client identity and optional authentication data.
+      description: Submit client identity, randomSeed uint32 and optional authentication data.
     - step: Identified
       from: Server
       to: Client

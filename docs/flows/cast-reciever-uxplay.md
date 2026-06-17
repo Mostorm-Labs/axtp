@@ -143,7 +143,7 @@ sequenceDiagram
 
     Launcher->>AXTP: Open WebSocket
     AXTP-->>Launcher: Hello(op=0, sid="")
-    Launcher->>AXTP: Identify(op=2, auth/subscriptions)
+    Launcher->>AXTP: Identify(op=2, randomSeed/auth/subscriptions)
     AXTP-->>Launcher: Identified(op=3, sid="12345678")
 
     Launcher->>AXTP: Candidate cast.getStatus
@@ -189,8 +189,8 @@ sequenceDiagram
 | 1 | Launcher | 启动投屏接收端 runtime。 | Launcher 配置可用。 | local-only | process config, external port | Electron receiver runtime 开始初始化。 | local-only | 启动失败时 UI 显示接收端不可用。 |
 | 2 | AXTP Adapter | 启动 UxPlay backend。 | Backend binary/config/token 可用。 | non-protocol / legacy adapter | `-ws-enable`, backend port, token | UxPlay 内部控制口 ready。 | non-protocol | UxPlay 退出或端口冲突时，后续通过候选 backend/error event 上报。 |
 | 3 | Control Client | 连接外部控制口。 | `AXTP-WS-JSON` profile。 | WebSocket open | `ws://127.0.0.1:7010/` | 进入 RPC handshake。 | generated | 连接失败按 UI 重连/提示策略处理。 |
-| 4 | AXTP Adapter | 发送服务端 Hello。 | WebSocket 已建立。 | `Hello(op=0)` | `sid=""`, `axtpVersion`, `rpcVersion`, auth challenge optional | Client 获得 session 规则和认证要求。 | generated | 超时未收到 Hello，Client 断开并重连。 |
-| 5 | Control Client | 提交身份、认证和订阅意图。 | Server Hello 已收到。 | `Identify(op=2)` | `rpcVersion`, `authentication`, `eventMasks` | Server 校验版本、身份和权限。 | generated / draft auth | auth 字段的 token/HMAC/scope 语义需 Stage 20 细化。 |
+| 4 | AXTP Adapter | 发送服务端 Hello。 | WebSocket 已建立。 | `Hello(op=0)` | `sid=""`, `axtpVersion`, auth challenge optional | Client 获得 session 规则和认证要求。 | generated | 超时未收到 Hello，Client 断开并重连。 |
+| 5 | Control Client | 提交身份、认证、随机种子和订阅意图。 | Server Hello 已收到。 | `Identify(op=2)` | `randomSeed`, `authentication`, `eventMasks` | Server 校验版本、身份和权限，并使用 randomSeed 参与 sid 生成。 | generated / draft auth | auth 字段的 token/HMAC/scope 语义需 Stage 20 细化。 |
 | 6 | AXTP Adapter | 确认 session ready。 | Identify 已通过。 | `Identified(op=3)` | fixed 8-char hex `sid` | 后续 Request/Event/Response 使用该 `sid`。 | generated | Identified 前收到业务 Request，应按 RPC session 错误处理。 |
 | 7 | AXTP Adapter | 通知 runtime/backend ready。 | runtime/backend 已初始化。 | Candidate `cast.runtimeReady`, `cast.backendReady` | state, backend type, ports | UI 可显示接收端可用。 | missing | backend 未 ready 时整体 status 可为 `starting` 或 `error`。 |
 | 8 | Control Client | 查询完整状态。 | RPC identified。 | Candidate `cast.getStatus` | no schema here; status selector optional | 返回 runtime、backend、session、pin、audio、window 摘要。 | missing | backend 暂不可用时仍应返回 runtime 状态。 |
@@ -207,7 +207,7 @@ sequenceDiagram
 
 | State change | Trigger | Event needed | Payload | Client handling | Coverage |
 |---|---|---|---|---|---|
-| RPC session identified | `Identified(op=3)` | no business event | sid, negotiated RPC version | 开始业务查询和订阅。 | generated |
+| RPC session identified | `Identified(op=3)` | no business event | sid | 开始业务查询和订阅。 | generated |
 | runtime ready | Electron receiver runtime 初始化完成 | Candidate `cast.runtimeReady` / `cast.runtimeChanged` | runtime state, displayName, controlPort | 更新接收端可用状态。 | missing |
 | backend ready / exited | UxPlay 启动成功或退出 | Candidate `cast.backendReady`, `cast.backendExited` | backend type, state, exit code/signal | 更新 backend 状态；必要时触发重启策略。 | missing |
 | receiver ready | AirPlay service 可被发现 | Candidate `cast.statusChanged` | aggregate status summary | UI 更新主状态；必要时调用 status query 校准。 | missing |
@@ -225,8 +225,8 @@ sequenceDiagram
 | Method/Event/Profile | Purpose in this flow | Source |
 |---|---|---|
 | `AXTP-WS-JSON` | 外部控制口 WebSocket JSON transport profile。 | `docs/generated/protocol.md`, `registry/core/protocol_meta.yaml` |
-| `Hello(op=0)` | Logical Server 建立连接后主动宣布 RPC version 和认证要求。 | `docs/generated/protocol.md`, `docs/specs/1-core/06-RPC-Session.md` |
-| `Identify(op=2)` | Logical Client 提交身份、认证和订阅意图。 | `docs/generated/protocol.md`, `docs/specs/1-core/06-RPC-Session.md` |
+| `Hello(op=0)` | Logical Server 建立连接后主动宣布 AXTP version 和认证要求。 | `docs/generated/protocol.md`, `docs/specs/1-core/06-RPC-Session.md` |
+| `Identify(op=2)` | Logical Client 提交身份、randomSeed、认证和订阅意图。 | `docs/generated/protocol.md`, `docs/specs/1-core/06-RPC-Session.md` |
 | `Identified(op=3)` | Logical Server 分配 RPC `sid`，session 进入 ready。 | `docs/generated/protocol.md`, `docs/specs/1-core/06-RPC-Session.md` |
 | `Request(op=7)` | 控制端调用业务 method。 | `docs/generated/protocol.md`, `docs/specs/1-core/06-RPC-Session.md` |
 | `RequestResponse(op=8)` | 服务端返回请求结果。 | `docs/generated/protocol.md`, `docs/specs/1-core/06-RPC-Session.md` |

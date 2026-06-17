@@ -54,7 +54,7 @@ Transport connected
 CONTROL OPEN
 CONTROL ACCEPT
 RPC Hello
-RPC Identify
+RPC Identify(randomSeed)
 RPC Identified
 RPC Request / Response / Event
 STREAM data，在业务 method 已建立 stream context 后使用
@@ -65,7 +65,7 @@ WebSocket Unframed JSON 路径：
 ```text
 WebSocket connected
 RPC Hello
-RPC Identify
+RPC Identify(randomSeed)
 RPC Identified
 RPC Request / Response / Event
 ```

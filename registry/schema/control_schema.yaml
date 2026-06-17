@@ -5,10 +5,10 @@ schemas:
       - id: 0x02
         name: protocolVersion
         type: uint8
-        required: true
+        required: false
         min: 1
         max: 15
-        deprecated: false
+        deprecated: true
       - id: 0x03
         name: reservedHeaderProfile
         type: uint8
@@ -20,13 +20,13 @@ schemas:
         name: maxFrameSize
         type: uint16
         required: true
-        min: 1
+        min: 19
         max: 65535
         deprecated: false
       - id: 0x06
         name: mtu
         type: uint16
-        required: true
+        required: false
         min: 1
         max: 65535
         deprecated: false
@@ -66,10 +66,10 @@ schemas:
       - id: 0x02
         name: protocolVersion
         type: uint8
-        required: true
+        required: false
         min: 1
         max: 15
-        deprecated: false
+        deprecated: true
       - id: 0x03
         name: reservedHeaderProfile
         type: uint8
@@ -81,13 +81,13 @@ schemas:
         name: maxFrameSize
         type: uint16
         required: true
-        min: 1
+        min: 19
         max: 65535
         deprecated: false
       - id: 0x06
         name: mtu
         type: uint16
-        required: true
+        required: false
         min: 1
         max: 65535
         deprecated: false

@@ -16,7 +16,7 @@
 | 请求 ID | Rooms request id 按 string correlation id 冻结；旧文档样例 wire 字段为 `d.id`，若具体实现使用 `d.requestid` 也必须原样保留，响应必须回填同一字段和值。 |
 | Session envelope | 继续使用 JSON `{sid, op, d}`。 |
 | Hello 方向 | 改为 Logical Server 主动发送 `Hello(op=0)`；Rooms 设备是 Logical Server，即使它在反连场景中是 Physical Client。 |
-| 客户端认证/声明 | Client 收到 Hello 后发送 `Identify(op=2)`；Server 返回 `Identified(op=3)` 并分配 `sid`。 |
+| 客户端认证/声明 | Client 收到 Hello 后发送带 `randomSeed:uint32` 的 `Identify(op=2)`；Server 返回 `Identified(op=3)` 并分配 `sid`。 |
 | 旧 HelloAck | `HelloAck(op=1)` 在新 Rooms profile 中不再作为主路径；仅可作为临时兼容入口，不进入冻结合同。 |
 | status envelope | 旧 `status.{code, comment, result}` 适配为 `status.{code, msg, ok}`。 |
 | 新业务开发 | 不扩展 Rooms 旧 method 表；新增能力必须走 `docs/protocol/<domain>/<domain.feature>.md` 草案、评审、YAML 采纳和 Generator 流程。 |
@@ -55,7 +55,7 @@ Rooms JSON codec 不依赖 AXTP `RegistryLookup::methodIdByName()`。原因是 R
 ```text
 WebSocket connected
   -> Server sends Hello(op=0, sid="")
-  -> Client sends Identify(op=2, sid="")
+  -> Client sends Identify(op=2, sid="", randomSeed)
   -> Server sends Identified(op=3, sid="<allocated>")
   -> APP_READY
   -> Client sends Request(op=7)
@@ -74,7 +74,6 @@ Server 在 WebSocket 建立后立即发送：
   "op": 0,
   "d": {
     "axtpVersion": "1.0.0",
-    "rpcVersion": 1,
     "profile": "rooms-ws-json",
     "roomsVersion": "5.2.3",
     "authentication": null
@@ -85,7 +84,6 @@ Server 在 WebSocket 建立后立即发送：
 规则：
 
 - `sid` 必须是空字符串。
-- `rpcVersion` 当前固定为 `1`。
 - `profile` 固定为 `rooms-ws-json`，用于客户端确认进入 Rooms 兼容 profile。
 - `roomsVersion` 对应旧文档中的 `adxdpVersion` 语义；字段名不再使用 `adxdpVersion`。
 - 不需要认证时 `authentication` 可省略；需要认证时按 AXTP Hello challenge 语义放入对象。
@@ -99,7 +97,7 @@ Client 收到 Hello 后发送：
   "sid": "",
   "op": 2,
   "d": {
-    "rpcVersion": 1,
+    "randomSeed": 305419896,
     "clientName": "rooms-client",
     "clientVersion": "1.0.0",
     "eventMasks": "",
@@ -111,6 +109,7 @@ Client 收到 Hello 后发送：
 规则：
 
 - 新连接 `sid` 为空字符串。
+- `randomSeed` 是 uint32 随机种子，Server 用它播种或混入 sid 生成器。
 - 断线恢复时 `sid` 仍为空字符串，旧 session 放入 `d.resumeSid`。
 - `eventMasks` 允许为空。Rooms MVP 可忽略该字段并继续按旧 Rooms 事件策略推送。
 - 旧 `supportedMethods` / `supportedEvents` 不再由 Client 在首次消息中声明。
@@ -121,10 +120,9 @@ Server 验证通过后发送：
 
 ```json
 {
-  "sid": "123456",
+  "sid": "12345678",
   "op": 3,
   "d": {
-    "negotiatedRpcVersion": 1,
     "expireIn": 300
   }
 }

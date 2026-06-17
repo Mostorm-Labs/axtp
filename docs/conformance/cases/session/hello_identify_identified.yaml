@@ -15,14 +15,15 @@ steps:
         sid: ""
         op: HELLO
         d:
-          rpcVersion: 1
+          axtpVersion:
+            type: string
 
   - direction: client_to_server
     jsonrpc:
       sid: ""
       op: IDENTIFY
       d:
-        rpcVersion: 1
+        randomSeed: 305419896
 
   - direction: server_to_client
     expect:
@@ -33,4 +34,4 @@ steps:
 
 assertions:
   - identified.sid != ""
-  - identified.d.negotiatedRpcVersion == 1
+  - identified.d == {}

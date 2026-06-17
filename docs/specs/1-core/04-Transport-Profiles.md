@@ -114,7 +114,7 @@ Transport connected
   -> Physical Server 发送 CONTROL ACCEPT 或失败 ACCEPT
   -> FRAMING_READY
   -> Logical Server sends RPC Hello
-  -> Logical Client sends RPC Identify
+  -> Logical Client sends RPC Identify(randomSeed)
   -> Logical Server sends RPC Identified
   -> APP_READY
 ```
@@ -124,7 +124,7 @@ Transport connected
 ```text
 WebSocket connected
   -> Logical Server 发送 RPC Hello
-  -> Logical Client 发送 RPC Identify
+  -> Logical Client 发送 RPC Identify(randomSeed)
   -> Logical Server 发送 RPC Identified
   -> APP_READY
 ```
@@ -186,16 +186,16 @@ Standard Framed 启动：
 PC -> PS: CONTROL OPEN
 PS -> PC: CONTROL ACCEPT
 LS -> LC: RPC Hello
-LC -> LS: RPC Identify
+LC -> LS: RPC Identify(randomSeed)
 LS -> LC: RPC Identified
 ```
 
 WebSocket JSON 启动：
 
 ```text
-LS -> LC: { "sid": "", "op": 0, "d": { "axtpVersion": "1.0.0-rc1", "rpcVersion": 1 } }
-LC -> LS: { "sid": "", "op": 2, "d": { "rpcVersion": 1 } }
-LS -> LC: { "sid": "12345678", "op": 3, "d": { "negotiatedRpcVersion": 1 } }
+LS -> LC: { "sid": "", "op": 0, "d": { "axtpVersion": "1.0.0-rc1" } }
+LC -> LS: { "sid": "", "op": 2, "d": { "randomSeed": 305419896 } }
+LS -> LC: { "sid": "12345678", "op": 3, "d": {} }
 ```
 
 Cloud reverse 角色提醒：
