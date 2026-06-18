@@ -2,6 +2,52 @@
 
 This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATCH` tags.
 
+## spec/v0.7.0
+
+Release contract, generated artifact governance, and Protocol IR fidelity release.
+
+### Protocol
+
+- Promotes capability metadata into top-level Protocol IR so runtimes and SDK generators can consume capability ids, status, type, and schema bindings directly.
+- Preserves field defaults, enum values, schema references, repeated metadata, and array item typing in generated Protocol IR and JSON references.
+- Converts generated-domain JSON-array fields from opaque `bytes` placeholders into first-class `array<T>` schema facts for device, firmware, network, audio stream, and video stream contracts.
+
+### Registry
+
+- Updates adopted domain YAML sources to express object arrays and scalar arrays with `type: array` plus `schema` or `array.item_type`.
+- Adds source validation for array item type references so malformed array declarations fail before generated artifacts drift.
+
+### Schemas
+
+- Refreshes `protocol/axtp.protocol.yaml`, `docs/generated/protocol.md`, `docs/generated/protocol.json`, MCP schema output, and generator snapshots from the richer registry/source model.
+- Keeps the remaining opaque `bytes` field only where the value is intentionally a polymorphic JSON selector rather than a simple array.
+
+### Conformance
+
+- Replaces loose conformance case validation with AJV-backed JSON Schema validation for case and result files.
+- Adds cross-reference checks for manifest levels, profiles, fixtures, methods, events, errors, and capabilities.
+- Keeps existing conformance behavior intact while making case authoring failures fail in CI.
+
+### Release Governance
+
+- Defines the release artifact as an explicit runtime-consumable contract containing `protocol/`, `docs/generated/`, `registry/`, `docs/specs/`, `docs/conformance/`, `tooling/mcp`, `tooling/test-vectors`, and `LICENSE`.
+- Excludes `.DS_Store` and legacy evidence files from the published archive while keeping a compatibility `conformance/` alias.
+- Adds generated drift, Markdown link, protocol status, and release artifact dry-run checks to CI and release validation.
+- Adds repository governance entry points: `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, and `CODEOWNERS`.
+
+### Documentation
+
+- Updates the protocol domain matrix to match generated method/event counts.
+- Fixes generated protocol draft status text for adopted device, network, audio stream, video stream, and firmware update features.
+- Fixes local Markdown links and clarifies renamed or merged draft paths.
+
+### Runtime Impact
+
+- Runtime and SDK teams should bind to `spec/v0.7.0` and regenerate from `protocol/axtp.protocol.yaml` or `docs/generated/protocol.json`.
+- Generators should treat `array<T>`, field defaults, enum values, and top-level capability records as authoritative.
+- Implementations that previously treated generated JSON-array fields as opaque bytes should update bindings to typed arrays where the new IR declares `type: array`.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.6.1
 
 Core session field cleanup and CONTROL negotiation clarification release.

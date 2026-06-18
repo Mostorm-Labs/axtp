@@ -40,7 +40,7 @@ lastReviewed: 2026-06-15
 | `7` | Request | 客户端调用业务 method。 |
 | `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
 
-本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 以 `registry/**`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**` 为准。
 
 业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
 
@@ -68,7 +68,7 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 
 ## 3. 方法 Methods
 
-方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。不要在草案中分配正式 ID。
+已生成 methodId、eventId、bitOffset 和 schema fieldId 以 registry/generated 为准；本文不重新分配正式 ID，保留的 draft/review 标记仅作为后续修订输入。
 
 ### 3.0 方法速览
 
@@ -890,7 +890,7 @@ AudioChunkHeaderV1 + AAC bytes
 
 ### 6.3 STREAM payload envelope：`AudioChunkHeaderV1`
 
-`AudioChunkHeaderV1` 是 STREAM data 内的音频业务 envelope，位于 STREAM 16B header 之后。二进制字段编号和布局为 `TBD after adoption`；不得把这些字段加入 STREAM 16B header。
+`AudioChunkHeaderV1` 是 STREAM data 内的音频业务 envelope，位于 STREAM 16B header 之后。二进制字段编号和布局以 registry/generated schema 为准；不得把这些字段加入 STREAM 16B header。
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -1282,21 +1282,21 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | hard-disconnect | 不要求补发 `closeStream`。 | 对端可能已经不可通信，按 session/transport lost 本地清理。 |
 | PCM fallback | NA20/NT10 MVP 不支持。 | 用户已确认 AAC 透传方案。 |
 
-## 附录 C. Registry 草案输入
+## 附录 C. Registry/generated 摘要
 
-以下仅为 registry review 输入，不分配正式 ID。
+以下条目已进入 generated 合同；正式 ID 以 registry/generated 为准。
 
 | 类型 | 名称 | Schema / Capability | ID |
 |---|---|---|---|
-| capability | `audio.stream` | `AudioStreamCapabilities` | `TBD after adoption` |
-| method | `audio.getStreamCapabilities` | `AudioGetStreamCapabilitiesParams` -> `AudioStreamCapabilities` | `TBD after adoption` |
-| method | `audio.openStream` | `AudioOpenStreamParams` -> `AudioOpenStreamResult` | `TBD after adoption` |
-| method | `audio.closeStream` | `AudioCloseStreamParams` -> `AudioCloseStreamResult` | `TBD after adoption` |
-| method | `audio.getStreamState` | `AudioGetStreamStateParams` -> `AudioStreamState` | `TBD after adoption` |
-| method | `audio.getStreamSourceState` | `AudioGetStreamSourceStateParams` -> `AudioStreamSourceState` | `TBD after adoption` |
-| event | `audio.streamStateChanged` | `AudioStreamStateChangedEvent` | `TBD after adoption` |
-| event | `audio.streamSourceStateChanged` | `AudioStreamSourceStateChangedEvent` | `TBD after adoption` |
-| event | `audio.streamStatsReported` | `AudioStreamStatsReportedEvent` | `TBD after adoption` |
+| capability | `audio.stream` | `AudioStreamCapabilities` | generated |
+| method | `audio.getStreamCapabilities` | `AudioGetStreamCapabilitiesParams` -> `AudioStreamCapabilities` | generated |
+| method | `audio.openStream` | `AudioOpenStreamParams` -> `AudioOpenStreamResult` | generated |
+| method | `audio.closeStream` | `AudioCloseStreamParams` -> `AudioCloseStreamResult` | generated |
+| method | `audio.getStreamState` | `AudioGetStreamStateParams` -> `AudioStreamState` | generated |
+| method | `audio.getStreamSourceState` | `AudioGetStreamSourceStateParams` -> `AudioStreamSourceState` | generated |
+| event | `audio.streamStateChanged` | `AudioStreamStateChangedEvent` | generated |
+| event | `audio.streamSourceStateChanged` | `AudioStreamSourceStateChangedEvent` | generated |
+| event | `audio.streamStatsReported` | `AudioStreamStatsReportedEvent` | generated |
 
 ## 附录 D. 采纳检查清单
 

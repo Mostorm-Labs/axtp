@@ -348,31 +348,33 @@ schemas:
         description: Update and atomicity policy for set and reset operations.
       - fieldId: 3
         name: supportedAlgorithms
-        type: bytes
+        type: array
         required: false
-        maxLength: 64
-        description: Optional compact list of supported algorithm object names; JSON implementations expose names as an array of
-          strings.
+        array:
+          itemType: string
+        description: Optional compact list of supported algorithm object names.
   AudioGetAlgorithmCapabilitiesRequest:
     kind: object
     description: Optional selector for querying audio algorithm capabilities.
     fields:
       - fieldId: 1
         name: items
-        type: bytes
+        type: array
         required: false
-        maxLength: 128
-        description: Optional JSON array of algorithm object names; omit to query all supported algorithms.
+        array:
+          itemType: string
+        description: Optional algorithm object names; omit to query all supported algorithms.
   AudioGetAlgorithmConfigRequest:
     kind: object
     description: Optional selector for querying current audio algorithm configuration.
     fields:
       - fieldId: 1
         name: items
-        type: bytes
+        type: array
         required: false
-        maxLength: 128
-        description: Optional JSON array of algorithm object names; omit to query all supported algorithms.
+        array:
+          itemType: string
+        description: Optional algorithm object names; omit to query all supported algorithms.
   AudioSetAlgorithmConfigRequest:
     kind: object
     description: Partial audio algorithm configuration update.
@@ -439,10 +441,11 @@ schemas:
         description: Changed or affected algorithm configuration values.
       - fieldId: 5
         name: changedFields
-        type: bytes
+        type: array
         required: false
-        maxLength: 256
-        description: Optional JSON array of changed field paths such as noiseSuppression.level.
+        array:
+          itemType: string
+        description: Optional changed field paths such as noiseSuppression.level.
   AudioGetAlgorithmCapabilitiesResponse:
     kind: object
     description: Supported algorithm objects, fields, defaults, ranges, units, and update policy.
@@ -568,10 +571,11 @@ schemas:
         description: Numeric step size.
       - fieldId: 8
         name: values
-        type: bytes
+        type: array
         required: false
-        maxLength: 128
-        description: Optional JSON array of enum values.
+        array:
+          itemType: string
+        description: Optional enum values.
       - fieldId: 9
         name: unit
         type: string
@@ -1063,6 +1067,7 @@ schemas:
         name: includeRuntimeState
         type: bool
         required: false
+        default: false
         description: Whether to include current source runtime state.
   AudioStreamCapabilities:
     kind: object
@@ -1076,28 +1081,34 @@ schemas:
         description: Fixed capability name audio.stream.
       - fieldId: 2
         name: sources
-        type: bytes
+        type: array
         required: true
-        maxLength: 8192
-        description: JSON array of AudioStreamSource objects.
+        schema: AudioStreamSource
+        array:
+          itemType: AudioStreamSource
+          itemSchema: AudioStreamSource
+        description: Audio stream source objects.
       - fieldId: 3
         name: streamProfiles
-        type: bytes
+        type: array
         required: true
-        maxLength: 512
-        description: JSON array of supported stream profiles, normally media.audio.
+        array:
+          itemType: string
+        description: Supported stream profiles, normally media.audio.
       - fieldId: 4
         name: openModes
-        type: bytes
+        type: array
         required: true
-        maxLength: 512
-        description: JSON array of supported open modes, such as producer_open and receiver_pull.
+        array:
+          itemType: string
+        description: Supported open modes, such as producer_open and receiver_pull.
       - fieldId: 5
         name: peerRoles
-        type: bytes
+        type: array
         required: true
-        maxLength: 512
-        description: JSON array of peer roles, such as receiver and transmitter.
+        array:
+          itemType: string
+        description: Peer roles, such as receiver and transmitter.
       - fieldId: 6
         name: supportsSourceStateEvent
         type: bool
@@ -1115,10 +1126,11 @@ schemas:
         description: Whether normal applications can rely on runtime-managed STREAM flow control.
       - fieldId: 9
         name: aacTransportFormats
-        type: bytes
+        type: array
         required: false
-        maxLength: 512
-        description: Optional JSON array of AAC transport format strings; exact supported set remains product-confirmed.
+        array:
+          itemType: string
+        description: Optional AAC transport format strings; exact supported set remains product-confirmed.
   AudioStreamSource:
     kind: object
     description: One real-time audio stream source.
@@ -1137,22 +1149,25 @@ schemas:
         description: User-visible source name.
       - fieldId: 3
         name: codecs
-        type: bytes
+        type: array
         required: true
-        maxLength: 512
-        description: JSON array of supported audio codecs.
+        array:
+          itemType: string
+        description: Supported audio codecs.
       - fieldId: 4
         name: sampleRates
-        type: bytes
+        type: array
         required: false
-        maxLength: 512
-        description: JSON array of supported sample rates in Hz.
+        array:
+          itemType: uint32
+        description: Supported sample rates in Hz.
       - fieldId: 5
         name: channels
-        type: bytes
+        type: array
         required: false
-        maxLength: 256
-        description: JSON array of supported channel counts.
+        array:
+          itemType: uint8
+        description: Supported channel counts.
       - fieldId: 6
         name: state
         type: enum
@@ -1208,6 +1223,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: media.audio
         description: STREAM profile name.
       - fieldId: 10
         name: cursorUnit
@@ -1380,6 +1396,7 @@ schemas:
         name: alreadyClosed
         type: bool
         required: false
+        default: false
         description: Whether the stream was already terminal before this request.
   AudioGetStreamStateParams:
     kind: object
@@ -1598,6 +1615,7 @@ schemas:
         name: includeCapabilitySummary
         type: bool
         required: false
+        default: true
         description: Whether to include the lightweight DeviceCapabilitySummary block.
   DeviceInfo:
     kind: object
@@ -1746,10 +1764,13 @@ schemas:
     fields:
       - fieldId: 1
         name: components
-        type: bytes
+        type: array
         required: false
-        maxLength: 4096
-        description: JSON array of SoftwareComponent objects.
+        schema: SoftwareComponent
+        array:
+          itemType: SoftwareComponent
+          itemSchema: SoftwareComponent
+        description: Software component objects.
   SoftwareComponent:
     kind: object
     description: One software component running on or hosted by the device.
@@ -1805,22 +1826,25 @@ schemas:
     fields:
       - fieldId: 1
         name: domains
-        type: bytes
+        type: array
         required: false
-        maxLength: 1024
-        description: JSON array of domain names represented by the device.
+        array:
+          itemType: string
+        description: Domain names represented by the device.
       - fieldId: 2
         name: features
-        type: bytes
+        type: array
         required: false
-        maxLength: 4096
-        description: JSON array of domain.feature names represented by the device.
+        array:
+          itemType: string
+        description: Domain.feature names represented by the device.
       - fieldId: 3
         name: profiles
-        type: bytes
+        type: array
         required: false
-        maxLength: 1024
-        description: JSON array of profile names or product profile hints.
+        array:
+          itemType: string
+        description: Profile names or product profile hints.
   DeviceInfoCapability:
     kind: object
     description: Capability descriptor for device.info.
@@ -1829,16 +1853,19 @@ schemas:
         name: readOnly
         type: bool
         required: true
+        default: true
         description: device.info currently exposes only read-only information.
       - fieldId: 2
         name: supportsCapabilitySummary
         type: bool
         required: false
+        default: true
         description: Whether device.getInfo can include DeviceCapabilitySummary.
       - fieldId: 3
         name: identityMerged
         type: bool
         required: false
+        default: true
         description: Whether device.identity has been merged into device.info.
   FirmwareUpdateCapabilities:
     kind: object
@@ -1906,10 +1933,13 @@ schemas:
         description: State after begin, normally receiving.
       - fieldId: 3
         name: streams
-        type: bytes
+        type: array
         required: true
-        maxLength: 4096
-        description: JSON array of FirmwareUpdateStreamBinding objects.
+        schema: FirmwareUpdateStreamBinding
+        array:
+          itemType: FirmwareUpdateStreamBinding
+          itemSchema: FirmwareUpdateStreamBinding
+        description: Firmware update stream bindings.
       - fieldId: 4
         name: chunkSize
         type: uint32
@@ -1973,10 +2003,13 @@ schemas:
         description: Target firmware version string.
       - fieldId: 3
         name: files
-        type: bytes
+        type: array
         required: true
-        maxLength: 16384
-        description: JSON array of FirmwareUpdateFile objects.
+        schema: FirmwareUpdateFile
+        array:
+          itemType: FirmwareUpdateFile
+          itemSchema: FirmwareUpdateFile
+        description: Firmware update files.
       - fieldId: 4
         name: devicePolicyVersion
         type: string
@@ -2135,6 +2168,7 @@ schemas:
         name: includeDisabled
         type: bool
         required: false
+        default: false
         description: Whether disabled interfaces should be included.
   NetworkGetInterfaceInfoParams:
     kind: object
@@ -2152,10 +2186,13 @@ schemas:
     fields:
       - fieldId: 1
         name: interfaces
-        type: bytes
+        type: array
         required: true
-        maxLength: 8192
-        description: JSON array of NetworkInterfaceSummary objects.
+        schema: NetworkInterfaceSummary
+        array:
+          itemType: NetworkInterfaceSummary
+          itemSchema: NetworkInterfaceSummary
+        description: Network interface summary objects.
       - fieldId: 2
         name: defaults
         type: NetworkDefaultInterfaceIds
@@ -2268,11 +2305,13 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.primary
         description: Interface identifier; omitted means default primary interface.
       - fieldId: 2
         name: family
         type: enum
         required: false
+        default: ipv4
         description: IP family; candidate values include ipv4 and ipv6.
   NetworkSetIpConfigParams:
     kind: object
@@ -2283,11 +2322,13 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.primary
         description: Interface identifier.
       - fieldId: 2
         name: family
         type: enum
         required: false
+        default: ipv4
         description: IP family.
       - fieldId: 3
         name: config
@@ -2298,6 +2339,7 @@ schemas:
         name: applyPolicy
         type: enum
         required: false
+        default: immediate
         description: Apply policy; candidate values include immediate and pending_restart.
   NetworkSetIpConfigResult:
     kind: object
@@ -2327,6 +2369,7 @@ schemas:
         name: family
         type: enum
         required: false
+        default: ipv4
         description: IP family; candidate values include ipv4 and ipv6.
       - fieldId: 3
         name: mode
@@ -2354,10 +2397,11 @@ schemas:
         description: Default gateway.
       - fieldId: 7
         name: dns
-        type: bytes
+        type: array
         required: false
-        maxLength: 1024
-        description: JSON array of DNS server addresses.
+        array:
+          itemType: string
+        description: DNS server addresses.
   NetworkGetWifiCapabilitiesParams:
     kind: object
     description: Selector for Wi-Fi station capability.
@@ -2367,6 +2411,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.wifiSta
         description: Wi-Fi station interface identifier.
   NetworkGetWifiConfigParams:
     kind: object
@@ -2377,11 +2422,13 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.wifiSta
         description: Wi-Fi station interface identifier.
       - fieldId: 2
         name: includeProfiles
         type: bool
         required: false
+        default: true
         description: Whether to include saved profile summaries.
   NetworkGetWifiStateParams:
     kind: object
@@ -2392,6 +2439,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.wifiSta
         description: Wi-Fi station interface identifier.
   NetworkWifiCapabilities:
     kind: object
@@ -2405,22 +2453,25 @@ schemas:
         description: Fixed capability name network.wifi.
       - fieldId: 2
         name: securityTypes
-        type: bytes
+        type: array
         required: true
-        maxLength: 1024
-        description: JSON array of supported security type strings.
+        array:
+          itemType: string
+        description: Supported security type strings.
       - fieldId: 3
         name: bands
-        type: bytes
+        type: array
         required: false
-        maxLength: 512
-        description: JSON array of supported Wi-Fi bands.
+        array:
+          itemType: string
+        description: Supported Wi-Fi bands.
       - fieldId: 4
         name: credentialImportModes
-        type: bytes
+        type: array
         required: true
-        maxLength: 512
-        description: JSON array of supported credential import modes such as passphrase, pairing_token, and opaque_ref.
+        array:
+          itemType: string
+        description: Supported credential import modes such as passphrase, pairing_token, and opaque_ref.
       - fieldId: 5
         name: savedProfilesSupported
         type: bool
@@ -2448,10 +2499,13 @@ schemas:
         description: Wi-Fi station interface identifier.
       - fieldId: 2
         name: profiles
-        type: bytes
+        type: array
         required: false
-        maxLength: 8192
-        description: JSON array of NetworkWifiProfile summaries. Plaintext credentials must not be returned.
+        schema: NetworkWifiProfile
+        array:
+          itemType: NetworkWifiProfile
+          itemSchema: NetworkWifiProfile
+        description: NetworkWifiProfile summaries. Plaintext credentials must not be returned.
       - fieldId: 3
         name: defaultProfileId
         type: string
@@ -2529,6 +2583,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.wifiSta
         description: Wi-Fi station interface identifier.
       - fieldId: 2
         name: profile
@@ -2539,11 +2594,13 @@ schemas:
         name: replaceExisting
         type: bool
         required: false
+        default: false
         description: Whether an existing matching profile may be replaced.
       - fieldId: 4
         name: makeDefault
         type: bool
         required: false
+        default: false
         description: Whether to make this the default profile.
       - fieldId: 5
         name: connectAfterSave
@@ -2579,6 +2636,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.wifiSta
         description: Wi-Fi station interface identifier.
       - fieldId: 2
         name: ssidFilter
@@ -2603,10 +2661,13 @@ schemas:
         description: Asynchronous scan identifier.
       - fieldId: 2
         name: results
-        type: bytes
+        type: array
         required: false
-        maxLength: 16384
-        description: JSON array of NetworkWifiScanResult objects.
+        schema: NetworkWifiScanResult
+        array:
+          itemType: NetworkWifiScanResult
+          itemSchema: NetworkWifiScanResult
+        description: NetworkWifiScanResult objects.
       - fieldId: 3
         name: complete
         type: bool
@@ -2621,6 +2682,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.wifiSta
         description: Wi-Fi station interface identifier.
       - fieldId: 2
         name: profileId
@@ -2647,6 +2709,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.wifiSta
         description: Wi-Fi station interface identifier.
       - fieldId: 2
         name: reason
@@ -2755,6 +2818,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.wifiAp
         description: Wi-Fi AP interface identifier.
   NetworkGetApConfigParams:
     kind: object
@@ -2765,6 +2829,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.wifiAp
         description: Wi-Fi AP interface identifier.
   NetworkApCapabilities:
     kind: object
@@ -2778,22 +2843,25 @@ schemas:
         description: Fixed capability name network.ap.
       - fieldId: 2
         name: securityTypes
-        type: bytes
+        type: array
         required: true
-        maxLength: 1024
-        description: JSON array of supported security types.
+        array:
+          itemType: string
+        description: Supported security types.
       - fieldId: 3
         name: bands
-        type: bytes
+        type: array
         required: false
-        maxLength: 512
-        description: JSON array of supported bands.
+        array:
+          itemType: string
+        description: Supported bands.
       - fieldId: 4
         name: credentialExportModes
-        type: bytes
+        type: array
         required: false
-        maxLength: 512
-        description: JSON array of credential export modes.
+        array:
+          itemType: string
+        description: Credential export modes.
       - fieldId: 5
         name: clientsSupported
         type: bool
@@ -2824,6 +2892,7 @@ schemas:
         name: hidden
         type: bool
         required: false
+        default: false
         description: Whether SSID broadcast is hidden.
       - fieldId: 5
         name: band
@@ -2859,6 +2928,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.wifiAp
         description: Wi-Fi AP interface identifier.
       - fieldId: 2
         name: config
@@ -2924,6 +2994,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: defaults.wifiAp
         description: Wi-Fi AP interface identifier.
       - fieldId: 2
         name: reason
@@ -2950,10 +3021,13 @@ schemas:
     fields:
       - fieldId: 1
         name: clients
-        type: bytes
+        type: array
         required: true
-        maxLength: 16384
-        description: JSON array of NetworkApClientInfo objects.
+        schema: NetworkApClientInfo
+        array:
+          itemType: NetworkApClientInfo
+          itemSchema: NetworkApClientInfo
+        description: NetworkApClientInfo objects.
   NetworkApClientInfo:
     kind: object
     description: One AP client summary.
@@ -3058,10 +3132,11 @@ schemas:
         description: New Wi-Fi configuration summary.
       - fieldId: 3
         name: changedFields
-        type: bytes
+        type: array
         required: false
-        maxLength: 1024
-        description: JSON array of changed field paths.
+        array:
+          itemType: string
+        description: Changed field paths.
       - fieldId: 4
         name: reason
         type: enum
@@ -3098,10 +3173,13 @@ schemas:
         description: Scan identifier.
       - fieldId: 2
         name: results
-        type: bytes
+        type: array
         required: false
-        maxLength: 16384
-        description: JSON array of NetworkWifiScanResult objects.
+        schema: NetworkWifiScanResult
+        array:
+          itemType: NetworkWifiScanResult
+          itemSchema: NetworkWifiScanResult
+        description: NetworkWifiScanResult objects.
       - fieldId: 3
         name: complete
         type: bool
@@ -3124,10 +3202,11 @@ schemas:
         description: New AP configuration.
       - fieldId: 3
         name: changedFields
-        type: bytes
+        type: array
         required: false
-        maxLength: 1024
-        description: JSON array of changed field paths.
+        array:
+          itemType: string
+        description: Changed field paths.
       - fieldId: 4
         name: reason
         type: enum
@@ -3177,10 +3256,11 @@ schemas:
     fields:
       - fieldId: 1
         name: interfaceTypes
-        type: bytes
+        type: array
         required: false
-        maxLength: 512
-        description: JSON array of supported interface type strings.
+        array:
+          itemType: string
+        description: Supported interface type strings.
       - fieldId: 2
         name: supportsStateEvent
         type: bool
@@ -3192,22 +3272,25 @@ schemas:
     fields:
       - fieldId: 1
         name: families
-        type: bytes
+        type: array
         required: false
-        maxLength: 256
-        description: JSON array of supported IP families.
+        array:
+          itemType: string
+        description: Supported IP families.
       - fieldId: 2
         name: modes
-        type: bytes
+        type: array
         required: false
-        maxLength: 512
-        description: JSON array of supported IP modes.
+        array:
+          itemType: string
+        description: Supported IP modes.
       - fieldId: 3
         name: applyPolicies
-        type: bytes
+        type: array
         required: false
-        maxLength: 512
-        description: JSON array of supported apply policies.
+        array:
+          itemType: string
+        description: Supported apply policies.
   VideoGetStreamCapabilitiesParams:
     kind: object
     description: Selector for video stream capability.
@@ -3222,6 +3305,7 @@ schemas:
         name: includeRuntimeState
         type: bool
         required: false
+        default: false
         description: Whether to include current source runtime state.
   VideoStreamCapabilities:
     kind: object
@@ -3235,28 +3319,34 @@ schemas:
         description: Fixed capability name video.stream.
       - fieldId: 2
         name: sources
-        type: bytes
+        type: array
         required: true
-        maxLength: 8192
-        description: JSON array of VideoStreamSource objects.
+        schema: VideoStreamSource
+        array:
+          itemType: VideoStreamSource
+          itemSchema: VideoStreamSource
+        description: Video stream source objects.
       - fieldId: 3
         name: streamProfiles
-        type: bytes
+        type: array
         required: true
-        maxLength: 512
-        description: JSON array of supported stream profiles, normally media.video.
+        array:
+          itemType: string
+        description: Supported stream profiles, normally media.video.
       - fieldId: 4
         name: openModes
-        type: bytes
+        type: array
         required: true
-        maxLength: 512
-        description: JSON array of supported open modes, such as producer_open and receiver_pull.
+        array:
+          itemType: string
+        description: Supported open modes, such as producer_open and receiver_pull.
       - fieldId: 5
         name: peerRoles
-        type: bytes
+        type: array
         required: true
-        maxLength: 512
-        description: JSON array of peer roles, such as receiver and transmitter.
+        array:
+          itemType: string
+        description: Peer roles, such as receiver and transmitter.
       - fieldId: 6
         name: supportsSourceStateEvent
         type: bool
@@ -3290,22 +3380,25 @@ schemas:
         description: User-visible source name.
       - fieldId: 3
         name: codecs
-        type: bytes
+        type: array
         required: true
-        maxLength: 512
-        description: JSON array of supported video codecs.
+        array:
+          itemType: string
+        description: Supported video codecs.
       - fieldId: 4
         name: resolutions
-        type: bytes
+        type: array
         required: false
-        maxLength: 1024
-        description: JSON array of supported resolution descriptors.
+        array:
+          itemType: string
+        description: Supported resolution descriptors.
       - fieldId: 5
         name: frameRates
-        type: bytes
+        type: array
         required: false
-        maxLength: 512
-        description: JSON array of supported frame rates.
+        array:
+          itemType: number
+        description: Supported frame rates.
       - fieldId: 6
         name: state
         type: enum
@@ -3356,6 +3449,7 @@ schemas:
         type: string
         required: false
         maxLength: 64
+        default: media.video
         description: STREAM profile name.
       - fieldId: 9
         name: cursorUnit
@@ -3504,6 +3598,7 @@ schemas:
         name: alreadyClosed
         type: bool
         required: false
+        default: false
         description: Whether the stream was already terminal before this request.
   VideoGetStreamStateParams:
     kind: object
@@ -6179,6 +6274,107 @@ errors:
     severity: warning
     retryable: true
     message: Legacy response timed out.
+capabilities:
+  - name: protocol.payload.control
+    description: Device supports CONTROL payload.
+    capabilityId: 1
+    domain: protocol
+    since: 1.0.0
+    status: stable
+    type: bool
+  - name: protocol.payload.rpc
+    description: Device supports RPC payload.
+    capabilityId: 2
+    domain: protocol
+    since: 1.0.0
+    status: stable
+    type: bool
+  - name: protocol.payload.stream
+    description: Device supports STREAM data-plane payloads.
+    capabilityId: 3
+    domain: protocol
+    since: 1.0.0
+    status: stable
+    type: bool
+  - name: protocol.reservedRequestIdWidth
+    description: Historical requestId width negotiation bit; AXTP v1 fixes requestId as uint32.
+    capabilityId: 9
+    domain: protocol
+    since: 1.0.0
+    status: reserved
+    type: reserved
+  - name: audio.algorithm
+    description: Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification.
+    capabilityId: 2305
+    domain: audio
+    since: 1.0.0
+    status: stable
+    type: object
+    schema: AudioAlgorithmCapability
+  - name: audio.stream
+    description: Device supports real-time audio STREAM setup, close, state, source state, and stats events.
+    capabilityId: 2306
+    domain: audio
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: AudioStreamCapabilities
+  - name: device.info
+    description: Device supports read-only device information discovery.
+    capabilityId: 257
+    domain: device
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: DeviceInfoCapability
+  - name: firmware.update
+    description: Device supports P0 STREAM-based firmware update sessions.
+    capabilityId: 1025
+    domain: firmware
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: FirmwareUpdateCapabilities
+  - name: network.interface
+    description: Device supports network interface enumeration and state observation.
+    capabilityId: 3585
+    domain: network
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: NetworkInterfaceCapability
+  - name: network.ip
+    description: Device supports IP configuration query, update, and change notification.
+    capabilityId: 3586
+    domain: network
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: NetworkIpCapability
+  - name: network.wifi
+    description: Device supports Wi-Fi station profile, scan, connection, and state operations.
+    capabilityId: 3587
+    domain: network
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: NetworkWifiCapabilities
+  - name: network.ap
+    description: Device supports Wi-Fi AP configuration, runtime state, and client observation.
+    capabilityId: 3588
+    domain: network
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: NetworkApCapabilities
+  - name: video.stream
+    description: Device supports real-time video STREAM setup, close, state, source state, key frame requests, and stats events.
+    capabilityId: 2049
+    domain: video
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: VideoStreamCapabilities
 profiles:
   - name: AXTP-MVP
     since: 1.0.0

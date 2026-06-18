@@ -154,10 +154,10 @@ types:
         description: State after begin, normally receiving.
       - id: 0x03
         name: streams
-        type: bytes
+        type: array
+        schema: FirmwareUpdateStreamBinding
         required: true
-        max_length: 4096
-        description: JSON array of FirmwareUpdateStreamBinding objects.
+        description: Firmware update stream bindings.
       - id: 0x04
         name: chunkSize
         type: uint32
@@ -225,10 +225,10 @@ types:
         description: Target firmware version string.
       - id: 0x03
         name: files
-        type: bytes
+        type: array
+        schema: FirmwareUpdateFile
         required: true
-        max_length: 16384
-        description: JSON array of FirmwareUpdateFile objects.
+        description: Firmware update files.
       - id: 0x04
         name: devicePolicyVersion
         type: string

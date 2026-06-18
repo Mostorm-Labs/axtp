@@ -5,11 +5,27 @@ axtp_spec:
   released_at: "{{DATE}}"
 
 contents:
-  specs: true
-  registry: true
-  schemas: true
-  conformance: true
-  migration: true
+  contract_paths:
+    - README.md
+    - LICENSE
+    - protocol/axtp.protocol.yaml
+    - docs/generated/protocol.md
+    - docs/generated/protocol.json
+    - registry/
+    - docs/specs/
+    - docs/conformance/
+    - tooling/mcp/
+    - tooling/test-vectors/
+  compatibility_paths:
+    - conformance/
+  supplemental_paths:
+    - ROADMAP.md
+    - CHANGELOG.md
+    - docs/release/
+    - docs/legacy-migration/
+  excluded_paths:
+    - docs/legacy-migration/evidence/
+    - "**/.DS_Store"
 
 runtime_update:
   target_runtime_version: "{{VERSION}}"

@@ -388,10 +388,10 @@ types:
     fields:
       - id: 0x01
         name: interfaces
-        type: bytes
+        type: array
+        schema: NetworkInterfaceSummary
         required: true
-        max_length: 8192
-        description: JSON array of NetworkInterfaceSummary objects.
+        description: Network interface summary objects.
       - id: 0x02
         name: defaults
         type: NetworkDefaultInterfaceIds
@@ -604,10 +604,11 @@ types:
         description: Default gateway.
       - id: 0x07
         name: dns
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 1024
-        description: JSON array of DNS server addresses.
+        description: DNS server addresses.
 
   NetworkGetWifiCapabilitiesParams:
     kind: object
@@ -663,22 +664,25 @@ types:
         description: Fixed capability name network.wifi.
       - id: 0x02
         name: securityTypes
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: true
-        max_length: 1024
-        description: JSON array of supported security type strings.
+        description: Supported security type strings.
       - id: 0x03
         name: bands
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 512
-        description: JSON array of supported Wi-Fi bands.
+        description: Supported Wi-Fi bands.
       - id: 0x04
         name: credentialImportModes
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: true
-        max_length: 512
-        description: JSON array of supported credential import modes such as passphrase, pairing_token, and opaque_ref.
+        description: Supported credential import modes such as passphrase, pairing_token, and opaque_ref.
       - id: 0x05
         name: savedProfilesSupported
         type: bool
@@ -707,10 +711,10 @@ types:
         description: Wi-Fi station interface identifier.
       - id: 0x02
         name: profiles
-        type: bytes
+        type: array
+        schema: NetworkWifiProfile
         required: false
-        max_length: 8192
-        description: JSON array of NetworkWifiProfile summaries. Plaintext credentials must not be returned.
+        description: NetworkWifiProfile summaries. Plaintext credentials must not be returned.
       - id: 0x03
         name: defaultProfileId
         type: string
@@ -872,10 +876,10 @@ types:
         description: Asynchronous scan identifier.
       - id: 0x02
         name: results
-        type: bytes
+        type: array
+        schema: NetworkWifiScanResult
         required: false
-        max_length: 16384
-        description: JSON array of NetworkWifiScanResult objects.
+        description: NetworkWifiScanResult objects.
       - id: 0x03
         name: complete
         type: bool
@@ -1058,22 +1062,25 @@ types:
         description: Fixed capability name network.ap.
       - id: 0x02
         name: securityTypes
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: true
-        max_length: 1024
-        description: JSON array of supported security types.
+        description: Supported security types.
       - id: 0x03
         name: bands
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 512
-        description: JSON array of supported bands.
+        description: Supported bands.
       - id: 0x04
         name: credentialExportModes
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 512
-        description: JSON array of credential export modes.
+        description: Credential export modes.
       - id: 0x05
         name: clientsSupported
         type: bool
@@ -1240,10 +1247,10 @@ types:
     fields:
       - id: 0x01
         name: clients
-        type: bytes
+        type: array
+        schema: NetworkApClientInfo
         required: true
-        max_length: 16384
-        description: JSON array of NetworkApClientInfo objects.
+        description: NetworkApClientInfo objects.
 
   NetworkApClientInfo:
     kind: object
@@ -1352,10 +1359,11 @@ types:
         description: New Wi-Fi configuration summary.
       - id: 0x03
         name: changedFields
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 1024
-        description: JSON array of changed field paths.
+        description: Changed field paths.
       - id: 0x04
         name: reason
         type: enum
@@ -1394,10 +1402,10 @@ types:
         description: Scan identifier.
       - id: 0x02
         name: results
-        type: bytes
+        type: array
+        schema: NetworkWifiScanResult
         required: false
-        max_length: 16384
-        description: JSON array of NetworkWifiScanResult objects.
+        description: NetworkWifiScanResult objects.
       - id: 0x03
         name: complete
         type: bool
@@ -1421,10 +1429,11 @@ types:
         description: New AP configuration.
       - id: 0x03
         name: changedFields
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 1024
-        description: JSON array of changed field paths.
+        description: Changed field paths.
       - id: 0x04
         name: reason
         type: enum
@@ -1477,10 +1486,11 @@ types:
     fields:
       - id: 0x01
         name: interfaceTypes
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 512
-        description: JSON array of supported interface type strings.
+        description: Supported interface type strings.
       - id: 0x02
         name: supportsStateEvent
         type: bool
@@ -1493,22 +1503,25 @@ types:
     fields:
       - id: 0x01
         name: families
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 256
-        description: JSON array of supported IP families.
+        description: Supported IP families.
       - id: 0x02
         name: modes
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 512
-        description: JSON array of supported IP modes.
+        description: Supported IP modes.
       - id: 0x03
         name: applyPolicies
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 512
-        description: JSON array of supported apply policies.
+        description: Supported apply policies.
 
 capabilities:
   - id: 0x0E01

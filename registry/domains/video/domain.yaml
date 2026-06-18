@@ -156,28 +156,31 @@ types:
         description: Fixed capability name video.stream.
       - id: 0x02
         name: sources
-        type: bytes
+        type: array
+        schema: VideoStreamSource
         required: true
-        max_length: 8192
-        description: JSON array of VideoStreamSource objects.
+        description: Video stream source objects.
       - id: 0x03
         name: streamProfiles
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: true
-        max_length: 512
-        description: JSON array of supported stream profiles, normally media.video.
+        description: Supported stream profiles, normally media.video.
       - id: 0x04
         name: openModes
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: true
-        max_length: 512
-        description: JSON array of supported open modes, such as producer_open and receiver_pull.
+        description: Supported open modes, such as producer_open and receiver_pull.
       - id: 0x05
         name: peerRoles
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: true
-        max_length: 512
-        description: JSON array of peer roles, such as receiver and transmitter.
+        description: Peer roles, such as receiver and transmitter.
       - id: 0x06
         name: supportsSourceStateEvent
         type: bool
@@ -212,22 +215,25 @@ types:
         description: User-visible source name.
       - id: 0x03
         name: codecs
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: true
-        max_length: 512
-        description: JSON array of supported video codecs.
+        description: Supported video codecs.
       - id: 0x04
         name: resolutions
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 1024
-        description: JSON array of supported resolution descriptors.
+        description: Supported resolution descriptors.
       - id: 0x05
         name: frameRates
-        type: bytes
+        type: array
+        array:
+          item_type: number
         required: false
-        max_length: 512
-        description: JSON array of supported frame rates.
+        description: Supported frame rates.
       - id: 0x06
         name: state
         type: enum

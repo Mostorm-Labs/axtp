@@ -164,7 +164,7 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 
 ## Domain 状态矩阵
 
-> 最后更新：2026-06-10（每次 domain 状态变更后手动更新此日期）
+> 最后更新：2026-06-18（每次 domain 状态变更后手动更新此日期）
 > 更新规则：新增、删除、采纳、废弃 domain 草案或 registry domain 后，必须同步本矩阵的 Drafts、Review、Generated 和 Next Step。
 > 验证方式：只有 `registry/domains/<domain>/domain.yaml` 存在，并且 `pnpm --dir generators validate:sources` / `validate:protocol` 通过，才算 generated/adopted；其余为草案状态。
 
@@ -172,18 +172,18 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 
 | Domain | Drafts | Review | Generated | Priority | Next Step |
 |---|---:|---|---:|---|---|
-| audio | 12 | ASK | 5 | 旁路高覆盖 / P0 stream | 已进入 generated；后续按修订流程维护，同时补齐 audio stream 控制面和 STREAM 数据面确认。 |
+| audio | 12 | ASK | 13 | 旁路高覆盖 / P0 stream | `audio.algorithm` 与 `audio.stream` 已进入 generated；后续按修订流程维护并补齐剩余 audio 草案确认。 |
 | auth | 3 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | camera | 7 | ASK | 0 | P3/P4 | 补产品/设备/legacy 确认。 |
 | capability | 1 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
-| device | 7 | ASK | 0 | P1 | 补产品/设备/legacy 确认，优先进入采纳批次。 |
+| device | 7 | ASK | 1 | P1 | `device.info` 已进入 generated；继续补 `device.childDevice`、`device.enrollment` 等通用底座确认。 |
 | diagnostic | 10 | ASK | 0 | P5 | 补产品/设备/legacy 确认。 |
 | display | 6 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | file | 2 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
-| firmware | 3 | ASK | 0 | 旁路高覆盖 | 补产品/设备/legacy 确认。 |
+| firmware | 3 | ASK | 6 | 旁路高覆盖 | `firmware.update` P0 已进入 generated；后续补 firmware info/policy 与 P1/P2 更新能力确认。 |
 | input | 5 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | log | 3 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
-| network | 6 | ASK | 0 | 旁路高覆盖 | 补产品/设备/legacy 确认。 |
+| network | 6 | ASK | 26 | 旁路高覆盖 | `network.interface`、`network.ip`、`network.wifi`、`network.ap` 已进入 generated；继续补蓝牙和服务端点草案确认。 |
 | output | 1 | ASK | 0 | P2b | 补产品/设备/legacy 确认。 |
 | privacy | 3 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | room | 5 | ASK | 0 | P7 | 补产品/设备/legacy 确认。 |
@@ -191,22 +191,22 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 | storage | 6 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | stream | 2 | ASK | 0 | P0 data-plane plumbing | Phase 1 需要通用 STREAM open/data/close 语义支撑 audio/video；具体业务参数仍由 audio/video profile 定义。 |
 | system | 6 | ASK | 0 | P1 | 补产品/设备/legacy 确认，优先进入采纳批次。 |
-| video | 12 | ASK | 0 | P0 stream | 先补 video stream RPC 控制面和 STREAM 数据面确认；这是 P0 媒体流主线。 |
+| video | 12 | ASK | 9 | P0 stream | `video.stream` 已进入 generated；后续按修订流程维护，并推进 framing/layout/encoder 等后续能力。 |
 
 ## 协议采纳/生成优先级
 
-本表用于安排后续从草案到 YAML、再到 generated 产物的顺序。统计依据为 `docs/legacy-migration/classification/legacy-protocol-classification.csv` 和 `docs/legacy-migration/classification/README.md`；当前 `docs/generated/protocol.md` 只有 `audio.algorithm` 已生成，其余业务域大多仍是草案状态。
+本表用于安排后续从草案到 YAML、再到 generated 产物的顺序。统计依据为 `docs/legacy-migration/classification/legacy-protocol-classification.csv` 和 `docs/legacy-migration/classification/README.md`；当前 `docs/generated/protocol.md` 已覆盖 `audio.algorithm`、`audio.stream`、`device.info`、`firmware.update` P0、`network.interface`、`network.ip`、`network.wifi`、`network.ap` 和 `video.stream`，其余业务域仍按草案评审推进。
 
 | 优先级 | 生成批次 | Legacy 覆盖 | 当前状态 | 建议动作 |
 |---|---|---:|---|---|
-| P1 | `device.*` / `system.*`：[`device.info`](device/device.info.md)、[`device.childDevice`](device/device.childDevice.md)、[`system.state`](system/system.state.md)、[`system.lifecycle`](system/system.lifecycle.md)、[`system.reset`](system/system.reset.md)、[`system.initialization`](system/system.initialization.md)、[`system.time`](system/system.time.md) | 64 条，覆盖 AXDP / Rooms / Signage / VM33 | 草案已存在，未进入 generated | 最先采纳生成。它们是设备识别、运行时状态事件、重启/关机、软重置、初始化、时间同步等通用底座，后续业务和工具都依赖这些基础事实；独立 system power 和 system health 草案已移除。 |
+| P1 | `device.*` / `system.*`：[`device.info`](device/device.info.md)、[`device.childDevice`](device/device.childDevice.md)、[`system.state`](system/system.state.md)、[`system.lifecycle`](system/system.lifecycle.md)、[`system.reset`](system/system.reset.md)、[`system.initialization`](system/system.initialization.md)、[`system.time`](system/system.time.md) | 64 条，覆盖 AXDP / Rooms / Signage / VM33 | `device.info` 已进入 generated；其余草案待采纳 | 继续采纳通用底座。它们是设备识别、运行时状态事件、重启/关机、软重置、初始化、时间同步等基础事实；独立 system power 和 system health 草案已移除。 |
 | P2 | [`video.framing`](video/video.framing.md) | 22 条，主要来自 AXDP，少量 VM33 | 草案已存在，未进入 generated | 紧跟 P1 生成。framing mode 是 legacy 高频控制项，也会影响 camera tracking、布局和画面输出的语义边界。 |
 | P2b | [`output.layout`](output/output.layout.md) / [`video.layout`](video/video.layout.md) | 28 条，`output.layout` 20 条、`video.layout` 8 条 | 草案已存在，未进入 generated | 原始优先级清单未单列，但 legacy 覆盖高。若近期要做输出画面、拼接、多画面或分屏，建议插在 P2 后、camera 控制前。 |
 | P3 | [`camera.focus`](camera/camera.focus.md)、[`camera.zoom`](camera/camera.zoom.md)、[`camera.ptz`](camera/camera.ptz.md) | 20 条，覆盖 AXDP / VM33 | 草案已存在，未进入 generated | 按同一 camera control 批次采纳。focus 和 zoom 命中多，PTZ 条目少但和控制体验强相关，适合一起确认 schema 与状态事件。 |
 | P4 | [`camera.image`](camera/camera.image.md)、[`camera.exposure`](camera/camera.exposure.md)、[`camera.calibration`](camera/camera.calibration.md)、[`camera.whiteBalance`](camera/camera.whiteBalance.md) | 12 条直接归类；VM33 Camera 配置另有 whiteBalance 字段线索 | 草案已存在，未进入 generated；`camera.image` 有低置信度拆分问题 | 先补 VM33 Camera 配置字段，再采纳 image/exposure/calibration；whiteBalance 当前分类 CSV 没有直接命中，建议随 camera 配置批次保留，但放在本批次后段确认。 |
 | P5 | `diagnostic.*` 产测：[`diagnostic.networkTest`](diagnostic/diagnostic.networkTest.md)、[`diagnostic.manufacturing`](diagnostic/diagnostic.manufacturing.md)、[`diagnostic.selfTest`](diagnostic/diagnostic.selfTest.md)、[`diagnostic.audioTest`](diagnostic/diagnostic.audioTest.md)、[`diagnostic.inputTest`](diagnostic/diagnostic.inputTest.md)、[`diagnostic.storageTest`](diagnostic/diagnostic.storageTest.md)、[`diagnostic.videoTest`](diagnostic/diagnostic.videoTest.md)、[`diagnostic.kvmTest`](diagnostic/diagnostic.kvmTest.md) | 33 条，覆盖 AXDP / Rooms / VM33 | 草案已存在，未进入 generated | 面向工厂和维修闭环，建议在用户侧 camera / video 基础能力之后生成；如果产线接入排期更早，可把 `diagnostic.manufacturing` 与 `diagnostic.networkTest` 提前成 P3b。 |
 | P6 | AXTP core / `axtpctl` | 不属于 legacy business 分类；core 已在 `registry/core/**`、`registry/schema/**`、`registry/error/**` 和 generated 中存在 | Core 已生成；`axtpctl` 属于工具/SDK 跟随项 | 不作为普通业务草案插队。每完成一批业务生成后，再让 `axtpctl` 命令、测试向量和 runtime 示例跟随 generated 事实更新。 |
-| P7 | `room.*` / `signage.*` / `device.binding` / `device.appearance`：[`room.source`](room/room.source.md)、[`room.layout`](room/room.layout.md)、[`room.schedule`](room/room.schedule.md)、[`room.participant`](room/room.participant.md)、[`signage.playlist`](signage/signage.playlist.md)、[`signage.playback`](signage/signage.playback.md)、[`device.binding`](device/device.binding.md)、[`device.appearance`](device/device.appearance.md) | 28 条，主要来自 Rooms / Signage / VM33 | 草案已存在，未进入 generated | 放后面生成。它们更偏产品场景和应用层编排；若 Rooms 业务先启动，可单独把 `room.source` 提前，因为它有 11 条 legacy 命中。`signage.media`、`signage.osd`、`signage.schedule` 已分别合并到 `signage.playlist`、`device.appearance`、`system.lifecycle`。 |
+| P7 | `room.*` / `signage.*` / enrollment / appearance：[`room.source`](room/room.source.md)、[`room.layout`](room/room.layout.md)、[`room.schedule`](room/room.schedule.md)、[`room.participant`](room/room.participant.md)、[`signage.playlist`](signage/signage.playlist.md)、[`signage.playback`](signage/signage.playback.md)、[`device.enrollment`](device/device.enrollment.md)、[`software.config`](software/software.config.md) | 28 条，主要来自 Rooms / Signage / VM33 | 草案已存在，未进入 generated | 放后面生成。它们更偏产品场景和应用层编排；若 Rooms 业务先启动，可单独把 `room.source` 提前，因为它有 11 条 legacy 命中。原 `device.binding` 已收敛为 `device.enrollment`，原 `device.appearance` 已合并到 `software.config`。 |
 
 ### 旁路高覆盖候选
 

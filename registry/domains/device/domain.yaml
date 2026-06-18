@@ -187,10 +187,10 @@ types:
     fields:
       - id: 0x01
         name: components
-        type: bytes
+        type: array
+        schema: SoftwareComponent
         required: false
-        max_length: 4096
-        description: JSON array of SoftwareComponent objects.
+        description: Software component objects.
 
   SoftwareComponent:
     kind: object
@@ -249,22 +249,25 @@ types:
     fields:
       - id: 0x01
         name: domains
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 1024
-        description: JSON array of domain names represented by the device.
+        description: Domain names represented by the device.
       - id: 0x02
         name: features
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 4096
-        description: JSON array of domain.feature names represented by the device.
+        description: Domain.feature names represented by the device.
       - id: 0x03
         name: profiles
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 1024
-        description: JSON array of profile names or product profile hints.
+        description: Profile names or product profile hints.
 
   DeviceInfoCapability:
     kind: object

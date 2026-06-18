@@ -1,0 +1,12 @@
+# Replace this team with the concrete maintainer team if the GitHub org uses a
+# different name.
+* @Mostorm-Labs/axtp-maintainers
+
+/registry/ @Mostorm-Labs/axtp-maintainers
+/protocol/ @Mostorm-Labs/axtp-maintainers
+/docs/generated/ @Mostorm-Labs/axtp-maintainers
+/docs/conformance/ @Mostorm-Labs/axtp-maintainers
+/generators/ @Mostorm-Labs/axtp-maintainers
+/scripts/ @Mostorm-Labs/axtp-maintainers
+/release/ @Mostorm-Labs/axtp-maintainers
+/.github/workflows/ @Mostorm-Labs/axtp-maintainers

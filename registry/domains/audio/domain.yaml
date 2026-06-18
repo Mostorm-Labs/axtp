@@ -301,10 +301,11 @@ types:
         description: Update and atomicity policy for set and reset operations.
       - id: 0x03
         name: supportedAlgorithms
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 64
-        description: Optional compact list of supported algorithm object names; JSON implementations expose names as an array of strings.
+        description: Optional compact list of supported algorithm object names.
 
   AudioGetAlgorithmCapabilitiesRequest:
     kind: object
@@ -312,10 +313,11 @@ types:
     fields:
       - id: 0x01
         name: items
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 128
-        description: Optional JSON array of algorithm object names; omit to query all supported algorithms.
+        description: Optional algorithm object names; omit to query all supported algorithms.
 
   AudioGetAlgorithmConfigRequest:
     kind: object
@@ -323,10 +325,11 @@ types:
     fields:
       - id: 0x01
         name: items
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 128
-        description: Optional JSON array of algorithm object names; omit to query all supported algorithms.
+        description: Optional algorithm object names; omit to query all supported algorithms.
 
   AudioSetAlgorithmConfigRequest:
     kind: object
@@ -395,10 +398,11 @@ types:
         description: Changed or affected algorithm configuration values.
       - id: 0x05
         name: changedFields
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 256
-        description: Optional JSON array of changed field paths such as noiseSuppression.level.
+        description: Optional changed field paths such as noiseSuppression.level.
 
   AudioGetAlgorithmCapabilitiesResponse:
     kind: object
@@ -528,10 +532,11 @@ types:
         description: Numeric step size.
       - id: 0x08
         name: values
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 128
-        description: Optional JSON array of enum values.
+        description: Optional enum values.
       - id: 0x09
         name: unit
         type: string
@@ -1056,28 +1061,31 @@ types:
         description: Fixed capability name audio.stream.
       - id: 0x02
         name: sources
-        type: bytes
+        type: array
+        schema: AudioStreamSource
         required: true
-        max_length: 8192
-        description: JSON array of AudioStreamSource objects.
+        description: Audio stream source objects.
       - id: 0x03
         name: streamProfiles
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: true
-        max_length: 512
-        description: JSON array of supported stream profiles, normally media.audio.
+        description: Supported stream profiles, normally media.audio.
       - id: 0x04
         name: openModes
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: true
-        max_length: 512
-        description: JSON array of supported open modes, such as producer_open and receiver_pull.
+        description: Supported open modes, such as producer_open and receiver_pull.
       - id: 0x05
         name: peerRoles
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: true
-        max_length: 512
-        description: JSON array of peer roles, such as receiver and transmitter.
+        description: Peer roles, such as receiver and transmitter.
       - id: 0x06
         name: supportsSourceStateEvent
         type: bool
@@ -1095,10 +1103,11 @@ types:
         description: Whether normal applications can rely on runtime-managed STREAM flow control.
       - id: 0x09
         name: aacTransportFormats
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: false
-        max_length: 512
-        description: Optional JSON array of AAC transport format strings; exact supported set remains product-confirmed.
+        description: Optional AAC transport format strings; exact supported set remains product-confirmed.
 
   AudioStreamSource:
     kind: object
@@ -1118,22 +1127,25 @@ types:
         description: User-visible source name.
       - id: 0x03
         name: codecs
-        type: bytes
+        type: array
+        array:
+          item_type: string
         required: true
-        max_length: 512
-        description: JSON array of supported audio codecs.
+        description: Supported audio codecs.
       - id: 0x04
         name: sampleRates
-        type: bytes
+        type: array
+        array:
+          item_type: uint32
         required: false
-        max_length: 512
-        description: JSON array of supported sample rates in Hz.
+        description: Supported sample rates in Hz.
       - id: 0x05
         name: channels
-        type: bytes
+        type: array
+        array:
+          item_type: uint8
         required: false
-        max_length: 256
-        description: JSON array of supported channel counts.
+        description: Supported channel counts.
       - id: 0x06
         name: state
         type: enum

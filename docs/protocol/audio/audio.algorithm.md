@@ -40,7 +40,7 @@ lastReviewed: 2026-06-10
 | `7` | Request | 客户端调用业务 method。 |
 | `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
 
-本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 以 `registry/**`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**` 为准。
 
 业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
 

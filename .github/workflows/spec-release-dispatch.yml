@@ -35,6 +35,34 @@ jobs:
           echo "SPEC_VERSION=$spec_version" >> "$GITHUB_ENV"
           echo "SPEC_COMMIT=$spec_commit" >> "$GITHUB_ENV"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+
+      - name: Validate release inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir generators install --frozen-lockfile
+          pnpm --dir generators build
+          pnpm --dir generators lint
+          pnpm --dir generators test
+          pnpm --dir generators validate
+          pnpm --dir generators validate:sources
+          pnpm --dir generators validate:protocol
+          scripts/check-generated-drift.sh
+          scripts/validate-conformance.sh
+          scripts/check-links.mjs
+          scripts/check-protocol-status.mjs
+
       - name: Build spec artifact
         shell: bash
         run: scripts/build-spec-artifact.sh "$SPEC_VERSION"

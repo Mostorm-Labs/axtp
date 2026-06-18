@@ -40,7 +40,7 @@ lastReviewed: 2026-06-15
 | `7` | Request | 客户端调用业务 method。 |
 | `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
 
-本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 以 `registry/**`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**` 为准。
 
 业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
 
@@ -50,7 +50,7 @@ lastReviewed: 2026-06-15
 
 本 feature 不表达 Wi-Fi 认证/关联、不表达 AP running，也不表达接口基础链路变化；这些分别由 `network.wifi`、`network.ap` 和 `network.interface` 负责。NA20 AP 本端 IP 可以通过 AP 接口的 `interfaceId` 查询；AP DHCP Server 地址池是否也放在 `network.ap` 仍待确认。
 
-当前 generated 协议没有 adopted `network.ip` 方法、事件或 schema。本文所有 methodId、eventId、errorCode、fieldId 均为 `TBD after adoption`。
+`network.ip` 的 P0 / confirmed subset 已进入 generated 合同；正式 methodId、eventId、errorCode、fieldId 以 `registry/**`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**` 为准。本文保留的 review 标记仅用于后续修订。
 
 ## 2. 能力边界
 
@@ -68,7 +68,7 @@ lastReviewed: 2026-06-15
 
 ## 3. 方法 Methods
 
-方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。不要在草案中分配正式 ID。
+已生成 methodId、eventId、bitOffset 和 schema fieldId 以 registry/generated 为准；本文不重新分配正式 ID，保留的 draft/review 标记仅作为后续修订输入。
 
 ### 3.0 方法速览
 

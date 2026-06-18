@@ -40,7 +40,7 @@ lastReviewed: 2026-06-15
 | `7` | Request | 客户端调用业务 method。 |
 | `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
 
-本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 以 `registry/**`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**` 为准。
 
 业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
 
@@ -68,7 +68,7 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 
 ## 3. 方法 Methods
 
-方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。不要在草案中分配正式 ID。
+已生成 methodId、eventId、bitOffset 和 schema fieldId 以 registry/generated 为准；本文不重新分配正式 ID，保留的 draft/review 标记仅作为后续修订输入。
 
 ### 3.0 方法速览
 
@@ -998,7 +998,7 @@ VideoChunkHeaderV1 + H.264 bytes
 
 ### 6.3 STREAM payload envelope：`VideoChunkHeaderV1`
 
-`VideoChunkHeaderV1` 是 STREAM data 内的视频业务 envelope，位于 STREAM 16B header 之后。二进制字段编号和布局为 `TBD after adoption`；不得把这些字段加入 STREAM 16B header。
+`VideoChunkHeaderV1` 是 STREAM data 内的视频业务 envelope，位于 STREAM 16B header 之后。二进制字段编号和布局以 registry/generated schema 为准；不得把这些字段加入 STREAM 16B header。
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -1382,22 +1382,22 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | receiver close | 只关闭 downstream stream，不停止 upstream source。 | MediaHost 关闭窗口后可快速重新拉取。 |
 | hard-disconnect | 不要求补发 `closeStream`。 | 对端可能已经不可通信，按 session/transport lost 本地清理。 |
 
-## 附录 C. Registry 草案输入
+## 附录 C. Registry/generated 摘要
 
-以下仅为 registry review 输入，不分配正式 ID。
+以下条目已进入 generated 合同；正式 ID 以 registry/generated 为准。
 
 | 类型 | 名称 | Schema / Capability | ID |
 |---|---|---|---|
-| capability | `video.stream` | `VideoStreamCapabilities` | `TBD after adoption` |
-| method | `video.getStreamCapabilities` | `VideoGetStreamCapabilitiesParams` -> `VideoStreamCapabilities` | `TBD after adoption` |
-| method | `video.openStream` | `VideoOpenStreamParams` -> `VideoOpenStreamResult` | `TBD after adoption` |
-| method | `video.closeStream` | `VideoCloseStreamParams` -> `VideoCloseStreamResult` | `TBD after adoption` |
-| method | `video.getStreamState` | `VideoGetStreamStateParams` -> `VideoStreamState` | `TBD after adoption` |
-| method | `video.getStreamSourceState` | `VideoGetStreamSourceStateParams` -> `VideoStreamSourceState` | `TBD after adoption` |
-| method | `video.requestKeyFrame` | `VideoRequestKeyFrameParams` -> `VideoRequestKeyFrameResult` | `TBD after adoption` |
-| event | `video.streamStateChanged` | `VideoStreamStateChangedEvent` | `TBD after adoption` |
-| event | `video.streamSourceStateChanged` | `VideoStreamSourceStateChangedEvent` | `TBD after adoption` |
-| event | `video.streamStatsReported` | `VideoStreamStatsReportedEvent` | `TBD after adoption` |
+| capability | `video.stream` | `VideoStreamCapabilities` | generated |
+| method | `video.getStreamCapabilities` | `VideoGetStreamCapabilitiesParams` -> `VideoStreamCapabilities` | generated |
+| method | `video.openStream` | `VideoOpenStreamParams` -> `VideoOpenStreamResult` | generated |
+| method | `video.closeStream` | `VideoCloseStreamParams` -> `VideoCloseStreamResult` | generated |
+| method | `video.getStreamState` | `VideoGetStreamStateParams` -> `VideoStreamState` | generated |
+| method | `video.getStreamSourceState` | `VideoGetStreamSourceStateParams` -> `VideoStreamSourceState` | generated |
+| method | `video.requestKeyFrame` | `VideoRequestKeyFrameParams` -> `VideoRequestKeyFrameResult` | generated |
+| event | `video.streamStateChanged` | `VideoStreamStateChangedEvent` | generated |
+| event | `video.streamSourceStateChanged` | `VideoStreamSourceStateChangedEvent` | generated |
+| event | `video.streamStatsReported` | `VideoStreamStatsReportedEvent` | generated |
 
 ## 附录 D. 采纳检查清单
 

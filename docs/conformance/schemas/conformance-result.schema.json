@@ -3,7 +3,7 @@
   "$id": "https://axtp.dev/schemas/conformance-result.schema.json",
   "type": "object",
   "required": ["runtime", "runtimeVersion", "specTag", "summary", "cases"],
-  "additionalProperties": true,
+  "additionalProperties": false,
   "properties": {
     "runtime": { "type": "string", "minLength": 1 },
     "runtimeVersion": { "type": "string", "minLength": 1 },
@@ -12,7 +12,7 @@
     "summary": {
       "type": "object",
       "required": ["total", "passed", "failed", "skipped"],
-      "additionalProperties": true,
+      "additionalProperties": false,
       "properties": {
         "total": { "type": "integer", "minimum": 0 },
         "passed": { "type": "integer", "minimum": 0 },
@@ -26,7 +26,7 @@
       "items": {
         "type": "object",
         "required": ["id", "status"],
-        "additionalProperties": true,
+        "additionalProperties": false,
         "properties": {
           "id": { "type": "string" },
           "status": {
