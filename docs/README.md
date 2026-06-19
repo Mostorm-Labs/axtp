@@ -56,7 +56,7 @@
 | Protocol IR | `protocol/axtp.protocol.yaml` | 是 |
 | Generated reference | `docs/generated/protocol.md`、`docs/generated/protocol.json` | 是 |
 | Conformance | `docs/conformance/**` | 是 |
-| 规划/宣讲 | `ROADMAP.md`、`KICKOFF.md` | 否 |
+| 规划 | `ROADMAP.md` | 否 |
 
 ## 不要手写 generated
 

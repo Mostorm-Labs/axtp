@@ -79,7 +79,6 @@ Runtime / SDK 实现者不应依赖：
 | `docs/protocol/**` draft | 人工草案和评审输入，采纳前不是合同。 |
 | `docs/legacy-migration/**` | 旧协议证据、分类和迁移计划。 |
 | `ROADMAP.md` | 规划材料，不是可绑定 spec。 |
-| `KICKOFF.md` | 研发启动宣讲材料，不是协议合同。 |
 
 完整合同等级和冲突处理规则只维护在 [连接建立边界与协议事实源边界](docs/architecture/protocol-lifecycle-boundaries.md)。
 
@@ -89,7 +88,6 @@ Runtime / SDK 实现者不应依赖：
 axtp/
 ├── README.md                    # 仓库总入口
 ├── ROADMAP.md                   # 规划材料，不是 runtime 合同
-├── KICKOFF.md                   # kickoff 宣讲材料，不是协议合同
 ├── docs/
 │   ├── README.md                # 文档地图
 │   ├── guides/                  # 产品、runtime、测试、协议维护、legacy 迁移的唯一人类入口

@@ -62,10 +62,9 @@ docs/flows/**
 docs/protocol/** before adoption
 docs/legacy-migration/**
 ROADMAP.md
-KICKOFF.md
 ```
 
-它们分别用于业务输入、场景流程、协议草案、迁移证据、规划和宣讲。它们可以指导评审，但不能跳过采纳与生成直接进入 runtime。
+它们分别用于业务输入、场景流程、协议草案、迁移证据和规划。它们可以指导评审，但不能跳过采纳与生成直接进入 runtime。
 
 ### 0.4 冲突处理规则
 
