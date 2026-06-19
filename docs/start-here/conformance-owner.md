@@ -4,6 +4,8 @@ Conformance 是 runtime、SDK、mock server 和工具仓库的行为验收入口
 
 测试的目标不是从草案猜行为，而是按 runtime 声明的支持等级，加载当前 spec 的 generated、Protocol IR、specs 和 conformance cases。
 
+mock server 也按声明 profile 验收。当前 Node mock-server 应覆盖 Standard Framed TCP 基准；WS-only mock 或轻量控制面实现才声明 WebSocket JSON profile。
+
 ## 先理解什么
 
 | 概念 | 含义 |

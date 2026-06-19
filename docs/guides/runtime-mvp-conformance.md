@@ -28,7 +28,7 @@ export AXTP_SPEC_PATH=/Users/qing/Desktop/sources/gitee/axtp
 
 ## WebSocket JSON MVP Checklist
 
-适合 App、Web、Node、Python、mock server 和云端控制面。
+适合 App、Web、Node、Python、WS-only mock server 和云端控制面。
 
 | 检查项 | 通过标准 |
 |---|---|
@@ -44,7 +44,7 @@ export AXTP_SPEC_PATH=/Users/qing/Desktop/sources/gitee/axtp
 
 ## Standard Framed MVP Checklist
 
-适合 TCP、USB HID、需要二进制 Frame Header 或 STREAM 数据面的设备链路。
+适合 TCP、USB HID、Node TCP mock-server、需要二进制 Frame Header 或 STREAM 数据面的设备链路。
 
 > Frame Header 和 CRC 规范见 [Frame and Payload Spec](../specs/1-core/03-Frame-and-Payload.md)，CONTROL 会话见 [Control Session Spec](../specs/1-core/05-Control-Session.md)，STREAM 数据面见 [Stream Data Plane Spec](../specs/1-core/07-Stream-Data-Plane.md)。
 

@@ -4,7 +4,7 @@ import path from "node:path";
 
 const root = path.resolve(process.argv[2] ?? process.cwd());
 const generatedPath = path.join(root, "docs", "generated", "protocol.json");
-const protocolReadmePath = path.join(root, "docs", "protocol", "README.md");
+const domainStatusPath = path.join(root, "docs", "product", "domain-status.md");
 const errors = [];
 
 function fail(message) {
@@ -79,14 +79,17 @@ for (const file of walkProtocolDrafts(path.join(root, "docs", "protocol"))) {
   }
 }
 
-const readme = fs.readFileSync(protocolReadmePath, "utf8");
-const matrixRows = readme.matchAll(/^\|\s*([a-z][a-z0-9]*)\s*\|\s*[^|]*\|\s*[^|]*\|\s*(\d+)\s*\|/gm);
+const domainStatus = fs.readFileSync(domainStatusPath, "utf8");
+const matrixRows = Array.from(domainStatus.matchAll(/^\|\s*([a-z][a-z0-9]*)\s*\|\s*[^|]*\|\s*[^|]*\|\s*(\d+)\s*\|/gm));
+if (matrixRows.length === 0) {
+  fail("docs/product/domain-status.md: Domain matrix has no parseable rows");
+}
 for (const match of matrixRows) {
   const domain = match[1];
   const actual = generatedCounts.get(domain) ?? 0;
   const documented = Number(match[2]);
   if (documented !== actual) {
-    fail(`docs/protocol/README.md: Domain matrix generated count for ${domain} is ${documented}, expected ${actual}`);
+    fail(`docs/product/domain-status.md: Domain matrix generated count for ${domain} is ${documented}, expected ${actual}`);
   }
 }
 
@@ -96,4 +99,4 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log("[OK] protocol draft frontmatter and domain matrix match generated protocol");
+console.log("[OK] protocol draft frontmatter and product domain matrix match generated protocol");

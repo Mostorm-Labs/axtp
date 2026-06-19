@@ -58,7 +58,7 @@ flowchart TD
 
 ## 3. WebSocket JSON 测试要点
 
-适用于 App、Web、Node、Python、mock server、云端控制面。
+适用于 App、Web、Node、Python、WS-only mock server、云端控制面。
 
 | 用例 | 通过标准 |
 |---|---|
@@ -99,7 +99,7 @@ flowchart TD
 
 ## 4. Standard Framed 测试要点
 
-适用于 TCP、USB HID、设备端 C/C++ runtime、未来需要 STREAM 的链路。
+适用于 TCP、USB HID、设备端 C/C++ runtime、Node TCP mock-server、未来需要 STREAM 的链路。
 
 | 用例 | 通过标准 |
 |---|---|

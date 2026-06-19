@@ -1,6 +1,6 @@
 # AXTP 文档地图
 
-`docs/` 是 AXTP 主仓库的人读文档区，用来组织业务输入、流程、草案、正式规范、生成参考、conformance、legacy 迁移、架构边界和发版治理。
+`docs/` 是 AXTP 主仓库的人读文档区，用来组织产品状态、业务输入、流程、草案、正式规范、生成参考、conformance、legacy 迁移、架构边界和发版治理。
 
 不同目录的合同等级不同。完整生命周期、合同等级和冲突处理规则只维护在 [连接建立边界与协议事实源边界](architecture/protocol-lifecycle-boundaries.md)；本文只做地图和入口。
 
@@ -15,7 +15,7 @@
 | 测试 / conformance 负责人 | [start-here/conformance-owner.md](start-here/conformance-owner.md) |
 | Legacy 迁移负责人 | [start-here/legacy-migration-owner.md](start-here/legacy-migration-owner.md) |
 
-完整操作 SOP 见 [guides/how-to-use.md](guides/how-to-use.md)。
+协议维护者的完整操作 SOP 见 [guides/protocol-maintainer-sop.md](guides/protocol-maintainer-sop.md)。
 
 ## 目录地图
 
@@ -24,13 +24,14 @@
 | [start-here/](start-here/new-to-axtp.md) | 按角色进入仓库的短路径。 | 导航 |
 | [business/](business/README.md) | 产品需求、业务背景、开放问题。 | 评审输入 |
 | [flows/](flows/README.md) | 场景流程、消息序列、协议覆盖和缺口。 | 评审输入 |
+| [product/](product/domain-status.md) | 产品能力状态、domain 生成状态和采纳优先级。 | 产品看板 |
 | [protocol/](protocol/README.md) | human-written protocol drafts 和 review 记录。 | 草案 |
 | [specs/](specs/README.md) | wire、session、registry、codec、tooling、versioning 的人工维护规范。 | 人工规范 |
 | [generated/](generated/protocol.md) | Generator 输出的人读/机读协议参考。 | generated 实现合同 |
 | [conformance/](conformance/README.md) | runtime、SDK、mock server 的行为验收输入。 | 验收合同 |
 | [legacy-migration/](legacy-migration/README.md) | 旧协议证据、分类、迁移计划和 adapter 线索。 | 迁移输入 |
 | [architecture/](architecture/README.md) | 协议边界、domain/feature 分类、事实源治理。 | 架构指导 |
-| [guides/](guides/quickstart.md) | 研发接入、维护者 SOP、测试入门。 | 指南 |
+| [guides/](guides/quickstart.md) | 研发接入、协议维护者 SOP、测试入门。 | 指南 |
 | [release/](release/README.md) | spec tag、release artifact、runtime spec lock。 | 发布治理 |
 | [dev/skills/](dev/skills/README.md) | lifecycle skills 和 agent 工作流。 | 维护流程 |
 

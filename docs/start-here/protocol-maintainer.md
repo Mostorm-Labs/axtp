@@ -26,7 +26,7 @@ business -> flows -> protocol draft -> registry -> generated -> conformance -> r
 
 | 顺序 | 文档 | 读它的目的 |
 |---:|---|---|
-| 1 | [../guides/how-to-use.md](../guides/how-to-use.md) | 了解自然语言请求如何进入 lifecycle workflow。 |
+| 1 | [../guides/protocol-maintainer-sop.md](../guides/protocol-maintainer-sop.md) | 了解自然语言请求如何进入 lifecycle workflow。 |
 | 2 | [../architecture/protocol-lifecycle-boundaries.md](../architecture/protocol-lifecycle-boundaries.md) | 读取合同等级和冲突处理唯一权威说明。 |
 | 3 | [../specs/README.md](../specs/README.md) | 找到 core、registry、codec、tooling 规范入口。 |
 | 4 | [../protocol/README.md](../protocol/README.md) | 了解 draft intake、状态、frontmatter 和 review 标记。 |
@@ -63,7 +63,7 @@ business -> flows -> protocol draft -> registry -> generated -> conformance -> r
 
 ## 下一步动作
 
-有新需求时，先读 [how-to-use](../guides/how-to-use.md) 判断生命周期阶段。
+有新需求时，先读 [protocol-maintainer-sop](../guides/protocol-maintainer-sop.md) 判断生命周期阶段。
 
 有 domain/feature 归属疑问时，先读 [domain-feature-classification](../architecture/domain-feature-classification.md)。
 

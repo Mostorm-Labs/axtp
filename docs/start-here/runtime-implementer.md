@@ -66,7 +66,7 @@ Runtime / SDK 不得实现 draft-only docs/protocol/**。
 
 先用 [Quickstart](../guides/quickstart.md) 连接真实设备或 mock server。
 
-没有设备时，先连接 [axtp-mock-server](https://github.com/Mostorm-Labs/axtp-mock-server)。
+没有设备时，先连接 [axtp-mock-server](https://github.com/Mostorm-Labs/axtp-mock-server)。Standard Framed runtime 优先用 Node TCP mock-server 做互操作基准；RPC-only runtime 可以声明并验证 WebSocket JSON profile。
 
 实现到 MVP 后，用 [Conformance Levels](../conformance/CONFORMANCE_LEVELS.md) 选择声明等级，再按 [Runtime MVP Checklist](../guides/runtime-mvp-conformance.md) 排查。
 

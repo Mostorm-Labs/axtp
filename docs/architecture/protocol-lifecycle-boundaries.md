@@ -7,7 +7,7 @@
 1. Runtime / SDK、协议维护者和测试负责人应该按什么顺序判断“哪份材料是合同”。
 2. AXTP Phase 1 从 Standard Framed `CONTROL OPEN / ACCEPT` 到 RPC Hello / Identify / Identified，再到 `APP_READY` 的连接状态机边界。
 
-如果要找具体操作 SOP，请看 [docs/guides/how-to-use.md](../guides/how-to-use.md)。如果要找 lifecycle skill，请看 [docs/dev/skills/README.md](../dev/skills/README.md)。
+如果要找具体操作 SOP，请看 [docs/guides/protocol-maintainer-sop.md](../guides/protocol-maintainer-sop.md)。如果要找 lifecycle skill，请看 [docs/dev/skills/README.md](../dev/skills/README.md)。
 
 ## 0. 合同等级与冲突处理
 
@@ -153,7 +153,7 @@ Phase 1 先实现控制面、业务 RPC 闭环，以及 Standard Framed 的 STRE
 | WebSocket JSON 是否必须等待 Server Hello 后才能 Identify | `docs/specs/1-core/06-RPC-Session.md` |
 | Standard Framed 是否必须先 CONTROL OPEN / ACCEPT | `docs/specs/1-core/05-Control-Session.md` |
 | 某个业务 method 是否存在 | `protocol/axtp.protocol.yaml` 或 `docs/generated/protocol.md` |
-| 某个业务 method 是否还只是草案 | `docs/protocol/<domain>/<domain.feature>.md` 和 Domain 状态矩阵 |
+| 某个业务 method 是否还只是草案 | `docs/protocol/<domain>/<domain.feature>.md` 和 [Product Domain Status](../product/domain-status.md) |
 | runtime 应该跑哪些验收 case | `docs/conformance/**` 和 runtime 支持等级声明 |
 
 因此，runtime 不从草案补齐连接状态，也不从连接状态机推断业务协议事实。
