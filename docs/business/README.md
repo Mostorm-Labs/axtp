@@ -6,6 +6,8 @@
 
 本目录不是协议合同。文档应尽量保留需求意图、业务背景、用户目标、约束和开放问题，让后续 `docs/flows/**` 与 `docs/protocol/**` 可以追溯到原始业务来源。
 
+业务文档只回答“为什么要做、给谁用、成功是什么、边界和疑问是什么”。不要在这里维护协议覆盖表、method/event/schema 细节、wire 示例或端到端 sequence；这些分别属于 `docs/flows/**` 和 `docs/protocol/**`。
+
 ## 边界
 
 | 路径 | 角色 | 能否作为实现合同 |
@@ -70,9 +72,9 @@
 
 ## 下一步
 
-- 创建或更新 `docs/flows/<scenario>.md`
-- 使用 `docs/dev/skills/10-plan-protocol-flow/SKILL.md` 梳理协议交互
-- 创建或更新 `docs/protocol/<domain>/<domain.feature>.md`
+- 推荐下一阶段：none / `plan-protocol-flow` / `draft-business-protocol` / `amend-adopted-protocol` / runtime implementation / legacy migration。
+- 如果需要端到端交互和协议覆盖分析，交给 `docs/flows/<scenario>.md`。
+- 如果 flow 已识别出明确协议缺口，再进入 `docs/protocol/<domain>/<domain.feature>.md` 草案。
 ```
 
 ## 命名

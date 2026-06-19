@@ -42,23 +42,7 @@ Capability ID：`firmware.update`
 
 ## JSON 示例约定
 
-本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
-
-示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
-
-```json
-{ "sid": "12345678", "op": 7, "d": {} }
-```
-
-| op | 名称 | 用途 |
-|---:|---|---|
-| `6` | Event | 设备向客户端推送事件。 |
-| `7` | Request | 客户端调用业务 method。 |
-| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
-
-本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 以 `registry/**`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**` 为准。
-
-业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+草案中的 JSON 示例遵循 [Protocol Draft Conventions](../draft-conventions.md#json-示例约定)。本文件只展示 feature-specific 的 RPC `d` block 示例；Hello / Identify / Identified、`sid`、`op` 和 JSON-RPC 禁用规则不在每篇草案中重复。
 
 ## 1. 功能说明
 

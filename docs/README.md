@@ -41,6 +41,7 @@
 | [architecture/](architecture/README.md) | 协议边界、domain/feature 分类、事实源治理。 | 架构指导 |
 | [release/](release/README.md) | spec tag、release artifact、runtime spec lock。 | 发布治理 |
 | [dev/skills/](dev/skills/README.md) | lifecycle skills 和 agent 工作流。 | 维护流程 |
+| `audits/` | 带日期的历史审计、盘点和重构建议，不是当前入口；该目录不进入 release artifact。 | 历史记录 |
 
 ## 合同等级简表
 
@@ -49,6 +50,7 @@
 | 评审输入 | `docs/business/**`、`docs/flows/**` | 否 |
 | 草案 | `docs/protocol/**` before adoption | 否，除非显式做 mock/prototype |
 | 迁移输入 | `docs/legacy-migration/**` | 否 |
+| 历史记录 | `docs/audits/**` | 否 |
 | 人工规范 | `docs/specs/**` | 是，需与 generated/YAML 对齐 |
 | 机器事实源 | `registry/**/*.yaml`、`registry/domains/**/*.yaml` | 是 |
 | Protocol IR | `protocol/axtp.protocol.yaml` | 是 |

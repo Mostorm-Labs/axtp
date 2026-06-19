@@ -2,6 +2,8 @@
 
 `docs/flows/` 存放场景级协议交互方案，是 Stage 10 `plan-protocol-flow` 的默认输出目录。
 
+如果同名或相近主题已经有 `docs/business/**`，business 文档只作为 PRD 源头；交互步骤、actor 责任、协议覆盖、缺口和下一步路由由 flow 文档维护。
+
 这类文档把产品 story、UI 原型、旧协议线索和 AXTP 协议工作连接起来，回答：
 
 - 用户或系统要完成什么目标。

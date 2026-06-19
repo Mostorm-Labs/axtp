@@ -1,8 +1,8 @@
-# <10-device-system-info>
+# Device Information And System Runtime State 需求
 
 ## 背景
 
-设备信息和系统状态监测是设备管理的基础接口，连接到设备的第一件事就是获取设备当前的设备状态以及基础的设备信息，设备信息包含设备id、sn码、产品信息、硬件信息、软件信息、上位机比如axtp自身的信息等，而系统system则管理了设备的运行状态，比如cpu、内存、在线、运行态等运行时状态信息，包括关机、重启等系统状态的控制
+设备信息和系统状态监测是设备管理的基础需求。连接到设备后的第一件事通常是确认“这是谁”和“现在状态怎样”：设备 ID、SN、产品、硬件、软件、AXTP runtime / host app 等属于设备身份和版本信息；CPU、内存、在线、运行态、关机、重启、计划任务、恢复默认等属于系统运行状态和生命周期控制。
 
 ## 用户目标
 
@@ -10,11 +10,17 @@
 
 ## 范围
 
-设备信息检测、设备系统状态监测
+- 设备基础身份和产品信息展示。
+- 主设备和级联 / 子设备信息查看。
+- 系统运行状态监测，例如 CPU、内存、在线和运行态。
+- lifecycle 控制，例如关机、重启、计划重启和计划关机。
+- runtime recovery、恢复默认配置和恢复出厂设置的产品目标。
 
 ## 非目标
 
-除device 和 system之外的内容
+- 不覆盖 camera、audio、video、network 等业务配置本身。
+- 不在 business 文档中定义 `device.*` / `system.*` method/event/schema。
+- 不定义 UI 展示顺序、图标、文案或具体确认弹窗。
 
 ## 场景
 
@@ -30,17 +36,19 @@
 ## 约束
 
 - [REVIEW-ASK] 设备信息与系统状态的字段基线、权限和 legacy 映射需在 flow / protocol 草案中继续确认。
+- 关机、重启、恢复默认和恢复出厂可能导致断连、数据变化或版本变化，flow 中必须明确权限、确认和重连策略。
 
 ## 旧协议线索
 
-- 关联旧协议文件、命令、日志、SDK 行为或历史文档。
+- [REVIEW-ASK] 待补充旧设备信息、系统状态、关机/重启、恢复默认和恢复出厂相关命令、日志或 SDK 行为。
 
 ## 开放问题
 
-- [REVIEW-ASK] 需要产品、架构、固件、App、后台或旧协议行为确认的问题。
+- [REVIEW-ASK] 主设备信息和子设备信息的最小字段基线是什么？
+- [REVIEW-ASK] runtime state recovery 与恢复默认 / 恢复出厂的产品边界如何向用户解释？
+- [REVIEW-ASK] 哪些 lifecycle 操作需要权限、二次确认或物理在场确认？
 
 ## 下一步
 
-- 创建或更新 `docs/flows/<scenario>.md`
-- 使用 `docs/dev/skills/10-plan-protocol-flow/SKILL.md` 梳理协议交互
-- 创建或更新 `docs/protocol/<domain>/<domain.feature>.md`
+- 交互和协议覆盖由 `docs/flows/device-system-info.md` 承接。
+- Flow 识别出的协议缺口再进入 `device.info`、`device.childDevice`、`system.state`、`system.lifecycle`、`system.reset` 或相关 protocol 草案。

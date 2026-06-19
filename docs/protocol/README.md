@@ -13,6 +13,8 @@ docs/protocol/ = human-written protocol drafts
 protocol/      = generated Protocol IR
 ```
 
+草案的公共写法只维护在 [Protocol Draft Conventions](draft-conventions.md)。单篇草案只写 feature-specific 的方法、事件、字段、错误候选、legacy 映射和待确认问题，不重复 JSON envelope、错误占位、合同边界和 flow 示例规则。
+
 ## 权威边界
 
 | 路径 | 角色 | 能否作为实现合同 |
@@ -55,33 +57,41 @@ lastReviewed: YYYY-MM-DD
 ## 生成路径
 
 ```text
-业务场景、UI 原型、用户 story 或旧协议材料
+用户没有明确阶段 / 请求横跨多个阶段
         ↓
+Codex skill: Stage 99 axtp-protocol-workflow
+        ↓ lifecycle routing
+产品想法、客户诉求、架构目标、UI 意图或旧协议线索
+        ↓
+Codex skill: Stage 00 business-intake
+        ↓ business requirement brief
+docs/business/<topic>.md
+        ↓ scenario / UI / actor / failure path needs mapping
 Codex skill: Stage 10 plan-protocol-flow
-        ↓ scenario / protocol coverage / gap list
+        ↓ protocol coverage and gap list
 docs/flows/<scenario>.md
-        ↓ protocol gap or confirmed protocol requirement
-产品/架构师业务描述、草稿文档或旧协议材料
+        ↓ concrete protocol gap
+domain.feature 语义、method/event/schema/error/capability/profile 候选
         ↓
-Codex skill: draft-business-protocol
-        ↓ search / reuse / modify / create draft
+Codex skill: Stage 20 draft-business-protocol
+        ↓ reviewable protocol draft
 docs/protocol/<domain>/<domain.feature>.md 协议草案
         ↓ internal review / confirmation
-Codex skill: adopt-protocol-draft
+Codex skill: Stage 30 adopt-protocol-draft
         ↓ reverse-confirm Registry and Capability Types specs, plus Profiles Registry when profiles/MVP change
 registry/**/*.yaml + registry/domains/**/*.yaml
         ↓
-Codex skill: generate-axtp-protocol
+Codex skill: Stage 50 generate-axtp-protocol
         ↓
 protocol/axtp.protocol.yaml
         ↓
 docs/generated/*、tooling/*、runtime 子仓库 generated 产物
         ↓ post-adoption semantic correction / field removal / deprecation / extension
-Codex skill: amend-adopted-protocol
+Codex skill: Stage 40 amend-adopted-protocol
         ↓ update adopted proposal + specs/YAML
 registry/**/*.yaml + registry/domains/**/*.yaml
         ↓
-Codex skill: generate-axtp-protocol
+Codex skill: Stage 50 generate-axtp-protocol
         ↓
 refreshed protocol/axtp.protocol.yaml + generated artifacts
 ```
@@ -92,16 +102,17 @@ refreshed protocol/axtp.protocol.yaml + generated artifacts
 
 | 阶段 | 触发输入 | Skill 做什么 | 允许修改 | 输出 |
 |---|---|---|---|---|
-| 总控路由 | 用户不确定应该起草、采纳、修订、生成还是实现 | `axtp-protocol-workflow` 判断生命周期阶段并路由到正确 skill | 按被路由阶段决定 | 明确下一步 workflow |
+| Stage 99 总控路由 | 用户不确定应该业务 intake、flow、草案、采纳、修订、生成、发布还是 runtime 实现 | [`axtp-protocol-workflow`](../dev/skills/99-axtp-protocol-workflow/SKILL.md) 判断生命周期阶段并路由到正确 skill | 按被路由阶段决定 | 明确下一步 workflow |
+| Stage 00 业务 | 产品想法、客户诉求、架构目标、UI 意图、legacy 线索或还没形成交互流程的 PRD 输入 | [`business-intake`](../dev/skills/00-business-intake/SKILL.md) 沉淀业务目标、范围、约束、开放问题和下一阶段建议 | `docs/business/**` | 业务需求 brief |
 | Stage 10 流程 | 业务场景、用户 story、UI 原型、端到端交互 | [`plan-protocol-flow`](../dev/skills/10-plan-protocol-flow/SKILL.md) 遍历 story 步骤，查询 adopted/generated/draft 协议覆盖，输出协议交互方案和缺口 | `docs/flows/**` | 场景流程文档，带 sequence、步骤表、协议覆盖和下一步 skill |
-| 草案 | 大白话需求、架构草图、旧协议片段或评审意见 | `draft-business-protocol` 遍历 `docs/protocol/**` 和 legacy 线索，判断复用、修改或新增 domain.feature 草案 | `docs/protocol/**` 草案和待确认问题 | 可评审协议草案，带候选接口、字段、legacyRefs 和 `[REVIEW-*]` 标记 |
-| 采纳 | 内部评审确认后的草案 | `adopt-protocol-draft` 读取草案、specs 和现有 YAML，拒绝未确认 `[REVIEW-*]`，反向确认 Registry/Capability Types specs，涉及 profile/MVP 时同步 Profiles Registry，固定草案状态，写入 YAML | `docs/protocol/**`、`docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`、`registry/**`、`registry/domains/**` | formal proposal + YAML 机器事实源 |
-| 修订 | 已采纳或已生成的协议事实需要语义修正、字段删除、字段废弃、重命名或扩展 | `amend-adopted-protocol` 读取 adopted proposal、specs、YAML 和 generated 现状，判断兼容性，记录 amendment，修正 YAML 并重新生成 | `docs/protocol/**`、`docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`、`registry/**`、`registry/domains/**`、Generator 生成产物 | amended proposal + 更新后的 YAML/生成物 |
-| 生成 | YAML 事实源已更新，需要刷新正式产物 | `generate-axtp-protocol` 从 YAML 运行 Generator pipeline 并验证输出 | 生成产物 | `protocol/axtp.protocol.yaml`、`docs/generated/*`、tooling/runtime generated 产物 |
+| Stage 20 草案 | flow 已识别出明确协议缺口，或用户已给出具体 method/event/schema/error/capability/profile 语义 | [`draft-business-protocol`](../dev/skills/20-draft-business-protocol/SKILL.md) 遍历 `docs/protocol/**` 和 legacy 线索，判断复用、修改或新增 domain.feature 草案 | `docs/protocol/**` 草案和待确认问题 | 可评审协议草案，带候选接口、字段、legacyRefs 和 `[REVIEW-*]` 标记 |
+| Stage 30 采纳 | 内部评审确认后的草案 | [`adopt-protocol-draft`](../dev/skills/30-adopt-protocol-draft/SKILL.md) 读取草案、specs 和现有 YAML，拒绝未确认 `[REVIEW-*]`，反向确认 Registry/Capability Types specs，涉及 profile/MVP 时同步 Profiles Registry，固定草案状态，写入 YAML | `docs/protocol/**`、`docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`、`registry/**`、`registry/domains/**` | formal proposal + YAML 机器事实源 |
+| Stage 40 修订 | 已采纳或已生成的协议事实需要语义修正、字段删除、字段废弃、重命名或扩展 | [`amend-adopted-protocol`](../dev/skills/40-amend-adopted-protocol/SKILL.md) 读取 adopted proposal、specs、YAML 和 generated 现状，判断兼容性，记录 amendment，修正 YAML 并重新生成 | `docs/protocol/**`、`docs/specs/2-registry/**` 与 `docs/specs/3-codec/02-Capability-Types.md`、`registry/**`、`registry/domains/**`、Generator 生成产物 | amended proposal + 更新后的 YAML/生成物 |
+| Stage 50 生成 | YAML 事实源已更新，需要刷新正式产物 | [`generate-axtp-protocol`](../dev/skills/50-generate-axtp-protocol/SKILL.md) 从 YAML 运行 Generator pipeline 并验证输出 | 生成产物 | `protocol/axtp.protocol.yaml`、`docs/generated/*`、tooling/runtime generated 产物 |
 
 草案阶段不得写 registry YAML，不得直接生成最终协议；采纳阶段不得采纳 `[REVIEW-ASK]` 或 `[REVIEW-BLOCKER]` 标记的事实；修订阶段不得绕过 adopted proposal 和 YAML 直接改 generated；生成阶段不得从 Markdown 推断新协议事实，只从 YAML 生成。
 
-如果输入还是端到端场景、UI 原型或用户 story，不要直接进入协议草案；先使用 `docs/dev/skills/10-plan-protocol-flow/SKILL.md` 输出 `docs/flows/<scenario>.md`，把协议步骤、已有覆盖、协议缺口和 UI-only 行为分清楚。
+如果输入还只是产品目标、客户诉求、架构意图、legacy 线索或 PRD 片段，不要直接进入 flow 或协议草案；先使用 `docs/dev/skills/00-business-intake/SKILL.md` 输出 `docs/business/<topic>.md`。如果输入已经是端到端场景、UI 原型或用户 story，不要直接进入协议草案；先使用 `docs/dev/skills/10-plan-protocol-flow/SKILL.md` 输出 `docs/flows/<scenario>.md`，把协议步骤、已有覆盖、协议缺口和 UI-only 行为分清楚。
 
 采纳阶段也不应该靠人照着 Markdown 手填 YAML；应使用 `docs/dev/skills/30-adopt-protocol-draft/SKILL.md` 固化草案到 specs/YAML 的转译、编号、冲突检查和源级验证流程。
 

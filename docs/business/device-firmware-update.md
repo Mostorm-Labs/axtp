@@ -10,29 +10,39 @@
 
 ## 范围
 
-1. 设备通用固件更新方案，即 `firmware.update` 能力。
+- 设备基础版本信息展示。
+- 上位机发起固件更新。
+- 支持完整 `.bin` 文件，也保留多个 `.bin` 文件组合升级的需求输入。
+- 更新过程中的进度、失败原因、重试和完成后的状态确认。
 
 ## 非目标
 
-
+- 不在 business 文档中定义 `firmware.update` 的 method/event/schema。
+- 不定义固件包签名、分片、STREAM payload 或具体校验算法。
+- 不覆盖 Launcher / App 自身的软件更新策略。
 
 ## 场景
 
 - 设备被接到 PC 上，通过上位机完成固件更新。
+- 上位机展示当前设备版本，用户选择升级文件。
+- 升级文件包含一个或多个 `.bin` 时，用户仍能看到统一的升级进度和最终结果。
 
 ## 约束
 
-- 产品、设备、固件、网络、兼容性、时延、安全、隐私或部署约束。
+- 固件更新可能导致设备重启、断连或进入不可操作状态，flow 需要明确用户提示和恢复路径。
+- 升级文件完整性、版本兼容性和权限策略需要在后续 flow / protocol 草案中确认。
 
 ## 旧协议线索
 
-- 关联旧协议文件、命令、日志、SDK 行为或历史文档。
+- [REVIEW-ASK] 待补充旧升级命令、文件传输方式、错误码和日志证据。
 
 ## 开放问题
 
-- [REVIEW-ASK] 需要产品、架构、固件、App、后台或旧协议行为确认的问题。
+- [REVIEW-ASK] 多 `.bin` 升级是顺序安装、按组件安装，还是设备自行解析包清单？
+- [REVIEW-ASK] 用户侧需要展示哪些升级阶段：校验、传输、写入、重启、验证？
+- [REVIEW-ASK] 升级失败后是否支持恢复、回滚或重新进入升级模式？
 
 ## 下一步
 
-- 创建或更新 `docs/flows/device-firmware-update.md`
-- 创建或更新 `docs/protocol/firmware/firmware.update.md`
+- 交互和协议覆盖由 `docs/flows/device-firmware-update.md` 承接。
+- Flow 识别出的协议缺口再进入 `docs/protocol/firmware/firmware.update.md`。

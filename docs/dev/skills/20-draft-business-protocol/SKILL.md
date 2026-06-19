@@ -15,7 +15,8 @@ Stage 20. Create or update an AXTP business protocol draft in `docs/protocol/<do
 - Do not introduce new PayloadType, Frame Header business fields, WebSocket STREAM support, or runtime Header Profile negotiation.
 - Do not use this skill for raw PRD intake. If the user is still describing product intent, customer value, UI goals, or unresolved business scope, route to `business-intake`.
 - JSON examples must be embedded in the `docs/protocol/**` Markdown draft by default; do not create generated JSON artifacts unless the user explicitly asks.
-- JSON examples in protocol drafts must define the full AXTP RPC JSON envelope once in `JSON 示例约定`, then show only the RPC `d` block in subsequent method/event examples by default. Business feature examples assume the RPC Session is already `APP_READY`; do not repeat Hello / Identify / Identified in every feature draft.
+- Follow `docs/protocol/draft-conventions.md` for JSON envelope, error, schema expansion, flow example, and contract-boundary conventions. Drafts should link to the common convention instead of repeating those rules.
+- Business feature examples assume the RPC Session is already `APP_READY`; show only feature-specific RPC `d` blocks after the common convention link.
 - Method/event example headings must state the envelope op, for example `Request d block Example (op=7)`, `Success Response d block Example (op=8)`, `Error Response d block Example (op=8)`, and `Event d block Example (op=6)`.
 - Do not use JSON-RPC 2.0 (`jsonrpc: "2.0"`) as an AXTP wire example unless explicitly documenting an external adapter representation.
 - Always leave `[REVIEW-*]` markers for human review. Unconfirmed facts must be `[REVIEW-ASK]`, `[REVIEW-DRAFT]`, `[REVIEW-FIX]`, or `[REVIEW-BLOCKER]`.
@@ -28,6 +29,7 @@ Work from the repository root containing `docs/specs`, `docs/protocol`, and `reg
 
 ```text
 docs/protocol/README.md
+docs/protocol/draft-conventions.md
 docs/specs/2-registry/01-Naming-and-Taxonomy.md
 docs/specs/4-tooling/01-YAML-Mapping.md
 docs/specs/2-registry/02-Methods-Registry.md
@@ -91,7 +93,7 @@ Use `apply_patch` for manual edits. A draft must include:
 
 - frontmatter status and contract state
 - a `0. 速读结论` table summarizing purpose, state, implementation contract status, main interaction type, STREAM usage, registry readiness, conformance state, and unresolved questions
-- a `JSON 示例约定` section explaining that examples assume `APP_READY`, show the full `sid/op/d` envelope once, and then use RPC `d` block examples with `op=6` Event, `op=7` Request, `op=8` RequestResponse called out in headings
+- a short `JSON 示例约定` section linking to `docs/protocol/draft-conventions.md` and stating this draft only shows feature-specific RPC `d` block examples
 - concise function description
 - capability boundary: included, excluded, and data-plane usage
 - method section with two layers: `3.0 方法速览` and one independent subsection per method
@@ -116,25 +118,24 @@ Prefer concise tables. Do not force a heavy Purpose/Scope/Lifecycle/Stream Usage
 
 The default `docs/protocol/<domain>/<domain.feature>.md` draft is a human-readable review artifact, not the machine truth source and not a runtime implementation contract. It should help product/architecture understand scope, engineers see method/event/schema details, test owners derive conformance cases, migration owners map legacy commands, and protocol maintainers judge registry readiness. Formal machine truth remains in `registry/**/*.yaml`, `protocol/axtp.protocol.yaml`, `docs/generated/**`, and `docs/conformance/**`.
 
-For schema-heavy features, organize the schema section for reading, not just completeness:
+For schema-heavy features, follow `docs/protocol/draft-conventions.md#schema-展开约定` and organize the schema section for reading, not just completeness:
 
 - Start with a schema hierarchy overview that explains the main data blocks and how they relate.
 - Separate request/response schemas, capability schemas, runtime config/state schemas, and event payload schemas.
 - For object families, split each object into its own field table instead of putting every nested field into one long flat table.
 - Explain `Capabilities` / descriptor schemas as "what the device can do" and `Config` / `State` schemas as "what currently applies or will be changed".
 - Include range, enum, unit, default, and restart/apply notes close to the field table where readers need them.
-- Choose one schema expansion mode and stay consistent:
-  - For simple features, expand params/result/payload fields directly under each method/event, and keep the schema section as an index.
+- Choose one schema expansion mode and stay consistent.
+- For simple features, expand params/result/payload fields directly under each method/event, and keep the schema section as an index.
 - For complex features, keep method/event blocks readable by naming the schema and linking to the exact schema subsection, but still include the key fields and inline JSON `d` block examples needed to understand the method/event without hunting through the whole document.
 - Never make readers infer whether a field table is method params, method result, event payload, shared schema, or capability. The heading and nearby prose must say which schema it belongs to.
 - Keep capability fields only in the Capability section; do not mix capability descriptors into method params/results or event payloads.
 
-When creating a new draft or materially updating an existing draft, include or refresh inline JSON examples:
+When creating a new draft or materially updating an existing draft, include or refresh inline JSON examples. Keep the common rules in `docs/protocol/draft-conventions.md` and keep each draft focused on the feature:
 
 - Put Request / Success Response / Error Response examples inside the relevant method subsection, close to that method's fields and rules.
 - Put Event examples inside the relevant event subsection, close to that event's payload fields and client handling rules.
-- Show the full AXTP RPC JSON envelope once in `JSON 示例约定`, using `sid: "12345678"` as the default example session id after `APP_READY`.
-- Subsequent method/event examples SHOULD show only the RPC `d` block to keep long feature drafts readable.
+- Method/event examples SHOULD show only the RPC `d` block to keep long feature drafts readable.
 - Request `d` block examples must include `id`, `method`, and optional `params`; `id` must be non-zero; the heading must mark `op=7`.
 - Response `d` block examples must echo request `id`, include `status.ok`, and use numeric `status.code`; use `0` for success; the heading must mark `op=8`.
 - Event `d` block examples must include `event`, numeric `intent`, and optional `data`; events must not include request `id`; the heading must mark `op=6`.

@@ -103,7 +103,8 @@ axtp/
 │   ├── legacy-migration/        # 旧协议证据、分类和迁移
 │   ├── architecture/            # 架构边界和治理原则
 │   ├── release/                 # spec tag 与 release governance
-│   └── dev/                     # lifecycle skills
+│   ├── dev/                     # lifecycle skills
+│   └── audits/                  # historical audits, not current entrypoints
 ├── registry/                    # YAML 事实源
 ├── protocol/                    # generated Protocol IR
 ├── generators/                  # Generator 实现

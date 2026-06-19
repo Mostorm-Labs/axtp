@@ -4,6 +4,8 @@
 
 `domain.feature` 草案的目标是让人快速看懂协议意图、接口形状、字段含义、测试重点和采纳风险。它不是最终机器事实源，也不是长篇规范论文。正式机器事实源仍然是 `registry/**/*.yaml`、`protocol/axtp.protocol.yaml`、`docs/generated/**` 和 `docs/conformance/**`。
 
+公共 JSON envelope、错误占位、schema 展开和 flow example 写法维护在 `docs/protocol/draft-conventions.md`，模板和草案只保留 feature-specific 内容。
+
 ````markdown
 ---
 status: draft
@@ -32,23 +34,7 @@ lastReviewed: YYYY-MM-DD
 
 ## JSON 示例约定
 
-本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在每篇业务 feature 草案中重复。
-
-示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
-
-```json
-{ "sid": "12345678", "op": 7, "d": {} }
-```
-
-| op | 名称 | 用途 |
-|---:|---|---|
-| `6` | Event | 设备向客户端推送事件。 |
-| `7` | Request | 客户端调用业务 method。 |
-| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
-
-本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
-
-业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
+草案中的 JSON 示例遵循 [Protocol Draft Conventions](../draft-conventions.md#json-示例约定)。本文只展示 feature-specific 的 RPC `d` block 示例；Hello / Identify / Identified、`sid`、`op` 和 JSON-RPC 禁用规则不在每篇草案中重复。
 
 ## 1. 功能说明
 
@@ -363,7 +349,7 @@ Schema 展开模式必须二选一：
 - 简单 feature：method/event 章节已经直接展开 Params / Result / Payload 字段表，本章只保留 schema 索引，避免重复。
 - 复杂 feature：method/event 章节必须给出关键字段和 JSON `d` block 示例；本章集中展开复杂对象；method/event 小节必须明确引用第 6.x 节，不能让读者自己猜。
 
-禁止出现 method 小节只有 schema 名称，而字段表和示例都被丢到后文的写法。
+Schema 展开规则见 [Protocol Draft Conventions](../draft-conventions.md#schema-展开约定)。禁止出现 method 小节只有 schema 名称，而字段表和示例都被丢到后文的写法。
 
 ```text
 XxxState
@@ -405,9 +391,7 @@ XxxChangedEvent
 
 ## 7. 交互流程示例 Flow Examples
 
-本章只展示多个 method/event 组成的端到端业务流程，不再承担单个 method/event 的 API 契约示例。
-
-单个 method 的 Request / Success Response / Error Response 示例必须写在对应 method 小节中。单个 event 的 Event 示例必须写在对应 event 小节中。
+Flow examples 的定位见 [Protocol Draft Conventions](../draft-conventions.md#flow-example-约定)。本章只展示多个 method/event 组成的端到端业务流程，不再承担单个 method/event 的 API 契约示例。
 
 每个 flow example 应展示：
 
@@ -456,7 +440,7 @@ XxxChangedEvent
 
 ## 8. 错误
 
-错误处理语义见 `docs/specs/1-core/09-Error-Model.md`；错误注册规则见 `docs/specs/2-registry/04-Errors-Registry.md`。草案不得随意分配正式 numeric errorCode。
+错误响应和 numeric code 占位规则见 [Protocol Draft Conventions](../draft-conventions.md#错误约定) 与 `docs/specs/2-registry/04-Errors-Registry.md`；本节只列 feature-specific 候选错误。
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
@@ -466,8 +450,6 @@ XxxChangedEvent
 | `BUSY` | 设备或资源繁忙。 | 如已有动作执行中。 |
 | `PERMISSION_DENIED` | 调用方权限不足。 | 危险操作或敏感信息读取。 |
 | `<FEATURE_SPECIFIC_ERROR>` | 候选业务错误。 | `[REVIEW-DRAFT]`；采纳前确认是否需要 feature-specific errorCode。 |
-
-JSON 示例中的 `status.code` 如果 registry 尚未采纳，可以使用 `10` 作为占位示例，并在 `status.details.candidateError` 中放候选错误名。正式 numeric code 必须由 registry 采纳时分配。
 
 ## 9. Legacy 映射
 

@@ -78,5 +78,5 @@
 
 ## 下一步
 
-- 创建 `docs/flows/camera-lens-control.md`，梳理 PTZ、zoom、focus 的查询、控制、事件和冲突流程。
-- 后续根据 flow 的缺口更新 `docs/protocol/camera/camera.ptz.md`、`docs/protocol/camera/camera.zoom.md`、`docs/protocol/camera/camera.focus.md`。
+- 交互和协议覆盖由 `docs/flows/camera-lens-control.md` 承接。
+- Flow 识别出的协议缺口再进入 `camera.ptz`、`camera.zoom`、`camera.focus` 或相关 protocol 草案。

@@ -78,5 +78,5 @@
 
 ## 下一步
 
-- 创建 `docs/flows/video-framing-modes.md`，梳理 App 查询能力、加载配置、切换模式、接收事件和错误处理流程。
-- 后续根据 flow 的缺口更新 `docs/protocol/video/video.framing.md`。
+- 交互和协议覆盖由 `docs/flows/video-framing-modes.md` 承接。
+- Flow 识别出的协议缺口再进入 `video.framing` 或相关 protocol 草案。

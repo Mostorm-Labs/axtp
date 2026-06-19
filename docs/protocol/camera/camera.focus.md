@@ -25,21 +25,7 @@ lastReviewed: 2026-06-15
 
 ## JSON 示例约定
 
-本文中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 RPC Session 规范，不在本业务草案中重复。
-
-示例使用 AXTP RPC JSON envelope。除本节的 envelope 速查外，后续 method/event/flow 示例默认只展示 RPC `d` 数据块，并在小节标题中标明对应 `op`：
-
-```json
-{ "sid": "12345678", "op": 7, "d": {} }
-```
-
-| op | 名称 | 用途 |
-|---:|---|---|
-| `6` | Event | 设备向客户端推送事件。 |
-| `7` | Request | 客户端调用业务 method。 |
-| `8` | RequestResponse | 设备返回业务 method 结果或错误。 |
-
-本文中的 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
+草案中的 JSON 示例遵循 [Protocol Draft Conventions](../draft-conventions.md#json-示例约定)。本文件只展示 feature-specific 的 RPC `d` block 示例；Hello / Identify / Identified、`sid`、`op` 和 JSON-RPC 禁用规则不在每篇草案中重复。
 
 ## 1. 功能说明
 
@@ -2010,7 +1996,7 @@ FocusCommandResult
 
 ## 8. 错误
 
-错误处理语义见 `docs/specs/1-core/09-Error-Model.md`；错误注册规则见 `docs/specs/2-registry/04-Errors-Registry.md`。草案不得随意分配正式 numeric errorCode。
+错误响应和 numeric code 占位规则见 [Protocol Draft Conventions](../draft-conventions.md#错误约定) 与 `docs/specs/2-registry/04-Errors-Registry.md`；本节只列 feature-specific 候选错误。
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
@@ -2021,8 +2007,6 @@ FocusCommandResult
 | `BUSY` | AF、jog 或 calibration 进行中。 | 稍后重试或 stop。 |
 | `TIMEOUT` | AF 超时。 | 可重试。 |
 | `PERMISSION_DENIED` | 调用方无权控制摄像头。 | 返回权限错误。 |
-
-JSON 示例中的 `status.code=10` 仅作为草案占位示例；正式 numeric code 必须由 registry 采纳时分配或复用已采纳 common error。
 
 ## 9. Legacy 映射
 

@@ -78,5 +78,5 @@
 
 ## 下一步
 
-- 创建 `docs/flows/camera-image-settings.md`，梳理图像设置加载、编辑、保存、事件和错误处理流程。
-- 后续根据 flow 的缺口更新 `docs/protocol/camera/camera.image.md`、`docs/protocol/camera/camera.exposure.md`、`docs/protocol/camera/camera.whiteBalance.md`。
+- 交互和协议覆盖由 `docs/flows/camera-image-settings.md` 承接。
+- Flow 识别出的协议缺口再进入 `camera.image`、`camera.exposure`、`camera.whiteBalance` 或相关 protocol 草案。
