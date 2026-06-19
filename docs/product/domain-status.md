@@ -2,13 +2,13 @@
 
 本页是产品 / 架构负责人查看 AXTP 业务能力覆盖、采纳优先级和下一步动作的入口。
 
-这里展示的是产品状态看板，不是 runtime 实现合同。runtime 能直接依赖的合同仍然是 `registry/**`、`protocol/axtp.protocol.yaml`、`docs/generated/**`、`docs/specs/**` 和 `docs/conformance/**`。
+这里展示的是产品状态看板，不是 runtime 实现合同。runtime 能直接依赖的合同仍然是 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml`、`contract/generated/**`、`specs/**` 和 `conformance/**`。
 
 ## Domain 状态矩阵
 
 > 最后更新：2026-06-18（每次 domain 状态变更后手动更新此日期）
 > 更新规则：新增、删除、采纳、废弃 domain 草案或 registry domain 后，必须同步本矩阵的 Drafts、Review、Generated 和 Next Step。
-> 验证方式：只有 `registry/domains/<domain>/domain.yaml` 存在，并且 `pnpm --dir generators validate:sources` / `validate:protocol` 通过，才算 generated/adopted；其余为草案状态。
+> 验证方式：只有 `contract/registry/domains/<domain>/domain.yaml` 存在，并且 `pnpm --dir tooling/generators validate:sources` / `validate:protocol` 通过，才算 generated/adopted；其余为草案状态。
 
 本表用于让产品、架构、研发和测试快速判断每个 domain 当前走到哪里。`Generated` 统计当前 generated protocol 中已经落地的方法和事件数量；`video` / `audio` 的 P0 stream 优先级表示要同时采纳 RPC 建流/关流控制面和 STREAM 数据面字段约束。
 
@@ -37,18 +37,18 @@
 
 ## 协议采纳/生成优先级
 
-本表用于安排后续从草案到 YAML、再到 generated 产物的顺序。统计依据为 `docs/legacy-migration/classification/legacy-protocol-classification.csv` 和 `docs/legacy-migration/classification/README.md`；当前 `docs/generated/protocol.md` 已覆盖 `audio.algorithm`、`audio.stream`、`device.info`、`firmware.update` P0、`network.interface`、`network.ip`、`network.wifi`、`network.ap` 和 `video.stream`，其余业务域仍按草案评审推进。
+本表用于安排后续从草案到 YAML、再到 generated 产物的顺序。统计依据为 `docs/workspace/legacy-migration/classification/legacy-protocol-classification.csv` 和 `docs/workspace/legacy-migration/classification/README.md`；当前 `contract/generated/protocol.md` 已覆盖 `audio.algorithm`、`audio.stream`、`device.info`、`firmware.update` P0、`network.interface`、`network.ip`、`network.wifi`、`network.ap` 和 `video.stream`，其余业务域仍按草案评审推进。
 
 | 优先级 | 生成批次 | Legacy 覆盖 | 当前状态 | 建议动作 |
 |---|---|---:|---|---|
-| P1 | `device.*` / `system.*`：[`device.info`](../protocol/device/device.info.md)、[`device.childDevice`](../protocol/device/device.childDevice.md)、[`system.state`](../protocol/system/system.state.md)、[`system.lifecycle`](../protocol/system/system.lifecycle.md)、[`system.reset`](../protocol/system/system.reset.md)、[`system.initialization`](../protocol/system/system.initialization.md)、[`system.time`](../protocol/system/system.time.md) | 64 条，覆盖 AXDP / Rooms / Signage / VM33 | `device.info` 已进入 generated；其余草案待采纳 | 继续采纳通用底座。它们是设备识别、运行时状态事件、重启/关机、软重置、初始化、时间同步等基础事实；独立 system power 和 system health 草案已移除。 |
-| P2 | [`video.framing`](../protocol/video/video.framing.md) | 22 条，主要来自 AXDP，少量 VM33 | 草案已存在，未进入 generated | 紧跟 P1 生成。framing mode 是 legacy 高频控制项，也会影响 camera tracking、布局和画面输出的语义边界。 |
-| P2b | [`output.layout`](../protocol/output/output.layout.md) / [`video.layout`](../protocol/video/video.layout.md) | 28 条，`output.layout` 20 条、`video.layout` 8 条 | 草案已存在，未进入 generated | 原始优先级清单未单列，但 legacy 覆盖高。若近期要做输出画面、拼接、多画面或分屏，建议插在 P2 后、camera 控制前。 |
-| P3 | [`camera.focus`](../protocol/camera/camera.focus.md)、[`camera.zoom`](../protocol/camera/camera.zoom.md)、[`camera.ptz`](../protocol/camera/camera.ptz.md) | 20 条，覆盖 AXDP / VM33 | 草案已存在，未进入 generated | 按同一 camera control 批次采纳。focus 和 zoom 命中多，PTZ 条目少但和控制体验强相关，适合一起确认 schema 与状态事件。 |
-| P4 | [`camera.image`](../protocol/camera/camera.image.md)、[`camera.exposure`](../protocol/camera/camera.exposure.md)、[`camera.calibration`](../protocol/camera/camera.calibration.md)、[`camera.whiteBalance`](../protocol/camera/camera.whiteBalance.md) | 12 条直接归类；VM33 Camera 配置另有 whiteBalance 字段线索 | 草案已存在，未进入 generated；`camera.image` 有低置信度拆分问题 | 先补 VM33 Camera 配置字段，再采纳 image/exposure/calibration；whiteBalance 当前分类 CSV 没有直接命中，建议随 camera 配置批次保留，但放在本批次后段确认。 |
-| P5 | `diagnostic.*` 产测：[`diagnostic.networkTest`](../protocol/diagnostic/diagnostic.networkTest.md)、[`diagnostic.manufacturing`](../protocol/diagnostic/diagnostic.manufacturing.md)、[`diagnostic.selfTest`](../protocol/diagnostic/diagnostic.selfTest.md)、[`diagnostic.audioTest`](../protocol/diagnostic/diagnostic.audioTest.md)、[`diagnostic.inputTest`](../protocol/diagnostic/diagnostic.inputTest.md)、[`diagnostic.storageTest`](../protocol/diagnostic/diagnostic.storageTest.md)、[`diagnostic.videoTest`](../protocol/diagnostic/diagnostic.videoTest.md)、[`diagnostic.kvmTest`](../protocol/diagnostic/diagnostic.kvmTest.md) | 33 条，覆盖 AXDP / Rooms / VM33 | 草案已存在，未进入 generated | 面向工厂和维修闭环，建议在用户侧 camera / video 基础能力之后生成；如果产线接入排期更早，可把 `diagnostic.manufacturing` 与 `diagnostic.networkTest` 提前成 P3b。 |
-| P6 | AXTP core / `axtpctl` | 不属于 legacy business 分类；core 已在 `registry/core/**`、`registry/schema/**`、`registry/error/**` 和 generated 中存在 | Core 已生成；`axtpctl` 属于工具/SDK 跟随项 | 不作为普通业务草案插队。每完成一批业务生成后，再让 `axtpctl` 命令、测试向量和 runtime 示例跟随 generated 事实更新。 |
-| P7 | `room.*` / `signage.*` / enrollment / appearance：[`room.source`](../protocol/room/room.source.md)、[`room.layout`](../protocol/room/room.layout.md)、[`room.schedule`](../protocol/room/room.schedule.md)、[`room.participant`](../protocol/room/room.participant.md)、[`signage.playlist`](../protocol/signage/signage.playlist.md)、[`signage.playback`](../protocol/signage/signage.playback.md)、[`device.enrollment`](../protocol/device/device.enrollment.md)、[`software.config`](../protocol/software/software.config.md) | 28 条，主要来自 Rooms / Signage / VM33 | 草案已存在，未进入 generated | 放后面生成。它们更偏产品场景和应用层编排；若 Rooms 业务先启动，可单独把 `room.source` 提前，因为它有 11 条 legacy 命中。原 `device.binding` 已收敛为 `device.enrollment`，原 `device.appearance` 已合并到 `software.config`。 |
+| P1 | `device.*` / `system.*`：[`device.info`](../workspace/protocol/device/device.info.md)、[`device.childDevice`](../workspace/protocol/device/device.childDevice.md)、[`system.state`](../workspace/protocol/system/system.state.md)、[`system.lifecycle`](../workspace/protocol/system/system.lifecycle.md)、[`system.reset`](../workspace/protocol/system/system.reset.md)、[`system.initialization`](../workspace/protocol/system/system.initialization.md)、[`system.time`](../workspace/protocol/system/system.time.md) | 64 条，覆盖 AXDP / Rooms / Signage / VM33 | `device.info` 已进入 generated；其余草案待采纳 | 继续采纳通用底座。它们是设备识别、运行时状态事件、重启/关机、软重置、初始化、时间同步等基础事实；独立 system power 和 system health 草案已移除。 |
+| P2 | [`video.framing`](../workspace/protocol/video/video.framing.md) | 22 条，主要来自 AXDP，少量 VM33 | 草案已存在，未进入 generated | 紧跟 P1 生成。framing mode 是 legacy 高频控制项，也会影响 camera tracking、布局和画面输出的语义边界。 |
+| P2b | [`output.layout`](../workspace/protocol/output/output.layout.md) / [`video.layout`](../workspace/protocol/video/video.layout.md) | 28 条，`output.layout` 20 条、`video.layout` 8 条 | 草案已存在，未进入 generated | 原始优先级清单未单列，但 legacy 覆盖高。若近期要做输出画面、拼接、多画面或分屏，建议插在 P2 后、camera 控制前。 |
+| P3 | [`camera.focus`](../workspace/protocol/camera/camera.focus.md)、[`camera.zoom`](../workspace/protocol/camera/camera.zoom.md)、[`camera.ptz`](../workspace/protocol/camera/camera.ptz.md) | 20 条，覆盖 AXDP / VM33 | 草案已存在，未进入 generated | 按同一 camera control 批次采纳。focus 和 zoom 命中多，PTZ 条目少但和控制体验强相关，适合一起确认 schema 与状态事件。 |
+| P4 | [`camera.image`](../workspace/protocol/camera/camera.image.md)、[`camera.exposure`](../workspace/protocol/camera/camera.exposure.md)、[`camera.calibration`](../workspace/protocol/camera/camera.calibration.md)、[`camera.whiteBalance`](../workspace/protocol/camera/camera.whiteBalance.md) | 12 条直接归类；VM33 Camera 配置另有 whiteBalance 字段线索 | 草案已存在，未进入 generated；`camera.image` 有低置信度拆分问题 | 先补 VM33 Camera 配置字段，再采纳 image/exposure/calibration；whiteBalance 当前分类 CSV 没有直接命中，建议随 camera 配置批次保留，但放在本批次后段确认。 |
+| P5 | `diagnostic.*` 产测：[`diagnostic.networkTest`](../workspace/protocol/diagnostic/diagnostic.networkTest.md)、[`diagnostic.manufacturing`](../workspace/protocol/diagnostic/diagnostic.manufacturing.md)、[`diagnostic.selfTest`](../workspace/protocol/diagnostic/diagnostic.selfTest.md)、[`diagnostic.audioTest`](../workspace/protocol/diagnostic/diagnostic.audioTest.md)、[`diagnostic.inputTest`](../workspace/protocol/diagnostic/diagnostic.inputTest.md)、[`diagnostic.storageTest`](../workspace/protocol/diagnostic/diagnostic.storageTest.md)、[`diagnostic.videoTest`](../workspace/protocol/diagnostic/diagnostic.videoTest.md)、[`diagnostic.kvmTest`](../workspace/protocol/diagnostic/diagnostic.kvmTest.md) | 33 条，覆盖 AXDP / Rooms / VM33 | 草案已存在，未进入 generated | 面向工厂和维修闭环，建议在用户侧 camera / video 基础能力之后生成；如果产线接入排期更早，可把 `diagnostic.manufacturing` 与 `diagnostic.networkTest` 提前成 P3b。 |
+| P6 | AXTP core / `axtpctl` | 不属于 legacy business 分类；core 已在 `contract/registry/core/**`、`contract/registry/schema/**`、`contract/registry/error/**` 和 generated 中存在 | Core 已生成；`axtpctl` 属于工具/SDK 跟随项 | 不作为普通业务草案插队。每完成一批业务生成后，再让 `axtpctl` 命令、测试向量和 runtime 示例跟随 generated 事实更新。 |
+| P7 | `room.*` / `signage.*` / enrollment / appearance：[`room.source`](../workspace/protocol/room/room.source.md)、[`room.layout`](../workspace/protocol/room/room.layout.md)、[`room.schedule`](../workspace/protocol/room/room.schedule.md)、[`room.participant`](../workspace/protocol/room/room.participant.md)、[`signage.playlist`](../workspace/protocol/signage/signage.playlist.md)、[`signage.playback`](../workspace/protocol/signage/signage.playback.md)、[`device.enrollment`](../workspace/protocol/device/device.enrollment.md)、[`software.config`](../workspace/protocol/software/software.config.md) | 28 条，主要来自 Rooms / Signage / VM33 | 草案已存在，未进入 generated | 放后面生成。它们更偏产品场景和应用层编排；若 Rooms 业务先启动，可单独把 `room.source` 提前，因为它有 11 条 legacy 命中。原 `device.binding` 已收敛为 `device.enrollment`，原 `device.appearance` 已合并到 `software.config`。 |
 
 ### 旁路高覆盖候选
 
@@ -56,10 +56,10 @@
 
 | 候选能力 | Legacy 覆盖 | 建议 |
 |---|---:|---|
-| [`network.wifi`](../protocol/network/network.wifi.md)、[`network.ip`](../protocol/network/network.ip.md)、[`network.ap`](../protocol/network/network.ap.md) | 38 条 | 若设备上线、配网或发现流程先行，应作为 P1 后的并行批次。 |
-| [`firmware.update`](../protocol/firmware/firmware.update.md) / [`firmware.updatePolicy`](../protocol/firmware/firmware.updatePolicy.md) | 22 条 | 跨 AXDP / Rooms / Signage / VM33，适合在基础 device/system 生成后启动采纳。 |
-| [`audio.volume`](../protocol/audio/audio.volume.md)、[`audio.input`](../protocol/audio/audio.input.md)、[`audio.recording`](../protocol/audio/audio.recording.md) | 31 条 | `audio.algorithm` 已 generated；这些可作为音频第二批。 |
-| [`video.stream`](../protocol/video/video.stream.md)、[`video.ndi`](../protocol/video/video.ndi.md)、[`video.rtsp`](../protocol/video/video.rtsp.md) | 23 条 | 与 framing、camera、layout 相关，建议等 P2/P3 的控制面边界稳定后采纳。 |
+| [`network.wifi`](../workspace/protocol/network/network.wifi.md)、[`network.ip`](../workspace/protocol/network/network.ip.md)、[`network.ap`](../workspace/protocol/network/network.ap.md) | 38 条 | 若设备上线、配网或发现流程先行，应作为 P1 后的并行批次。 |
+| [`firmware.update`](../workspace/protocol/firmware/firmware.update.md) / [`firmware.updatePolicy`](../workspace/protocol/firmware/firmware.updatePolicy.md) | 22 条 | 跨 AXDP / Rooms / Signage / VM33，适合在基础 device/system 生成后启动采纳。 |
+| [`audio.volume`](../workspace/protocol/audio/audio.volume.md)、[`audio.input`](../workspace/protocol/audio/audio.input.md)、[`audio.recording`](../workspace/protocol/audio/audio.recording.md) | 31 条 | `audio.algorithm` 已 generated；这些可作为音频第二批。 |
+| [`video.stream`](../workspace/protocol/video/video.stream.md)、[`video.ndi`](../workspace/protocol/video/video.ndi.md)、[`video.rtsp`](../workspace/protocol/video/video.rtsp.md) | 23 条 | 与 framing、camera、layout 相关，建议等 P2/P3 的控制面边界稳定后采纳。 |
 
 ## 后续治理 TODO
 

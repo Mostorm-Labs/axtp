@@ -1,0 +1,36 @@
+axtp_spec:
+  version: "{{VERSION}}"
+  tag: "spec/v{{VERSION}}"
+  commit: "{{COMMIT}}"
+  released_at: "{{DATE}}"
+
+contents:
+  contract_paths:
+    - README.md
+    - LICENSE
+    - contract/protocol/axtp.protocol.yaml
+    - contract/generated/protocol.md
+    - contract/generated/protocol.json
+    - contract/registry/
+    - specs/
+    - conformance/
+    - contract/mcp/
+    - contract/test-vectors/
+  compatibility_paths: []
+  supplemental_paths:
+    - docs/product/roadmap.md
+    - CHANGELOG.md
+    - docs/workspace/release/
+    - docs/workspace/
+  excluded_paths:
+    - docs/workspace/legacy-migration/evidence/
+    - "**/.DS_Store"
+
+runtime_update:
+  target_runtime_version: "{{VERSION}}"
+  dispatch_event: "axtp_spec_released"
+
+notes:
+  summary: ""
+  breaking_changes: []
+  runtime_required_changes: []

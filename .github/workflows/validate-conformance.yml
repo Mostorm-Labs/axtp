@@ -32,31 +32,31 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --dir generators install --frozen-lockfile
+          pnpm --dir tooling/generators install --frozen-lockfile
 
       - name: Validate generator and generated artifacts
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --dir generators build
-          pnpm --dir generators lint
-          pnpm --dir generators test
-          pnpm --dir generators validate
-          pnpm --dir generators validate:sources
-          pnpm --dir generators validate:protocol
-          scripts/check-generated-drift.sh
+          pnpm --dir tooling/generators build
+          pnpm --dir tooling/generators lint
+          pnpm --dir tooling/generators test
+          pnpm --dir tooling/generators validate
+          pnpm --dir tooling/generators validate:sources
+          pnpm --dir tooling/generators validate:protocol
+          tooling/scripts/check-generated-drift.sh
 
       - name: Validate conformance cases
         shell: bash
-        run: scripts/validate-conformance.sh
+        run: tooling/scripts/validate-conformance.sh
 
       - name: Validate docs and protocol status
         shell: bash
         run: |
           set -euo pipefail
-          scripts/check-links.mjs
-          scripts/check-protocol-status.mjs
+          tooling/scripts/check-links.mjs
+          tooling/scripts/check-protocol-status.mjs
 
       - name: Validate release artifact dry run
         shell: bash
-        run: scripts/check-release-artifact.sh 0.0.0
+        run: tooling/scripts/check-release-artifact.sh 0.0.0

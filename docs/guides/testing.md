@@ -9,10 +9,10 @@ mock server 也按声明 profile 验收。当前 Node mock-server 应覆盖 TCP 
 | 输入 | 用途 |
 |---|---|
 | Spec lock | 确认测的是哪个 spec tag、commit 或 release artifact。 |
-| [../generated/protocol.json](../generated/protocol.json) | 构造 method、event、schema、error 的合法输入。 |
-| [../generated/protocol.md](../generated/protocol.md) | 人工核对字段、错误码、能力语义。 |
-| [../conformance/manifest.yaml](../conformance/manifest.yaml) | 确认声明 level 需要跑哪些 case。 |
-| [../conformance/cases](../conformance/cases) | 自动化验收输入。 |
+| [../../contract/generated/protocol.json](../../contract/generated/protocol.json) | 构造 method、event、schema、error 的合法输入。 |
+| [../../contract/generated/protocol.md](../../contract/generated/protocol.md) | 人工核对字段、错误码、能力语义。 |
+| [../../conformance/manifest.yaml](../../conformance/manifest.yaml) | 确认声明 level 需要跑哪些 case。 |
+| [../../conformance/cases](../../conformance/cases) | 自动化验收输入。 |
 | Runtime profile 声明 | 判断 WebSocket JSON、Standard Framed、STREAM 是否应该被测。 |
 
 如果 runtime 没声明某个 profile，不要把该 profile 的失败直接判成 runtime bug；先要求补支持范围声明或实现。
@@ -81,9 +81,9 @@ Phase 1 不把 ACK/NACK 严格重传、RESUME、低带宽 profile、链路加密
 主库验证 conformance 源文件：
 
 ```bash
-pnpm --dir generators install --frozen-lockfile
-pnpm --dir generators build
-scripts/validate-conformance.sh
+pnpm --dir tooling/generators install --frozen-lockfile
+pnpm --dir tooling/generators build
+tooling/scripts/validate-conformance.sh
 ```
 
 runtime 仓库测试时先指定 spec 路径：
@@ -95,7 +95,6 @@ export AXTP_SPEC_PATH=/path/to/axtp-spec-or-release-artifact
 runtime runner 应兼容两个路径：
 
 ```text
-$AXTP_SPEC_PATH/docs/conformance
 $AXTP_SPEC_PATH/conformance
 ```
 
@@ -106,7 +105,7 @@ $AXTP_SPEC_PATH/conformance
 | 失败类型 | 判断标准 | 处理 |
 |---|---|---|
 | Runtime bug | case 与 manifest、generated、spec 一致，但 runtime 行为不符。 | 提 runtime 仓库缺陷。 |
-| Spec / case mismatch | case 要求与 specs 或 generated 冲突。 | 回主库修 `docs/conformance/**` 或 specs。 |
+| Spec / case mismatch | case 要求与 specs 或 generated 冲突。 | 回主库修 `conformance/**` 或 specs。 |
 | Generated mismatch | generated protocol 与 registry / specs 不一致。 | 回主库修源头并重新 generate。 |
 | Profile 声明错误 | runtime 没实现某能力却声明支持对应 level。 | 要 runtime 修 spec lock、README 或测试配置。 |
 | 测试环境问题 | spec path、版本、mock 数据、transport 地址不对。 | 修测试配置。 |
@@ -123,4 +122,3 @@ failed cases: <case ids>
 unsupported: <declared unsupported>
 blocking release: yes | no
 ```
-

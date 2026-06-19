@@ -51,21 +51,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --dir generators install --frozen-lockfile
-          pnpm --dir generators build
-          pnpm --dir generators lint
-          pnpm --dir generators test
-          pnpm --dir generators validate
-          pnpm --dir generators validate:sources
-          pnpm --dir generators validate:protocol
-          scripts/check-generated-drift.sh
-          scripts/validate-conformance.sh
-          scripts/check-links.mjs
-          scripts/check-protocol-status.mjs
+          pnpm --dir tooling/generators install --frozen-lockfile
+          pnpm --dir tooling/generators build
+          pnpm --dir tooling/generators lint
+          pnpm --dir tooling/generators test
+          pnpm --dir tooling/generators validate
+          pnpm --dir tooling/generators validate:sources
+          pnpm --dir tooling/generators validate:protocol
+          tooling/scripts/check-generated-drift.sh
+          tooling/scripts/validate-conformance.sh
+          tooling/scripts/check-links.mjs
+          tooling/scripts/check-protocol-status.mjs
 
       - name: Build spec artifact
         shell: bash
-        run: scripts/build-spec-artifact.sh "$SPEC_VERSION"
+        run: tooling/scripts/build-spec-artifact.sh "$SPEC_VERSION"
 
       - name: Create or update AXTP Spec release
         uses: softprops/action-gh-release@v2

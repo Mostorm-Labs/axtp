@@ -1,72 +1,45 @@
-# AXTP 文档地图
+# AXTP Docs Reading Route
 
-`docs/` 是 AXTP 主仓库的人读文档区，用来组织产品状态、业务输入、流程、草案、正式规范、生成参考、conformance、legacy 迁移、架构边界和发版治理。
+This directory contains both the public reading path and the protocol maintenance workspace. Start from a role guide first; most subdirectories are background material, not onboarding pages.
 
-不同目录的合同等级不同。完整生命周期、合同等级和冲突处理规则只维护在 [连接建立边界与协议事实源边界](architecture/protocol-lifecycle-boundaries.md)；本文只做地图和入口。
+## Front Door
 
-## 你是谁？从这里开始
-
-| 角色 | 入口 |
+| Role | Entry |
 |---|---|
-| 第一次了解 AXTP 的新人 | [README](../README.md)、[Core Overview](specs/1-core/01-Overview.md)、[Glossary](specs/0-principles/01-Glossary.md) |
-| Runtime / SDK 实现者 | [guides/runtime.md](guides/runtime.md) |
-| 协议维护者 | [guides/protocol-maintainer.md](guides/protocol-maintainer.md) |
-| 产品 / 架构负责人 | [guides/product.md](guides/product.md) |
-| 测试 / conformance 负责人 | [guides/testing.md](guides/testing.md) |
-| Legacy 迁移负责人 | [guides/legacy-migration.md](guides/legacy-migration.md) |
+| Product / architecture | [guides/product.md](guides/product.md) |
+| Runtime / SDK engineering | [guides/runtime.md](guides/runtime.md) |
+| Testing / conformance | [guides/testing.md](guides/testing.md) |
+| Protocol maintenance | [guides/protocol-maintainer.md](guides/protocol-maintainer.md) |
 
-## 主指南
+## Implementation Contract
 
-| 指南 | 解决什么问题 |
-|---|---|
-| [Runtime / SDK Guide](guides/runtime.md) | 研发如何用 spec/generated/conformance 接入 runtime、SDK 和 mock server。 |
-| [Testing / Conformance Guide](guides/testing.md) | 测试如何按 profile 和 level 验收 runtime、SDK、mock server。 |
-| [Protocol Maintainer Guide](guides/protocol-maintainer.md) | 维护者如何从需求推进到 flow、draft、registry、generated、release。 |
-| [Product / Architecture Guide](guides/product.md) | 产品和架构如何看 domain 状态、能力边界和采纳优先级。 |
-| [Legacy Migration Guide](guides/legacy-migration.md) | 迁移负责人如何从旧协议证据走到 AXTP 映射和 adapter 计划。 |
-
-## 目录地图
-
-| 目录 | 定位 | 合同等级 |
-|---|---|---|
-| [guides/](guides/runtime.md) | 产品、研发、测试、协议维护、legacy 迁移的唯一人类入口。 | 指南 |
-| [business/](business/README.md) | 产品需求、业务背景、开放问题。 | 评审输入 |
-| [flows/](flows/README.md) | 场景流程、消息序列、协议覆盖和缺口。 | 评审输入 |
-| [product/](product/domain-status.md) | 产品能力状态、domain 生成状态和采纳优先级。 | 产品看板 |
-| [protocol/](protocol/README.md) | human-written protocol drafts 和 review 记录。 | 草案 |
-| [specs/](specs/README.md) | wire、session、registry、codec、tooling、versioning 的人工维护规范。 | 人工规范 |
-| [generated/](generated/protocol.md) | Generator 输出的人读/机读协议参考。 | generated 实现合同 |
-| [conformance/](conformance/README.md) | runtime、SDK、mock server 的行为验收输入。 | 验收合同 |
-| [legacy-migration/](legacy-migration/README.md) | 旧协议证据、分类、迁移计划和 adapter 线索。 | 迁移输入 |
-| [architecture/](architecture/README.md) | 协议边界、domain/feature 分类、事实源治理。 | 架构指导 |
-| [release/](release/README.md) | spec tag、release artifact、runtime spec lock。 | 发布治理 |
-| [dev/skills/](dev/skills/README.md) | lifecycle skills 和 agent 工作流。 | 维护流程 |
-| `audits/` | 带日期的历史审计、盘点和重构建议，不是当前入口；该目录不进入 release artifact。 | 历史记录 |
-
-## 合同等级简表
-
-| 等级 | 位置 | runtime 能否直接依赖 |
+| Contract class | Read from | Runtime can implement from it |
 |---|---|---:|
-| 评审输入 | `docs/business/**`、`docs/flows/**` | 否 |
-| 草案 | `docs/protocol/**` before adoption | 否，除非显式做 mock/prototype |
-| 迁移输入 | `docs/legacy-migration/**` | 否 |
-| 历史记录 | `docs/audits/**` | 否 |
-| 人工规范 | `docs/specs/**` | 是，需与 generated/YAML 对齐 |
-| 机器事实源 | `registry/**/*.yaml`、`registry/domains/**/*.yaml` | 是 |
-| Protocol IR | `protocol/axtp.protocol.yaml` | 是 |
-| Generated reference | `docs/generated/protocol.md`、`docs/generated/protocol.json` | 是 |
-| Conformance | `docs/conformance/**` | 是 |
-| 规划 | `ROADMAP.md` | 否 |
+| Generated contract | [../contract/generated/protocol.md](../contract/generated/protocol.md), [../contract/generated/protocol.json](../contract/generated/protocol.json), `../contract/protocol/axtp.protocol.yaml` | Yes |
+| Hand-written specs | [../specs/](../specs/README.md) | Yes, when aligned with generated/YAML |
+| Registry facts | `../contract/registry/**`, `../contract/registry/domains/**` | Yes |
+| Conformance | [../conformance/](../conformance/README.md) | Yes, as behavior acceptance |
+| Release state | [workspace/release/](workspace/release/README.md) | Yes, for version binding |
 
-## 不要手写 generated
+## Background Workspace
 
-以下内容由 Generator 或工具链输出，不应为“修文档”手写：
+Do not browse these directories by default. Open them only when the role guide or a maintenance task sends you there.
 
-| 路径 | 正确修改方式 |
+| Directory | Purpose | Runtime contract |
+|---|---|---:|
+| [workspace/](workspace/README.md) | Maintainer workspace for business inputs, flows, drafts, and legacy migration. | No |
+| [workspace/release/](workspace/release/README.md) | Release governance, changelog, spec lock, and runtime update flow. | No, except for version binding |
+| `docs/archive/audits/` | Historical audits and dated decision context. | No |
+| `tooling/skills/` | Agent lifecycle skills and workflow definitions. | No |
+| `../specs/2-registry/appendix/` | Historical/candidate registry tables. | No |
+
+## Generated Files
+
+Generated outputs are read-only from a documentation-editing perspective. If generated content is wrong, fix the source YAML, specs, or generator and rerun the pipeline.
+
+| Generated path | Source |
 |---|---|
-| `docs/generated/**` | 修改 specs / registry YAML / Generator 后重新生成。 |
-| `../protocol/axtp.protocol.yaml` | 从 `../registry/**` 和 `../registry/domains/**` 生成。 |
-| `../tooling/test-vectors/**` | 由 Generator 或测试向量工具刷新。 |
-| `../generators/src/__snapshots__/**` | 由 Generator 测试更新。 |
-
-如果 generated 结果不符合预期，应回到源头：业务输入、flow、protocol draft、spec、registry YAML 或 Generator 逻辑。
+| `../contract/protocol/axtp.protocol.yaml` | `../contract/registry/**`, `../contract/registry/domains/**` |
+| `../contract/generated/**` | Generator output from Protocol IR and registry sources |
+| `../contract/mcp/**` | Generator output |
+| `../contract/test-vectors/**` | Generator or test-vector tooling output |
