@@ -1,40 +1,40 @@
 # Cast Receiver UxPlay Protocol Interaction Flow
 
 > Status: flow design
-> Scope: Windows Launcher 集成 AirPlay 接收端、UxPlay backend adapter、外部 AXTP 控制口
+> Scope: Windows Launcher 集成 AirPlay 接收端、UxPlay backend adapter、Media / Render Core、外部 AXTP 控制口
 > Source inputs: `docs/business/cast-reciever-uxplay.md`, `docs/legacy-migration/evidence/WEBSOCKET_PROTOCOL.md`, `docs/generated/protocol.md`, `docs/protocol/auth/auth.session.md`, `docs/protocol/auth/auth.token.md`, `docs/protocol/auth/auth.permission.md`
 > Protocol lifecycle: Stage 10 `plan-protocol-flow`
 
-本文根据 Launcher 集成 UxPlay/AirPlay 接收端的业务需求，梳理外部 AXTP 控制端、Launcher UI、Cast Receiver Adapter、UxPlay backend 和 iOS/macOS 投屏源之间的交互流程。
+本文根据 Launcher 集成 UxPlay/AirPlay 接收端的业务需求，梳理外部 AXTP 控制端、Launcher UI、Cast Receiver Adapter、UxPlay backend、Media / Render Core 和 iOS/macOS 投屏源之间的交互流程。
 
 本文不是最终协议事实源。已采纳事实以 `registry/**/*.yaml`、`registry/domains/**/*.yaml`、`protocol/axtp.protocol.yaml` 和 `docs/generated/**` 为准；新增或修改协议必须进入 `docs/protocol/**` 草案，并经过后续采纳和生成流程。
 
 Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖状态、识别协议缺口，并将缺口路由到 candidate `domain.feature`。Flow 文档不负责定义完整 method/event/schema/capability，不分配 methodId/eventId/errorCode/fieldId，也不能替代 `docs/protocol/<domain>/<feature>.md`。
 
-命名说明：`cast.session`、`cast.pinCode`、`cast.audio`、`cast.window`、`cast.backend` 仅表示候选 feature 归属。真正进入 RPC wire 的 method/event 名称需要在 Stage 20 协议草案中确认，例如候选 `cast.stopSession`、`cast.pinCodeChanged`、`cast.windowChanged`。
+命名说明：`cast.session`、`cast.pinCode`、`cast.audio`、`cast.window`、`cast.backend`、`cast.flowControl` 仅表示候选 feature 归属。真正进入 RPC wire 的 method/event 名称需要在 Stage 20 协议草案中确认，例如候选 `cast.stopSession`、`cast.pinCodeChanged`、`cast.windowChanged`、`cast.setRenderFps`。
 
 ## 0. 速读结论
 
 | 项目 | 内容 |
 |---|---|
-| Flow 目标 | Launcher 启动 UxPlay AirPlay 接收端后，外部控制端通过 AXTP WS-JSON 控制口管理投屏音频、停止投屏、密码保护、指定密码、窗口置顶/全屏/还原、backend 重启，并接收投屏过程中的状态和事件。 |
+| Flow 目标 | Launcher 启动 UxPlay AirPlay 接收端后，外部控制端通过 AXTP WS-JSON 控制口管理投屏音频、停止投屏、密码保护、指定密码、窗口置顶/全屏/还原、backend 重启和本地渲染流控，并接收投屏过程中的状态和事件。 |
 | 当前协议覆盖 | partial |
-| 涉及 domain.feature | `cast.session`, `cast.pinCode`, `cast.audio`, `cast.window`, `cast.backend`; optional aggregate `cast.status`; draft `auth.session` / `auth.token` / `auth.permission` |
+| 涉及 domain.feature | `cast.session`, `cast.pinCode`, `cast.audio`, `cast.window`, `cast.backend`, `cast.flowControl`; optional aggregate `cast.status`; draft `auth.session` / `auth.token` / `auth.permission` |
 | 已有 adopted/generated | `AXTP-WS-JSON`, RPC `Hello`, `Identify`, `Identified`, `Request`, `RequestResponse`, `Event`, JSON `sid/op/d` envelope。 |
-| 缺口 | `cast` domain 尚未有 adopted/generated 协议；投屏会话、密码策略、音频播放、窗口控制、backend 重启、投屏过程事件、错误模型和 legacy adapter mapping 均需 Stage 20 草案。 |
+| 缺口 | `cast` domain 尚未有 adopted/generated 协议；投屏会话、密码策略、音频播放、窗口控制、backend 重启、本地渲染流控、投屏过程事件、错误模型和 legacy adapter mapping 均需 Stage 20 草案。 |
 | 是否需要新增协议草案 | yes |
 | 是否涉及 Legacy | yes，主要旧协议证据为 `docs/legacy-migration/evidence/WEBSOCKET_PROTOCOL.md`。 |
-| 是否涉及 STREAM | no，AirPlay 媒体面和 UxPlay 内部媒体传输不进入本 AXTP 控制 flow。 |
-| 下一步 | 使用 `docs/dev/skills/20-draft-business-protocol/SKILL.md` 起草 `cast.session`、`cast.pinCode`、`cast.audio`、`cast.window`、`cast.backend`；如需要聚合状态，再起草 `cast.status`。 |
+| 是否涉及 STREAM | indirect。外部 WebSocket 控制 flow 不承载 STREAM；如底层媒体来自 HID/AXTP STREAM，`cast.flowControl` 只观测和控制接收端本地渲染策略，不修改 STREAM header 或 payload。 |
+| 下一步 | 使用 `docs/dev/skills/20-draft-business-protocol/SKILL.md` 起草 `cast.session`、`cast.pinCode`、`cast.audio`、`cast.window`、`cast.backend`、`cast.flowControl`；如需要聚合状态，再起草 `cast.status`。 |
 
 ## 1. Story Summary
 
 | Item | Content |
 |---|---|
-| User goal | 用户能通过 Launcher 使用 AirPlay 投屏接收能力；外部控制端能控制投屏音频、停止投屏、密码保护、指定密码、投屏窗口和 backend 重启，并能实时感知投屏过程状态。 |
-| Trigger | Launcher 启动投屏接收端；控制端连接 AXTP 控制口；iOS/macOS 发起 AirPlay 投屏；用户或外部控制端修改投屏设置。 |
-| Success result | Receiver 可被发现；默认不播放投屏音频；密码策略按配置生效；投屏请求、等待密码、鉴权、开始、异常、结束等过程都有事件；窗口置顶/全屏/还原和 backend 重启都有状态反馈。 |
-| Primary actors | User, Launcher / App UI, External Control Client, Cast Receiver AXTP Adapter, UxPlay Backend Adapter, UxPlay AirPlay Service, iOS/macOS Source |
+| User goal | 用户能通过 Launcher 使用 AirPlay 投屏接收能力；外部控制端能控制投屏音频、停止投屏、密码保护、指定密码、投屏窗口、backend 重启和本地渲染流控，并能实时感知投屏过程状态。 |
+| Trigger | Launcher 启动投屏接收端；控制端连接 AXTP 控制口；iOS/macOS 发起 AirPlay 投屏；用户或外部控制端修改投屏设置或手动降低本地渲染 fps。 |
+| Success result | Receiver 可被发现；默认不播放投屏音频；密码策略按配置生效；投屏请求、等待密码、鉴权、开始、异常、结束等过程都有事件；窗口置顶/全屏/还原、backend 重启和本地渲染流控都有状态反馈；降低到 10fps 时队列和延迟不持续增长。 |
+| Primary actors | User, Launcher / App UI, External Control Client, Cast Receiver AXTP Adapter, UxPlay Backend Adapter, UxPlay AirPlay Service, Media / Render Core, iOS/macOS Source |
 | Product scope | Windows Launcher 集成 AirPlay receiver；外部控制口使用 AXTP WS-JSON；UxPlay backend 内部控制口只作为 adapter 实现细节。 |
 
 ## 2. Source Observations
@@ -52,6 +52,9 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 | Cast lifecycle display | UI 需要知道有投屏请求、鉴权完成、开始投屏、投屏结束。 | 需要 `cast.session` 生命周期事件。 |
 | Cast window controls | 可将投屏窗口置顶、放大到全屏、还原到正常状态。 | 需要 `cast.window` 控制方法和 `windowChanged` 事件。 |
 | Backend restart | UxPlay backend 异常或配置变更后可重启。 | 需要 `cast.backend` 重启方法和 backend restarting/ready/exited/failed 事件。 |
+| Render fps control | 外部控制端可把接收端本地渲染帧率降到 10fps，后续可恢复到 25fps。 | 需要 `cast.flowControl` 设置目标渲染 fps，并返回/上报 input/render fps、queue 和 drop 统计。 |
+| Flow policy control | 外部控制端可调整视频队列上限、late frame 阈值和 drop policy。 | 需要 `cast.flowControl` 策略方法；WebSocket 回调只更新控制状态，媒体线程读取执行。 |
+| Overlay / diagnostics | overlay 可显示 fps、queue、drop、延迟和错误摘要。 | 可作为 `cast.flowControl` 或聚合状态字段；是否正式可控待确认。 |
 
 ### 2.2 Requirement Notes
 
@@ -61,6 +64,10 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 - 投屏密码开关变化、密码值变化、投屏状态变化都需要通知外部控制端。
 - 投屏窗口控制只覆盖置顶、全屏、还原正常状态；不覆盖完整窗口坐标、多显示器和拖拽同步。
 - Backend 重启只表示重启 UxPlay backend，不表示退出 Launcher 或重启整个 receiver runtime。
+- WebSocket 手动流控属于 `cast` 域；`cast.setRenderFps` 只控制接收端本地渲染 fps，不要求发射端降低发送 fps。
+- 降低本地渲染 fps 时，HID 输入必须继续消费，AXTP 数据必须继续解析，视频队列和端到端延迟不得持续增长。
+- 外部控制端不直接请求关键帧；fps 大幅变化、丢帧爆发或解码异常时，接收端内部可自动请求关键帧。
+- `cast.flowControl` 与公共 `stream.flowControl` 不同：前者是投屏接收端业务流控，后者是 runtime/STREAM 公共流控。
 - UxPlay、AirPlay、mDNS、RAOP、H.264/AAC 媒体面不进入 AXTP 标准化范围。
 - UxPlay 内部控制口是 adapter 实现细节；外部控制端只面向 AXTP 控制口。
 
@@ -80,6 +87,12 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 | casting | 有活动 AirPlay 投屏会话。 | 候选 `cast.sessionStarted` / `cast.sessionStateChanged`。 |
 | audio playback enabled / disabled | 接收端是否播放投屏音频。 | 候选 `cast.audioChanged`。 |
 | window normal / fullscreen / alwaysOnTop | 投屏窗口展示状态变化。 | 候选 `cast.windowChanged`。 |
+| target render fps | 接收端本地目标渲染 fps，例如 10 或 25。 | 候选 `cast.flowControlChanged` / `cast.getStatus`。 |
+| input fps / render fps | 实际输入 fps 和实际渲染 fps。 | 候选 `cast.getStatus`；可用于诊断 fps cap 是否生效。 |
+| video queue depth | 视频队列当前深度。 | 候选 `cast.getStatus` / `cast.flowControlChanged`；应稳定在上限附近，不持续增长。 |
+| drop mode / dropped frames / late frames | 当前丢帧策略和统计。 | 候选 `cast.flowControlChanged` / `cast.getStatus`；用于判断延迟是否受控。 |
+| internal keyframe request count | 接收端内部自动请求关键帧的次数。 | 候选 `cast.getStatus`；不暴露外部 requestKeyFrame 方法。 |
+| overlay enabled | 是否开启 fps/queue/drop/latency 诊断 overlay。 | 候选 `cast.flowControlChanged`；是否正式可控待确认。 |
 | stopping / ended / failed | 投屏会话正在结束、已结束或失败。 | 候选 `cast.sessionStopping` / `cast.sessionStopped` / `cast.sessionFailed`。 |
 
 ## 3. Assumptions And Non-Goals
@@ -93,9 +106,14 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 | Assumption | `cast.session` 承载投屏生命周期主线；如 UI 需要跨 session/pin/audio/window/backend 的聚合状态，再补 `cast.status`。 | `[REVIEW-DRAFT]` |
 | Decision | 投屏音频播放默认关闭，开关只控制接收端本地播放，不改变 AirPlay 媒体协商，除非后续产品明确要求。 | `[REVIEW-DRAFT]` |
 | Decision | Backend 重启只重启 UxPlay backend，不等同于 Launcher 退出或 receiver runtime 重启。 | `[REVIEW-DRAFT]` |
+| Decision | `cast.setRenderFps` 只控制接收端本地渲染 fps，不要求 NT10、AirPlay Source 或其他发射端降低发送 fps。 | `[REVIEW-OK]` |
+| Decision | 外部控制端不直接请求关键帧；接收端在 fps 大幅变化、丢帧爆发或解码异常时内部自动触发关键帧请求。 | `[REVIEW-OK]` |
+| Assumption | WebSocket 回调线程只更新 `cast.flowControl` 控制状态，不直接操作 D3D、WASAPI 或窗口资源。 | `[REVIEW-DRAFT]` |
+| Assumption | `cast.flowControl` 与公共 `stream.flowControl` 分层：前者是投屏接收端业务流控，后者是 runtime/STREAM 公共流控。 | `[REVIEW-DRAFT]` |
 | Question | 外部控制口是否只允许本机 `127.0.0.1`，还是需要 LAN 控制；如允许 LAN，密码读取、停止投屏、窗口控制和 backend 重启必须有权限 scope。 | `[REVIEW-ASK]` |
 | Non-goal | 不标准化 AirPlay、mDNS、RAOP、H.264/AAC 媒体面或 UxPlay 内部媒体实现。 | `[REVIEW-OK]` |
 | Non-goal | 不把 UxPlay 内部控制口作为 AXTP 公共接口；它只作为 adapter evidence。 | `[REVIEW-OK]` |
+| Non-goal | 不把 `cast.flowControl` 写成通用 `video` 域能力；视频 stream、codec 和关键帧底层能力仍归 `video.stream`。 | `[REVIEW-OK]` |
 | Non-goal | 不覆盖完整窗口系统管理，例如窗口坐标、多显示器选择、拖拽同步、系统级置顶覆盖策略。 | `[REVIEW-OK]` |
 | Non-goal | 本文不修改 `docs/protocol/**`、`registry/**`、`protocol/axtp.protocol.yaml`、`docs/generated/**`。 | `[REVIEW-OK]` |
 
@@ -118,6 +136,11 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 | 等待密码、鉴权成功/失败事件 | missing | Candidate `cast.pinCodeRequired`, `cast.pinCodeAuthSucceeded`, `cast.pinCodeAuthFailed` | business requirement, legacy PIN / auth events | 转 Stage 20。 |
 | 投屏窗口置顶、全屏、还原 | missing | Candidate `cast.getWindowState`, `cast.setWindowState`, `cast.windowChanged` | business requirement, legacy `setFullscreen`, `setAlwaysOnTop`, `window.changed` | 转 Stage 20。 |
 | UxPlay backend 状态和重启 | missing | Candidate `cast.getBackendStatus`, `cast.restartBackend`, `cast.backendChanged` | business requirement, legacy `restartUxPlay`, `uxplay.ready`, `uxplay.exited` | 转 Stage 20。 |
+| 查询接收端聚合状态 | missing | Candidate `cast.getStatus` | business requirement | 返回 source、HID、AXTP、video/audio stream、fps、queue、drop、mute、fullscreen、overlay、last error 等摘要；转 Stage 20。 |
+| 设置本地目标渲染 fps | missing | Candidate `cast.setRenderFps`, feature `cast.flowControl` | business requirement | 只控制接收端本地渲染 fps；不要求 source 降低输入 fps；转 Stage 20。 |
+| 设置队列和丢帧策略 | missing | Candidate `cast.setFlowPolicy`, feature `cast.flowControl` | business requirement | 包含 `videoQueueFrames`、`lateFrameThresholdMs`、`dropMode`、`keyFrameOnDropBurst`；转 Stage 20。 |
+| fps cap 下静音 | missing | Candidate `cast.setMuted` or `cast.audio` method | business requirement | 静音时继续消费音频数据，不重启音频设备，不影响视频渲染；转 Stage 20 时与 `cast.audio` 合并裁决。 |
+| 内部自动请求关键帧 | local-only / optional reuse | Internal policy, optional `video.requestKeyFrame` reuse | `docs/generated/protocol.md`, `docs/protocol/video/video.stream.md` | 不作为外部 `cast` 方法；由接收端内部在 fps 大幅变化、丢帧爆发或解码异常时触发。 |
 | AirPlay 媒体传输、mDNS 发现、RAOP 鉴权细节 | non-protocol | AirPlay/UxPlay implementation detail | business requirement | 不进入 AXTP cast 控制协议。 |
 
 Coverage 取值：
@@ -141,10 +164,12 @@ sequenceDiagram
     participant AXTP as "Cast Receiver AXTP Adapter"
     participant Backend as "UxPlay Backend Adapter"
     participant UxPlay as "UxPlay AirPlay Service"
+    participant Media as "Media / Render Core"
     participant Source as "iOS/macOS Source"
 
     User->>UI: Start Launcher
     UI->>AXTP: Start cast receiver runtime
+    AXTP->>Media: Initialize render/audio pipeline and flow-control state
     AXTP->>Backend: Start UxPlay backend
     Backend->>UxPlay: Launch backend service
     UxPlay-->>Backend: Backend ready
@@ -192,8 +217,22 @@ sequenceDiagram
 
     opt First media or display changes
         UxPlay-->>Backend: First frame / resolution / orientation changed
+        Backend-->>Media: Media frame / metadata
+        Media-->>Media: Decode, queue, render according to flow-control state
         Backend-->>AXTP: session state update
         AXTP-->>Client: Event cast.sessionStateChanged
+    end
+
+    opt Manual local render fps cap
+        Client->>AXTP: Candidate cast.setRenderFps(fps=10)
+        AXTP->>Media: Update targetRenderFps=10
+        Media-->>AXTP: flow-control state snapshot
+        AXTP-->>Client: Response target accepted
+        AXTP-->>Client: Event cast.flowControlChanged(targetRenderFps=10)
+        Media-->>Media: Keep consuming input, parse AXTP, drop old/late frames
+        Client->>AXTP: Candidate cast.getStatus()
+        AXTP->>Media: Read status snapshot
+        AXTP-->>Client: Status(inputFps, renderFps, queueDepth, droppedFrames)
     end
 
     Client->>AXTP: Candidate cast.setWindowState(fullscreen=true, alwaysOnTop=true)
@@ -244,11 +283,17 @@ sequenceDiagram
 | 14 | Backend / AXTP Adapter | 投屏会话正式开始。 | AirPlay session established。 | Candidate `cast.sessionStarted`, `cast.sessionStateChanged` | sessionId, source, protocol, audio/window summary | UI 进入 casting，显示停止投屏按钮。 | missing | 缺少 source 字段时仍可进入 casting，但记录 legacy 缺口。 |
 | 15 | Backend / AXTP Adapter | 首帧、分辨率或方向变化。 | UxPlay 获得媒体元信息。 | Candidate `cast.sessionStateChanged` or optional media meta event | sessionId, video size, orientation, firstFrame flag | UI 可调整窗口或展示“已出画”。 | missing | 这是低频状态事件，不是媒体 STREAM 数据。 |
 | 16 | Control Client | 打开或关闭投屏音频播放。 | 有无活动会话都可设置目标状态。 | Candidate `cast.setAudio`, event `cast.audioChanged` | enabled, session scope optional | 当前会话或后续会话的音频播放状态改变。 | missing | 当前无会话时保存为目标状态；是否返回 current/effective 需草案确认。 |
-| 17 | Control Client | 窗口置顶、全屏、还原正常状态。 | 投屏窗口存在，或产品允许预设窗口状态。 | Candidate `cast.setWindowState`, event `cast.windowChanged` | fullscreen, alwaysOnTop, mode=`normal` optional | UI 窗口状态同步。 | missing | 无窗口时返回 invalid state 或保存预设，待确认。 |
-| 18 | Control Client | 外部主动关闭投屏。 | Active session exists。 | Candidate `cast.stopSession` | sessionId optional, reason=`external_request` | 会话进入 stopping，然后 stopped。 | missing | 无活动 session 时返回幂等成功或 no active session，待确认。 |
-| 19 | Source / Backend | 发射端主动结束投屏。 | Active session exists。 | Candidate `cast.sessionStopped` | reason=`source_closed` | UI 恢复未投屏状态。 | missing | 若事件丢失，客户端重连后调用 get 校准。 |
-| 20 | Control Client | 重启 UxPlay backend。 | Admin/control permission; backend restart supported。 | Candidate `cast.restartBackend`, events `cast.backendChanged`, `cast.sessionStopped` if needed | reason, force policy optional | Backend restarting；当前投屏可能被结束。 | missing | 权限不足、backend busy、重启失败需要 typed error。 |
-| 21 | Backend / AXTP Adapter | backend 重启完成或失败。 | restart in progress。 | Candidate `cast.backendChanged` | state=`ready`/`failed`, reason, retryable | UI 恢复入口或展示错误。 | missing | 如果 backend ready 后 receiver 仍不可发现，应继续上报 failed/starting。 |
+| 17 | Control Client | 设置接收端本地目标渲染 fps。 | Active session or render pipeline ready；`cast.flowControl` supported。 | Candidate `cast.setRenderFps`, event `cast.flowControlChanged` | fps, apply scope, reason | `targetRenderFps` 更新；Media / Render Core 按目标 fps 本地渲染。 | missing | `fps=0`、超出范围、权限不足或 pipeline 不可用需 typed error；不要求 source 降低输入 fps。 |
+| 18 | Media / Render Core | 应用 fps cap。 | targetRenderFps 已更新。 | local-only runtime action | targetRenderFps, inputFps, renderFps, queue limits | HID 输入继续消费，AXTP 数据继续解析；未渲染帧按策略丢弃。 | local-only | 队列持续增长或延迟持续变大时上报状态/错误。 |
+| 19 | Control Client | 设置流控策略。 | `cast.flowControl` supported。 | Candidate `cast.setFlowPolicy`, event `cast.flowControlChanged` | videoQueueFrames, lateFrameThresholdMs, dropMode, keyFrameOnDropBurst | 队列上限、late frame 阈值和 drop 策略更新。 | missing | dropMode 不支持、参数越界或策略冲突时返回 invalid argument。 |
+| 20 | Control Client | 查询接收端状态快照。 | RPC identified；pipeline available。 | Candidate `cast.getStatus` or `cast.getFlowControlState` | include flow/audio/window/backend summaries | 返回 input/render fps、queue depth、dropped/late frames、keyframeRequestCount、muted、fullscreen、overlay、lastError。 | missing | event 丢失或重连后用该查询校准 UI。 |
+| 21 | Media / Render Core | 内部自动请求关键帧。 | fps 大幅变化、丢帧爆发、解码异常或恢复播放。 | local-only policy, optional internal `video.requestKeyFrame` reuse | stream/source context, reason | 关键帧请求计数增加；不暴露外部 cast 关键帧请求方法。 | local-only / optional reuse | 必须防抖，避免短时间内疯狂请求关键帧。 |
+| 22 | Control Client | fps cap 下静音或取消静音。 | Active or configured cast audio state。 | Candidate `cast.setMuted` or `cast.audio` method, event `cast.audioChanged` | muted | 本地音频输出静音/恢复；音频数据继续消费。 | missing | 不重启音频设备，不影响视频渲染。 |
+| 23 | Control Client | 窗口置顶、全屏、还原正常状态。 | 投屏窗口存在，或产品允许预设窗口状态。 | Candidate `cast.setWindowState`, event `cast.windowChanged` | fullscreen, alwaysOnTop, mode=`normal` optional | UI 窗口状态同步。 | missing | 无窗口时返回 invalid state 或保存预设，待确认；fps cap 下仍需稳定。 |
+| 24 | Control Client | 外部主动关闭投屏。 | Active session exists。 | Candidate `cast.stopSession` | sessionId optional, reason=`external_request` | 会话进入 stopping，然后 stopped。 | missing | 无活动 session 时返回幂等成功或 no active session，待确认。 |
+| 25 | Source / Backend | 发射端主动结束投屏。 | Active session exists。 | Candidate `cast.sessionStopped` | reason=`source_closed` | UI 恢复未投屏状态。 | missing | 若事件丢失，客户端重连后调用 get 校准。 |
+| 26 | Control Client | 重启 UxPlay backend。 | Admin/control permission; backend restart supported。 | Candidate `cast.restartBackend`, events `cast.backendChanged`, `cast.sessionStopped` if needed | reason, force policy optional | Backend restarting；当前投屏可能被结束。 | missing | 权限不足、backend busy、重启失败需要 typed error。 |
+| 27 | Backend / AXTP Adapter | backend 重启完成或失败。 | restart in progress。 | Candidate `cast.backendChanged` | state=`ready`/`failed`, reason, retryable | UI 恢复入口或展示错误。 | missing | 如果 backend ready 后 receiver 仍不可发现，应继续上报 failed/starting。 |
 
 ## 7. State Changes And Events
 
@@ -272,6 +317,12 @@ sequenceDiagram
 | media info changed | 分辨率、方向、画面比例、source 名称等低频变化 | `cast.sessionStateChanged` | sessionId, changed fields, media summary | 调整窗口显示或 UI 文案。 | missing |
 | audio playback changed | 外部设置或 backend 策略改变接收端本地音频播放 | `cast.audioChanged` | enabled, effective state, reason | 同步音频开关；默认关闭。 | missing |
 | window changed | 外部设置或 UI 行为改变窗口置顶/全屏/正常状态 | `cast.windowChanged` | visible, fullscreen, alwaysOnTop, mode | 同步窗口按钮状态。 | missing |
+| target render fps changed | 外部设置本地目标渲染 fps | `cast.flowControlChanged` | targetRenderFps, previousTargetRenderFps, reason | 更新 UI；需要完整统计时调用 getStatus。 | missing |
+| flow policy changed | 外部设置队列上限、late frame 阈值或 dropMode | `cast.flowControlChanged` | videoQueueFrames, lateFrameThresholdMs, dropMode, keyFrameOnDropBurst | 更新诊断面板；必要时提示策略已应用。 | missing |
+| render fps reduced | Media / Render Core 应用 fps cap | optional `cast.flowControlChanged` or stats snapshot | inputFps, renderFps, queue depth, droppedFrames | overlay 或状态页显示 renderFps 接近目标值。 | missing |
+| video queue pressure | 队列接近上限、持续 late frame 或丢帧爆发 | `cast.flowControlChanged` or optional warning event | queue depth, droppedFrames, lateFrames, lastError | 展示诊断信息；持续恶化时建议恢复 fps 或重启 backend。 | missing |
+| internal keyframe requested | fps 大幅变化、丢帧爆发或解码异常 | no public event required; visible in status | keyframeRequestCount, reason | 仅用于诊断；外部控制端不直接请求关键帧。 | local-only / missing status |
+| overlay changed | 外部或本地调试开关改变 overlay 状态 | `cast.flowControlChanged` if exposed | overlayEnabled | 更新 UI 按钮；是否正式可控待确认。 | missing |
 | media interrupted | AirPlay 媒体暂时中断、网络抖动、source 暂停 | `cast.sessionStateChanged` or optional `cast.sessionInterrupted` | sessionId, reason, recoverable | 显示恢复中，不立即判定结束。 | missing |
 | media resumed | 中断后恢复 | `cast.sessionStateChanged` or optional `cast.sessionResumed` | sessionId, reason | 恢复 UI 状态。 | missing |
 | session stopping | 外部关闭、发射端关闭或 backend 重启导致结束中 | `cast.sessionStateChanged` | sessionId, reason | UI 进入处理中。 | missing |
@@ -288,6 +339,7 @@ sequenceDiagram
 | `cast.audio*` | 接收端本地投屏音频播放是否启用、设置结果、有效状态变化。 | 通用系统音量、混音器、音频算法或 AirPlay 音频编码流。 |
 | `cast.window*` | 投屏窗口是否可见、是否全屏、是否置顶、是否还原正常状态。 | 多显示器选择、任意坐标拖拽、完整窗口管理系统。 |
 | `cast.backend*` | UxPlay backend ready/exited/restarting/failed、重启结果。 | Launcher 退出、receiver runtime 端口变更、UxPlay 内部 `7001` wire contract。 |
+| `cast.flowControl*` | 接收端本地目标渲染 fps、input/render fps、队列、drop policy、late frame、overlay 和内部关键帧请求统计。 | 不要求 source 降低 fps；不定义 `video.stream` payload、codec 或公共 `stream.flowControl` ACK/window 语义。 |
 
 ## 8. Protocol Details
 
@@ -314,6 +366,9 @@ sequenceDiagram
 | 投屏音频播放控制未定义。 | `cast.audio` | `getAudio`, `setAudio`, `audioChanged` | `draft-business-protocol` | `[REVIEW-ASK]` 仅控制接收端本地播放，还是影响 AirPlay 音频协商？ |
 | 投屏窗口置顶/全屏/还原未定义。 | `cast.window` | `getWindowState`, `setWindowState`, `windowChanged` | `draft-business-protocol` | `[REVIEW-ASK]` “还原正常状态”是否同时取消置顶、恢复尺寸和位置？ |
 | UxPlay backend 状态和重启未定义。 | `cast.backend` | `getBackendStatus`, `restartBackend`, `backendChanged` | `draft-business-protocol` | `[REVIEW-ASK]` 重启 backend 时是否强制停止当前投屏？ |
+| 接收端本地渲染 fps 和手动流控未定义。 | `cast.flowControl` | `setRenderFps`, `setFlowPolicy`, `flowControlChanged`, flow-control state schema | `draft-business-protocol` | `[REVIEW-ASK]` `fps=0` 是不限制还是拒绝？默认 dropMode 是什么？ |
+| 接收端聚合状态是否承载 flow-control 统计未定义。 | optional `cast.status` / `cast.flowControl` | `getStatus` or `getFlowControlState`, status snapshot schema | `draft-business-protocol` | `[REVIEW-ASK]` `cast.getStatus` 是否作为聚合状态接口存在，还是流控状态只在 `cast.flowControl` 查询？ |
+| fps cap 下静音边界未定义。 | `cast.audio` / `cast.flowControl` | `setMuted`, `audioChanged`, flow-control state `muted` | `draft-business-protocol` | `[REVIEW-ASK]` 静音是否作为 `cast.audio` 方法，还是在 `cast.flowControl` 状态中只读展示？ |
 | 聚合状态是否需要独立 feature。 | optional `cast.status` | `getStatus`, `statusChanged`, aggregate status schema | `draft-business-protocol` | `[REVIEW-ASK]` 用 `cast.session` + feature events 是否足够，还是 UI 需要一个聚合状态接口？ |
 | Legacy 错误码和状态码需映射。 | `cast.session` / `cast.pinCode` / `cast.backend` / `auth.*` | common error reuse, feature-specific details | `draft-business-protocol` | `[REVIEW-ASK]` 是否复用 AXTP common errors，还是补 cast-specific typed details？ |
 
@@ -333,6 +388,7 @@ sequenceDiagram
 | `getAudio`, `setAudio`, `setMuted`, `audio.changed` | `cast.getAudio`, `cast.setAudio`, `cast.audioChanged` | 当前需求是投屏音频播放开关，默认关闭；`muted` 是否独立保留待确认。 |
 | `showCastWindow`, `hideCastWindow`, `setFullscreen`, `setAlwaysOnTop`, `window.changed` | `cast.getWindowState`, `cast.setWindowState`, `cast.windowChanged` | 当前需求只需要置顶、全屏、还原正常状态。 |
 | `uxplay.ready`, `uxplay.exited`, `restartUxPlay` | `cast.backendChanged`, `cast.restartBackend` | UxPlay 是 backend type，不进入标准 method name。 |
+| 暂无旧协议映射 | `cast.setRenderFps`, `cast.setFlowPolicy`, `cast.flowControlChanged` | 手动渲染 fps 和流控策略来自新增业务需求，当前不保留旧实现 alias。 |
 | `Bye`, `ByeAck` | optional RPC close / WebSocket close policy | Core 中 Bye/ByeAck 是 optional；是否暴露应用层 graceful close 待评审。 |
 
 ### 8.4 Candidate Feature Boundaries
@@ -344,6 +400,7 @@ sequenceDiagram
 | `cast.audio` | 投屏音频在接收端本地播放的开关和有效状态。 | `cast.getAudio`, `cast.setAudio`, `cast.audioChanged` |
 | `cast.window` | 投屏窗口置顶、全屏、还原正常状态和状态反馈。 | `cast.getWindowState`, `cast.setWindowState`, `cast.windowChanged` |
 | `cast.backend` | UxPlay backend ready/exited/restarting/failed 和重启动作。 | `cast.getBackendStatus`, `cast.restartBackend`, `cast.backendChanged` |
+| `cast.flowControl` | 接收端本地渲染 fps、队列/drop 策略、late frame 阈值、overlay 和流控统计。 | `cast.setRenderFps`, `cast.setFlowPolicy`, `cast.flowControlChanged`, optional `cast.getFlowControlState` |
 | optional `cast.status` | 跨 session/pin/audio/window/backend 的聚合状态查询和变化通知。 | `cast.getStatus`, `cast.statusChanged` |
 
 ## 9. Test / Conformance Notes
@@ -361,6 +418,14 @@ sequenceDiagram
 | backend restart without session | Backend ready, no active session | Client 调用 restartBackend | Client 收到 restarting -> ready 或 failed | candidate `cast.backend` |
 | backend restart with active session | Active session exists | Client 调用 restartBackend | 当前投屏被停止或标记受影响，随后 backend restarting/ready | candidate `cast.backend`, `cast.session` |
 | backend exited unexpectedly | Active or idle backend exits | Adapter detects exit | Client 收到 backendChanged/failed；active session 不应继续显示为 casting | candidate `cast.backend`, `cast.session` |
+| render fps cap 25fps | 25fps 输入，receiver 正常播放 | Client 设置 targetRenderFps=25 | renderFps 接近 25；inputFps 仍接近 source；队列稳定 | candidate `cast.flowControl` |
+| render fps cap 15fps | 25fps 输入，receiver 正常播放 | Client 设置 targetRenderFps=15 | renderFps 接近 15；HID/AXTP 输入继续消费；队列不持续增长 | candidate `cast.flowControl` |
+| render fps cap 10fps | 25fps 输入，receiver 正常播放 | Client 设置 targetRenderFps=10 | overlay/status 显示 renderFps 接近 10；延迟不持续变大 | candidate `cast.flowControl` |
+| render fps cap 5fps | 25fps 输入，receiver 正常播放 | Client 设置 targetRenderFps=5 | drop policy 生效；队列深度稳定；画面仍按最新状态更新 | candidate `cast.flowControl` |
+| restore render fps | targetRenderFps=10 | Client 恢复 targetRenderFps=25 | 画面继续正常播放；必要时内部关键帧请求计数可观测 | candidate `cast.flowControl`, optional `video.requestKeyFrame` internal reuse |
+| muted during fps cap | targetRenderFps=10, active session | Client 设置 muted true/false | 音频数据继续消费，不重启音频设备，不影响视频渲染 | candidate `cast.audio`, `cast.flowControl` |
+| window control during fps cap | targetRenderFps=10, active window | Client 拖动窗口或切换全屏/还原 | 窗口事件正常；HID/AXTP 解析和队列稳定 | candidate `cast.window`, `cast.flowControl` |
+| long run low fps | 25fps 输入，targetRenderFps=10 | 持续运行 10 分钟以上 | renderFps 接近 10，inputFps 接近 source，queue depth 和 latency 不持续增长 | candidate `cast.flowControl` |
 | reconnect calibration | Client reconnects after event loss | Client completes Identify and calls get | UI 能用查询结果校准 session/pin/audio/window/backend 状态 | candidate get methods + generated RPC session |
 | auth and permissions | LAN or protected control port | Client lacks permission for password read/backend restart/window control | Request rejected with standard permission/capability error | draft `auth.*`, core Error Model |
 
@@ -374,6 +439,10 @@ sequenceDiagram
 - 密码保护开关变化、密码值变化、等待密码、鉴权成功/失败、投屏开始/结束都必须有事件或可查询状态。
 - 投屏窗口置顶、全屏、还原正常状态都必须有明确反馈；完整窗口坐标和多显示器不是本 flow 范围。
 - Backend 重启必须和 Launcher 退出、receiver runtime 重启区分；本 flow 只要求重启 UxPlay backend。
+- `cast.setRenderFps` 必须只控制接收端本地渲染 fps，不要求 source 降低输入 fps。
+- 手动 fps cap 下 HID 输入必须继续消费，AXTP 数据必须继续解析，视频队列不得持续增长，端到端延迟不得持续变大。
+- WebSocket 回调线程不得直接操作 D3D、WASAPI 或窗口资源；它只更新控制状态，由媒体线程读取执行。
+- 外部控制端不直接请求关键帧；内部关键帧请求必须防抖，并可通过状态统计观测。
 - UxPlay 内部控制口不能直接暴露为标准协议；标准接口应停留在外部 AXTP Adapter。
 - UI 和测试用例必须能区分 AirPlay discovery/media 失败、UxPlay backend 失败、密码鉴权失败和 AXTP 控制协议失败。
 - 本流程不修改 registry、generated 或 Protocol IR；后续协议事实必须通过 Stage 20/30/50 工作流进入正式生成路径。
@@ -396,3 +465,9 @@ sequenceDiagram
 | Backend 重启是否会强制结束当前投屏会话？如果会，停止原因如何展示给用户？ | product / backend | TBD | REVIEW-ASK | 决定 `restartBackend` 与 `sessionStopped` 的事件顺序。 |
 | Backend 重启是否只重启 UxPlay backend，还是需要重建 backend adapter 到 UxPlay 的内部 WebSocket 连接？ | backend / runtime | TBD | REVIEW-ASK | 决定 backend boundary。 |
 | 是否需要一个独立 `cast.status` 聚合接口，还是 `cast.session` + `cast.pinCode` + `cast.audio` + `cast.window` + `cast.backend` 查询足够？ | protocol / app | TBD | REVIEW-ASK | 决定是否创建 `cast.status` 草案。 |
+| `fps=0` 是表示不限制本地渲染 fps，还是直接拒绝？ | protocol / app | TBD | REVIEW-ASK | 决定 `cast.setRenderFps` 参数校验。 |
+| 目标 fps 高于当前输入 fps 时，是按输入 fps 运行，还是只把目标值作为上限保存？ | protocol / runtime | TBD | REVIEW-ASK | 决定 `targetRenderFps` 与 `inputFps` 的关系。 |
+| 默认 `dropMode` 使用 `drop-late`、`drop-oldest` 还是 `render-latest`？ | runtime / product | TBD | REVIEW-ASK | 决定 `cast.flowControl` capability defaults。 |
+| `cast.getStatus` 是否承载 flow-control 统计，还是另设 `cast.getFlowControlState`？ | protocol / app | TBD | REVIEW-ASK | 决定聚合状态和 feature-specific 查询边界。 |
+| overlay 是否只是本地调试开关，还是进入正式 `cast.flowControl` 能力？ | product / runtime | TBD | REVIEW-ASK | 决定 overlay 字段是否进入草案。 |
+| `cast.setMuted` 是否作为 `cast.audio` 的方法，还是只在 `cast.flowControl` 状态中展示？ | protocol / product | TBD | REVIEW-ASK | 决定 fps cap 下音频静音归属。 |
