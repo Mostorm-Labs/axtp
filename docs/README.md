@@ -8,20 +8,28 @@
 
 | 角色 | 入口 |
 |---|---|
-| 第一次了解 AXTP 的新人 | [start-here/new-to-axtp.md](start-here/new-to-axtp.md) |
-| Runtime / SDK 实现者 | [start-here/runtime-implementer.md](start-here/runtime-implementer.md) |
-| 协议维护者 | [start-here/protocol-maintainer.md](start-here/protocol-maintainer.md) |
-| 产品 / 架构负责人 | [start-here/product-architecture.md](start-here/product-architecture.md) |
-| 测试 / conformance 负责人 | [start-here/conformance-owner.md](start-here/conformance-owner.md) |
-| Legacy 迁移负责人 | [start-here/legacy-migration-owner.md](start-here/legacy-migration-owner.md) |
+| 第一次了解 AXTP 的新人 | [README](../README.md)、[Core Overview](specs/1-core/01-Overview.md)、[Glossary](specs/0-principles/01-Glossary.md) |
+| Runtime / SDK 实现者 | [guides/runtime.md](guides/runtime.md) |
+| 协议维护者 | [guides/protocol-maintainer.md](guides/protocol-maintainer.md) |
+| 产品 / 架构负责人 | [guides/product.md](guides/product.md) |
+| 测试 / conformance 负责人 | [guides/testing.md](guides/testing.md) |
+| Legacy 迁移负责人 | [guides/legacy-migration.md](guides/legacy-migration.md) |
 
-协议维护者的完整操作 SOP 见 [guides/protocol-maintainer-sop.md](guides/protocol-maintainer-sop.md)。
+## 主指南
+
+| 指南 | 解决什么问题 |
+|---|---|
+| [Runtime / SDK Guide](guides/runtime.md) | 研发如何用 spec/generated/conformance 接入 runtime、SDK 和 mock server。 |
+| [Testing / Conformance Guide](guides/testing.md) | 测试如何按 profile 和 level 验收 runtime、SDK、mock server。 |
+| [Protocol Maintainer Guide](guides/protocol-maintainer.md) | 维护者如何从需求推进到 flow、draft、registry、generated、release。 |
+| [Product / Architecture Guide](guides/product.md) | 产品和架构如何看 domain 状态、能力边界和采纳优先级。 |
+| [Legacy Migration Guide](guides/legacy-migration.md) | 迁移负责人如何从旧协议证据走到 AXTP 映射和 adapter 计划。 |
 
 ## 目录地图
 
 | 目录 | 定位 | 合同等级 |
 |---|---|---|
-| [start-here/](start-here/new-to-axtp.md) | 按角色进入仓库的短路径。 | 导航 |
+| [guides/](guides/runtime.md) | 产品、研发、测试、协议维护、legacy 迁移的唯一人类入口。 | 指南 |
 | [business/](business/README.md) | 产品需求、业务背景、开放问题。 | 评审输入 |
 | [flows/](flows/README.md) | 场景流程、消息序列、协议覆盖和缺口。 | 评审输入 |
 | [product/](product/domain-status.md) | 产品能力状态、domain 生成状态和采纳优先级。 | 产品看板 |
@@ -31,7 +39,6 @@
 | [conformance/](conformance/README.md) | runtime、SDK、mock server 的行为验收输入。 | 验收合同 |
 | [legacy-migration/](legacy-migration/README.md) | 旧协议证据、分类、迁移计划和 adapter 线索。 | 迁移输入 |
 | [architecture/](architecture/README.md) | 协议边界、domain/feature 分类、事实源治理。 | 架构指导 |
-| [guides/](guides/quickstart.md) | 研发接入、协议维护者 SOP、测试入门。 | 指南 |
 | [release/](release/README.md) | spec tag、release artifact、runtime spec lock。 | 发布治理 |
 | [dev/skills/](dev/skills/README.md) | lifecycle skills 和 agent 工作流。 | 维护流程 |
 

@@ -43,18 +43,18 @@ AXTP 当前有两条生产路径：
 | WebSocket Unframed JSON | RPC-only：Hello / Identify / Identified / Request / Response / Event。 | App、Web、Node、Python、WS-only mock、云端控制面快速接入。 |
 | Standard Framed | `CONTROL OPEN / ACCEPT` 后承载 `RPC` 和 `STREAM`。 | TCP、USB HID、设备端 runtime、audio/video 连续数据。 |
 
-README 不展开完整 wire format。协议分层先读 [Core Overview](docs/specs/1-core/01-Overview.md)；研发联调路径见 [研发接入 Quickstart](docs/guides/quickstart.md)。
+README 不展开完整 wire format。协议分层先读 [Core Overview](docs/specs/1-core/01-Overview.md)；研发联调路径见 [Runtime / SDK Guide](docs/guides/runtime.md)。
 
 ## 你是谁？从这里开始
 
 | 角色 | 你要解决的问题 | 入口 |
 |---|---|---|
-| 第一次了解 AXTP 的新人 | 先知道 AXTP 是什么、仓库里哪些内容可信。 | [新人入口](docs/start-here/new-to-axtp.md)、[Core Overview](docs/specs/1-core/01-Overview.md)、[文档地图](docs/README.md) |
-| Runtime / SDK 实现者 | 从正式合同实现握手、RPC、事件、STREAM，并绑定版本。 | [Runtime 入口](docs/start-here/runtime-implementer.md)、[研发接入 Quickstart](docs/guides/quickstart.md)、[Conformance](docs/conformance/README.md) |
-| 协议维护者 | 从需求、flow、草案推进到 registry、generated、release。 | [维护者入口](docs/start-here/protocol-maintainer.md)、[协议维护者 SOP](docs/guides/protocol-maintainer-sop.md)、[Protocol Draft Intake](docs/protocol/README.md) |
-| 产品 / 架构负责人 | 看 domain 状态、能力边界、优先级和协议缺口。 | [产品架构入口](docs/start-here/product-architecture.md)、[Product Domain Status](docs/product/domain-status.md)、[Roadmap](ROADMAP.md) |
-| 测试 / conformance 负责人 | 按 runtime 声明的能力等级验收实现行为。 | [测试入口](docs/start-here/conformance-owner.md)、[Conformance 主文档](docs/conformance/README.md)、[测试入门](docs/guides/testing-conformance-quickstart.md) |
-| Legacy 迁移负责人 | 从旧协议证据、分类和计划追踪迁移进度。 | [迁移入口](docs/start-here/legacy-migration-owner.md)、[Legacy 迁移](docs/legacy-migration/README.md)、[迁移总览](docs/legacy-migration/MIGRATION_DASHBOARD.md) |
+| 第一次了解 AXTP 的新人 | 先知道 AXTP 是什么、仓库里哪些内容可信。 | [文档地图](docs/README.md)、[Core Overview](docs/specs/1-core/01-Overview.md)、[Glossary](docs/specs/0-principles/01-Glossary.md) |
+| Runtime / SDK 实现者 | 从正式合同实现握手、RPC、事件、STREAM，并绑定版本。 | [Runtime / SDK Guide](docs/guides/runtime.md)、[Conformance](docs/conformance/README.md) |
+| 协议维护者 | 从需求、flow、草案推进到 registry、generated、release。 | [Protocol Maintainer Guide](docs/guides/protocol-maintainer.md)、[Protocol Draft Intake](docs/protocol/README.md) |
+| 产品 / 架构负责人 | 看 domain 状态、能力边界、优先级和协议缺口。 | [Product / Architecture Guide](docs/guides/product.md)、[Product Domain Status](docs/product/domain-status.md) |
+| 测试 / conformance 负责人 | 按 runtime 声明的能力等级验收实现行为。 | [Testing / Conformance Guide](docs/guides/testing.md)、[Conformance 主文档](docs/conformance/README.md) |
+| Legacy 迁移负责人 | 从旧协议证据、分类和计划追踪迁移进度。 | [Legacy Migration Guide](docs/guides/legacy-migration.md)、[Migration Dashboard](docs/legacy-migration/MIGRATION_DASHBOARD.md) |
 
 完整文档地图见 [docs/README.md](docs/README.md)。
 
@@ -92,7 +92,7 @@ axtp/
 ├── KICKOFF.md                   # kickoff 宣讲材料，不是协议合同
 ├── docs/
 │   ├── README.md                # 文档地图
-│   ├── start-here/              # 按角色进入仓库
+│   ├── guides/                  # 产品、runtime、测试、协议维护、legacy 迁移的唯一人类入口
 │   ├── business/                # 业务输入，不是协议合同
 │   ├── flows/                   # 场景流程，不是协议合同
 │   ├── product/                 # 产品能力状态和采纳优先级
@@ -103,7 +103,6 @@ axtp/
 │   ├── legacy-migration/        # 旧协议证据、分类和迁移
 │   ├── architecture/            # 架构边界和治理原则
 │   ├── release/                 # spec tag 与 release governance
-│   ├── guides/                  # quickstart、协议维护者 SOP、测试指南
 │   └── dev/                     # lifecycle skills
 ├── registry/                    # YAML 事实源
 ├── protocol/                    # generated Protocol IR
@@ -122,4 +121,4 @@ axtp/
 - 不绕过 protocol review 直接改 registry。
 - Runtime 必须绑定 spec tag、明确 commit 或 release artifact，不依赖浮动 `main`。
 - Conformance 是 runtime 行为验收入口。
-- Generator、发布和协议维护者 SOP 见 [协议维护者 SOP](docs/guides/protocol-maintainer-sop.md) 与 [Release 文档](docs/release/README.md)。
+- Generator、发布和协议维护流程见 [Protocol Maintainer Guide](docs/guides/protocol-maintainer.md) 与 [Release 文档](docs/release/README.md)。

@@ -7,7 +7,7 @@
 1. Runtime / SDK、协议维护者和测试负责人应该按什么顺序判断“哪份材料是合同”。
 2. AXTP Phase 1 从 Standard Framed `CONTROL OPEN / ACCEPT` 到 RPC Hello / Identify / Identified，再到 `APP_READY` 的连接状态机边界。
 
-如果要找具体操作 SOP，请看 [docs/guides/protocol-maintainer-sop.md](../guides/protocol-maintainer-sop.md)。如果要找 lifecycle skill，请看 [docs/dev/skills/README.md](../dev/skills/README.md)。
+如果要找具体操作指南，请看 [Protocol Maintainer Guide](../guides/protocol-maintainer.md)。如果要找 lifecycle skill，请看 [docs/dev/skills/README.md](../dev/skills/README.md)。
 
 ## 0. 合同等级与冲突处理
 

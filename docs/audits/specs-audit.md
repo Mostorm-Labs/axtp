@@ -222,7 +222,7 @@ Recommended split:
 
 - Keep YAML shape, normalization, merge, conflict detection, and Protocol IR mapping in `4-tooling/01`.
 - Move registry governance to `2-registry`.
-- Move Codex skill/lifecycle workflow to `docs/dev/skills` and `docs/guides/how-to-use.md`.
+- Move Codex skill/lifecycle workflow to `docs/dev/skills` and `docs/guides/protocol-maintainer.md`.
 - Move generated output rendering rules to `4-tooling/02-Generator-V1.md`.
 
 ### 5.8 `4-tooling/03-Versioning.md`

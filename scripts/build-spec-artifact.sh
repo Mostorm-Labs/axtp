@@ -64,7 +64,15 @@ copy_file() {
 copy_file "$root/README.md" "$artifact_dir/README.md" "README.md"
 copy_file "$root/LICENSE" "$artifact_dir/LICENSE" "LICENSE"
 copy_file "$root/ROADMAP.md" "$artifact_dir/ROADMAP.md" "ROADMAP.md"
+copy_file "$root/docs/README.md" "$artifact_dir/docs/README.md" "docs README"
 copy_dir "$root/protocol" "$artifact_dir/protocol" "Protocol IR"
+copy_dir "$root/docs/guides" "$artifact_dir/docs/guides" "role guides"
+copy_dir "$root/docs/product" "$artifact_dir/docs/product" "product status"
+copy_dir "$root/docs/business" "$artifact_dir/docs/business" "business inputs"
+copy_dir "$root/docs/flows" "$artifact_dir/docs/flows" "flows"
+copy_dir "$root/docs/protocol" "$artifact_dir/docs/protocol" "protocol drafts"
+copy_dir "$root/docs/architecture" "$artifact_dir/docs/architecture" "architecture docs"
+copy_dir "$root/docs/dev" "$artifact_dir/docs/dev" "dev workflow docs"
 copy_dir "$root/docs/generated" "$artifact_dir/docs/generated" "generated protocol references"
 copy_dir "$root/docs/specs" "$artifact_dir/docs/specs" "specs"
 copy_dir "$root/registry" "$artifact_dir/registry" "registry"
@@ -72,6 +80,12 @@ copy_dir "$root/tooling/mcp" "$artifact_dir/tooling/mcp" "MCP registry artifacts
 copy_dir "$root/tooling/test-vectors" "$artifact_dir/tooling/test-vectors" "test vectors"
 copy_dir "$root/docs/conformance" "$artifact_dir/docs/conformance" "conformance"
 copy_dir "$root/docs/conformance" "$artifact_dir/conformance" "conformance compatibility alias"
+if [[ -f "$artifact_dir/conformance/README.md" ]]; then
+  sed \
+    -e "s|(../guides/|(../docs/guides/|g" \
+    -e "s|(../specs/|(../docs/specs/|g" \
+    "$artifact_dir/docs/conformance/README.md" > "$artifact_dir/conformance/README.md"
+fi
 copy_dir "$root/docs/release" "$artifact_dir/docs/release" "release docs"
 copy_dir "$root/docs/legacy-migration" "$artifact_dir/docs/legacy-migration" "legacy migration planning"
 rm -rf "$artifact_dir/docs/legacy-migration/evidence"
@@ -89,6 +103,13 @@ find "$artifact_dir" -name ".DS_Store" -delete
 required_artifact_paths=(
   "README.md"
   "LICENSE"
+  "docs/README.md"
+  "docs/guides/runtime.md"
+  "docs/guides/testing.md"
+  "docs/guides/protocol-maintainer.md"
+  "docs/guides/product.md"
+  "docs/guides/legacy-migration.md"
+  "docs/product/domain-status.md"
   "protocol/axtp.protocol.yaml"
   "docs/generated/protocol.md"
   "docs/generated/protocol.json"
@@ -96,6 +117,8 @@ required_artifact_paths=(
   "docs/specs/README.md"
   "docs/conformance/manifest.yaml"
   "conformance/manifest.yaml"
+  "docs/protocol/README.md"
+  "docs/architecture/README.md"
   "tooling/mcp/method_registry.generated.json"
   "tooling/test-vectors/manifest.json"
   "docs/release/CHANGELOG.md"

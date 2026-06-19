@@ -43,6 +43,13 @@ function isExternal(target) {
   return /^(https?:|mailto:|tel:)/i.test(target);
 }
 
+function isIgnoredTarget(resolved) {
+  const relativeParts = path.relative(root, resolved).split(path.sep);
+  return ignoredPathSegments.some((segments) =>
+    segments.every((segment, index) => relativeParts[index] === segment)
+  );
+}
+
 for (const file of walk(root)) {
   const text = stripCodeFences(fs.readFileSync(file, "utf8"));
   for (const match of text.matchAll(markdownLink)) {
@@ -59,6 +66,7 @@ for (const file of walk(root)) {
     const [target] = raw.split("#");
     if (!target) continue;
     const resolved = path.resolve(path.dirname(file), decodeURIComponent(target));
+    if (isIgnoredTarget(resolved)) continue;
     if (!fs.existsSync(resolved)) {
       broken.push(`${path.relative(root, file)} -> ${raw}`);
     }

@@ -21,6 +21,13 @@ zip_path, artifact = sys.argv[1], sys.argv[2]
 required = {
     f"{artifact}/README.md",
     f"{artifact}/LICENSE",
+    f"{artifact}/docs/README.md",
+    f"{artifact}/docs/guides/runtime.md",
+    f"{artifact}/docs/guides/testing.md",
+    f"{artifact}/docs/guides/protocol-maintainer.md",
+    f"{artifact}/docs/guides/product.md",
+    f"{artifact}/docs/guides/legacy-migration.md",
+    f"{artifact}/docs/product/domain-status.md",
     f"{artifact}/protocol/axtp.protocol.yaml",
     f"{artifact}/docs/generated/protocol.md",
     f"{artifact}/docs/generated/protocol.json",
@@ -28,6 +35,8 @@ required = {
     f"{artifact}/docs/specs/README.md",
     f"{artifact}/docs/conformance/manifest.yaml",
     f"{artifact}/conformance/manifest.yaml",
+    f"{artifact}/docs/protocol/README.md",
+    f"{artifact}/docs/architecture/README.md",
     f"{artifact}/tooling/mcp/method_registry.generated.json",
     f"{artifact}/tooling/test-vectors/manifest.json",
     f"{artifact}/docs/release/CHANGELOG.md",
@@ -59,3 +68,5 @@ if legacy_evidence:
 
 print("[OK] release archive contract paths verified")
 PY
+
+node "$root/scripts/check-links.mjs" "$root/dist/$artifact"
