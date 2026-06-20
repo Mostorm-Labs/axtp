@@ -93,7 +93,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.1.3 返回结果 Result：`OpenStreamResult`
 
@@ -228,7 +227,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.2.3 返回结果 Result：`StartRecordingResult`
 
@@ -363,7 +361,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.3.3 返回结果 Result：`BeginUploadResult`
 
@@ -498,7 +495,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.4.3 返回结果 Result：`BeginUpdateResult`
 
@@ -633,7 +629,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.5.3 返回结果 Result：`OpenResult`
 
@@ -768,7 +763,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.6.3 返回结果 Result：`CloseStreamResult`
 
@@ -903,7 +897,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.7.3 返回结果 Result：`StopRecordingResult`
 
@@ -1038,7 +1031,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.8.3 返回结果 Result：`CloseResult`
 
@@ -1175,7 +1167,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.9.3 返回结果 Result：`GetCapabilitiesResult`
 
@@ -1278,7 +1269,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.10.3 返回结果 Result：`GetStateResult`
 
@@ -1381,7 +1371,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.11.3 返回结果 Result：`GetStatsResult`
 
@@ -1482,7 +1471,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.12.3 返回结果 Result：`AckResult`
 
@@ -1617,7 +1605,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.13.3 返回结果 Result：`WindowUpdateResult`
 
@@ -1752,7 +1739,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.14.3 返回结果 Result：`PauseResult`
 
@@ -1887,7 +1873,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.15.3 返回结果 Result：`ResumeResult`
 
@@ -2022,7 +2007,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.16.3 返回结果 Result：`AbortResult`
 

@@ -1,40 +1,40 @@
-# AXTP Product Roadmap
+# AXTP 产品路线图
 
-This roadmap is planning material for product and architecture decisions. It is not a runtime implementation contract. Runtime, SDK, CLI, mock server, and adapter repositories must bind to spec tags, release artifacts, `contract/protocol/axtp.protocol.yaml`, `contract/generated/**`, `specs/**`, and `conformance/**`.
+本页是产品和架构规划材料，不是 runtime 实现合同。Runtime、SDK、CLI、mock server 和 adapter 仓库必须绑定 spec tag、release artifact、`contract/protocol/axtp.protocol.yaml`、`contract/generated/**`、`specs/**` 和 `conformance/**`。
 
-## Current Status
+## 当前状态
 
-Current generated/adopted coverage is tracked in [Product Domain Status](domain-status.md). A domain is runtime-contract ready only when its source YAML exists under `contract/registry/domains/<domain>/domain.yaml`, generated artifacts are refreshed, and validation passes.
+当前 generated / adopted 覆盖情况以 [Product Domain Status](domain-status.md) 为准。只有当 source YAML 已进入 `contract/registry/domains/<domain>/domain.yaml`、生成产物已刷新、并且 validation 通过时，该 domain 才算 runtime-contract ready。
 
-Today the repository front door is intentionally narrow:
+仓库前台刻意保持窄入口：
 
-- Product and architecture use [Product Guide](../guides/product.md) and [Domain Status](domain-status.md).
-- Runtime and SDK teams use generated protocol, specs, release artifacts, and conformance.
-- Protocol maintainers use business inputs, flows, drafts, registry, and generator only when changing protocol facts.
+- 产品和架构看 [Product Guide](../guides/product.md) 与 [Domain Status](domain-status.md)。
+- Runtime 和 SDK 团队看 generated protocol、specs、release artifact 与 conformance。
+- 协议维护者只有在修改协议事实时，才进入 business inputs、flows、drafts、registry 和 generator。
 
-## Planning Themes
+## 规划主题
 
-| Theme | Direction | Contract boundary |
+| 主题 | 方向 | 合同边界 |
 |---|---|---|
-| Runtime interoperability | Keep C++ / TypeScript / mock-server aligned around released spec tags and conformance profiles. | Implement in runtime/tool repositories, not this repo. |
-| Standard Framed transport | Use AXTP-TCP and Standard Frame as the primary cross-runtime interop baseline where available. | Behavior must be validated by conformance and mock-server interop. |
-| Generated business domains | Promote reviewed domain drafts into `contract/registry/domains/**` only after product and protocol review. | Drafts are not implementation contracts. |
-| Conformance expansion | Add profile/case coverage when generated protocol behavior changes. | Tests validate declared support levels. |
-| Legacy migration | Keep old protocol evidence and adapter planning as background material. | Legacy evidence does not override generated AXTP facts. |
+| Runtime 互操作 | 围绕已发布 spec tag 和 conformance profile 保持 C++、TypeScript、mock-server 等实现一致。 | 在 runtime / tool 仓库实现，不在本仓库实现。 |
+| Standard Framed transport | 可用时优先使用 AXTP-TCP + Standard Frame 作为跨 runtime 互操作基准。 | 行为必须由 conformance 和 mock-server interop 验证。 |
+| Generated business domains | 只有经过产品和协议评审的 domain 草案，才能进入 `contract/registry/domains/**`。 | Draft 不是实现合同。 |
+| Conformance expansion | 当 generated protocol 行为变化时，同步增加 profile / case 覆盖。 | 测试只验证 runtime 声明的 support level。 |
+| Legacy migration | 旧协议 evidence 和 adapter planning 保持为后台材料。 | Legacy evidence 不覆盖 generated AXTP facts。 |
 
-## Near-Term Priorities
+## 近期优先级
 
-| Priority | Outcome | Owner path |
+| 优先级 | 目标 | Owner path |
 |---|---|---|
-| P0 | Keep release artifact, generated protocol, and conformance validation green. | [Release Docs](../../release/README.md), [Testing Guide](../guides/testing.md) |
-| P0 | Use Node mock-server plus runtime conformance to verify TCP / framed behavior across active runtimes. | Runtime repositories + conformance profiles |
-| P1 | Move high-confidence drafts from `workspace/protocol/**` into registry YAML and generated outputs. | [Protocol Maintainer Guide](../guides/protocol-maintainer.md) |
-| P1 | Clarify product status and adoption priority per domain. | [Product Domain Status](domain-status.md) |
-| P2 | Continue legacy adapter planning only when it supports an active migration target. | [Legacy Migration Guide](../guides/legacy-migration.md) |
+| P0 | 保持 release artifact、generated protocol 和 conformance validation 绿色。 | [Release Docs](../../release/README.md)、[Testing Guide](../guides/testing.md) |
+| P0 | 使用 Node mock-server 和 runtime conformance 验证 active runtimes 的 TCP / framed 行为。 | Runtime repositories + conformance profiles |
+| P1 | 将高置信度草案从 `workspace/protocol/**` 推进到 registry YAML 和 generated outputs。 | [Protocol Maintainer Guide](../guides/protocol-maintainer.md) |
+| P1 | 按 domain 澄清产品状态和采纳优先级。 | [Product Domain Status](domain-status.md) |
+| P2 | 只有当 legacy adapter planning 支撑明确迁移目标时才继续推进。 | [Legacy Migration Guide](../guides/legacy-migration.md) |
 
-## Rules
+## 规则
 
-- Roadmap milestones are planning labels, not spec versions.
-- Runtime teams bind to `spec/vMAJOR.MINOR.PATCH`, a commit, or a release artifact.
-- Unadopted drafts, flow plans, audits, and legacy evidence cannot be used as runtime implementation contracts.
-- Tool and runtime delivery happens outside this repository unless explicitly generated here.
+- Roadmap milestone 是规划标签，不是 spec version。
+- Runtime 团队绑定 `spec/vMAJOR.MINOR.PATCH`、明确 commit 或 release artifact。
+- 未采纳草案、flow plans、audits 和 legacy evidence 不能作为 runtime 实现合同。
+- Tool 和 runtime 交付发生在外部仓库；只有本仓库显式生成的产物才留在这里。

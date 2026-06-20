@@ -12,6 +12,8 @@ This directory is the public reading path. Start from a role guide first; mainta
 | Protocol maintenance | [guides/protocol-maintainer.md](guides/protocol-maintainer.md) |
 | Release owner | [../release/README.md](../release/README.md) |
 
+Release owner 是前台角色；`release/` 是发布操作区，用来管理 spec tag、artifact、changelog 和 runtime update flow。它不是 runtime 行为合同源。
+
 ## Implementation Contract
 
 | Contract class | Read from | Runtime can implement from it |
@@ -25,12 +27,12 @@ This directory is the public reading path. Start from a role guide first; mainta
 ## Background Workspace
 
 Do not browse these directories by default. Open them only when the role guide or a maintenance task sends you there.
-Default release artifacts include only `release/`; other workspace directories are repository-only maintainer inputs.
+Default release artifacts include only the release operation docs under `release/`; other workspace directories are repository-only maintainer inputs.
 
 | Directory | Purpose | Runtime contract |
 |---|---|---:|
 | `workspace/` | Maintainer workspace for business inputs, flows, drafts, and legacy migration. | No |
-| [../release/](../release/README.md) | Release governance, changelog, spec lock, and runtime update flow. | No, except for version binding |
+| [../release/](../release/README.md) | Release operation docs for tag, artifact, changelog, spec lock, and runtime update flow. | No, except for version binding |
 | `docs/archive/` | Historical audits, old spec shapes, and dated decision context. | No |
 | `tooling/skills/` | Agent lifecycle skills and workflow definitions. | No |
 | `../workspace/registry-planning/candidates/` | Historical/candidate registry tables. | No |

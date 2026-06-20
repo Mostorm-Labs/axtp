@@ -61,6 +61,7 @@ jobs:
           tooling/scripts/check-generated-drift.sh
           tooling/scripts/validate-conformance.sh
           tooling/scripts/check-links.mjs
+          node tooling/scripts/check-text-paths.mjs
           tooling/scripts/check-protocol-status.mjs
 
       - name: Build spec artifact

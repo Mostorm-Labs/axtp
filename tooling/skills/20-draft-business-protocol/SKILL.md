@@ -32,22 +32,12 @@ workspace/protocol/README.md
 workspace/protocol/draft-conventions.md
 specs/30-registry.md
 specs/50-tooling.md
-specs/30-registry.md
-specs/30-registry.md
-specs/30-registry.md
 specs/40-codec.md
-specs/30-registry.md
-specs/50-tooling.md
 ```
 
 For stream, firmware.update, transport-sensitive, HID media, or low-bandwidth work, also read:
 
 ```text
-specs/20-core.md
-specs/20-core.md
-specs/20-core.md
-specs/20-core.md
-specs/20-core.md
 specs/20-core.md
 ```
 
@@ -63,7 +53,7 @@ Make one decision and explain it in the draft and final response:
 | Modify existing draft | Existing domain.feature is right but lacks scenario, method, event, schema, error, or boundary details | Patch that draft; preserve existing review markers and user edits |
 | Create new draft | No existing feature has the right boundary | Create `workspace/protocol/<domain>/<domain.feature>.md` from `references/protocol-draft-template.md` |
 
-Choose `domain.feature` by 08 rules: feature is a capability block, not a field name. Keep `stream` for common data plane only; business streams are owned by the business domain and bind to STREAM through RPC-created `streamId`.
+Choose `domain.feature` by `specs/30-registry.md`: feature is a capability block, not a field name. Keep `stream` for common data plane only; business streams are owned by the business domain and bind to STREAM through RPC-created `streamId`.
 
 ### 3. Inspect Implementation Degree
 

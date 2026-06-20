@@ -30,9 +30,6 @@ If validation errors mention wire facts, also read the relevant specs:
 
 ```text
 specs/20-core.md
-specs/20-core.md
-specs/20-core.md
-specs/20-core.md
 specs/30-registry.md
 specs/50-tooling.md
 specs/40-codec.md

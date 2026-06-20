@@ -28,13 +28,7 @@ workspace/protocol/README.md
 workspace/protocol/<domain>/<domain.feature>.md
 specs/30-registry.md
 specs/50-tooling.md
-specs/30-registry.md
-specs/30-registry.md
-specs/30-registry.md
 specs/40-codec.md
-specs/30-registry.md
-specs/40-codec.md
-specs/50-tooling.md
 contract/registry/**/*.yaml
 contract/registry/domains/**/*.yaml
 contract/generated/protocol.md

@@ -87,7 +87,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.1.3 返回结果 Result：`GetPlaylistItemUrlResult`
 
@@ -190,7 +189,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.2.3 返回结果 Result：`PlaylistCapabilitiesResult`
 
@@ -293,7 +291,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.3.3 返回结果 Result：`PlaylistConfigResult`
 
@@ -396,7 +393,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.4.3 返回结果 Result：`SetPlaylistConfigResult`
 
@@ -531,7 +527,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：该示例只展示 RPC `d` block。字段集合为草案占位，采纳前需按真实 schema 收敛。
 
 #### 3.5.3 返回结果 Result：`SetPlaylistConfigResult`
 

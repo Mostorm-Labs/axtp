@@ -28,6 +28,8 @@
 
 `sid="12345678"`、`id=101`、`intent=1` 均为示例值。正式 methodId、eventId、fieldId、errorCode、intent bit 由 registry 采纳后分配。
 
+草案示例默认只展示 feature-specific 的 RPC `d` block；字段集合若仍是候选或占位，必须在采纳前按真实 schema 收敛。不要在每个 method/event 示例下重复这句公共读法。
+
 业务草案不得使用 JSON-RPC 2.0 外层格式作为 AXTP wire 示例；不要在 AXTP 示例中写 `jsonrpc`、JSON-RPC 外层 `id/method/params`，或把 JSON-RPC envelope 当作 AXTP envelope。
 
 ## 错误约定
@@ -51,4 +53,3 @@ Capability 字段只描述“设备能做什么”，不得混入 method params/
 `交互流程示例` 只展示多个 method/event 组成的端到端业务流程。单个 method 的 Request / Success Response / Error Response 示例写在对应 method 小节；单个 event 的 Event 示例写在对应 event 小节。
 
 Flow example 应说明调用顺序、关键 `d` block、客户端状态更新、事件订阅和异常处理，不承担完整协议合同定义。
-

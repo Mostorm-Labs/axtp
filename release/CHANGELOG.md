@@ -4,6 +4,33 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.8.5
+
+Reader experience and governance patch.
+
+### Protocol
+
+- Keeps AXTP wire, CONTROL, RPC, STREAM, method, event, schema, capability, profile, and error semantics unchanged from `spec/v0.8.4`.
+- Does not change registry YAML, Protocol IR, generated references, MCP artifacts, test vectors, or conformance case behavior.
+
+### Documentation
+
+- Clarifies the public docs reading route so Release owner remains a front-door role while `release/` is described as an operation area rather than a runtime behavior contract.
+- Converts the product roadmap to Chinese-first wording for the current product and architecture audience.
+- Consolidates repeated protocol draft JSON `d` block boilerplate into `workspace/protocol/draft-conventions.md` and removes duplicated boilerplate lines from workspace drafts without changing feature-specific draft content.
+- Cleans lifecycle skill instructions by removing repeated spec path entries and replacing the old "08 rules" wording with the current `specs/30-registry.md` reference.
+
+### Release Governance
+
+- Adds the plain-text repository path checker to both PR validation and spec release validation so stale hidden paths are caught by CI.
+- Keeps the release artifact contents and path contract unchanged from `spec/v0.8.4`.
+
+### Runtime Impact
+
+- Runtime and SDK teams do not need wire-level, registry, SDK API, generated metadata, or conformance behavior changes for this release.
+- Runtime upgrade workflows can treat this as a documentation/governance patch while continuing to bind to the exact `spec/v0.8.5` tag.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.8.4
 
 Chinese human-readable specs patch.
