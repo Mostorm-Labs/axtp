@@ -88,10 +88,8 @@ request:
   "id": 101,
   "method": "signage.getPlaylistItemUrl",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "playlistId": "lobby-loop",
+    "itemId": "welcome-video"
   }
 }
 ```
@@ -106,10 +104,9 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "itemId": "welcome-video",
+    "url": "https://example.invalid/media/welcome.mp4",
+    "expiresAt": "2026-06-21T22:00:00Z"
   }
 }
 ```
@@ -165,10 +162,7 @@ request:
   "id": 102,
   "method": "signage.getPlaylistCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "player-main"
   }
 }
 ```
@@ -183,10 +177,13 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "signage.playlist",
+    "maxItems": 128,
+    "mediaTypes": [
+      "image/png",
+      "video/mp4"
+    ],
+    "scheduleSupported": true
   }
 }
 ```
@@ -242,9 +239,10 @@ request:
   "id": 103,
   "method": "signage.getPlaylistConfig",
   "params": {
-    "target": "default",
+    "target": "player-main",
     "sections": [
-      "summary"
+      "playlist",
+      "schedule"
     ]
   }
 }
@@ -260,10 +258,14 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "playlistId": "lobby-loop",
+    "revision": 12,
+    "items": [
+      {
+        "itemId": "welcome-video",
+        "durationSeconds": 30
+      }
+    ]
   }
 }
 ```
@@ -319,9 +321,17 @@ request:
   "id": 104,
   "method": "signage.setPlaylistConfig",
   "params": {
-    "target": "default",
+    "target": "player-main",
     "config": {
-      "enabled": true
+      "playlistId": "lobby-loop",
+      "replace": true,
+      "items": [
+        {
+          "itemId": "welcome-video",
+          "mediaType": "video/mp4",
+          "durationSeconds": 30
+        }
+      ]
     }
   }
 }
@@ -337,7 +347,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "playlistId": "lobby-loop",
+      "revision": 13,
+      "itemCount": 1
+    }
   }
 }
 ```
@@ -393,8 +408,8 @@ request:
   "id": 105,
   "method": "signage.resetPlaylistConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "player-main",
+    "reason": "restore_factory_playlist"
   }
 }
 ```
@@ -409,7 +424,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "playlistId": "factory-default",
+      "revision": 1,
+      "itemCount": 0
+    }
   }
 }
 ```

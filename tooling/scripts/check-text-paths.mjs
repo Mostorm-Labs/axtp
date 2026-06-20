@@ -41,7 +41,7 @@ const legacyCompatibilityPages = new Map([
 const legacyCompatibilityPathPattern =
   /workspace\/(?:business|flows)\/(?:cast-reciever-uxplay|cast-rxtx-paring)\.md/g;
 const activeRepoPathPattern =
-  /(?:docs\/(?!archive\/)[^\s`"'<>),\]]+\.(?:md|yaml|yml|json)|workspace\/(?:business|flows|legacy-migration\/classification|protocol|registry-planning|runtime)\/[^\s`"'<>),\]]+\.(?:csv|json|md|pdf|txt|xlsx|yaml|yml)|tooling\/(?:release|scripts|skills)\/[^\s`"'<>),\]]+\.(?:json|md|mjs|sh|yaml|yml)|specs\/[^\s`"'<>),\]]+\.md|release\/[^\s`"'<>),\]]+\.md|conformance\/[^\s`"'<>),\]]+\.(?:json|md|yaml|yml))/g;
+  /(?:docs\/(?!archive\/)[^\s`"'<>),\]]+\.(?:md|yaml|yml|json)|workspace\/(?:business|flows|legacy-migration\/classification|legacy-migration\/generated|protocol|registry-planning|runtime)\/[^\s`"'<>),\]]+\.(?:csv|json|md|pdf|txt|xlsx|yaml|yml)|tooling\/(?:release|scripts|skills)\/[^\s`"'<>),\]]+\.(?:json|md|mjs|sh|yaml|yml)|contract\/registry\/domains\/[A-Za-z0-9_.-]+\/domain\.yaml|specs\/[^\s`"'<>),\]]+\.md|release\/[^\s`"'<>),\]]+\.md|conformance\/[^\s`"'<>),\]]+\.(?:json|md|yaml|yml))/g;
 
 function walk(dir) {
   const out = [];
@@ -74,11 +74,20 @@ function report(file, raw, reason) {
 function checkExists(file, raw) {
   const candidate = stripDecorators(raw);
   if (!candidate || candidate.includes("*") || candidate.includes("<") || candidate.includes(">")) return;
+  if (isLegacyMigrationCandidatePath(file, candidate)) return;
   const evidencePath = candidate.includes(":")
     ? candidate.slice(0, candidate.indexOf(":"))
     : candidate;
   const target = path.join(root, evidencePath);
   if (!fs.existsSync(target)) report(file, raw, "missing referenced path");
+}
+
+function isLegacyMigrationCandidatePath(file, candidate) {
+  const relative = path.relative(root, file);
+  return (
+    relative.startsWith(path.join("workspace", "legacy-migration") + path.sep) &&
+    /^contract\/registry\/domains\/[A-Za-z0-9_.-]+\/domain\.yaml$/.test(candidate)
+  );
 }
 
 function checkLegacyCompatibilityPages() {

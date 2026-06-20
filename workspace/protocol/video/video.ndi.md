@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "video.getNdiCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "encoder-main"
   }
 }
 ```
@@ -104,10 +101,12 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "video.ndi",
+    "discoveryModes": [
+      "mdns"
+    ],
+    "maxSources": 2,
+    "tallySupported": true
   }
 }
 ```
@@ -163,9 +162,11 @@ request:
   "id": 102,
   "method": "video.setNdiConfig",
   "params": {
-    "target": "default",
+    "target": "encoder-main",
     "config": {
-      "enabled": true
+      "enabled": true,
+      "sourceName": "Room-101 Main",
+      "discoveryMode": "mdns"
     }
   }
 }
@@ -181,7 +182,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "enabled": true,
+      "sourceName": "Room-101 Main",
+      "discoveryMode": "mdns"
+    }
   }
 }
 ```
@@ -237,9 +243,10 @@ request:
   "id": 103,
   "method": "video.getNdiConfig",
   "params": {
-    "target": "default",
+    "target": "encoder-main",
     "sections": [
-      "summary"
+      "service",
+      "source"
     ]
   }
 }
@@ -256,8 +263,9 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
+      "enabled": true,
+      "sourceName": "Room-101 Main",
+      "activeReceivers": 1
     }
   }
 }
@@ -314,8 +322,8 @@ request:
   "id": 104,
   "method": "video.resetNdiConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "encoder-main",
+    "reason": "restore_defaults"
   }
 }
 ```
@@ -330,7 +338,11 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "enabled": false,
+      "sourceName": "AXTP Device"
+    }
   }
 }
 ```

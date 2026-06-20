@@ -118,7 +118,7 @@ success:
 | `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
 | `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
-### 3.3 `system.getState`
+### 3.2 `system.getState`
 
 **用途**：查询当前通用运行状态快照。
 
@@ -131,21 +131,21 @@ success:
 | 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-#### 3.3.1 请求参数 Params：`GetSystemStateParams`
+#### 3.2.1 请求参数 Params：`GetSystemStateParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
 | `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
 
-#### 3.3.2 返回结果 Result：`SystemState`
+#### 3.2.2 返回结果 Result：`SystemState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
 | `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
 
-#### 3.3.3 d block 示例
+#### 3.2.3 d block 示例
 
 request:
 
@@ -180,13 +180,13 @@ success:
 }
 ```
 
-#### 3.3.4 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.3.5 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|

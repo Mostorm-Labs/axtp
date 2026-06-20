@@ -84,9 +84,9 @@ request:
   "id": 101,
   "method": "device.getInfo",
   "params": {
-    "target": "default",
+    "target": "root",
     "sections": [
-      "summary"
+      "childrenSummary"
     ]
   }
 }
@@ -102,10 +102,10 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "deviceId": "hub-1",
+    "model": "AXTP-Hub",
+    "childCount": 2,
+    "topologyRevision": 7
   }
 }
 ```
@@ -161,10 +161,8 @@ request:
   "id": 102,
   "method": "device.getTopology",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "root",
+    "depth": 2
   }
 }
 ```
@@ -179,10 +177,15 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "rootId": "hub-1",
+    "topologyRevision": 7,
+    "links": [
+      {
+        "parentId": "hub-1",
+        "childId": "display-1",
+        "relation": "attached"
+      }
+    ]
   }
 }
 ```
@@ -238,10 +241,8 @@ request:
   "id": 103,
   "method": "device.getChildren",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "parentId": "hub-1",
+    "includeOffline": false
   }
 }
 ```
@@ -256,10 +257,19 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "children": [
+      {
+        "childId": "display-1",
+        "kind": "display",
+        "online": true
+      },
+      {
+        "childId": "camera-1",
+        "kind": "camera",
+        "online": true
+      }
+    ],
+    "topologyRevision": 7
   }
 }
 ```
@@ -315,9 +325,10 @@ request:
   "id": 104,
   "method": "device.getChildInfo",
   "params": {
-    "target": "default",
+    "childId": "display-1",
     "sections": [
-      "summary"
+      "identity",
+      "state"
     ]
   }
 }
@@ -333,10 +344,11 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "childId": "display-1",
+    "model": "Display-4K",
+    "firmwareVersion": "1.2.3",
+    "online": true,
+    "parentId": "hub-1"
   }
 }
 ```

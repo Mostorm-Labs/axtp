@@ -89,9 +89,9 @@ request:
   "id": 101,
   "method": "system.getRebootSchedule",
   "params": {
-    "target": "default",
+    "target": "system",
     "sections": [
-      "summary"
+      "rebootSchedule"
     ]
   }
 }
@@ -107,10 +107,16 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "schedules": [
+      {
+        "scheduleId": "reboot-nightly",
+        "enabled": true,
+        "triggerAt": "2026-06-22T03:00:00Z",
+        "policy": "graceful",
+        "reason": "maintenance"
+      }
+    ],
+    "sampledAt": "2026-06-21T21:00:00Z"
   }
 }
 ```
@@ -166,9 +172,12 @@ request:
   "id": 102,
   "method": "system.setRebootSchedule",
   "params": {
-    "target": "default",
+    "target": "system",
     "config": {
-      "enabled": true
+      "scheduleId": "reboot-nightly",
+      "enabled": true,
+      "triggerAt": "2026-06-22T03:00:00Z",
+      "policy": "graceful"
     }
   }
 }
@@ -184,7 +193,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "scheduleId": "reboot-nightly",
+      "enabled": true,
+      "pendingAction": "reboot"
+    }
   }
 }
 ```
@@ -240,7 +254,8 @@ request:
   "id": 103,
   "method": "system.cancelRebootSchedule",
   "params": {
-    "target": "default",
+    "target": "system",
+    "scheduleId": "reboot-nightly",
     "reason": "user_request"
   }
 }
@@ -256,7 +271,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "cancel-reboot-nightly"
   }
 }
 ```
@@ -312,9 +328,9 @@ request:
   "id": 104,
   "method": "system.getShutdownSchedule",
   "params": {
-    "target": "default",
+    "target": "system",
     "sections": [
-      "summary"
+      "shutdownSchedule"
     ]
   }
 }
@@ -330,10 +346,15 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "schedules": [
+      {
+        "scheduleId": "shutdown-weekend",
+        "enabled": false,
+        "triggerAt": "2026-06-27T22:00:00Z",
+        "policy": "graceful"
+      }
+    ],
+    "sampledAt": "2026-06-21T21:00:00Z"
   }
 }
 ```
@@ -389,9 +410,12 @@ request:
   "id": 105,
   "method": "system.setShutdownSchedule",
   "params": {
-    "target": "default",
+    "target": "system",
     "config": {
-      "enabled": true
+      "scheduleId": "shutdown-weekend",
+      "enabled": true,
+      "triggerAt": "2026-06-27T22:00:00Z",
+      "policy": "graceful"
     }
   }
 }
@@ -407,7 +431,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "scheduleId": "shutdown-weekend",
+      "enabled": true,
+      "pendingAction": "shutdown"
+    }
   }
 }
 ```
@@ -463,8 +492,9 @@ request:
   "id": 106,
   "method": "system.cancelShutdownSchedule",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "system",
+    "scheduleId": "shutdown-weekend",
+    "reason": "operator_cancelled"
   }
 }
 ```
@@ -479,7 +509,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "cancel-shutdown-weekend"
   }
 }
 ```
@@ -499,7 +530,7 @@ success:
 | `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
 | `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
-### 3.8 `system.getLifecycleState`
+### 3.7 `system.getLifecycleState`
 
 **用途**：原草案中出现的候选方法。
 
@@ -512,19 +543,97 @@ success:
 | 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-#### 3.8.1 请求参数 Params：`GetLifecycleStateParams`
+#### 3.7.1 请求参数 Params：`GetLifecycleStateParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
 | `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
 
-#### 3.8.2 返回结果 Result：`LifecycleState`
+#### 3.7.2 返回结果 Result：`LifecycleState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
 | `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+
+#### 3.7.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 107,
+  "method": "system.getLifecycleState",
+  "params": {
+    "target": "system",
+    "sections": [
+      "runtime",
+      "pendingAction"
+    ]
+  }
+}
+```
+
+success:
+
+```json
+{
+  "id": 107,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "lifecycleState": "running",
+    "uptimeSeconds": 86400,
+    "pendingAction": null,
+    "sampledAt": "2026-06-21T21:00:00Z"
+  }
+}
+```
+
+#### 3.7.4 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.7.5 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+### 3.8 `system.reboot`
+
+**用途**：原草案示例中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | action |
+| Params Schema | `RebootParams` |
+| Result Schema | `LifecycleActionResult` |
+| 是否触发事件 | 是，状态实际变化后触发 `system.lifecycleStateChanged`。 |
+| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
+
+#### 3.8.1 请求参数 Params：`RebootParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
+| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
+
+#### 3.8.2 返回结果 Result：`LifecycleActionResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
 
 #### 3.8.3 d block 示例
 
@@ -533,12 +642,12 @@ request:
 ```json
 {
   "id": 108,
-  "method": "system.getLifecycleState",
+  "method": "system.reboot",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "system",
+    "delaySeconds": 30,
+    "policy": "graceful",
+    "reason": "firmware_update_complete"
   }
 }
 ```
@@ -553,10 +662,8 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "accepted": true,
+    "actionId": "reboot-20260621-001"
   }
 }
 ```
@@ -565,7 +672,7 @@ success:
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
-| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+| `system.lifecycleStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `LifecycleStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
 #### 3.8.5 错误
 
@@ -576,20 +683,20 @@ success:
 | `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
 | `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
-### 3.9 `system.reboot`
+### 3.9 `system.shutdown`
 
 **用途**：原草案示例中出现的候选方法。
 
 | 项 | 内容 |
 |---|---|
 | 调用类型 | action |
-| Params Schema | `RebootParams` |
+| Params Schema | `ShutdownParams` |
 | Result Schema | `LifecycleActionResult` |
 | 是否触发事件 | 是，状态实际变化后触发 `system.lifecycleStateChanged`。 |
 | 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
 
-#### 3.9.1 请求参数 Params：`RebootParams`
+#### 3.9.1 请求参数 Params：`ShutdownParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -610,10 +717,12 @@ request:
 ```json
 {
   "id": 109,
-  "method": "system.reboot",
+  "method": "system.shutdown",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "system",
+    "delaySeconds": 60,
+    "policy": "graceful",
+    "reason": "scheduled_maintenance"
   }
 }
 ```
@@ -628,7 +737,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "shutdown-20260621-001"
   }
 }
 ```
@@ -640,78 +750,6 @@ success:
 | `system.lifecycleStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `LifecycleStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
 #### 3.9.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
-
-### 3.10 `system.shutdown`
-
-**用途**：原草案示例中出现的候选方法。
-
-| 项 | 内容 |
-|---|---|
-| 调用类型 | action |
-| Params Schema | `ShutdownParams` |
-| Result Schema | `LifecycleActionResult` |
-| 是否触发事件 | 是，状态实际变化后触发 `system.lifecycleStateChanged`。 |
-| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
-| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
-
-#### 3.10.1 请求参数 Params：`ShutdownParams`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
-| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
-
-#### 3.10.2 返回结果 Result：`LifecycleActionResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
-| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
-
-#### 3.10.3 d block 示例
-
-request:
-
-```json
-{
-  "id": 110,
-  "method": "system.shutdown",
-  "params": {
-    "target": "default",
-    "reason": "user_request"
-  }
-}
-```
-
-success:
-
-```json
-{
-  "id": 110,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "accepted": true
-  }
-}
-```
-
-#### 3.10.4 可能触发的事件
-
-| Event | 触发条件 | Payload Schema | 客户端处理建议 |
-|---|---|---|---|
-| `system.lifecycleStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `LifecycleStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
-
-#### 3.10.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|

@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "video.getRtspCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "encoder-main"
   }
 }
 ```
@@ -104,10 +101,16 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "video.rtsp",
+    "maxSessions": 4,
+    "authModes": [
+      "none",
+      "basic"
+    ],
+    "profiles": [
+      "main",
+      "sub"
+    ]
   }
 }
 ```
@@ -163,9 +166,12 @@ request:
   "id": 102,
   "method": "video.setRtspConfig",
   "params": {
-    "target": "default",
+    "target": "encoder-main",
     "config": {
-      "enabled": true
+      "enabled": true,
+      "port": 8554,
+      "path": "/live/main",
+      "authMode": "basic"
     }
   }
 }
@@ -181,7 +187,11 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "enabled": true,
+      "uri": "rtsp://192.0.2.10:8554/live/main"
+    }
   }
 }
 ```
@@ -237,9 +247,10 @@ request:
   "id": 103,
   "method": "video.getRtspConfig",
   "params": {
-    "target": "default",
+    "target": "encoder-main",
     "sections": [
-      "summary"
+      "service",
+      "auth"
     ]
   }
 }
@@ -256,8 +267,10 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
+      "enabled": true,
+      "port": 8554,
+      "path": "/live/main",
+      "activeSessions": 1
     }
   }
 }
@@ -314,8 +327,8 @@ request:
   "id": 104,
   "method": "video.resetRtspConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "encoder-main",
+    "reason": "restore_defaults"
   }
 }
 ```
@@ -330,7 +343,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "enabled": false,
+      "port": 8554,
+      "path": "/live/main"
+    }
   }
 }
 ```

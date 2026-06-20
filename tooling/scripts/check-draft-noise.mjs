@@ -191,6 +191,66 @@ function lineNumber(text, offset) {
   return text.slice(0, offset).split(/\r?\n/).length;
 }
 
+function checkMethodNumbering(file, relative, text) {
+  if (file === protocolDraftTemplate) return;
+  const lines = text.split(/\r?\n/);
+  let sawOverview = false;
+  let expectedMethod = 0;
+  let currentMethod = null;
+  let expectedSubsection = null;
+
+  lines.forEach((line, index) => {
+    const h2Match = line.match(/^## (\d+)\./);
+    if (h2Match && Number(h2Match[1]) !== 3) {
+      currentMethod = null;
+      expectedSubsection = null;
+    }
+
+    const methodMatch = line.match(/^### 3\.(\d+)\s+(.*)$/);
+    if (methodMatch) {
+      const methodNumber = Number(methodMatch[1]);
+      if (methodNumber === 0) {
+        if (sawOverview) {
+          errors.push(`${relative}:${index + 1}: duplicate Methods overview heading 3.0`);
+        }
+        sawOverview = true;
+        expectedMethod = 1;
+        currentMethod = 0;
+        expectedSubsection = null;
+        return;
+      }
+
+      if (!sawOverview) {
+        errors.push(`${relative}:${index + 1}: Methods section must include 3.0 overview before 3.${methodNumber}`);
+        expectedMethod = methodNumber + 1;
+      } else if (methodNumber !== expectedMethod) {
+        errors.push(`${relative}:${index + 1}: method headings must be consecutive; expected 3.${expectedMethod}, found 3.${methodNumber}`);
+        expectedMethod = methodNumber + 1;
+      } else {
+        expectedMethod += 1;
+      }
+      currentMethod = methodNumber;
+      expectedSubsection = 1;
+      return;
+    }
+
+    const subsectionMatch = line.match(/^#### 3\.(\d+)\.(\d+)\s+(.*)$/);
+    if (!subsectionMatch) return;
+
+    const methodNumber = Number(subsectionMatch[1]);
+    const subsectionNumber = Number(subsectionMatch[2]);
+    if (currentMethod === null || currentMethod === 0) {
+      errors.push(`${relative}:${index + 1}: method subsection 3.${methodNumber}.${subsectionNumber} appears outside a method heading`);
+    } else if (methodNumber !== currentMethod) {
+      errors.push(`${relative}:${index + 1}: method subsection belongs to 3.${methodNumber}, but current method heading is 3.${currentMethod}`);
+    }
+    if (expectedSubsection !== null && subsectionNumber !== expectedSubsection) {
+      errors.push(`${relative}:${index + 1}: method subsections must be consecutive; expected 3.${currentMethod}.${expectedSubsection}, found 3.${methodNumber}.${subsectionNumber}`);
+    }
+    expectedSubsection = subsectionNumber + 1;
+  });
+}
+
 for (const file of files) {
   if (shouldSkip(file)) continue;
   const relative = path.relative(root, file);
@@ -220,6 +280,7 @@ for (const file of files) {
       }
     }
   });
+  checkMethodNumbering(file, relative, text);
   checkMethodExampleCoverage(file, relative, text);
 }
 

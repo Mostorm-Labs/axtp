@@ -28,6 +28,7 @@ for (let index = 0; index < args.length; index += 1) {
 const root = path.resolve(rootArg ?? process.cwd());
 const protocolRoot = path.join(root, "workspace", "protocol");
 const generatedPath = path.join(root, "contract", "generated", "protocol.json");
+const domainStatusPath = path.join(root, "docs", "product", "domain-status.md");
 
 function usage(exitCode) {
   console.error("Usage: node tooling/scripts/report-protocol-draft-health.mjs [root] [--write PATH] [--check PATH] [--json]");
@@ -101,9 +102,32 @@ function generatedDomainCounts() {
   return counts;
 }
 
+function productPriorities() {
+  const priorities = new Map();
+  if (!fs.existsSync(domainStatusPath)) return priorities;
+  const text = fs.readFileSync(domainStatusPath, "utf8");
+  const rows = text.matchAll(/^\|\s*([a-z][a-z0-9]*)\s*\|\s*\d+\s*\|\s*[^|]*\|\s*\d+\s*\|\s*([^|]+?)\s*\|/gm);
+  for (const match of rows) {
+    priorities.set(match[1], match[2].trim());
+  }
+  return priorities;
+}
+
+function priorityRank(priority) {
+  if (!priority) return 99;
+  if (/P0/.test(priority)) return 0;
+  const numbered = priority.match(/P(\d+)(b)?/);
+  if (numbered) return Number(numbered[1]) + (numbered[2] ? 0.5 : 0);
+  if (/旁路高覆盖/.test(priority)) return 1.8;
+  if (/待排期/.test(priority)) return 20;
+  return 50;
+}
+
 function emptyDomainStats(domain) {
   return {
     domain,
+    priority: "",
+    priorityRank: 99,
     drafts: 0,
     generatedDrafts: 0,
     generatedFacts: 0,
@@ -124,11 +148,14 @@ function emptyDomainStats(domain) {
 
 function analyze() {
   const generatedCounts = generatedDomainCounts();
+  const priorities = productPriorities();
   const domains = new Map();
   const files = [];
 
   for (const [domain, count] of generatedCounts) {
     const stats = emptyDomainStats(domain);
+    stats.priority = priorities.get(domain) ?? "";
+    stats.priorityRank = priorityRank(stats.priority);
     stats.generatedFacts = count;
     domains.set(domain, stats);
   }
@@ -139,6 +166,8 @@ function analyze() {
     const { text, data } = readFrontmatter(file);
     const domain = data.domain || path.relative(protocolRoot, file).split(path.sep)[0];
     const stats = domains.get(domain) ?? emptyDomainStats(domain);
+    stats.priority ||= priorities.get(domain) ?? "";
+    stats.priorityRank = priorityRank(stats.priority);
     domains.set(domain, stats);
 
     const methods = countMatches(text, /^### 3\.\d+ `/gm);
@@ -147,6 +176,8 @@ function analyze() {
     const fileStats = {
       file: relative,
       domain,
+      priority: priorities.get(domain) ?? "",
+      priorityRank: priorityRank(priorities.get(domain) ?? ""),
       feature: data.feature ?? "",
       status: data.status ?? "",
       generated: boolValue(data.generated),
@@ -240,6 +271,20 @@ function renderMarkdown(report) {
     )
     .slice(0, 30);
 
+  const priorityQueue = report.files
+    .filter((file) => file.genericExampleHints > 0 || file.reviewAsk > 0 || file.reviewFix > 0 || file.reviewBlocker > 0)
+    .sort(
+      (a, b) =>
+        a.priorityRank - b.priorityRank ||
+        b.generated - a.generated ||
+        b.genericExampleHints - a.genericExampleHints ||
+        b.reviewBlocker - a.reviewBlocker ||
+        b.reviewFix - a.reviewFix ||
+        b.reviewAsk - a.reviewAsk ||
+        b.lines - a.lines,
+    )
+    .slice(0, 30);
+
   return `# AXTP Protocol Draft Health
 
 本页是产品和协议维护者查看草案健康度、示例质量和待确认问题密度的报告。它不是 runtime 实现合同；可实现事实仍以 \`contract/**\`、\`specs/**\` 和 \`conformance/**\` 为准。
@@ -274,15 +319,25 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 
 ## Domain Health Matrix
 
-| Domain | Drafts | Generated Drafts | Generated Facts | Methods | Example Coverage | Review Markers | Generic Example Hints | Focus |
-|---|---:|---:|---:|---:|---:|---|---:|---|
+| Domain | Priority | Drafts | Generated Drafts | Generated Facts | Methods | Example Coverage | Review Markers | Generic Example Hints | Focus |
+|---|---|---:|---:|---:|---:|---:|---|---:|---|
 ${report.domains
-  .map((domain) => `| ${domain.domain} | ${domain.drafts} | ${domain.generatedDrafts} | ${domain.generatedFacts} | ${domain.methods} | ${domain.compactExamples}/${domain.methods} | ${reviewSummary(domain)} | ${domain.genericExampleHints} | ${focus(domain)} |`)
+  .map((domain) => `| ${domain.domain} | ${domain.priority || "未排期"} | ${domain.drafts} | ${domain.generatedDrafts} | ${domain.generatedFacts} | ${domain.methods} | ${domain.compactExamples}/${domain.methods} | ${reviewSummary(domain)} | ${domain.genericExampleHints} | ${focus(domain)} |`)
   .join("\n")}
 
-## Example Tuning Queue
+## Product Priority Tuning Queue
 
-这些文件不是错误；它们只是含有较多机械示例或未决标记，适合下一轮人工把示例改得更贴近真实业务。
+这张表按产品优先级排序，用于决定下一轮先人工调哪些草案。
+
+| File | Priority | Domain | Methods | Generic Example Hints | Review Markers | Lines |
+|---|---|---|---:|---:|---|---:|
+${priorityQueue
+  .map((file) => `| \`${file.file}\` | ${file.priority || "未排期"} | ${file.domain} | ${file.methods} | ${file.genericExampleHints} | ASK ${file.reviewAsk} / DRAFT ${file.reviewDraft} / FIX ${file.reviewFix} / BLOCKER ${file.reviewBlocker} | ${file.lines} |`)
+  .join("\n")}
+
+## Mechanical Example Tuning Queue
+
+这张表按机械示例密度排序。它不是产品优先级，只用于找到模板味最重的草案。
 
 | File | Domain | Methods | Generic Example Hints | Review Markers | Lines |
 |---|---|---:|---:|---|---:|

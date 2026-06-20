@@ -89,7 +89,9 @@ request:
   "id": 101,
   "method": "audio.startRecording",
   "params": {
-    "target": "default",
+    "target": "mic-array",
+    "profile": "meeting",
+    "container": "wav",
     "reason": "user_request"
   }
 }
@@ -105,7 +107,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "recording-20260621-001"
   }
 }
 ```
@@ -161,7 +164,8 @@ request:
   "id": 102,
   "method": "audio.stopRecording",
   "params": {
-    "target": "default",
+    "target": "mic-array",
+    "recordingId": "recording-20260621-001",
     "reason": "user_request"
   }
 }
@@ -177,7 +181,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "fileId": "audio-file-001"
   }
 }
 ```
@@ -233,8 +238,9 @@ request:
   "id": 103,
   "method": "audio.cancelRecording",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "mic-array",
+    "recordingId": "recording-20260621-001",
+    "reason": "discard_test_take"
   }
 }
 ```
@@ -249,7 +255,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "discarded": true
   }
 }
 ```
@@ -305,9 +312,10 @@ request:
   "id": 104,
   "method": "audio.getRecordingState",
   "params": {
-    "target": "default",
+    "target": "mic-array",
     "sections": [
-      "summary"
+      "runtime",
+      "file"
     ]
   }
 }
@@ -323,10 +331,10 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "recordingId": "recording-20260621-001",
+    "state": "recording",
+    "elapsedMs": 120000,
+    "outputFileId": "audio-file-001"
   }
 }
 ```
@@ -382,8 +390,9 @@ request:
   "id": 105,
   "method": "stream.open",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "profile": "audio.recording",
+    "target": "mic-array",
+    "direction": "device_to_host"
   }
 }
 ```
@@ -398,6 +407,7 @@ success:
     "code": 0
   },
   "result": {
+    "streamId": "stream-audio-recording-1",
     "accepted": true
   }
 }
@@ -454,9 +464,9 @@ request:
   "id": 106,
   "method": "file.getInfo",
   "params": {
-    "target": "default",
+    "fileId": "audio-file-001",
     "sections": [
-      "summary"
+      "metadata"
     ]
   }
 }
@@ -472,10 +482,10 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "fileId": "audio-file-001",
+    "sizeBytes": 5242880,
+    "mediaType": "audio/wav",
+    "durationMs": 120000
   }
 }
 ```
@@ -531,8 +541,8 @@ request:
   "id": 107,
   "method": "file.download",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "fileId": "audio-file-001",
+    "transferMode": "stream"
   }
 }
 ```
@@ -547,7 +557,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "streamId": "stream-file-audio-001"
   }
 }
 ```
@@ -603,8 +614,8 @@ request:
   "id": 108,
   "method": "file.delete",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "fileId": "audio-file-001",
+    "reason": "retention_policy"
   }
 }
 ```
@@ -619,7 +630,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "deleted": true
   }
 }
 ```
@@ -675,10 +687,7 @@ request:
   "id": 109,
   "method": "audio.getRecordingCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "mic-array"
   }
 }
 ```
@@ -693,10 +702,13 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "audio.recording",
+    "containers": [
+      "wav",
+      "aac"
+    ],
+    "maxDurationSeconds": 7200,
+    "streamDownloadSupported": true
   }
 }
 ```

@@ -84,9 +84,9 @@ request:
   "id": 101,
   "method": "device.getInfo",
   "params": {
-    "target": "default",
+    "target": "root",
     "sections": [
-      "summary"
+      "capabilitySummary"
     ]
   }
 }
@@ -102,10 +102,14 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "registryRevision": 42,
+    "capabilityCount": 18,
+    "domains": [
+      "device",
+      "network",
+      "audio",
+      "video"
+    ]
   }
 }
 ```
@@ -125,7 +129,7 @@ success:
 | `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
 | `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
-### 3.3 `capability.getRegistry`
+### 3.2 `capability.getRegistry`
 
 **用途**：原草案中出现的候选方法。
 
@@ -138,7 +142,90 @@ success:
 | 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-#### 3.3.1 请求参数 Params：`GetCapabilityRegistryParams`
+#### 3.2.1 请求参数 Params：`GetCapabilityRegistryParams`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
+| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+
+#### 3.2.2 返回结果 Result：`CapabilityRegistry`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+
+#### 3.2.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 102,
+  "method": "capability.getRegistry",
+  "params": {
+    "includeMethods": true,
+    "includeEvents": true
+  }
+}
+```
+
+success:
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "registryRevision": 42,
+    "capabilities": [
+      {
+        "capability": "network.wifi",
+        "methods": [
+          "network.getWifiState"
+        ],
+        "events": [
+          "network.wifiStateChanged"
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### 3.2.4 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.2.5 错误
+
+| 错误 | 场景 | 返回建议 |
+|---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
+
+### 3.3 `capability.getDomainRegistry`
+
+**用途**：原草案中出现的候选方法。
+
+| 项 | 内容 |
+|---|---|
+| 调用类型 | query |
+| Params Schema | `GetDomainRegistryParams` |
+| Result Schema | `CapabilityRegistry` |
+| 是否触发事件 | 否 |
+| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
+| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
+
+#### 3.3.1 请求参数 Params：`GetDomainRegistryParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -159,12 +246,10 @@ request:
 ```json
 {
   "id": 103,
-  "method": "capability.getRegistry",
+  "method": "capability.getDomainRegistry",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "domain": "network",
+    "includeFeatures": true
   }
 }
 ```
@@ -179,10 +264,14 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "domain": "network",
+    "features": [
+      "network.interface",
+      "network.ip",
+      "network.wifi",
+      "network.ap"
+    ],
+    "registryRevision": 42
   }
 }
 ```
@@ -202,27 +291,27 @@ success:
 | `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
 | `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
-### 3.4 `capability.getDomainRegistry`
+### 3.4 `capability.getFeatureRegistry`
 
 **用途**：原草案中出现的候选方法。
 
 | 项 | 内容 |
 |---|---|
 | 调用类型 | query |
-| Params Schema | `GetDomainRegistryParams` |
-| Result Schema | `CapabilityRegistry` |
+| Params Schema | `GetFeatureRegistryParams` |
+| Result Schema | `GetFeatureRegistryResult` |
 | 是否触发事件 | 否 |
 | 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-#### 3.4.1 请求参数 Params：`GetDomainRegistryParams`
+#### 3.4.1 请求参数 Params：`GetFeatureRegistryParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
 | `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
 
-#### 3.4.2 返回结果 Result：`CapabilityRegistry`
+#### 3.4.2 返回结果 Result：`GetFeatureRegistryResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -236,12 +325,9 @@ request:
 ```json
 {
   "id": 104,
-  "method": "capability.getDomainRegistry",
+  "method": "capability.getFeatureRegistry",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "capability": "network.wifi"
   }
 }
 ```
@@ -256,10 +342,15 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "network.wifi",
+    "supported": true,
+    "methods": [
+      "network.getWifiCapabilities",
+      "network.getWifiState"
+    ],
+    "events": [
+      "network.wifiStateChanged"
+    ]
   }
 }
 ```
@@ -271,83 +362,6 @@ success:
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
 #### 3.4.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
-
-### 3.5 `capability.getFeatureRegistry`
-
-**用途**：原草案中出现的候选方法。
-
-| 项 | 内容 |
-|---|---|
-| 调用类型 | query |
-| Params Schema | `GetFeatureRegistryParams` |
-| Result Schema | `GetFeatureRegistryResult` |
-| 是否触发事件 | 否 |
-| 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
-| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
-
-#### 3.5.1 请求参数 Params：`GetFeatureRegistryParams`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
-
-#### 3.5.2 返回结果 Result：`GetFeatureRegistryResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
-
-#### 3.5.3 d block 示例
-
-request:
-
-```json
-{
-  "id": 105,
-  "method": "capability.getFeatureRegistry",
-  "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
-  }
-}
-```
-
-success:
-
-```json
-{
-  "id": 105,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
-  }
-}
-```
-
-#### 3.5.4 可能触发的事件
-
-| Event | 触发条件 | Payload Schema | 客户端处理建议 |
-|---|---|---|---|
-| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
-
-#### 3.5.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
