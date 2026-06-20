@@ -47,8 +47,8 @@ GitHub Release body 应包含：
 
 1. 确认 `spec-release-dispatch` workflow 已向所有真实 runtime/mock 仓库发送 `axtp_spec_released`。
 2. 确认每个 runtime/tool 仓库打开或更新了 `automation/upgrade-axtp-spec-vX.Y.Z`。
-3. 确认每个升级 PR 更新了 `AXTP_SPEC.lock.yaml`、runtime/tool 版本文件、生成代码和 `generated/axtp_generated_manifest.json`。
-4. 确认每个 generated manifest 记录 AXTP Spec `X.Y.Z` 和 runtime/tool version `X.Y.Z.0`。
+3. 确认每个升级 PR 更新了 `AXTP_SPEC.lock.yaml`、runtime/tool 版本文件、生成代码和 runtime release metadata。
+4. 确认每个 runtime generated manifest 或 release metadata 记录 AXTP Spec `X.Y.Z` 和 runtime/tool version `X.Y.Z.0`。
 5. 确认每个自动化 PR 只在检查通过后 auto-merge。
 6. 确认每个 runtime/tool 仓库创建了 `vX.Y.Z.0` 和 GitHub Release。
 7. 不要要求 runtime 依赖 `main`；每个 runtime 依赖都必须指向 tag 或 commit。

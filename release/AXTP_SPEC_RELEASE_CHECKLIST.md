@@ -47,8 +47,8 @@ After the release:
 
 1. Confirm the `spec-release-dispatch` workflow dispatched `axtp_spec_released` to all real runtime/mock repositories.
 2. Confirm each runtime/tool repository opened or updated `automation/upgrade-axtp-spec-vX.Y.Z`.
-3. Confirm each upgrade PR updates `AXTP_SPEC.lock.yaml`, runtime/tool version files, generated code, and `generated/axtp_generated_manifest.json`.
-4. Confirm each generated manifest records AXTP Spec `X.Y.Z` and runtime/tool version `X.Y.Z.0`.
+3. Confirm each upgrade PR updates `AXTP_SPEC.lock.yaml`, runtime/tool version files, generated code, and runtime release metadata.
+4. Confirm each runtime generated manifest or release metadata records AXTP Spec `X.Y.Z` and runtime/tool version `X.Y.Z.0`.
 5. Confirm each automation PR auto-merges only after checks pass.
 6. Confirm each runtime/tool repository creates `vX.Y.Z.0` and a GitHub Release.
 7. Do not ask runtimes to depend on `main`; every runtime dependency must point to a tag or commit.

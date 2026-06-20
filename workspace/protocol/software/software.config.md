@@ -723,18 +723,7 @@ Capability name: `software.config`。
 
 ---
 
-## 10. Registry / Conformance 状态
-
-| 项 | 状态 |
-|---|---|
-| Registry YAML | not written |
-| Generated docs | not generated |
-| Method / event IDs | `TBD after adoption` |
-| Conformance | 需覆盖 get/set/reset 一致性、target 不支持、字段值校验、配置变化事件。 |
-
----
-
-## 11. 测试要点
+## 10. 测试要点
 
 - `software.getConfig(target: "launcher")` / `software.setConfig(target: "launcher")` 配置 get/set 一致。
 - `software.setConfig` partial update 语义验证：只传 `appearance.panelLayout`，`displayName`、`appearance.autoHidePanel` 和 `appearance.autoHideDelay` 保持不变。
@@ -749,7 +738,7 @@ Capability name: `software.config`。
 
 ---
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | Issue | Impact | Current recommendation | Status |
 |---|---|---|---|

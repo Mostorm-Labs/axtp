@@ -1433,17 +1433,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | VM33 `Wifi.ConnectWifi` / `Wifi.ConnectWif` | `network.connectWifi` | `[REVIEW-DRAFT]` | 字段线索：`SSID` -> `profile.ssid`，`key` -> `profile.credential.value`。 |
 | VM33 `Config.Subscribe:Wifi` | `network.wifiConfigChanged` | `[REVIEW-ASK]` | 需确认事件 payload。 |
 
-## 10. Registry / Conformance 状态
-
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | source adopted | 已写入 `../../../../contract/registry/domains/network/domain.yaml`。 |
-| generated | true | 已运行 `generate-axtp-protocol`，刷新 `contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**`。 |
-| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
-| registry readiness | ready | network.wifi P0/confirmed subset 已写入 registry source；profile 持久化默认、forget/reset 和 legacyRefs 仍保留待确认。 |
-| conformance | needed | 采纳后需要覆盖 profile 保存、默认立即连接、事件分层、敏感字段脱敏和失败原因。 |
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -1454,7 +1444,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | compatibility | 旧 `TailWiFiSSID` 只可映射 SSID，不能隐含完整 credential。 |
 | pairing path | Wi-Fi `connected` 后，IP ready 由 `network.ip` 决定是否继续验收。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

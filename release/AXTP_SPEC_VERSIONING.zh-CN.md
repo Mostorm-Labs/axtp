@@ -1,6 +1,6 @@
 # AXTP Spec 版本管理
 
-AXTP 使用 Git Tag 和 GitHub Release 发布不可变的协议标准版本。AXTP 主仓库是协议标准的唯一真源，包含文本规范、registry YAML、schema、生成后的协议参考、conformance 材料、迁移说明和发布文档。
+AXTP 使用 Git Tag 和 GitHub Release 发布不可变的协议标准版本。AXTP 主仓库是协议标准的唯一真源，包含文本规范、registry YAML、Protocol IR、生成后的协议参考、conformance 材料、产品指南、发布文档和 artifact manifest。
 
 Runtime 仓库只实现某个明确的 AXTP Spec 版本。Runtime 不应重新定义协议事实，也不应依赖 `main` 分支来构建可复现版本。
 

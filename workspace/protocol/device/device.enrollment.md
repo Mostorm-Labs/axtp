@@ -688,18 +688,7 @@ Capability name: `device.enrollment`。
 
 ---
 
-## 10. Registry / Conformance 状态
-
-| 项 | 状态 |
-|---|---|
-| Registry YAML | not written |
-| Generated docs | not generated |
-| Method / event IDs | `TBD after adoption` |
-| Conformance | 需覆盖 pairing code TTL、状态查询、状态变更事件、解绑权限、legacy `expiresInSeconds`。 |
-
----
-
-## 11. 测试要点
+## 10. 测试要点
 
 - `device.getPairingCode` 返回 `code`、`expiresAt`、`expiresInSeconds`。`expiresInSeconds` 不可省略。
 - `device.getEnrollmentState` 未纳管时返回 `state: "unmanaged"`；已纳管时返回 `state: "enrolled"` + endpoint。
@@ -710,7 +699,7 @@ Capability name: `device.enrollment`。
 
 ---
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | Issue | Impact | Current recommendation | Status |
 |---|---|---|---|

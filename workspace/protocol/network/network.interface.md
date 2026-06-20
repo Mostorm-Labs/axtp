@@ -560,17 +560,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | Rooms `GetMacAddr` | `network.getInterfaceInfo` | `[REVIEW-ASK]` | 需确认是否映射到默认 `interfaceId`。 |
 | Rooms `SetMacAddr` | future `network.setInterfaceConfig` | `[REVIEW-ASK]` | 需确认权限、持久化和状态码。 |
 
-## 10. Registry / Conformance 状态
-
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | source adopted | 已写入 `../../../../contract/registry/domains/network/domain.yaml`。 |
-| generated | true | 已运行 `generate-axtp-protocol`，刷新 `contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**`。 |
-| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
-| registry readiness | ready | network.interface P0/confirmed subset 已写入 registry source；MAC 策略和 legacyRefs 仍保留待确认。 |
-| conformance | needed | 采纳后需要覆盖接口发现、默认接口、事件去重和错误路径。 |
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -581,7 +571,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | error case | `interfaceId` 不存在、非法 role filter、权限不足。 |
 | compatibility | 旧 MAC 查询可迁移到 `network.getInterfaceInfo`，MAC 写入暂缓。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

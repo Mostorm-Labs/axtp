@@ -1207,17 +1207,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | AXDP / Rooms / VM33 / Signage audio stream 条目 | `audio.stream`、`audio.recording` 或 `audio.playback` | `[REVIEW-ASK]` | 需按业务语义区分实时播放、录制和本地播放。 |
 | NA20/NT10 private wireless cast | `audio.openStream(source=wireless_cast_audio)` + `audio.streamSourceStateChanged` | `[REVIEW-DRAFT]` | NT10->NA20 无线协议不进入 AXTP wire。 |
 
-## 10. Registry / Conformance 状态
-
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | source adopted | 已写入 `../../../../contract/registry/domains/audio/domain.yaml`。 |
-| generated | true | 已运行 `generate-axtp-protocol`，刷新 `contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**`。 |
-| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
-| registry readiness | ready | audio.stream P0/confirmed subset 已写入 registry source；AAC transportFormat 和 legacy 映射仍保留待确认。 |
-| conformance | needed | 需覆盖 producer-open、receiver-pull、rejected fallback、close 解耦、AAC 透传和 hard-disconnect。 |
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -1228,7 +1218,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | error case | source unavailable、codec/transportFormat unsupported、PCM fallback unsupported、receiver not ready、session lost。 |
 | compatibility | `stream.open` 不作为音频业务建流入口；`audio.recording` 不表达投屏播放音频。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

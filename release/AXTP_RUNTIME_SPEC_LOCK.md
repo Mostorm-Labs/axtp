@@ -115,7 +115,7 @@ Long term, AXTP may publish a machine-readable spec package:
 @mostorm/axtp-spec
 ```
 
-That package should contain machine-readable spec material such as `contract/registry/`, schemas, generated TypeScript metadata, and test/conformance assets. Runtime packages can then declare:
+That package should contain the same consumable contract shape as the spec release artifact: `contract/`, `specs/`, `conformance/`, role/product docs, release docs, changelog, and manifest. Runtime packages can then declare:
 
 ```json
 {
@@ -152,7 +152,7 @@ Long term, AXTP may publish a Dart package:
 axtp_spec
 ```
 
-That package can contain generated Dart types, schema metadata, capability registry data, and conformance fixtures.
+That package can contain generated Dart types derived from the locked spec, schema and capability metadata, and conformance cases.
 
 ## Submodule Boundaries
 

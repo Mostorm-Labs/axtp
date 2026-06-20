@@ -666,18 +666,7 @@ Capability name: `software.updatePolicy`。
 
 ---
 
-## 10. Registry / Conformance 状态
-
-| 项 | 状态 |
-|---|---|
-| Registry YAML | not written |
-| Generated docs | not generated |
-| Method / event IDs | `TBD after adoption` |
-| Conformance | 需覆盖 get/set/reset 一致性、target 不支持、非法 channel、跨日 window、事件校准。 |
-
----
-
-## 11. 测试要点
+## 10. 测试要点
 
 - `software.getUpdatePolicy(target: "launcher")` / `software.setUpdatePolicy(target: "launcher")` 策略 get/set 一致。
 - `software.setUpdatePolicy` partial update 语义验证：只传 `channel`，其余字段保持不变。
@@ -688,7 +677,7 @@ Capability name: `software.updatePolicy`。
 
 ---
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | Issue | Impact | Current recommendation | Status |
 |---|---|---|---|

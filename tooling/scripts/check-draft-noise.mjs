@@ -83,6 +83,10 @@ const bannedLinePatterns = [
     pattern: /^\|\s*conformance\s*\|\s*missing\s*\|\s*需覆盖 /,
     reason: "fixed conformance status table belongs in draft-conventions.md unless it carries adopted case IDs",
   },
+  {
+    pattern: /^## 10\. Registry \/ Conformance 状态$/,
+    reason: "generic registry/conformance status belongs in frontmatter and product domain status, not each draft",
+  },
 ];
 
 const templateOnlyBannedLinePatterns = [

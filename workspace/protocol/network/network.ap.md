@@ -1346,17 +1346,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | VM33 `Config.Set:APInfo` | `network.setApConfig` | `[REVIEW-DRAFT]` | `Ssid` 和 `Password` 可映射到 AP config；是否立即重启 AP 待确认。 |
 | VM33 `Wifi.OpenApService` / `Wifi.openApService` | optional `network.startAp` + possible `network.setApConfig` | `[REVIEW-DRAFT]` | 旧 payload 同时带 `Password`、`FreqBand`、`Retransmit`；新协议中 AP 默认开启，开关低优先级。 |
 
-## 10. Registry / Conformance 状态
-
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | source adopted | 已写入 `../../../../contract/registry/domains/network/domain.yaml`。 |
-| generated | true | 已运行 `generate-axtp-protocol`，刷新 `contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**`。 |
-| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
-| registry readiness | ready | network.ap P0/confirmed subset 已写入 registry source；客户端列表和 DHCP Server 地址池仍保留待确认。 |
-| conformance | needed | 采纳后需要覆盖凭据导出、配置写入、AP 默认开启、状态事件和敏感字段脱敏。 |
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -1368,7 +1358,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | compatibility | VM33 `APInfo` / `OpenApService` 字段可迁移，但旧 `Retransmit` 暂不进入 MVP。 |
 | pairing path | Host 用 AP config 组装 NT10 Wi-Fi profile；AP 本端 IP 和客户端列表仅作为可选验收。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

@@ -846,17 +846,7 @@ Response:
 | Rooms / Signage / VM33 | `UpgradeProgress`, `CloudProgress` | `firmware.getUpdateState` or progress/state events | `[REVIEW-DRAFT]` 主动查询和事件订阅均可表达。 |
 | VM33 | `Upgrade.Version` | `firmware.getInfo` in `firmware.info` | `[REVIEW-ASK]` 与 `device.info` 边界需确认。 |
 
-## 10. Registry / Conformance 状态
-
-| Item | Status |
-|---|---|
-| Implementation degree | Generated P0 subset |
-| Registry YAML | Adopted in `../../../../contract/registry/domains/firmware/domain.yaml` |
-| Generated protocol | Generated in `contract/protocol/axtp.protocol.yaml` and `contract/generated/**` |
-| Conformance tests | Not written |
-| Required next route | `tooling/skills/40-amend-adopted-protocol/SKILL.md` for semantic changes; `tooling/skills/50-generate-axtp-protocol/SKILL.md` after YAML changes |
-
-Registry 草案输入摘要：
+## 10. Registry 草案输入摘要
 
 | Fact | P-level | Notes |
 |---|---|---|

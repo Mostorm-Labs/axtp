@@ -1,6 +1,6 @@
 # AXTP Spec Versioning
 
-AXTP uses Git tags and GitHub Releases to publish immutable protocol standard versions. The AXTP repository is the single source of truth for the spec: text specs, registry YAML, schemas, generated protocol references, conformance material, migration notes, and release docs.
+AXTP uses Git tags and GitHub Releases to publish immutable protocol standard versions. The AXTP repository is the single source of truth for the spec: text specs, registry YAML, Protocol IR, generated protocol references, conformance material, product guides, release docs, and the artifact manifest.
 
 Runtime repositories implement AXTP Spec versions. They must not redefine protocol facts, and they must not depend on the `main` branch for reproducible builds.
 

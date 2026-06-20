@@ -8,8 +8,9 @@ build dependency.
 ## Release Contract
 
 - AXTP Spec tags use `spec/vMAJOR.MINOR.PATCH`, for example `spec/v0.3.0`.
-- The main AXTP repository publishes release artifacts with specs, registry
-  facts, migration material, a changelog, and a manifest.
+- The main AXTP repository publishes release artifacts with `contract/`,
+  `specs/`, `conformance/`, role/product docs, release docs, a changelog, and
+  a manifest.
 - Runtime repositories record their binding in `AXTP_SPEC.lock.yaml`.
 - Runtime repositories expose runtime-local upgrade and lock-check scripts
   named `upgrade-axtp-spec.sh spec/vX.Y.Z` and `check-axtp-spec-lock.sh`.
@@ -78,7 +79,8 @@ runtime revision:
 - AXTP Spec Version from the main repository tag, for example `spec/v0.3.0`.
 - Runtime/tool GitHub Release Version from the runtime/tool repository, for
   example `v0.3.0.0` or `v0.3.0.1`.
-- Generated Artifact Version from `generated/axtp_generated_manifest.json`.
+- Runtime Generated Artifact Version from the runtime repository generated
+  manifest or release metadata.
 
 Runtime repositories use runtime tags `vX.Y.Z.R`; they must not tag runtime
 releases as `spec/vX.Y.Z`.

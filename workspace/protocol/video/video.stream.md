@@ -1311,17 +1311,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | VM33 `PushStream.Start` / `PushStream.Stop` | `video.openStream` / `video.closeStream` 或后续 `video.pushStream` | `[REVIEW-ASK]` | 若目的地是 RTMP/SRT/公网地址，不应归 `video.stream`。 |
 | NA20/NT10 wireless cast | `video.openStream(source=wireless_cast)` + `video.streamSourceStateChanged` | `[REVIEW-DRAFT]` | NT10->NA20 无线协议不进入 AXTP wire。 |
 
-## 10. Registry / Conformance 状态
-
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | source adopted | 已写入 `../../../../contract/registry/domains/video/domain.yaml`。 |
-| generated | true | 已运行 `generate-axtp-protocol`，刷新 `contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**`。 |
-| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
-| registry readiness | ready | video.stream P0/confirmed subset 已写入 registry source；legacy 映射和部分 stream policy 仍保留待确认。 |
-| conformance | needed | 需覆盖 producer-open、receiver-pull、rejected fallback、close 解耦和 hard-disconnect。 |
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -1332,7 +1322,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | error case | source unavailable、codec unsupported、receiver not ready、resource exhausted、session lost。 |
 | compatibility | `stream.open` 不作为视频业务建流入口；legacy PushStream 需确认是否为内部 stream。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

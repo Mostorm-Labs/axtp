@@ -630,17 +630,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | VM33 `NetWork.SetNetwork` / `NetWork.SetIP` | `network.setIpConfig` | `[REVIEW-ASK]` | 需确认字段路径、静态/DHCP 切换和重启要求。 |
 | VM33 `NetWork.GetNetwork` / `NetWork.GetNetworkStatus` | `network.getIpConfig` | `[REVIEW-ASK]` | 需确认状态字段。 |
 
-## 10. Registry / Conformance 状态
-
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | source adopted | 已写入 `../../../../contract/registry/domains/network/domain.yaml`。 |
-| generated | true | 已运行 `generate-axtp-protocol`，刷新 `contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**`。 |
-| protocol draft | generated | 已作为 Stage 30 采纳输入固定；未确认 `[REVIEW-ASK]` 不进入 YAML。 |
-| registry readiness | ready | network.ip P0/confirmed subset 已写入 registry source；IPv6/AP DHCP Server 地址池等仍保留待确认。 |
-| conformance | needed | 采纳后需要覆盖 DHCP、static、disabled、事件去重、IP ready 和错误路径。 |
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -652,7 +642,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | pairing path | 若产品要求 IP ready，NT10 connected 后等待 `effective=true` 且 `address` 存在。 |
 | compatibility | legacy netmask 转 `prefixLength`，gateway/DNS 字段映射需确认。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|
