@@ -21,7 +21,7 @@
 5. Event name MUST 表示状态变化、结果、进度或上报语义，SHOULD 使用 `Changed`、`Completed`、`Failed`、`Progressed` 等后缀。Event 不替代 RPC Response。
 6. Capability name SHOULD 使用 `domain.feature`，并描述设备在当前固件、配置、会话和鉴权状态下可用的业务能力。
 7. `stream` domain 只用于公共 STREAM 数据面或流控能力。业务流能力 MUST 归属到业务 domain，例如 `video.stream`、`audio.stream`、`file.transfer`。
-8. 新增 domain 或 feature MUST 能追溯到 `docs/workspace/business`、`docs/workspace/flows` 或 `docs/workspace/protocol` 的评审输入；不能仅因为 legacy 命令存在而创建。
+8. 新增 domain 或 feature MUST 能追溯到 `workspace/business`、`workspace/flows` 或 `workspace/protocol` 的评审输入；不能仅因为 legacy 命令存在而创建。
 9. stable 名称不得复用为新语义。废弃名称 MUST 通过 registry 状态表达，并保留兼容解释。
 
 ## Registry / Schema / Tooling 模型
@@ -29,8 +29,8 @@
 AXTP 的命名链路如下：
 
 ```text
-docs/workspace/business or docs/workspace/flows
-  -> docs/workspace/protocol/<domain>/<domain.feature>.md
+workspace/business or workspace/flows
+  -> workspace/protocol/<domain>/<domain.feature>.md
   -> contract/registry/domains/<domain>/domain.yaml or core registry YAML
   -> contract/protocol/axtp.protocol.yaml
   -> contract/generated/* and runtime generated artifacts
@@ -61,7 +61,7 @@ Registry review 和 generator validation SHOULD 至少检查：
 
 1. 已发布的 stable domain、feature、method name、event name 和 capability name MUST NOT 改变语义。
 2. 重命名 SHOULD 通过新增名称加旧名称 deprecated 的方式完成，不得静默替换。
-3. legacy 命令映射 MAY 记录在 registry 条目的 `legacy` 元数据或 `docs/workspace/legacy-migration` 中，但 legacy 名称不得污染正式 AXTP 命名。
+3. legacy 命令映射 MAY 记录在 registry 条目的 `legacy` 元数据或 `workspace/legacy-migration` 中，但 legacy 名称不得污染正式 AXTP 命名。
 4. 新增 feature SHOULD 默认向后兼容；若需要 breaking change，必须进入版本治理并同步 generated/conformance。
 
 ## 实现要求

@@ -91,7 +91,7 @@ contract/registry/**/*.yaml + contract/registry/domains/**/*.yaml
 | `contract/registry/**/*.yaml`、`contract/registry/domains/**/*.yaml` | 机器可读协议事实源 |
 | `contract/protocol/axtp.protocol.yaml` | Generator 输出的 Protocol IR |
 | `contract/generated/**` | Generator 输出的协议参考 |
-| `docs/workspace/protocol/**` | 评审中的协议草案 |
+| `workspace/protocol/**` | 评审中的协议草案 |
 
 如果当前 method / event / error / capability 清单与 specs 叙述冲突，以 registry YAML 和 generated 输出为实现合同，并回修 specs。
 

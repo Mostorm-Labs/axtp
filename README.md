@@ -10,7 +10,7 @@ AXTP is the spec contract center for Auditoryworks Transport Protocol. This repo
 | Runtime / SDK engineering | [Runtime / SDK Guide](docs/guides/runtime.md) | Binding a spec version, using generated protocol, connecting to mock/server/runtime implementations. |
 | Testing / conformance | [Testing Guide](docs/guides/testing.md) | Validating runtime, SDK, and mock-server behavior by profile and level. |
 | Protocol maintainer | [Protocol Maintainer Guide](docs/guides/protocol-maintainer.md) | Moving requirements through business input, flow, draft, registry, generated, and release. |
-| Release owner | [Release Docs](docs/workspace/release/README.md) | Publishing spec tags, release artifacts, and runtime update flow. |
+| Release owner | [Release Docs](release/README.md) | Publishing spec tags, release artifacts, and runtime update flow. |
 
 For the full documentation reading route, use [docs/README.md](docs/README.md). Do not browse the whole repository as an onboarding path.
 
@@ -24,13 +24,13 @@ Runtime and SDK work should bind to a spec tag, a commit, or a release artifact.
 | Generated reference | [contract/generated/protocol.md](contract/generated/protocol.md), [contract/generated/protocol.json](contract/generated/protocol.json) |
 | Hand-written specs | [specs/](specs/README.md) |
 | Conformance inputs | [conformance/](conformance/README.md) |
-| Release governance | [docs/workspace/release/](docs/workspace/release/README.md) |
+| Release governance | [release/](release/README.md) |
 
 The registry source of truth lives in `contract/registry/**` and `contract/registry/domains/**`. Generated artifacts must not be edited by hand.
 
 ## Hard Rules
 
-- Do not implement runtime behavior from `docs/workspace/business/**`, `docs/workspace/flows/**`, or unadopted `docs/workspace/protocol/**` drafts.
+- Do not implement runtime behavior from `workspace/business/**`, `workspace/flows/**`, or unadopted `workspace/protocol/**` drafts.
 - Do not hand-edit `contract/protocol/axtp.protocol.yaml`, `contract/generated/**`, `contract/mcp/**`, or `contract/test-vectors/**`.
 - Do not bypass protocol review and write new business semantics directly into registry YAML.
 - Conformance is the behavior acceptance surface for runtime, SDK, and mock-server work.

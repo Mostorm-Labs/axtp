@@ -1,0 +1,81 @@
+#!/usr/bin/env node
+import fs from "node:fs";
+import path from "node:path";
+
+const root = path.resolve(process.argv[2] ?? process.cwd());
+const ignoredDirs = new Set([".git", "node_modules", "dist", "outputs"]);
+const textExtensions = new Set([
+  ".csv",
+  ".json",
+  ".md",
+  ".sh",
+  ".toml",
+  ".txt",
+  ".yaml",
+  ".yml",
+]);
+const errors = [];
+
+function walk(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (!ignoredDirs.has(entry.name)) out.push(...walk(entryPath));
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    const ext = path.extname(entry.name).toLowerCase();
+    if (textExtensions.has(ext) || ["README", "CHANGELOG", "CODEOWNERS", "LICENSE"].includes(entry.name)) {
+      out.push(entryPath);
+    }
+  }
+  return out;
+}
+
+function stripDecorators(raw) {
+  return raw
+    .replace(/^['"`(<\[]+/, "")
+    .replace(/[>'"`)\].,;，。；、:]+$/, "")
+    .split("#")[0];
+}
+
+function report(file, raw, reason) {
+  errors.push(`${path.relative(root, file)} -> ${raw}: ${reason}`);
+}
+
+function checkExists(file, raw) {
+  const candidate = stripDecorators(raw);
+  if (!candidate || candidate.includes("*") || candidate.includes("<") || candidate.includes(">")) return;
+  const evidencePath = candidate.includes(":")
+    ? candidate.slice(0, candidate.indexOf(":"))
+    : candidate;
+  const target = path.join(root, evidencePath);
+  if (!fs.existsSync(target)) report(file, raw, "missing referenced path");
+}
+
+for (const file of walk(root)) {
+  const relative = path.relative(root, file);
+  if (relative.startsWith(`docs${path.sep}archive${path.sep}`)) continue;
+  const text = fs.readFileSync(file, "utf8");
+
+  for (const match of text.matchAll(/docs\/workspace\/[^\s`"'<>),\]]+/g)) {
+    report(file, match[0], "legacy docs/workspace path is no longer valid");
+  }
+
+  for (const match of text.matchAll(/workspace\/protocol\/[^\s`"'<>),\]]+\.md(?:#[^\s`"'<>),\]]+)?/g)) {
+    checkExists(file, match[0]);
+  }
+
+  for (const match of text.matchAll(/workspace\/legacy-migration\/evidence\/[^\s`"'<>),\]]+\.(?:md|pdf|xlsx)(?::[^\s`"'<>),\]]+)?/g)) {
+    checkExists(file, match[0]);
+  }
+}
+
+if (errors.length > 0) {
+  console.error(`[FAIL] plain-text repository paths failed: ${errors.length}`);
+  for (const error of errors) console.error(`- ${error}`);
+  process.exit(1);
+}
+
+console.log("[OK] plain-text repository paths resolved");

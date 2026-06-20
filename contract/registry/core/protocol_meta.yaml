@@ -205,8 +205,8 @@ stream:
 
 compatibility:
   legacySources:
-    - docs/workspace/legacy-migration/planning/AXTP-Legacy-Compatibility-Reference.md
-    - docs/workspace/legacy-migration/planning/AXTP-Legacy-Registry-Migration-Map.md
+    - workspace/legacy-migration/planning/AXTP-Legacy-Compatibility-Reference.md
+    - workspace/legacy-migration/planning/AXTP-Legacy-Registry-Migration-Map.md
   rules:
     - Stable methodId, eventId and error code values must not be reused.
     - Legacy command mappings may be preserved as metadata under methods[].legacy.

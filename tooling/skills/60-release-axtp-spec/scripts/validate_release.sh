@@ -27,10 +27,10 @@ cd "${repo_root}"
 
 required_files=(
   "README.md"
-  "docs/workspace/release/CHANGELOG.md"
-  "docs/workspace/release/AXTP_SPEC_VERSIONING.md"
-  "docs/workspace/release/AXTP_SPEC_RELEASE_CHECKLIST.md"
-  "docs/workspace/release/AXTP_RUNTIME_SPEC_LOCK.md"
+  "release/CHANGELOG.md"
+  "release/AXTP_SPEC_VERSIONING.md"
+  "release/AXTP_SPEC_RELEASE_CHECKLIST.md"
+  "release/AXTP_RUNTIME_SPEC_LOCK.md"
   "tooling/scripts/print-spec-version.sh"
 )
 
@@ -57,7 +57,7 @@ if [[ "${ALLOW_DIRTY:-0}" != "1" ]] && [[ -n "$(git status --porcelain)" ]]; the
   exit 1
 fi
 
-changelog="docs/workspace/release/CHANGELOG.md"
+changelog="release/CHANGELOG.md"
 
 if ! grep -q "^## ${tag}$" "${changelog}"; then
   echo "${changelog} is missing section: ## ${tag}" >&2

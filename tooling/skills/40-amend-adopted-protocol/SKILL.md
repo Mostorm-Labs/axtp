@@ -9,7 +9,7 @@ Stage 40. Change a protocol that has already passed adoption and entered YAML/ge
 
 ## Hard Boundaries
 
-- Start from existing adopted facts in `docs/workspace/protocol/<domain>/<domain.feature>.md` plus `contract/registry/**/*.yaml` or `contract/registry/domains/**/*.yaml`.
+- Start from existing adopted facts in `workspace/protocol/<domain>/<domain.feature>.md` plus `contract/registry/**/*.yaml` or `contract/registry/domains/**/*.yaml`.
 - Do not infer new facts from generated files. Generated files are evidence of current output only.
 - Do not hand-edit `contract/protocol/axtp.protocol.yaml`, `contract/generated/*`, `contract/mcp/*`, or `contract/test-vectors/*`.
 - Do not silently break `stable` or `mvp` wire contracts. For stable/MVP facts, prefer `deprecated`, optional additions, or versioned replacements over deletion or semantic mutation.
@@ -23,8 +23,8 @@ Stage 40. Change a protocol that has already passed adoption and entered YAML/ge
 Read only what is needed, but include enough evidence to avoid guessing:
 
 ```text
-docs/workspace/protocol/README.md
-docs/workspace/protocol/<domain>/<domain.feature>.md
+workspace/protocol/README.md
+workspace/protocol/<domain>/<domain.feature>.md
 specs/2-registry/01-Naming-and-Taxonomy.md
 specs/4-tooling/01-YAML-Mapping.md
 specs/2-registry/02-Methods-Registry.md
@@ -89,7 +89,7 @@ When removing draft fields, field IDs may disappear from draft YAML. When deprec
 
 ### 4. Update Adopted Proposal
 
-Patch `docs/workspace/protocol/<domain>/<domain.feature>.md` first:
+Patch `workspace/protocol/<domain>/<domain.feature>.md` first:
 
 - Add or update an `## Amendment History` / `## 修订记录` section.
 - Record date, change summary, rationale, compatibility decision, and YAML targets.

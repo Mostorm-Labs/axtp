@@ -1,10 +1,10 @@
 # AXTP 业务模块审计 Checklist
 
 > Date: 2026-06-10
-> Scope: `docs/workspace/protocol/**`, `docs/workspace/business/**`, `docs/workspace/flows/**`, `docs/workspace/legacy-migration/**`, `contract/registry/domains/**`, `contract/generated/**`, `docs/conformance/**`
+> Scope: `workspace/protocol/**`, `workspace/business/**`, `workspace/flows/**`, `workspace/legacy-migration/**`, `contract/registry/domains/**`, `contract/generated/**`, `docs/conformance/**`
 > Authority: specs 定义规则；registry YAML / Protocol IR / generated artifacts 才是 runtime implementation contract。
 
-本 checklist 用于审计单个 `domain.feature` 业务模块是否可以从 draft/review 输入进入 registry、generated 和 conformance。审计时不要把 `docs/workspace/protocol/**` 草案、`specs/2-registry/appendix/**` 候选表或 legacy evidence 当成 runtime 合同。
+本 checklist 用于审计单个 `domain.feature` 业务模块是否可以从 draft/review 输入进入 registry、generated 和 conformance。审计时不要把 `workspace/protocol/**` 草案、`specs/2-registry/appendix/**` 候选表或 legacy evidence 当成 runtime 合同。
 
 ## 1. Classification
 
@@ -13,7 +13,7 @@
 - [ ] 模块边界能说明它负责什么、不负责什么。
 - [ ] 模块能说明与相邻 feature 的关系和差异。
 - [ ] 模块没有把 transport、encoding、PayloadType、profile 名称误当成业务 feature。
-- [ ] 模块能追溯到 `docs/workspace/business/**`、`docs/workspace/flows/**`、`docs/workspace/protocol/**` 或 legacy evidence。
+- [ ] 模块能追溯到 `workspace/business/**`、`workspace/flows/**`、`workspace/protocol/**` 或 legacy evidence。
 
 ## 2. Lifecycle Status
 

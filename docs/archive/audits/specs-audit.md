@@ -62,7 +62,7 @@ Recommendation: keep allocation ranges, invariants, status semantics, and entry 
 
 Legacy material is valuable, but much of it is a migration playbook rather than formal AXTP design. This is most visible in `4-tooling/03-Versioning.md`, and also appears in registry, codec, RPC, and STREAM documents.
 
-Recommendation: formal specs should contain only compatibility invariants that protect the protocol. Mapping from old CmdValue, old JSON-RPC, old firmware/file/log protocols, adapter architecture, and migration phases should live under `docs/workspace/legacy-migration`.
+Recommendation: formal specs should contain only compatibility invariants that protect the protocol. Mapping from old CmdValue, old JSON-RPC, old firmware/file/log protocols, adapter architecture, and migration phases should live under `workspace/legacy-migration`.
 
 ### 3.4 Future/P1 content should be appendices or separate profile specs
 
@@ -101,7 +101,7 @@ Recommendation: specs should include one minimal valid and one minimal invalid e
 | `specs/3-codec/04-Schema-Numbering.md` | Stable fieldId allocation and schema evolution rules. | Contains legacy field mapping examples and local error names that may not align with the generated ErrorCode registry. | Yes for schema evolution and codegen validation. | Keep numbering/evolution rules. Move legacy mapping example out; use registry-linked error names in future rewrite. |
 | `specs/4-tooling/01-YAML-Mapping.md` | Source YAML to Protocol IR mapping, domain YAML shape, ID/domain planning. | Also carries registry governance, domain registry, domain-scoped masks, and Codex skill workflow. | No for runtime behavior; yes for generator/source tooling. | Keep YAML-to-IR mapping here. Move registry governance to registry specs, skill workflow to `tooling/skills`, generated layout details to Generator spec. |
 | `specs/4-tooling/02-Generator-V1.md` | Generator v1 implementation contract, generated output shape, CLI, validation, test requirements. | Mixes implementation contract with protocol lifecycle workflow, Codex skill boundaries, current P0 completion state, P1/P2 roadmap, and generated examples. | No for runtime behavior; yes for generator maintainers. | Keep Source Model, IR, output, validation, CLI, and CI contract. Move skill workflow to `tooling/skills`, roadmap/status to `docs/product/roadmap.md` or release docs, long examples to guides. |
-| `specs/4-tooling/03-Versioning.md` | Compatibility/versioning plus legacy migration rules. | Heavily overloaded: wire freeze rules are followed by full legacy migration architecture, CmdValue mapping, old JSON-RPC/BinaryRPC/Firmware/RawStream/Log/File/HID migration, C++ adapter requirements, test vectors, and migration phases. | Partial. Freeze/versioning sections are important; most of the document is not runtime AXTP core spec. | Extract a short formal versioning spec. Move the legacy migration manual to `docs/workspace/legacy-migration`, and move adapter implementation examples to guides or migration planning docs. |
+| `specs/4-tooling/03-Versioning.md` | Compatibility/versioning plus legacy migration rules. | Heavily overloaded: wire freeze rules are followed by full legacy migration architecture, CmdValue mapping, old JSON-RPC/BinaryRPC/Firmware/RawStream/Log/File/HID migration, C++ adapter requirements, test vectors, and migration phases. | Partial. Freeze/versioning sections are important; most of the document is not runtime AXTP core spec. | Extract a short formal versioning spec. Move the legacy migration manual to `workspace/legacy-migration`, and move adapter implementation examples to guides or migration planning docs. |
 
 ## 5. Focus Area Review
 
@@ -170,7 +170,7 @@ Material that should be moved out:
 - current generated method/event range tables;
 - guide-style migration examples.
 
-Recommended decision: keep field rules and state machine in the main body; replace long scenarios with links to `docs/guides`, `docs/workspace/legacy-migration`, and `contract/generated`.
+Recommended decision: keep field rules and state machine in the main body; replace long scenarios with links to `docs/guides`, `workspace/legacy-migration`, and `contract/generated`.
 
 ### 5.4 `1-core/07-Stream-Data-Plane.md`
 
@@ -196,8 +196,8 @@ Recommended split:
 - Specs own: entry shape, status lifecycle, ID ranges, allocation rules, deprecation/non-reuse rules, validation rules.
 - YAML owns: concrete source facts.
 - `contract/generated` owns: current rendered tables.
-- `docs/workspace/protocol` owns: draft/planning candidate tables before adoption.
-- `docs/workspace/legacy-migration` owns: old protocol mapping evidence.
+- `workspace/protocol` owns: draft/planning candidate tables before adoption.
+- `workspace/legacy-migration` owns: old protocol mapping evidence.
 
 This applies to methods, events, errors, profiles, and capability-related tables.
 
@@ -240,7 +240,7 @@ Most later sections are a legacy migration guide:
 - C++ adapter examples;
 - migration phases and test vector plans.
 
-Recommended decision: split the formal versioning spec from the legacy migration manual. The formal spec should stay under `specs`; the migration manual should move to `docs/workspace/legacy-migration`.
+Recommended decision: split the formal versioning spec from the legacy migration manual. The formal spec should stay under `specs`; the migration manual should move to `workspace/legacy-migration`.
 
 ## 6. Reorganization Proposal
 
@@ -352,7 +352,7 @@ specs/
 - Runtime troubleshooting and implementation recipes.
 - Human how-to workflows for using generated docs.
 
-### 6.5 Content to Move to `docs/workspace/legacy-migration`
+### 6.5 Content to Move to `workspace/legacy-migration`
 
 - Old CmdValue to MethodId mapping strategy and examples.
 - Old JSON-RPC and BinaryRPC adapter behavior.
@@ -444,7 +444,7 @@ List explicitly excluded behavior and future work. Future work must not be confu
 |---|---|---|
 | Phase 1 | Make authority visible | Add status/authority blocks and mark future/legacy/example sections. No semantic changes. |
 | Phase 2 | Remove duplicate generated facts | Replace complete current registry tables with links to `contract/generated` references. |
-| Phase 3 | Separate legacy migration | Extract legacy-heavy sections from core/contract/registry/codec/tooling specs into `docs/workspace/legacy-migration`. |
+| Phase 3 | Separate legacy migration | Extract legacy-heavy sections from core/contract/registry/codec/tooling specs into `workspace/legacy-migration`. |
 | Phase 4 | Normalize core runtime specs | Make `03` to `07` directly usable by runtime implementers with clear P0 normative text. |
 | Phase 5 | Split overloaded model docs | Split capability/schema and versioning/migration responsibilities. |
 | Phase 6 | Optional directory cleanup | Apply the ideal long-term structure only after links and readers are stable. |

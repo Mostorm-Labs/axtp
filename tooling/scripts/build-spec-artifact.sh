@@ -67,20 +67,14 @@ copy_file "$root/docs/README.md" "$artifact_dir/docs/README.md" "docs README"
 copy_dir "$root/contract/protocol" "$artifact_dir/contract/protocol" "Protocol IR"
 copy_dir "$root/docs/guides" "$artifact_dir/docs/guides" "role guides"
 copy_dir "$root/docs/product" "$artifact_dir/docs/product" "product status"
-copy_dir "$root/docs/workspace/business" "$artifact_dir/docs/workspace/business" "business inputs"
-copy_dir "$root/docs/workspace/flows" "$artifact_dir/docs/workspace/flows" "flows"
-copy_dir "$root/docs/workspace/protocol" "$artifact_dir/docs/workspace/protocol" "protocol drafts"
-copy_file "$root/docs/workspace/README.md" "$artifact_dir/docs/workspace/README.md" "workspace README"
 copy_dir "$root/contract/generated" "$artifact_dir/contract/generated" "generated protocol references"
 copy_dir "$root/specs" "$artifact_dir/specs" "specs"
 copy_dir "$root/contract/registry" "$artifact_dir/contract/registry" "registry"
 copy_dir "$root/contract/mcp" "$artifact_dir/contract/mcp" "MCP registry artifacts"
 copy_dir "$root/contract/test-vectors" "$artifact_dir/contract/test-vectors" "test vectors"
 copy_dir "$root/conformance" "$artifact_dir/conformance" "conformance"
-copy_dir "$root/docs/workspace/release" "$artifact_dir/docs/workspace/release" "release docs"
-copy_dir "$root/docs/workspace/legacy-migration" "$artifact_dir/docs/workspace/legacy-migration" "legacy migration planning"
-rm -rf "$artifact_dir/docs/workspace/legacy-migration/evidence"
-copy_file "$root/docs/workspace/release/CHANGELOG.md" "$artifact_dir/CHANGELOG.md" "CHANGELOG.md"
+copy_dir "$root/release" "$artifact_dir/release" "release docs"
+copy_file "$root/release/CHANGELOG.md" "$artifact_dir/CHANGELOG.md" "CHANGELOG.md"
 
 sed \
   -e "s|{{VERSION}}|$version|g" \
@@ -103,7 +97,6 @@ required_artifact_paths=(
   "docs/product/domain-status.md"
   "docs/product/roadmap.md"
   "CHANGELOG.md"
-  "docs/workspace/README.md"
   "contract/protocol/axtp.protocol.yaml"
   "contract/generated/protocol.md"
   "contract/generated/protocol.json"
@@ -112,10 +105,10 @@ required_artifact_paths=(
   "specs/0-principles/02-Contract-Boundaries.md"
   "specs/0-principles/03-Domain-Feature-Classification.md"
   "conformance/manifest.yaml"
-  "docs/workspace/protocol/README.md"
   "contract/mcp/method_registry.generated.json"
   "contract/test-vectors/manifest.json"
-  "docs/workspace/release/CHANGELOG.md"
+  "release/README.md"
+  "release/CHANGELOG.md"
 )
 
 for rel in "${required_artifact_paths[@]}"; do

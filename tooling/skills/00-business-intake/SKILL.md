@@ -1,18 +1,18 @@
 ---
 name: business-intake
-description: Stage 00 business intake skill for AXTP product, architecture, legacy, or customer requirements that are not yet ready for flow planning or protocol drafting. Use when the user describes a rough business need, PRD idea, product capability, scenario goal, customer request, legacy clue, UI intention, or unresolved problem and needs a docs/workspace/business requirement brief before routing to plan-protocol-flow or draft-business-protocol. Writes docs/workspace/business Markdown only by default.
+description: Stage 00 business intake skill for AXTP product, architecture, legacy, or customer requirements that are not yet ready for flow planning or protocol drafting. Use when the user describes a rough business need, PRD idea, product capability, scenario goal, customer request, legacy clue, UI intention, or unresolved problem and needs a workspace/business requirement brief before routing to plan-protocol-flow or draft-business-protocol. Writes workspace/business Markdown only by default.
 ---
 
 # Business Intake
 
-Stage 00. Turn a rough product, architecture, customer, legacy, or UI-driven idea into a business requirement brief under `docs/workspace/business/**`.
+Stage 00. Turn a rough product, architecture, customer, legacy, or UI-driven idea into a business requirement brief under `workspace/business/**`.
 
 This skill exists before flow planning and protocol drafting. Its job is to capture business intent clearly enough that later stages can decide whether to create a flow, draft a protocol, amend adopted facts, or do nothing protocol-level.
 
 ## Boundaries
 
-- Edit `docs/workspace/business/**` by default.
-- Do not edit `docs/workspace/flows/**`, `docs/workspace/protocol/**`, `contract/registry/**`, `contract/registry/domains/**`, `contract/protocol/axtp.protocol.yaml`, `contract/generated/**`, `contract/mcp/**`, or `contract/test-vectors/**`.
+- Edit `workspace/business/**` by default.
+- Do not edit `workspace/flows/**`, `workspace/protocol/**`, `contract/registry/**`, `contract/registry/domains/**`, `contract/protocol/axtp.protocol.yaml`, `contract/generated/**`, `contract/mcp/**`, or `contract/test-vectors/**`.
 - Do not invent final method, event, schema, error, capability, field ID, or registry names.
 - Do not treat PRD text as runtime implementation contract.
 - If the request already contains a complete end-to-end interaction, route to `plan-protocol-flow`.
@@ -42,14 +42,14 @@ If details are missing, write `[REVIEW-ASK]` questions instead of guessing.
 Read enough repo context to avoid duplicating existing business inputs:
 
 ```text
-docs/workspace/business/README.md
-docs/workspace/business/**
-docs/workspace/flows/README.md
-docs/workspace/protocol/README.md
+workspace/business/README.md
+workspace/business/**
+workspace/flows/README.md
+workspace/protocol/README.md
 docs/product/domain-status.md
 specs/0-principles/03-Domain-Feature-Classification.md
 contract/generated/protocol.md
-docs/workspace/legacy-migration/README.md when legacy is involved
+workspace/legacy-migration/README.md when legacy is involved
 ```
 
 Search with product terms, feature names, likely domain names, and legacy command names.
@@ -58,9 +58,9 @@ Search with product terms, feature names, likely domain names, and legacy comman
 
 | Decision | Use when | Action |
 |---|---|---|
-| Reuse existing business doc | Existing `docs/workspace/business/<slug>.md` already captures the need | Add only a short update or final note if needed |
+| Reuse existing business doc | Existing `workspace/business/<slug>.md` already captures the need | Add only a short update or final note if needed |
 | Update existing business doc | Existing doc has the right topic but lacks new constraints, actors, goals, or open questions | Patch that doc |
-| Create new business doc | No existing business doc covers the requirement | Create `docs/workspace/business/<scenario-or-capability>.md` |
+| Create new business doc | No existing business doc covers the requirement | Create `workspace/business/<scenario-or-capability>.md` |
 
 Prefer slugs based on product capability or scenario, not proposed protocol method names.
 
@@ -89,7 +89,7 @@ Keep the document at business level. It may mention candidate domains such as `a
 
 | Finding | Next stage |
 |---|---|
-| Need is only product/background context | Stay in `docs/workspace/business/**` |
+| Need is only product/background context | Stay in `workspace/business/**` |
 | End-to-end actors, sequence, UI flow, or failure paths matter | `tooling/skills/10-plan-protocol-flow/SKILL.md` |
 | A clear protocol capability/method/event/schema gap exists | `tooling/skills/20-draft-business-protocol/SKILL.md` |
 | Adopted/generated facts need semantic change | `tooling/skills/40-amend-adopted-protocol/SKILL.md` |
@@ -112,8 +112,8 @@ Report:
 ## Useful Commands
 
 ```bash
-rg --files docs/workspace/business docs/workspace/flows docs/workspace/protocol docs/product contract/generated docs/workspace/legacy-migration
-rg -n "keyword1|keyword2|关键词" docs/workspace/business docs/workspace/flows docs/workspace/protocol docs/product contract/generated docs/workspace/legacy-migration
-git diff --check -- docs/workspace/business tooling/skills
-git status --short docs/workspace/business tooling/skills docs/workspace/flows docs/workspace/protocol contract/registry contract/protocol contract/generated
+rg --files workspace/business workspace/flows workspace/protocol docs/product contract/generated workspace/legacy-migration
+rg -n "keyword1|keyword2|关键词" workspace/business workspace/flows workspace/protocol docs/product contract/generated workspace/legacy-migration
+git diff --check -- workspace/business tooling/skills
+git status --short workspace/business tooling/skills workspace/flows workspace/protocol contract/registry contract/protocol contract/generated
 ```

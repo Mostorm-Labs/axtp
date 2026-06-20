@@ -30,7 +30,6 @@ required = {
     f"{artifact}/docs/product/domain-status.md",
     f"{artifact}/docs/product/roadmap.md",
     f"{artifact}/CHANGELOG.md",
-    f"{artifact}/docs/workspace/README.md",
     f"{artifact}/contract/protocol/axtp.protocol.yaml",
     f"{artifact}/contract/generated/protocol.md",
     f"{artifact}/contract/generated/protocol.json",
@@ -39,10 +38,10 @@ required = {
     f"{artifact}/specs/0-principles/02-Contract-Boundaries.md",
     f"{artifact}/specs/0-principles/03-Domain-Feature-Classification.md",
     f"{artifact}/conformance/manifest.yaml",
-    f"{artifact}/docs/workspace/protocol/README.md",
     f"{artifact}/contract/mcp/method_registry.generated.json",
     f"{artifact}/contract/test-vectors/manifest.json",
-    f"{artifact}/docs/workspace/release/CHANGELOG.md",
+    f"{artifact}/release/README.md",
+    f"{artifact}/release/CHANGELOG.md",
 }
 
 with zipfile.ZipFile(zip_path) as archive:
@@ -62,7 +61,7 @@ if ds_store:
         print(f"- {item}", file=sys.stderr)
     sys.exit(1)
 
-legacy_evidence = sorted(name for name in names if f"{artifact}/docs/workspace/legacy-migration/evidence/" in name)
+legacy_evidence = sorted(name for name in names if f"{artifact}/workspace/legacy-migration/evidence/" in name)
 if legacy_evidence:
     print("[FAIL] release archive contains legacy evidence files", file=sys.stderr)
     for item in legacy_evidence[:20]:
@@ -76,7 +75,7 @@ if skills:
         print(f"- {item}", file=sys.stderr)
     sys.exit(1)
 
-release_tooling = sorted(name for name in names if f"{artifact}/tooling/release/" in name or f"{artifact}/release/" in name)
+release_tooling = sorted(name for name in names if f"{artifact}/tooling/release/" in name)
 if release_tooling:
     print("[FAIL] release archive contains repository-only release template files", file=sys.stderr)
     for item in release_tooling[:20]:
@@ -101,6 +100,24 @@ old_conformance = sorted(name for name in names if f"{artifact}/docs/conformance
 if old_conformance:
     print("[FAIL] release archive contains legacy docs/conformance path", file=sys.stderr)
     for item in old_conformance[:20]:
+        print(f"- {item}", file=sys.stderr)
+    sys.exit(1)
+
+old_workspace = sorted(name for name in names if f"{artifact}/docs/workspace/" in name)
+if old_workspace:
+    print("[FAIL] release archive contains legacy docs/workspace path", file=sys.stderr)
+    for item in old_workspace[:20]:
+        print(f"- {item}", file=sys.stderr)
+    sys.exit(1)
+
+workspace_private = sorted(
+    name for name in names
+    if name.startswith(f"{artifact}/workspace/")
+    and name != f"{artifact}/workspace/"
+)
+if workspace_private:
+    print("[FAIL] release archive contains maintainer-only workspace materials", file=sys.stderr)
+    for item in workspace_private[:20]:
         print(f"- {item}", file=sys.stderr)
     sys.exit(1)
 

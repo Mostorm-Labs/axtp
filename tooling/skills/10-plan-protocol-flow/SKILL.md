@@ -1,19 +1,19 @@
 ---
 name: plan-protocol-flow
-description: Stage 10 flow-planning skill for AXTP protocol interactions. Use when business scenarios, user stories, UI prototypes, product workflows, or end-to-end feature requirements need to be mapped into actors, screens, protocol calls/events/capabilities, existing protocol coverage, gaps, and follow-up draft-business-protocol or amend-adopted-protocol work. Writes docs/workspace/flows Markdown only by default and must not write registry YAML or generated artifacts.
+description: Stage 10 flow-planning skill for AXTP protocol interactions. Use when business scenarios, user stories, UI prototypes, product workflows, or end-to-end feature requirements need to be mapped into actors, screens, protocol calls/events/capabilities, existing protocol coverage, gaps, and follow-up draft-business-protocol or amend-adopted-protocol work. Writes workspace/flows Markdown only by default and must not write registry YAML or generated artifacts.
 ---
 
 # Plan Protocol Flow
 
-Stage 10. Turn a business scenario, user story, UI prototype, or end-to-end workflow into a reviewable AXTP protocol interaction plan under `docs/workspace/flows/**`.
+Stage 10. Turn a business scenario, user story, UI prototype, or end-to-end workflow into a reviewable AXTP protocol interaction plan under `workspace/flows/**`.
 
 This skill sits before `draft-business-protocol`: it discovers which existing protocols are needed across the whole story, records what is already adopted or drafted, and identifies gaps that should be handed to `draft-business-protocol`, `amend-adopted-protocol`, or runtime implementation.
 
 ## Boundaries
 
-- Edit `docs/workspace/flows/**` by default.
+- Edit `workspace/flows/**` by default.
 - Do not edit `contract/registry/**`, `contract/registry/domains/**`, `contract/protocol/axtp.protocol.yaml`, `contract/generated/**`, `contract/mcp/**`, or `contract/test-vectors/**`.
-- Do not change `docs/workspace/protocol/**` unless the user explicitly asks to continue into the draft/update stage.
+- Do not change `workspace/protocol/**` unless the user explicitly asks to continue into the draft/update stage.
 - Do not invent adopted method names. Use generated/YAML facts when adopted, and mark unadopted candidates as gaps.
 - If an adopted protocol needs a semantic change, route to `amend-adopted-protocol`, not `draft-business-protocol`.
 - If a missing or draft-only method/schema is needed, record the gap and route to `draft-business-protocol`.
@@ -40,20 +40,20 @@ Read enough context to avoid guessing:
 
 ```text
 docs/README.md
-docs/workspace/protocol/README.md
+workspace/protocol/README.md
 contract/generated/protocol.md
 contract/protocol/axtp.protocol.yaml
 contract/registry/**/*.yaml
 contract/registry/domains/**/*.yaml
-docs/workspace/protocol/**
-docs/workspace/legacy-migration/classification/** when legacy evidence is relevant
-docs/workspace/legacy-migration/plans/** when migration strategy is relevant
+workspace/protocol/**
+workspace/legacy-migration/classification/** when legacy evidence is relevant
+workspace/legacy-migration/plans/** when migration strategy is relevant
 ```
 
 Search with requirement keywords and likely English equivalents. For "算法参数调整", search at least:
 
 ```bash
-rg -n "algorithm|算法|audio\\.algorithm|getAlgorithm|setAlgorithm|resetAlgorithm|capabilit" docs/workspace/protocol contract/registry contract/generated contract/protocol
+rg -n "algorithm|算法|audio\\.algorithm|getAlgorithm|setAlgorithm|resetAlgorithm|capabilit" workspace/protocol contract/registry contract/generated contract/protocol
 ```
 
 ### 3. Build The Story Map
@@ -87,7 +87,7 @@ Use these states:
 |---|---|---|
 | generated | `contract/generated/**` or protocol IR already define the method/event/schema/capability | Reference generated docs and use exact names |
 | adopted | Registry YAML already defines the fact, but generated output is not the direct evidence in this flow | Reference registry path and verify generated status |
-| draft | `docs/workspace/protocol/**` has a candidate but YAML/generated do not | Route to `draft-business-protocol` after review |
+| draft | `workspace/protocol/**` has a candidate but YAML/generated do not | Route to `draft-business-protocol` after review |
 | missing | No suitable draft or adopted/generated fact exists | Propose candidate `domain.feature` and route to `draft-business-protocol` |
 | local-only | App/UI/runtime local behavior with no AXTP call | Keep as implementation/UI behavior |
 | non-protocol | Product policy, manual operation, business rule, or documentation-only concern | Keep out of protocol work |
@@ -116,7 +116,7 @@ If the UI needs fields or algorithms not present in generated/YAML, mark the aff
 Create or update:
 
 ```text
-docs/workspace/flows/<scenario-slug>.md
+workspace/flows/<scenario-slug>.md
 ```
 
 Use `references/flow-plan-template.md` as the structure. A flow plan must include:
@@ -137,7 +137,7 @@ Use `references/flow-plan-template.md` as the structure. A flow plan must includ
 - test/conformance notes using Given/When/Then and protocol evidence
 - open questions as a table with impact, owner, status, and next action
 
-Keep flow docs scenario-oriented. Do not duplicate full protocol schemas; link to `contract/generated/protocol.md` for generated facts, registry YAML for adopted facts, and `docs/workspace/protocol/**` for drafts.
+Keep flow docs scenario-oriented. Do not duplicate full protocol schemas; link to `contract/generated/protocol.md` for generated facts, registry YAML for adopted facts, and `workspace/protocol/**` for drafts.
 
 Flow docs are a business interaction and coverage-routing artifact. They should:
 
@@ -151,9 +151,9 @@ Flow docs must not:
 - define complete method/event/schema/capability contracts
 - assign methodId/eventId/errorCode/fieldId values
 - act as runtime implementation contracts
-- replace `docs/workspace/protocol/<domain>/<feature>.md`
+- replace `workspace/protocol/<domain>/<feature>.md`
 
-Complete method/event/schema/capability definitions must be written in `docs/workspace/protocol/<domain>/<feature>.md`.
+Complete method/event/schema/capability definitions must be written in `workspace/protocol/<domain>/<feature>.md`.
 
 ### 6. Route Follow-Up Work
 
@@ -185,8 +185,8 @@ Report:
 ## Useful Commands
 
 ```bash
-rg --files docs/workspace/flows docs/workspace/protocol contract/registry contract/generated
-rg -n "keyword1|keyword2|关键词" docs/workspace/protocol contract/registry contract/generated contract/protocol
-git diff --check -- docs/workspace/flows tooling/skills
-git status --short docs/workspace/flows tooling/skills docs/workspace/protocol contract/registry contract/protocol contract/generated
+rg --files workspace/flows workspace/protocol contract/registry contract/generated
+rg -n "keyword1|keyword2|关键词" workspace/protocol contract/registry contract/generated contract/protocol
+git diff --check -- workspace/flows tooling/skills
+git status --short workspace/flows tooling/skills workspace/protocol contract/registry contract/protocol contract/generated
 ```

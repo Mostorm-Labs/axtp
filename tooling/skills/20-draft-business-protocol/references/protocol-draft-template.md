@@ -1,10 +1,10 @@
 # 协议草案模板
 
-创建或重写 `docs/workspace/protocol/<domain>/<domain.feature>.md` 时，使用这份轻量中文模板。
+创建或重写 `workspace/protocol/<domain>/<domain.feature>.md` 时，使用这份轻量中文模板。
 
 `domain.feature` 草案的目标是让人快速看懂协议意图、接口形状、字段含义、测试重点和采纳风险。它不是最终机器事实源，也不是长篇规范论文。正式机器事实源仍然是 `contract/registry/**/*.yaml`、`contract/protocol/axtp.protocol.yaml`、`contract/generated/**` 和 `conformance/**`。
 
-公共 JSON envelope、错误占位、schema 展开和 flow example 写法维护在 `docs/workspace/protocol/draft-conventions.md`，模板和草案只保留 feature-specific 内容。
+公共 JSON envelope、错误占位、schema 展开和 flow example 写法维护在 `workspace/protocol/draft-conventions.md`，模板和草案只保留 feature-specific 内容。
 
 ````markdown
 ---
@@ -32,13 +32,9 @@ lastReviewed: YYYY-MM-DD
 | Conformance | none / needed / ready |
 | 主要未决问题 | <一句话列出，若无则写“暂无”> |
 
-## JSON 示例约定
-
-草案中的 JSON 示例遵循 [Protocol Draft Conventions](../draft-conventions.md#json-示例约定)。本文只展示 feature-specific 的 RPC `d` block 示例；Hello / Identify / Identified、`sid`、`op` 和 JSON-RPC 禁用规则不在每篇草案中重复。
-
 ## 1. 功能说明
 
-用 3-5 句话说明这个 feature 解决什么问题、面向哪些调用方、适用于哪些设备或场景。
+用 3-5 句话说明这个 feature 解决什么问题、面向哪些调用方、适用于哪些设备或场景。公共 JSON envelope、错误占位和合同边界遵循 [Protocol Draft Conventions](../draft-conventions.md)。
 
 ## 2. 能力边界
 
@@ -51,8 +47,6 @@ lastReviewed: YYYY-MM-DD
 | 数据面 | 本 feature 不定义 STREAM payload，所有操作均通过 RPC method/event 完成。 |
 
 ## 3. 方法 Methods
-
-方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`，由 registry 采纳时分配。不要在草案中分配正式 ID。
 
 ### 3.0 方法速览
 
@@ -349,8 +343,6 @@ Schema 展开模式必须二选一：
 - 简单 feature：method/event 章节已经直接展开 Params / Result / Payload 字段表，本章只保留 schema 索引，避免重复。
 - 复杂 feature：method/event 章节必须给出关键字段和 JSON `d` block 示例；本章集中展开复杂对象；method/event 小节必须明确引用第 6.x 节，不能让读者自己猜。
 
-Schema 展开规则见 [Protocol Draft Conventions](../draft-conventions.md#schema-展开约定)。禁止出现 method 小节只有 schema 名称，而字段表和示例都被丢到后文的写法。
-
 ```text
 XxxState
   fieldA
@@ -390,8 +382,6 @@ XxxChangedEvent
 如存在状态对象、配置对象、数组元素对象，在这里展开。对象字段较多时，每个对象单独成表。
 
 ## 7. 交互流程示例 Flow Examples
-
-Flow examples 的定位见 [Protocol Draft Conventions](../draft-conventions.md#flow-example-约定)。本章只展示多个 method/event 组成的端到端业务流程，不再承担单个 method/event 的 API 契约示例。
 
 每个 flow example 应展示：
 
@@ -439,8 +429,6 @@ Flow examples 的定位见 [Protocol Draft Conventions](../draft-conventions.md#
 读法：<说明这个流程中的状态变化、客户端缓存更新、事件订阅和异常处理。>
 
 ## 8. 错误
-
-错误响应和 numeric code 占位规则见 [Protocol Draft Conventions](../draft-conventions.md#错误约定) 与 `specs/2-registry/04-Errors-Registry.md`；本节只列 feature-specific 候选错误。
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

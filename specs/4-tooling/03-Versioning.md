@@ -10,7 +10,7 @@
 
 ## 范围
 
-本文档覆盖 spec version、registry version、schema/wire version、spec tag、release artifact、runtime 绑定、兼容变更、breaking change、deprecated/reserved 和 generated artifact version lock。本文档不承载 legacy adapter 的完整迁移设计；legacy 迁移细节应进入 `docs/workspace/legacy-migration/**`。
+本文档覆盖 spec version、registry version、schema/wire version、spec tag、release artifact、runtime 绑定、兼容变更、breaking change、deprecated/reserved 和 generated artifact version lock。本文档不承载 legacy adapter 的完整迁移设计；legacy 迁移细节应进入 `workspace/legacy-migration/**`。
 
 ## 规范规则
 
@@ -108,4 +108,4 @@ AudioAlgorithmConfig 增加 optional fieldId=0x05
 
 ## 非目标 / 未来
 
-Legacy protocol sniffing、legacy CmdValue 到 AXTP method 的迁移、legacy status code 映射、legacy adapter C++ skeleton 和迁移阶段计划均为非规范迁移内容，应在 `docs/workspace/legacy-migration/**` 中维护。本文只规定这些迁移不得污染 AXTP Core wire format、registry 稳定性和 generated implementation contract。
+Legacy protocol sniffing、legacy CmdValue 到 AXTP method 的迁移、legacy status code 映射、legacy adapter C++ skeleton 和迁移阶段计划均为非规范迁移内容，应在 `workspace/legacy-migration/**` 中维护。本文只规定这些迁移不得污染 AXTP Core wire format、registry 稳定性和 generated implementation contract。

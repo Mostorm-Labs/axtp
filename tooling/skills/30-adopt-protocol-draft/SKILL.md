@@ -1,6 +1,6 @@
 ---
 name: adopt-protocol-draft
-description: Stage 30 adoption skill for reviewed AXTP docs/workspace/protocol domain-feature drafts. Use when an already-reviewed protocol draft should be approved, formalized, adopted, activated, landed, or converted into Registry/Capability Types specs alignment, Profiles Registry alignment when profiles/MVP change, and contract/registry/domain YAML facts. Fixes the draft as the formal accepted proposal but does not manually edit generated artifacts.
+description: Stage 30 adoption skill for reviewed AXTP workspace/protocol domain-feature drafts. Use when an already-reviewed protocol draft should be approved, formalized, adopted, activated, landed, or converted into Registry/Capability Types specs alignment, Profiles Registry alignment when profiles/MVP change, and contract/registry/domain YAML facts. Fixes the draft as the formal accepted proposal but does not manually edit generated artifacts.
 ---
 
 # Adopt Protocol Draft
@@ -9,7 +9,7 @@ Stage 30. Convert a reviewed AXTP protocol draft into formal protocol facts afte
 
 ## Hard Boundaries
 
-- Start from an existing `docs/workspace/protocol/<domain>/<domain.feature>.md` draft.
+- Start from an existing `workspace/protocol/<domain>/<domain.feature>.md` draft.
 - Do not adopt drafts containing unresolved `[REVIEW-BLOCKER]`, `[REVIEW-FIX]`, or `[REVIEW-ASK]` facts unless the user provides exact confirmed facts and the adoption is scoped around them.
 - Do not invent method/event/error/capability/profile semantics that are not present in the reviewed draft or specs.
 - Do not edit `contract/protocol/axtp.protocol.yaml`, `contract/generated/*`, `contract/mcp/*`, or `contract/test-vectors/*` by hand.
@@ -24,8 +24,8 @@ Stage 30. Convert a reviewed AXTP protocol draft into formal protocol facts afte
 Read enough local evidence to avoid guessing:
 
 ```text
-docs/workspace/protocol/README.md
-docs/workspace/protocol/<domain>/<domain.feature>.md
+workspace/protocol/README.md
+workspace/protocol/<domain>/<domain.feature>.md
 specs/2-registry/01-Naming-and-Taxonomy.md
 specs/4-tooling/01-YAML-Mapping.md
 specs/2-registry/02-Methods-Registry.md
@@ -41,7 +41,7 @@ contract/generated/protocol.md
 contract/protocol/axtp.protocol.yaml
 ```
 
-For stream, firmware.update, transport-sensitive, or low-bandwidth features, also read Core wire/session specs. For legacy adoption, read cited legacy evidence under `docs/workspace/legacy-migration/evidence/**`, `docs/workspace/legacy-migration/plans/**`, or `contract/registry/legacy/legacy_mapping.yaml` if it already exists.
+For stream, firmware.update, transport-sensitive, or low-bandwidth features, also read Core wire/session specs. For legacy adoption, read cited legacy evidence under `workspace/legacy-migration/evidence/**`, `workspace/legacy-migration/plans/**`, or `contract/registry/legacy/legacy_mapping.yaml` if it already exists.
 
 ## Workflow
 
@@ -95,7 +95,7 @@ Update the draft only enough to record adoption:
 
 - Mark accepted sections as `[REVIEW-OK]` or add an adoption note/table.
 - Preserve unresolved sections as open questions and keep them out of YAML.
-- Record that future unadopted facts must update the `docs/workspace/protocol` proposal first, then re-run adoption; already-adopted semantic changes must use `amend-adopted-protocol`.
+- Record that future unadopted facts must update the `workspace/protocol` proposal first, then re-run adoption; already-adopted semantic changes must use `amend-adopted-protocol`.
 - Do not remove useful review history unless it is misleading.
 
 ### 5. Choose YAML Targets

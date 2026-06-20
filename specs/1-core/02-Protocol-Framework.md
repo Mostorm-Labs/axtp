@@ -170,9 +170,9 @@ WebSocket connected
 
 | 内容 | 归属 |
 |---|---|
-| legacy protocol mapping、CmdValue 迁移、adapter 设计 | `docs/workspace/legacy-migration/**` |
-| roadmap、P1/P2/Future 计划 | `docs/product/roadmap.md`、`docs/workspace/release/**` 或明确标记的 appendix |
-| 长业务示例、端到端教程 | `docs/guides/**`、`docs/workspace/flows/**` |
+| legacy protocol mapping、CmdValue 迁移、adapter 设计 | `workspace/legacy-migration/**` |
+| roadmap、P1/P2/Future 计划 | `docs/product/roadmap.md`、`release/**` 或明确标记的 appendix |
+| 长业务示例、端到端教程 | `docs/guides/**`、`workspace/flows/**` |
 | 当前完整 method/event/error/capability/profile 清单 | `contract/generated/**` |
 | Codex / agent 操作流程 | `tooling/skills/**` |
 

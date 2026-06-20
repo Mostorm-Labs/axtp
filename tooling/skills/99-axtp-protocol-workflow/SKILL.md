@@ -15,11 +15,11 @@ Classify the request before editing anything:
 
 | User state | Correct workflow | Allowed edits |
 |---|---|---|
-| Rough product, architecture, customer, legacy, or UI idea not ready for flow/draft | Use `tooling/skills/00-business-intake/SKILL.md` | `docs/workspace/business/**` only |
-| Business scenario, user story, UI prototype, or end-to-end interaction needs protocol mapping | Use `tooling/skills/10-plan-protocol-flow/SKILL.md` | `docs/workspace/flows/**` only |
-| Concrete missing capability, method, event, schema, error, profile, or feature semantics need reviewable protocol design | Use `tooling/skills/20-draft-business-protocol/SKILL.md` | `docs/workspace/protocol/**` only |
-| Existing `docs/workspace/protocol/<domain>/<domain.feature>.md` draft needs review or refinement | Use `draft-business-protocol` | `docs/workspace/protocol/**` only |
-| Reviewed draft should become formal protocol | Use `tooling/skills/30-adopt-protocol-draft/SKILL.md` | `docs/workspace/protocol/**`, needed specs, `contract/registry/**`, `contract/registry/domains/**` |
+| Rough product, architecture, customer, legacy, or UI idea not ready for flow/draft | Use `tooling/skills/00-business-intake/SKILL.md` | `workspace/business/**` only |
+| Business scenario, user story, UI prototype, or end-to-end interaction needs protocol mapping | Use `tooling/skills/10-plan-protocol-flow/SKILL.md` | `workspace/flows/**` only |
+| Concrete missing capability, method, event, schema, error, profile, or feature semantics need reviewable protocol design | Use `tooling/skills/20-draft-business-protocol/SKILL.md` | `workspace/protocol/**` only |
+| Existing `workspace/protocol/<domain>/<domain.feature>.md` draft needs review or refinement | Use `draft-business-protocol` | `workspace/protocol/**` only |
+| Reviewed draft should become formal protocol | Use `tooling/skills/30-adopt-protocol-draft/SKILL.md` | `workspace/protocol/**`, needed specs, `contract/registry/**`, `contract/registry/domains/**` |
 | Already-adopted/generated protocol needs semantic correction, field removal, deprecation, rename, or extension | Use `tooling/skills/40-amend-adopted-protocol/SKILL.md` | adopted proposal, needed specs/YAML, generated artifacts via Generator |
 | YAML facts are ready and artifacts need refresh | Use `tooling/skills/50-generate-axtp-protocol/SKILL.md` | generated artifacts only, unless validation exposes a source bug |
 | Verified spec needs tag/release artifact/runtime notification | Use `tooling/skills/60-release-axtp-spec/SKILL.md` | release metadata, tag, artifact, dispatch |
@@ -32,24 +32,24 @@ Default to `business-intake`, `plan-protocol-flow`, `draft-business-protocol`, a
 
 ```text
 business-intake
-  rough requirement / product idea -> docs/workspace/business/<topic>.md
+  rough requirement / product idea -> workspace/business/<topic>.md
                                   -> route to flow, draft, amendment, implementation, or no protocol work
 
 plan-protocol-flow
-  scenario / UI prototype / user story -> docs/workspace/flows/<scenario>.md
+  scenario / UI prototype / user story -> workspace/flows/<scenario>.md
                                       -> gap list for draft/amend workflows
 
 draft-business-protocol
-  concrete protocol gap -> docs/workspace/protocol/<domain>/<domain.feature>.md
+  concrete protocol gap -> workspace/protocol/<domain>/<domain.feature>.md
 
 adopt-protocol-draft
   reviewed draft -> specs alignment if needed
-                 -> formalized docs/workspace/protocol proposal
+                 -> formalized workspace/protocol proposal
                  -> contract/registry/**/*.yaml + contract/registry/domains/**/*.yaml
 
 amend-adopted-protocol
   adopted/generated protocol change
-                 -> amendment note in docs/workspace/protocol proposal
+                 -> amendment note in workspace/protocol proposal
                  -> specs/YAML alignment if needed
                  -> generated artifacts refreshed by Generator
 
@@ -68,8 +68,8 @@ release-axtp-spec
 ## Non-Negotiables
 
 - Do not convert rough requirements or scenario flow plans directly into YAML.
-- Do not skip `docs/workspace/business/**` when the request is still product intent rather than protocol semantics.
-- Do not put scenario-only UI behavior into protocol drafts; keep it in `docs/workspace/flows/**`.
+- Do not skip `workspace/business/**` when the request is still product intent rather than protocol semantics.
+- Do not put scenario-only UI behavior into protocol drafts; keep it in `workspace/flows/**`.
 - Do not adopt unresolved `[REVIEW-ASK]`, `[REVIEW-FIX]`, or `[REVIEW-BLOCKER]` facts.
 - Do not edit `contract/protocol/axtp.protocol.yaml`, `contract/generated/*`, `contract/mcp/*`, or `contract/test-vectors/*` by hand.
 - New business features default to business intake, flow, or protocol draft first, then `contract/registry/domains/<domain>/domain.yaml` after adoption.

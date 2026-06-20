@@ -20,10 +20,14 @@ contents:
   supplemental_paths:
     - docs/product/roadmap.md
     - CHANGELOG.md
-    - docs/workspace/release/
-    - docs/workspace/
+    - release/
   excluded_paths:
-    - docs/workspace/legacy-migration/evidence/
+    - workspace/business/
+    - workspace/flows/
+    - workspace/protocol/
+    - workspace/legacy-migration/
+    - workspace/legacy-migration/evidence/
+    - tooling/skills/
     - "**/.DS_Store"
 
 runtime_update:

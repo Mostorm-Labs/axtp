@@ -17,13 +17,13 @@
 - method/event/schema/error/capability/profile 的引用校验；
 - 业务模块进入正式协议的准入标准。
 
-本文档不覆盖完整 Method/Event/Error/Profile/Capability 大表，也不定义 legacy adapter 迁移细节。legacy 迁移材料应进入 `docs/workspace/legacy-migration/**`。
+本文档不覆盖完整 Method/Event/Error/Profile/Capability 大表，也不定义 legacy adapter 迁移细节。legacy 迁移材料应进入 `workspace/legacy-migration/**`。
 
 ## 规范规则
 
 1. Registry YAML 是 generator 的人工维护 source model；`contract/protocol/axtp.protocol.yaml` 是 generated Protocol IR，MUST NOT 手写修改。
 2. `contract/generated/**` 是 generated implementation view，MUST NOT 手写修改。
-3. Generator MUST 从 source YAML 聚合出单一 Protocol IR；不得从 `docs/workspace/protocol`、appendix 或 generated markdown 反推协议事实。
+3. Generator MUST 从 source YAML 聚合出单一 Protocol IR；不得从 `workspace/protocol`、appendix 或 generated markdown 反推协议事实。
 4. Domain YAML 中的业务条目与 core registry 条目在进入 Protocol IR 后同属正式机器事实，但 profile/status 决定其是否为 Core/MVP required。
 5. 同一 method/event/error/schema/capability/profile 不得在 core registry 和 domain YAML 重复定义。
 6. Source YAML 中的 id、name、domain、schema、error、capability、profile 引用 MUST 在生成前完成一致性校验。
@@ -99,7 +99,7 @@ Source model 分层：
 
 ```text
 新增 audio.algorithm method:
-  docs/workspace/protocol/audio/audio.algorithm.md review-ok
+  workspace/protocol/audio/audio.algorithm.md review-ok
   -> contract/registry/domains/audio/domain.yaml 增加 method/type/event/error/capability
   -> tooling/generators validate-sources
   -> build contract/protocol/axtp.protocol.yaml
@@ -119,4 +119,4 @@ pnpm emit:protocol
 
 ## 非目标 / 未来
 
-本文档不作为 registry governance 的唯一入口；命名和 ID 稳定性规则分别在 `2-registry/**` 与 `3-codec/**` 中定义。Codex skill 工作流应放在 `tooling/skills/**`。legacy adapter 的分类、映射和测试向量应放在 `docs/workspace/legacy-migration/**`。
+本文档不作为 registry governance 的唯一入口；命名和 ID 稳定性规则分别在 `2-registry/**` 与 `3-codec/**` 中定义。Codex skill 工作流应放在 `tooling/skills/**`。legacy adapter 的分类、映射和测试向量应放在 `workspace/legacy-migration/**`。

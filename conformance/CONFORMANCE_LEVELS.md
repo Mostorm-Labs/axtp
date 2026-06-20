@@ -72,7 +72,7 @@ L3 当前是规划等级。没有对应 profile 和 case 前，runtime 不应宣
 | 可选 case | 未采纳草案、adapter-private legacy 行为。 |
 | 可声明不支持 | 设备不具备的 generated capability，但必须在 capability discovery 中明确。 |
 
-L4 只验收已经 generated 的业务 domain。`docs/workspace/protocol/**` draft-only 能力不能直接成为 L4 必测项。
+L4 只验收已经 generated 的业务 domain。`workspace/protocol/**` draft-only 能力不能直接成为 L4 必测项。
 
 ## 如何声明不支持
 

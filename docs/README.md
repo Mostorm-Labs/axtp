@@ -1,6 +1,6 @@
 # AXTP Docs Reading Route
 
-This directory contains both the public reading path and the protocol maintenance workspace. Start from a role guide first; most subdirectories are background material, not onboarding pages.
+This directory is the public reading path. Start from a role guide first; maintainer-only inputs live in the root `workspace/` directory and are not part of the default onboarding path.
 
 ## Front Door
 
@@ -10,6 +10,7 @@ This directory contains both the public reading path and the protocol maintenanc
 | Runtime / SDK engineering | [guides/runtime.md](guides/runtime.md) |
 | Testing / conformance | [guides/testing.md](guides/testing.md) |
 | Protocol maintenance | [guides/protocol-maintainer.md](guides/protocol-maintainer.md) |
+| Release owner | [../release/README.md](../release/README.md) |
 
 ## Implementation Contract
 
@@ -19,16 +20,17 @@ This directory contains both the public reading path and the protocol maintenanc
 | Hand-written specs | [../specs/](../specs/README.md) | Yes, when aligned with generated/YAML |
 | Registry facts | `../contract/registry/**`, `../contract/registry/domains/**` | Yes |
 | Conformance | [../conformance/](../conformance/README.md) | Yes, as behavior acceptance |
-| Release state | [workspace/release/](workspace/release/README.md) | Yes, for version binding |
+| Release state | [../release/](../release/README.md) | Yes, for version binding |
 
 ## Background Workspace
 
 Do not browse these directories by default. Open them only when the role guide or a maintenance task sends you there.
+Default release artifacts include only `release/`; other workspace directories are repository-only maintainer inputs.
 
 | Directory | Purpose | Runtime contract |
 |---|---|---:|
-| [workspace/](workspace/README.md) | Maintainer workspace for business inputs, flows, drafts, and legacy migration. | No |
-| [workspace/release/](workspace/release/README.md) | Release governance, changelog, spec lock, and runtime update flow. | No, except for version binding |
+| `workspace/` | Maintainer workspace for business inputs, flows, drafts, and legacy migration. | No |
+| [../release/](../release/README.md) | Release governance, changelog, spec lock, and runtime update flow. | No, except for version binding |
 | `docs/archive/audits/` | Historical audits and dated decision context. | No |
 | `tooling/skills/` | Agent lifecycle skills and workflow definitions. | No |
 | `../specs/2-registry/appendix/` | Historical/candidate registry tables. | No |

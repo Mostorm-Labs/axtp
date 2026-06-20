@@ -9,7 +9,7 @@
 
 当前业务模块体系已经有较完整的草案目录，但正式 runtime contract 仍然很窄：`contract/registry/domains/audio/domain.yaml` 目前只采纳了 `audio.algorithm`，generated method registry 只有 4 个 audio algorithm methods，generated event registry 只有 1 个 `audio.algorithmConfigChanged`，generated capability registry 只有 `audio.algorithm` 这一项业务 capability。
 
-`docs/workspace/protocol/**` 共有 103 个草案文件，覆盖 20 个 domain。大多数草案是按模板生成的 draft intake：有 capability 名称和候选 method/event，但缺少 schema、error、legacyRefs、conformance case 和边界复核。它们适合作为 review 输入，不适合作为 runtime 实现合同。
+`workspace/protocol/**` 共有 103 个草案文件，覆盖 20 个 domain。大多数草案是按模板生成的 draft intake：有 capability 名称和候选 method/event，但缺少 schema、error、legacyRefs、conformance case 和边界复核。它们适合作为 review 输入，不适合作为 runtime 实现合同。
 
 优先级上，建议先处理两类模块：
 
@@ -24,9 +24,9 @@
 |---|---|---|---|
 | Generated / adopted | `audio.algorithm` | `contract/registry/domains/audio/domain.yaml`、`contract/generated/method_registry.generated.md`、`contract/generated/event_registry.generated.md`、`contract/generated/capability_registry.generated.md` | 可作为 runtime contract；后续修改走 amendment。 |
 | Rich review draft | `audio.eq`、`audio.recording`、`audio.stream`、`video.stream`、部分 device/system drafts | 草案中已有较多 schema、错误、边界或 flow 说明 | 可进入下一轮精修，不能直接进 registry。 |
-| Template draft | 多数 `docs/workspace/protocol/<domain>/<feature>.md` | 只有候选 methods/events 和 `[REVIEW-DRAFT]` / `[REVIEW-ASK]` | 需要补 flow/schema/capability/error/legacyRefs。 |
-| Business / flow input | `device-system-info`、`device-streaming-audio-video`、`signage-device-management` 等 | `docs/workspace/business/**`、`docs/workspace/flows/**` | 是 protocol 草案和采纳优先级输入，不是实现合同。 |
-| Legacy evidence | AXDP / Rooms / VM33 / Signage 分类和 evidence | `docs/workspace/legacy-migration/classification/**` | 只能作为 mapping 证据；不能直接生成 registry。 |
+| Template draft | 多数 `workspace/protocol/<domain>/<feature>.md` | 只有候选 methods/events 和 `[REVIEW-DRAFT]` / `[REVIEW-ASK]` | 需要补 flow/schema/capability/error/legacyRefs。 |
+| Business / flow input | `device-system-info`、`device-streaming-audio-video`、`signage-device-management` 等 | `workspace/business/**`、`workspace/flows/**` | 是 protocol 草案和采纳优先级输入，不是实现合同。 |
+| Legacy evidence | AXDP / Rooms / VM33 / Signage 分类和 evidence | `workspace/legacy-migration/classification/**` | 只能作为 mapping 证据；不能直接生成 registry。 |
 | Conformance | core/session/rpc/event/stream/capability cases；audio fixture 指向 `audio.algorithm` | `docs/conformance/**` | 有基础框架，但业务模块级 coverage 仍薄。 |
 
 ## 3. 重复或边界模糊的 domain.feature
@@ -117,7 +117,7 @@
 |---|---|---|---|---|---|
 | `audio.algorithm` | generated / contract | `contract/registry/domains/audio/domain.yaml`; generated 4 methods + 1 event + capability; flow `audio-algorithm-level-control` | 未采纳 legacy 授权、默认值读写、AI 线程、beam report；conformance schema 覆盖薄。 | 保持 generated；后续走 amendment 补 conformance 和待确认 legacy 分类。 | P0 maintain |
 | `audio.volume` | draft / high legacy | protocol draft; legacy count 16; signage flow line-out volume | volume/mute/default/lineOut 清楚，但容易吞 input preGain、channel gain、mixer gain；缺 schema/range/unit/state event。 | 第一批 candidate 之一，但先拆清 target：output volume/mute 留本模块，input preGain 归 input，mixer gain 归 mixer。 | P1 |
-| `audio.source` | missing / concept only | 未发现 `docs/workspace/protocol/audio/audio.source.md`; source 字段出现在 audio.stream/video.stream/room.source | 作为 capability 会和 input/routing/stream source descriptor 重复。 | 暂不建独立 capability；沉淀为 source descriptor schema，被 input/routing/stream 引用。 | P2 defer |
+| `audio.source` | missing / concept only | 未发现 `workspace/protocol/audio/audio.source.md`; source 字段出现在 audio.stream/video.stream/room.source | 作为 capability 会和 input/routing/stream source descriptor 重复。 | 暂不建独立 capability；沉淀为 source descriptor schema，被 input/routing/stream 引用。 | P2 defer |
 | `audio.routing` | draft / weak evidence | protocol draft; no direct legacy count in classification summary | 与 source/input/output 边界模糊；缺 route graph schema、route state event、legacyRefs。 | 暂缓采纳；先定义 routing graph 和 active route，不承载 port/source 静态能力。 | P2 |
 | `audio.eq` | rich draft / high legacy | protocol draft v0.2; legacy count 8; review conclusions already distinguish algorithm/default reset | 较成熟，但没有 generated/frontmatter；需要 fieldId/schema/error/conformance 转译。 | 作为第一批 registry candidate；补 schema、errors、capability binding、conformance。 | P1 |
 | `audio.mixer` | template draft / medium legacy | protocol draft; legacy count 3 | mixer item/bus/gain/mute/mix mode 未建模；易与 volume 重叠。 | 第二批；先明确 mixer gain 与 output volume 的边界。 | P2 |
@@ -151,11 +151,11 @@
 
 | 批次 | 重点文件 | 主要边界问题 | 预期产物 |
 |---|---|---|---|
-| device/system | `docs/workspace/business/device-system-info.md`; `docs/workspace/flows/device-system-info.md`; `docs/workspace/protocol/device/*.md`; `docs/workspace/protocol/system/*.md`; launcher/signage legacy evidence | `device.info` 与 system runtime state；default settings vs factory settings；shutdown/reboot schedules；stateChanged event 粒度。 | device/system module audit；registry candidate list；reset/lifecycle conformance outline。 |
-| display/signage | `docs/workspace/flows/signage-device-management.md`; `docs/workspace/protocol/display/*.md`; `docs/workspace/protocol/signage/*.md`; signage migration plan/evidence | display input/output/power 与 signage playback/schedule/media 的边界；OSD、playlist、media storage 是否跨 domain。 | display/signage boundary matrix；first signage candidates；adapter-only list。 |
-| video/camera/stream | `docs/workspace/flows/device-streaming-audio-video.md`; `docs/workspace/protocol/video/*.md`; `docs/workspace/protocol/camera/*.md`; `docs/workspace/protocol/stream/*.md` | video.stream vs stream.flowControl；camera control vs video framing/layout；wireless_cast source proxy；A/V sync。 | media stream adoption plan；STREAM conformance outline；camera/video split recommendations。 |
-| room | `docs/workspace/protocol/room/*.md`; Rooms evidence/classification; rooms migration plan | room.source vs output.layout/video.layout/signage; participant/schedule/layout 的应用层边界。 | room module audit；room.source adoption readiness；Rooms adapter mapping gaps。 |
-| legacy-only | `docs/workspace/legacy-migration/classification/**`; generated migration maps; vendor classification | 哪些 legacy command 只适合 adapter，不应进入 formal registry；vendor/private ranges；旧状态码映射。 | adapter-only registry notes；legacy cleanup backlog；do-not-adopt list。 |
+| device/system | `workspace/business/device-system-info.md`; `workspace/flows/device-system-info.md`; `workspace/protocol/device/*.md`; `workspace/protocol/system/*.md`; launcher/signage legacy evidence | `device.info` 与 system runtime state；default settings vs factory settings；shutdown/reboot schedules；stateChanged event 粒度。 | device/system module audit；registry candidate list；reset/lifecycle conformance outline。 |
+| display/signage | `workspace/flows/signage-device-management.md`; `workspace/protocol/display/*.md`; `workspace/protocol/signage/*.md`; signage migration plan/evidence | display input/output/power 与 signage playback/schedule/media 的边界；OSD、playlist、media storage 是否跨 domain。 | display/signage boundary matrix；first signage candidates；adapter-only list。 |
+| video/camera/stream | `workspace/flows/device-streaming-audio-video.md`; `workspace/protocol/video/*.md`; `workspace/protocol/camera/*.md`; `workspace/protocol/stream/*.md` | video.stream vs stream.flowControl；camera control vs video framing/layout；wireless_cast source proxy；A/V sync。 | media stream adoption plan；STREAM conformance outline；camera/video split recommendations。 |
+| room | `workspace/protocol/room/*.md`; Rooms evidence/classification; rooms migration plan | room.source vs output.layout/video.layout/signage; participant/schedule/layout 的应用层边界。 | room module audit；room.source adoption readiness；Rooms adapter mapping gaps。 |
+| legacy-only | `workspace/legacy-migration/classification/**`; generated migration maps; vendor classification | 哪些 legacy command 只适合 adapter，不应进入 formal registry；vendor/private ranges；旧状态码映射。 | adapter-only registry notes；legacy cleanup backlog；do-not-adopt list。 |
 
 ## 15. 本轮未做的事情
 
@@ -164,6 +164,6 @@
 - 未修改 `contract/generated/**`。
 - 未修改 `docs/conformance/**`。
 - 未修改 `specs/**`。
-- 未重写任何 `docs/workspace/protocol/**` 草案。
+- 未重写任何 `workspace/protocol/**` 草案。
 - 未删除 legacy evidence。
 - 未把 appendix candidate 表当成正式 registry。

@@ -1,5 +1,5 @@
 interface:
   display_name: "00 Business Intake"
   short_description: "Stage 00: draft AXTP business requirement briefs"
-  default_prompt: "Use $business-intake to turn this AXTP product idea into a concise docs/workspace/business requirement brief."
+  default_prompt: "Use $business-intake to turn this AXTP product idea into a concise workspace/business requirement brief."
 

@@ -14,7 +14,7 @@ business -> flows -> protocol draft -> registry -> generated -> conformance -> r
 
 | 类型 | 路径 | 含义 |
 |---|---|---|
-| 评审输入 | `docs/workspace/business/`、`docs/workspace/flows/`、`docs/workspace/protocol/`、`docs/workspace/legacy-migration/` | 用于讨论、规划和评审，还不是 runtime 合同。 |
+| 评审输入 | `workspace/business/`、`workspace/flows/`、`workspace/protocol/`、`workspace/legacy-migration/` | 用于讨论、规划和评审，还不是 runtime 合同。 |
 | 事实源 | `specs/`、`contract/registry/`、`contract/registry/domains/` | 定义当前协议的人读规则和机器可读事实。 |
 | 生成合同 | `contract/protocol/axtp.protocol.yaml`、`contract/generated/`、`contract/test-vectors/` | 供工具、测试、release artifact 和 runtime 仓库消费。 |
 
@@ -23,9 +23,9 @@ business -> flows -> protocol draft -> registry -> generated -> conformance -> r
 ## 标准动作
 
 1. 判断输入是业务 PRD、场景流程、协议草案、采纳、修订、生成还是发布。
-2. 需求还只是产品、架构、客户、legacy 或 UI 意图时，先形成 `docs/workspace/business/<topic>.md`。
-3. 端到端交互再形成 `docs/workspace/flows/<scenario>.md`。
-4. 新增或修改业务能力先形成 `docs/workspace/protocol/<domain>/<domain.feature>.md`。
+2. 需求还只是产品、架构、客户、legacy 或 UI 意图时，先形成 `workspace/business/<topic>.md`。
+3. 端到端交互再形成 `workspace/flows/<scenario>.md`。
+4. 新增或修改业务能力先形成 `workspace/protocol/<domain>/<domain.feature>.md`。
 5. 草案评审通过后，反向确认 specs 和 registry YAML。
 6. 从 YAML 运行 Generator，刷新 Protocol IR、generated reference、test vectors 或 snapshots。
 7. 行为合同变化时，同步 conformance 或说明为什么不需要。
@@ -35,9 +35,9 @@ business -> flows -> protocol draft -> registry -> generated -> conformance -> r
 
 | 阶段 | Skill | 什么时候使用 | 典型输出 |
 |---:|---|---|---|
-| 00 | `business-intake` | 需求还停留在产品、架构、客户、legacy 或 UI 意图，需要先沉淀业务 PRD。 | `docs/workspace/business/<topic>.md`。 |
-| 10 | `plan-protocol-flow` | 有场景、UI flow、用户 story 或端到端交互。 | `docs/workspace/flows/<scenario>.md`。 |
-| 20 | `draft-business-protocol` | business intake 或 flow 已识别出明确协议缺口。 | `docs/workspace/protocol/<domain>/<domain.feature>.md` 草案。 |
+| 00 | `business-intake` | 需求还停留在产品、架构、客户、legacy 或 UI 意图，需要先沉淀业务 PRD。 | `workspace/business/<topic>.md`。 |
+| 10 | `plan-protocol-flow` | 有场景、UI flow、用户 story 或端到端交互。 | `workspace/flows/<scenario>.md`。 |
+| 20 | `draft-business-protocol` | business intake 或 flow 已识别出明确协议缺口。 | `workspace/protocol/<domain>/<domain.feature>.md` 草案。 |
 | 30 | `adopt-protocol-draft` | 草案已评审，需要成为正式协议事实。 | 更新 specs 和 registry YAML。 |
 | 40 | `amend-adopted-protocol` | 已采纳 / 已生成协议需要语义修正、废弃、改名、收窄或扩展。 | 更新 proposal、specs、YAML 和 generated artifacts。 |
 | 50 | `generate-axtp-protocol` | YAML 事实已准备好，需要刷新或验证输出。 | Protocol IR、generated reference、snapshots、test vectors。 |
@@ -81,7 +81,7 @@ Legacy references：<旧命令、旧文档或旧行为，如有>。
 采纳草案：
 
 ```text
-采纳 docs/workspace/protocol/<domain>/<domain.feature>.md 中已评审的草案。
+采纳 workspace/protocol/<domain>/<domain.feature>.md 中已评审的草案。
 确认 naming、schema、method、event、error、capability、profile 和 legacy mapping。
 然后更新 registry YAML 并重新生成。
 ```
@@ -122,6 +122,6 @@ tooling/scripts/validate-conformance.sh
 git diff --check
 ```
 
-release 路径会构建 spec artifact，将版本标记为 `spec/vMAJOR.MINOR.PATCH`，并可触发 runtime upgrade workflows。发布规则见 [release docs](../workspace/release/README.md)。
+release 路径会构建 spec artifact，将版本标记为 `spec/vMAJOR.MINOR.PATCH`，并可触发 runtime upgrade workflows。发布规则见 [release docs](../../release/README.md)。
 
 如果只是文档变更，通常链接检查和针对性 validation 就够；如果文档影响 generated facts、conformance、release artifacts 或 workflow scripts，就跑完整链路。

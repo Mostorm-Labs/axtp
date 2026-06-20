@@ -5,7 +5,7 @@
 > Source inputs: <UI prototype, business story, legacy docs, requirement links>
 > Protocol lifecycle: Stage 10 `plan-protocol-flow`
 
-本文根据业务场景和交互 story 梳理需要使用的 AXTP 协议、已有覆盖状态和协议缺口。本文不是最终协议事实源；已采纳事实以 `contract/registry/**/*.yaml`、`contract/registry/domains/**/*.yaml` 和 `contract/generated/**` 为准，新增或修改协议必须转入 `docs/workspace/protocol/**` 草案和后续采纳流程。
+本文根据业务场景和交互 story 梳理需要使用的 AXTP 协议、已有覆盖状态和协议缺口。本文不是最终协议事实源；已采纳事实以 `contract/registry/**/*.yaml`、`contract/registry/domains/**/*.yaml` 和 `contract/generated/**` 为准，新增或修改协议必须转入 `workspace/protocol/**` 草案和后续采纳流程。
 
 Flow 文档负责：
 
@@ -19,9 +19,9 @@ Flow 文档不负责：
 - 定义完整 method schema。
 - 分配 methodId / eventId / errorCode / fieldId。
 - 作为 runtime implementation contract。
-- 替代 `docs/workspace/protocol/<domain>/<feature>.md`。
+- 替代 `workspace/protocol/<domain>/<feature>.md`。
 
-完整 method / event / schema / capability 定义必须进入 `docs/workspace/protocol/<domain>/<feature>.md`。
+完整 method / event / schema / capability 定义必须进入 `workspace/protocol/<domain>/<feature>.md`。
 
 ## 0. 速读结论
 
@@ -87,7 +87,7 @@ Coverage 取值：
 |---|---|
 | generated | 已进入 `contract/generated/**` 或 protocol IR，可作为实现合同视图。 |
 | adopted | 已写入 registry YAML，但当前 flow 未直接引用 generated 输出。 |
-| draft | 已有 `docs/workspace/protocol/**` 草案，但尚未 adopted/generated。 |
+| draft | 已有 `workspace/protocol/**` 草案，但尚未 adopted/generated。 |
 | missing | 没有合适的 adopted/generated/draft 协议覆盖。 |
 | local-only | App/UI/runtime 本地逻辑，不需要 AXTP 协议。 |
 | non-protocol | 产品规则、人工流程、运营策略或文档说明，不进入协议。 |

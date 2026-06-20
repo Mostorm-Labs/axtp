@@ -31,7 +31,7 @@ Runtime / SDK / mock server 实现者按以下顺序读取实现合同：
 - `conformance/**` 是 runtime 行为验收输入。
 - `specs/**` 是人工维护的正式规范，用来解释 wire、session、registry、codec、tooling 和 versioning 规则。
 
-Runtime MUST NOT implement draft-only `docs/workspace/protocol/**` entries unless explicitly building a mock/prototype.
+Runtime MUST NOT implement draft-only `workspace/protocol/**` entries unless explicitly building a mock/prototype.
 
 ### 0.2 Protocol maintenance sources
 
@@ -57,10 +57,10 @@ Runtime MUST NOT implement draft-only `docs/workspace/protocol/**` entries unles
 以下材料不是 runtime 实现合同：
 
 ```text
-docs/workspace/business/**
-docs/workspace/flows/**
-docs/workspace/protocol/** before adoption
-docs/workspace/legacy-migration/**
+workspace/business/**
+workspace/flows/**
+workspace/protocol/** before adoption
+workspace/legacy-migration/**
 docs/product/roadmap.md
 ```
 
@@ -70,7 +70,7 @@ docs/product/roadmap.md
 
 | 冲突 | 判断方式 | 处理 |
 |---|---|---|
-| generated 与 draft 冲突 | `contract/generated/**` 或 Protocol IR 与 `docs/workspace/protocol/**` 不一致。 | runtime 相信 generated；维护者回到草案或采纳流程修正。 |
+| generated 与 draft 冲突 | `contract/generated/**` 或 Protocol IR 与 `workspace/protocol/**` 不一致。 | runtime 相信 generated；维护者回到草案或采纳流程修正。 |
 | generated 与 specs/YAML 冲突 | generated 输出不能反映 specs 或 registry YAML。 | 维护者修正 specs、YAML 或 Generator 后重新生成。 |
 | conformance 与 specs/generated 冲突 | case 要求和正式合同不一致。 | 修 `conformance/**` 或 specs/YAML，不让 runtime 绕过。 |
 | roadmap 与 generated 冲突 | roadmap 规划了未 generated 能力。 | runtime 不实现 roadmap；产品/架构推动 flow、draft、采纳和生成。 |
@@ -131,8 +131,8 @@ Phase 1 先实现控制面、业务 RPC 闭环，以及 Standard Framed 的 STRE
 
 ```text
 业务需求
-  -> docs/workspace/flows/<scenario>.md
-  -> docs/workspace/protocol/<domain>/<domain.feature>.md
+  -> workspace/flows/<scenario>.md
+  -> workspace/protocol/<domain>/<domain.feature>.md
   -> contract/registry/domains/<domain>/domain.yaml
   -> contract/protocol/axtp.protocol.yaml
   -> contract/generated/*
@@ -152,7 +152,7 @@ Phase 1 先实现控制面、业务 RPC 闭环，以及 Standard Framed 的 STRE
 | WebSocket JSON 是否必须等待 Server Hello 后才能 Identify | `specs/1-core/06-RPC-Session.md` |
 | Standard Framed 是否必须先 CONTROL OPEN / ACCEPT | `specs/1-core/05-Control-Session.md` |
 | 某个业务 method 是否存在 | `contract/protocol/axtp.protocol.yaml` 或 `contract/generated/protocol.md` |
-| 某个业务 method 是否还只是草案 | `docs/workspace/protocol/<domain>/<domain.feature>.md` 和 [Product Domain Status](../../docs/product/domain-status.md) |
+| 某个业务 method 是否还只是草案 | `workspace/protocol/<domain>/<domain.feature>.md` 和 [Product Domain Status](../../docs/product/domain-status.md) |
 | runtime 应该跑哪些验收 case | `conformance/**` 和 runtime 支持等级声明 |
 
 因此，runtime 不从草案补齐连接状态，也不从连接状态机推断业务协议事实。

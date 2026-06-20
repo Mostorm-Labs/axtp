@@ -15,7 +15,7 @@
 ## 规范规则
 
 1. Generator MUST 只从 registry YAML 和 generator 自身模板/代码读取协议事实。
-2. Generator MUST NOT 从 `contract/generated/**`、`docs/workspace/protocol/**`、appendix 或 runtime generated files 反推 source facts。
+2. Generator MUST NOT 从 `contract/generated/**`、`workspace/protocol/**`、appendix 或 runtime generated files 反推 source facts。
 3. `contract/protocol/axtp.protocol.yaml`、`contract/generated/**`、runtime generated outputs 和 `contract/mcp/*.generated.json` MUST 被视为 generated artifacts，不得手写修改。
 4. Generator MUST 先 validate source model，再 build Protocol IR，再 validate Protocol IR，再 emit generated artifacts。
 5. Generator 输出 MUST 尽可能确定性排序，避免无意义 diff。

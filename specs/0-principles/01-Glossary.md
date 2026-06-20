@@ -402,15 +402,15 @@ RPC Hello 永远由 Logical Server 发送，不按 TCP accept/connect 判断。
 
 ### Business Input
 
-**Business Input** 是 `docs/workspace/business/**` 下的产品需求、PRD、现场反馈或用户场景。它是评审输入，不是 runtime 实现合同。
+**Business Input** 是 `workspace/business/**` 下的产品需求、PRD、现场反馈或用户场景。它是评审输入，不是 runtime 实现合同。
 
 ### Flow
 
-**Flow** 是 `docs/workspace/flows/**` 下的场景级交互流，用于描述多角色、多消息的业务流程。它是草案输入，不是最终协议事实源。
+**Flow** 是 `workspace/flows/**` 下的场景级交互流，用于描述多角色、多消息的业务流程。它是草案输入，不是最终协议事实源。
 
 ### Protocol Draft
 
-**Protocol Draft** 是 `docs/workspace/protocol/**` 下的 domain.feature 草案，用于评审候选 method/event/schema/error/capability/profile。
+**Protocol Draft** 是 `workspace/protocol/**` 下的 domain.feature 草案，用于评审候选 method/event/schema/error/capability/profile。
 
 未采纳 draft 不得作为 runtime 正式实现合同。
 
@@ -441,5 +441,5 @@ Runtime release 应绑定 spec tag、明确 commit 或 release artifact，不应
 | STREAM Header 里写 codec/fileType | 错。STREAM Header 只含 streamId/seqId/cursor；业务参数由 RPC 建流上下文绑定。 |
 | JSON_BINARY = 二进制 JSON 标准格式 | 错。JSON_BINARY 是 AXTP RPC fixed binary envelope 的 canonical name。 |
 | methodId 可以复用旧 CmdValue | 错。旧 CmdValue 必须通过 legacy mapping 映射到 AXTP MethodId。 |
-| docs/workspace/protocol 草案就是实现合同 | 错。采纳并 generated 后才是 runtime 可依赖合同。 |
+| workspace/protocol 草案就是实现合同 | 错。采纳并 generated 后才是 runtime 可依赖合同。 |
 | generated 文档可以手写修 | 错。应修改 contract/registry/spec/generator 后重新生成。 |

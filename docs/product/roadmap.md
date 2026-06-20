@@ -26,9 +26,9 @@ Today the repository front door is intentionally narrow:
 
 | Priority | Outcome | Owner path |
 |---|---|---|
-| P0 | Keep release artifact, generated protocol, and conformance validation green. | [Release Docs](../workspace/release/README.md), [Testing Guide](../guides/testing.md) |
+| P0 | Keep release artifact, generated protocol, and conformance validation green. | [Release Docs](../../release/README.md), [Testing Guide](../guides/testing.md) |
 | P0 | Use Node mock-server plus runtime conformance to verify TCP / framed behavior across active runtimes. | Runtime repositories + conformance profiles |
-| P1 | Move high-confidence drafts from `docs/workspace/protocol/**` into registry YAML and generated outputs. | [Protocol Maintainer Guide](../guides/protocol-maintainer.md) |
+| P1 | Move high-confidence drafts from `workspace/protocol/**` into registry YAML and generated outputs. | [Protocol Maintainer Guide](../guides/protocol-maintainer.md) |
 | P1 | Clarify product status and adoption priority per domain. | [Product Domain Status](domain-status.md) |
 | P2 | Continue legacy adapter planning only when it supports an active migration target. | [Legacy Migration Guide](../guides/legacy-migration.md) |
 

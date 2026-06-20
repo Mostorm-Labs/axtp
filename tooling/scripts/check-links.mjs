@@ -7,6 +7,7 @@ const ignoredDirs = new Set([".git", "node_modules", "dist", "outputs"]);
 const ignoredPathSegments = [
   ["docs", "legacy-migration", "evidence"],
   ["docs", "workspace", "legacy-migration", "evidence"],
+  ["workspace", "legacy-migration", "evidence"],
 ];
 const markdownLink = /!?\[[^\]]*]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 const broken = [];

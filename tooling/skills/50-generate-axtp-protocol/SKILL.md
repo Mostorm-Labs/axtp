@@ -11,7 +11,7 @@ Stage 50. Run the deterministic AXTP generation stage after `adopt-protocol-draf
 
 - Input is `contract/registry/**/*.yaml` and `contract/registry/domains/**/*.yaml`.
 - Registry/Profile/Capability Types specs are governance context, not the machine input for generation.
-- Do not infer new protocol facts from `docs/workspace/protocol/**` or `specs/**` during generation.
+- Do not infer new protocol facts from `workspace/protocol/**` or `specs/**` during generation.
 - Do not hand-edit generated outputs.
 - If validation fails because source YAML or Generator logic is wrong, stop and report the source issue unless the user asked you to fix it.
 
@@ -46,7 +46,7 @@ Check the working tree and identify source changes:
 
 ```bash
 git status --short
-git diff --name-only -- contract/registry specs docs/workspace/protocol tooling/generators
+git diff --name-only -- contract/registry specs workspace/protocol tooling/generators
 ```
 
 If only rough drafts changed and no YAML was adopted, do not generate. Route back to `adopt-protocol-draft`.

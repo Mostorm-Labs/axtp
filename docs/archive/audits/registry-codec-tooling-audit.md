@@ -2,7 +2,7 @@
 
 > Date: 2026-06-10
 > Scope: `specs/2-registry/**`, `specs/3-codec/**`, `specs/4-tooling/**`, `specs/README.md`
-> Constraint: no protocol semantic changes; no changes to `contract/registry/**`, `protocol/**`, `contract/generated/**`, `docs/conformance/**`, `docs/workspace/protocol/**`, `docs/workspace/legacy-migration/**`, or root `README.md`.
+> Constraint: no protocol semantic changes; no changes to `contract/registry/**`, `protocol/**`, `contract/generated/**`, `docs/conformance/**`, `workspace/protocol/**`, `workspace/legacy-migration/**`, or root `README.md`.
 
 ## Summary
 
@@ -54,7 +54,7 @@ No status/source/registry_path/generated columns were inferred, because doing so
 ## Non-normative Content Downgraded
 
 - Complete Method/Event/Error/Profile/Capability planning tables are now appendix-only.
-- Legacy adapter details are referenced as `docs/workspace/legacy-migration/**` material instead of normative tooling/versioning rules.
+- Legacy adapter details are referenced as `workspace/legacy-migration/**` material instead of normative tooling/versioning rules.
 - Codex skill workflow and agent operation steps were removed from Generator normative body and referenced as `tooling/skills/**` responsibility.
 - Long business examples and generated table snapshots were removed from codec/tooling normative bodies.
 - Roadmap/P1/P2 planning is now treated as future/non-goal language rather than implementation requirement.
@@ -64,7 +64,7 @@ No status/source/registry_path/generated columns were inferred, because doing so
 | Destination | Suggested future move |
 |---|---|
 | `contract/generated/**` | Current adopted Method/Event/Error/Profile/Capability reference tables should be generated only from registry YAML |
-| `docs/workspace/legacy-migration/**` | Detailed legacy CmdValue, legacy JSON-RPC, status-code, adapter skeleton, and migration-stage material |
+| `workspace/legacy-migration/**` | Detailed legacy CmdValue, legacy JSON-RPC, status-code, adapter skeleton, and migration-stage material |
 | `docs/guides/**` | End-to-end tutorials, long examples, and operator-facing generator walkthroughs |
 | `tooling/skills/**` | Agent workflows such as plan-protocol-flow, adopt-protocol-draft, amend-adopted-protocol, generate-axtp-protocol |
 | `docs/conformance/**` | Profile-specific runtime validation cases derived from contract/registry/generated facts |
@@ -91,8 +91,8 @@ No protocol semantics were changed:
 
 ## Fifth-stage Business Module Audit Suggestions
 
-1. Audit `docs/workspace/protocol/**` drafts against the new `domain.feature` taxonomy and mark which drafts are ready for registry admission.
-2. For each adopted business domain, compare `docs/workspace/protocol/**`, `contract/registry/domains/<domain>/domain.yaml`, `contract/generated/protocol.md`, and conformance coverage.
+1. Audit `workspace/protocol/**` drafts against the new `domain.feature` taxonomy and mark which drafts are ready for registry admission.
+2. For each adopted business domain, compare `workspace/protocol/**`, `contract/registry/domains/<domain>/domain.yaml`, `contract/generated/protocol.md`, and conformance coverage.
 3. Move any remaining current-method/event/error/capability reference tables out of human-authored specs into generated output.
 4. Add conformance case stubs for each stable business method/event, especially schema validation, error handling, and event emission behavior.
 5. Review appendix rows against current registry YAML only if those rows are needed for adoption; otherwise leave appendices as historical planning material.

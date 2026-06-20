@@ -1,6 +1,6 @@
 # AXTP Domain And Feature Classification
 
-本文说明 AXTP 业务能力如何选择 domain、feature 和候选 method/event 归属。它面向协议维护者、legacy 迁移负责人、App / 固件 / runtime 研发，以及在写 `docs/workspace/flows/**` 和 `docs/workspace/protocol/**` 前需要先判断“这件事应该放在哪里”的读者。
+本文说明 AXTP 业务能力如何选择 domain、feature 和候选 method/event 归属。它面向协议维护者、legacy 迁移负责人、App / 固件 / runtime 研发，以及在写 `workspace/flows/**` 和 `workspace/protocol/**` 前需要先判断“这件事应该放在哪里”的读者。
 
 本文是规范性 domain / feature 分类原则。稳定 method、event、schema、error 和 capability 机器事实仍以 `contract/registry/**/*.yaml`、`contract/registry/domains/**/*.yaml`、`contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**` 为准。命名模板和 registry 规则以 `specs/2-registry/01-Naming-and-Taxonomy.md` 为准。
 

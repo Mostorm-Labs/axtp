@@ -108,4 +108,4 @@ fields:
 
 ## 非目标 / 未来
 
-本文档不定义 schema registry 的完整大表，也不定义 legacy 固定结构到 TLV 的完整迁移方案。legacy 字段映射应进入 `docs/workspace/legacy-migration` 或 registry 条目的非 wire 元数据。
+本文档不定义 schema registry 的完整大表，也不定义 legacy 固定结构到 TLV 的完整迁移方案。legacy 字段映射应进入 `workspace/legacy-migration` 或 registry 条目的非 wire 元数据。

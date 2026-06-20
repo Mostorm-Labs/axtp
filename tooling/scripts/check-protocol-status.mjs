@@ -5,6 +5,7 @@ import path from "node:path";
 const root = path.resolve(process.argv[2] ?? process.cwd());
 const generatedPath = path.join(root, "contract", "generated", "protocol.json");
 const domainStatusPath = path.join(root, "docs", "product", "domain-status.md");
+const protocolDraftRoot = path.join(root, "workspace", "protocol");
 const errors = [];
 
 function fail(message) {
@@ -44,6 +45,7 @@ function boolValue(value) {
 const generated = JSON.parse(fs.readFileSync(generatedPath, "utf8"));
 const generatedFeatures = new Set();
 const generatedCounts = new Map();
+const draftCounts = new Map();
 
 function addDomainCount(domain) {
   generatedCounts.set(domain, (generatedCounts.get(domain) ?? 0) + 1);
@@ -58,9 +60,11 @@ for (const event of generated.events ?? []) {
   for (const capability of event.capabilities ?? []) generatedFeatures.add(capability);
 }
 
-for (const file of walkProtocolDrafts(path.join(root, "docs", "workspace", "protocol"))) {
+for (const file of walkProtocolDrafts(protocolDraftRoot)) {
   const relative = path.relative(root, file);
   const { text, data } = readFrontmatter(file);
+  const domain = data.domain || path.relative(protocolDraftRoot, file).split(path.sep)[0];
+  draftCounts.set(domain, (draftCounts.get(domain) ?? 0) + 1);
   if (!data.status || data.contract === undefined || data.generated === undefined || !data.feature) {
     fail(`${relative}: missing required protocol frontmatter`);
     continue;
@@ -80,16 +84,36 @@ for (const file of walkProtocolDrafts(path.join(root, "docs", "workspace", "prot
 }
 
 const domainStatus = fs.readFileSync(domainStatusPath, "utf8");
-const matrixRows = Array.from(domainStatus.matchAll(/^\|\s*([a-z][a-z0-9]*)\s*\|\s*[^|]*\|\s*[^|]*\|\s*(\d+)\s*\|/gm));
+if (/最后更新：\s*\d{4}-\d{2}-\d{2}/.test(domainStatus)) {
+  fail("docs/product/domain-status.md: remove manual Last update dates; Drafts and Generated counts are script-checked");
+}
+if (!/Drafts 和 Generated 数量由 `tooling\/scripts\/check-protocol-status\.mjs` 校验/.test(domainStatus)) {
+  fail("docs/product/domain-status.md: missing script-checked count policy");
+}
+
+const matrixRows = Array.from(domainStatus.matchAll(/^\|\s*([a-z][a-z0-9]*)\s*\|\s*(\d+)\s*\|\s*[^|]*\|\s*(\d+)\s*\|/gm));
 if (matrixRows.length === 0) {
   fail("docs/product/domain-status.md: Domain matrix has no parseable rows");
 }
+const matrixDomains = new Set();
 for (const match of matrixRows) {
   const domain = match[1];
-  const actual = generatedCounts.get(domain) ?? 0;
-  const documented = Number(match[2]);
-  if (documented !== actual) {
-    fail(`docs/product/domain-status.md: Domain matrix generated count for ${domain} is ${documented}, expected ${actual}`);
+  matrixDomains.add(domain);
+  const documentedDrafts = Number(match[2]);
+  const documentedGenerated = Number(match[3]);
+  const actualDrafts = draftCounts.get(domain) ?? 0;
+  const actualGenerated = generatedCounts.get(domain) ?? 0;
+  if (documentedDrafts !== actualDrafts) {
+    fail(`docs/product/domain-status.md: Domain matrix draft count for ${domain} is ${documentedDrafts}, expected ${actualDrafts}`);
+  }
+  if (documentedGenerated !== actualGenerated) {
+    fail(`docs/product/domain-status.md: Domain matrix generated count for ${domain} is ${documentedGenerated}, expected ${actualGenerated}`);
+  }
+}
+
+for (const domain of new Set([...draftCounts.keys(), ...generatedCounts.keys()])) {
+  if (!matrixDomains.has(domain)) {
+    fail(`docs/product/domain-status.md: Domain matrix is missing ${domain}`);
   }
 }
 
@@ -99,4 +123,4 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log("[OK] protocol draft frontmatter and product domain matrix match generated protocol");
+console.log("[OK] protocol draft frontmatter and product domain matrix counts match workspace and generated protocol");

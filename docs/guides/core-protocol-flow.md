@@ -673,7 +673,7 @@ RPC 建流 -> STREAM 数据包 -> RPC 关流
 
 也就是说，CONTROL 负责让链路进入 `FRAMING_READY`，RPC 负责打开/关闭业务流，STREAM 负责搬运连续媒体数据。三者缺一不可。
 
-发布前，具体 `video.*` / `audio.*` 方法仍必须进入 `contract/registry/` 并由 generator 输出到 `contract/generated/protocol.json`。研发联调可以先按 `docs/workspace/protocol/video/video.stream.md` 和 `docs/workspace/protocol/audio/audio.recording.md` 草案实现 adapter，但不能把未采纳草案当作最终发布合同。
+发布前，具体 `video.*` / `audio.*` 方法仍必须进入 `contract/registry/` 并由 generator 输出到 `contract/generated/protocol.json`。研发联调可以先按 `workspace/protocol/video/video.stream.md` 和 `workspace/protocol/audio/audio.recording.md` 草案实现 adapter，但不能把未采纳草案当作最终发布合同。
 
 ### 14.1 视频流完整流程
 

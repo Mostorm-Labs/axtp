@@ -1,21 +1,21 @@
 ---
 name: draft-business-protocol
-description: Stage 20 drafting skill for AXTP business protocol proposals. Use when business intake or flow planning has identified a concrete AXTP protocol gap that needs a docs/workspace/protocol domain-feature draft, including method/event/schema/error/capability/profile candidates, JSON examples, stream or firmware.update behavior, or protocol classification. Writes docs/workspace/protocol drafts only by default and must not write registry YAML or generated artifacts.
+description: Stage 20 drafting skill for AXTP business protocol proposals. Use when business intake or flow planning has identified a concrete AXTP protocol gap that needs a workspace/protocol domain-feature draft, including method/event/schema/error/capability/profile candidates, JSON examples, stream or firmware.update behavior, or protocol classification. Writes workspace/protocol drafts only by default and must not write registry YAML or generated artifacts.
 ---
 
 # Draft Business Protocol
 
-Stage 20. Create or update an AXTP business protocol draft in `docs/workspace/protocol/<domain>/<domain.feature>.md`. Use this stage after business intake or flow planning has identified concrete protocol semantics that need review.
+Stage 20. Create or update an AXTP business protocol draft in `workspace/protocol/<domain>/<domain.feature>.md`. Use this stage after business intake or flow planning has identified concrete protocol semantics that need review.
 
 ## Boundaries
 
-- Edit only `docs/workspace/protocol/**` unless the user explicitly asks for documentation around the draft.
+- Edit only `workspace/protocol/**` unless the user explicitly asks for documentation around the draft.
 - Do not edit `contract/registry/**`, `contract/registry/domains/**`, `contract/protocol/axtp.protocol.yaml`, `contract/generated/**`, `contract/mcp/**`, or `contract/test-vectors/**`.
 - Do not assign final numeric IDs unless they already exist in YAML/specs; use `TBD after adoption` for new methodId/eventId/errorCode/fieldId values.
 - Do not introduce new PayloadType, Frame Header business fields, WebSocket STREAM support, or runtime Header Profile negotiation.
 - Do not use this skill for raw PRD intake. If the user is still describing product intent, customer value, UI goals, or unresolved business scope, route to `business-intake`.
-- JSON examples must be embedded in the `docs/workspace/protocol/**` Markdown draft by default; do not create generated JSON artifacts unless the user explicitly asks.
-- Follow `docs/workspace/protocol/draft-conventions.md` for JSON envelope, error, schema expansion, flow example, and contract-boundary conventions. Drafts should link to the common convention instead of repeating those rules.
+- JSON examples must be embedded in the `workspace/protocol/**` Markdown draft by default; do not create generated JSON artifacts unless the user explicitly asks.
+- Follow `workspace/protocol/draft-conventions.md` for JSON envelope, error, schema expansion, flow example, and contract-boundary conventions. Drafts should link to the common convention instead of repeating those rules.
 - Business feature examples assume the RPC Session is already `APP_READY`; show only feature-specific RPC `d` blocks after the common convention link.
 - Method/event example headings must state the envelope op, for example `Request d block Example (op=7)`, `Success Response d block Example (op=8)`, `Error Response d block Example (op=8)`, and `Event d block Example (op=6)`.
 - Do not use JSON-RPC 2.0 (`jsonrpc: "2.0"`) as an AXTP wire example unless explicitly documenting an external adapter representation.
@@ -25,11 +25,11 @@ Stage 20. Create or update an AXTP business protocol draft in `docs/workspace/pr
 
 ### 1. Locate AXTP Context
 
-Work from the repository root containing `specs`, `docs/workspace/protocol`, and `contract/registry`. Read only the relevant parts of:
+Work from the repository root containing `specs`, `workspace/protocol`, and `contract/registry`. Read only the relevant parts of:
 
 ```text
-docs/workspace/protocol/README.md
-docs/workspace/protocol/draft-conventions.md
+workspace/protocol/README.md
+workspace/protocol/draft-conventions.md
 specs/2-registry/01-Naming-and-Taxonomy.md
 specs/4-tooling/01-YAML-Mapping.md
 specs/2-registry/02-Methods-Registry.md
@@ -51,7 +51,7 @@ specs/1-core/07-Stream-Data-Plane.md
 specs/1-core/08-Low-Bandwidth-Degradation.md
 ```
 
-Search `docs/workspace/protocol/**`, `contract/registry/**`, and `contract/registry/domains/**` for the requirement keywords and likely English equivalents.
+Search `workspace/protocol/**`, `contract/registry/**`, and `contract/registry/domains/**` for the requirement keywords and likely English equivalents.
 
 ### 2. Decide Reuse, Modify, Or Create
 
@@ -59,9 +59,9 @@ Make one decision and explain it in the draft and final response:
 
 | Decision | Use when | Action |
 |---|---|---|
-| Reuse existing draft | Existing `docs/workspace/protocol/<domain>/<domain.feature>.md` already covers the requirement | Add a short review note or leave unchanged if complete |
+| Reuse existing draft | Existing `workspace/protocol/<domain>/<domain.feature>.md` already covers the requirement | Add a short review note or leave unchanged if complete |
 | Modify existing draft | Existing domain.feature is right but lacks scenario, method, event, schema, error, or boundary details | Patch that draft; preserve existing review markers and user edits |
-| Create new draft | No existing feature has the right boundary | Create `docs/workspace/protocol/<domain>/<domain.feature>.md` from `references/protocol-draft-template.md` |
+| Create new draft | No existing feature has the right boundary | Create `workspace/protocol/<domain>/<domain.feature>.md` from `references/protocol-draft-template.md` |
 
 Choose `domain.feature` by 08 rules: feature is a capability block, not a field name. Keep `stream` for common data plane only; business streams are owned by the business domain and bind to STREAM through RPC-created `streamId`.
 
@@ -81,7 +81,7 @@ Use the result to label implementation degree:
 | State | Meaning |
 |---|---|
 | Not drafted | No matching protocol draft found |
-| Drafted only | Exists in `docs/workspace/protocol`, not in YAML |
+| Drafted only | Exists in `workspace/protocol`, not in YAML |
 | Partially adopted | Some facts exist in YAML, but draft has gaps |
 | Adopted | YAML/generated already cover the feature |
 
@@ -93,7 +93,7 @@ Use `apply_patch` for manual edits. A draft must include:
 
 - frontmatter status and contract state
 - a `0. 速读结论` table summarizing purpose, state, implementation contract status, main interaction type, STREAM usage, registry readiness, conformance state, and unresolved questions
-- a short `JSON 示例约定` section linking to `docs/workspace/protocol/draft-conventions.md` and stating this draft only shows feature-specific RPC `d` block examples
+- a short convention reference, usually in the intro or quick-read section, linking to `workspace/protocol/draft-conventions.md`; do not add a standalone boilerplate JSON convention section
 - concise function description
 - capability boundary: included, excluded, and data-plane usage
 - method section with two layers: `3.0 方法速览` and one independent subsection per method
@@ -116,9 +116,9 @@ Use `apply_patch` for manual edits. A draft must include:
 
 Prefer concise tables. Do not force a heavy Purpose/Scope/Lifecycle/Stream Usage/Non-goals template on simple features. Complex features may add state machines, interaction flows, STREAM details, or more examples only when useful. Use `TBD after adoption` for numeric IDs.
 
-The default `docs/workspace/protocol/<domain>/<domain.feature>.md` draft is a human-readable review artifact, not the machine truth source and not a runtime implementation contract. It should help product/architecture understand scope, engineers see method/event/schema details, test owners derive conformance cases, migration owners map legacy commands, and protocol maintainers judge registry readiness. Formal machine truth remains in `contract/registry/**/*.yaml`, `contract/protocol/axtp.protocol.yaml`, `contract/generated/**`, and `conformance/**`.
+The default `workspace/protocol/<domain>/<domain.feature>.md` draft is a human-readable review artifact, not the machine truth source and not a runtime implementation contract. It should help product/architecture understand scope, engineers see method/event/schema details, test owners derive conformance cases, migration owners map legacy commands, and protocol maintainers judge registry readiness. Formal machine truth remains in `contract/registry/**/*.yaml`, `contract/protocol/axtp.protocol.yaml`, `contract/generated/**`, and `conformance/**`.
 
-For schema-heavy features, follow `docs/workspace/protocol/draft-conventions.md#schema-展开约定` and organize the schema section for reading, not just completeness:
+For schema-heavy features, follow `workspace/protocol/draft-conventions.md#schema-展开约定` and organize the schema section for reading, not just completeness:
 
 - Start with a schema hierarchy overview that explains the main data blocks and how they relate.
 - Separate request/response schemas, capability schemas, runtime config/state schemas, and event payload schemas.
@@ -131,7 +131,7 @@ For schema-heavy features, follow `docs/workspace/protocol/draft-conventions.md#
 - Never make readers infer whether a field table is method params, method result, event payload, shared schema, or capability. The heading and nearby prose must say which schema it belongs to.
 - Keep capability fields only in the Capability section; do not mix capability descriptors into method params/results or event payloads.
 
-When creating a new draft or materially updating an existing draft, include or refresh inline JSON examples. Keep the common rules in `docs/workspace/protocol/draft-conventions.md` and keep each draft focused on the feature:
+When creating a new draft or materially updating an existing draft, include or refresh inline JSON examples. Keep the common rules in `workspace/protocol/draft-conventions.md` and keep each draft focused on the feature:
 
 - Put Request / Success Response / Error Response examples inside the relevant method subsection, close to that method's fields and rules.
 - Put Event examples inside the relevant event subsection, close to that event's payload fields and client handling rules.
@@ -184,8 +184,8 @@ Never move `[REVIEW-ASK]`, `[REVIEW-FIX]`, or `[REVIEW-BLOCKER]` facts into YAML
 ## Useful Commands
 
 ```bash
-rg --files docs/workspace/protocol contract/registry specs
-rg -n "keyword1|keyword2|关键词" docs/workspace/protocol contract/registry specs
-git diff --check -- docs/workspace/protocol
-git status --short docs/workspace/protocol specs contract/registry contract/protocol contract/generated
+rg --files workspace/protocol contract/registry specs
+rg -n "keyword1|keyword2|关键词" workspace/protocol contract/registry specs
+git diff --check -- workspace/protocol
+git status --short workspace/protocol specs contract/registry contract/protocol contract/generated
 ```
