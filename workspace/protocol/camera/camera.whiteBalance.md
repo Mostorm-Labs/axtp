@@ -638,13 +638,9 @@ lastReviewed: 2026-06-13
 | VM33 `WhiteBalance.Temperature` | `colorTemperatureK` | candidate | 单位和范围需确认。 |
 | `Config.MultiGet:Camera` / `Config.MultiGet:camera` | 拆分到 whiteBalance/image/exposure | `[REVIEW-ASK]` | 不能整体归 `camera.image`。 |
 
-## 10. Registry / Conformance 状态
+## 10. 采纳状态
 
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | not generated | `contract/registry/domains/camera/domain.yaml` 尚未包含 `camera.whiteBalance`。 |
-| generated | false | generated 文档无 camera whiteBalance 方法。 |
-| conformance | missing | 需覆盖 mode dependency、range、event。 |
+本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。feature-specific 验收重点见下方测试要点。
 
 ## 11. 测试要点
 

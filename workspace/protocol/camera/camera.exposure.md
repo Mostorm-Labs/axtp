@@ -646,13 +646,9 @@ lastReviewed: 2026-06-13
 | VM33 `Exposure.Mode` | `mode` | candidate | mode 枚举待确认。 |
 | VM33 `Exposure.ExposureValue` | `ev` 或 sensor sensitivity | `[REVIEW-ASK]` | 注释和命名不完全一致。 |
 
-## 10. Registry / Conformance 状态
+## 10. 采纳状态
 
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | not generated | `contract/registry/domains/camera/domain.yaml` 尚未包含 `camera.exposure`。 |
-| generated | false | generated 文档无 camera exposure 方法。 |
-| conformance | missing | 需覆盖 mode dependency、range、event。 |
+本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。feature-specific 验收重点见下方测试要点。
 
 ## 11. 测试要点
 

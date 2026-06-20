@@ -4,6 +4,14 @@ import path from "node:path";
 
 const root = path.resolve(process.argv[2] ?? process.cwd());
 const protocolRoot = path.join(root, "workspace", "protocol");
+const protocolDraftTemplate = path.join(
+  root,
+  "tooling",
+  "skills",
+  "20-draft-business-protocol",
+  "references",
+  "protocol-draft-template.md",
+);
 const errors = [];
 
 const bannedLinePatterns = [
@@ -63,6 +71,37 @@ const bannedLinePatterns = [
     pattern: /^\|\s*registry\s*\|\s*not generated\s*\|\s*尚未写入正式 registry YAML。\s*\|/,
     reason: "generic registry status table belongs in draft-conventions.md",
   },
+  {
+    pattern: /^\|\s*registry\s*\|\s*not generated\s*\|\s*`contract\/registry\/domains\/[^`]+` 尚未包含 /,
+    reason: "fixed not-generated registry status belongs in frontmatter/domain status, not each draft",
+  },
+  {
+    pattern: /^\|\s*generated\s*\|\s*false\s*\|\s*generated 文档无 /,
+    reason: "fixed not-generated status belongs in frontmatter/domain status, not each draft",
+  },
+  {
+    pattern: /^\|\s*conformance\s*\|\s*missing\s*\|\s*需覆盖 /,
+    reason: "fixed conformance status table belongs in draft-conventions.md unless it carries adopted case IDs",
+  },
+];
+
+const templateOnlyBannedLinePatterns = [
+  {
+    pattern: /^#### 3\.1\.2 Request d block Example \(op=7\)$/,
+    reason: "template must not require generic request examples for every method",
+  },
+  {
+    pattern: /^#### 3\.1\.4 Success Response d block Example \(op=8\)$/,
+    reason: "template must not require generic success examples for every method",
+  },
+  {
+    pattern: /^#### 3\.1\.7 Error Response d block Example \(op=8\)$/,
+    reason: "template must not require generic error examples for every method",
+  },
+  {
+    pattern: /^### 7\.1 场景：<客户端要完成什么>$/,
+    reason: "template must not include generic read/modify flow boilerplate",
+  },
 ];
 
 function walk(dir) {
@@ -84,7 +123,10 @@ function shouldSkip(file) {
   return base === "README.md" || base === "draft-conventions.md";
 }
 
-for (const file of walk(protocolRoot)) {
+const files = walk(protocolRoot);
+if (fs.existsSync(protocolDraftTemplate)) files.push(protocolDraftTemplate);
+
+for (const file of files) {
   if (shouldSkip(file)) continue;
   const relative = path.relative(root, file);
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
@@ -92,6 +134,13 @@ for (const file of walk(protocolRoot)) {
     for (const { pattern, reason } of bannedLinePatterns) {
       if (pattern.test(line)) {
         errors.push(`${relative}:${index + 1}: ${reason}`);
+      }
+    }
+    if (file === protocolDraftTemplate) {
+      for (const { pattern, reason } of templateOnlyBannedLinePatterns) {
+        if (pattern.test(line)) {
+          errors.push(`${relative}:${index + 1}: ${reason}`);
+        }
       }
     }
   });

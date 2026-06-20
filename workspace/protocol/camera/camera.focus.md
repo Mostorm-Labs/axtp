@@ -2015,15 +2015,9 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | `Focus.SetFocusRegion` | `camera.setFocusRegion` / `camera.triggerAutoFocus` | candidate | 点选坐标归一化。 |
 | `Focus.*Zoom` | `camera.zoom` | out-of-scope | 不归 `camera.focus`。 |
 
-## 10. Registry / Conformance 状态
+## 10. 采纳状态
 
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | not generated | `contract/registry/domains/camera/domain.yaml` 尚未包含 `camera.focus`。 |
-| generated | false | generated 文档无 camera focus 方法。 |
-| protocol draft | draft | 本文为 review 草案。 |
-| registry readiness | candidate | 方法/事件/schema/capability 轮廓可进入 review，但事件拆分、坐标系统和 jog 仍需确认。 |
-| conformance | missing | 需覆盖 mode/position/region/AF/jog/event/errors/capability discovery。 |
+本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。registry readiness 为 candidate，但事件拆分、坐标系统和 jog 仍需确认；feature-specific 验收重点见下方测试要点。
 
 ## 11. 测试要点
 

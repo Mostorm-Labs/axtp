@@ -14,10 +14,10 @@ Stage 20. Create or update an AXTP business protocol draft in `workspace/protoco
 - Do not assign final numeric IDs unless they already exist in YAML/specs; use `TBD after adoption` for new methodId/eventId/errorCode/fieldId values.
 - Do not introduce new PayloadType, Frame Header business fields, WebSocket STREAM support, or runtime Header Profile negotiation.
 - Do not use this skill for raw PRD intake. If the user is still describing product intent, customer value, UI goals, or unresolved business scope, route to `business-intake`.
-- JSON examples must be embedded in the `workspace/protocol/**` Markdown draft by default; do not create generated JSON artifacts unless the user explicitly asks.
+- JSON examples are conditional: keep feature-specific `d` block examples when they clarify complex params/results, event payload, STREAM setup, async state machines, permission/error branches, or legacy field conversion. Do not copy generic Request/Success/Error envelope examples into every simple method.
 - Follow `workspace/protocol/draft-conventions.md` for JSON envelope, error, schema expansion, flow example, and contract-boundary conventions. Drafts should link to the common convention instead of repeating those rules.
 - Business feature examples assume the RPC Session is already `APP_READY`; show only feature-specific RPC `d` blocks after the common convention link.
-- Method/event example headings must state the envelope op, for example `Request d block Example (op=7)`, `Success Response d block Example (op=8)`, `Error Response d block Example (op=8)`, and `Event d block Example (op=6)`.
+- When a method/event keeps a JSON example, the heading must make the envelope role clear, for example `Request d block Example (op=7)`, `Success Response d block Example (op=8)`, `Error Response d block Example (op=8)`, or `Event d block Example (op=6)`.
 - Do not use JSON-RPC 2.0 (`jsonrpc: "2.0"`) as an AXTP wire example unless explicitly documenting an external adapter representation.
 - Always leave `[REVIEW-*]` markers for human review. Unconfirmed facts must be `[REVIEW-ASK]`, `[REVIEW-DRAFT]`, `[REVIEW-FIX]`, or `[REVIEW-BLOCKER]`.
 
@@ -88,7 +88,7 @@ Use `apply_patch` for manual edits. A draft must include:
 - capability boundary: included, excluded, and data-plane usage
 - method section with two layers: `3.0 方法速览` and one independent subsection per method
 - method overview table columns: Method, 调用类型, 用途, Params Schema, Result Schema, 是否触发事件, 状态
-- per-method detail blocks with purpose, call type, Params Schema, Result Schema, event trigger behavior, idempotency/async notes, common errors, params fields, request `d` block example, result fields, success response `d` block example, possible events with related event `d` block examples when applicable, method-specific error table, error response `d` block example, and method rules
+- per-method detail blocks with purpose, call type, Params Schema, Result Schema, event trigger behavior, idempotency/async notes, common errors, params fields, result fields, possible events, method-specific error table, method rules, and conditional feature-specific `d` block examples only when they add review value
 - params/result field table headings that include the schema name, such as `请求参数 Params：SetVolumeParams` and `返回结果 Result：AudioVolumeState`
 - event section with two layers: `4.0 事件速览` and one independent subsection per event
 - event overview table columns: Event, 触发条件, Payload Schema, 客户端处理建议, 状态
@@ -96,7 +96,7 @@ Use `apply_patch` for manual edits. A draft must include:
 - event payload field table headings that include the schema name, such as `Payload：XxxChangedEvent`
 - capability table with field, type, required, range/enum, and description
 - schema field tables with field, type, required, range/enum, default, and description
-- inline JSON `d` block examples for each method request, method success response, representative method error response, related event when applicable, and each event payload
+- conditional JSON `d` block examples for complex payloads, event payloads, STREAM setup, async transitions, permission/error branches, or legacy field conversions; simple get/set methods may rely on field tables plus rules
 - a `7. 交互流程示例 Flow Examples` section for end-to-end multi-method/event flows only; do not use it as the only place for single method/event API examples
 - candidate errors
 - legacy mapping candidates or `[REVIEW-ASK]`
@@ -117,24 +117,27 @@ For schema-heavy features, follow `workspace/protocol/draft-conventions.md#schem
 - Include range, enum, unit, default, and restart/apply notes close to the field table where readers need them.
 - Choose one schema expansion mode and stay consistent.
 - For simple features, expand params/result/payload fields directly under each method/event, and keep the schema section as an index.
-- For complex features, keep method/event blocks readable by naming the schema and linking to the exact schema subsection, but still include the key fields and inline JSON `d` block examples needed to understand the method/event without hunting through the whole document.
+- For complex features, keep method/event blocks readable by naming the schema and linking to the exact schema subsection, but still include the key fields and feature-specific JSON `d` block examples needed to understand the method/event without hunting through the whole document.
 - Never make readers infer whether a field table is method params, method result, event payload, shared schema, or capability. The heading and nearby prose must say which schema it belongs to.
 - Keep capability fields only in the Capability section; do not mix capability descriptors into method params/results or event payloads.
 
-When creating a new draft or materially updating an existing draft, include or refresh inline JSON examples. Keep the common rules in `workspace/protocol/draft-conventions.md` and keep each draft focused on the feature:
+When creating a new draft or materially updating an existing draft, use conditional JSON examples. Keep the common rules in `workspace/protocol/draft-conventions.md` and keep each draft focused on the feature:
 
-- Put Request / Success Response / Error Response examples inside the relevant method subsection, close to that method's fields and rules.
-- Put Event examples inside the relevant event subsection, close to that event's payload fields and client handling rules.
-- Method/event examples SHOULD show only the RPC `d` block to keep long feature drafts readable.
-- Request `d` block examples must include `id`, `method`, and optional `params`; `id` must be non-zero; the heading must mark `op=7`.
-- Response `d` block examples must echo request `id`, include `status.ok`, and use numeric `status.code`; use `0` for success; the heading must mark `op=8`.
-- Event `d` block examples must include `event`, numeric `intent`, and optional `data`; events must not include request `id`; the heading must mark `op=6`.
+- Do not add generic Request / Success Response / Error Response examples just to show `op=7`, `op=8`, `status.ok`, or `id` echoing; those are common conventions.
+- Add Request examples when params contain nested objects, arrays, selectors, scope/target semantics, default-sensitive fields, STREAM setup, credentials, or legacy field conversion.
+- Add Success Response examples when result shape is not obvious, returns accepted state instead of final state, creates stream/session IDs, or contains transformed/derived fields.
+- Add Error Response examples only when the feature has a meaningful error branch, permission boundary, candidate error, partial-apply rule, or recovery instruction.
+- Add Event examples when payload shape, intent, changedFields, state snapshot, async transition, or client cache behavior needs review.
+- Examples SHOULD show only the RPC `d` block to keep long feature drafts readable.
+- Request examples must include `id`, `method`, and optional `params`; `id` must be non-zero.
+- Response examples must echo request `id`, include `status.ok`, and use numeric `status.code`; use `0` for success.
+- Event examples must include `event`, numeric `intent`, and optional `data`; events must not include request `id`.
 - A failure response still uses `op=8`, uses `status.ok=false`, and must not carry business `result`.
 - Do not use string error names in `status.code`. Use adopted numeric ErrorCode values from specs/YAML/generated. If a draft-only candidate error lacks a numeric code, either use the nearest adopted common numeric code in the JSON example and put the candidate name in `status.details.candidateError`, or state that the final code is `TBD after adoption` in prose outside JSON.
 - Validate JSON examples mentally or with a parser when practical; examples should be readable and syntactically valid.
 - Use placeholders for secrets, credentials, tokens, keys, personal data, serial numbers, MAC addresses, and IP addresses when exact values are not confirmed.
 - Mark unconfirmed example fields or behavior in nearby prose with `[REVIEW-ASK]`.
-- For existing drafts, refresh examples for methods/events that were added or changed; if the draft has no inline examples yet, add them for each primary method/event.
+- For existing drafts, refresh examples only for methods/events whose feature-specific payload, state, error, or legacy semantics changed.
 
 The old centralized `JSON 示例` section is deprecated. Section 7 in new drafts should be `交互流程示例 Flow Examples` and should only show end-to-end flows such as capability discovery -> set method -> changed event, action accepted -> state event, failure request -> no event, or reconnect -> get state calibration.
 
@@ -154,7 +157,7 @@ Return:
 - decision: reuse, modify, or create
 - draft file path
 - what was added or changed
-- inline JSON `d` block examples added or refreshed
+- feature-specific JSON `d` block examples added or refreshed, or why simple fields did not need examples
 - key review questions / `[REVIEW-*]` blockers
 - confirmation that no contract/registry/generated/protocol files were modified
 - next step: after human review, use `tooling/skills/30-adopt-protocol-draft/SKILL.md`

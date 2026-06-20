@@ -1046,13 +1046,9 @@ lastReviewed: 2026-06-13
 | `CommonGetPositionNumberJson` / `CommonSetPositionNumberJson` | preset 查询/保存候选 | `[REVIEW-ASK]` | 需确认 position number 是 PTZ preset 还是房间座位编号。 |
 | `CommonSetPanTiltZoom` / `CommonGetPanTiltZoom` | `camera.ptz` + `camera.zoom` 拆分候选 | `[REVIEW-ASK]` | 名称含 pan/tilt/zoom；payload 单位和字段边界需确认。 |
 
-## 10. Registry / Conformance 状态
+## 10. 采纳状态
 
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | not generated | `contract/registry/domains/camera/domain.yaml` 尚未包含 `camera.ptz`。 |
-| generated | false | generated 文档无 camera PTZ 方法。 |
-| conformance | missing | 需覆盖 move/stop/preset/conflict/event。 |
+本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。feature-specific 验收重点见下方测试要点。
 
 ## 11. 测试要点
 

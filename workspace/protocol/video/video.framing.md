@@ -921,13 +921,9 @@ lastReviewed: 2026-06-13
 | `CommonSetSpeakerTrackDelay` / `CommonGetSpeakerTrackDelay` | `speakerTracking.delayMs` | candidate | 单位是否毫秒待确认。 |
 | `Config.MultiSet:Video mode=auto-framing` | `mode=auto_framing` | candidate | VM33 字段仍需按实际 payload 核对。 |
 
-## 10. Registry / Conformance 状态
+## 10. 采纳状态
 
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | not generated | `contract/registry/domains/video/domain.yaml` 尚未包含 `video.framing` 正式事实。 |
-| generated | false | `contract/generated/protocol.md` 无 `video.framing` methods/events。 |
-| conformance | missing | 需补 capability、set/get、event、conflict、legacy adapter cases。 |
+本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。feature-specific 验收重点见下方测试要点。
 
 ## 11. 测试要点
 

@@ -867,13 +867,9 @@ lastReviewed: 2026-06-13
 | `Focus.GetZoomInfo` | `camera.getZoomState` | candidate | `digitalBase` / `opticsBase` 字段映射待确认。 |
 | `CommonSetPanTiltZoom` / `CommonGetPanTiltZoom` | `camera.zoom` + `camera.ptz` 拆分候选 | `[REVIEW-ASK]` | 名称含 PTZ，不能直接全部归 zoom。 |
 
-## 10. Registry / Conformance 状态
+## 10. 采纳状态
 
-| 项 | 状态 | 说明 |
-|---|---|---|
-| registry | not generated | `contract/registry/domains/camera/domain.yaml` 尚未包含 `camera.zoom`。 |
-| generated | false | generated 文档无 camera zoom 方法。 |
-| conformance | missing | 需覆盖 ratio/position/type、move/stop、events。 |
+本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。feature-specific 验收重点见下方测试要点。
 
 ## 11. 测试要点
 
