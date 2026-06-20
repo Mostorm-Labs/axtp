@@ -38,12 +38,14 @@
     "docs/release/",
     "docs/architecture/",
     "docs/conformance/",
-    "docs/workspace/",
-    "specs/0-principles/",
-    "specs/1-core/",
-    "specs/2-registry/",
-    "specs/3-codec/",
-    "specs/4-tooling/"
+    "docs/workspace/"
+  ],
+  "excluded_legacy_specs_dirs": [
+    "0-principles",
+    "1-core",
+    "2-registry",
+    "3-codec",
+    "4-tooling"
   ],
   "excluded_contains": [
     "workspace/legacy-migration/evidence/"

@@ -5,7 +5,7 @@
 > Runtime 实现不得将本附录视为实现合同。
 > 已采纳条目必须以 registry YAML 和 generated protocol 产物为准。
 
-来源文档： `../../3-codec/02-Capability-Types.md`
+当前规则参考： `specs/40-codec.md`。本文件是后台规划材料，不是 runtime 合同。
 
 ## 正式 CapabilityId 与 Capability 注册表
 

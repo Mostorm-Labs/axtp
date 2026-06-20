@@ -13,10 +13,10 @@ Normative migration rules live in:
 specs/50-tooling.md
 ```
 
-Original legacy registry documents are retained at:
+Original legacy registry documents are retained as raw evidence at:
 
 ```text
-docs/source/
+workspace/legacy-migration/evidence/
 ```
 
 ## 2. Mapping Categories

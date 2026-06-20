@@ -20,6 +20,8 @@ const legacySpecsPattern = new RegExp(`specs/(?:${legacySpecsDirs.join("|")})/[^
 const legacyRegistryAppendixPattern = new RegExp(`specs/${"2-registry"}/appendix/[^\\s\`"'<>),\\]]+`, "g");
 const unprefixedSpecs = ["glossary", "contract", "core", "registry", "codec", "tooling"];
 const unprefixedSpecsPattern = new RegExp(`specs/(?:${unprefixedSpecs.join("|")})\\.md`, "g");
+const activeRepoPathPattern =
+  /(?:docs\/(?!archive\/)[^\s`"'<>),\]]+\.(?:md|yaml|yml|json)|workspace\/(?:business|flows|legacy-migration\/classification|protocol|registry-planning|runtime)\/[^\s`"'<>),\]]+\.(?:csv|json|md|pdf|txt|xlsx|yaml|yml)|tooling\/(?:release|scripts|skills)\/[^\s`"'<>),\]]+\.(?:json|md|mjs|sh|yaml|yml)|specs\/[^\s`"'<>),\]]+\.md|release\/[^\s`"'<>),\]]+\.md|conformance\/[^\s`"'<>),\]]+\.(?:json|md|yaml|yml))/g;
 
 function walk(dir) {
   const out = [];
@@ -62,6 +64,7 @@ function checkExists(file, raw) {
 for (const file of walk(root)) {
   const relative = path.relative(root, file);
   if (relative.startsWith(`docs${path.sep}archive${path.sep}`)) continue;
+  if (relative.startsWith(path.join("workspace", "legacy-migration", "evidence") + path.sep)) continue;
   if (relative === path.join("release", "CHANGELOG.md")) continue;
   const text = fs.readFileSync(file, "utf8");
 
@@ -86,6 +89,10 @@ for (const file of walk(root)) {
   }
 
   for (const match of text.matchAll(/workspace\/legacy-migration\/evidence\/[^\s`"'<>),\]]+\.(?:md|pdf|xlsx)(?::[^\s`"'<>),\]]+)?/g)) {
+    checkExists(file, match[0]);
+  }
+
+  for (const match of text.matchAll(activeRepoPathPattern)) {
     checkExists(file, match[0]);
   }
 }

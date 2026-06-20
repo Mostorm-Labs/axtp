@@ -2,7 +2,7 @@
 
 > Status: flow design
 > Scope: PC Host updates a directly connected device through the generic `firmware.update` capability
-> Source inputs: `workspace/business/device-firmware-update.md`, `tooling/skills/10-plan-protocol-flow/references/flow-plan-template.md`, `workspace/protocol/firmware/firmware.update.md`, `workspace/protocol/firmware/firmware.info.md`, `docs/legacy-classification/firmware.md`
+> Source inputs: `workspace/business/device-firmware-update.md`, `tooling/skills/10-plan-protocol-flow/references/flow-plan-template.md`, `workspace/protocol/firmware/firmware.update.md`, `workspace/protocol/firmware/firmware.info.md`, `workspace/legacy-migration/classification/firmware.md`
 > Protocol lifecycle: Stage 10 `plan-protocol-flow`
 
 本文根据“设备接到 PC 上位机后可以读取当前版本并执行固件更新，且需要从单个 `.bin` 扩展到多个 `.bin` 文件”的业务需求，梳理需要使用的 AXTP 协议、已有覆盖状态和协议缺口。
@@ -116,7 +116,7 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 | 细粒度批次提交、外部校验、外部安装控制 | draft / P1 | `firmware.commitUpdateBatch`, `firmware.verifyUpdatePackage`, `firmware.installUpdate` | `workspace/protocol/firmware/firmware.update.md` | 降为 P1 或高级能力；仅在设备需要 Host 细粒度协同时启用。 |
 | 设备自动重启后确认新版本 | draft | `firmware.finishUpdate`, `firmware.getInfo`; optional `firmware.confirmUpdate` | `workspace/protocol/firmware/firmware.update.md` | P0 不新增 Host 主动重启；confirm/rollback 为 P1。 |
 | 固件更新错误码 | generated | Firmware and stream error codes | `contract/generated/error_code.generated.md`, `contract/registry/error/error_code.yaml` | 复用已生成错误码；业务方法错误映射在 Stage 20 草案中声明。 |
-| 旧协议迁移证据 | draft evidence | AXDP Alpha/Beta, Rooms, Signage, VM33 upgrade/progress | `docs/legacy-classification/firmware.md` | 仅作为迁移证据；稳定 `legacyRefs` 需 Stage 20/30 确认。 |
+| 旧协议迁移证据 | draft evidence | AXDP Alpha/Beta, Rooms, Signage, VM33 upgrade/progress | `workspace/legacy-migration/classification/firmware.md` | 仅作为迁移证据；稳定 `legacyRefs` 需 Stage 20/30 确认。 |
 
 Coverage 取值：
 

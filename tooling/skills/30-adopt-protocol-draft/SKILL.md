@@ -72,14 +72,11 @@ Reverse-confirm the accepted proposal into specs where needed:
 
 | Spec | Confirm or update |
 |---|---|
-| `2-registry/01-Naming-and-Taxonomy.md` | domain.feature naming, method/event naming templates, feature taxonomy |
-| `4-tooling/01-YAML-Mapping.md` | domain placement, ID range, DomainId, bitOffset, mapping to Protocol Definition |
-| `2-registry/02-Methods-Registry.md` | method registry rules or accepted method table references if the local spec pattern requires it |
-| `2-registry/03-Events-Registry.md` | event registry rules or accepted event table references if needed |
-| `2-registry/04-Errors-Registry.md` | error code rules and domain-specific error placement |
-| `3-codec/02-Capability-Types.md` | schema/type/capability rules and capability placement |
+| `specs/30-registry.md` | domain.feature naming, method/event/error/profile registry rules, feature taxonomy, and compatibility boundaries |
+| `specs/40-codec.md` | schema/type/capability rules and capability placement |
+| `specs/50-tooling.md` | YAML source placement, ID ranges, DomainId, bitOffset, deterministic generation, and release binding |
 
-Use `2-registry/05-Profiles-Registry.md` as well if the proposal changes profile membership, MVP requirements, or profile registry semantics.
+Re-check `specs/30-registry.md` profile sections if the proposal changes profile membership, MVP requirements, or profile registry semantics.
 
 Do not turn specs into the machine fact source. Specs are governance and normative explanation; YAML remains the machine input.
 

@@ -98,6 +98,11 @@ import sys
 
 artifact_dir, contract_path = sys.argv[1], sys.argv[2]
 contract = json.load(open(contract_path, encoding="utf-8"))
+excluded_prefixes = list(contract.get("excluded_prefixes", []))
+excluded_prefixes.extend(
+    f"specs/{legacy_dir}/"
+    for legacy_dir in contract.get("excluded_legacy_specs_dirs", [])
+)
 
 missing = [
     rel
@@ -117,7 +122,7 @@ for dirpath, _, filenames in os.walk(artifact_dir):
         rel = os.path.relpath(full, artifact_dir).replace(os.sep, "/")
         if any(rel.endswith(suffix) for suffix in contract.get("excluded_suffixes", [])):
             violations.append((rel, "excluded suffix"))
-        if any(rel.startswith(prefix) for prefix in contract.get("excluded_prefixes", [])):
+        if any(rel.startswith(prefix) for prefix in excluded_prefixes):
             violations.append((rel, "excluded prefix"))
         if any(token in rel for token in contract.get("excluded_contains", [])):
             violations.append((rel, "excluded path"))

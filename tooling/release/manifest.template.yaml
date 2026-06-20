@@ -8,6 +8,9 @@ contents:
   contract_paths:
     - README.md
     - LICENSE
+    - docs/README.md
+    - docs/guides/
+    - docs/product/
     - contract/protocol/axtp.protocol.yaml
     - contract/generated/protocol.md
     - contract/generated/protocol.json
@@ -18,17 +21,23 @@ contents:
     - contract/test-vectors/
   compatibility_paths: []
   supplemental_paths:
-    - docs/product/roadmap.md
     - CHANGELOG.md
     - release/
   excluded_paths:
-    - workspace/business/
-    - workspace/flows/
-    - workspace/protocol/
-    - workspace/legacy-migration/
-    - workspace/legacy-migration/evidence/
+    - workspace/
     - tooling/skills/
+    - tooling/release/
+    - docs/release/
+    - docs/architecture/
+    - docs/conformance/
+    - docs/workspace/
     - "**/.DS_Store"
+  excluded_legacy_specs_dirs:
+    - 0-principles
+    - 1-core
+    - 2-registry
+    - 3-codec
+    - 4-tooling
 
 runtime_update:
   target_runtime_version: "{{VERSION}}.0"

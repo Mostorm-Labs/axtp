@@ -12,10 +12,10 @@
 | Affects OPEN / ACCEPT / READY | `04` |
 | Affects Hello / Identify / RPC | `05` |
 | Affects STREAM header / resume | `06` |
-| Concrete business method/event/type | `contract/registry/**/*.yaml`, `contract/registry/domains/**/*.yaml`, or `docs/source/AXTP-Protocol-Full-Reference.md` |
+| Concrete business method/event/type | `contract/registry/**/*.yaml`, `contract/registry/domains/**/*.yaml`, or legacy evidence under `workspace/legacy-migration/evidence/` |
 | Complete Capability Model | Not carried forward as a current v1 input; restart through `workspace/protocol/` RFC if needed |
 | Registry entry meta model | `Registry/Capability Types specs` meta specs |
-| Legacy compatibility reference | `docs/source/AXTP-Legacy-Compatibility-Reference.md` |
+| Legacy compatibility reference | `workspace/legacy-migration/planning/AXTP-Legacy-Compatibility-Reference.md` |
 
 ## 2. Legacy 08 Disposition
 
@@ -29,7 +29,7 @@
 | RPC Encoding / RPC Operation | Migrated to `05` |
 | Stream Profile boundary | Migrated to `06` |
 | Domain / method / event / error / type allocation rules | Kept in `YAML mapping and Registry/Capability Types specs` meta specs |
-| Legacy Mapping / Vendor Extension | Migrated to `07` and `docs/source/AXTP-Legacy-Compatibility-Reference.md` |
+| Legacy Mapping / Vendor Extension | Migrated to `07` and `workspace/legacy-migration/planning/AXTP-Legacy-Compatibility-Reference.md` |
 | Domain-Scoped Mask | Split into `05` eventMasks and `12` supportedMethods bitmap |
 
 ## 3. Legacy 09-11 Disposition
@@ -38,13 +38,13 @@
 |---|---|
 | MethodId online position and JSON/Binary mapping | `05` and `09` |
 | Method entry fields and stability rules | `09` |
-| Complete method planning tables | `docs/source/AXTP-Protocol-Full-Reference.md`; current MVP facts in Source YAML |
+| Complete method planning tables | Legacy evidence under `workspace/legacy-migration/evidence/`; current MVP facts in Source YAML |
 | EventId online position and eventMasks | `05` and `10` |
 | Event entry fields and eventId ranges | `10` |
-| Complete event planning tables | `docs/source/AXTP-Protocol-Full-Reference.md`; current MVP facts in Source YAML |
+| Complete event planning tables | Legacy evidence under `workspace/legacy-migration/evidence/`; current MVP facts in Source YAML |
 | ErrorCode response/control/stream mappings | `04`, `05`, `06`, `11` |
 | Complete error planning tables | Current set in Source YAML; future set in protocol source |
-| Legacy status mapping | `docs/source/AXTP-Legacy-Compatibility-Reference.md` |
+| Legacy status mapping | `workspace/legacy-migration/planning/AXTP-Legacy-Compatibility-Reference.md` |
 
 ## 4. Legacy 12-13 Disposition
 
@@ -56,7 +56,7 @@
 | MVP payload/frame/control/RPC/stream decisions | Migrated to `02/03/04/05/06` |
 | MVP method/event/error/profile facts | `contract/registry/**/*.yaml` and `contract/registry/domains/**/*.yaml` |
 | MVP type/TLV subset | `12` and future type-system work |
-| Legacy compatibility MVP | `07` and `docs/source/AXTP-Legacy-Compatibility-Reference.md` |
+| Legacy compatibility MVP | `07` and `workspace/legacy-migration/planning/AXTP-Legacy-Compatibility-Reference.md` |
 
 ## 5. Domain-Feature Migration Notes
 
@@ -81,4 +81,4 @@ legacy command -> domain.feature -> method/event -> schema adapter
 
 ## 6. Execution Notes
 
-The source files under `docs/source/` are retained as evidence, planning and migration reference. They are not normative unless their facts have been promoted into `contract/registry/**/*.yaml` or `contract/registry/domains/**/*.yaml`.
+The source files under `workspace/legacy-migration/evidence/` and the planning notes under `workspace/legacy-migration/planning/` are retained as evidence, planning and migration reference. They are not normative unless their facts have been promoted into `contract/registry/**/*.yaml` or `contract/registry/domains/**/*.yaml`.

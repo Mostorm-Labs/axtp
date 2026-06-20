@@ -11,8 +11,8 @@ build dependency.
 - The main AXTP repository publishes release artifacts with specs, registry
   facts, migration material, a changelog, and a manifest.
 - Runtime repositories record their binding in `AXTP_SPEC.lock.yaml`.
-- Runtime repositories expose `tooling/scripts/upgrade-axtp-spec.sh spec/vX.Y.Z` and
-  `tooling/scripts/check-axtp-spec-lock.sh`.
+- Runtime repositories expose runtime-local upgrade and lock-check scripts
+  named `upgrade-axtp-spec.sh spec/vX.Y.Z` and `check-axtp-spec-lock.sh`.
 - Runtime/tool GitHub release tags extend the AXTP Spec version with an
   implementation revision: `spec/vX.Y.Z` maps to `vX.Y.Z.0` for the first
   runtime/tool release, and later runtime-only fixes use `vX.Y.Z.R`.
