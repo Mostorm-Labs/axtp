@@ -85,7 +85,6 @@ Cast RX/TX 配对 flow 中，NA20 / NT10 的识别由 Host 基于 USB descriptor
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `GetDeviceInfoParams`，省略字段按上表默认值处理。
 
 #### 3.1.3 返回结果 Result：`DeviceInfo`
 
@@ -198,7 +197,6 @@ Cast RX/TX 配对 flow 中，NA20 / NT10 的识别由 Host 基于 USB descriptor
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 

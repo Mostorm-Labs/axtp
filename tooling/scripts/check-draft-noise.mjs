@@ -64,6 +64,22 @@ const bannedLinePatterns = [
     reason: "generic success response explanation belongs in draft-conventions.md",
   },
   {
+    pattern: /^读法：请求只展示 RPC `d` block；`params` 对应 `[^`]+`，省略字段按上表默认值处理。$/,
+    reason: "generic request d-block explanation belongs in draft-conventions.md",
+  },
+  {
+    pattern: /^读法：失败响应仍使用 `op=8`，`d\.id` 回显请求；草案阶段的错误名放在 `status\.details\.candidateError` 中。$/,
+    reason: "generic error response explanation belongs in draft-conventions.md",
+  },
+  {
+    pattern: /^读法：失败响应仍使用 `op=8`，`id` 回显请求 `id`。失败时不得携带业务 `result`。$/,
+    reason: "generic error response explanation belongs in draft-conventions.md",
+  },
+  {
+    pattern: /^读法：事件不携带 `d\.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。$/,
+    reason: "generic event explanation belongs in draft-conventions.md",
+  },
+  {
     pattern: /^### 7\.1 场景：读取或修改 `/,
     reason: "generic read-or-modify flow example belongs in draft-conventions.md",
   },

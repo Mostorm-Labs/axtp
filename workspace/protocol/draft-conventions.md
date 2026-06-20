@@ -86,6 +86,8 @@ Flow example 应说明调用顺序、关键 `d` block、客户端状态更新、
 
 只有当示例展示 feature-specific payload、状态机分支、特殊错误细节或 legacy 映射时，才把 JSON 示例留在草案正文。
 
+事件示例同理：除非需要说明 feature-specific payload、状态更新规则或重连恢复语义，不要在每个 event 后重复“事件不携带 `d.id`”这类公共读法。
+
 ## 测试约定
 
 通用测试矩阵不在每篇草案中重复。进入 registry review 前，维护者至少应覆盖以下方向，并只在草案里记录 feature-specific 的补充项：

@@ -76,7 +76,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `GetPtzCapabilitiesParams`，省略字段按上表默认值处理。
 
 #### 3.1.3 返回结果 Result：`PtzCapabilities`
 
@@ -129,7 +128,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `camera.getPtzState`
 
@@ -156,7 +154,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `GetPtzStateParams`，省略字段按上表默认值处理。
 
 #### 3.2.3 返回结果 Result：`PtzState`
 
@@ -211,7 +208,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `camera.setPtzConfig`
 
@@ -241,7 +237,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `SetPtzConfigParams`，省略字段按上表默认值处理。
 
 #### 3.3.3 返回结果 Result：`PtzCommandResult`
 
@@ -293,7 +288,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 3.3.7 错误
 
@@ -321,7 +315,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.4 `camera.startPtzMove`
 
@@ -350,7 +343,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `StartPtzMoveParams`，省略字段按上表默认值处理。
 
 #### 3.4.3 返回结果 Result：`PtzCommandResult`
 
@@ -402,7 +394,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 3.4.7 错误
 
@@ -428,7 +419,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.5 `camera.stopPtzMove`
 
@@ -455,7 +445,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `StopPtzMoveParams`，省略字段按上表默认值处理。
 
 #### 3.5.3 返回结果 Result：`PtzCommandResult`
 
@@ -507,7 +496,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 3.5.7 错误
 
@@ -533,7 +521,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.6 `camera.callPtzPreset`
 
@@ -561,7 +548,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `CallPtzPresetParams`，省略字段按上表默认值处理。
 
 #### 3.6.3 返回结果 Result：`PtzCommandResult`
 
@@ -613,7 +599,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 3.6.7 错误
 
@@ -639,7 +624,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.7 `camera.savePtzPreset`
 
@@ -671,7 +655,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `SavePtzPresetParams`，省略字段按上表默认值处理。
 
 #### 3.7.3 返回结果 Result：`PtzPreset`
 
@@ -734,7 +717,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -778,7 +760,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 
@@ -812,7 +793,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 

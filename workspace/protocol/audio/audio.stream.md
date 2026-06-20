@@ -92,7 +92,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `AudioGetStreamCapabilitiesParams`，省略字段按上表默认值处理。
 
 #### 3.1.3 返回结果 Result：`AudioStreamCapabilities`
 
@@ -178,7 +177,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `audio.openStream`
 
@@ -236,7 +234,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `AudioOpenStreamParams`，省略字段按上表默认值处理。
 
 #### 3.2.3 返回结果 Result：`AudioOpenStreamResult`
 
@@ -311,7 +308,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 3.2.7 错误
 
@@ -341,7 +337,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `audio.closeStream`
 
@@ -378,7 +373,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `AudioCloseStreamParams`，省略字段按上表默认值处理。
 
 #### 3.3.3 返回结果 Result：`AudioCloseStreamResult`
 
@@ -434,7 +428,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 3.3.7 错误
 
@@ -462,7 +455,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.4 `audio.getStreamState`
 
@@ -495,7 +487,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `AudioGetStreamStateParams`，省略字段按上表默认值处理。
 
 #### 3.4.3 返回结果 Result：`AudioStreamState`
 
@@ -565,7 +556,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.5 `audio.getStreamSourceState`
 
@@ -598,7 +588,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `AudioGetStreamSourceStateParams`，省略字段按上表默认值处理。
 
 #### 3.5.3 返回结果 Result：`AudioStreamSourceState`
 
@@ -664,7 +653,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -715,7 +703,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 
@@ -766,7 +753,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 
@@ -810,7 +796,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 

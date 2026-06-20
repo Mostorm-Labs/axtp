@@ -92,7 +92,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `NetworkGetWifiCapabilitiesParams`，省略字段按上表默认值处理。
 
 #### 3.1.3 返回结果 Result：`NetworkWifiCapabilities`
 
@@ -165,7 +164,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.2 `network.getWifiConfig`
 
@@ -200,7 +198,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `NetworkGetWifiConfigParams`，省略字段按上表默认值处理。
 
 #### 3.2.3 返回结果 Result：`NetworkWifiConfig`
 
@@ -270,7 +267,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `network.setWifiConfig`
 
@@ -320,7 +316,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `NetworkSetWifiConfigParams`，省略字段按上表默认值处理。
 
 #### 3.3.3 返回结果 Result：`NetworkSetWifiConfigResult`
 
@@ -385,7 +380,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 3.3.7 错误
 
@@ -413,7 +407,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.4 `network.scanWifi`
 
@@ -449,7 +442,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `NetworkScanWifiParams`，省略字段按上表默认值处理。
 
 #### 3.4.3 返回结果 Result：`NetworkScanWifiResult`
 
@@ -498,7 +490,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 3.4.7 错误
 
@@ -525,7 +516,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.5 `network.connectWifi`
 
@@ -573,7 +563,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `NetworkConnectWifiParams`，省略字段按上表默认值处理。
 
 #### 3.5.3 返回结果 Result：`NetworkWifiActionResult`
 
@@ -632,7 +621,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 3.5.7 错误
 
@@ -659,7 +647,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.6 `network.disconnectWifi`
 
@@ -692,7 +679,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `NetworkDisconnectWifiParams`，省略字段按上表默认值处理。
 
 #### 3.6.3 返回结果 Result：`NetworkWifiActionResult`
 
@@ -751,7 +737,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 3.6.7 错误
 
@@ -777,7 +762,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.7 `network.getWifiState`
 
@@ -810,7 +794,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `NetworkGetWifiStateParams`，省略字段按上表默认值处理。
 
 #### 3.7.3 返回结果 Result：`NetworkWifiState`
 
@@ -875,7 +858,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ## 4. 事件 Events
 
@@ -934,7 +916,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 
@@ -985,7 +966,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 
@@ -1024,7 +1004,6 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### 客户端处理建议
 

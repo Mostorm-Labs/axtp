@@ -129,7 +129,6 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `EmptyParams`，省略字段按上表默认值处理。
 
 返回结果 Result：`FirmwareUpdateCapabilities`
 
@@ -153,7 +152,6 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 #### Success Response d block Example (op=8)
 
@@ -211,7 +209,6 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `BeginUpdateParams`，省略字段按上表默认值处理。
 
 返回结果 Result：`BeginUpdateResult`
 
@@ -240,7 +237,6 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 #### Success Response d block Example (op=8)
 
@@ -297,7 +293,6 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `FinishUpdateParams`，省略字段按上表默认值处理。
 
 返回结果 Result：`FinishUpdateResult`
 
@@ -325,7 +320,6 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 #### Success Response d block Example (op=8)
 
@@ -383,7 +377,6 @@ finish 规则：
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `GetUpdateStateParams`，省略字段按上表默认值处理。
 
 返回结果 Result：`FirmwareUpdateState`
 
@@ -407,7 +400,6 @@ finish 规则：
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 #### Success Response d block Example (op=8)
 
@@ -482,7 +474,6 @@ Payload：`FirmwareUpdateProgressEvent`
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 客户端处理建议：事件只用于 UI 更新，不作为唯一事实源；Host 可用 `getUpdateState` 校准。
 
@@ -515,7 +506,6 @@ Payload：`FirmwareUpdateStateChangedEvent`
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 客户端处理建议：当 `state=failed` 时显示 `error`；当 `state=rebooting` 时提示保持供电并等待设备断连/重连。
 

@@ -115,7 +115,6 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `SoftwareGetUpdatePolicyParams`，省略字段按上表默认值处理。
 
 #### 返回结果 Result：`SoftwareUpdatePolicy`
 
@@ -139,7 +138,6 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 #### Success Response d block Example (op=8)
 
@@ -196,7 +194,6 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `SoftwareSetUpdatePolicyParams`，省略字段按上表默认值处理。
 
 #### 返回结果 Result：`SoftwareUpdatePolicy`
 
@@ -249,7 +246,6 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 #### `software.setUpdatePolicy` 候选错误
 
@@ -277,7 +273,6 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 ### 3.3 `software.resetUpdatePolicy`
 
@@ -309,7 +304,6 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-读法：请求只展示 RPC `d` block；`params` 对应 `SoftwareResetUpdatePolicyParams`，省略字段按上表默认值处理。
 
 #### 返回结果 Result：`SoftwareUpdatePolicy`
 
@@ -335,7 +329,6 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`d.id` 回显请求；草案阶段的错误名放在 `status.details.candidateError` 中。
 
 #### Success Response d block Example (op=8)
 
@@ -404,7 +397,6 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-读法：事件不携带 `d.id`；客户端可按 `data` 更新本地状态，事件丢失或重连后应调用对应 get method 校准。
 
 ## 5. Capability
 

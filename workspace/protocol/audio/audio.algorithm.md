@@ -188,7 +188,6 @@ lastReviewed: 2026-06-10
 }
 ```
 
-读法：失败响应仍使用 `op=8`，`id` 回显请求 `id`。失败时不得携带业务 `result`。
 
 ### 3.2 `audio.getAlgorithmConfig`
 
