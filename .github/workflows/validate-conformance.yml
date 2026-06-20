@@ -56,6 +56,7 @@ jobs:
           set -euo pipefail
           tooling/scripts/check-links.mjs
           node tooling/scripts/check-text-paths.mjs
+          node tooling/scripts/check-draft-noise.mjs
           tooling/scripts/check-protocol-status.mjs
 
       - name: Validate release artifact dry run

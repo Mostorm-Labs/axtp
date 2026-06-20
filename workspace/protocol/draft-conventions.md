@@ -40,6 +40,8 @@
 
 失败响应仍使用 `op=8`，必须回显请求 `d.id`，`status.ok=false` 或非零 `status.code` 时不得携带业务 `result`。
 
+草案不得保留 `<FEATURE_SPECIFIC_ERROR>` 这类无语义占位行；确实需要业务错误时，写出候选错误名、触发条件和是否可复用现有错误码。
+
 ## Schema 展开约定
 
 简单 feature：method/event 小节直接展开 Params / Result / Payload 字段表，本章只保留 schema 索引。
@@ -48,8 +50,42 @@
 
 Capability 字段只描述“设备能做什么”，不得混入 method params/result 或 event payload。
 
+## Capability Discovery 约定
+
+草案可以声明 feature capability，但不要在每篇草案里重复 `supportedMethods` / `supportedEvents` 的通用字段说明。是否支持某个 method 或 event，采纳后应由 capability discovery、`contract/registry/**` 和 `contract/generated/**` 表达。
+
+通用 capability 字段读法如下：
+
+| 字段 | 用途 |
+|---|---|
+| `capability` | capability 名称，通常为 `domain.feature`。 |
+| `supportedMethods` | 可选 method name array；正式支持情况以 generated contract 为准。 |
+| `supportedEvents` | 可选 event name array；正式支持情况以 generated contract 为准。 |
+| `supportedTargets` | 可选 target / channel / port / component / scope 列表。 |
+| `constraints` | feature-specific 能力范围、限制、模式或策略摘要。 |
+
+草案内只展开 feature-specific 的 target、constraints、枚举、范围或对象结构；不要把 capability discovery 当成 method params/result 的替代品。
+
 ## Flow Example 约定
 
 `交互流程示例` 只展示多个 method/event 组成的端到端业务流程。单个 method 的 Request / Success Response / Error Response 示例写在对应 method 小节；单个 event 的 Event 示例写在对应 event 小节。
 
 Flow example 应说明调用顺序、关键 `d` block、客户端状态更新、事件订阅和异常处理，不承担完整协议合同定义。
+
+## 测试约定
+
+通用测试矩阵不在每篇草案中重复。进入 registry review 前，维护者至少应覆盖以下方向，并只在草案里记录 feature-specific 的补充项：
+
+| 类型 | 通用要点 |
+|---|---|
+| happy path | capability discovery 后调用主要 query / command / action method，返回成功响应。 |
+| event path | 会改变状态的 method 成功后，按需产生 changed / progress / state event。 |
+| boundary case | 省略可选字段、非法 target、非法枚举、越界值、空列表和最大对象数量。 |
+| error case | unsupported feature/method、permission denied、busy、invalid argument、version/capability mismatch。 |
+| compatibility | 新旧 App / 设备组合下，未知可选字段可忽略，未知必填语义必须返回标准错误。 |
+
+## Review 问题约定
+
+草案默认都必须在采纳前检查 method/event 命名是否和 generated 事实重复、legacy 映射是否有证据、错误码是否复用现有 registry。不要在每篇草案里复制这些通用 open question。
+
+`待确认问题` 章节只保留会影响该 feature 的具体问题，例如字段范围、状态机、legacy payload 语义、权限边界、profile 绑定或 conformance case 缺口。

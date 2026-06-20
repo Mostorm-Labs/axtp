@@ -4,6 +4,33 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.8.6
+
+Protocol draft governance and runtime dispatch consolidation patch.
+
+### Protocol
+
+- Keeps AXTP wire, CONTROL, RPC, STREAM, method, event, schema, capability, profile, and error semantics unchanged from `spec/v0.8.5`.
+- Does not change registry YAML, Protocol IR, generated references, MCP artifacts, test vectors, or conformance case behavior.
+
+### Documentation
+
+- Expands `workspace/protocol/draft-conventions.md` as the shared home for capability discovery, placeholder error, generic test matrix, and common review-question guidance.
+- Removes repeated template boilerplate from protocol drafts while preserving feature-specific methods, events, schemas, legacy mapping notes, review markers, and draft status.
+- Clarifies that Chinese release docs are the maintainer-facing primary reading path, while English release docs remain for runtime repositories, release artifacts, and cross-repo automation.
+
+### Release Governance
+
+- Adds a protocol draft noise checker to PR validation, spec release validation, and local release validation so repeated template boilerplate does not re-enter drafts.
+- Consolidates runtime repository dispatch configuration into a single shared list and replaces duplicated workflow dispatch logic with a shared script.
+- Keeps the release artifact contents and path contract unchanged from `spec/v0.8.5`.
+
+### Runtime Impact
+
+- Runtime and SDK teams do not need wire-level, registry, SDK API, generated metadata, or conformance behavior changes for this release.
+- Runtime upgrade workflows should observe the same `axtp_spec_released` payload shape as previous releases, now produced by shared release tooling.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.8.5
 
 Reader experience and governance patch.

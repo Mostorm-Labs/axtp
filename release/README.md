@@ -2,6 +2,8 @@
 
 `release/` 存放 changelog、spec version、release checklist、runtime spec lock 和 runtime update flow。发布时以这里的流程和脚本为准。
 
+中文文档是维护者主读口径；英文文档保留给 runtime 仓库、release artifact 和跨仓自动化消费。两种语言描述冲突时，以同一 commit 中的中文发布流程和自动化脚本为准。
+
 ## 版本号体系
 
 | 版本体系 | 示例 | 含义 | Runtime 是否可绑定 |

@@ -84,5 +84,6 @@ fi
 
 git diff --check
 bash tooling/scripts/print-spec-version.sh >/dev/null
+node tooling/scripts/check-draft-noise.mjs >/dev/null
 
 echo "AXTP Spec release validation passed for ${tag}"
