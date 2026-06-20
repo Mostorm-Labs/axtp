@@ -4,6 +4,53 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.8.0
+
+Repository contract layout and release artifact boundary release.
+
+### Protocol
+
+- Keeps AXTP wire, session, RPC, STREAM, method, event, schema, and error semantics unchanged from `spec/v0.7.0`.
+- Promotes the current machine-readable contract paths as the implementation authority: `contract/protocol/axtp.protocol.yaml`, `contract/generated/**`, `contract/registry/**`, `contract/mcp/**`, and `contract/test-vectors/**`.
+- Keeps human-readable normative specs under root `specs/**` so runtime and SDK teams can separate implementation rules from maintainer workbench material.
+
+### Registry
+
+- Moves registry source facts to `contract/registry/**` and updates generator, validation, release, and workflow references to consume that path.
+- Does not add, remove, or renumber adopted registry methods, events, capabilities, profiles, schemas, or error codes in this release.
+- Updates protocol metadata references so generated artifacts point to the root `workspace/**` maintainer inputs rather than removed docs-hosted workspace paths.
+
+### Schemas
+
+- Refreshes generated protocol JSON/YAML metadata and generator snapshots for the new contract/workspace path model.
+- Keeps generated Protocol IR structure and field semantics compatible with `spec/v0.7.0`; changes are path and release-boundary metadata only.
+- Keeps MCP and test-vector artifacts inside `contract/` as part of the runtime-consumable release contract.
+
+### Conformance
+
+- Keeps conformance as a root-level testing entry point at `conformance/**`, independent from maintainer `workspace/**`.
+- Adds plain-text path validation for maintainer draft and legacy evidence references so stale hidden paths fail before release.
+- Extends protocol status validation to check generated and draft counts in `docs/product/domain-status.md`.
+
+### Migration
+
+- Moves maintainer workbench material to root `workspace/**`.
+- Moves release operation documents to root `release/**`.
+- Keeps historical audits in `docs/archive/**` and keeps legacy evidence in `workspace/legacy-migration/evidence/**`, but excludes those maintainer-only inputs from the default release artifact.
+
+### Release Governance
+
+- Tightens the default release artifact to include only `contract/`, `specs/`, `conformance/`, `docs/guides/`, `docs/product/`, root `release/`, and top-level release metadata.
+- Excludes `workspace/business`, `workspace/flows`, `workspace/protocol`, `workspace/legacy-migration`, lifecycle skills, release templates, and legacy evidence from the published artifact.
+- Updates release scripts, manifest template, CODEOWNERS, CI references, and lifecycle skill instructions to the new `contract/`, `tooling/`, `workspace/`, `conformance/`, and `release/` paths.
+
+### Runtime Impact
+
+- Runtime and SDK teams should bind to `spec/v0.8.0` when they need the new release artifact layout and root `conformance/**` packaging.
+- Implementations already compatible with `spec/v0.7.0` protocol facts do not need wire-level or API behavior changes for this release.
+- Tooling that previously consumed `docs/generated/**`, `protocol/axtp.protocol.yaml`, `registry/**`, `tooling/mcp/**`, or `tooling/test-vectors/**` from the spec repository must update to the `contract/**` paths.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.7.0
 
 Release contract, generated artifact governance, and Protocol IR fidelity release.
