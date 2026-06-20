@@ -1,79 +1,79 @@
-# AXTP Glossary
+# AXTP 术语表
 
-This file defines shared AXTP vocabulary. It does not define field layout, registry facts, generated outputs, or release status.
+本文定义 AXTP 的共享词汇。它不定义字段布局、registry 事实、生成产物或发布状态。
 
-## Layers
+## 分层
 
-| Term | Meaning |
+| 术语 | 含义 |
 |---|---|
-| AXTP | Auditoryworks Transport Protocol, the protocol standard consumed by runtime, SDK, tooling, mock server, and conformance repositories. |
-| Transport | The carrier for AXTP bytes or JSON messages, such as TCP, USB HID, WebSocket, BLE, UART, or a mock transport. |
-| Transport Profile | A fixed rule for how a transport carries AXTP, including whether it uses Standard Framed Binary or WebSocket Unframed JSON. |
-| Frame Layer | Standard Frame parsing: magic, version, payload length, PayloadType, fragmentation, and CRC. |
-| Payload Layer | CONTROL, RPC, or STREAM parsing after PayloadType dispatch. |
-| Registry Layer | Machine facts for methods, events, errors, schemas, capabilities, and profiles. |
-| Business Layer | Device or product semantics such as `audio`, `video`, `network`, `firmware`, or `room`. |
+| AXTP | Auditoryworks Transport Protocol，由 runtime、SDK、工具链、mock server 和 conformance 仓库消费的协议标准。 |
+| Transport | 承载 AXTP 字节流或 JSON 消息的载体，例如 TCP、USB HID、WebSocket、BLE、UART 或 mock transport。 |
+| Transport Profile | 固定某种 transport 如何承载 AXTP 的规则，包括是否使用 Standard Framed Binary 或 WebSocket Unframed JSON。 |
+| Frame Layer | Standard Frame 解析层，处理 magic、version、payload length、PayloadType、分片和 CRC。 |
+| Payload Layer | 根据 PayloadType 分发后的 CONTROL、RPC 或 STREAM 解析层。 |
+| Registry Layer | method、event、error、schema、capability 和 profile 的机器事实层。 |
+| Business Layer | 设备或产品语义层，例如 `audio`、`video`、`network`、`firmware` 或 `room`。 |
 
-## Payloads
+## Payload
 
-| Term | Meaning |
+| 术语 | 含义 |
 |---|---|
-| PayloadType | The top-level parser selector: CONTROL=`0x01`, RPC=`0x02`, STREAM=`0x03`. It is not a business type. |
-| CONTROL | Standard Framed link control for OPEN / ACCEPT, heartbeat, and close. |
-| RPC | Business control plane for Hello / Identify / Identified, Request / Response, and Event. |
-| STREAM | Continuous data plane for an already established stream context. |
-| Control Plane | CONTROL plus RPC behavior that manages sessions and business commands. |
-| Data Plane | STREAM behavior that carries continuous data such as media, firmware, file, log, or sensor chunks. |
+| PayloadType | 顶层 parser selector：CONTROL=`0x01`，RPC=`0x02`，STREAM=`0x03`。它不是业务类型。 |
+| CONTROL | Standard Framed 链路控制，用于 OPEN / ACCEPT、heartbeat 和 close。 |
+| RPC | 业务控制面，用于 Hello / Identify / Identified、Request / Response 和 Event。 |
+| STREAM | 为已经建立的 stream context 承载连续数据的数据面。 |
+| Control Plane | 管理 session 和业务命令的 CONTROL 加 RPC 行为。 |
+| Data Plane | 承载媒体、firmware、file、log 或 sensor chunk 等连续数据的 STREAM 行为。 |
 
-## Contexts And IDs
+## 上下文与 ID
 
-| Term | Meaning |
+| 术语 | 含义 |
 |---|---|
-| Transport connection | The underlying socket, WebSocket, HID connection, or equivalent transport handle. |
-| Framed Link Context | Standard Framed context created by CONTROL OPEN / ACCEPT. |
-| RPC Session | Application session created by RPC Hello / Identify / Identified. |
-| Stream Context | Per-stream metadata created by an adopted RPC method or profile before STREAM data is sent. |
-| `sessionId` | Optional CONTROL link identifier for trace or future resume; not a business session id. |
-| `sid` | RPC Session ID allocated by the Logical Server after Identify succeeds. |
-| `requestId` | RPC request/response correlation id. |
-| `messageId` | Standard Frame fragmentation/reassembly/debug id. |
-| `streamId` | STREAM context id. |
-| `seqId` | STREAM packet sequence id. |
-| `cursor` | STREAM position/time cursor whose unit is defined by the stream context. |
+| Transport connection | 底层 socket、WebSocket、HID connection 或等价 transport handle。 |
+| Framed Link Context | 通过 CONTROL OPEN / ACCEPT 建立的 Standard Framed 上下文。 |
+| RPC Session | 通过 RPC Hello / Identify / Identified 建立的应用 session。 |
+| Stream Context | 发送 STREAM 数据前，由已采纳 RPC method 或 profile 创建的 per-stream 元数据。 |
+| `sessionId` | 可选的 CONTROL link identifier，用于 trace 或未来 resume；不是业务 session id。 |
+| `sid` | Identify 成功后由 Logical Server 分配的 RPC Session ID。 |
+| `requestId` | RPC request/response 关联 id。 |
+| `messageId` | Standard Frame 分片、重组和调试 id。 |
+| `streamId` | STREAM context id。 |
+| `seqId` | STREAM packet sequence id。 |
+| `cursor` | STREAM position/time cursor，单位由 stream context 定义。 |
 
-## Registry Terms
+## Registry 术语
 
-| Term | Meaning |
+| 术语 | 含义 |
 |---|---|
-| Domain | Stable business or protocol category such as `audio`, `video`, `device`, `system`, `network`, or `capability`. |
-| Feature | Reviewable capability block within a domain, such as `audio.algorithm` or `network.wifi`. |
-| Method | RPC business operation with a stable name and optional binary methodId. |
-| Event | RPC asynchronous notification for state, progress, result, or report semantics. |
-| ErrorCode | Shared numeric error code used by RPC status, CONTROL status, and STREAM/profile error mapping. |
-| Schema | Structured object definition for method params/result, event payload, capability, or profile data. |
-| Capability | Device-declared availability or limits for a domain.feature. |
-| Profile | Named implementation requirement set for transports, methods, events, errors, types, and capabilities. |
-| Protocol IR | Generated machine-readable model at `contract/protocol/axtp.protocol.yaml`. |
-| Generated Reference | Generated human/machine references under `contract/generated/**`. |
+| Domain | 稳定的业务或协议分类，例如 `audio`、`video`、`device`、`system`、`network` 或 `capability`。 |
+| Feature | domain 内可评审的能力块，例如 `audio.algorithm` 或 `network.wifi`。 |
+| Method | 拥有稳定名称和可选 binary methodId 的 RPC 业务操作。 |
+| Event | 表示状态、进度、结果或报告语义的 RPC 异步通知。 |
+| ErrorCode | RPC status、CONTROL status 和 STREAM/profile error mapping 共用的数值错误码。 |
+| Schema | method params/result、event payload、capability 或 profile data 的结构化对象定义。 |
+| Capability | 设备声明的某个 domain.feature 的可用性或限制。 |
+| Profile | 对 transport、method、event、error、type 和 capability 的命名实现要求集合。 |
+| Protocol IR | 生成的机器可读模型，位于 `contract/protocol/axtp.protocol.yaml`。 |
+| Generated Reference | `contract/generated/**` 下生成的人读和机器读参考。 |
 
-## Roles
+## 角色
 
-| Term | Meaning |
+| 术语 | 含义 |
 |---|---|
-| Physical Client | The side that initiates the underlying transport connection. |
-| Physical Server | The side that accepts the underlying transport connection. |
-| Logical Client | The side that identifies to the Logical Server and primarily consumes exposed methods/events/streams. |
-| Logical Server | The side that sends Hello, assigns `sid`, and exposes methods/events/streams. |
+| Physical Client | 主动建立底层 transport connection 的一侧。 |
+| Physical Server | 接受底层 transport connection 的一侧。 |
+| Logical Client | 向 Logical Server identify，并主要消费其 method/event/stream 的一侧。 |
+| Logical Server | 发送 Hello、分配 `sid`，并暴露 method/event/stream 的一侧。 |
 
-Physical direction and logical direction can differ. For example, a device may be the Physical Client when connecting to cloud, while still acting as the Logical Server.
+物理方向和逻辑方向可以不同。例如设备主动连接云端时可以是 Physical Client，但仍然作为 Logical Server 暴露能力。
 
-## Encodings
+## 编码
 
-| Term | Meaning |
+| 术语 | 含义 |
 |---|---|
-| JSON | Default RPC object encoding for `{ sid, op, d }`. |
-| CBOR | Optional compact object encoding for the same RPC semantics. |
-| MSGPACK | Optional compact object encoding for the same RPC semantics. |
-| JSON_BINARY | AXTP RPC fixed binary envelope encoding; not a generic binary JSON format. |
-| TLV8 | `fieldId:uint8 + length:uint8 + value` body encoding. |
-| TLV16 | Longer TLV body encoding, optional/future unless required by a profile. |
+| JSON | `{ sid, op, d }` 的默认 RPC object encoding。 |
+| CBOR | 同一 RPC 语义的可选紧凑 object encoding。 |
+| MSGPACK | 同一 RPC 语义的可选紧凑 object encoding。 |
+| JSON_BINARY | AXTP RPC 固定二进制 envelope encoding；不是通用 binary JSON 格式。 |
+| TLV8 | `fieldId:uint8 + length:uint8 + value` body encoding。 |
+| TLV16 | 更长的 TLV body encoding，除非 profile 要求，否则属于 optional/future。 |

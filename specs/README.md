@@ -1,45 +1,45 @@
-# AXTP Specs
+# AXTP 规范文本
 
-`specs/` is the hand-written AXTP standard text. It explains the rules behind the machine contract in `contract/`; it does not contain generated registries, candidate tables, legacy evidence, or workflow playbooks.
+`specs/` 是手写的 AXTP 正式标准文本。它解释 `contract/` 中机器合同背后的规则；这里不放生成的 registry、候选表、legacy evidence 或工作流 playbook。
 
-## Read This Way
+## 阅读方式
 
-| Reader | Read |
+| 读者 | 推荐阅读 |
 |---|---|
-| Runtime / SDK implementer | [20-core.md](20-core.md), then [40-codec.md](40-codec.md) as needed. |
-| Registry / generator maintainer | [30-registry.md](30-registry.md), [40-codec.md](40-codec.md), [50-tooling.md](50-tooling.md). |
-| Product / protocol reviewer | [30-registry.md](30-registry.md), then `docs/product/domain-status.md`. |
-| Release owner | [10-contract.md](10-contract.md), [50-tooling.md](50-tooling.md), `release/README.md`. |
-| Anyone confused by terms | [00-glossary.md](00-glossary.md). |
+| Runtime / SDK 实现者 | 先读 [20-core.md](20-core.md)，需要编码细节时再读 [40-codec.md](40-codec.md)。 |
+| Registry / generator 维护者 | 读 [30-registry.md](30-registry.md)、[40-codec.md](40-codec.md)、[50-tooling.md](50-tooling.md)。 |
+| 产品 / 协议评审 | 读 [30-registry.md](30-registry.md)，再看 `docs/product/domain-status.md`。 |
+| Release owner | 读 [10-contract.md](10-contract.md)、[50-tooling.md](50-tooling.md)、`release/README.md`。 |
+| 对术语不确定的人 | 读 [00-glossary.md](00-glossary.md)。 |
 
-## Standard Texts
+## 标准文本
 
-| File | Contract |
+| 文件 | 合同内容 |
 |---|---|
-| [00-glossary.md](00-glossary.md) | Shared terms only. |
-| [10-contract.md](10-contract.md) | Source-of-truth order, conflict handling, and non-contract material. |
-| [20-core.md](20-core.md) | Frame, transport profile, CONTROL, RPC, STREAM, and low-bandwidth boundaries. |
-| [30-registry.md](30-registry.md) | Domain/feature taxonomy and method/event/error/profile registry rules. |
-| [40-codec.md](40-codec.md) | Types, schemas, capability model, TLV, and field numbering. |
-| [50-tooling.md](50-tooling.md) | Registry YAML to Protocol IR, generator behavior, versioning, and release binding. |
+| [00-glossary.md](00-glossary.md) | 共享术语。 |
+| [10-contract.md](10-contract.md) | 事实源顺序、冲突处理和非合同材料边界。 |
+| [20-core.md](20-core.md) | Frame、transport profile、CONTROL、RPC、STREAM 和低带宽边界。 |
+| [30-registry.md](30-registry.md) | Domain/feature 分类，以及 method/event/error/profile registry 规则。 |
+| [40-codec.md](40-codec.md) | 类型、schema、capability model、TLV 和字段编号规则。 |
+| [50-tooling.md](50-tooling.md) | Registry YAML 到 Protocol IR、生成器行为、版本和发布绑定。 |
 
-## Authority
+## 权威顺序
 
-For implementation, use this order:
+实现时按照以下顺序判断合同事实：
 
-1. Released spec artifact or `spec/vMAJOR.MINOR.PATCH` tag.
-2. `contract/protocol/axtp.protocol.yaml`.
-3. `contract/generated/protocol.md` and `contract/generated/protocol.json`.
-4. `conformance/**`.
-5. `specs/**`.
+1. 已发布的 spec artifact，或精确的 `spec/vMAJOR.MINOR.PATCH` tag。
+2. `contract/protocol/axtp.protocol.yaml`。
+3. `contract/generated/protocol.md` 和 `contract/generated/protocol.json`。
+4. `conformance/**`。
+5. `specs/**`。
 
-Current method/event/error/capability/profile facts live in `contract/registry/**` and generated outputs. Candidate planning lives in `workspace/registry-planning/**` and is not a runtime contract.
+当前 method、event、error、capability、profile 等事实位于 `contract/registry/**` 和生成产物中。候选规划位于 `workspace/registry-planning/**`，不是 runtime 合同。
 
-## Keywords
+## 关键词
 
-| Keyword | Meaning |
+| 关键词 | 含义 |
 |---|---|
-| MUST | Required for the relevant AXTP profile. |
-| SHOULD | Strongly recommended; deviations need an explicit engineering reason. |
-| MAY | Optional or profile-specific behavior. |
-| RESERVED / FUTURE | Not a v1 required behavior; do not implement as a required profile claim. |
+| MUST | 对相关 AXTP profile 来说是强制要求。 |
+| SHOULD | 强烈建议；偏离时需要明确工程理由。 |
+| MAY | 可选行为，或 profile 专属行为。 |
+| RESERVED / FUTURE | 不是 v1 必需行为；不能作为 required profile claim 实现。 |

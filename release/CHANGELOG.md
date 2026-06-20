@@ -4,6 +4,27 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.8.4
+
+Chinese human-readable specs patch.
+
+### Protocol
+
+- Keeps AXTP wire, CONTROL, RPC, STREAM, method, event, schema, capability, profile, and error semantics unchanged from `spec/v0.8.3`.
+- Keeps the flattened numbered specs layout introduced in `spec/v0.8.1`.
+- Translates the formal human-readable `specs/**` documents to Chinese while preserving implementation anchors, wire examples, registry IDs, field names, paths, and RFC-style keywords.
+
+### Release Governance
+
+- Keeps the release artifact contents unchanged from `spec/v0.8.3`.
+- Uses this patch tag to publish the Chinese `specs/**` contract text without requiring generated artifact or registry changes.
+
+### Runtime Impact
+
+- Runtime and SDK teams do not need wire-level, registry, SDK API, or conformance behavior changes for this release.
+- Tooling that validates protocol invariants can continue reading `specs/20-core.md` and `specs/40-codec.md`; the required invariant phrases remain present.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.8.3
 
 Runtime dispatch compatibility verification patch.
