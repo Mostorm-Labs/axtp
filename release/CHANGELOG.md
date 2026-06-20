@@ -4,6 +4,27 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.8.3
+
+Runtime dispatch compatibility verification patch.
+
+### Protocol
+
+- Keeps AXTP wire, CONTROL, RPC, STREAM, method, event, schema, capability, profile, and error semantics unchanged from `spec/v0.8.2`.
+- Keeps the flattened numbered specs layout and machine contract paths introduced across `spec/v0.8.0` through `spec/v0.8.2`.
+
+### Release Governance
+
+- Publishes a fresh spec tag after C, Python, TypeScript, Flutter, and mock-server runtime generators were updated to consume `contract/**` and flattened `specs/**` paths.
+- Uses this tag to re-run automatic `axtp_spec_released` dispatch across runtime repositories after the runtime-side workflow fixes.
+- Keeps the release artifact contents unchanged from `spec/v0.8.2`.
+
+### Runtime Impact
+
+- Runtime and SDK teams can bind to `spec/v0.8.3` as the verified patch tag for cross-runtime dispatch compatibility with the current spec repository layout.
+- Implementations already compatible with `spec/v0.8.2` do not need wire-level, registry, SDK API, or conformance behavior changes for this release.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.8.2
 
 Runtime dispatch CI verification patch.
