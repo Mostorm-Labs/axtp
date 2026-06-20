@@ -31,7 +31,7 @@ contents:
     - "**/.DS_Store"
 
 runtime_update:
-  target_runtime_version: "{{VERSION}}"
+  target_runtime_version: "{{VERSION}}.0"
   dispatch_event: "axtp_spec_released"
 
 notes:

@@ -17,6 +17,22 @@ Runtime Package Version: axtp_flutter_runtime 0.3.x
 
 Runtime versions may align their major/minor numbers with the compatible spec range, but they are still separate package versions. For example, runtime `0.3.x` means the runtime is intended to implement or remain compatible with AXTP `spec/v0.3.x`.
 
+Runtime GitHub Release tags use a four-part coordination version when they are
+derived from a fixed AXTP Spec tag:
+
+```text
+Runtime Release Version: vSPEC_MAJOR.SPEC_MINOR.SPEC_PATCH.RUNTIME_REVISION
+```
+
+The first runtime release for `spec/vX.Y.Z` uses `vX.Y.Z.0`. Runtime-only
+fixes, SDK fixes, tooling fixes, platform packaging changes, and similar
+implementation updates that keep the same `AXTP_SPEC.lock.yaml` increment only
+the fourth field, for example `vX.Y.Z.1`.
+
+Language package versions may need an ecosystem-specific projection if the
+package manager does not accept four numeric fields. The GitHub Release tag and
+generated manifest remain the canonical runtime release identity.
+
 ## Tag Format
 
 AXTP Spec tags use this format:
@@ -55,6 +71,9 @@ AXTP Spec v0.3.0
 | PATCH | Non-breaking correction. | Documentation fix, schema description correction, non-breaking registry metadata correction. | Runtimes are not required to upgrade unless they need the correction. |
 
 Patch releases must not change wire compatibility. Minor releases may expand the generated registry and machine-readable facts without invalidating previous minor functionality. Major releases are explicit compatibility boundaries.
+
+Runtime revision `R` in `vX.Y.Z.R` is not an AXTP Spec version field. It is a
+runtime repository release counter scoped to the locked Spec version `X.Y.Z`.
 
 ## Release Content
 

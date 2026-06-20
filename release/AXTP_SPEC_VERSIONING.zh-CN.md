@@ -17,6 +17,16 @@ Runtime Package Version: axtp_flutter_runtime 0.3.x
 
 Runtime 可以让自己的 major/minor 与兼容的 spec 范围对齐，但 runtime 版本仍然是独立的包版本。例如 runtime `0.3.x` 表示该 runtime 计划实现或兼容 AXTP `spec/v0.3.x`。
 
+当 runtime GitHub Release 从固定 AXTP Spec tag 派生时，使用四段协同版本：
+
+```text
+Runtime Release Version: vSPEC_MAJOR.SPEC_MINOR.SPEC_PATCH.RUNTIME_REVISION
+```
+
+`spec/vX.Y.Z` 对应的第一个 runtime release 使用 `vX.Y.Z.0`。如果只是 runtime、SDK、工具、平台打包等实现层修复，并且 `AXTP_SPEC.lock.yaml` 仍锁定同一个 spec，则只递增第四位，例如 `vX.Y.Z.1`。
+
+如果某个语言包管理器不接受四段数字版本，package version 可以按生态做映射。GitHub Release tag 和 generated manifest 才是 runtime release 身份的规范来源。
+
 ## Tag 格式
 
 AXTP Spec tag 使用：
@@ -55,6 +65,8 @@ AXTP Spec v0.3.0
 | PATCH | 非破坏性修正。 | 文档修正、schema 描述修正、非破坏性 registry metadata 修正。 | Runtime 不要求升级，除非需要该修正。 |
 
 Patch 发布不得改变 wire compatibility。Minor 发布可以扩展生成 registry 和机器可读事实，但不得破坏既有 minor 功能。Major 发布是明确的兼容边界。
+
+`vX.Y.Z.R` 中的 runtime revision `R` 不是 AXTP Spec version 字段，而是 runtime 仓库在已锁定 spec version `X.Y.Z` 下的发布计数。
 
 ## Release 内容
 

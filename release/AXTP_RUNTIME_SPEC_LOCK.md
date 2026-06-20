@@ -33,6 +33,26 @@ Fields:
 
 Package metadata may repeat the same information, but the runtime should still keep a clear spec binding in source control.
 
+## Runtime Release Version
+
+Runtime/tool GitHub Release tags use the locked Spec version plus a runtime
+revision:
+
+```text
+spec/vX.Y.Z -> vX.Y.Z.0
+spec/vX.Y.Z -> vX.Y.Z.1
+```
+
+The first release that aligns with a Spec tag uses revision `0`. Later
+implementation-only fixes that keep the same `AXTP_SPEC.lock.yaml` increment
+only the fourth field. This keeps the next Spec patch, such as `spec/vX.Y.(Z+1)`,
+available for the spec repository.
+
+If a package ecosystem cannot use four numeric fields, keep the four-part value
+in the runtime repository release metadata, generated manifest, or a root
+`VERSION` file, and map the package-manager version separately. The package
+metadata must not be the only place that records the AXTP Spec binding.
+
 ## C++ Runtime
 
 C++ runtimes should depend on a fixed AXTP Spec tag or commit. Two common options are Git submodules and CMake `FetchContent`.
@@ -70,7 +90,7 @@ Short term, TypeScript runtimes can record AXTP Spec metadata in `package.json`:
 ```json
 {
   "name": "@mostorm/axtp-ts-runtime",
-  "version": "0.3.1",
+  "version": "0.3.0-runtime.1",
   "axtp": {
     "specVersion": "0.3.0",
     "specTag": "spec/v0.3.0",
@@ -111,10 +131,12 @@ Flutter/Dart runtime package versions remain in `pubspec.yaml`:
 
 ```yaml
 name: axtp_flutter_runtime
-version: 0.3.0
+version: 0.3.0-runtime.1
 ```
 
-Do not hide AXTP Spec version inside the Dart package version. Use `AXTP_SPEC.lock.yaml` or a project-local `axtp_spec.yaml`:
+Do not hide AXTP Spec version inside the Dart package version. Use
+`AXTP_SPEC.lock.yaml`, generated release metadata, or a project-local
+`axtp_spec.yaml`:
 
 ```yaml
 axtp_spec:
