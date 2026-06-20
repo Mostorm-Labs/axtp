@@ -65,4 +65,4 @@
 ## 后续治理 TODO
 
 - 将本页从手动维护逐步迁移为从 registry、generated JSON 和 protocol frontmatter 自动生成。
-- 对 legacy 拼写文件名 `reciever`、`paring` 单独做兼容迁移：新增正确拼写文件、保留旧路径跳转页、全仓替换链接。
+- legacy 拼写兼容页可在外部旧链接迁移完成后删除；当前正确路径为 `cast-receiver-uxplay` 和 `cast-rxtx-pairing`。

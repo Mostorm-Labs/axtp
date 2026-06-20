@@ -90,8 +90,6 @@ lastReviewed: 2026-06-15
 
 #### 3.1.3 返回结果 Result：`FocusCapabilities`
 
-字段见 [6.3](#63-capability-schemas)。
-
 #### 3.1.4 Success Response d block Example (op=8)
 
 ```json
@@ -216,8 +214,6 @@ lastReviewed: 2026-06-15
 
 #### 3.2.3 返回结果 Result：`FocusState`
 
-字段见 [6.4](#64-state--config-schemas)。
-
 #### 3.2.4 Success Response d block Example (op=8)
 
 ```json
@@ -316,8 +312,6 @@ lastReviewed: 2026-06-15
 读法：客户端请求切换到连续自动对焦；设备如果接受请求，可能立即返回 accepted，并通过后续事件报告运行态。
 
 #### 3.3.3 返回结果 Result：`FocusCommandResult`
-
-字段见 [6.2](#62-请求与响应-schemas)。
 
 #### 3.3.4 Success Response d block Example (op=8)
 
@@ -557,8 +551,6 @@ lastReviewed: 2026-06-15
 读法：`applyMode=switch_to_manual` 表示设备可先切换到 manual 再应用 position；如果设备不允许自动切换，应返回 `DEVICE_MODE_CONFLICT`。
 
 #### 3.5.3 返回结果 Result：`FocusCommandResult`
-
-字段见 [6.2](#62-请求与响应-schemas)。
 
 #### 3.5.4 Success Response d block Example (op=8)
 
@@ -806,8 +798,6 @@ lastReviewed: 2026-06-15
 读法：`point` 使用归一化坐标；坐标原点和方向需在 registry review 中确认是否与 video/camera 坐标系统一致。[REVIEW-ASK]
 
 #### 3.7.3 返回结果 Result：`FocusCommandResult`
-
-字段见 [6.2](#62-请求与响应-schemas)。
 
 #### 3.7.4 Success Response d block Example (op=8)
 
@@ -1072,8 +1062,6 @@ lastReviewed: 2026-06-15
 
 #### 3.9.3 返回结果 Result：`FocusCommandResult`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.9.4 Success Response d block Example (op=8)
 
 ```json
@@ -1228,8 +1216,6 @@ lastReviewed: 2026-06-15
 
 #### 3.10.3 返回结果 Result：`FocusCommandResult`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.10.4 Success Response d block Example (op=8)
 
 ```json
@@ -1367,8 +1353,6 @@ lastReviewed: 2026-06-15
 读法：用于释放 UI 按住态或取消正在进行的 AF/jog。
 
 #### 3.11.3 返回结果 Result：`FocusCommandResult`
-
-字段见 [6.2](#62-请求与响应-schemas)。
 
 #### 3.11.4 Success Response d block Example (op=8)
 

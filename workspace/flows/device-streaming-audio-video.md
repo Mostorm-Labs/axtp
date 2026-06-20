@@ -2,7 +2,7 @@
 
 > Status: flow design
 > Scope: NA20 receiver USB-HID media bridge, NT10 wireless transmitter, and upper-host MediaHost audio/video playback
-> Source inputs: `workspace/business/device-streaming.md`, `workspace/flows/cast-rxtx-paring.md`, `contract/generated/protocol.md`, `specs/20-core.md`, `workspace/protocol/video/video.stream.md`, `workspace/protocol/audio/audio.stream.md`, `workspace/protocol/stream/stream.flowControl.md`
+> Source inputs: `workspace/business/device-streaming.md`, `workspace/flows/cast-rxtx-pairing.md`, `contract/generated/protocol.md`, `specs/20-core.md`, `workspace/protocol/video/video.stream.md`, `workspace/protocol/audio/audio.stream.md`, `workspace/protocol/stream/stream.flowControl.md`
 > Protocol lifecycle: Stage 10 `plan-protocol-flow`
 
 本文根据 NA20/NT10 投屏设备业务需求，梳理上位机 MediaHost、NA20、NT10 和 AXTP 协议之间的音视频投屏交互流程、已有协议覆盖状态和后续协议缺口。
@@ -83,7 +83,7 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 
 | State | Meaning | Protocol relevance |
 |---|---|---|
-| pairing completed | NA20/NT10 已完成 AP/Wi-Fi 配对。 | 前置条件；详见 `workspace/flows/cast-rxtx-paring.md`。 |
+| pairing completed | NA20/NT10 已完成 AP/Wi-Fi 配对。 | 前置条件；详见 `workspace/flows/cast-rxtx-pairing.md`。 |
 | NA20 AXTP session ready | MediaHost 与 NA20 已建立 Standard Framed AXTP session。 | generated；RPC + STREAM 前置条件。 |
 | wireless_cast upstream source available/receiving | NA20 已检测到 NT10 无线投屏源，且可能正在接收上游媒体。 | draft query/event；source state 可驱动 NA20 producer-open、MediaHost receiver-pull，以及 NA20 open 被拒后的 fallback notification。 |
 | video source available/receiving | NA20 已收到 NT10 的 H.264 视频输入，具备建立 NA20->MediaHost 下游视频 STREAM 的条件。 | draft amendment；NA20 可发起 `video.openStream(peerRole=receiver)`，也可发出视频 source available/receiving 事件；MediaHost 可在该状态下 `video.openStream(peerRole=transmitter)` 主动拉取。 |
@@ -116,7 +116,7 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 
 | Type | Item | Status |
 |---|---|---|
-| Assumption | NA20/NT10 配对流程已经完成，NT10 已可连接 NA20 AP；配对详见 `workspace/flows/cast-rxtx-paring.md`。 | `[REVIEW-DRAFT]` |
+| Assumption | NA20/NT10 配对流程已经完成，NT10 已可连接 NA20 AP；配对详见 `workspace/flows/cast-rxtx-pairing.md`。 | `[REVIEW-DRAFT]` |
 | Assumption | MediaHost 至少与 NA20 建立一条 AXTP-over-USB-HID 会话；主流程不要求 MediaHost 直接控制 NT10 开始推流。 | `[REVIEW-DRAFT]` |
 | Assumption | NA20 将音频和视频拆成两个独立 `streamId`，通过同一 AXTP session 多路复用。 | `[REVIEW-DRAFT]` |
 | Assumption | MediaHost 能接收 NA20 发起的业务 RPC request，或协议层补充 Host-side receiver service 语义；core spec 已按双向 requester 语义澄清后，generated 输出仍需后续同步。 | `[REVIEW-DRAFT]` |
@@ -193,7 +193,7 @@ sequenceDiagram
     MediaHost->>NA20: Open AXTP-USB-HID session
     NA20-->>MediaHost: Session accepted / identified
 
-    Note over MediaHost,NT10: Pairing is already completed by cast-rxtx-paring flow.
+    Note over MediaHost,NT10: Pairing is already completed by cast-rxtx-pairing flow.
     User->>SourcePC: Insert NT10
     SourcePC-->>NT10: Power and source media available
     NT10->>NA20: Auto-start wireless cast(H.264 Annex-B + AAC passthrough)
@@ -267,7 +267,7 @@ sequenceDiagram
 | Step | Actor | Action | Capability / precondition | Protocol call/event | Payload fields | Result / state change | Coverage | Error / fallback |
 |---:|---|---|---|---|---|---|---|---|
 | 1 | MediaHost | 建立到 NA20 的控制和数据会话。 | NA20 connected, Standard Framed supported。 | `AXTP-USB-HID` session | transport/session fields | MediaHost 可与 NA20 交互 RPC，并接收 STREAM。 | generated | HID 打开失败则提示 NA20 未连接或被占用。 |
-| 2 | MediaHost | 确认 NA20/NT10 配对已完成，并准备接收 NA20 发起的 Host-side stream request 或后续主动拉取 source。 | Pairing flow done, host receiver service ready。 | local-only / previous flow result | pair record, receiver role, source availability cache | 进入投屏媒体等待阶段。 | local-only | 未配对时跳转 `cast-rxtx-paring` flow。 |
+| 2 | MediaHost | 确认 NA20/NT10 配对已完成，并准备接收 NA20 发起的 Host-side stream request 或后续主动拉取 source。 | Pairing flow done, host receiver service ready。 | local-only / previous flow result | pair record, receiver role, source availability cache | 进入投屏媒体等待阶段。 | local-only | 未配对时跳转 `cast-rxtx-pairing` flow。 |
 | 3 | User / Source PC | 用户将 NT10 插入源端 PC。 | NT10 已与 NA20 配对，源端 PC 供电。 | non-protocol | source power, source media availability | NT10 具备向 NA20 发起无线投屏的条件。 | non-protocol | NT10 未供电或未配对时 NA20 不会产生 ready 事件。 |
 | 4 | NT10 | 自动向 NA20 发起无线投屏。 | NT10 connected to NA20 AP。 | device-specific wireless cast | H.264 Annex-B video, AAC passthrough audio | NA20 开始接收上游音视频。 | non-protocol | 无线连接失败由设备侧重连或提示处理，不进入 AXTP wire。 |
 | 5 | NA20 | 检测视频 source available/receiving，并选择主动请求 Host 接收或发出 source state。 | 收到 NT10 H.264 输入。 | Draft `video.openStream` from NA20, or per-media source available/receiving event | source, codec=h264, stream profile, peer media role=receiver when producer-open, sync/clock metadata | 若 producer-open 被接受，MediaHost 创建 H.264 decoder/buffer；若只发 source event，MediaHost 缓存可拉取状态。 | draft amendment | 若 MediaHost 拒绝或不支持 receiver service，NA20 不发送 STREAM；source 仍可用时可继续通知 Host 后续 pull。 |

@@ -47,7 +47,7 @@
 
 | Source | Evidence | Classified | Mapped to generated | Mapped to draft | Blocked | Adapter needed | Next step |
 |---|---|---|---|---|---|---|---|
-| uxplay / cast receiver WebSocket and product flows | [WEBSOCKET_PROTOCOL.md](evidence/WEBSOCKET_PROTOCOL.md)、[cast receiver business](../business/cast-reciever-uxplay.md)、[cast pairing business](../business/cast-rxtx-paring.md)、[device streaming business](../business/device-streaming.md) | Not yet split into `classification/by-source/**`; related rows may exist in [classification CSV](classification/legacy-protocol-classification.csv) | TBD | TBD；video/audio stream、room/source、signage/cast-related 草案需复核 | 当前 cast / uxplay backend 控制和 AXTP audio/video stream 边界需要统一 | 是，uxplay backend control 到 AXTP domain method 需要 adapter | 先补 by-source 分类或 flow，再决定是否进入 `video.stream`、`audio.stream`、`room.source` 或未来 cast domain 草案。 |
+| uxplay / cast receiver WebSocket and product flows | [WEBSOCKET_PROTOCOL.md](evidence/WEBSOCKET_PROTOCOL.md)、[cast receiver business](../business/cast-receiver-uxplay.md)、[cast pairing business](../business/cast-rxtx-pairing.md)、[device streaming business](../business/device-streaming.md) | Not yet split into `classification/by-source/**`; related rows may exist in [classification CSV](classification/legacy-protocol-classification.csv) | TBD | TBD；video/audio stream、room/source、signage/cast-related 草案需复核 | 当前 cast / uxplay backend 控制和 AXTP audio/video stream 边界需要统一 | 是，uxplay backend control 到 AXTP domain method 需要 adapter | 先补 by-source 分类或 flow，再决定是否进入 `video.stream`、`audio.stream`、`room.source` 或未来 cast domain 草案。 |
 
 ## 迁移看板维护规则
 

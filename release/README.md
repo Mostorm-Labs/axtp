@@ -14,6 +14,8 @@
 
 Runtime 仓库必须绑定明确的 Spec tag、commit 或 release artifact，不得依赖浮动 `main`。Roadmap milestone 可以由多个 `spec/v0.0.x` 发布累积完成。
 
+本地反复 dry-run 后，可用 `tooling/scripts/clean-local-artifacts.sh` 清理 ignored `dist/axtp-spec-v*` 产物；这不会改变 release artifact 构建规则。
+
 ## 最小发布步骤
 
 | 步骤 | 动作 | 主要检查 |

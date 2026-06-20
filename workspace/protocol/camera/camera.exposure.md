@@ -59,8 +59,6 @@ lastReviewed: 2026-06-13
 
 #### 3.1.1 请求参数 Params：`GetExposureCapabilitiesParams`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.1.2 Request d block Example (op=7)
 
 ```json
@@ -76,8 +74,6 @@ lastReviewed: 2026-06-13
 读法：请求只展示 RPC `d` block；`params` 对应 `GetExposureCapabilitiesParams`，省略字段按上表默认值处理。
 
 #### 3.1.3 返回结果 Result：`ExposureCapabilities`
-
-字段见 [6.3](#63-capability-schemas)。
 
 #### 3.1.4 Success Response d block Example (op=8)
 
@@ -146,8 +142,6 @@ lastReviewed: 2026-06-13
 
 #### 3.2.1 请求参数 Params：`GetExposureConfigParams`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.2.2 Request d block Example (op=7)
 
 ```json
@@ -163,8 +157,6 @@ lastReviewed: 2026-06-13
 读法：请求只展示 RPC `d` block；`params` 对应 `GetExposureConfigParams`，省略字段按上表默认值处理。
 
 #### 3.2.3 返回结果 Result：`ExposureConfig`
-
-字段见 [6.4](#64-config--state-总结构)。
 
 #### 3.2.4 Success Response d block Example (op=8)
 
@@ -232,8 +224,6 @@ lastReviewed: 2026-06-13
 
 #### 3.3.1 请求参数 Params：`SetExposureConfigParams`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.3.2 Request d block Example (op=7)
 
 ```json
@@ -257,8 +247,6 @@ lastReviewed: 2026-06-13
 读法：请求只展示 RPC `d` block；`params` 对应 `SetExposureConfigParams`，省略字段按上表默认值处理。
 
 #### 3.3.3 返回结果 Result：`SetExposureConfigResult`
-
-字段见 [6.2](#62-请求与响应-schemas)。
 
 #### 3.3.4 Success Response d block Example (op=8)
 
@@ -348,8 +336,6 @@ lastReviewed: 2026-06-13
 
 #### 3.4.1 请求参数 Params：`ResetExposureConfigParams`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.4.2 Request d block Example (op=7)
 
 ```json
@@ -365,8 +351,6 @@ lastReviewed: 2026-06-13
 读法：请求只展示 RPC `d` block；`params` 对应 `ResetExposureConfigParams`，省略字段按上表默认值处理。
 
 #### 3.4.3 返回结果 Result：`SetExposureConfigResult`
-
-字段见 [6.2](#62-请求与响应-schemas)。
 
 #### 3.4.4 Success Response d block Example (op=8)
 

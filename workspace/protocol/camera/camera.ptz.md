@@ -64,8 +64,6 @@ lastReviewed: 2026-06-13
 
 #### 3.1.1 请求参数 Params：`GetPtzCapabilitiesParams`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.1.2 Request d block Example (op=7)
 
 ```json
@@ -81,8 +79,6 @@ lastReviewed: 2026-06-13
 读法：请求只展示 RPC `d` block；`params` 对应 `GetPtzCapabilitiesParams`，省略字段按上表默认值处理。
 
 #### 3.1.3 返回结果 Result：`PtzCapabilities`
-
-字段见 [6.3](#63-capability-schemas)。
 
 #### 3.1.4 Success Response d block Example (op=8)
 
@@ -148,8 +144,6 @@ lastReviewed: 2026-06-13
 
 #### 3.2.1 请求参数 Params：`GetPtzStateParams`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.2.2 Request d block Example (op=7)
 
 ```json
@@ -165,8 +159,6 @@ lastReviewed: 2026-06-13
 读法：请求只展示 RPC `d` block；`params` 对应 `GetPtzStateParams`，省略字段按上表默认值处理。
 
 #### 3.2.3 返回结果 Result：`PtzState`
-
-字段见 [6.4](#64-config--state-总结构)。
 
 #### 3.2.4 Success Response d block Example (op=8)
 
@@ -234,7 +226,7 @@ lastReviewed: 2026-06-13
 
 #### 3.3.1 请求参数 Params：`SetPtzConfigParams`
 
-字段见 [6.2](#62-请求与响应-schemas)。`mode` 可为 `absolute`、`relative`、`home` 或 `reset`。
+`mode` 可为 `absolute`、`relative`、`home` 或 `reset`。
 
 #### 3.3.2 Request d block Example (op=7)
 
@@ -252,8 +244,6 @@ lastReviewed: 2026-06-13
 读法：请求只展示 RPC `d` block；`params` 对应 `SetPtzConfigParams`，省略字段按上表默认值处理。
 
 #### 3.3.3 返回结果 Result：`PtzCommandResult`
-
-字段见 [6.2](#62-请求与响应-schemas)。
 
 #### 3.3.4 Success Response d block Example (op=8)
 
@@ -346,8 +336,6 @@ lastReviewed: 2026-06-13
 
 #### 3.4.1 请求参数 Params：`StartPtzMoveParams`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.4.2 Request d block Example (op=7)
 
 ```json
@@ -365,8 +353,6 @@ lastReviewed: 2026-06-13
 读法：请求只展示 RPC `d` block；`params` 对应 `StartPtzMoveParams`，省略字段按上表默认值处理。
 
 #### 3.4.3 返回结果 Result：`PtzCommandResult`
-
-字段见 [6.2](#62-请求与响应-schemas)。
 
 #### 3.4.4 Success Response d block Example (op=8)
 
@@ -457,8 +443,6 @@ lastReviewed: 2026-06-13
 
 #### 3.5.1 请求参数 Params：`StopPtzMoveParams`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.5.2 Request d block Example (op=7)
 
 ```json
@@ -474,8 +458,6 @@ lastReviewed: 2026-06-13
 读法：请求只展示 RPC `d` block；`params` 对应 `StopPtzMoveParams`，省略字段按上表默认值处理。
 
 #### 3.5.3 返回结果 Result：`PtzCommandResult`
-
-字段见 [6.2](#62-请求与响应-schemas)。
 
 #### 3.5.4 Success Response d block Example (op=8)
 
@@ -566,8 +548,6 @@ lastReviewed: 2026-06-13
 
 #### 3.6.1 请求参数 Params：`CallPtzPresetParams`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.6.2 Request d block Example (op=7)
 
 ```json
@@ -584,8 +564,6 @@ lastReviewed: 2026-06-13
 读法：请求只展示 RPC `d` block；`params` 对应 `CallPtzPresetParams`，省略字段按上表默认值处理。
 
 #### 3.6.3 返回结果 Result：`PtzCommandResult`
-
-字段见 [6.2](#62-请求与响应-schemas)。
 
 #### 3.6.4 Success Response d block Example (op=8)
 
@@ -676,8 +654,6 @@ lastReviewed: 2026-06-13
 
 #### 3.7.1 请求参数 Params：`SavePtzPresetParams`
 
-字段见 [6.2](#62-请求与响应-schemas)。
-
 #### 3.7.2 Request d block Example (op=7)
 
 ```json
@@ -698,8 +674,6 @@ lastReviewed: 2026-06-13
 读法：请求只展示 RPC `d` block；`params` 对应 `SavePtzPresetParams`，省略字段按上表默认值处理。
 
 #### 3.7.3 返回结果 Result：`PtzPreset`
-
-字段见 [6.5](#65-各对象字段)。
 
 #### 3.7.4 Success Response d block Example (op=8)
 

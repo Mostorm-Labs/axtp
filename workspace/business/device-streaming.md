@@ -23,7 +23,7 @@ NA20 和 NT10 是配对使用的投屏设备，目标是提供极简投屏流程
 ## 非目标
 
 - 不解决设备升级。
-- 不解决 NA20 / NT10 配对流程；配对需求见 `workspace/business/cast-rxtx-paring.md`。
+- 不解决 NA20 / NT10 配对流程；配对需求见 `workspace/business/cast-rxtx-pairing.md`。
 - 不在 business 文档中定义 STREAM header、payload、method/event/schema 或 HID 细节。
 
 ## 场景

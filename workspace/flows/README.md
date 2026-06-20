@@ -51,8 +51,8 @@ workspace/business/<requirement>.md 或业务场景 / UI 原型 / 用户 story
 | Flow 名称 | 文件 | 状态 | Next action |
 |---|---|---|---|
 | Audio Algorithm Level Control | [audio-algorithm-level-control.md](audio-algorithm-level-control.md) | 已完成 / 复用 adopted | 使用 generated `audio.algorithm`；后续语义变化走 amendment。 |
-| Cast Receiver UxPlay | [cast-reciever-uxplay.md](cast-reciever-uxplay.md) | 已进入 protocol draft | 继续确认投屏会话、PIN、窗口和音频控制对应的 protocol drafts。 |
-| Cast RX/TX Pairing | [cast-rxtx-paring.md](cast-rxtx-paring.md) | 已进入 protocol draft | 采纳或修订 `network.ap` / `network.wifi` 草案。 |
+| Cast Receiver UxPlay | [cast-receiver-uxplay.md](cast-receiver-uxplay.md) | 已进入 protocol draft | 继续确认投屏会话、PIN、窗口和音频控制对应的 protocol drafts。 |
+| Cast RX/TX Pairing | [cast-rxtx-pairing.md](cast-rxtx-pairing.md) | 已进入 protocol draft | 采纳或修订 `network.ap` / `network.wifi` 草案。 |
 | Device Firmware Update | [device-firmware-update.md](device-firmware-update.md) | 已进入 protocol draft | 采纳 `firmware.update` / `firmware.info`，并确认 STREAM P0 边界。 |
 | Device Information And System Runtime State | [device-system-info.md](device-system-info.md) | 已进入 protocol draft | 采纳 `device.info`、`device.childDevice` 和 `system.*` 草案。 |
 | NearHub Launcher Digital Signage Device Management | [signage-device-management.md](signage-device-management.md) | 已进入 protocol draft | 继续确认 signage、network、firmware、log 等 legacy 映射。 |
