@@ -214,7 +214,7 @@ Documentation governance, business protocol draft consolidation, and AXTP networ
 
 - No registry YAML source facts are changed in this release.
 - Keeps adopted runtime contract facts sourced from `contract/registry/**`, `contract/protocol/axtp.protocol.yaml`, and `contract/generated/**`.
-- Moves historical registry planning tables into non-normative appendix documents under `specs/2-registry/appendix/**`; runtimes must not implement from these appendix tables.
+- Moves historical registry planning tables into non-normative appendix documents under `workspace/registry-planning/candidates/**`; runtimes must not implement from these appendix tables.
 - Clarifies domain.feature naming, method/event/error/profile allocation rules, draft ID boundaries, and registry adoption readiness criteria.
 
 ### Schemas

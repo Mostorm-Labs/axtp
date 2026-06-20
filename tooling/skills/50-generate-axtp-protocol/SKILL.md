@@ -20,7 +20,7 @@ Stage 50. Run the deterministic AXTP generation stage after `adopt-protocol-draf
 Read only what is needed:
 
 ```text
-specs/4-tooling/02-Generator-V1.md
+specs/50-tooling.md
 contract/registry/**/*.yaml
 contract/registry/domains/**/*.yaml
 tooling/generators/package.json
@@ -29,13 +29,13 @@ tooling/generators/package.json
 If validation errors mention wire facts, also read the relevant specs:
 
 ```text
-specs/1-core/03-Frame-and-Payload.md
-specs/1-core/05-Control-Session.md
-specs/1-core/06-RPC-Session.md
-specs/1-core/07-Stream-Data-Plane.md
-specs/2-registry/01-Naming-and-Taxonomy.md
-specs/4-tooling/01-YAML-Mapping.md
-specs/3-codec/02-Capability-Types.md
+specs/20-core.md
+specs/20-core.md
+specs/20-core.md
+specs/20-core.md
+specs/30-registry.md
+specs/50-tooling.md
+specs/40-codec.md
 ```
 
 ## Workflow

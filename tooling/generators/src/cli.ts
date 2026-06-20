@@ -118,18 +118,19 @@ program.command("validate-sources")
 program.command("build-protocol")
   .description("build contract/protocol/axtp.protocol.yaml from contract/registry/domain YAML sources")
   .requiredOption("--spec <path>", "AXTP repository root")
-  .requiredOption("--out <path>", "output protocol YAML file")
+  .option("--out <path>", "output protocol YAML file")
   .action(async (options) => {
     try {
       const specRoot = resolveInputPath(options.spec);
+      const out = options.out ? resolveOutputPath(options.out) : path.join(specRoot, "contract", "protocol", "axtp.protocol.yaml");
       const sources = await loadProtocolSources(specRoot);
       const messages = validateSpec(sources);
       const raw = buildProtocolDefinitionRaw(sources);
       const model = buildProtocolDefinition(sources);
       validateProtocolDefinition(model);
-      await writeProtocolDefinition(raw, resolveOutputPath(options.out));
+      await writeProtocolDefinition(raw, out);
       for (const message of messages) console.log(message);
-      console.log(`[OK] built protocol definition: ${resolveOutputPath(options.out)}`);
+      console.log(`[OK] built protocol definition: ${out}`);
     } catch (error) {
       console.error(formatGeneratorError(error));
       process.exitCode = 1;

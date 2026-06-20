@@ -4,10 +4,10 @@
 
 本文不改变 `specs/` 的正式语义，只把研发实现时最容易混淆的字段、报文、状态和鉴权选择集中写在一起。正式 wire format 仍以以下规范为准：
 
-- [Frame and Payload Spec](../../specs/1-core/03-Frame-and-Payload.md)
-- [Transport Profiles](../../specs/1-core/04-Transport-Profiles.md)
-- [Control Session Spec](../../specs/1-core/05-Control-Session.md)
-- [RPC Session Spec](../../specs/1-core/06-RPC-Session.md)
+- [Frame and Payload Spec](../../specs/20-core.md)
+- [Transport Profiles](../../specs/20-core.md)
+- [Control Session Spec](../../specs/20-core.md)
+- [RPC Session Spec](../../specs/20-core.md)
 
 ## 1. 先记住两句话
 

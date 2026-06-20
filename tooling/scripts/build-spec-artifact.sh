@@ -102,8 +102,12 @@ required_artifact_paths=(
   "contract/generated/protocol.json"
   "contract/registry/version.yaml"
   "specs/README.md"
-  "specs/0-principles/02-Contract-Boundaries.md"
-  "specs/0-principles/03-Domain-Feature-Classification.md"
+  "specs/00-glossary.md"
+  "specs/10-contract.md"
+  "specs/20-core.md"
+  "specs/30-registry.md"
+  "specs/40-codec.md"
+  "specs/50-tooling.md"
   "conformance/manifest.yaml"
   "contract/mcp/method_registry.generated.json"
   "contract/test-vectors/manifest.json"
@@ -120,6 +124,11 @@ done
 
 if find "$artifact_dir" -name ".DS_Store" | grep -q .; then
   echo "Release artifact contains .DS_Store files" >&2
+  exit 1
+fi
+
+if [[ -e "$artifact_dir/workspace/registry-planning" ]]; then
+  echo "Release artifact must not contain maintainer-only registry planning materials" >&2
   exit 1
 fi
 

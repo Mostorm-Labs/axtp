@@ -18,7 +18,7 @@ business -> flows -> protocol draft -> registry -> generated -> conformance -> r
 | 事实源 | `specs/`、`contract/registry/`、`contract/registry/domains/` | 定义当前协议的人读规则和机器可读事实。 |
 | 生成合同 | `contract/protocol/axtp.protocol.yaml`、`contract/generated/`、`contract/test-vectors/` | 供工具、测试、release artifact 和 runtime 仓库消费。 |
 
-完整合同等级和冲突处理规则见 [Contract Boundaries](../../specs/0-principles/02-Contract-Boundaries.md)。
+完整合同等级和冲突处理规则见 [Contract Boundaries](../../specs/10-contract.md)。
 
 ## 标准动作
 

@@ -4,7 +4,7 @@
 > Scope: `workspace/protocol/**`, `workspace/business/**`, `workspace/flows/**`, `workspace/legacy-migration/**`, `contract/registry/domains/**`, `contract/generated/**`, `docs/conformance/**`
 > Authority: specs 定义规则；registry YAML / Protocol IR / generated artifacts 才是 runtime implementation contract。
 
-本 checklist 用于审计单个 `domain.feature` 业务模块是否可以从 draft/review 输入进入 registry、generated 和 conformance。审计时不要把 `workspace/protocol/**` 草案、`specs/2-registry/appendix/**` 候选表或 legacy evidence 当成 runtime 合同。
+本 checklist 用于审计单个 `domain.feature` 业务模块是否可以从 draft/review 输入进入 registry、generated 和 conformance。审计时不要把 `workspace/protocol/**` 草案、`workspace/registry-planning/candidates/**` 候选表或 legacy evidence 当成 runtime 合同。
 
 ## 1. Classification
 

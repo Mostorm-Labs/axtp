@@ -30,7 +30,7 @@ AXTP conformance 用例维护在根目录 `conformance/` 下，是 runtime、SDK
 | CONTROL CLOSE / CLOSE_ACK | 否 | 是 |
 | STREAM open / data / close | 否 | 是，P0 用于 audio/video 媒体流 |
 
-Hello / Identify / Identified 字段规则不在 conformance 文档中重复定义；完整规范见 [RPC Session Spec](../specs/1-core/06-RPC-Session.md)。
+Hello / Identify / Identified 字段规则不在 conformance 文档中重复定义；完整规范见 [RPC Session Spec](../specs/20-core.md)。
 
 ## Required Levels
 

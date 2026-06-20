@@ -140,7 +140,7 @@ source:
 只有满足以下条件的 audio feature 才能进入 registry candidate：
 
 - 有清楚的 `domain.feature` 边界，且 feature 是可评审、可测试、可演进的能力块。
-- method、event、schema、capability 齐全，且命名符合 `specs/2-registry/01-Naming-and-Taxonomy.md`。
+- method、event、schema、capability 齐全，且命名符合 `specs/30-registry.md`。
 - params、result、event payload 可以 schema 化，并能后续分配稳定 fieldId。
 - error model 清楚，能复用正式 ErrorCode，不发明局部错误语义。
 - legacy mapping 不污染正式语义；旧命令名、旧字段名、旧状态码只作为 mapping 或 adapter metadata。
@@ -171,7 +171,7 @@ source:
 - 不要修改 `README.md`。
 - 不要新增 methodId、eventId、errorCode 或 fieldId。
 - 不要删除 legacy 证据。
-- 不要把 `specs/2-registry/appendix/**` candidate 表当成正式 registry。
+- 不要把 `workspace/registry-planning/candidates/**` candidate 表当成正式 registry。
 - 不要把 `workspace/protocol/audio/**` 草案标成 `contract: true`，除非它已经明确由 contract/registry/generated 支撑；即便是 `audio.algorithm`，也应表述为“实现合同在 contract/registry/generated，本文是 adopted reference 或 amendment input”。
 
 ## 8. audio-domain-consolidation 未解决问题

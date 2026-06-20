@@ -96,8 +96,8 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 | Need | Coverage state | AXTP protocol | Evidence | Next action |
 |---|---|---|---|---|
 | 外部控制端通过 WebSocket 建立 RPC 通道 | generated | `AXTP-WS-JSON` | `contract/generated/protocol.md`, `contract/registry/core/protocol_meta.yaml` | 可按 generated/core 实现。 |
-| RPC session handshake | generated | `Hello(op=0)`, `Identify(op=2)`, `Identified(op=3)` | `contract/generated/protocol.md`, `specs/1-core/06-RPC-Session.md` | 用新 handshake 替代 legacy `HelloAck`。 |
-| RPC 请求、响应、事件 envelope | generated | `Request(op=7)`, `RequestResponse(op=8)`, `Event(op=6)`, JSON `sid/op/d` | `contract/generated/protocol.md`, `specs/1-core/06-RPC-Session.md` | 可按 core 实现。 |
+| RPC session handshake | generated | `Hello(op=0)`, `Identify(op=2)`, `Identified(op=3)` | `contract/generated/protocol.md`, `specs/20-core.md` | 用新 handshake 替代 legacy `HelloAck`。 |
+| RPC 请求、响应、事件 envelope | generated | `Request(op=7)`, `RequestResponse(op=8)`, `Event(op=6)`, JSON `sid/op/d` | `contract/generated/protocol.md`, `specs/20-core.md` | 可按 core 实现。 |
 | 外部控制口 token、权限和 LAN 安全策略 | draft | `Identify.d.authentication`, draft `auth.session` / `auth.token` / `auth.permission` | `workspace/protocol/auth/auth.session.md`, `workspace/protocol/auth/auth.token.md`, `workspace/protocol/auth/auth.permission.md` | Stage 20 细化本场景 auth 策略。 |
 | Launcher 启动 runtime | local-only | App process orchestration | `workspace/business/cast-reciever-uxplay.md` | UI/runtime 实现，不进 AXTP。 |
 | Electron 启动 UxPlay backend | non-protocol | Backend adapter to `ws://127.0.0.1:7001/` | `workspace/legacy-migration/evidence/WEBSOCKET_PROTOCOL.md` | 只作为 adapter 实现。 |
@@ -225,12 +225,12 @@ sequenceDiagram
 | Method/Event/Profile | Purpose in this flow | Source |
 |---|---|---|
 | `AXTP-WS-JSON` | 外部控制口 WebSocket JSON transport profile。 | `contract/generated/protocol.md`, `contract/registry/core/protocol_meta.yaml` |
-| `Hello(op=0)` | Logical Server 建立连接后主动宣布 AXTP version 和认证要求。 | `contract/generated/protocol.md`, `specs/1-core/06-RPC-Session.md` |
-| `Identify(op=2)` | Logical Client 提交身份、randomSeed、认证和订阅意图。 | `contract/generated/protocol.md`, `specs/1-core/06-RPC-Session.md` |
-| `Identified(op=3)` | Logical Server 分配 RPC `sid`，session 进入 ready。 | `contract/generated/protocol.md`, `specs/1-core/06-RPC-Session.md` |
-| `Request(op=7)` | 控制端调用业务 method。 | `contract/generated/protocol.md`, `specs/1-core/06-RPC-Session.md` |
-| `RequestResponse(op=8)` | 服务端返回请求结果。 | `contract/generated/protocol.md`, `specs/1-core/06-RPC-Session.md` |
-| `Event(op=6)` | 服务端广播状态变化、会话变化和窗口变化。 | `contract/generated/protocol.md`, `specs/1-core/06-RPC-Session.md` |
+| `Hello(op=0)` | Logical Server 建立连接后主动宣布 AXTP version 和认证要求。 | `contract/generated/protocol.md`, `specs/20-core.md` |
+| `Identify(op=2)` | Logical Client 提交身份、randomSeed、认证和订阅意图。 | `contract/generated/protocol.md`, `specs/20-core.md` |
+| `Identified(op=3)` | Logical Server 分配 RPC `sid`，session 进入 ready。 | `contract/generated/protocol.md`, `specs/20-core.md` |
+| `Request(op=7)` | 控制端调用业务 method。 | `contract/generated/protocol.md`, `specs/20-core.md` |
+| `RequestResponse(op=8)` | 服务端返回请求结果。 | `contract/generated/protocol.md`, `specs/20-core.md` |
+| `Event(op=6)` | 服务端广播状态变化、会话变化和窗口变化。 | `contract/generated/protocol.md`, `specs/20-core.md` |
 
 ### 8.2 Draft Or Missing Protocol Gaps
 
@@ -282,7 +282,7 @@ sequenceDiagram
 | Case | Given | When | Then | Protocol evidence |
 |---|---|---|---|---|
 | happy path | Receiver runtime running on `7010` | Client connects and completes Hello / Identify / Identified | Client receives 8-char hex `sid` and can send business request candidates | `AXTP-WS-JSON`, RPC session |
-| handshake direction | Client opens WebSocket | Server sends Hello first | Client does not send legacy client Hello/HelloAck flow | `specs/1-core/06-RPC-Session.md` |
+| handshake direction | Client opens WebSocket | Server sends Hello first | Client does not send legacy client Hello/HelloAck flow | `specs/20-core.md` |
 | request before identified | Client sends business Request before Identified | Server receives request | Server rejects according to RPC session rules | `SESSION_NOT_READY` behavior in RPC spec |
 | auth path | Hello indicates auth required | Client identifies without/with invalid auth | Server rejects Identify or closes per policy; correct auth enters ready | `Identify.d.authentication`, draft `auth.*` |
 | event path | UxPlay emits `mirrorStarted` | Adapter normalizes event | Client receives candidate `cast.sessionStarted` and `cast.statusChanged(casting)` | candidate `cast.session`, `cast.status` |

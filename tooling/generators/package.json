@@ -13,12 +13,12 @@
     "lint": "tsc -p tsconfig.json --noEmit",
     "validate": "node dist/cli.js validate --spec ../..",
     "validate:sources": "node dist/cli.js validate-sources --spec ../..",
-    "build:protocol": "node dist/cli.js build-protocol --spec ../.. --out ../../contract/protocol/axtp.protocol.yaml",
-    "emit:protocol": "node dist/cli.js emit-protocol --spec ../.. --out ../../contract/generated",
+    "build:protocol": "node dist/cli.js build-protocol --spec ../..",
+    "emit:protocol": "node dist/cli.js emit-protocol --spec ../..",
     "generate": "node dist/cli.js generate --spec ../..",
     "generate:registry": "node dist/cli.js generate-registry --spec ../..",
     "validate:protocol": "node dist/cli.js validate-protocol --spec ../..",
-    "generate:protocol": "node dist/cli.js generate-protocol --spec ../.. --out ../../contract/generated"
+    "generate:protocol": "node dist/cli.js generate-protocol --spec ../.."
   },
   "dependencies": {
     "ajv": "^8.20.0",

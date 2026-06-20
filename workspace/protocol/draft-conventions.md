@@ -10,7 +10,7 @@
 
 ## JSON 示例约定
 
-草案中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 [RPC Session Spec](../../specs/1-core/06-RPC-Session.md)，不在每篇业务 feature 草案中重复。
+草案中的 JSON 示例默认 RPC Session 已进入 `APP_READY`，`sid` 已由 Server 分配。Hello、Identify、Identified 属于 [RPC Session Spec](../../specs/20-core.md)，不在每篇业务 feature 草案中重复。
 
 示例使用 AXTP RPC JSON envelope：
 
@@ -32,7 +32,7 @@
 
 ## 错误约定
 
-错误处理和 numeric code 规则以 [Errors Registry](../../specs/2-registry/04-Errors-Registry.md) 为准。草案不得随意分配正式 numeric errorCode。
+错误处理和 numeric code 规则以 [Errors Registry](../../specs/30-registry.md) 为准。草案不得随意分配正式 numeric errorCode。
 
 如果 registry 尚未采纳 feature-specific error，JSON 示例可以使用最近的通用错误码作为占位，并在 `status.details.candidateError` 中放候选错误名。采纳时必须由 registry 分配正式 numeric code。
 

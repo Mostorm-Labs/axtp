@@ -18,7 +18,7 @@ legacy mapping 在采纳前不是新协议正式合同。
 | 2 | `workspace/legacy-migration/MIGRATION_DASHBOARD.md` | 按来源查看迁移总览、阻塞项和 next step。 |
 | 3 | `workspace/legacy-migration/classification/README.md` | 了解分类输出和使用方式。 |
 | 4 | `workspace/legacy-migration/plans/README.md` | 查看迁移计划入口。 |
-| 5 | [Domain/Feature Classification](../../specs/0-principles/03-Domain-Feature-Classification.md) | 按新协议语义判断 domain / feature。 |
+| 5 | [Domain/Feature Classification](../../specs/30-registry.md) | 按新协议语义判断 domain / feature。 |
 
 ## 判断步骤
 

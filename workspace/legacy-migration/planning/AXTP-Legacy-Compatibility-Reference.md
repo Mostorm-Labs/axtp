@@ -10,7 +10,7 @@ This file collects legacy compatibility material that should not live in v1 Core
 Normative migration rules live in:
 
 ```text
-specs/4-tooling/03-Versioning.md
+specs/50-tooling.md
 ```
 
 Original legacy registry documents are retained at:

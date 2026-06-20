@@ -376,7 +376,7 @@ function renderProtocolFramework(model: ProtocolModel): string[] {
       ]
     ),
     "",
-    "Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP v1 Core requirement. See `specs/1-core/08-Low-Bandwidth-Degradation.md` for that path."
+    "Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP v1 Core requirement. See `specs/20-core.md` for that path."
   ];
 }
 

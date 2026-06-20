@@ -30,25 +30,25 @@ Work from the repository root containing `specs`, `workspace/protocol`, and `con
 ```text
 workspace/protocol/README.md
 workspace/protocol/draft-conventions.md
-specs/2-registry/01-Naming-and-Taxonomy.md
-specs/4-tooling/01-YAML-Mapping.md
-specs/2-registry/02-Methods-Registry.md
-specs/2-registry/03-Events-Registry.md
-specs/2-registry/04-Errors-Registry.md
-specs/3-codec/02-Capability-Types.md
-specs/2-registry/05-Profiles-Registry.md
-specs/4-tooling/02-Generator-V1.md
+specs/30-registry.md
+specs/50-tooling.md
+specs/30-registry.md
+specs/30-registry.md
+specs/30-registry.md
+specs/40-codec.md
+specs/30-registry.md
+specs/50-tooling.md
 ```
 
 For stream, firmware.update, transport-sensitive, HID media, or low-bandwidth work, also read:
 
 ```text
-specs/1-core/03-Frame-and-Payload.md
-specs/1-core/04-Transport-Profiles.md
-specs/1-core/05-Control-Session.md
-specs/1-core/06-RPC-Session.md
-specs/1-core/07-Stream-Data-Plane.md
-specs/1-core/08-Low-Bandwidth-Degradation.md
+specs/20-core.md
+specs/20-core.md
+specs/20-core.md
+specs/20-core.md
+specs/20-core.md
+specs/20-core.md
 ```
 
 Search `workspace/protocol/**`, `contract/registry/**`, and `contract/registry/domains/**` for the requirement keywords and likely English equivalents.

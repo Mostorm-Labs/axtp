@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import csv
 import html
+import json
 import re
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
@@ -17,13 +18,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-LEGACY_DIR = ROOT / "docs" / "legacy-migration" / "evidence"
-PROTOCOL_DIR = ROOT / "docs" / "protocol"
-SPECS_DIR = ROOT / "docs" / "specs"
-OUT_DIR = ROOT / "docs" / "legacy-migration" / "classification"
+LEGACY_DIR = ROOT / "workspace" / "legacy-migration" / "evidence"
+PROTOCOL_DIR = ROOT / "workspace" / "protocol"
+GENERATED_PROTOCOL_JSON = ROOT / "contract" / "generated" / "protocol.json"
+OUT_DIR = ROOT / "workspace" / "legacy-migration" / "classification"
 
-METHOD_SPEC = "specs/2-registry/02-Methods-Registry.md"
-EVENT_SPEC = "specs/2-registry/03-Events-Registry.md"
+METHOD_SPEC = "specs/30-registry.md"
+EVENT_SPEC = "specs/30-registry.md"
 
 
 def source_rel(path: Path) -> str:
@@ -155,18 +156,19 @@ def load_symbol_sources() -> tuple[dict[str, set[str]], set[str], set[str]]:
         for token in event_pat.findall(text):
             events.add(token)
 
-    for spec, store in [(SPECS_DIR / "2-registry/02-Methods-Registry.md", methods), (SPECS_DIR / "2-registry/03-Events-Registry.md", events)]:
-        if not spec.exists():
-            continue
-        rel = source_rel(spec)
-        text = spec.read_text(encoding="utf-8", errors="ignore")
-        for token in token_pat.findall(text):
-            token_sources[token].add(rel)
-        for token in token_pat.findall(text):
-            if spec.name == "02-Methods-Registry.md":
-                store.add(token)
-            elif spec.name == "03-Events-Registry.md":
-                store.add(token)
+    if GENERATED_PROTOCOL_JSON.exists():
+        rel = source_rel(GENERATED_PROTOCOL_JSON)
+        model = json.loads(GENERATED_PROTOCOL_JSON.read_text(encoding="utf-8"))
+        for item in model.get("methods", []):
+            token = item.get("name")
+            if isinstance(token, str):
+                token_sources[token].add(rel)
+                methods.add(token)
+        for item in model.get("events", []):
+            token = item.get("name")
+            if isinstance(token, str):
+                token_sources[token].add(rel)
+                events.add(token)
     return token_sources, methods, events
 
 
@@ -1444,7 +1446,7 @@ def write_markdown(entries: list[Entry], csv_path: Path) -> Path:
 
     text = f"""# Legacy Protocol Domain-Feature Classification
 
-本目录是 AXDP / VM33 / Rooms / Signage legacy intake 的逐条分类结果，不是 AXTP registry 事实源。分类依据为 `specs/2-registry/01-Naming-and-Taxonomy.md`、`specs/4-tooling/01-YAML-Mapping.md`，并对照 `workspace/protocol` 下已成型的业务协议文档。
+本目录是 AXDP / VM33 / Rooms / Signage legacy intake 的逐条分类结果，不是 AXTP registry 事实源。分类依据为 `specs/30-registry.md`、`specs/50-tooling.md`，并对照 `workspace/protocol` 下已成型的业务协议文档。
 
 生成脚本：`tooling/legacy_classification/classify_legacy_protocols.py`
 

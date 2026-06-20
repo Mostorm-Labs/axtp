@@ -15,6 +15,11 @@ const textExtensions = new Set([
   ".yml",
 ]);
 const errors = [];
+const legacySpecsDirs = ["0-principles", "1-core", "2-registry", "3-codec", "4-tooling"];
+const legacySpecsPattern = new RegExp(`specs/(?:${legacySpecsDirs.join("|")})/[^\\s\`"'<>),\\]]+`, "g");
+const legacyRegistryAppendixPattern = new RegExp(`specs/${"2-registry"}/appendix/[^\\s\`"'<>),\\]]+`, "g");
+const unprefixedSpecs = ["glossary", "contract", "core", "registry", "codec", "tooling"];
+const unprefixedSpecsPattern = new RegExp(`specs/(?:${unprefixedSpecs.join("|")})\\.md`, "g");
 
 function walk(dir) {
   const out = [];
@@ -57,10 +62,23 @@ function checkExists(file, raw) {
 for (const file of walk(root)) {
   const relative = path.relative(root, file);
   if (relative.startsWith(`docs${path.sep}archive${path.sep}`)) continue;
+  if (relative === path.join("release", "CHANGELOG.md")) continue;
   const text = fs.readFileSync(file, "utf8");
 
   for (const match of text.matchAll(/docs\/workspace\/[^\s`"'<>),\]]+/g)) {
     report(file, match[0], "legacy docs/workspace path is no longer valid");
+  }
+
+  for (const match of text.matchAll(legacySpecsPattern)) {
+    report(file, match[0], "legacy nested specs path is no longer valid");
+  }
+
+  for (const match of text.matchAll(legacyRegistryAppendixPattern)) {
+    report(file, match[0], "registry planning appendix moved out of specs");
+  }
+
+  for (const match of text.matchAll(unprefixedSpecsPattern)) {
+    report(file, match[0], "current specs files must use numeric prefixes");
   }
 
   for (const match of text.matchAll(/workspace\/protocol\/[^\s`"'<>),\]]+\.md(?:#[^\s`"'<>),\]]+)?/g)) {

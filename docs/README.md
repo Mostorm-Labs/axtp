@@ -31,9 +31,9 @@ Default release artifacts include only `release/`; other workspace directories a
 |---|---|---:|
 | `workspace/` | Maintainer workspace for business inputs, flows, drafts, and legacy migration. | No |
 | [../release/](../release/README.md) | Release governance, changelog, spec lock, and runtime update flow. | No, except for version binding |
-| `docs/archive/audits/` | Historical audits and dated decision context. | No |
+| `docs/archive/` | Historical audits, old spec shapes, and dated decision context. | No |
 | `tooling/skills/` | Agent lifecycle skills and workflow definitions. | No |
-| `../specs/2-registry/appendix/` | Historical/candidate registry tables. | No |
+| `../workspace/registry-planning/candidates/` | Historical/candidate registry tables. | No |
 
 ## Generated Files
 

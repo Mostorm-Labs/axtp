@@ -5,7 +5,7 @@ description: Stage 30 adoption skill for reviewed AXTP workspace/protocol domain
 
 # Adopt Protocol Draft
 
-Stage 30. Convert a reviewed AXTP protocol draft into formal protocol facts after `draft-business-protocol`: align the accepted proposal with `specs/2-registry/**` and `specs/3-codec/02-Capability-Types.md`, also `specs/2-registry/05-Profiles-Registry.md` when profiles/MVP contracts change, freeze the draft as the formal proposal, and write the confirmed facts into YAML.
+Stage 30. Convert a reviewed AXTP protocol draft into formal protocol facts after `draft-business-protocol`: align the accepted proposal with `specs/30-registry.md` and `specs/40-codec.md`, freeze the draft as the formal proposal, and write the confirmed facts into YAML.
 
 ## Hard Boundaries
 
@@ -26,15 +26,15 @@ Read enough local evidence to avoid guessing:
 ```text
 workspace/protocol/README.md
 workspace/protocol/<domain>/<domain.feature>.md
-specs/2-registry/01-Naming-and-Taxonomy.md
-specs/4-tooling/01-YAML-Mapping.md
-specs/2-registry/02-Methods-Registry.md
-specs/2-registry/03-Events-Registry.md
-specs/2-registry/04-Errors-Registry.md
-specs/3-codec/02-Capability-Types.md
-specs/2-registry/05-Profiles-Registry.md
-specs/3-codec/04-Schema-Numbering.md
-specs/4-tooling/02-Generator-V1.md
+specs/30-registry.md
+specs/50-tooling.md
+specs/30-registry.md
+specs/30-registry.md
+specs/30-registry.md
+specs/40-codec.md
+specs/30-registry.md
+specs/40-codec.md
+specs/50-tooling.md
 contract/registry/**/*.yaml
 contract/registry/domains/**/*.yaml
 contract/generated/protocol.md

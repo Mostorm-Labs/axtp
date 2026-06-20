@@ -241,7 +241,7 @@ sequenceDiagram
 | Method/Event/Profile | Purpose in this flow | Source |
 |---|---|---|
 | `AXTP-USB-HID` | 上位机通过 USB HID 与 NA20、NT10 分别建立 AXTP 会话。 | `contract/generated/protocol.md`, `contract/protocol/axtp.protocol.yaml` |
-| AXTP session / RPC lifecycle | Host 在 session ready 后发起业务 RPC；连接、握手、基础错误按 generated core 处理。 | `contract/generated/protocol.md`, `specs/1-core/06-RPC-Session.md` |
+| AXTP session / RPC lifecycle | Host 在 session ready 后发起业务 RPC；连接、握手、基础错误按 generated core 处理。 | `contract/generated/protocol.md`, `specs/20-core.md` |
 
 当前 generated 协议没有 adopted `network.*` 业务方法。因此下面的方法名只能作为草案依赖引用，不能作为实现合同；`device.info` 不作为本 flow 的设备识别依赖。
 

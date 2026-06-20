@@ -2,7 +2,7 @@
 
 > Status: flow design
 > Scope: NA20 receiver USB-HID media bridge, NT10 wireless transmitter, and upper-host MediaHost audio/video playback
-> Source inputs: `workspace/business/device-streaming.md`, `workspace/flows/cast-rxtx-paring.md`, `contract/generated/protocol.md`, `specs/1-core/07-Stream-Data-Plane.md`, `workspace/protocol/video/video.stream.md`, `workspace/protocol/audio/audio.stream.md`, `workspace/protocol/stream/stream.flowControl.md`
+> Source inputs: `workspace/business/device-streaming.md`, `workspace/flows/cast-rxtx-paring.md`, `contract/generated/protocol.md`, `specs/20-core.md`, `workspace/protocol/video/video.stream.md`, `workspace/protocol/audio/audio.stream.md`, `workspace/protocol/stream/stream.flowControl.md`
 > Protocol lifecycle: Stage 10 `plan-protocol-flow`
 
 本文根据 NA20/NT10 投屏设备业务需求，梳理上位机 MediaHost、NA20、NT10 和 AXTP 协议之间的音视频投屏交互流程、已有协议覆盖状态和后续协议缺口。
@@ -148,16 +148,16 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 | Need | Coverage state | AXTP protocol | Evidence | Next action |
 |---|---|---|---|---|
 | MediaHost 与 NA20 建立 USB HID 会话 | generated | `AXTP-USB-HID`, Standard Framed transport | `contract/generated/protocol.md`, `contract/registry/core/protocol_meta.yaml` | 可按 generated/core 实现。 |
-| 通过 USB HID 承载连续音视频数据 | generated | `PayloadType=STREAM`, 16B header: `streamId`, `seqId`, `cursor` | `contract/generated/protocol.md`, `specs/1-core/07-Stream-Data-Plane.md` | 可作为数据面基础。 |
+| 通过 USB HID 承载连续音视频数据 | generated | `PayloadType=STREAM`, 16B header: `streamId`, `seqId`, `cursor` | `contract/generated/protocol.md`, `specs/20-core.md` | 可作为数据面基础。 |
 | STREAM 基础错误和缺包观测 | generated | `STREAM_NOT_FOUND`, `STREAM_SEQ_INVALID`, `STREAM_CHUNK_MISSING`, `STREAM_OFFSET_INVALID` | `contract/generated/protocol.md` | 可复用 generated errors。 |
-| AXTP session/transport lost 后清理 stream context | generated + local-only | AXTP transport/session lifecycle + MediaHost/NA20 runtime cleanup | `contract/generated/protocol.md`, `specs/1-core/07-Stream-Data-Plane.md` | session lost 时不要求业务 `closeStream`；所有旧 stream context 本地失效，重连后重新 open。 |
+| AXTP session/transport lost 后清理 stream context | generated + local-only | AXTP transport/session lifecycle + MediaHost/NA20 runtime cleanup | `contract/generated/protocol.md`, `specs/20-core.md` | session lost 时不要求业务 `closeStream`；所有旧 stream context 本地失效，重连后重新 open。 |
 | NA20 producer 主动请求 Host 接收 H.264 视频 | draft amendment | device-initiated `video.openStream` with peer media role receiver | `workspace/protocol/video/video.stream.md` | Stage 20/30 需补充 openStream 发起方可为 producer，并声明对端 MediaHost 是 receiver。 |
 | NA20 producer 主动请求 Host 接收 AAC 音频 | draft amendment | device-initiated `audio.openStream` with peer media role receiver | `workspace/protocol/audio/audio.stream.md` | Stage 20/30 需补充 openStream 发起方可为 producer，并声明对端 MediaHost 是 receiver。 |
 | MediaHost receiver 主动拉取 available/receiving source | draft amendment | host-initiated `video.openStream` / `audio.openStream` with peer media role transmitter | `workspace/protocol/video/video.stream.md`, `workspace/protocol/audio/audio.stream.md` | Stage 20/30 需补充 openStream 也允许 receiver 发起；请求声明对端 NA20 是 transmitter/producer，成功后仍只建立 NA20->MediaHost downstream stream。 |
 | NA20 主动 open 被拒后的 source available/receiving 通知 | draft amendment | per-media source state event/query, e.g. video source event and audio equivalent | `workspace/protocol/video/video.stream.md`, `workspace/protocol/audio/audio.stream.md` | Stage 20/30 需明确 rejected open 后不得发送 STREAM；若 source 仍 available/receiving，可发事件提示 Host 后续主动 pull。 |
 | 任一端关闭已建立 stream | draft amendment | bidirectional `video.closeStream` / `audio.closeStream`, or terminal state event | `workspace/protocol/video/video.stream.md`, `workspace/protocol/audio/audio.stream.md` | MediaHost 可提前关闭，NA20 可因 source stopped 关闭；close 必须幂等并收敛到 terminal state。 |
 | Host 关闭接收后保留 NT10 upstream source | draft amendment / runtime policy | receiver inactive state, retained source reopen, host-initiated `openStream` pull or NA20 re-offer | `workspace/protocol/video/video.stream.md`, `workspace/protocol/audio/audio.stream.md` | Stage 20/30 需明确 receiver close 不等价于 source stop；重新打开窗口时可复用 active upstream source 建立新的 downstream stream。 |
-| AXTP RPC request 方向支持 NA20 主动调用 MediaHost | partial / generated sync gap | bidirectional business RPC request or Host-side receiver service | `specs/1-core/06-RPC-Session.md`, `contract/generated/protocol.md` | Core spec 已澄清 Identified 后双方可作为 requester；generated 输出和协议草案仍需同步 requester/responder 与 role policy。 |
+| AXTP RPC request 方向支持 NA20 主动调用 MediaHost | partial / generated sync gap | bidirectional business RPC request or Host-side receiver service | `specs/20-core.md`, `contract/generated/protocol.md` | Core spec 已澄清 Identified 后双方可作为 requester；generated 输出和协议草案仍需同步 requester/responder 与 role policy。 |
 | 查询或订阅 NA20 是否有投屏输入源和媒体桥能力 | draft | `video.stream` source `wireless_cast`, `audio.stream` source `wireless_cast_audio`, optional source state event | `workspace/protocol/video/video.stream.md`, `workspace/protocol/audio/audio.stream.md` | 可作为诊断/预检能力，也可作为 MediaHost 主动拉取和 rejected producer-open fallback 的状态依据。 |
 | 打开 H.264 视频到 MediaHost | draft | `video.getStreamCapabilities`, `video.openStream`, `video.closeStream`, `video.streamStateChanged` | `workspace/protocol/video/video.stream.md` | 采纳 `video.stream`，固化 `wireless_cast` source、对端 receiver 角色和同步字段。 |
 | 视频分片、帧边界、关键帧和丢包重同步 | draft | `VideoChunkHeaderV1`, `video.requestKeyFrame`, `media.video` profile | `workspace/protocol/video/video.stream.md` | H.264 Annex-B、SPS/PPS 随关键帧需采纳固化。 |
@@ -319,8 +319,8 @@ sequenceDiagram
 | Method/Event/Profile | Purpose in this flow | Source |
 |---|---|---|
 | `AXTP-USB-HID` | MediaHost 通过 USB HID 与 NA20 建立 AXTP Standard Framed 会话。 | `contract/generated/protocol.md`, `contract/registry/core/protocol_meta.yaml` |
-| `PayloadType=STREAM` | 承载视频和音频连续数据。 | `contract/generated/protocol.md`, `specs/1-core/07-Stream-Data-Plane.md` |
-| STREAM 16B header | 每个媒体 chunk 使用 `streamId`, `seqId`, `cursor`；业务含义由 stream context/profile 解释。 | `specs/1-core/07-Stream-Data-Plane.md` |
+| `PayloadType=STREAM` | 承载视频和音频连续数据。 | `contract/generated/protocol.md`, `specs/20-core.md` |
+| STREAM 16B header | 每个媒体 chunk 使用 `streamId`, `seqId`, `cursor`；业务含义由 stream context/profile 解释。 | `specs/20-core.md` |
 | STREAM common errors | 缺包、无效 streamId、seq/cursor 问题的基础错误可复用。 | `contract/generated/protocol.md` |
 
 ### 8.2 Draft Or Missing Protocol Gaps

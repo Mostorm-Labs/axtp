@@ -47,7 +47,7 @@ workspace/business/**
 workspace/flows/README.md
 workspace/protocol/README.md
 docs/product/domain-status.md
-specs/0-principles/03-Domain-Feature-Classification.md
+specs/30-registry.md
 contract/generated/protocol.md
 workspace/legacy-migration/README.md when legacy is involved
 ```

@@ -4,10 +4,8 @@ import { GeneratorError } from "./errors.js";
 import type { ProtocolModel } from "./protocolModel.js";
 
 export interface ProtocolDocsText {
-  frameSpec: string;
-  streamSpec: string;
-  controlSpec: string;
-  typesSpec: string;
+  coreSpec: string;
+  codecSpec: string;
 }
 
 function fail(file: string, entry: string, message: string): never {
@@ -31,7 +29,7 @@ function assertYamlStreamHeader(model: ProtocolModel): void {
   ];
   const fields = model.stream.header.fields;
   if (model.stream.header.size !== 16 || fields.length !== expected.length) {
-    fail("contract/protocol/axtp.protocol.yaml", "stream.header", "YAML stream.header must match the 16B STREAM header defined in specs/1-core/07-Stream-Data-Plane.md");
+    fail("contract/protocol/axtp.protocol.yaml", "stream.header", "YAML stream.header must match the 16B STREAM header defined in specs/20-core.md");
   }
   for (const forbidden of ["seq", "position", "chunkLength", "flags"]) {
     if (fields.some((field) => field.name === forbidden)) {
@@ -79,34 +77,31 @@ function assertYamlCapability(model: ProtocolModel): void {
 
 export async function loadProtocolDocs(specRoot: string): Promise<ProtocolDocsText> {
   const docsRoot = path.join(specRoot, "specs");
-  const [frameSpec, streamSpec, controlSpec, typesSpec] = await Promise.all([
-    readFile(path.join(docsRoot, "1-core", "03-Frame-and-Payload.md"), "utf8"),
-    readFile(path.join(docsRoot, "1-core", "07-Stream-Data-Plane.md"), "utf8"),
-    readFile(path.join(docsRoot, "1-core", "05-Control-Session.md"), "utf8"),
-    readFile(path.join(docsRoot, "3-codec", "01-Type-System.md"), "utf8")
+  const [coreSpec, codecSpec] = await Promise.all([
+    readFile(path.join(docsRoot, "20-core.md"), "utf8"),
+    readFile(path.join(docsRoot, "40-codec.md"), "utf8")
   ]);
-  return { frameSpec, streamSpec, controlSpec, typesSpec };
+  return { coreSpec, codecSpec };
 }
 
 export function validateProtocolDocsConsistency(model: ProtocolModel, docs: ProtocolDocsText): string[] {
-  requirePattern(docs.frameSpec, /Big-Endian[\s\S]{0,80}network byte order/, "specs/1-core/03-Frame-and-Payload.md", "Wire Byte Order", "frame spec must define Big-Endian / network byte order");
-  requirePattern(docs.streamSpec, /STREAM Header[^\n]*16B|16B STREAM Header/, "specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define a 16B STREAM Header");
-  requirePattern(docs.streamSpec, /streamId:uint32/, "specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define streamId:uint32");
-  requirePattern(docs.streamSpec, /seqId:uint32/, "specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define seqId:uint32");
-  requirePattern(docs.streamSpec, /cursor:uint64/, "specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define cursor:uint64");
-  requirePattern(docs.streamSpec, /Big-Endian[\s\S]{0,80}network byte order/, "specs/1-core/07-Stream-Data-Plane.md", "STREAM Byte Order", "stream spec must define Big-Endian / network byte order");
-  requirePattern(docs.typesSpec, /Big-Endian[\s\S]{0,80}network byte order/, "specs/3-codec/01-Type-System.md", "Codec Byte Order", "codec spec must define Big-Endian / network byte order");
+  requirePattern(docs.coreSpec, /Big-Endian[\s\S]{0,80}network byte order/, "specs/20-core.md", "Wire Byte Order", "core spec must define Big-Endian / network byte order");
+  requirePattern(docs.coreSpec, /STREAM Header[^\n]*16B|16B STREAM Header/, "specs/20-core.md", "STREAM Header", "core spec must define a 16B STREAM Header");
+  requirePattern(docs.coreSpec, /streamId:uint32/, "specs/20-core.md", "STREAM Header", "core spec must define streamId:uint32");
+  requirePattern(docs.coreSpec, /seqId:uint32/, "specs/20-core.md", "STREAM Header", "core spec must define seqId:uint32");
+  requirePattern(docs.coreSpec, /cursor:uint64/, "specs/20-core.md", "STREAM Header", "core spec must define cursor:uint64");
+  requirePattern(docs.codecSpec, /Big-Endian[\s\S]{0,80}network byte order/, "specs/40-codec.md", "Codec Byte Order", "codec spec must define Big-Endian / network byte order");
 
   if (model.wire.byteOrder !== "big-endian" || model.wire.byteOrderAlias !== "network") {
     fail("contract/protocol/axtp.protocol.yaml", "wire.byteOrder", "YAML wire byte order must match specs Big-Endian / network byte order");
   }
 
-  requirePattern(docs.controlSpec, /OPEN[\s\S]*ACCEPT/, "specs/1-core/05-Control-Session.md", "OPEN/ACCEPT", "control spec must define OPEN and ACCEPT");
-  requirePattern(docs.controlSpec, /HEARTBEAT[\s\S]*HEARTBEAT_ACK/, "specs/1-core/05-Control-Session.md", "HEARTBEAT", "control spec must define HEARTBEAT and HEARTBEAT_ACK");
-  requirePattern(docs.controlSpec, /CLOSE[\s\S]*CLOSE_ACK/, "specs/1-core/05-Control-Session.md", "CLOSE", "control spec must define CLOSE and CLOSE_ACK");
-  requirePattern(docs.controlSpec, /READY[\s\S]{0,80}可选/, "specs/1-core/05-Control-Session.md", "READY", "control spec must define READY as optional");
-  requirePattern(docs.controlSpec, /默认握手只要求 OPEN \/ ACCEPT/, "specs/1-core/05-Control-Session.md", "READY", "control spec must state that default handshake only requires OPEN / ACCEPT");
-  requirePattern(docs.controlSpec, /Phase 1[\s\S]{0,120}不要求 runtime 实现 ACK\/NACK/, "specs/1-core/05-Control-Session.md", "ACK/NACK", "control spec must keep ACK/NACK out of Phase 1");
+  requirePattern(docs.coreSpec, /OPEN[\s\S]*ACCEPT/, "specs/20-core.md", "OPEN/ACCEPT", "core spec must define OPEN and ACCEPT");
+  requirePattern(docs.coreSpec, /HEARTBEAT[\s\S]*HEARTBEAT_ACK/, "specs/20-core.md", "HEARTBEAT", "core spec must define HEARTBEAT and HEARTBEAT_ACK");
+  requirePattern(docs.coreSpec, /CLOSE[\s\S]*CLOSE_ACK/, "specs/20-core.md", "CLOSE", "core spec must define CLOSE and CLOSE_ACK");
+  requirePattern(docs.coreSpec, /READY[\s\S]{0,80}可选/, "specs/20-core.md", "READY", "core spec must define READY as optional");
+  requirePattern(docs.coreSpec, /默认握手只要求 OPEN \/ ACCEPT/, "specs/20-core.md", "READY", "core spec must state that default handshake only requires OPEN / ACCEPT");
+  requirePattern(docs.coreSpec, /Phase 1[\s\S]{0,120}不要求 runtime 实现 ACK\/NACK/, "specs/20-core.md", "ACK/NACK", "core spec must keep ACK/NACK out of Phase 1");
 
   assertYamlStreamHeader(model);
   assertYamlControl(model);

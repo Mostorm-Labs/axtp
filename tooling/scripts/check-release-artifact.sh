@@ -35,8 +35,12 @@ required = {
     f"{artifact}/contract/generated/protocol.json",
     f"{artifact}/contract/registry/version.yaml",
     f"{artifact}/specs/README.md",
-    f"{artifact}/specs/0-principles/02-Contract-Boundaries.md",
-    f"{artifact}/specs/0-principles/03-Domain-Feature-Classification.md",
+    f"{artifact}/specs/00-glossary.md",
+    f"{artifact}/specs/10-contract.md",
+    f"{artifact}/specs/20-core.md",
+    f"{artifact}/specs/30-registry.md",
+    f"{artifact}/specs/40-codec.md",
+    f"{artifact}/specs/50-tooling.md",
     f"{artifact}/conformance/manifest.yaml",
     f"{artifact}/contract/mcp/method_registry.generated.json",
     f"{artifact}/contract/test-vectors/manifest.json",
@@ -118,6 +122,17 @@ workspace_private = sorted(
 if workspace_private:
     print("[FAIL] release archive contains maintainer-only workspace materials", file=sys.stderr)
     for item in workspace_private[:20]:
+        print(f"- {item}", file=sys.stderr)
+    sys.exit(1)
+
+legacy_spec_dirs = ("0-principles", "1-core", "2-registry", "3-codec", "4-tooling")
+old_specs = sorted(
+    name for name in names
+    if any(f"{artifact}/specs/{legacy_dir}/" in name for legacy_dir in legacy_spec_dirs)
+)
+if old_specs:
+    print("[FAIL] release archive contains legacy nested specs paths", file=sys.stderr)
+    for item in old_specs[:20]:
         print(f"- {item}", file=sys.stderr)
     sys.exit(1)
 

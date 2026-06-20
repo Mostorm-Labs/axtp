@@ -1,6 +1,6 @@
 # Legacy Protocol Domain-Feature Classification
 
-本目录是 AXDP / VM33 / Rooms / Signage legacy intake 的逐条分类结果，不是 AXTP registry 事实源。分类依据为 `specs/2-registry/01-Naming-and-Taxonomy.md`、`specs/4-tooling/01-YAML-Mapping.md`，并对照 `workspace/protocol` 下已成型的业务协议文档。
+本目录是 AXDP / VM33 / Rooms / Signage legacy intake 的逐条分类结果，不是 AXTP registry 事实源。分类依据为 `specs/30-registry.md`、`specs/50-tooling.md`，并对照 `workspace/protocol` 下已成型的业务协议文档。
 
 生成脚本：`tooling/legacy_classification/classify_legacy_protocols.py`
 

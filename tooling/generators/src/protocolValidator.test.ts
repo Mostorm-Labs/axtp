@@ -234,14 +234,14 @@ describe("protocol docs consistency validator", () => {
   it("rejects missing stream header facts in docs", async () => {
     const model = await loadCurrentProtocol();
     const docs = await loadProtocolDocs(repoRoot);
-    docs.streamSpec = docs.streamSpec.replace("cursor:uint64", "cursor:uint32");
+    docs.coreSpec = docs.coreSpec.replace("cursor:uint64", "cursor:uint32");
     expect(() => validateProtocolDocsConsistency(model, docs)).toThrow(/cursor:uint64/);
   });
 
   it("rejects missing byte order facts in docs", async () => {
     const model = await loadCurrentProtocol();
     const docs = await loadProtocolDocs(repoRoot);
-    docs.frameSpec = docs.frameSpec.replace("Big-Endian", "Little-Endian");
+    docs.coreSpec = docs.coreSpec.replace(/Big-Endian/g, "Little-Endian");
     expect(() => validateProtocolDocsConsistency(model, docs)).toThrow(/Big-Endian/);
   });
 

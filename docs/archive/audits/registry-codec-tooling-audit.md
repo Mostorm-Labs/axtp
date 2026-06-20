@@ -15,18 +15,18 @@ The refactor did not change methodId, eventId, errorCode, profileId, capabilityI
 | File | New responsibility |
 |---|---|
 | `specs/README.md` | Formal specs entry and authority map; explicitly marks registry appendices as non-normative |
-| `specs/2-registry/01-Naming-and-Taxonomy.md` | `domain.feature` naming, taxonomy, and registry admission governance |
-| `specs/2-registry/02-Methods-Registry.md` | Method registry rules: naming, methodId/bitOffset stability, schema/error/event binding |
-| `specs/2-registry/03-Events-Registry.md` | Event registry rules: eventId/bitOffset, eventMasks, payload schema, event compatibility |
-| `specs/2-registry/04-Errors-Registry.md` | Error registry rules: errorCode ranges, CONTROL/RPC/STREAM mappings, stability |
-| `specs/2-registry/05-Profiles-Registry.md` | Implementation profile rules, runtime support declarations, conformance relationship |
-| `specs/3-codec/01-Type-System.md` | AXTP type system: scalar/string/bytes/enum/bitmap/array/object/optional/nullability boundaries |
-| `specs/3-codec/02-Capability-Types.md` | Split internal responsibility into Schema Model and Capability Model; capability discovery boundaries |
-| `specs/3-codec/03-TLV-Encoding.md` | TLV byte encoding rules, arrays/objects, unknown fields, canonical encoding |
-| `specs/3-codec/04-Schema-Numbering.md` | schema-local fieldId allocation, reserved/deprecated, compatibility rules |
-| `specs/4-tooling/01-YAML-Mapping.md` | Source registry YAML to Protocol IR mapping and business module admission checklist |
-| `specs/4-tooling/02-Generator-V1.md` | Generator v1 contract: inputs, outputs, validation, generated-not-handwritten, CLI/CI |
-| `specs/4-tooling/03-Versioning.md` | Versioning and compatibility contract: spec tag, registry version, breaking changes, runtime binding |
+| `specs/30-registry.md` | `domain.feature` naming, taxonomy, and registry admission governance |
+| `specs/30-registry.md` | Method registry rules: naming, methodId/bitOffset stability, schema/error/event binding |
+| `specs/30-registry.md` | Event registry rules: eventId/bitOffset, eventMasks, payload schema, event compatibility |
+| `specs/30-registry.md` | Error registry rules: errorCode ranges, CONTROL/RPC/STREAM mappings, stability |
+| `specs/30-registry.md` | Implementation profile rules, runtime support declarations, conformance relationship |
+| `specs/40-codec.md` | AXTP type system: scalar/string/bytes/enum/bitmap/array/object/optional/nullability boundaries |
+| `specs/40-codec.md` | Split internal responsibility into Schema Model and Capability Model; capability discovery boundaries |
+| `specs/40-codec.md` | TLV byte encoding rules, arrays/objects, unknown fields, canonical encoding |
+| `specs/40-codec.md` | schema-local fieldId allocation, reserved/deprecated, compatibility rules |
+| `specs/50-tooling.md` | Source registry YAML to Protocol IR mapping and business module admission checklist |
+| `specs/50-tooling.md` | Generator v1 contract: inputs, outputs, validation, generated-not-handwritten, CLI/CI |
+| `specs/50-tooling.md` | Versioning and compatibility contract: spec tag, registry version, breaking changes, runtime binding |
 
 ## Appendix Moves
 
@@ -34,11 +34,11 @@ The following large tables were removed from normative spec bodies and preserved
 
 | Appendix | Source | Content moved |
 |---|---|---|
-| `specs/2-registry/appendix/method-candidates.md` | `2-registry/02-Methods-Registry.md` | Historical/current MethodId planning tables, generated method snapshot, legacy method intake, method relationship notes |
-| `specs/2-registry/appendix/event-candidates.md` | `2-registry/03-Events-Registry.md` | Historical/current EventId planning tables, generated event snapshot, event schema notes, legacy event intake |
-| `specs/2-registry/appendix/error-candidates.md` | `2-registry/04-Errors-Registry.md` | Historical/current ErrorCode planning tables, error range tables, legacy status mapping |
-| `specs/2-registry/appendix/profile-candidates.md` | `2-registry/05-Profiles-Registry.md` | MVP/profile planning tables, generated registry snapshots, legacy-compatible MVP notes |
-| `specs/2-registry/appendix/capability-candidates.md` | `3-codec/02-Capability-Types.md` | Historical/current CapabilityId planning tables, capability query candidates, generated capability snapshot |
+| `workspace/registry-planning/candidates/method-candidates.md` | `2-registry/02-Methods-Registry.md` | Historical/current MethodId planning tables, generated method snapshot, legacy method intake, method relationship notes |
+| `workspace/registry-planning/candidates/event-candidates.md` | `2-registry/03-Events-Registry.md` | Historical/current EventId planning tables, generated event snapshot, event schema notes, legacy event intake |
+| `workspace/registry-planning/candidates/error-candidates.md` | `2-registry/04-Errors-Registry.md` | Historical/current ErrorCode planning tables, error range tables, legacy status mapping |
+| `workspace/registry-planning/candidates/profile-candidates.md` | `2-registry/05-Profiles-Registry.md` | MVP/profile planning tables, generated registry snapshots, legacy-compatible MVP notes |
+| `workspace/registry-planning/candidates/capability-candidates.md` | `3-codec/02-Capability-Types.md` | Historical/current CapabilityId planning tables, capability query candidates, generated capability snapshot |
 
 Each appendix begins with the required non-normative notice:
 

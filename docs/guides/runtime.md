@@ -111,7 +111,7 @@ WebSocket open
 | RPC session | CONTROL 成功后再执行 Hello / Identify / Identified。 |
 | STREAM | 通过业务 RPC 建立 Stream Context，解析 16B STREAM Header 并按 `streamId` 投递数据。 |
 
-Frame、CONTROL、RPC、STREAM 的完整规则分别见 [Frame and Payload](../../specs/1-core/03-Frame-and-Payload.md)、[Control Session](../../specs/1-core/05-Control-Session.md)、[RPC Session](../../specs/1-core/06-RPC-Session.md) 和 [Stream Data Plane](../../specs/1-core/07-Stream-Data-Plane.md)。长流程参考 [core-protocol-flow.md](core-protocol-flow.md)。
+Frame、CONTROL、RPC、STREAM 的完整规则分别见 [Frame and Payload](../../specs/20-core.md)、[Control Session](../../specs/20-core.md)、[RPC Session](../../specs/20-core.md) 和 [Stream Data Plane](../../specs/20-core.md)。长流程参考 [core-protocol-flow.md](core-protocol-flow.md)。
 
 ## 验收定义
 
