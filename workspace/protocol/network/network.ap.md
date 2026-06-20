@@ -81,20 +81,7 @@ lastReviewed: 2026-06-15
 |---|---|---:|---|---|---|
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口；省略表示 `network.interface.defaults.ap`。 |
 
-#### 3.1.2 Request d block Example (op=7)
-
-```json
-{
-  "id": 101,
-  "method": "network.getApCapabilities",
-  "params": {
-    "interfaceId": "wlan0"
-  }
-}
-```
-
-
-#### 3.1.3 返回结果 Result：`NetworkApCapabilities`
+#### 3.1.2 返回结果 Result：`NetworkApCapabilities`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -108,7 +95,21 @@ lastReviewed: 2026-06-15
 | `clientListSupported` | boolean | no | bool | omitted | 是否支持客户端列表。 |
 | `maxClients` | uint16 | no | `0..65535` | omitted | 最大客户端数量。 |
 
-#### 3.1.4 Success Response d block Example (op=8)
+#### 3.1.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 101,
+  "method": "network.getApCapabilities",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+success:
 
 ```json
 {
@@ -126,39 +127,18 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：`result` 是 `NetworkApCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_FOUND` | 指定 `interfaceId` 不存在或不是 AP-capable 接口。 | 使用 adopted numeric code `12`。 |
 | `NOT_SUPPORTED` | 设备不支持 AP 能力。 | 使用 adopted numeric code `3`。 |
-
-#### 3.1.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 101,
-  "status": {
-    "ok": false,
-    "code": 12,
-    "msg": "Request failed.",
-    "details": {
-      "candidateError": "NOT_FOUND",
-      "field": "interfaceId",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ### 3.2 `network.getApConfig`
 
@@ -180,20 +160,7 @@ lastReviewed: 2026-06-15
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
 | `credentialExport` | string enum | no | `none`, `one_time` | `none` | 是否一次性导出凭据。 |
 
-#### 3.2.2 Request d block Example (op=7)
-
-```json
-{
-  "id": 102,
-  "method": "network.getApConfig",
-  "params": {
-    "interfaceId": "wlan0"
-  }
-}
-```
-
-
-#### 3.2.3 返回结果 Result：`NetworkApConfig`
+#### 3.2.2 返回结果 Result：`NetworkApConfig`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -206,7 +173,21 @@ lastReviewed: 2026-06-15
 | `channel` | uint16 | no | valid channel | omitted | AP 信道。 |
 | `maxClients` | uint16 | no | `0..65535` | omitted | 客户端上限。 |
 
-#### 3.2.4 Success Response d block Example (op=8)
+#### 3.2.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 102,
+  "method": "network.getApConfig",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+success:
 
 ```json
 {
@@ -229,39 +210,18 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：`result` 是 `NetworkApConfig` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变 AP 配置。 | none | 无需处理。 |
 
-#### 3.2.6 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `PERMISSION_DENIED` | 当前会话无权导出凭据。 | 使用 adopted numeric code `9`，details 可标注候选 `NETWORK_CREDENTIAL_EXPORT_DENIED`。 |
 | `INVALID_ARGUMENT` | `credentialExport` 枚举非法。 | 使用 adopted numeric code `10`。 |
-
-#### 3.2.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 102,
-  "status": {
-    "ok": false,
-    "code": 9,
-    "msg": "Request failed.",
-    "details": {
-      "candidateError": "PERMISSION_DENIED",
-      "field": "interfaceId",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ### 3.3 `network.setApConfig`
 
@@ -283,7 +243,17 @@ lastReviewed: 2026-06-15
 | `config` | `NetworkApConfig` | yes | object | none | 要写入的 AP 配置。 |
 | `apply` | string enum | no | `immediate`, `on_restart` | `immediate` | 生效策略。 |
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`NetworkSetApConfigResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `config` | `NetworkApConfig` | yes | object | none | 设备接受的配置摘要，敏感 credential 不应明文回显。 |
+| `applied` | boolean | yes | bool | none | 是否已生效。 |
+| `requiresApRestart` | boolean | no | bool | omitted | 是否需要 AP 重启后生效。 |
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -305,16 +275,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-
-#### 3.3.3 返回结果 Result：`NetworkSetApConfigResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `config` | `NetworkApConfig` | yes | object | none | 设备接受的配置摘要，敏感 credential 不应明文回显。 |
-| `applied` | boolean | yes | bool | none | 是否已生效。 |
-| `requiresApRestart` | boolean | no | bool | omitted | 是否需要 AP 重启后生效。 |
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -337,59 +298,19 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：`result` 是 `NetworkSetApConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.3.5 可能触发的事件
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.apConfigChanged` | AP 配置实际变化。 | `NetworkApConfigChangedEvent` | 重新读取 AP config，必要时重建 NT10 profile。 |
 | `network.apStateChanged` | 配置应用导致 AP 重启或异常。 | `NetworkApStateChangedEvent` | 展示状态并等待 running。 |
 
-#### 3.3.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "network.apConfigChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "config"
-    ],
-    "config": {
-      "mode": "auto"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.3.7 错误
+#### 3.3.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `OUT_OF_RANGE` | SSID 长度、信道或客户端上限超出能力。 | 使用 adopted numeric code `11`。 |
 | `BUSY` | AP 正在启动、停止或重配置。 | 使用 adopted numeric code `5`，客户端稍后重试。 |
-
-#### 3.3.8 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 103,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid argument.",
-    "details": {
-      "candidateError": "OUT_OF_RANGE",
-      "field": "config",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ### 3.4 `network.getApState`
 
@@ -410,7 +331,20 @@ lastReviewed: 2026-06-15
 |---|---|---:|---|---|---|
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
 
-#### 3.4.2 Request d block Example (op=7)
+#### 3.4.2 返回结果 Result：`NetworkApState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | interface id | omitted | AP 接口标识。 |
+| `state` | string enum | yes | `stopped`, `starting`, `running`, `stopping`, `error` | none | AP 服务状态。 |
+| `ssid` | string | no | SSID | omitted | 当前运行的 SSID。 |
+| `bssid` | string | no | MAC/BSSID | omitted | 当前 BSSID。 |
+| `clientCount` | uint16 | no | `0..65535` | omitted | 当前客户端数量。 |
+| `lastError` | string enum | no | see 6.5 | omitted | 最近一次失败原因。 |
+
+#### 3.4.3 d block 示例
+
+request:
 
 ```json
 {
@@ -422,19 +356,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-
-#### 3.4.3 返回结果 Result：`NetworkApState`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `interfaceId` | string | no | interface id | omitted | AP 接口标识。 |
-| `state` | string enum | yes | `stopped`, `starting`, `running`, `stopping`, `error` | none | AP 服务状态。 |
-| `ssid` | string | no | SSID | omitted | 当前运行的 SSID。 |
-| `bssid` | string | no | MAC/BSSID | omitted | 当前 BSSID。 |
-| `clientCount` | uint16 | no | `0..65535` | omitted | 当前客户端数量。 |
-| `lastError` | string enum | no | see 6.5 | omitted | 最近一次失败原因。 |
-
-#### 3.4.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -453,38 +375,17 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：`result` 是 `NetworkApState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.4.5 可能触发的事件
+#### 3.4.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变 AP 状态。 | none | 无需处理。 |
 
-#### 3.4.6 错误
+#### 3.4.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_FOUND` | 指定 AP 接口不存在。 | 使用 adopted numeric code `12`。 |
-
-#### 3.4.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 104,
-  "status": {
-    "ok": false,
-    "code": 12,
-    "msg": "Request failed.",
-    "details": {
-      "candidateError": "NOT_FOUND",
-      "field": "interfaceId",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ### 3.5 `network.startAp`
 
@@ -506,7 +407,16 @@ lastReviewed: 2026-06-15
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
 | `timeoutMs` | uint32 | no | `0..uint32 max` | omitted | 动作等待超时。 |
 
-#### 3.5.2 Request d block Example (op=7)
+#### 3.5.2 返回结果 Result：`NetworkApActionResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | bool | none | 动作是否被接受。 |
+| `state` | `NetworkApState` | yes | object | none | 操作后的当前或目标状态。 |
+
+#### 3.5.3 d block 示例
+
+request:
 
 ```json
 {
@@ -519,15 +429,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-
-#### 3.5.3 返回结果 Result：`NetworkApActionResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `accepted` | boolean | yes | bool | none | 动作是否被接受。 |
-| `state` | `NetworkApState` | yes | object | none | 操作后的当前或目标状态。 |
-
-#### 3.5.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -549,58 +451,18 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：`result` 是 `NetworkApActionResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.5.5 可能触发的事件
+#### 3.5.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.apStateChanged` | AP 进入 starting / running / error。 | `NetworkApStateChangedEvent` | 等待 running 或处理失败。 |
 
-#### 3.5.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "network.apStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.5.7 错误
+#### 3.5.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持远程启动 AP。 | 使用 adopted numeric code `3`。 |
 | `BUSY` | AP 正在处理冲突动作。 | 使用 adopted numeric code `5`。 |
-
-#### 3.5.8 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 105,
-  "status": {
-    "ok": false,
-    "code": 3,
-    "msg": "Request failed.",
-    "details": {
-      "candidateError": "NOT_SUPPORTED",
-      "field": "interfaceId",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ### 3.6 `network.stopAp`
 
@@ -622,7 +484,16 @@ lastReviewed: 2026-06-15
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
 | `timeoutMs` | uint32 | no | `0..uint32 max` | omitted | 动作等待超时。 |
 
-#### 3.6.2 Request d block Example (op=7)
+#### 3.6.2 返回结果 Result：`NetworkApActionResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | bool | none | 动作是否被接受。 |
+| `state` | `NetworkApState` | yes | object | none | 操作后的当前或目标状态。 |
+
+#### 3.6.3 d block 示例
+
+request:
 
 ```json
 {
@@ -635,15 +506,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-
-#### 3.6.3 返回结果 Result：`NetworkApActionResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `accepted` | boolean | yes | bool | none | 动作是否被接受。 |
-| `state` | `NetworkApState` | yes | object | none | 操作后的当前或目标状态。 |
-
-#### 3.6.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -665,57 +528,17 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：`result` 是 `NetworkApActionResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.6.5 可能触发的事件
+#### 3.6.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.apStateChanged` | AP 进入 stopping / stopped / error。 | `NetworkApStateChangedEvent` | 更新 UI，并提示可能断开 STA。 |
 
-#### 3.6.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "network.apStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.6.7 错误
+#### 3.6.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `PERMISSION_DENIED` | 当前策略禁止关闭 AP。 | 使用 adopted numeric code `9`。 |
-
-#### 3.6.8 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 106,
-  "status": {
-    "ok": false,
-    "code": 9,
-    "msg": "Request failed.",
-    "details": {
-      "candidateError": "PERMISSION_DENIED",
-      "field": "interfaceId",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ### 3.7 `network.getApClients`
 
@@ -736,7 +559,16 @@ lastReviewed: 2026-06-15
 |---|---|---:|---|---|---|
 | `interfaceId` | string | no | AP-capable interface id | `defaults.ap` | AP 接口。 |
 
-#### 3.7.2 Request d block Example (op=7)
+#### 3.7.2 返回结果 Result：`NetworkApClients`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaceId` | string | no | interface id | omitted | AP 接口。 |
+| `clients` | `NetworkApClientInfo[]` | yes | array | none | 当前客户端列表。 |
+
+#### 3.7.3 d block 示例
+
+request:
 
 ```json
 {
@@ -748,15 +580,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-
-#### 3.7.3 返回结果 Result：`NetworkApClients`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `interfaceId` | string | no | interface id | omitted | AP 接口。 |
-| `clients` | `NetworkApClientInfo[]` | yes | array | none | 当前客户端列表。 |
-
-#### 3.7.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -775,38 +599,17 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：`result` 是 `NetworkApClients` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.7.5 可能触发的事件
+#### 3.7.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变客户端列表。 | none | 无需处理。 |
 
-#### 3.7.6 错误
+#### 3.7.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持客户端列表。 | 使用 adopted numeric code `3`；details 可标注候选 `NETWORK_AP_CLIENT_LIST_UNAVAILABLE`。 |
-
-#### 3.7.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 107,
-  "status": {
-    "ok": false,
-    "code": 3,
-    "msg": "Request failed.",
-    "details": {
-      "candidateError": "NOT_SUPPORTED",
-      "field": "interfaceId",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ## 4. 事件 Events
 
@@ -1304,7 +1107,7 @@ Capability 描述设备能做什么；`NetworkApConfig` 描述当前或目标配
 
 读法：`status.code=9` 对应 adopted `PERMISSION_DENIED`。候选业务错误名只作为草案 details。
 
-## 7. 错误
+## 8. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

@@ -14,10 +14,11 @@ Stage 20. Create or update an AXTP business protocol draft in `workspace/protoco
 - Do not assign final numeric IDs unless they already exist in YAML/specs; use `TBD after adoption` for new methodId/eventId/errorCode/fieldId values.
 - Do not introduce new PayloadType, Frame Header business fields, WebSocket STREAM support, or runtime Header Profile negotiation.
 - Do not use this skill for raw PRD intake. If the user is still describing product intent, customer value, UI goals, or unresolved business scope, route to `business-intake`.
-- JSON examples are conditional: keep feature-specific `d` block examples when they clarify complex params/results, event payload, STREAM setup, async state machines, permission/error branches, or legacy field conversion. Do not copy generic Request/Success/Error envelope examples into every simple method.
+- Every method must keep one compact `d block 示例` subsection with `request:` and `success:` examples so reviewers can see the callable shape without hunting through tables.
+- Do not split method examples into separate request and success headings. Generic error envelope examples are not copied into every method.
 - Follow `workspace/protocol/draft-conventions.md` for JSON envelope, error, schema expansion, flow example, and contract-boundary conventions. Drafts should link to the common convention instead of repeating those rules.
 - Business feature examples assume the RPC Session is already `APP_READY`; show only feature-specific RPC `d` blocks after the common convention link.
-- When a method/event keeps a JSON example, the heading must make the envelope role clear, for example `Request d block Example (op=7)`, `Success Response d block Example (op=8)`, `Error Response d block Example (op=8)`, or `Event d block Example (op=6)`.
+- Method examples use one heading named `d block 示例` and label the two blocks as `request:` and `success:`. Error Response examples are only kept when they show feature-specific errors, special `details`, recovery behavior, or state consequences. Event examples live in the Events section unless the method-specific trigger behavior would be unclear without one.
 - Do not use JSON-RPC 2.0 (`jsonrpc: "2.0"`) as an AXTP wire example unless explicitly documenting an external adapter representation.
 - Always leave `[REVIEW-*]` markers for human review. Unconfirmed facts must be `[REVIEW-ASK]`, `[REVIEW-DRAFT]`, `[REVIEW-FIX]`, or `[REVIEW-BLOCKER]`.
 
@@ -88,7 +89,7 @@ Use `apply_patch` for manual edits. A draft must include:
 - capability boundary: included, excluded, and data-plane usage
 - method section with two layers: `3.0 方法速览` and one independent subsection per method
 - method overview table columns: Method, 调用类型, 用途, Params Schema, Result Schema, 是否触发事件, 状态
-- per-method detail blocks with purpose, call type, Params Schema, Result Schema, event trigger behavior, idempotency/async notes, common errors, params fields, result fields, possible events, method-specific error table, method rules, and conditional feature-specific `d` block examples only when they add review value
+- per-method detail blocks with purpose, call type, Params Schema, Result Schema, event trigger behavior, idempotency/async notes, common errors, params fields, result fields, one compact `d block 示例`, possible events, method-specific error table, and method rules
 - params/result field table headings that include the schema name, such as `请求参数 Params：SetVolumeParams` and `返回结果 Result：AudioVolumeState`
 - event section with two layers: `4.0 事件速览` and one independent subsection per event
 - event overview table columns: Event, 触发条件, Payload Schema, 客户端处理建议, 状态
@@ -96,7 +97,7 @@ Use `apply_patch` for manual edits. A draft must include:
 - event payload field table headings that include the schema name, such as `Payload：XxxChangedEvent`
 - capability table with field, type, required, range/enum, and description
 - schema field tables with field, type, required, range/enum, default, and description
-- conditional JSON `d` block examples for complex payloads, event payloads, STREAM setup, async transitions, permission/error branches, or legacy field conversions; simple get/set methods may rely on field tables plus rules
+- one compact method `d block 示例` for every method; add extra error/event examples only for complex payloads, event payloads, STREAM setup, async transitions, permission/error branches, or legacy field conversions
 - a `7. 交互流程示例 Flow Examples` section for end-to-end multi-method/event flows only; do not use it as the only place for single method/event API examples
 - candidate errors
 - legacy mapping candidates or `[REVIEW-ASK]`
@@ -121,13 +122,13 @@ For schema-heavy features, follow `workspace/protocol/draft-conventions.md#schem
 - Never make readers infer whether a field table is method params, method result, event payload, shared schema, or capability. The heading and nearby prose must say which schema it belongs to.
 - Keep capability fields only in the Capability section; do not mix capability descriptors into method params/results or event payloads.
 
-When creating a new draft or materially updating an existing draft, use conditional JSON examples. Keep the common rules in `workspace/protocol/draft-conventions.md` and keep each draft focused on the feature:
+When creating a new draft or materially updating an existing draft, keep method examples compact and consistent. Keep the common rules in `workspace/protocol/draft-conventions.md` and keep each draft focused on the feature:
 
-- Do not add generic Request / Success Response / Error Response examples just to show `op=7`, `op=8`, `status.ok`, or `id` echoing; those are common conventions.
-- Add Request examples when params contain nested objects, arrays, selectors, scope/target semantics, default-sensitive fields, STREAM setup, credentials, or legacy field conversion.
-- Add Success Response examples when result shape is not obvious, returns accepted state instead of final state, creates stream/session IDs, or contains transformed/derived fields.
+- Every method gets one `d block 示例` subsection containing `request:` and `success:` examples.
+- Keep examples minimal: include only fields needed to understand target/scope, params, result shape, accepted-vs-final-state semantics, created IDs, STREAM setup, credentials, or legacy field conversion.
+- Do not create separate Request / Success Response headings just to show `op=7`, `op=8`, `status.ok`, or `id` echoing; those are common conventions.
 - Add Error Response examples only when the feature has a meaningful error branch, permission boundary, candidate error, partial-apply rule, or recovery instruction.
-- Add Event examples when payload shape, intent, changedFields, state snapshot, async transition, or client cache behavior needs review.
+- Keep Event examples in the Events section when payload shape, intent, changedFields, state snapshot, async transition, or client cache behavior needs review.
 - Examples SHOULD show only the RPC `d` block to keep long feature drafts readable.
 - Request examples must include `id`, `method`, and optional `params`; `id` must be non-zero.
 - Response examples must echo request `id`, include `status.ok`, and use numeric `status.code`; use `0` for success.
@@ -137,7 +138,7 @@ When creating a new draft or materially updating an existing draft, use conditio
 - Validate JSON examples mentally or with a parser when practical; examples should be readable and syntactically valid.
 - Use placeholders for secrets, credentials, tokens, keys, personal data, serial numbers, MAC addresses, and IP addresses when exact values are not confirmed.
 - Mark unconfirmed example fields or behavior in nearby prose with `[REVIEW-ASK]`.
-- For existing drafts, refresh examples only for methods/events whose feature-specific payload, state, error, or legacy semantics changed.
+- For existing drafts, refresh method examples when method params/results are missing, still use split Request/Success headings, or no longer match the field tables.
 
 The old centralized `JSON 示例` section is deprecated. Section 7 in new drafts should be `交互流程示例 Flow Examples` and should only show end-to-end flows such as capability discovery -> set method -> changed event, action accepted -> state event, failure request -> no event, or reconnect -> get state calibration.
 
@@ -157,7 +158,7 @@ Return:
 - decision: reuse, modify, or create
 - draft file path
 - what was added or changed
-- feature-specific JSON `d` block examples added or refreshed, or why simple fields did not need examples
+- method `d block 示例` examples added or refreshed, plus any feature-specific error/event examples kept
 - key review questions / `[REVIEW-*]` blockers
 - confirmation that no contract/registry/generated/protocol files were modified
 - next step: after human review, use `tooling/skills/30-adopt-protocol-draft/SKILL.md`

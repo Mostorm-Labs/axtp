@@ -75,7 +75,16 @@ lastReviewed: 2026-06-10
 | 字段表 | 见 6.2「查询类请求」。 |
 | 备注 | `items` 省略表示查询全部支持的算法对象。 |
 
-#### 3.1.2 Request d block Example (op=7)
+#### 3.1.2 返回结果 Result：`AudioGetAlgorithmCapabilitiesResponse`
+
+| 字段定义 | 内容 |
+|---|---|
+| 顶层字段表 | 见 6.2「能力查询结果」。 |
+| 嵌套 capability 字段 | 见 6.3「Capability Schemas」。 |
+
+#### 3.1.3 d block 示例
+
+request:
 
 ```json
 {
@@ -91,16 +100,7 @@ lastReviewed: 2026-06-10
 }
 ```
 
-读法：`items` 用于选择要查询的算法对象。省略 `items` 表示查询全部支持对象；示例只展示 RPC `d` block，不重复外层 `sid/op/d` envelope。
-
-#### 3.1.3 返回结果 Result：`AudioGetAlgorithmCapabilitiesResponse`
-
-| 字段定义 | 内容 |
-|---|---|
-| 顶层字段表 | 见 6.2「能力查询结果」。 |
-| 嵌套 capability 字段 | 见 6.3「Capability Schemas」。 |
-
-#### 3.1.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -154,15 +154,13 @@ lastReviewed: 2026-06-10
 }
 ```
 
-读法：客户端可用 `algorithms.<object>.<field>` 下的 `type/min/max/step/default*` 渲染 UI，并用 `requiresAudioRestart` 提示修改风险。
-
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发配置变化事件。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -170,7 +168,7 @@ lastReviewed: 2026-06-10
 | `INVALID_ARGUMENT` | `items` 中包含非法算法对象名。 | 返回具体非法 item。 |
 | `INTERNAL_ERROR` | 读取能力描述失败。 | 返回内部错误摘要。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
+#### 3.1.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -187,7 +185,6 @@ lastReviewed: 2026-06-10
   }
 }
 ```
-
 
 ### 3.2 `audio.getAlgorithmConfig`
 
@@ -209,7 +206,16 @@ lastReviewed: 2026-06-10
 | 字段表 | 见 6.2「查询类请求」。 |
 | 备注 | `items` 省略表示查询全部支持的算法对象；响应可只包含被选择或被设备支持的算法对象。 |
 
-#### 3.2.2 Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`AudioAlgorithmConfig`
+
+| 字段定义 | 内容 |
+|---|---|
+| 总结构 | 见 6.4「Config 总结构：`AudioAlgorithmConfig`」。 |
+| 各算法对象字段 | 见 6.5「各算法对象配置字段」。 |
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -224,16 +230,7 @@ lastReviewed: 2026-06-10
 }
 ```
 
-读法：`items` 省略表示读取全部支持对象；带 `items` 时，响应可以只返回被选中的对象。
-
-#### 3.2.3 返回结果 Result：`AudioAlgorithmConfig`
-
-| 字段定义 | 内容 |
-|---|---|
-| 总结构 | 见 6.4「Config 总结构：`AudioAlgorithmConfig`」。 |
-| 各算法对象字段 | 见 6.5「各算法对象配置字段」。 |
-
-#### 3.2.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -256,15 +253,13 @@ lastReviewed: 2026-06-10
 }
 ```
 
-读法：`result` 本身就是 `AudioAlgorithmConfig`。不支持或未选择的算法对象可以省略。
-
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发配置变化事件。 | none | 无需处理。 |
 
-#### 3.2.6 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -272,7 +267,7 @@ lastReviewed: 2026-06-10
 | `INVALID_ARGUMENT` | selector 结构或对象名非法。 | 返回具体字段路径。 |
 | `INTERNAL_ERROR` | 读取当前配置失败。 | 返回内部错误摘要。 |
 
-#### 3.2.7 Error Response d block Example (op=8)
+#### 3.2.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -311,7 +306,16 @@ lastReviewed: 2026-06-10
 | 配置对象 | 见 6.4 和 6.5。 |
 | 备注 | 请求必须符合 `updatePolicy`；如果校验失败，不应部分应用失败请求。 |
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`AudioSetAlgorithmConfigResponse`
+
+| 字段定义 | 内容 |
+|---|---|
+| 字段表 | 见 6.2「更新 / reset 结果：`AudioSetAlgorithmConfigResponse`」。 |
+| 配置对象 | `config` 字段使用 `AudioAlgorithmConfig`，见 6.4 和 6.5。 |
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -330,16 +334,7 @@ lastReviewed: 2026-06-10
 }
 ```
 
-读法：这是部分更新请求。未出现在 `config` 中的算法对象和字段保持不变；如果 `atomicUpdateSupported=true`，校验失败时不应部分应用。
-
-#### 3.3.3 返回结果 Result：`AudioSetAlgorithmConfigResponse`
-
-| 字段定义 | 内容 |
-|---|---|
-| 字段表 | 见 6.2「更新 / reset 结果：`AudioSetAlgorithmConfigResponse`」。 |
-| 配置对象 | `config` 字段使用 `AudioAlgorithmConfig`，见 6.4 和 6.5。 |
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -366,41 +361,13 @@ lastReviewed: 2026-06-10
 }
 ```
 
-读法：`config` 返回本次受影响对象的最终状态，而不是只回显请求字段。`pending_restart` 表示等待音频链路重启后完全生效。
-
-#### 3.3.5 可能触发的事件
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `audio.algorithmConfigChanged` | 配置实际发生变化。 | `AudioAlgorithmConfigChangedEvent` | 可用变化片段更新 UI；如需完整算法配置，调用 `audio.getAlgorithmConfig` 校准。 |
 
-#### 3.3.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "audio.algorithmConfigChanged",
-  "intent": 1,
-  "data": {
-    "reason": "user_request",
-    "applyState": "pending_restart",
-    "requiresAudioRestart": true,
-    "config": {
-      "noiseSuppression": {
-        "level": 3
-      },
-      "echoCancellation": {
-        "tailLengthMs": 256
-      }
-    },
-    "changedFields": [
-      "noiseSuppression.level",
-      "echoCancellation.tailLengthMs"
-    ]
-  }
-}
-```
-
-#### 3.3.7 错误
+#### 3.3.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -412,7 +379,7 @@ lastReviewed: 2026-06-10
 | `PERMISSION_DENIED` | 调用方没有权限。 | 返回权限错误。 |
 | `INTERNAL_ERROR` | 应用配置失败。 | 返回内部错误摘要。 |
 
-#### 3.3.8 Error Response d block Example (op=8)
+#### 3.3.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -454,7 +421,16 @@ lastReviewed: 2026-06-10
 | selector 写法 | 支持 `"all"`、算法对象名数组、或 `{ algorithm: [field] }`，详见 6.2 的 `items` 写法表。 |
 | 备注 | reset 是恢复当前运行时配置，不表示写入新的设备默认 profile。 |
 
-#### 3.4.2 Request d block Example (op=7)
+#### 3.4.2 返回结果 Result：`AudioSetAlgorithmConfigResponse`
+
+| 字段定义 | 内容 |
+|---|---|
+| 字段表 | 见 6.2「更新 / reset 结果：`AudioSetAlgorithmConfigResponse`」。 |
+| 配置对象 | `config` 字段使用 `AudioAlgorithmConfig`，见 6.4 和 6.5。 |
+
+#### 3.4.3 d block 示例
+
+request:
 
 ```json
 {
@@ -473,16 +449,7 @@ lastReviewed: 2026-06-10
 }
 ```
 
-读法：该请求只恢复指定字段到 capability 声明的默认值，不关闭算法对象，也不写入新的设备默认 profile。
-
-#### 3.4.3 返回结果 Result：`AudioSetAlgorithmConfigResponse`
-
-| 字段定义 | 内容 |
-|---|---|
-| 字段表 | 见 6.2「更新 / reset 结果：`AudioSetAlgorithmConfigResponse`」。 |
-| 配置对象 | `config` 字段使用 `AudioAlgorithmConfig`，见 6.4 和 6.5。 |
-
-#### 3.4.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -508,41 +475,13 @@ lastReviewed: 2026-06-10
 }
 ```
 
-读法：reset 的目标是 capability 中声明的默认值。响应中的 `config` 是受影响对象的最终状态。
-
-#### 3.4.5 可能触发的事件
+#### 3.4.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `audio.algorithmConfigChanged` | reset 后配置实际发生变化。 | `AudioAlgorithmConfigChangedEvent` | 可用变化片段更新 UI；如需完整算法配置，调用 `audio.getAlgorithmConfig` 校准。 |
 
-#### 3.4.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "audio.algorithmConfigChanged",
-  "intent": 1,
-  "data": {
-    "reason": "reset_to_default",
-    "applyState": "applied",
-    "requiresAudioRestart": false,
-    "config": {
-      "noiseSuppression": {
-        "level": 2
-      },
-      "echoCancellation": {
-        "nlpLevel": 2
-      }
-    },
-    "changedFields": [
-      "noiseSuppression.level",
-      "echoCancellation.nlpLevel"
-    ]
-  }
-}
-```
-
-#### 3.4.7 错误
+#### 3.4.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -554,7 +493,7 @@ lastReviewed: 2026-06-10
 | `PERMISSION_DENIED` | 调用方没有权限。 | 返回权限错误。 |
 | `INTERNAL_ERROR` | 恢复默认值失败。 | 返回内部错误摘要。 |
 
-#### 3.4.8 Error Response d block Example (op=8)
+#### 3.4.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -907,7 +846,7 @@ AudioAlgorithmConfig
 
 读法：如果 `audio.algorithmConfigChanged.data.config` 只是变化片段，客户端可以局部更新 UI；如果需要完整状态，调用 `audio.getAlgorithmConfig` 校准。失败响应不得部分应用，也不得触发配置变化事件。
 
-## 7. 错误
+## 8. 错误
 
 本 feature 复用 generated ErrorCode，不新增 feature-specific errorCode。
 

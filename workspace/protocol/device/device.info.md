@@ -73,20 +73,7 @@ Cast RX/TX 配对 flow 中，NA20 / NT10 的识别由 Host 基于 USB descriptor
 |---|---|---:|---|---|---|
 | `includeCapabilitySummary` | boolean | no | `true`, `false` | `true` | 是否返回轻量 `capability` 建模摘要。 |
 
-#### 3.1.2 Request d block Example (op=7)
-
-```json
-{
-  "id": 101,
-  "method": "device.getInfo",
-  "params": {
-    "includeCapabilitySummary": true
-  }
-}
-```
-
-
-#### 3.1.3 返回结果 Result：`DeviceInfo`
+#### 3.1.2 返回结果 Result：`DeviceInfo`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -98,7 +85,21 @@ Cast RX/TX 配对 flow 中，NA20 / NT10 的识别由 Host 基于 USB descriptor
 | `runtime` | `DeviceAxtpRuntime` | no | object | omitted | AXTP runtime 摘要。 |
 | `capability` | `DeviceCapabilitySummary` | no | object | omitted | 轻量建模摘要；不是完整 capability registry。 |
 
-#### 3.1.4 Success Response d block Example (op=8)
+#### 3.1.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 101,
+  "method": "device.getInfo",
+  "params": {
+    "includeCapabilitySummary": true
+  }
+}
+```
+
+success:
 
 ```json
 {
@@ -163,15 +164,13 @@ Cast RX/TX 配对 flow 中，NA20 / NT10 的识别由 Host 基于 USB descriptor
 }
 ```
 
-读法：`result` 是 `DeviceInfo` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 需要刷新时重新调用 `device.getInfo`。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -179,7 +178,7 @@ Cast RX/TX 配对 flow 中，NA20 / NT10 的识别由 Host 基于 USB descriptor
 | `PERMISSION_DENIED` | 当前调用方无权读取设备身份或序列号。 | 使用 adopted numeric code `9`；敏感字段可省略。 |
 | `INTERNAL_ERROR` | 设备信息服务、OS 查询或 runtime 查询失败。 | 使用 adopted numeric code `14`。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
+#### 3.1.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -196,7 +195,6 @@ Cast RX/TX 配对 flow 中，NA20 / NT10 的识别由 Host 基于 USB descriptor
   }
 }
 ```
-
 
 ## 4. 事件 Events
 
@@ -464,7 +462,7 @@ DeviceInfo
 
 读法：`status.code=14` 对应 adopted `INTERNAL_ERROR`。失败不改变设备状态，也不会触发事件。
 
-## 7. 错误
+## 8. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

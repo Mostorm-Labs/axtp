@@ -61,7 +61,11 @@ lastReviewed: 2026-06-13
 
 #### 3.1.1 请求参数 Params：`GetZoomCapabilitiesParams`
 
-#### 3.1.2 Request d block Example (op=7)
+#### 3.1.2 返回结果 Result：`ZoomCapabilities`
+
+#### 3.1.3 d block 示例
+
+request:
 
 ```json
 {
@@ -73,10 +77,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.1.3 返回结果 Result：`ZoomCapabilities`
-
-#### 3.1.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -93,21 +94,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `ZoomCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备无可控 zoom。 | 隐藏控件。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
+#### 3.1.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -125,7 +124,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.2 `camera.getZoomState`
 
 | 项 | 内容 |
@@ -139,7 +137,11 @@ lastReviewed: 2026-06-13
 
 #### 3.2.1 请求参数 Params：`GetZoomStateParams`
 
-#### 3.2.2 Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`ZoomState`
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -151,10 +153,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.2.3 返回结果 Result：`ZoomState`
-
-#### 3.2.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -171,21 +170,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `ZoomState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.2.6 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | zoom 状态不可读。 | 返回 unavailable detail。 |
 
-#### 3.2.7 Error Response d block Example (op=8)
+#### 3.2.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -203,7 +200,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.3 `camera.setZoomConfig`
 
 | 项 | 内容 |
@@ -217,7 +213,11 @@ lastReviewed: 2026-06-13
 
 #### 3.3.1 请求参数 Params：`SetZoomConfigParams`
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`ZoomCommandResult`
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -229,10 +229,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.3.3 返回结果 Result：`ZoomCommandResult`
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -252,41 +249,20 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `ZoomCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.3.5 可能触发的事件
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.zoomStateChanged` | ratio/position/type/state 变化。 | `ZoomStateChangedEvent` | 更新 zoom slider。 |
 
-#### 3.3.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.zoomStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.3.7 错误
+#### 3.3.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `OUT_OF_RANGE` | ratio 或 position 超范围。 | 返回合法范围。 |
 | `DEVICE_MODE_CONFLICT` | framing 或 PTZ preset 正在占用 lens。 | 返回 owner。 |
 
-#### 3.3.8 Error Response d block Example (op=8)
+#### 3.3.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -304,7 +280,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.4 `camera.startZoomMove`
 
 | 项 | 内容 |
@@ -318,7 +293,11 @@ lastReviewed: 2026-06-13
 
 #### 3.4.1 请求参数 Params：`StartZoomMoveParams`
 
-#### 3.4.2 Request d block Example (op=7)
+#### 3.4.2 返回结果 Result：`ZoomCommandResult`
+
+#### 3.4.3 d block 示例
+
+request:
 
 ```json
 {
@@ -332,10 +311,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.4.3 返回结果 Result：`ZoomCommandResult`
-
-#### 3.4.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -355,40 +331,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `ZoomCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.4.5 可能触发的事件
+#### 3.4.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.zoomStateChanged` | zoom 进入 moving。 | `ZoomStateChangedEvent` | UI 显示移动中。 |
 
-#### 3.4.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.zoomStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.4.7 错误
+#### 3.4.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `INVALID_ARGUMENT` | direction/speed 非法。 | 返回字段路径。 |
 
-#### 3.4.8 Error Response d block Example (op=8)
+#### 3.4.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -406,7 +361,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.5 `camera.stopZoomMove`
 
 | 项 | 内容 |
@@ -420,7 +374,11 @@ lastReviewed: 2026-06-13
 
 #### 3.5.1 请求参数 Params：`StopZoomMoveParams`
 
-#### 3.5.2 Request d block Example (op=7)
+#### 3.5.2 返回结果 Result：`ZoomCommandResult`
+
+#### 3.5.3 d block 示例
+
+request:
 
 ```json
 {
@@ -432,10 +390,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.5.3 返回结果 Result：`ZoomCommandResult`
-
-#### 3.5.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -455,40 +410,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `ZoomCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.5.5 可能触发的事件
+#### 3.5.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.zoomStateChanged` | zoom 停止。 | `ZoomStateChangedEvent` | 释放按下态。 |
 
-#### 3.5.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.zoomStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.5.7 错误
+#### 3.5.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | zoom 控制不可用。 | 清除移动 UI。 |
 
-#### 3.5.8 Error Response d block Example (op=8)
+#### 3.5.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -506,7 +440,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.6 `camera.resetZoomConfig`
 
 | 项 | 内容 |
@@ -520,7 +453,11 @@ lastReviewed: 2026-06-13
 
 #### 3.6.1 请求参数 Params：`ResetZoomConfigParams`
 
-#### 3.6.2 Request d block Example (op=7)
+#### 3.6.2 返回结果 Result：`ZoomCommandResult`
+
+#### 3.6.3 d block 示例
+
+request:
 
 ```json
 {
@@ -532,10 +469,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.6.3 返回结果 Result：`ZoomCommandResult`
-
-#### 3.6.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -555,40 +489,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `ZoomCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.6.5 可能触发的事件
+#### 3.6.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.zoomStateChanged` | 默认值不同于当前值。 | `ZoomStateChangedEvent` | 更新 slider。 |
 
-#### 3.6.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.zoomStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.6.7 错误
+#### 3.6.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `BUSY` | zoom 正在移动。 | 先 stop 或稍后重试。 |
 
-#### 3.6.8 Error Response d block Example (op=8)
+#### 3.6.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -605,7 +518,6 @@ lastReviewed: 2026-06-13
   }
 }
 ```
-
 
 ## 4. 事件 Events
 
@@ -805,7 +717,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-## 7. 错误
+## 8. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

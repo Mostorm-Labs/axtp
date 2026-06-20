@@ -4,7 +4,7 @@
 
 草案目标是让评审者快速看懂协议意图、接口形状、字段含义、测试重点和采纳风险。它不是最终机器事实源。正式事实源仍然是 `contract/registry/**/*.yaml`、`contract/protocol/axtp.protocol.yaml`、`contract/generated/**` 和 `conformance/**`。
 
-公共 RPC envelope、成功/失败响应读法、错误约定、schema 展开和 flow example 写法维护在 `workspace/protocol/draft-conventions.md`。草案只保留 feature-specific 内容；复杂 payload、事件、STREAM、异步状态机、权限/错误分支和 legacy 字段转换必须写可评审的 `d` block 示例。
+公共 RPC envelope、成功/失败响应读法、错误约定、schema 展开和 flow example 写法维护在 `workspace/protocol/draft-conventions.md`。每个 method 保留一个最小可读的 `d block 示例`，用 `request:` / `success:` 展示可调用形状；复杂错误、事件、STREAM、异步状态机、权限分支和 legacy 字段转换再补 feature-specific 示例。
 
 ````markdown
 ---
@@ -79,17 +79,42 @@ lastReviewed: YYYY-MM-DD
 |---|---|---:|---|---|---|
 | `<field>` | `<type>` | yes/no | <range or enum> | <default or omitted> | <说明> |
 
-#### 3.1.3 可能触发的事件
+#### 3.1.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 101,
+  "method": "<domain.feature>.<method>",
+  "params": {
+    "<field>": "<value>"
+  }
+}
+```
+
+success:
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "<field>": "<value>"
+  }
+}
+```
+
+示例只展示 RPC `d` block。公共 `op`、`sid`、成功/失败 envelope 和 `id` 回显规则见 [Protocol Draft Conventions](../draft-conventions.md)。如果 method 无 `params` 或无业务 `result`，可以省略对应对象；不要拆成独立 Request / Success Response 标题。
+
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `<domain.feature>.changed` | <状态实际变化时> | `<ChangedEvent>` | <直接更新 UI / 调用 get 校准 / 可忽略> |
-
-#### 3.1.4 条件 JSON 示例
-
-简单 query/set 可以删除本小节，只保留字段表和规则。以下情况必须保留 feature-specific `d` block 示例：复杂 `params` / `result`、事件 payload、STREAM 建流、异步状态机、权限或错误分支、legacy 字段转换。
-
-示例只展示 RPC `d` block，公共 `op`、`sid`、成功/失败 envelope 和 `id` 回显规则见 [Protocol Draft Conventions](../draft-conventions.md)。
 
 #### 3.1.5 错误
 
@@ -128,9 +153,21 @@ lastReviewed: YYYY-MM-DD
 | `source` | string enum | no | feature-specific | `unknown` | 状态变化来源。 |
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 
-#### 4.1.2 条件 JSON 示例
+#### 4.1.2 Event d block Example (op=6)
 
-事件 payload 不直观、包含嵌套对象、字段转换、状态机分支或客户端缓存语义时，必须保留 feature-specific event `d` block 示例。简单 changed event 可以只保留 payload 字段表和客户端处理建议。
+```json
+{
+  "event": "<domain.feature>.changed",
+  "intent": 1,
+  "data": {
+    "<field>": "<value>",
+    "source": "remoteApp",
+    "reason": "user_request"
+  }
+}
+```
+
+事件 payload 不直观、包含嵌套对象、字段转换、状态机分支或客户端缓存语义时，应保留 feature-specific event `d` block 示例。简单 changed event 可以只保留 payload 字段表和客户端处理建议。
 
 #### 4.1.3 客户端处理建议
 
@@ -165,8 +202,8 @@ Capability name: `<domain.feature>`。
 
 Schema 展开模式必须二选一：
 
-- 简单 feature：method/event 章节已经直接展开字段表，本章只保留 schema 索引，避免重复。
-- 复杂 feature：method/event 章节保留关键字段；本章集中展开复杂对象；必要时在 method/event 条件 JSON 示例中展示关键 payload。
+- 简单 feature：method/event 章节已经直接展开字段表和最小 `d block 示例`，本章只保留 schema 索引，避免重复。
+- 复杂 feature：method/event 章节保留关键字段；本章集中展开复杂对象；必要时在 method/event `d block 示例` 中展示关键 payload。
 
 ### 6.2 请求与响应 Schemas
 
@@ -198,7 +235,7 @@ Schema 展开模式必须二选一：
 
 只在存在真实端到端顺序时保留本章，例如 capability discovery -> set method -> changed event、action accepted -> progress event、failure request -> no event、STREAM open -> STREAM data -> close、reconnect -> get state calibration。
 
-单个 method/event 的普通用法不要写成本章；放在对应 method/event 的字段表、规则和条件 JSON 示例中。
+单个 method/event 的普通用法不要写成本章；放在对应 method/event 的字段表、规则和 `d block 示例` 中。
 
 ## 8. 错误
 
@@ -270,14 +307,14 @@ reset / factory restore、firmware.ota、security/auth、network.config、storag
 - [ ] conformance cases 已规划。
 ````
 
-## 示例片段：保留 feature-specific JSON 的方式
+## 示例片段：method 示例减肥后的写法
 
-下面只展示“复杂 payload 才保留示例”的写法，不表示正式 registry 命名或 ID。
+下面展示每个 method 保留一个紧凑 `d block 示例` 的写法，不表示正式 registry 命名或 ID。复杂错误和事件示例不要塞进 method；除非它们直接影响 method 评审，否则放到错误或事件章节。
 
 ````markdown
-#### 3.2.4 条件 JSON 示例
+#### 3.2.3 d block 示例
 
-`audio.volume.set` 同时支持音量和静音设置；这里保留 Request `d` block，帮助评审者确认局部更新语义。
+request:
 
 ```json
 {
@@ -291,7 +328,7 @@ reset / factory restore、firmware.ota、security/auth、network.config、storag
 }
 ```
 
-`result` 返回设置后的完整状态，而不是变化片段：
+success:
 
 ```json
 {
@@ -308,7 +345,9 @@ reset / factory restore、firmware.ota、security/auth、network.config、storag
 }
 ```
 
-事件 payload 展示变化字段和完整状态：
+读法：`result` 返回设置后的完整状态，而不是变化片段；状态实际变化时由 `audio.volume.changed` 事件通知。
+
+#### 4.1.2 Event d block Example (op=6)
 
 ```json
 {

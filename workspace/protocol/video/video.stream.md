@@ -80,21 +80,7 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `source` | string | no | source id | omitted | 可选按 source 查询；省略表示返回全部可见视频 source。 |
 | `includeRuntimeState` | bool | no | `true`, `false` | `false` | 是否同时返回 source 当前 `available/receiving` 状态。 |
 
-#### 3.1.2 Request d block Example (op=7)
-
-```json
-{
-  "id": 101,
-  "method": "video.getStreamCapabilities",
-  "params": {
-    "source": "wireless_cast_video",
-    "includeRuntimeState": true
-  }
-}
-```
-
-
-#### 3.1.3 返回结果 Result：`VideoStreamCapabilities`
+#### 3.1.2 返回结果 Result：`VideoStreamCapabilities`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -107,7 +93,22 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `supportsSyncGroup` | bool | yes | `true`, `false` | none | 是否支持与音频流共享同步组。 |
 | `flowControlManagedByRuntime` | bool | yes | `true`, `false` | `true` | 普通业务 App 是否无需直接调用 `stream.flowControl`。 |
 
-#### 3.1.4 Success Response d block Example (op=8)
+#### 3.1.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 101,
+  "method": "video.getStreamCapabilities",
+  "params": {
+    "source": "wireless_cast_video",
+    "includeRuntimeState": true
+  }
+}
+```
+
+success:
 
 ```json
 {
@@ -145,39 +146,18 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：`result` 是 `VideoStreamCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不应改变状态。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 `video.stream`。 | 返回 unsupported feature。 |
 | `INVALID_ARGUMENT` | `source` 字段格式非法。 | 返回字段路径和合法 source 约束。 |
-
-#### 3.1.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 101,
-  "status": {
-    "ok": false,
-    "code": 3,
-    "msg": "Request failed.",
-    "details": {
-      "candidateError": "NOT_SUPPORTED",
-      "field": "source",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ### 3.2 `video.openStream`
 
@@ -222,22 +202,7 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `receiverClockDomain` | string | no | `na20_receive_clock`, receiver-defined | omitted | NA20 接收时钟域，用于 jitter/诊断。 |
 | `maxDataSize` | uint32 | no | transport/profile limit | omitted | 单个 STREAM payload data 最大大小建议。 |
 
-#### 3.2.2 Request d block Example (op=7)
-
-```json
-{
-  "id": 102,
-  "method": "video.openStream",
-  "params": {
-    "source": "wireless_cast_video",
-    "peerRole": "receiver",
-    "codec": "h264"
-  }
-}
-```
-
-
-#### 3.2.3 返回结果 Result：`VideoOpenStreamResult`
+#### 3.2.2 返回结果 Result：`VideoOpenStreamResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -256,7 +221,23 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `maxDataSize` | uint32 | no | negotiated limit | omitted | 每个 STREAM chunk data 最大长度。 |
 | `parameterSetsInKeyFrame` | bool | no | `true`, `false` | capability default | `wireless_cast` H.264 Annex-B 必须为 `true`。 |
 
-#### 3.2.4 Success Response d block Example (op=8)
+#### 3.2.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 102,
+  "method": "video.openStream",
+  "params": {
+    "source": "wireless_cast_video",
+    "peerRole": "receiver",
+    "codec": "h264"
+  }
+}
+```
+
+success:
 
 ```json
 {
@@ -278,37 +259,14 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：`result` 是 `VideoOpenStreamResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `video.streamStateChanged` | stream 进入 `opening`、`streaming`、`closed` 或 `failed`。 | `VideoStreamStateChangedEvent` | 更新播放器 pipeline；必要时调用 `video.getStreamState` 校准。 |
 | `video.streamSourceStateChanged` | producer-open 被拒后 source 仍可用，或 source lifecycle 变化。 | `VideoStreamSourceStateChangedEvent` | 缓存 source 状态；receiver ready 后可主动 `video.openStream`。 |
 
-#### 3.2.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "video.streamStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "streamId": 4097,
-      "state": "streaming",
-      "source": "wireless_cast_video"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.2.7 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -317,25 +275,6 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `MEDIA_CODEC_UNSUPPORTED` | 请求 codec 或格式不支持。 | 返回支持的 codec/format 线索。 |
 | `BUSY` / `RESOURCE_EXHAUSTED` | 同一 source/mediaKind 已有 active downstream stream 或资源不足。 | 返回可重试提示；不得发送 STREAM。 |
 | `MEDIA_STREAM_START_FAILED` | 建立 stream context 或 producer 绑定失败。 | 返回失败原因；可触发 `video.streamStateChanged(state=failed)`。 |
-
-#### 3.2.8 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 102,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid argument.",
-    "details": {
-      "candidateError": "MEDIA_SOURCE_NOT_FOUND",
-      "field": "source",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ### 3.3 `video.closeStream`
 
@@ -359,7 +298,18 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `reason` | enum | no | `receiver_closed`, `user_stop`, `not_needed`, `source_disconnected`, `producer_stopped`, `session_lost`, `receiver_timeout`, `error` | `user_stop` | 关闭原因。 |
 | `finalCursor` | uint64 | no | cursorUnit-defined | omitted | 调用方最后处理到的 cursor。 |
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`VideoCloseStreamResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `streamId` | uint32 | yes | stream id | none | 被关闭的 stream。 |
+| `state` | enum | yes | `closing`, `closed`, `failed` | none | close 后状态。 |
+| `reason` | enum | no | same as params | omitted | 最终关闭原因。 |
+| `alreadyClosed` | bool | no | `true`, `false` | `false` | 是否此前已经进入 terminal state。 |
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -372,17 +322,7 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-
-#### 3.3.3 返回结果 Result：`VideoCloseStreamResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `streamId` | uint32 | yes | stream id | none | 被关闭的 stream。 |
-| `state` | enum | yes | `closing`, `closed`, `failed` | none | close 后状态。 |
-| `reason` | enum | no | same as params | omitted | 最终关闭原因。 |
-| `alreadyClosed` | bool | no | `true`, `false` | `false` | 是否此前已经进入 terminal state。 |
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -399,61 +339,19 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：`result` 是 `VideoCloseStreamResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.3.5 可能触发的事件
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `video.streamStateChanged` | stream 关闭、失败或重复 close 收敛。 | `VideoStreamStateChangedEvent` | 释放 decoder、buffer 和 UI 状态。 |
 
-#### 3.3.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "video.streamStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "streamId": 4097,
-      "state": "streaming",
-      "source": "wireless_cast_video"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.3.7 错误
+#### 3.3.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `STREAM_NOT_FOUND` | streamId 不属于当前 AXTP session。 | 调用方本地清理旧 context。 |
 | `STREAM_CLOSED` | stream 已关闭且实现选择返回错误。 | 也可返回 `alreadyClosed=true` 的成功结果。 |
 | `MEDIA_STREAM_STOP_FAILED` | 设备无法停止 producer。 | 返回 typed error，并尽快进入 `failed` terminal state。 |
-
-#### 3.3.8 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 103,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid argument.",
-    "details": {
-      "candidateError": "STREAM_NOT_FOUND",
-      "field": "streamId",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ### 3.4 `video.getStreamState`
 
@@ -474,20 +372,7 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 |---|---|---:|---|---|---|
 | `streamId` | uint32 | yes | stream id | none | 查询目标 stream。 |
 
-#### 3.4.2 Request d block Example (op=7)
-
-```json
-{
-  "id": 104,
-  "method": "video.getStreamState",
-  "params": {
-    "streamId": 4097
-  }
-}
-```
-
-
-#### 3.4.3 返回结果 Result：`VideoStreamState`
+#### 3.4.2 返回结果 Result：`VideoStreamState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -501,7 +386,21 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `lastCursor` | uint64 | no | cursorUnit-defined | omitted | 最近 cursor。 |
 | `reason` | string | no | state reason | omitted | terminal 或异常原因。 |
 
-#### 3.4.4 Success Response d block Example (op=8)
+#### 3.4.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 104,
+  "method": "video.getStreamState",
+  "params": {
+    "streamId": 4097
+  }
+}
+```
+
+success:
 
 ```json
 {
@@ -520,38 +419,17 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：`result` 是 `VideoStreamState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.4.5 可能触发的事件
+#### 3.4.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.4.6 错误
+#### 3.4.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `STREAM_NOT_FOUND` | streamId 不存在或已随 session lost 失效。 | 释放本地 context。 |
-
-#### 3.4.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 104,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid argument.",
-    "details": {
-      "candidateError": "STREAM_NOT_FOUND",
-      "field": "streamId",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ### 3.5 `video.getStreamSourceState`
 
@@ -572,20 +450,7 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 |---|---|---:|---|---|---|
 | `source` | string | yes | source id | none | 查询目标 source。 |
 
-#### 3.5.2 Request d block Example (op=7)
-
-```json
-{
-  "id": 105,
-  "method": "video.getStreamSourceState",
-  "params": {
-    "source": "wireless_cast_video"
-  }
-}
-```
-
-
-#### 3.5.3 返回结果 Result：`VideoStreamSourceState`
+#### 3.5.2 返回结果 Result：`VideoStreamSourceState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -599,7 +464,21 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `lastOpenRejectedReason` | string | no | reason enum/string | omitted | 最近一次 producer-open 被拒原因。 |
 | `receiverTimestampUs` | uint64 | no | microseconds | omitted | NA20 接收时钟时间戳。 |
 
-#### 3.5.4 Success Response d block Example (op=8)
+#### 3.5.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 105,
+  "method": "video.getStreamSourceState",
+  "params": {
+    "source": "wireless_cast_video"
+  }
+}
+```
+
+success:
 
 ```json
 {
@@ -616,38 +495,17 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：`result` 是 `VideoStreamSourceState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.5.5 可能触发的事件
+#### 3.5.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.5.6 错误
+#### 3.5.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `MEDIA_SOURCE_NOT_FOUND` | source 不存在。 | 清理 source cache。 |
-
-#### 3.5.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 105,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid argument.",
-    "details": {
-      "candidateError": "MEDIA_SOURCE_NOT_FOUND",
-      "field": "source",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ### 3.6 `video.requestKeyFrame`
 
@@ -669,7 +527,17 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 | `streamId` | uint32 | yes | active video stream id | none | 目标视频 stream。 |
 | `reason` | enum | no | `seq_gap`, `decode_error`, `receiver_reopen`, `startup`, `manual` | `manual` | 请求原因。 |
 
-#### 3.6.2 Request d block Example (op=7)
+#### 3.6.2 返回结果 Result：`VideoRequestKeyFrameResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `streamId` | uint32 | yes | stream id | none | 目标 stream。 |
+| `accepted` | bool | yes | `true`, `false` | none | producer 是否接受请求。 |
+| `expectedWithinMs` | uint32 | no | implementation-defined | omitted | 预计关键帧时间。 |
+
+#### 3.6.3 d block 示例
+
+request:
 
 ```json
 {
@@ -682,16 +550,7 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-
-#### 3.6.3 返回结果 Result：`VideoRequestKeyFrameResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `streamId` | uint32 | yes | stream id | none | 目标 stream。 |
-| `accepted` | bool | yes | `true`, `false` | none | producer 是否接受请求。 |
-| `expectedWithinMs` | uint32 | no | implementation-defined | omitted | 预计关键帧时间。 |
-
-#### 3.6.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -707,58 +566,18 @@ NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 
 }
 ```
 
-读法：`result` 是 `VideoRequestKeyFrameResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.6.5 可能触发的事件
+#### 3.6.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `video.streamStatsReported` | producer 上报关键帧计数或恢复状态。 | `VideoStreamStatsReportedEvent` | 可用于诊断；播放恢复以 STREAM 数据为准。 |
 
-#### 3.6.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "video.streamStatsReported",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.6.7 错误
+#### 3.6.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `STREAM_NOT_FOUND` | stream 不存在。 | 停止请求，等待新 stream。 |
 | `MEDIA_CODEC_UNSUPPORTED` | 当前 codec 不支持关键帧请求。 | 播放器按 codec 策略恢复。 |
-
-#### 3.6.8 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 106,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid argument.",
-    "details": {
-      "candidateError": "STREAM_NOT_FOUND",
-      "field": "streamId",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
 
 ## 4. 事件 Events
 
@@ -1265,7 +1084,7 @@ VideoChunkHeaderV1 + H.264 bytes
 
 读法：`2050` 是 adopted `MEDIA_SOURCE_UNAVAILABLE`。请求不产生 streamId，也不会触发 `video.streamStateChanged(streaming)`。
 
-## 7. 错误
+## 8. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
@@ -1332,30 +1151,3 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | open 发起方 | Identified 后任一端可作为 requester，但 method 方向由 feature role policy 约束。 | 符合 core RPC session 双向 request 语义。 |
 | receiver close | 只关闭 downstream stream，不停止 upstream source。 | MediaHost 关闭窗口后可快速重新拉取。 |
 | hard-disconnect | 不要求补发 `closeStream`。 | 对端可能已经不可通信，按 session/transport lost 本地清理。 |
-
-## 附录 C. Registry/generated 摘要
-
-以下条目已进入 generated 合同；正式 ID 以 contract/registry/generated 为准。
-
-| 类型 | 名称 | Schema / Capability | ID |
-|---|---|---|---|
-| capability | `video.stream` | `VideoStreamCapabilities` | generated |
-| method | `video.getStreamCapabilities` | `VideoGetStreamCapabilitiesParams` -> `VideoStreamCapabilities` | generated |
-| method | `video.openStream` | `VideoOpenStreamParams` -> `VideoOpenStreamResult` | generated |
-| method | `video.closeStream` | `VideoCloseStreamParams` -> `VideoCloseStreamResult` | generated |
-| method | `video.getStreamState` | `VideoGetStreamStateParams` -> `VideoStreamState` | generated |
-| method | `video.getStreamSourceState` | `VideoGetStreamSourceStateParams` -> `VideoStreamSourceState` | generated |
-| method | `video.requestKeyFrame` | `VideoRequestKeyFrameParams` -> `VideoRequestKeyFrameResult` | generated |
-| event | `video.streamStateChanged` | `VideoStreamStateChangedEvent` | generated |
-| event | `video.streamSourceStateChanged` | `VideoStreamSourceStateChangedEvent` | generated |
-| event | `video.streamStatsReported` | `VideoStreamStatsReportedEvent` | generated |
-
-## 附录 D. 采纳检查清单
-
-- [ ] domain.feature 边界已确认。
-- [ ] producer-open / receiver-pull 的 role policy 已确认。
-- [ ] source available/receiving event 是否 MVP 已确认。
-- [ ] methodId/eventId/fieldId/errorCode 将由 registry 采纳时分配。
-- [ ] H.264 Annex-B、SPS/PPS 随关键帧策略已同步 conformance。
-- [ ] legacy 映射已人工确认。
-- [ ] conformance cases 已规划。

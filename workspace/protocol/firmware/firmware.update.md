@@ -119,22 +119,7 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 |---|---|---:|---|---|---|
 | none | - | - | - | - | P0 不需要请求参数。 |
 
-#### Request d block Example (op=7)
-
-```json
-{
-  "id": 101,
-  "method": "firmware.getUpdateCapabilities",
-  "params": {}
-}
-```
-
-
-返回结果 Result：`FirmwareUpdateCapabilities`
-
-见 [5. Capability Schema](#5-capability-schema)。
-
-#### Error Response d block Example (op=8)
+#### 3.1.1 Error Response d block Example (op=8)
 
 ```json
 {
@@ -152,8 +137,19 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 }
 ```
 
+#### 3.1.2 d block 示例
 
-#### Success Response d block Example (op=8)
+request:
+
+```json
+{
+  "id": 101,
+  "method": "firmware.getUpdateCapabilities",
+  "params": {}
+}
+```
+
+success:
 
 ```json
 {
@@ -165,8 +161,6 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
   "result": {}
 }
 ```
-
-读法：`result` 是 `FirmwareUpdateCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
 
 ### 3.2 `firmware.beginUpdate`
 
@@ -186,7 +180,27 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 |---|---|---:|---|---|---|
 | `manifest` | `FirmwareUpdateManifest` | yes | object | none | 固件包最小摘要。 |
 
-#### Request d block Example (op=7)
+#### 3.2.1 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "manifest",
+      "reason": "example failure"
+    }
+  }
+}
+```
+
+#### 3.2.2 d block 示例
+
+request:
 
 ```json
 {
@@ -209,36 +223,7 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 }
 ```
 
-
-返回结果 Result：`BeginUpdateResult`
-
-| Field | Type | Required | Range/Enum | Default | Description |
-|---|---|---:|---|---|---|
-| `updateSessionId` | string | yes | opaque | none | 更新会话 ID。 |
-| `state` | string | yes | `receiving` | none | begin 成功后的状态。 |
-| `streams` | array<`FirmwareUpdateStreamBinding`> | yes | non-empty | none | `fileId` 到 `streamId` 的绑定。 |
-| `chunkSize` | uint32 | no | bytes | device default | 建议 Host 使用的 chunk size。 |
-
-#### Error Response d block Example (op=8)
-
-```json
-{
-  "id": 102,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid argument.",
-    "details": {
-      "candidateError": "INVALID_ARGUMENT",
-      "field": "manifest",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
-
-#### Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -261,8 +246,6 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 }
 ```
 
-读法：`result` 是 `BeginUpdateResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
 ### 3.3 `firmware.finishUpdate`
 
 | 条目 | 内容 |
@@ -281,28 +264,7 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 |---|---|---:|---|---|---|
 | `updateSessionId` | string | yes | opaque | none | 更新会话 ID。 |
 
-#### Request d block Example (op=7)
-
-```json
-{
-  "id": 103,
-  "method": "firmware.finishUpdate",
-  "params": {
-    "updateSessionId": "upd_20260615_001"
-  }
-}
-```
-
-
-返回结果 Result：`FinishUpdateResult`
-
-| Field | Type | Required | Range/Enum | Default | Description |
-|---|---|---:|---|---|---|
-| `updateSessionId` | string | yes | opaque | none | 更新会话 ID。 |
-| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受 finish 并接管后续流程。 |
-| `state` | string | yes | state enum | none | 通常为 `verifying` 或 `failed`。 |
-
-#### Error Response d block Example (op=8)
+#### 3.3.1 Error Response d block Example (op=8)
 
 ```json
 {
@@ -320,8 +282,21 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 }
 ```
 
+#### 3.3.2 d block 示例
 
-#### Success Response d block Example (op=8)
+request:
+
+```json
+{
+  "id": 103,
+  "method": "firmware.finishUpdate",
+  "params": {
+    "updateSessionId": "upd_20260615_001"
+  }
+}
+```
+
+success:
 
 ```json
 {
@@ -337,15 +312,6 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
   }
 }
 ```
-
-读法：`result` 是 `FinishUpdateResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-finish 规则：
-
-1. `finishUpdate` 是 P0 中 Host 的最后一个主动升级控制动作。
-2. `accepted=true` 只表示设备接管，不表示 md5 校验或安装成功。
-3. 数据不完整时返回 `STREAM_CHUNK_MISSING`、`FW_SIZE_MISMATCH` 或 `INVALID_STATE`，不得进入安装。
-4. 设备策略决定多文件安装顺序；Host 不调用独立 verify/install。
 
 ### 3.4 `firmware.getUpdateState`
 
@@ -365,24 +331,7 @@ finish 规则：
 |---|---|---:|---|---|---|
 | `updateSessionId` | string | yes | opaque | none | 更新会话 ID。 |
 
-#### Request d block Example (op=7)
-
-```json
-{
-  "id": 104,
-  "method": "firmware.getUpdateState",
-  "params": {
-    "updateSessionId": "upd_20260615_001"
-  }
-}
-```
-
-
-返回结果 Result：`FirmwareUpdateState`
-
-见 [6.3 运行态状态 schema](#63-运行态状态-schema)。
-
-#### Error Response d block Example (op=8)
+#### 3.4.1 Error Response d block Example (op=8)
 
 ```json
 {
@@ -400,8 +349,21 @@ finish 规则：
 }
 ```
 
+#### 3.4.2 d block 示例
 
-#### Success Response d block Example (op=8)
+request:
+
+```json
+{
+  "id": 104,
+  "method": "firmware.getUpdateState",
+  "params": {
+    "updateSessionId": "upd_20260615_001"
+  }
+}
+```
+
+success:
 
 ```json
 {
@@ -417,23 +379,6 @@ finish 规则：
   }
 }
 ```
-
-读法：`result` 是 `FirmwareUpdateState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-### 3.5 P1/P2 reserved methods
-
-下列方法不是 P0 必要字段集。只有设备明确声明扩展能力时才可进入后续草案或采纳：
-
-| Method | Level | Why reserved |
-|---|---|---|
-| `firmware.cancelUpdate` | P1 optional | 用户取消和清理策略需要设备确认；P0 可由 Host 断开或设备超时清理。 |
-| `firmware.getUpdateTransferState` | P1 | 断点续传、缺失范围补传。 |
-| `firmware.commitUpdateBatch` | P1 advanced | Host 细粒度提交 batch；P0 不需要。 |
-| `firmware.verifyUpdatePackage` | P1 advanced | Host 外部触发校验；P0 由设备在 finish 后自主校验。 |
-| `firmware.installUpdate` | P1 advanced | Host 外部触发安装；P0 由设备在 finish 后自主安装。 |
-| `firmware.confirmUpdate` | P1 | A/B 新版本确认。 |
-| `firmware.rollbackUpdate` | P1 | 回滚到上一可用版本。 |
-| `firmware.uploadUpdateChunk` | P2 | 无 STREAM 的 legacy adapter 兼容路径。 |
 
 ## 4. 事件 Events
 
@@ -806,7 +751,7 @@ Response:
 
 读法：P0 不要求设备返回 `missingRanges`；Host 可重新发送当前文件或重新开始会话。
 
-## 7. 错误
+## 8. 错误
 
 | 场景 | 推荐错误码 | 状态 |
 |---|---|---|

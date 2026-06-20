@@ -64,7 +64,11 @@ lastReviewed: 2026-06-13
 
 #### 3.1.1 请求参数 Params：`GetPtzCapabilitiesParams`
 
-#### 3.1.2 Request d block Example (op=7)
+#### 3.1.2 返回结果 Result：`PtzCapabilities`
+
+#### 3.1.3 d block 示例
+
+request:
 
 ```json
 {
@@ -76,10 +80,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.1.3 返回结果 Result：`PtzCapabilities`
-
-#### 3.1.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -95,22 +96,20 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `PtzCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备无物理 PTZ。 | 隐藏 PTZ 控件。 |
 | `UNAVAILABLE` | 云台服务不可读。 | 稍后重试。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
+#### 3.1.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -128,7 +127,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.2 `camera.getPtzState`
 
 | 项 | 内容 |
@@ -142,7 +140,11 @@ lastReviewed: 2026-06-13
 
 #### 3.2.1 请求参数 Params：`GetPtzStateParams`
 
-#### 3.2.2 Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`PtzState`
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -154,10 +156,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.2.3 返回结果 Result：`PtzState`
-
-#### 3.2.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -176,21 +175,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `PtzState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.2.6 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | 云台状态未知。 | 返回状态不可用原因。 |
 
-#### 3.2.7 Error Response d block Example (op=8)
+#### 3.2.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -208,7 +205,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.3 `camera.setPtzConfig`
 
 | 项 | 内容 |
@@ -224,7 +220,11 @@ lastReviewed: 2026-06-13
 
 `mode` 可为 `absolute`、`relative`、`home` 或 `reset`。
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`PtzCommandResult`
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -237,10 +237,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.3.3 返回结果 Result：`PtzCommandResult`
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -262,34 +259,13 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `PtzCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.3.5 可能触发的事件
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.ptzStateChanged` | 位置、运动状态、owner 或限位变化。 | `PtzStateChangedEvent` | 更新方向控件和状态。 |
 
-#### 3.3.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.ptzStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.3.7 错误
+#### 3.3.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -297,7 +273,7 @@ lastReviewed: 2026-06-13
 | `DEVICE_MODE_CONFLICT` | framing 算法或其他 owner 正在控制云台。 | 返回当前 owner。 |
 | `BUSY` | 云台正在执行不可打断动作。 | 稍后重试或先 stop。 |
 
-#### 3.3.8 Error Response d block Example (op=8)
+#### 3.3.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -315,7 +291,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.4 `camera.startPtzMove`
 
 | 项 | 内容 |
@@ -329,7 +304,11 @@ lastReviewed: 2026-06-13
 
 #### 3.4.1 请求参数 Params：`StartPtzMoveParams`
 
-#### 3.4.2 Request d block Example (op=7)
+#### 3.4.2 返回结果 Result：`PtzCommandResult`
+
+#### 3.4.3 d block 示例
+
+request:
 
 ```json
 {
@@ -343,10 +322,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.4.3 返回结果 Result：`PtzCommandResult`
-
-#### 3.4.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -368,40 +344,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `PtzCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.4.5 可能触发的事件
+#### 3.4.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.ptzStateChanged` | PTZ 进入 `moving`。 | `PtzStateChangedEvent` | UI 显示移动中。 |
 
-#### 3.4.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.ptzStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.4.7 错误
+#### 3.4.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `INVALID_ARGUMENT` | direction 或 speed 非法。 | 返回字段路径。 |
 
-#### 3.4.8 Error Response d block Example (op=8)
+#### 3.4.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -419,7 +374,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.5 `camera.stopPtzMove`
 
 | 项 | 内容 |
@@ -433,7 +387,11 @@ lastReviewed: 2026-06-13
 
 #### 3.5.1 请求参数 Params：`StopPtzMoveParams`
 
-#### 3.5.2 Request d block Example (op=7)
+#### 3.5.2 返回结果 Result：`PtzCommandResult`
+
+#### 3.5.3 d block 示例
+
+request:
 
 ```json
 {
@@ -445,10 +403,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.5.3 返回结果 Result：`PtzCommandResult`
-
-#### 3.5.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -470,40 +425,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `PtzCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.5.5 可能触发的事件
+#### 3.5.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.ptzStateChanged` | PTZ 停止或限位停止。 | `PtzStateChangedEvent` | UI 释放按下态。 |
 
-#### 3.5.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.ptzStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.5.7 错误
+#### 3.5.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | 云台控制链路不可用。 | 清除移动 UI 状态。 |
 
-#### 3.5.8 Error Response d block Example (op=8)
+#### 3.5.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -521,7 +455,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.6 `camera.callPtzPreset`
 
 | 项 | 内容 |
@@ -535,7 +468,11 @@ lastReviewed: 2026-06-13
 
 #### 3.6.1 请求参数 Params：`CallPtzPresetParams`
 
-#### 3.6.2 Request d block Example (op=7)
+#### 3.6.2 返回结果 Result：`PtzCommandResult`
+
+#### 3.6.3 d block 示例
+
+request:
 
 ```json
 {
@@ -548,10 +485,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.6.3 返回结果 Result：`PtzCommandResult`
-
-#### 3.6.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -573,40 +507,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `PtzCommandResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.6.5 可能触发的事件
+#### 3.6.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.ptzStateChanged` | 调用 preset 导致位置变化。 | `PtzStateChangedEvent` | 更新位置和状态。 |
 
-#### 3.6.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.ptzStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.6.7 错误
+#### 3.6.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_FOUND` | preset 不存在。 | 刷新 preset 列表。 |
 
-#### 3.6.8 Error Response d block Example (op=8)
+#### 3.6.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -624,7 +537,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.7 `camera.savePtzPreset`
 
 | 项 | 内容 |
@@ -638,7 +550,11 @@ lastReviewed: 2026-06-13
 
 #### 3.7.1 请求参数 Params：`SavePtzPresetParams`
 
-#### 3.7.2 Request d block Example (op=7)
+#### 3.7.2 返回结果 Result：`PtzPreset`
+
+#### 3.7.3 d block 示例
+
+request:
 
 ```json
 {
@@ -655,10 +571,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.7.3 返回结果 Result：`PtzPreset`
-
-#### 3.7.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -685,21 +598,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `PtzPreset` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.7.5 可能触发的事件
+#### 3.7.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | TBD | preset 列表变化。 | TBD | `[REVIEW-ASK]` 是否需要 preset event。 |
 
-#### 3.7.6 错误
+#### 3.7.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `RESOURCE_EXHAUSTED` | preset 数量达到上限。 | 返回上限。 |
 
-#### 3.7.7 Error Response d block Example (op=8)
+#### 3.7.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -716,7 +627,6 @@ lastReviewed: 2026-06-13
   }
 }
 ```
-
 
 ## 4. 事件 Events
 
@@ -983,7 +893,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-## 7. 错误
+## 8. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

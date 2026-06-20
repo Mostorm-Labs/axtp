@@ -59,7 +59,11 @@ lastReviewed: 2026-06-13
 
 #### 3.1.1 请求参数 Params：`GetWhiteBalanceCapabilitiesParams`
 
-#### 3.1.2 Request d block Example (op=7)
+#### 3.1.2 返回结果 Result：`WhiteBalanceCapabilities`
+
+#### 3.1.3 d block 示例
+
+request:
 
 ```json
 {
@@ -71,10 +75,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.1.3 返回结果 Result：`WhiteBalanceCapabilities`
-
-#### 3.1.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -93,21 +94,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `WhiteBalanceCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变配置。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备无白平衡控制。 | 隐藏白平衡设置。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
+#### 3.1.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -125,7 +124,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.2 `camera.getWhiteBalanceConfig`
 
 | 项 | 内容 |
@@ -139,7 +137,11 @@ lastReviewed: 2026-06-13
 
 #### 3.2.1 请求参数 Params：`GetWhiteBalanceConfigParams`
 
-#### 3.2.2 Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`WhiteBalanceConfig`
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -151,10 +153,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.2.3 返回结果 Result：`WhiteBalanceConfig`
-
-#### 3.2.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -172,21 +171,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `WhiteBalanceConfig` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变配置。 | none | 无需处理。 |
 
-#### 3.2.6 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | white balance 状态不可读。 | 返回 unavailable detail。 |
 
-#### 3.2.7 Error Response d block Example (op=8)
+#### 3.2.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -204,7 +201,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.3 `camera.setWhiteBalanceConfig`
 
 | 项 | 内容 |
@@ -218,7 +214,11 @@ lastReviewed: 2026-06-13
 
 #### 3.3.1 请求参数 Params：`SetWhiteBalanceConfigParams`
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`SetWhiteBalanceConfigResult`
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -237,10 +237,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.3.3 返回结果 Result：`SetWhiteBalanceConfigResult`
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -258,41 +255,20 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `SetWhiteBalanceConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.3.5 可能触发的事件
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.whiteBalanceConfigChanged` | 配置实际变化。 | `WhiteBalanceConfigChangedEvent` | 更新 UI；根据 mode 启禁字段。 |
 
-#### 3.3.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.whiteBalanceConfigChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "config"
-    ],
-    "config": {
-      "mode": "auto"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.3.7 错误
+#### 3.3.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `DEVICE_MODE_CONFLICT` | auto mode 下写 manual-only 字段。 | 返回 required mode。 |
 | `OUT_OF_RANGE` | 色温或 RGB gain 越界。 | 返回范围。 |
 
-#### 3.3.8 Error Response d block Example (op=8)
+#### 3.3.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -310,7 +286,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.4 `camera.resetWhiteBalanceConfig`
 
 | 项 | 内容 |
@@ -324,7 +299,11 @@ lastReviewed: 2026-06-13
 
 #### 3.4.1 请求参数 Params：`ResetWhiteBalanceConfigParams`
 
-#### 3.4.2 Request d block Example (op=7)
+#### 3.4.2 返回结果 Result：`SetWhiteBalanceConfigResult`
+
+#### 3.4.3 d block 示例
+
+request:
 
 ```json
 {
@@ -336,10 +315,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.4.3 返回结果 Result：`SetWhiteBalanceConfigResult`
-
-#### 3.4.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -357,40 +333,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `SetWhiteBalanceConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.4.5 可能触发的事件
+#### 3.4.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.whiteBalanceConfigChanged` | reset 后配置变化。 | `WhiteBalanceConfigChangedEvent` | 更新 UI。 |
 
-#### 3.4.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.whiteBalanceConfigChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "config"
-    ],
-    "config": {
-      "mode": "auto"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.4.7 错误
+#### 3.4.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `BUSY` | ISP 正忙。 | 稍后重试。 |
 
-#### 3.4.8 Error Response d block Example (op=8)
+#### 3.4.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -407,7 +362,6 @@ lastReviewed: 2026-06-13
   }
 }
 ```
-
 
 ## 4. 事件 Events
 
@@ -593,7 +547,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-## 7. 错误
+## 8. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

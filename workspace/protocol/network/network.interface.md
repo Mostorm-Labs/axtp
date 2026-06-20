@@ -75,7 +75,16 @@ Cast RX/TX 配对 flow 已确认：Host 不硬编码内部网卡名；`network.g
 | `roleFilter` | `NetworkInterfaceRole[]` | no | `uplink`, `sta`, `ap`, `control`, `management` | omitted | 只返回指定角色接口；配对时 Host 可用 `ap` 查询 NA20 AP 接口，用 `sta` 查询 NT10 STA 接口。 |
 | `typeFilter` | `NetworkInterfaceType[]` | no | `ethernet`, `wifi`, `usb_network`, `cellular`, `bridge`, `virtual`, `unknown` | omitted | 只返回指定接口类型。 |
 
-#### 3.1.2 Request d block Example (op=7)
+#### 3.1.2 返回结果 Result：`NetworkInterfaces`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `interfaces` | `NetworkInterfaceSummary[]` | yes | array | none | 接口摘要列表。 |
+| `defaults` | `NetworkDefaultInterfaceIds` | no | object | omitted | 默认接口绑定；同一 role 多接口时 Host 优先使用对应默认接口。 |
+
+#### 3.1.3 d block 示例
+
+request:
 
 ```json
 {
@@ -85,15 +94,7 @@ Cast RX/TX 配对 flow 已确认：Host 不硬编码内部网卡名；`network.g
 }
 ```
 
-
-#### 3.1.3 返回结果 Result：`NetworkInterfaces`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `interfaces` | `NetworkInterfaceSummary[]` | yes | array | none | 接口摘要列表。 |
-| `defaults` | `NetworkDefaultInterfaceIds` | no | object | omitted | 默认接口绑定；同一 role 多接口时 Host 优先使用对应默认接口。 |
-
-#### 3.1.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -114,22 +115,20 @@ Cast RX/TX 配对 flow 已确认：Host 不硬编码内部网卡名；`network.g
 }
 ```
 
-读法：`result` 是 `NetworkInterfaces` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `INVALID_ARGUMENT` | `roleFilter` 或 `typeFilter` 包含非法枚举。 | 使用 adopted numeric code `10`，并在 details 中指出字段路径。 |
 | `PERMISSION_DENIED` | 当前调用方无权读取接口信息。 | 使用 adopted numeric code `9`。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
+#### 3.1.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -146,7 +145,6 @@ Cast RX/TX 配对 flow 已确认：Host 不硬编码内部网卡名；`network.g
   }
 }
 ```
-
 
 ### 3.2 `network.getInterfaceInfo`
 
@@ -167,20 +165,7 @@ Cast RX/TX 配对 flow 已确认：Host 不硬编码内部网卡名；`network.g
 |---|---|---:|---|---|---|
 | `interfaceId` | string | yes | device-returned id | none | 目标接口标识，必须来自 `network.getInterfaces`，不要求等同 OS 内部网卡名。 |
 
-#### 3.2.2 Request d block Example (op=7)
-
-```json
-{
-  "id": 102,
-  "method": "network.getInterfaceInfo",
-  "params": {
-    "interfaceId": "wlan0"
-  }
-}
-```
-
-
-#### 3.2.3 返回结果 Result：`NetworkInterfaceInfo`
+#### 3.2.2 返回结果 Result：`NetworkInterfaceInfo`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -192,7 +177,21 @@ Cast RX/TX 配对 flow 已确认：Host 不硬编码内部网卡名；`network.g
 | `mtu` | uint16 | no | `0..65535` | omitted | 当前 MTU。 |
 | `displayName` | string | no | UI label | omitted | 面向 UI 的显示名。 |
 
-#### 3.2.4 Success Response d block Example (op=8)
+#### 3.2.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 102,
+  "method": "network.getInterfaceInfo",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+success:
 
 ```json
 {
@@ -210,22 +209,20 @@ Cast RX/TX 配对 flow 已确认：Host 不硬编码内部网卡名；`network.g
 }
 ```
 
-读法：`result` 是 `NetworkInterfaceInfo` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.2.6 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_FOUND` | 指定 `interfaceId` 不存在或当前不可见。 | 使用 adopted numeric code `12`；可在 details 标注候选 `NETWORK_INTERFACE_NOT_FOUND`。 |
 | `PERMISSION_DENIED` | 当前调用方无权读取 MAC 或接口详情。 | 返回可诊断原因，不泄露受限字段。 |
 
-#### 3.2.7 Error Response d block Example (op=8)
+#### 3.2.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -242,7 +239,6 @@ Cast RX/TX 配对 flow 已确认：Host 不硬编码内部网卡名；`network.g
   }
 }
 ```
-
 
 ## 4. 事件 Events
 
@@ -534,7 +530,7 @@ NetworkInterfaceStateChangedEvent
 
 读法：`status.code=12` 对应 adopted `NOT_FOUND`。候选业务错误名只放在 details 中，正式编号待采纳。
 
-## 7. 错误
+## 8. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

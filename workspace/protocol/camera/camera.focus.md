@@ -74,7 +74,11 @@ lastReviewed: 2026-06-15
 |---|---|---:|---|---|---|
 | `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
 
-#### 3.1.2 Request d block Example (op=7)
+#### 3.1.2 返回结果 Result：`FocusCapabilities`
+
+#### 3.1.3 d block 示例
+
+request:
 
 ```json
 {
@@ -88,9 +92,7 @@ lastReviewed: 2026-06-15
 
 读法：客户端用该请求决定 UI 是否显示 focus 控件、哪些模式可选、position 和 region 的合法范围。
 
-#### 3.1.3 返回结果 Result：`FocusCapabilities`
-
-#### 3.1.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -142,20 +144,20 @@ lastReviewed: 2026-06-15
 
 读法：`positionRange` 和 `targets` 是后续 set/action 请求的合法边界；未声明的 mode/target 不应在 UI 中启用。
 
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备固定焦且无可控 focus。 | 返回 unsupported feature。 |
 | `UNAVAILABLE` | camera service 尚未初始化。 | 返回可重试原因。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
+#### 3.1.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -174,7 +176,7 @@ lastReviewed: 2026-06-15
 
 读法：失败响应不携带 `result`；客户端应按 `details.reason` 决定是否稍后重试。
 
-#### 3.1.8 规则
+#### 3.1.7 规则
 
 - Query method MUST NOT 因查询本身触发事件。
 - `modes`、`targets`、`positionRange` 缺失时，客户端 MUST 认为对应控制不可用。
@@ -198,7 +200,11 @@ lastReviewed: 2026-06-15
 |---|---|---:|---|---|---|
 | `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
 
-#### 3.2.2 Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`FocusState`
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -212,9 +218,7 @@ lastReviewed: 2026-06-15
 
 读法：客户端在打开 focus 面板、重连或收到部分 event 后，可用该请求获取完整状态。
 
-#### 3.2.3 返回结果 Result：`FocusState`
-
-#### 3.2.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -240,19 +244,19 @@ lastReviewed: 2026-06-15
 
 读法：`result` 是完整 focus 快照，客户端可以直接覆盖本地 focus 缓存。
 
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.2.6 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | 摄像头未打开或被校准占用。 | 返回不可用原因。 |
 
-#### 3.2.7 Error Response d block Example (op=8)
+#### 3.2.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -271,7 +275,7 @@ lastReviewed: 2026-06-15
 
 读法：客户端不应使用旧缓存覆盖为成功状态；可显示不可用态并等待后续事件或人工刷新。
 
-#### 3.2.8 规则
+#### 3.2.7 规则
 
 - `getFocusState` SHOULD 返回设备当前可观测的完整 focus state。
 - 如果某些字段不可观测，字段 MAY 省略，但 MUST 保留 `focusState`。
@@ -296,7 +300,11 @@ lastReviewed: 2026-06-15
 | `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
 | `mode` | string enum | yes | supported mode | none | 目标 focus mode。 |
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`FocusCommandResult`
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -311,9 +319,7 @@ lastReviewed: 2026-06-15
 
 读法：客户端请求切换到连续自动对焦；设备如果接受请求，可能立即返回 accepted，并通过后续事件报告运行态。
 
-#### 3.3.3 返回结果 Result：`FocusCommandResult`
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -336,61 +342,23 @@ lastReviewed: 2026-06-15
 
 读法：成功响应表示 mode 请求已被接受；`applyState=focusing` 表示运行态仍在变化中，客户端应继续等待事件或调用 `getFocusState` 校准。
 
-#### 3.3.5 可能触发的事件
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.focusModeChanged` | mode 实际变化。 | `FocusModeChangedEvent` | 更新 mode selector。 |
 | `camera.focusStateChanged` | state 进入 focusing/focused/idle。 | `FocusStateChangedEvent` | 更新运行态。 |
 
-```json
-{
-  "event": "camera.focusModeChanged",
-  "intent": 1,
-  "data": {
-    "cameraId": "main",
-    "mode": "continuous_auto",
-    "state": {
-      "cameraId": "main",
-      "mode": "continuous_auto",
-      "focusState": "focusing"
-    },
-    "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1025
-  }
-}
-```
-
 读法：该事件说明 mode 已实际切换；如果事件只包含部分字段，客户端可用 `camera.getFocusState` 校准完整状态。
 
-#### 3.3.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.focusModeChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.3.7 错误
+#### 3.3.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | mode 不支持。 | 返回合法 modes。 |
 | `DEVICE_MODE_CONFLICT` | framing、calibration 或其他 owner 占用。 | 返回 owner。 |
 
-#### 3.3.8 Error Response d block Example (op=8)
+#### 3.3.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -414,7 +382,7 @@ lastReviewed: 2026-06-15
 
 读法：mode 未生效，设备不应因此触发 `focusModeChanged`。
 
-#### 3.3.9 规则
+#### 3.3.7 规则
 
 - `mode` MUST 来自 `FocusCapabilities.modes`。
 - 重复设置相同 mode SHOULD 成功；状态未变化时 MAY 不触发事件。
@@ -439,7 +407,16 @@ lastReviewed: 2026-06-15
 |---|---|---:|---|---|---|
 | `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
 
-#### 3.4.2 Request d block Example (op=7)
+#### 3.4.2 返回结果 Result：`FocusModeState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+| `mode` | string enum | yes | supported mode | none | 当前 focus mode。 |
+
+#### 3.4.3 d block 示例
+
+request:
 
 ```json
 {
@@ -453,14 +430,7 @@ lastReviewed: 2026-06-15
 
 读法：仅需要 mode selector 状态时使用；需要完整 state 时应调用 `camera.getFocusState`。
 
-#### 3.4.3 返回结果 Result：`FocusModeState`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
-| `mode` | string enum | yes | supported mode | none | 当前 focus mode。 |
-
-#### 3.4.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -478,19 +448,19 @@ lastReviewed: 2026-06-15
 
 读法：结果是 mode 的轻量快照，不保证包含 position/region/focusState。
 
-#### 3.4.5 可能触发的事件
+#### 3.4.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.4.6 错误
+#### 3.4.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | camera service 不可用。 | 返回不可用原因。 |
 
-#### 3.4.7 Error Response d block Example (op=8)
+#### 3.4.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -507,7 +477,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-#### 3.4.8 规则
+#### 3.4.7 规则
 
 - Query method MUST NOT 触发事件。
 - 如果实现不提供轻量 get，可在 registry review 中合并到 `camera.getFocusState`。[REVIEW-DRAFT]
@@ -533,7 +503,11 @@ lastReviewed: 2026-06-15
 | `position` | int32 | yes | capability range | none | 原生对焦位置。 |
 | `applyMode` | string enum | no | `require_manual`, `switch_to_manual` | `require_manual` | 非 manual 时处理策略。 |
 
-#### 3.5.2 Request d block Example (op=7)
+#### 3.5.2 返回结果 Result：`FocusCommandResult`
+
+#### 3.5.3 d block 示例
+
+request:
 
 ```json
 {
@@ -549,9 +523,7 @@ lastReviewed: 2026-06-15
 
 读法：`applyMode=switch_to_manual` 表示设备可先切换到 manual 再应用 position；如果设备不允许自动切换，应返回 `DEVICE_MODE_CONFLICT`。
 
-#### 3.5.3 返回结果 Result：`FocusCommandResult`
-
-#### 3.5.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -575,62 +547,23 @@ lastReviewed: 2026-06-15
 
 读法：`position=512` 是目标位置；如果镜头仍在移动，客户端应等待 `focusStateChanged` 或后续 `getFocusState`。
 
-#### 3.5.5 可能触发的事件
+#### 3.5.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.focusPositionChanged` | position 变化。 | `FocusPositionChangedEvent` | 更新位置 UI。 |
 | `camera.focusStateChanged` | 镜头 moving/focused/failed。 | `FocusStateChangedEvent` | 更新运行态。 |
 
-```json
-{
-  "event": "camera.focusPositionChanged",
-  "intent": 1,
-  "data": {
-    "cameraId": "main",
-    "position": 512,
-    "state": {
-      "cameraId": "main",
-      "mode": "manual",
-      "position": 512,
-      "focusState": "moving"
-    },
-    "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1026
-  }
-}
-```
-
 读法：事件表示 position 已被设备接受或实际变化；如设备只能上报移动完成事件，可在 `focusStateChanged` 中补齐。
 
-#### 3.5.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.focusPositionChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.5.7 错误
+#### 3.5.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `OUT_OF_RANGE` | position 超出能力范围。 | 返回合法范围。 |
 | `DEVICE_MODE_CONFLICT` | 当前不是 manual 且 `applyMode=require_manual`。 | 提示切换手动模式。 |
 
-#### 3.5.8 Error Response d block Example (op=8)
+#### 3.5.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -652,7 +585,7 @@ lastReviewed: 2026-06-15
 
 读法：请求未生效，不应触发 position/state changed event。
 
-#### 3.5.9 规则
+#### 3.5.7 规则
 
 - `position` MUST 落在 `FocusCapabilities.positionRange` 内。
 - `applyMode=require_manual` 时，如果当前不是 manual，设备 SHOULD 返回 `DEVICE_MODE_CONFLICT`。
@@ -677,7 +610,17 @@ lastReviewed: 2026-06-15
 |---|---|---:|---|---|---|
 | `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
 
-#### 3.6.2 Request d block Example (op=7)
+#### 3.6.2 返回结果 Result：`FocusPositionState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+| `position` | int32 | yes | capability range | none | 当前对焦位置。 |
+| `focusState` | string enum | no | `idle`, `moving`, `focusing`, `focused`, `failed`, `locked`, `unavailable` | omitted | 当前位置相关运行态。 |
+
+#### 3.6.3 d block 示例
+
+request:
 
 ```json
 {
@@ -691,15 +634,7 @@ lastReviewed: 2026-06-15
 
 读法：仅需要手动位置显示时使用；完整状态请使用 `camera.getFocusState`。
 
-#### 3.6.3 返回结果 Result：`FocusPositionState`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
-| `position` | int32 | yes | capability range | none | 当前对焦位置。 |
-| `focusState` | string enum | no | `idle`, `moving`, `focusing`, `focused`, `failed`, `locked`, `unavailable` | omitted | 当前位置相关运行态。 |
-
-#### 3.6.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -718,19 +653,19 @@ lastReviewed: 2026-06-15
 
 读法：轻量结果不包含 mode/region；如客户端需要关联 mode，应调用 `getFocusState`。
 
-#### 3.6.5 可能触发的事件
+#### 3.6.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.6.6 错误
+#### 3.6.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 固定焦或设备无可读 position。 | 返回 unsupported。 |
 
-#### 3.6.7 Error Response d block Example (op=8)
+#### 3.6.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -747,7 +682,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-#### 3.6.8 规则
+#### 3.6.7 规则
 
 - Query method MUST NOT 触发事件。
 - 对固定焦设备，registry review 可决定是否省略该 method 或返回 `NOT_SUPPORTED`。[REVIEW-DRAFT]
@@ -775,7 +710,11 @@ lastReviewed: 2026-06-15
 | `region` | object | no | normalized rect | omitted | `target=region` 时的区域目标。 |
 | `lockAfterFocus` | bool | no | true/false | false | AF 成功后是否锁定。 |
 
-#### 3.7.2 Request d block Example (op=7)
+#### 3.7.2 返回结果 Result：`FocusCommandResult`
+
+#### 3.7.3 d block 示例
+
+request:
 
 ```json
 {
@@ -795,9 +734,7 @@ lastReviewed: 2026-06-15
 
 读法：`point` 使用归一化坐标；坐标原点和方向需在 registry review 中确认是否与 video/camera 坐标系统一致。[REVIEW-ASK]
 
-#### 3.7.3 返回结果 Result：`FocusCommandResult`
-
-#### 3.7.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -825,69 +762,22 @@ lastReviewed: 2026-06-15
 
 读法：成功响应说明 AF target 已设置；是否立即触发 AF 应由单独 action 参数或 `triggerAutoFocus` 控制。
 
-#### 3.7.5 可能触发的事件
+#### 3.7.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.focusRegionChanged` | target/point/region 变化。 | `FocusRegionChangedEvent` | 更新区域 UI。 |
 
-```json
-{
-  "event": "camera.focusRegionChanged",
-  "intent": 1,
-  "data": {
-    "cameraId": "main",
-    "target": "point",
-    "point": {
-      "x": 0.5,
-      "y": 0.42
-    },
-    "state": {
-      "cameraId": "main",
-      "mode": "auto",
-      "target": "point",
-      "point": {
-        "x": 0.5,
-        "y": 0.42
-      },
-      "focusState": "idle"
-    },
-    "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1027
-  }
-}
-```
-
 读法：事件可直接更新焦点区域叠层；需要完整 focus state 时调用 `camera.getFocusState`。
 
-#### 3.7.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.focusRegionChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.7.7 错误
+#### 3.7.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `INVALID_ARGUMENT` | `target=point` 但缺少 `point`，或 `target=region` 但缺少 `region`。 | 返回缺失字段。 |
 | `OUT_OF_RANGE` | point/region 坐标越界。 | 返回合法范围。 |
 
-#### 3.7.8 Error Response d block Example (op=8)
+#### 3.7.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -909,7 +799,7 @@ lastReviewed: 2026-06-15
 
 读法：请求未生效，不应触发 `focusRegionChanged`。
 
-#### 3.7.9 规则
+#### 3.7.7 规则
 
 - `target=point` 时 SHOULD 携带 `point`。
 - `target=region` 时 SHOULD 携带 `region`。
@@ -934,7 +824,18 @@ lastReviewed: 2026-06-15
 |---|---|---:|---|---|---|
 | `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
 
-#### 3.8.2 Request d block Example (op=7)
+#### 3.8.2 返回结果 Result：`FocusRegionState`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
+| `target` | string enum | yes | `center`, `full_frame`, `point`, `region` | none | 当前 AF 目标。 |
+| `point` | object | no | normalized x/y | omitted | 点选目标。 |
+| `region` | object | no | normalized rect | omitted | 区域目标。 |
+
+#### 3.8.3 d block 示例
+
+request:
 
 ```json
 {
@@ -948,16 +849,7 @@ lastReviewed: 2026-06-15
 
 读法：用于恢复 UI 中的 focus point/region overlay。
 
-#### 3.8.3 返回结果 Result：`FocusRegionState`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
-| `target` | string enum | yes | `center`, `full_frame`, `point`, `region` | none | 当前 AF 目标。 |
-| `point` | object | no | normalized x/y | omitted | 点选目标。 |
-| `region` | object | no | normalized rect | omitted | 区域目标。 |
-
-#### 3.8.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -979,19 +871,19 @@ lastReviewed: 2026-06-15
 
 读法：轻量结果只表达 AF target，不表达 focus mode 或 movement state。
 
-#### 3.8.5 可能触发的事件
+#### 3.8.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.8.6 错误
+#### 3.8.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 point/region AF。 | 返回 unsupported target。 |
 
-#### 3.8.7 Error Response d block Example (op=8)
+#### 3.8.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -1008,7 +900,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-#### 3.8.8 规则
+#### 3.8.7 规则
 
 - Query method MUST NOT 触发事件。
 - 如果当前 target 不是 `point` 或 `region`，对应 `point`/`region` 字段 SHOULD 省略。
@@ -1037,7 +929,11 @@ lastReviewed: 2026-06-15
 | `lockAfterFocus` | bool | no | true/false | false | AF 成功后是否锁定。 |
 | `timeoutMs` | uint16 | no | capability range | device default | 超时。 |
 
-#### 3.9.2 Request d block Example (op=7)
+#### 3.9.2 返回结果 Result：`FocusCommandResult`
+
+#### 3.9.3 d block 示例
+
+request:
 
 ```json
 {
@@ -1057,9 +953,7 @@ lastReviewed: 2026-06-15
 
 读法：这是一次动作请求；成功响应只表示动作被接受，不保证已经对焦完成。
 
-#### 3.9.3 返回结果 Result：`FocusCommandResult`
-
-#### 3.9.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -1088,65 +982,22 @@ lastReviewed: 2026-06-15
 
 读法：`operationId` 可用于日志或后续 stop；AF 完成/失败必须通过 `focusStateChanged` 或查询确认。
 
-#### 3.9.5 可能触发的事件
+#### 3.9.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.focusStateChanged` | AF focusing/focused/failed。 | `FocusStateChangedEvent` | 更新状态；失败显示原因。 |
 
-```json
-{
-  "event": "camera.focusStateChanged",
-  "intent": 1,
-  "data": {
-    "cameraId": "main",
-    "state": {
-      "cameraId": "main",
-      "mode": "auto",
-      "target": "point",
-      "point": {
-        "x": 0.5,
-        "y": 0.42
-      },
-      "focusState": "focused",
-      "confidence": 92
-    },
-    "source": "remoteApp",
-    "reason": "focus_completed",
-    "stateRevision": 1028
-  }
-}
-```
-
 读法：事件表示 AF 已完成；客户端可把 UI 从 focusing 切到 focused。
 
-#### 3.9.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.focusStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.9.7 错误
+#### 3.9.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `BUSY` | 已有 AF 或校准动作进行中。 | 稍后重试或先 stop。 |
 | `TIMEOUT` | AF 超时。 | 可允许重试。 |
 
-#### 3.9.8 Error Response d block Example (op=8)
+#### 3.9.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -1165,7 +1016,7 @@ lastReviewed: 2026-06-15
 
 读法：动作未接受；设备不应因这个失败请求触发新的 focusing event。
 
-#### 3.9.9 规则
+#### 3.9.7 规则
 
 - 成功响应中的 `accepted=true` 不等于 AF 完成。
 - AF 完成、失败或取消 SHOULD 通过 `camera.focusStateChanged` 上报。
@@ -1193,7 +1044,11 @@ lastReviewed: 2026-06-15
 | `speed` | uint8 | no | capability range | device default | 移动速度。 |
 | `timeoutMs` | uint16 | no | capability range | device default | 安全超时。 |
 
-#### 3.10.2 Request d block Example (op=7)
+#### 3.10.2 返回结果 Result：`FocusCommandResult`
+
+#### 3.10.3 d block 示例
+
+request:
 
 ```json
 {
@@ -1210,9 +1065,7 @@ lastReviewed: 2026-06-15
 
 读法：客户端应在 UI 松手时调用 `camera.stopFocus`；`timeoutMs` 是防止异常长时间移动的安全边界。
 
-#### 3.10.3 返回结果 Result：`FocusCommandResult`
-
-#### 3.10.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -1236,59 +1089,22 @@ lastReviewed: 2026-06-15
 
 读法：设备已进入 jog 移动态；客户端应展示 pressed/moving 状态。
 
-#### 3.10.5 可能触发的事件
+#### 3.10.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.focusStateChanged` | focus 进入 moving。 | `FocusStateChangedEvent` | UI 显示 moving。 |
 
-```json
-{
-  "event": "camera.focusStateChanged",
-  "intent": 1,
-  "data": {
-    "cameraId": "main",
-    "state": {
-      "cameraId": "main",
-      "mode": "manual",
-      "focusState": "moving"
-    },
-    "source": "remoteApp",
-    "reason": "manual_move",
-    "stateRevision": 1029
-  }
-}
-```
-
 读法：事件可用于多端 UI 同步；如果 event 丢失，客户端应在 stop 后调用 `getFocusState`。
 
-#### 3.10.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.focusStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.10.7 错误
+#### 3.10.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `DEVICE_MODE_CONFLICT` | 当前不是 manual 或设备不能自动切换。 | 提示切换手动。 |
 | `BUSY` | 已有 AF/jog 动作进行中。 | 稍后重试或 stop。 |
 
-#### 3.10.8 Error Response d block Example (op=8)
+#### 3.10.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -1306,7 +1122,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-#### 3.10.9 规则
+#### 3.10.7 规则
 
 - 本方法是否进入首批 registry 仍为 `[REVIEW-ASK]`。
 - 如果设备支持 jog，`startFocusMove` SHOULD 搭配 `stopFocus`。
@@ -1332,7 +1148,11 @@ lastReviewed: 2026-06-15
 | `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
 | `operationId` | string | no | device-defined | omitted | 要停止的动作；省略表示停止当前 focus 动作。 |
 
-#### 3.11.2 Request d block Example (op=7)
+#### 3.11.2 返回结果 Result：`FocusCommandResult`
+
+#### 3.11.3 d block 示例
+
+request:
 
 ```json
 {
@@ -1347,9 +1167,7 @@ lastReviewed: 2026-06-15
 
 读法：用于释放 UI 按住态或取消正在进行的 AF/jog。
 
-#### 3.11.3 返回结果 Result：`FocusCommandResult`
-
-#### 3.11.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -1373,59 +1191,21 @@ lastReviewed: 2026-06-15
 
 读法：停止后返回当前状态；客户端可释放操作态。
 
-#### 3.11.5 可能触发的事件
+#### 3.11.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.focusStateChanged` | moving/focusing 停止。 | `FocusStateChangedEvent` | 释放 UI 操作态。 |
 
-```json
-{
-  "event": "camera.focusStateChanged",
-  "intent": 1,
-  "data": {
-    "cameraId": "main",
-    "state": {
-      "cameraId": "main",
-      "mode": "manual",
-      "position": 530,
-      "focusState": "idle"
-    },
-    "source": "remoteApp",
-    "reason": "stop",
-    "stateRevision": 1030
-  }
-}
-```
-
 读法：该事件通知所有端 focus 动作已经停止。
 
-#### 3.11.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.focusStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.11.7 错误
+#### 3.11.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | focus 控制链路不可用。 | 清除本地操作态。 |
 
-#### 3.11.8 Error Response d block Example (op=8)
+#### 3.11.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -1442,7 +1222,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-#### 3.11.9 规则
+#### 3.11.7 规则
 
 - `stopFocus` SHOULD be idempotent：没有进行中的 focus 动作时也可成功返回当前状态。
 - 如果指定 `operationId` 不存在，设备 MAY 返回成功的当前状态，或返回 `INVALID_ARGUMENT`。[REVIEW-ASK]
@@ -1966,7 +1746,7 @@ FocusCommandResult
 
 读法：失败响应不携带业务 result，也不应触发 changed event。客户端应保留原 UI 状态并提示合法范围。
 
-## 7. 错误
+## 8. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
@@ -1993,11 +1773,9 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | `Focus.SetFocusRegion` | `camera.setFocusRegion` / `camera.triggerAutoFocus` | candidate | 点选坐标归一化。 |
 | `Focus.*Zoom` | `camera.zoom` | out-of-scope | 不归 `camera.focus`。 |
 
-## 10. 采纳状态
+采纳状态：本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。registry readiness 为 candidate，但事件拆分、坐标系统和 jog 仍需确认；feature-specific 验收重点见下方测试要点。
 
-本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。registry readiness 为 candidate，但事件拆分、坐标系统和 jog 仍需确认；feature-specific 验收重点见下方测试要点。
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -2008,7 +1786,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | capability discovery | UI 根据 modes/targets/positionRange/manualMove 启禁控件。 |
 | compatibility | legacy focus mode / position / region command 只能作为 adapter mapping，不污染正式 schema。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

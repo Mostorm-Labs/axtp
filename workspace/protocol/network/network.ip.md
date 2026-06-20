@@ -76,20 +76,7 @@ lastReviewed: 2026-06-15
 | `interfaceId` | string | yes | device-returned id | none | 目标接口，来自 `network.interface`。 |
 | `family` | `NetworkIpFamily` | no | `ipv4`, `ipv6` | `ipv4` | 地址族。 |
 
-#### 3.1.2 Request d block Example (op=7)
-
-```json
-{
-  "id": 101,
-  "method": "network.getIpConfig",
-  "params": {
-    "interfaceId": "wlan0"
-  }
-}
-```
-
-
-#### 3.1.3 返回结果 Result：`NetworkIpConfig`
+#### 3.1.2 返回结果 Result：`NetworkIpConfig`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -103,7 +90,21 @@ lastReviewed: 2026-06-15
 | `source` | string enum | no | `static`, `dhcp`, `system_policy`, `runtime` | omitted | 当前有效配置来源。 |
 | `effective` | boolean | yes | bool | none | 返回内容是否为当前已生效配置。 |
 
-#### 3.1.4 Success Response d block Example (op=8)
+#### 3.1.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 101,
+  "method": "network.getIpConfig",
+  "params": {
+    "interfaceId": "wlan0"
+  }
+}
+```
+
+success:
 
 ```json
 {
@@ -124,22 +125,20 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：`result` 是 `NetworkIpConfig` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_FOUND` | 指定接口不存在或不支持 IP 配置。 | 使用 adopted numeric code `12`。 |
 | `NOT_SUPPORTED` | 地址族或 feature 不支持。 | 使用 adopted numeric code `3`。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
+#### 3.1.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -156,7 +155,6 @@ lastReviewed: 2026-06-15
   }
 }
 ```
-
 
 ### 3.2 `network.setIpConfig`
 
@@ -184,7 +182,19 @@ lastReviewed: 2026-06-15
 | `dnsServers` | string[] | no | IP address array | omitted | DNS 服务器。 |
 | `apply` | `NetworkConfigApplyPolicy` | no | `immediate`, `on_reconnect`, `on_reboot` | `immediate` | 生效策略。 |
 
-#### 3.2.2 Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`NetworkSetIpConfigResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `config` | `NetworkIpConfig` | yes | object | none | 写入后的配置摘要。 |
+| `applied` | boolean | yes | bool | none | 是否已经生效。 |
+| `effectiveAfter` | `NetworkConfigApplyPolicy` | yes | see enum | none | 实际生效时机。 |
+| `requiresReconnect` | boolean | no | bool | omitted | 是否可能导致当前 AXTP 会话断开或需要客户端重连。 |
+| `requiresReboot` | boolean | no | bool | omitted | 是否需要设备重启。 |
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -199,18 +209,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-
-#### 3.2.3 返回结果 Result：`NetworkSetIpConfigResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `config` | `NetworkIpConfig` | yes | object | none | 写入后的配置摘要。 |
-| `applied` | boolean | yes | bool | none | 是否已经生效。 |
-| `effectiveAfter` | `NetworkConfigApplyPolicy` | yes | see enum | none | 实际生效时机。 |
-| `requiresReconnect` | boolean | no | bool | omitted | 是否可能导致当前 AXTP 会话断开或需要客户端重连。 |
-| `requiresReboot` | boolean | no | bool | omitted | 是否需要设备重启。 |
-
-#### 3.2.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -231,34 +230,13 @@ lastReviewed: 2026-06-15
 }
 ```
 
-读法：`result` 是 `NetworkSetIpConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `network.ipConfigChanged` | 配置或有效地址实际变化。 | `NetworkIpConfigChangedEvent` | 更新 IP 缓存；配对验收可在有效地址出现时通过。 |
 
-#### 3.2.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "network.ipConfigChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "config"
-    ],
-    "config": {
-      "mode": "auto"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.2.7 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -266,7 +244,7 @@ lastReviewed: 2026-06-15
 | `OUT_OF_RANGE` | `prefixLength` 超出地址族范围。 | 使用 adopted numeric code `11`。 |
 | `INVALID_STATE` | 当前接口状态不允许立即应用配置。 | 使用 adopted numeric code `4`。 |
 
-#### 3.2.8 Error Response d block Example (op=8)
+#### 3.2.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -283,7 +261,6 @@ lastReviewed: 2026-06-15
   }
 }
 ```
-
 
 ## 4. 事件 Events
 
@@ -596,7 +573,7 @@ NetworkIpConfigChangedEvent
 
 读法：`status.code=10` 对应 adopted `INVALID_ARGUMENT`。候选业务错误名只作为草案 details。
 
-## 7. 错误
+## 8. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

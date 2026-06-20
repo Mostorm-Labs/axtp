@@ -97,13 +97,19 @@ Capability ID：`software.updatePolicy`
 | 幂等性 | 是 |
 | 常见错误 | `NOT_SUPPORTED`（target 不支持） |
 
-#### 请求参数 Params：`SoftwareGetUpdatePolicyParams`
+#### 3.1.1 请求参数 Params：`SoftwareGetUpdatePolicyParams`
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` `[REVIEW-ASK]` | none | 要查询策略的软件对象。 |
 
-#### Request d block Example (op=7)
+#### 3.1.2 返回结果 Result：`SoftwareUpdatePolicy`
+
+字段见 6.1。
+
+#### 3.1.3 d block 示例
+
+request:
 
 ```json
 {
@@ -115,12 +121,28 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
+success:
 
-#### 返回结果 Result：`SoftwareUpdatePolicy`
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "target": "launcher",
+    "mode": "manual",
+    "allowedWindow": {
+      "start": "02:00",
+      "end": "05:00"
+    },
+    "autoInstall": false
+  }
+}
+```
 
-字段见 6.1。
-
-#### Error Response d block Example (op=8)
+#### 3.1.4 Error Response d block Example (op=8)
 
 ```json
 {
@@ -138,30 +160,6 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-
-#### Success Response d block Example (op=8)
-
-```json
-{
-  "id": 101,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "target": "launcher",
-    "mode": "manual",
-    "allowedWindow": {
-      "start": "02:00",
-      "end": "05:00"
-    },
-    "autoInstall": false
-  }
-}
-```
-
-读法：`result` 是 `SoftwareUpdatePolicy` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
 ### 3.2 `software.setUpdatePolicy`
 
 | 项 | 内容 |
@@ -174,14 +172,20 @@ Capability ID：`software.updatePolicy`
 | 幂等性 | 否（写入操作） |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED` |
 
-#### 请求参数 Params：`SoftwareSetUpdatePolicyParams`
+#### 3.2.1 请求参数 Params：`SoftwareSetUpdatePolicyParams`
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
 | `policy` | object | yes | target-specific fields | none | 要设置的策略片段。未出现的字段保持不变。 |
 
-#### Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`SoftwareUpdatePolicy`
+
+字段见 6.1。
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -194,12 +198,7 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-
-#### 返回结果 Result：`SoftwareUpdatePolicy`
-
-字段见 6.1。
-
-#### Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -220,34 +219,13 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-读法：`result` 是 `SoftwareUpdatePolicy` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 可能的事件
+#### 3.2.4 可能的事件
 
 | Event | 条件 |
 |---|---|
 | `software.updatePolicyChanged` | 策略实际变化时触发。 |
 
-#### Event d block Example (op=6)
-
-```json
-{
-  "event": "software.updatePolicyChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### `software.setUpdatePolicy` 候选错误
+#### 3.2.5 `software.setUpdatePolicy` 候选错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
@@ -255,7 +233,7 @@ Capability ID：`software.updatePolicy`
 | `INVALID_ARGUMENT` | common | policy 字段值非法（如时间格式错误）。 |
 | `PERMISSION_DENIED` | common | 无权修改更新策略。 |
 
-#### Error Response d block Example (op=8)
+#### 3.2.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -273,7 +251,6 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-
 ### 3.3 `software.resetUpdatePolicy`
 
 | 项 | 内容 |
@@ -286,13 +263,21 @@ Capability ID：`software.updatePolicy`
 | 幂等性 | 是 |
 | 常见错误 | `NOT_SUPPORTED`, `PERMISSION_DENIED` |
 
-#### 请求参数 Params：`SoftwareResetUpdatePolicyParams`
+#### 3.3.1 请求参数 Params：`SoftwareResetUpdatePolicyParams`
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 要恢复默认策略的软件对象。 |
 
-#### Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`SoftwareUpdatePolicy`
+
+返回重置后的完整策略，省去额外 round-trip。字段见 6.1。
+
+---
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -304,33 +289,7 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-
-#### 返回结果 Result：`SoftwareUpdatePolicy`
-
-返回重置后的完整策略，省去额外 round-trip。字段见 6.1。
-
----
-
-#### Error Response d block Example (op=8)
-
-```json
-{
-  "id": 103,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid argument.",
-    "details": {
-      "candidateError": "INVALID_ARGUMENT",
-      "field": "target",
-      "reason": "example failure"
-    }
-  }
-}
-```
-
-
-#### Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -351,7 +310,23 @@ Capability ID：`software.updatePolicy`
 }
 ```
 
-读法：`result` 是 `SoftwareUpdatePolicy` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
+#### 3.3.4 Error Response d block Example (op=8)
+
+```json
+{
+  "id": 103,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "candidateError": "INVALID_ARGUMENT",
+      "field": "target",
+      "reason": "example failure"
+    }
+  }
+}
+```
 
 ## 4. 事件 Events
 
@@ -639,7 +614,7 @@ Capability name: `software.updatePolicy`。
 
 ---
 
-## 7. 错误
+## 8. 错误
 
 | Error | 复用 / 候选 | 说明 | Review |
 |---|---|---|---|

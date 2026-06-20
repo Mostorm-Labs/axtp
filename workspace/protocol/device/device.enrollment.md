@@ -90,14 +90,25 @@ Capability ID：`device.enrollment`
 | 幂等 / 异步 | `refresh=false` 时返回当前有效 code；`refresh=true` 生成新 code 并使旧 code 失效。 |
 | 常见错误 | `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INTERNAL_ERROR` |
 
-#### 请求参数 Params：`GetPairingCodeParams`
+#### 3.1.1 请求参数 Params：`GetPairingCodeParams`
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `refresh` | boolean | no | `true` / `false` | `false` | 是否强制刷新 pairing code。 |
 | `purpose` | string | no | `"initial_enrollment"`, `"re_enrollment"`, `"service_repair"` | `"initial_enrollment"` | code 使用场景。`[REVIEW-DRAFT]` |
 
-#### Request d block Example (op=7)
+#### 3.1.2 返回结果 Result：`PairingCodeInfo`
+
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `code` | string | yes | display-safe code | none | 可展示或输入的 pairing code。 |
+| `expiresAt` | string | no | RFC 3339 timestamp | omitted | 绝对过期时间。 |
+| `expiresInSeconds` | uint32 | no | `> 0` | omitted | 相对过期秒数。legacy device-sdk 实测值为 `1800`，不可省略。 |
+| `state` | string | no | `"available"`, `"expired"`, `"used"`, `"disabled"` | `"available"` | code 当前状态。 |
+
+#### 3.1.3 d block 示例
+
+request:
 
 ```json
 {
@@ -110,17 +121,7 @@ Capability ID：`device.enrollment`
 }
 ```
 
-
-#### 返回结果 Result：`PairingCodeInfo`
-
-| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `code` | string | yes | display-safe code | none | 可展示或输入的 pairing code。 |
-| `expiresAt` | string | no | RFC 3339 timestamp | omitted | 绝对过期时间。 |
-| `expiresInSeconds` | uint32 | no | `> 0` | omitted | 相对过期秒数。legacy device-sdk 实测值为 `1800`，不可省略。 |
-| `state` | string | no | `"available"`, `"expired"`, `"used"`, `"disabled"` | `"available"` | code 当前状态。 |
-
-#### Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -137,9 +138,7 @@ Capability ID：`device.enrollment`
 }
 ```
 
-读法：`result` 是 `PairingCodeInfo` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### `device.getPairingCode` 候选错误
+#### 3.1.4 `device.getPairingCode` 候选错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
@@ -147,7 +146,7 @@ Capability ID：`device.enrollment`
 | `PERMISSION_DENIED` | common | 无权获取 pairing code。 |
 | `INTERNAL_ERROR` | common | 服务端无法生成 code。 |
 
-#### Error Response d block Example (op=8)
+#### 3.1.5 Error Response d block Example (op=8)
 
 ```json
 {
@@ -165,7 +164,6 @@ Capability ID：`device.enrollment`
 }
 ```
 
-
 ### 3.2 `device.getEnrollmentState`
 
 | 项 | 内容 |
@@ -178,13 +176,19 @@ Capability ID：`device.enrollment`
 | 幂等性 | 是 |
 | 常见错误 | `NOT_SUPPORTED` |
 
-#### 请求参数 Params：`GetEnrollmentStateParams`
+#### 3.2.1 请求参数 Params：`GetEnrollmentStateParams`
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `includeEndpoint` | boolean | no | `true` / `false` | `true` | 是否返回 enrollment 后的 endpoint 摘要。 |
 
-#### Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`EnrollmentState`
+
+字段见 6.1。
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -196,12 +200,29 @@ Capability ID：`device.enrollment`
 }
 ```
 
+success:
 
-#### 返回结果 Result：`EnrollmentState`
+```json
+{
+  "id": 102,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": "enrolled",
+    "deviceId": "dev_001",
+    "workspaceId": "workspace_001",
+    "endpoint": {
+      "endpointId": "room_101",
+      "type": "room",
+      "displayName": "Room 101"
+    }
+  }
+}
+```
 
-字段见 6.1。
-
-#### Error Response d block Example (op=8)
+#### 3.2.4 Error Response d block Example (op=8)
 
 ```json
 {
@@ -219,31 +240,6 @@ Capability ID：`device.enrollment`
 }
 ```
 
-
-#### Success Response d block Example (op=8)
-
-```json
-{
-  "id": 102,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "state": "enrolled",
-    "deviceId": "dev_001",
-    "workspaceId": "workspace_001",
-    "endpoint": {
-      "endpointId": "room_101",
-      "type": "room",
-      "displayName": "Room 101"
-    }
-  }
-}
-```
-
-读法：`result` 是 `EnrollmentState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
 ### 3.3 `device.setEnrollmentState`
 
 | 项 | 内容 |
@@ -256,7 +252,7 @@ Capability ID：`device.enrollment`
 | 幂等 / 异步 | 对同一 `desiredState` + `reason` 可幂等；解绑可能异步。 |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `PERMISSION_DENIED` |
 
-#### 请求参数 Params：`SetEnrollmentStateParams`
+#### 3.3.1 请求参数 Params：`SetEnrollmentStateParams`
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -265,7 +261,16 @@ Capability ID：`device.enrollment`
 | `endpoint` | `EnrollmentEndpointSummary` | no | see schema | omitted | enrollment 成功后关联的 endpoint 摘要。 |
 | `message` | string | no | human-readable | omitted | 失败、解绑或修复说明。 |
 
-#### Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`SetEnrollmentStateResult`
+
+| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `state` | `EnrollmentState` | yes | see schema | none | 操作后的纳管状态。 |
+| `disconnectExpected` | boolean | no | `true` / `false` | `false` | 解绑或重置是否预期导致连接变化。 |
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -278,15 +283,7 @@ Capability ID：`device.enrollment`
 }
 ```
 
-
-#### 返回结果 Result：`SetEnrollmentStateResult`
-
-| 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `state` | `EnrollmentState` | yes | see schema | none | 操作后的纳管状态。 |
-| `disconnectExpected` | boolean | no | `true` / `false` | `false` | 解绑或重置是否预期导致连接变化。 |
-
-#### Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -308,34 +305,13 @@ Capability ID：`device.enrollment`
 }
 ```
 
-读法：`result` 是 `SetEnrollmentStateResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 可能的事件
+#### 3.3.4 可能的事件
 
 | Event | 条件 |
 |---|---|
 | `device.enrollmentStateChanged` | 状态实际变化时触发。 |
 
-#### Event d block Example (op=6)
-
-```json
-{
-  "event": "device.enrollmentStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### `device.setEnrollmentState` 候选错误
+#### 3.3.5 `device.setEnrollmentState` 候选错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
@@ -346,7 +322,7 @@ Capability ID：`device.enrollment`
 
 ---
 
-#### Error Response d block Example (op=8)
+#### 3.3.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -363,7 +339,6 @@ Capability ID：`device.enrollment`
   }
 }
 ```
-
 
 ## 4. 事件 Events
 
@@ -656,7 +631,7 @@ Capability name: `device.enrollment`。
 
 ---
 
-## 7. 错误
+## 8. 错误
 
 | Error | 复用 / 候选 | 说明 | Review |
 |---|---|---|---|

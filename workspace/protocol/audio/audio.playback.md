@@ -77,13 +77,48 @@ lastReviewed: 2026-06-15
 | `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
 | `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
 
-#### 3.1.3 可能触发的事件
+#### 3.1.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 101,
+  "method": "audio.getPlaybackCapabilities",
+  "params": {
+    "target": "default",
+    "sections": [
+      "summary"
+    ]
+  }
+}
+```
+
+success:
+
+```json
+{
+  "id": 101,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": {
+      "target": "default",
+      "status": "ok"
+    }
+  }
+}
+```
+
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.1.4 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -91,12 +126,6 @@ lastReviewed: 2026-06-15
 | `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
 | `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
 | `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
-
-#### 3.1.5 规则
-
-- Request MUST 使用 `op=7`。
-- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
-- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ### 3.2 `audio.startPlayback`
 
@@ -118,7 +147,16 @@ lastReviewed: 2026-06-15
 | `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
 | `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
 
-#### 3.2.2 Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`StartPlaybackResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -131,14 +169,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-#### 3.2.3 返回结果 Result：`StartPlaybackResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
-| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
-
-#### 3.2.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -153,49 +184,13 @@ lastReviewed: 2026-06-15
 }
 ```
 
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `audio.playbackStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `PlaybackStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-```json
-{
-  "event": "audio.playbackStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "target": "default",
-      "status": "ok"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-#### 3.2.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "audio.playbackStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.2.7 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -203,12 +198,6 @@ lastReviewed: 2026-06-15
 | `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
 | `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
 | `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
-
-#### 3.2.8 规则
-
-- Request MUST 使用 `op=7`。
-- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
-- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ### 3.3 `audio.stopPlayback`
 
@@ -230,7 +219,16 @@ lastReviewed: 2026-06-15
 | `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
 | `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`StopPlaybackResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
+| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -243,14 +241,7 @@ lastReviewed: 2026-06-15
 }
 ```
 
-#### 3.3.3 返回结果 Result：`StopPlaybackResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
-| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -265,49 +256,13 @@ lastReviewed: 2026-06-15
 }
 ```
 
-#### 3.3.5 可能触发的事件
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `audio.playbackStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `PlaybackStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-```json
-{
-  "event": "audio.playbackStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "target": "default",
-      "status": "ok"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-#### 3.3.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "audio.playbackStateChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "state"
-    ],
-    "state": {
-      "state": "active"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.3.7 错误
+#### 3.3.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -315,12 +270,6 @@ lastReviewed: 2026-06-15
 | `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
 | `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
 | `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
-
-#### 3.3.8 规则
-
-- Request MUST 使用 `op=7`。
-- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
-- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ### 3.4 `audio.getPlaybackState`
 
@@ -349,13 +298,48 @@ lastReviewed: 2026-06-15
 | `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
 | `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
 
-#### 3.4.3 可能触发的事件
+#### 3.4.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 104,
+  "method": "audio.getPlaybackState",
+  "params": {
+    "target": "default",
+    "sections": [
+      "summary"
+    ]
+  }
+}
+```
+
+success:
+
+```json
+{
+  "id": 104,
+  "status": {
+    "ok": true,
+    "code": 0
+  },
+  "result": {
+    "state": {
+      "target": "default",
+      "status": "ok"
+    }
+  }
+}
+```
+
+#### 3.4.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.4.4 错误
+#### 3.4.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -363,12 +347,6 @@ lastReviewed: 2026-06-15
 | `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
 | `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
 | `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
-
-#### 3.4.5 规则
-
-- Request MUST 使用 `op=7`。
-- Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
-- 草案阶段不得分配正式 methodId、bitOffset 或 fieldId。
 
 ## 4. 事件 Events
 

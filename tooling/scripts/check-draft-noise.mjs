@@ -80,6 +80,10 @@ const bannedLinePatterns = [
     reason: "generic event explanation belongs in draft-conventions.md",
   },
   {
+    pattern: /^读法：`result` 是 `[^`]+` 的示例快照；正式字段以 registry 采纳后的 schema 为准。$/,
+    reason: "generic result snapshot explanation belongs in draft-conventions.md",
+  },
+  {
     pattern: /^### 7\.1 场景：读取或修改 `/,
     reason: "generic read-or-modify flow example belongs in draft-conventions.md",
   },
@@ -102,6 +106,14 @@ const bannedLinePatterns = [
   {
     pattern: /^## 10\. Registry \/ Conformance 状态$/,
     reason: "generic registry/conformance status belongs in frontmatter and product domain status, not each draft",
+  },
+  {
+    pattern: /^#### (?:\d+\.\d+\.\d+ )?Request d block Example \(op=7\)$/,
+    reason: "method request examples must be folded into a single d block 示例 subsection",
+  },
+  {
+    pattern: /^#### (?:\d+\.\d+\.\d+ )?Success Response d block Example \(op=8\)$/,
+    reason: "method success examples must be folded into a single d block 示例 subsection",
   },
 ];
 
@@ -146,11 +158,55 @@ function shouldSkip(file) {
 const files = walk(protocolRoot);
 if (fs.existsSync(protocolDraftTemplate)) files.push(protocolDraftTemplate);
 
+function checkMethodExampleCoverage(file, relative, text) {
+  const methodMatches = [...text.matchAll(/^### 3\.\d+ `[^`]+`.*$/gm)];
+  for (let index = 0; index < methodMatches.length; index += 1) {
+    const start = methodMatches[index].index;
+    const nextMethodStart = index + 1 < methodMatches.length ? methodMatches[index + 1].index : text.length;
+    const nextH2Match = text.slice(start).match(/\n## [4-9]\./);
+    const h2Start = nextH2Match ? start + nextH2Match.index + 1 : text.length;
+    const end = Math.min(nextMethodStart, h2Start);
+    const section = text.slice(start, end);
+    const heading = methodMatches[index][0];
+    const compactMatches = [...section.matchAll(/^#### \d+\.\d+\.\d+ d block 示例$/gm)];
+    if (compactMatches.length !== 1) {
+      errors.push(`${relative}:${lineNumber(text, start)}: ${heading} must contain exactly one compact d block 示例 subsection`);
+      continue;
+    }
+    const compactStart = compactMatches[0].index;
+    const nextH4 = section.slice(compactStart + compactMatches[0][0].length).match(/\n#### /);
+    const compactEnd = nextH4 ? compactStart + compactMatches[0][0].length + nextH4.index : section.length;
+    const compactSection = section.slice(compactStart, compactEnd);
+    if (!/^request:$/m.test(compactSection) || !/^success:$/m.test(compactSection)) {
+      errors.push(`${relative}:${lineNumber(text, start + compactStart)}: method d block 示例 must label request: and success: examples`);
+    }
+    const methodEventExample = section.match(/^#### (?:\d+\.\d+\.\d+ )?Event d block Example \(op=6\)$/m);
+    if (methodEventExample) {
+      errors.push(`${relative}:${lineNumber(text, start + methodEventExample.index)}: method-level event examples belong in the Events section`);
+    }
+  }
+}
+
+function lineNumber(text, offset) {
+  return text.slice(0, offset).split(/\r?\n/).length;
+}
+
 for (const file of files) {
   if (shouldSkip(file)) continue;
   const relative = path.relative(root, file);
-  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+  const text = fs.readFileSync(file, "utf8");
+  const lines = text.split(/\r?\n/);
+  const h2Numbers = new Map();
   lines.forEach((line, index) => {
+    const h2Match = line.match(/^## (\d+)\./);
+    if (h2Match) {
+      const previous = h2Numbers.get(h2Match[1]);
+      if (previous !== undefined) {
+        errors.push(`${relative}:${index + 1}: duplicate H2 section number ${h2Match[1]} also used on line ${previous}`);
+      } else {
+        h2Numbers.set(h2Match[1], index + 1);
+      }
+    }
     for (const { pattern, reason } of bannedLinePatterns) {
       if (pattern.test(line)) {
         errors.push(`${relative}:${index + 1}: ${reason}`);
@@ -164,6 +220,7 @@ for (const file of files) {
       }
     }
   });
+  checkMethodExampleCoverage(file, relative, text);
 }
 
 if (errors.length > 0) {

@@ -59,7 +59,11 @@ lastReviewed: 2026-06-13
 
 #### 3.1.1 请求参数 Params：`GetExposureCapabilitiesParams`
 
-#### 3.1.2 Request d block Example (op=7)
+#### 3.1.2 返回结果 Result：`ExposureCapabilities`
+
+#### 3.1.3 d block 示例
+
+request:
 
 ```json
 {
@@ -71,10 +75,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.1.3 返回结果 Result：`ExposureCapabilities`
-
-#### 3.1.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -94,21 +95,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `ExposureCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变配置。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持曝光控制。 | 隐藏曝光设置。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
+#### 3.1.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -126,7 +125,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.2 `camera.getExposureConfig`
 
 | 项 | 内容 |
@@ -140,7 +138,11 @@ lastReviewed: 2026-06-13
 
 #### 3.2.1 请求参数 Params：`GetExposureConfigParams`
 
-#### 3.2.2 Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`ExposureConfig`
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -152,10 +154,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.2.3 返回结果 Result：`ExposureConfig`
-
-#### 3.2.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -174,21 +173,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `ExposureConfig` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变配置。 | none | 无需处理。 |
 
-#### 3.2.6 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | sensor 状态不可读。 | 返回 unavailable detail。 |
 
-#### 3.2.7 Error Response d block Example (op=8)
+#### 3.2.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -206,7 +203,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.3 `camera.setExposureConfig`
 
 | 项 | 内容 |
@@ -220,7 +216,11 @@ lastReviewed: 2026-06-13
 
 #### 3.3.1 请求参数 Params：`SetExposureConfigParams`
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`SetExposureConfigResult`
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -240,10 +240,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.3.3 返回结果 Result：`SetExposureConfigResult`
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -262,34 +259,13 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `SetExposureConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.3.5 可能触发的事件
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.exposureConfigChanged` | 配置实际变化。 | `ExposureConfigChangedEvent` | 更新 UI；根据 mode 禁用/启用字段。 |
 
-#### 3.3.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.exposureConfigChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "config"
-    ],
-    "config": {
-      "mode": "auto"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.3.7 错误
+#### 3.3.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -297,7 +273,7 @@ lastReviewed: 2026-06-13
 | `OUT_OF_RANGE` | ISO/gain/shutter/EV 越界。 | 返回合法范围。 |
 | `INVALID_ARGUMENT` | 字段组合非法。 | 整体失败，不部分生效。 |
 
-#### 3.3.8 Error Response d block Example (op=8)
+#### 3.3.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -315,7 +291,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.4 `camera.resetExposureConfig`
 
 | 项 | 内容 |
@@ -329,7 +304,11 @@ lastReviewed: 2026-06-13
 
 #### 3.4.1 请求参数 Params：`ResetExposureConfigParams`
 
-#### 3.4.2 Request d block Example (op=7)
+#### 3.4.2 返回结果 Result：`SetExposureConfigResult`
+
+#### 3.4.3 d block 示例
+
+request:
 
 ```json
 {
@@ -341,10 +320,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.4.3 返回结果 Result：`SetExposureConfigResult`
-
-#### 3.4.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -363,40 +339,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `SetExposureConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.4.5 可能触发的事件
+#### 3.4.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `camera.exposureConfigChanged` | reset 后配置变化。 | `ExposureConfigChangedEvent` | 更新 UI。 |
 
-#### 3.4.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "camera.exposureConfigChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "config"
-    ],
-    "config": {
-      "mode": "auto"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.4.7 错误
+#### 3.4.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `BUSY` | sensor 正忙。 | 稍后重试。 |
 
-#### 3.4.8 Error Response d block Example (op=8)
+#### 3.4.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -413,7 +368,6 @@ lastReviewed: 2026-06-13
   }
 }
 ```
-
 
 ## 4. 事件 Events
 
@@ -600,7 +554,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-## 7. 错误
+## 8. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

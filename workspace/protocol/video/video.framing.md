@@ -68,7 +68,13 @@ lastReviewed: 2026-06-13
 
 主要字段为 `cameraId` 和 `sourceId`。
 
-#### 3.1.2 Request d block Example (op=7)
+#### 3.1.2 返回结果 Result：`VideoFramingCapabilities`
+
+必须能表达 `modes`、`galleryVariants`、`trackingCarriers` 和默认配置。
+
+#### 3.1.3 d block 示例
+
+request:
 
 ```json
 {
@@ -81,12 +87,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.1.3 返回结果 Result：`VideoFramingCapabilities`
-
-必须能表达 `modes`、`galleryVariants`、`trackingCarriers` 和默认配置。
-
-#### 3.1.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -106,22 +107,20 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `VideoFramingCapabilities` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query 不应产生状态变化。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备没有 framing 服务。 | UI 隐藏 framing 设置。 |
 | `UNAVAILABLE` | 摄像头链路或算法服务暂不可用。 | 稍后重试或展示不可用原因。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
+#### 3.1.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -139,7 +138,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.2 `video.getFramingConfig`
 
 **用途**：查询当前生效或待生效的 framing 配置。
@@ -155,7 +153,11 @@ lastReviewed: 2026-06-13
 
 #### 3.2.1 请求参数 Params：`GetFramingConfigParams`
 
-#### 3.2.2 Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`VideoFramingConfig`
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -167,10 +169,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.2.3 返回结果 Result：`VideoFramingConfig`
-
-#### 3.2.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -188,22 +187,20 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `VideoFramingConfig` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变配置。 | none | 无需处理。 |
 
-#### 3.2.6 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `INVALID_ARGUMENT` | `cameraId` 或 `sourceId` 非法。 | 返回字段路径。 |
 | `UNAVAILABLE` | framing 状态不可读。 | 返回 `unavailableReason` detail。 |
 
-#### 3.2.7 Error Response d block Example (op=8)
+#### 3.2.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -220,7 +217,6 @@ lastReviewed: 2026-06-13
   }
 }
 ```
-
 
 ### 3.3 `video.setFramingConfig`
 
@@ -239,7 +235,13 @@ lastReviewed: 2026-06-13
 
 `config.mode` 是必填或部分更新字段，未携带的字段保持原值。
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`SetFramingConfigResult`
+
+返回最终配置或 `applying` 状态下的目标配置。
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -258,12 +260,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.3.3 返回结果 Result：`SetFramingConfigResult`
-
-返回最终配置或 `applying` 状态下的目标配置。
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -281,9 +278,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `SetFramingConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.3.5 可能触发的事件
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
@@ -291,26 +286,7 @@ lastReviewed: 2026-06-13
 | `video.framingStateChanged` | mode 切换进入 applying / active / degraded / failed。 | `VideoFramingStateChangedEvent` | 更新状态文案和禁用态。 |
 | `camera.ptzStateChanged` | `trackingCarrier=physical_ptz` 时 framing 接管或释放 PTZ。 | `PtzStateChangedEvent` | 禁用或恢复手动 PTZ 控件。 |
 
-#### 3.3.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "video.framingConfigChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "config"
-    ],
-    "config": {
-      "mode": "auto"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.3.7 错误
+#### 3.3.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
@@ -319,7 +295,7 @@ lastReviewed: 2026-06-13
 | `DEVICE_MODE_CONFLICT` | physical PTZ 正被其他控制端占用，或 privacy cover 生效。 | 返回冲突 owner。 |
 | `BUSY` | 算法服务正在切换。 | 建议稍后重试。 |
 
-#### 3.3.8 Error Response d block Example (op=8)
+#### 3.3.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -336,7 +312,6 @@ lastReviewed: 2026-06-13
   }
 }
 ```
-
 
 ### 3.4 `video.resetFramingConfig`
 
@@ -353,7 +328,11 @@ lastReviewed: 2026-06-13
 
 #### 3.4.1 请求参数 Params：`ResetFramingConfigParams`
 
-#### 3.4.2 Request d block Example (op=7)
+#### 3.4.2 返回结果 Result：`SetFramingConfigResult`
+
+#### 3.4.3 d block 示例
+
+request:
 
 ```json
 {
@@ -365,10 +344,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.4.3 返回结果 Result：`SetFramingConfigResult`
-
-#### 3.4.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -386,41 +362,20 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `SetFramingConfigResult` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.4.5 可能触发的事件
+#### 3.4.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `video.framingConfigChanged` | 默认配置与当前配置不同。 | `VideoFramingConfigChangedEvent` | 更新 UI。 |
 
-#### 3.4.6 Event d block Example (op=6)
-
-```json
-{
-  "event": "video.framingConfigChanged",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "config"
-    ],
-    "config": {
-      "mode": "auto"
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-
-#### 3.4.7 错误
+#### 3.4.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 reset。 | UI 隐藏恢复默认。 |
 | `BUSY` | 正在切换 mode。 | 稍后重试。 |
 
-#### 3.4.8 Error Response d block Example (op=8)
+#### 3.4.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -438,7 +393,6 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
 ### 3.5 `video.getFramingState`
 
 **用途**：查询 framing 运行态、当前控制 owner 和不可用原因。
@@ -454,7 +408,11 @@ lastReviewed: 2026-06-13
 
 #### 3.5.1 请求参数 Params：`GetFramingStateParams`
 
-#### 3.5.2 Request d block Example (op=7)
+#### 3.5.2 返回结果 Result：`VideoFramingState`
+
+#### 3.5.3 d block 示例
+
+request:
 
 ```json
 {
@@ -466,10 +424,7 @@ lastReviewed: 2026-06-13
 }
 ```
 
-
-#### 3.5.3 返回结果 Result：`VideoFramingState`
-
-#### 3.5.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -487,21 +442,19 @@ lastReviewed: 2026-06-13
 }
 ```
 
-读法：`result` 是 `VideoFramingState` 的示例快照；正式字段以 registry 采纳后的 schema 为准。
-
-#### 3.5.5 可能触发的事件
+#### 3.5.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | 查询不改变状态。 | none | 无需处理。 |
 
-#### 3.5.6 错误
+#### 3.5.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `UNAVAILABLE` | camera pipeline 不可读。 | 返回 unavailable detail。 |
 
-#### 3.5.7 Error Response d block Example (op=8)
+#### 3.5.6 Error Response d block Example (op=8)
 
 ```json
 {
@@ -518,7 +471,6 @@ lastReviewed: 2026-06-13
   }
 }
 ```
-
 
 ## 4. 事件 Events
 
@@ -871,7 +823,7 @@ lastReviewed: 2026-06-13
 
 读法：physical PTZ 被其他 owner 占用；客户端应提示冲突或切换到 electronic PTZ。
 
-## 7. 错误
+## 8. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

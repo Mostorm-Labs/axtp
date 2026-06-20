@@ -76,7 +76,7 @@ Flow example 应说明调用顺序、关键 `d` block、客户端状态更新、
 
 ## Method Example 约定
 
-草案 method 小节可以保留 Params / Result 字段表、触发事件和 feature-specific 规则；不要为每个 method 复制通用 Request、Success Response、Error Response JSON 示例。通用读法如下：
+草案 method 小节应保留 Params / Result 字段表、触发事件、feature-specific 规则，以及最小可读的 Request / Success Response `d` block 示例。Error Response 示例只在能展示 feature-specific 错误、候选错误名、特殊 `details` 或状态后果时保留。通用读法如下：
 
 | 示例类型 | 公共规则 |
 |---|---|
@@ -84,7 +84,9 @@ Flow example 应说明调用顺序、关键 `d` block、客户端状态更新、
 | Success Response | `op=8`，必须回显 Request 的 `d.id`，`status.ok=true`，业务结果放在 `d.result`。 |
 | Error Response | `op=8`，必须回显 Request 的 `d.id`，`status.ok=false` 或非零 `status.code`，不得携带业务 `result`。 |
 
-只有当示例展示 feature-specific payload、状态机分支、特殊错误细节或 legacy 映射时，才把 JSON 示例留在草案正文。
+Request / Success 示例用于帮助评审者看懂 payload 形状，不需要在示例后重复“result 是某 schema 快照，正式字段以 registry 为准”这类公共说明。Error 示例只有当它展示 feature-specific payload、状态机分支、特殊错误细节或 legacy 映射时，才留在草案正文。
+
+推荐的 method 示例形态是一个 `d block 示例` 小节，内部用 `request:` / `success:` 两段展示；不要再为同一 method 分散创建两个英文 request / success 标题。
 
 事件示例同理：除非需要说明 feature-specific payload、状态更新规则或重连恢复语义，不要在每个 event 后重复“事件不携带 `d.id`”这类公共读法。
 
