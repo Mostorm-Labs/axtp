@@ -4,6 +4,35 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.8.1
+
+Specs readability and runtime dispatch verification patch.
+
+### Protocol
+
+- Keeps AXTP wire, CONTROL, RPC, STREAM, method, event, schema, capability, profile, and error semantics unchanged from `spec/v0.8.0`.
+- Renames the formal human-readable specs into numbered flat files under `specs/`: `00-glossary.md`, `10-contract.md`, `20-core.md`, `30-registry.md`, `40-codec.md`, and `50-tooling.md`.
+- Preserves CONTROL OPEN/ACCEPT, RPC, and STREAM examples in `specs/20-core.md` so runtime teams still have executable wire guidance after the docs slimming pass.
+
+### Documentation
+
+- Archives the previous multi-directory specs tree under `docs/archive/specs/legacy-structured-specs/**` for comparison instead of dropping the old material outright.
+- Moves candidate registry planning material to `workspace/registry-planning/**`, keeping it out of the default reader path and release artifact.
+- Updates active docs and tooling references from the old nested specs paths to the new `specs/*.md` contract paths.
+
+### Release Governance
+
+- Keeps the default release artifact focused on current consumer contracts and excludes archived specs and registry-planning workspace material.
+- Validates the flattened specs layout through link checks, plain-text path checks, generated drift checks, conformance validation, and release artifact dry-run.
+- Verifies the runtime upgrade path after fixing cpp-runtime tooling to consume `contract/protocol/axtp.protocol.yaml` and the flattened `specs/20-core.md` / `specs/40-codec.md` documentation facts.
+
+### Runtime Impact
+
+- Runtime and SDK teams should bind to `spec/v0.8.1` if they need the flattened `specs/**` layout or the verified cpp-runtime dispatch path.
+- Implementations already compatible with `spec/v0.8.0` do not need wire-level, registry, SDK API, or conformance behavior changes for this release.
+- Tooling that validates human-readable spec facts should read `specs/20-core.md` and `specs/40-codec.md`, with old nested paths treated only as historical archive material.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.8.0
 
 Repository contract layout and release artifact boundary release.
