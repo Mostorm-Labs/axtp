@@ -539,7 +539,7 @@ NetworkInterfaceStateChangedEvent
 
 读法：`status.code=12` 对应 adopted `NOT_FOUND`。候选业务错误名只放在 details 中，正式编号待采纳。
 
-## 8. 错误
+## 7. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

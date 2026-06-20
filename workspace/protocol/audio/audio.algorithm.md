@@ -908,7 +908,7 @@ AudioAlgorithmConfig
 
 读法：如果 `audio.algorithmConfigChanged.data.config` 只是变化片段，客户端可以局部更新 UI；如果需要完整状态，调用 `audio.getAlgorithmConfig` 校准。失败响应不得部分应用，也不得触发配置变化事件。
 
-## 8. 错误
+## 7. 错误
 
 本 feature 复用 generated ErrorCode，不新增 feature-specific errorCode。
 

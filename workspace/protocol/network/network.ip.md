@@ -602,7 +602,7 @@ NetworkIpConfigChangedEvent
 
 读法：`status.code=10` 对应 adopted `INVALID_ARGUMENT`。候选业务错误名只作为草案 details。
 
-## 8. 错误
+## 7. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

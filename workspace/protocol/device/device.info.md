@@ -466,7 +466,7 @@ DeviceInfo
 
 读法：`status.code=14` 对应 adopted `INTERNAL_ERROR`。失败不改变设备状态，也不会触发事件。
 
-## 8. 错误
+## 7. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

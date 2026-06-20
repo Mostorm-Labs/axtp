@@ -69,6 +69,13 @@ jobs:
         shell: bash
         run: tooling/scripts/build-spec-artifact.sh "$SPEC_VERSION"
 
+      - name: Validate spec artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          tooling/scripts/check-release-artifact.sh "$SPEC_VERSION"
+          node tooling/scripts/check-links.mjs "dist/axtp-spec-v$SPEC_VERSION"
+
       - name: Create or update AXTP Spec release
         uses: softprops/action-gh-release@v2
         with:

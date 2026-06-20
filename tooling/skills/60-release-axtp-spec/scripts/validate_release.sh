@@ -22,6 +22,10 @@ if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 fi
 
 tag="spec/v${version}"
+dry_run_version=0
+if [[ "${version}" == "0.0.0" ]]; then
+  dry_run_version=1
+fi
 repo_root="$(git rev-parse --show-toplevel)"
 cd "${repo_root}"
 
@@ -41,12 +45,12 @@ for path in "${required_files[@]}"; do
   fi
 done
 
-if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+if [[ "${dry_run_version}" != "1" ]] && git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
   echo "Tag already exists locally: ${tag}" >&2
   exit 1
 fi
 
-if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+if [[ "${dry_run_version}" != "1" ]] && git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
   echo "Tag already exists on origin: ${tag}" >&2
   exit 1
 fi
@@ -59,31 +63,35 @@ fi
 
 changelog="release/CHANGELOG.md"
 
-if ! grep -q "^## ${tag}$" "${changelog}"; then
+if [[ "${dry_run_version}" != "1" ]] && ! grep -q "^## ${tag}$" "${changelog}"; then
   echo "${changelog} is missing section: ## ${tag}" >&2
   exit 1
 fi
 
-section="$(
-  awk -v tag="${tag}" '
-    $0 == "## " tag { in_section = 1; next }
-    in_section && /^## / { exit }
-    in_section { print }
-  ' "${changelog}"
-)"
+if [[ "${dry_run_version}" != "1" ]]; then
+  section="$(
+    awk -v tag="${tag}" '
+      $0 == "## " tag { in_section = 1; next }
+      in_section && /^## / { exit }
+      in_section { print }
+    ' "${changelog}"
+  )"
 
-if [[ -z "${section//[[:space:]]/}" ]]; then
-  echo "${changelog} section for ${tag} is empty." >&2
-  exit 1
-fi
+  if [[ -z "${section//[[:space:]]/}" ]]; then
+    echo "${changelog} section for ${tag} is empty." >&2
+    exit 1
+  fi
 
-if grep -q "TBD" <<<"${section}"; then
-  echo "${changelog} section for ${tag} still contains TBD placeholders." >&2
-  exit 1
+  if grep -q "TBD" <<<"${section}"; then
+    echo "${changelog} section for ${tag} still contains TBD placeholders." >&2
+    exit 1
+  fi
 fi
 
 git diff --check
 bash tooling/scripts/print-spec-version.sh >/dev/null
 node tooling/scripts/check-draft-noise.mjs >/dev/null
+tooling/scripts/check-release-artifact.sh "${version}" >/dev/null
+node tooling/scripts/check-links.mjs "dist/axtp-spec-v${version}" >/dev/null
 
 echo "AXTP Spec release validation passed for ${tag}"

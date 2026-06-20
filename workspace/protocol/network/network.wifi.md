@@ -1404,7 +1404,7 @@ Capability 描述设备能做什么；Config/Profile 描述保存的目标网络
 
 读法：`status.code=12` 对应 adopted `NOT_FOUND`。候选业务错误名只作为草案 details。
 
-## 8. 错误
+## 7. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

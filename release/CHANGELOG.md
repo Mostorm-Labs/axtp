@@ -4,6 +4,34 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.8.7
+
+Release artifact governance and backstage documentation slimming patch.
+
+### Protocol
+
+- Keeps AXTP wire, CONTROL, RPC, STREAM, method, event, schema, capability, profile, and error semantics unchanged from `spec/v0.8.6`.
+- Does not change registry YAML, Protocol IR, generated references, MCP artifacts, test vectors, or conformance case behavior.
+
+### Documentation
+
+- Slims the frontstage `docs/guides/core-protocol-flow.md` into a runtime startup-flow summary and moves the long packet, authentication, and STREAM reference into `workspace/runtime/core-protocol-flow.md`.
+- Removes repeated request/response/error example boilerplate, generic flow examples, and fixed registry/conformance status tables from protocol drafts while preserving feature-specific fields, payload examples, state machines, legacy mapping notes, and review markers.
+- Expands `workspace/protocol/draft-conventions.md` as the shared home for common method examples, response envelope rules, generic flow guidance, and registry/conformance status conventions.
+
+### Release Governance
+
+- Adds `tooling/release/artifact-contract.json` as the shared release artifact contract for required paths and excluded repository-only materials.
+- Updates release artifact build and check scripts to read the same artifact contract, reducing duplicated required-path lists.
+- Validates the release artifact and artifact-local Markdown links in the `spec/v*` release workflow before creating or updating the GitHub Release.
+- Extends local release validation so artifact dry-run, artifact link check, and protocol draft noise checks run before tagging.
+
+### Runtime Impact
+
+- Runtime and SDK teams do not need wire-level, registry, SDK API, generated metadata, or conformance behavior changes for this release.
+- Runtime upgrade workflows should bind to the exact `spec/v0.8.7` tag and consume the release artifact as before.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.8.6
 
 Protocol draft governance and runtime dispatch consolidation patch.

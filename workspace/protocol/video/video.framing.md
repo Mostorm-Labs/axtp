@@ -898,7 +898,7 @@ lastReviewed: 2026-06-13
 
 读法：physical PTZ 被其他 owner 占用；客户端应提示冲突或切换到 electronic PTZ。
 
-## 8. 错误
+## 7. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

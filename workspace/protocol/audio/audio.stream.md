@@ -1182,7 +1182,7 @@ AudioChunkHeaderV1 + AAC bytes
 
 读法：`2051` 是 adopted `MEDIA_CODEC_UNSUPPORTED`。NA20/NT10 投屏 MVP 确认为 AAC 透传，不要求 NA20 解码 PCM 后给 Host。
 
-## 8. 错误
+## 7. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

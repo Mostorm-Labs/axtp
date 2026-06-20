@@ -1283,7 +1283,7 @@ VideoChunkHeaderV1 + H.264 bytes
 
 读法：`2050` 是 adopted `MEDIA_SOURCE_UNAVAILABLE`。请求不产生 streamId，也不会触发 `video.streamStateChanged(streaming)`。
 
-## 8. 错误
+## 7. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|

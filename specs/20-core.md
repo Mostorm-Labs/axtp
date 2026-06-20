@@ -161,7 +161,7 @@ ACCEPT:
 0b 01 00           # ackMode = NONE
 ```
 
-Standard Frame Header、payload length 和 CRC 会包裹这个 CONTROL payload。完整 packet 示例见 `docs/guides/core-protocol-flow.md`。
+Standard Frame Header、payload length 和 CRC 会包裹这个 CONTROL payload。启动流程摘要见 `docs/guides/core-protocol-flow.md`。
 
 ## RPC
 

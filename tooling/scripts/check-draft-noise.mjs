@@ -51,6 +51,18 @@ const bannedLinePatterns = [
     pattern: /^\|\s*compatibility\s*\|\s*新旧 App \/ 设备组合下，未知可选字段可忽略，未知必填语义必须返回标准错误。\s*\|/,
     reason: "generic test matrix belongs in draft-conventions.md",
   },
+  {
+    pattern: /读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。/,
+    reason: "generic success response explanation belongs in draft-conventions.md",
+  },
+  {
+    pattern: /^### 7\.1 场景：读取或修改 `/,
+    reason: "generic read-or-modify flow example belongs in draft-conventions.md",
+  },
+  {
+    pattern: /^\|\s*registry\s*\|\s*not generated\s*\|\s*尚未写入正式 registry YAML。\s*\|/,
+    reason: "generic registry status table belongs in draft-conventions.md",
+  },
 ];
 
 function walk(dir) {

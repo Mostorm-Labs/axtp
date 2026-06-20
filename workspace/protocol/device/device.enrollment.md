@@ -664,7 +664,7 @@ Capability name: `device.enrollment`。
 
 ---
 
-## 8. 错误
+## 7. 错误
 
 | Error | 复用 / 候选 | 说明 | Review |
 |---|---|---|---|

@@ -14,6 +14,7 @@ fi
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 template="$root/tooling/release/manifest.template.yaml"
+contract="$root/tooling/release/artifact-contract.json"
 artifact_name="axtp-spec-v$version"
 dist_dir="$root/dist"
 artifact_dir="$dist_dir/$artifact_name"
@@ -23,6 +24,11 @@ released_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 if [[ ! -f "$template" ]]; then
   echo "Missing manifest template: $template" >&2
+  exit 1
+fi
+
+if [[ ! -f "$contract" ]]; then
+  echo "Missing artifact contract: $contract" >&2
   exit 1
 fi
 
@@ -85,52 +91,43 @@ echo "[OK] wrote manifest.yaml"
 
 find "$artifact_dir" -name ".DS_Store" -delete
 
-required_artifact_paths=(
-  "README.md"
-  "LICENSE"
-  "docs/README.md"
-  "docs/guides/runtime.md"
-  "docs/guides/testing.md"
-  "docs/guides/protocol-maintainer.md"
-  "docs/guides/product.md"
-  "docs/guides/legacy-migration.md"
-  "docs/product/domain-status.md"
-  "docs/product/roadmap.md"
-  "CHANGELOG.md"
-  "contract/protocol/axtp.protocol.yaml"
-  "contract/generated/protocol.md"
-  "contract/generated/protocol.json"
-  "contract/registry/version.yaml"
-  "specs/README.md"
-  "specs/00-glossary.md"
-  "specs/10-contract.md"
-  "specs/20-core.md"
-  "specs/30-registry.md"
-  "specs/40-codec.md"
-  "specs/50-tooling.md"
-  "conformance/manifest.yaml"
-  "contract/mcp/method_registry.generated.json"
-  "contract/test-vectors/manifest.json"
-  "release/README.md"
-  "release/CHANGELOG.md"
-)
+python3 - "$artifact_dir" "$contract" <<'PY'
+import json
+import os
+import sys
 
-for rel in "${required_artifact_paths[@]}"; do
-  if [[ ! -e "$artifact_dir/$rel" ]]; then
-    echo "Release artifact missing required path: $rel" >&2
-    exit 1
-  fi
-done
+artifact_dir, contract_path = sys.argv[1], sys.argv[2]
+contract = json.load(open(contract_path, encoding="utf-8"))
 
-if find "$artifact_dir" -name ".DS_Store" | grep -q .; then
-  echo "Release artifact contains .DS_Store files" >&2
-  exit 1
-fi
+missing = [
+    rel
+    for rel in contract["required_paths"]
+    if not os.path.exists(os.path.join(artifact_dir, rel))
+]
+if missing:
+    print("Release artifact missing required paths:", file=sys.stderr)
+    for rel in missing:
+        print(f"- {rel}", file=sys.stderr)
+    sys.exit(1)
 
-if [[ -e "$artifact_dir/workspace/registry-planning" ]]; then
-  echo "Release artifact must not contain maintainer-only registry planning materials" >&2
-  exit 1
-fi
+violations = []
+for dirpath, _, filenames in os.walk(artifact_dir):
+    for filename in filenames:
+        full = os.path.join(dirpath, filename)
+        rel = os.path.relpath(full, artifact_dir).replace(os.sep, "/")
+        if any(rel.endswith(suffix) for suffix in contract.get("excluded_suffixes", [])):
+            violations.append((rel, "excluded suffix"))
+        if any(rel.startswith(prefix) for prefix in contract.get("excluded_prefixes", [])):
+            violations.append((rel, "excluded prefix"))
+        if any(token in rel for token in contract.get("excluded_contains", [])):
+            violations.append((rel, "excluded path"))
+
+if violations:
+    print("Release artifact contains excluded paths:", file=sys.stderr)
+    for rel, reason in violations[:40]:
+        print(f"- {rel}: {reason}", file=sys.stderr)
+    sys.exit(1)
+PY
 
 mkdir -p "$dist_dir"
 if command -v zip >/dev/null 2>&1; then

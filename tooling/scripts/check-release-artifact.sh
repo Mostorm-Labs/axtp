@@ -5,6 +5,7 @@ version="${1:-0.0.0-ci}"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 artifact="axtp-spec-v$version"
 zip_path="$root/dist/$artifact.zip"
+contract="$root/tooling/release/artifact-contract.json"
 
 "$root/tooling/scripts/build-spec-artifact.sh" "$version" >/tmp/axtp-release-artifact.log
 
@@ -13,127 +14,49 @@ if [[ ! -f "$zip_path" ]]; then
   exit 1
 fi
 
-python3 - "$zip_path" "$artifact" <<'PY'
+if [[ ! -f "$contract" ]]; then
+  echo "Missing artifact contract: $contract" >&2
+  exit 1
+fi
+
+python3 - "$zip_path" "$artifact" "$contract" <<'PY'
+import json
 import sys
 import zipfile
 
-zip_path, artifact = sys.argv[1], sys.argv[2]
-required = {
-    f"{artifact}/README.md",
-    f"{artifact}/LICENSE",
-    f"{artifact}/docs/README.md",
-    f"{artifact}/docs/guides/runtime.md",
-    f"{artifact}/docs/guides/testing.md",
-    f"{artifact}/docs/guides/protocol-maintainer.md",
-    f"{artifact}/docs/guides/product.md",
-    f"{artifact}/docs/guides/legacy-migration.md",
-    f"{artifact}/docs/product/domain-status.md",
-    f"{artifact}/docs/product/roadmap.md",
-    f"{artifact}/CHANGELOG.md",
-    f"{artifact}/contract/protocol/axtp.protocol.yaml",
-    f"{artifact}/contract/generated/protocol.md",
-    f"{artifact}/contract/generated/protocol.json",
-    f"{artifact}/contract/registry/version.yaml",
-    f"{artifact}/specs/README.md",
-    f"{artifact}/specs/00-glossary.md",
-    f"{artifact}/specs/10-contract.md",
-    f"{artifact}/specs/20-core.md",
-    f"{artifact}/specs/30-registry.md",
-    f"{artifact}/specs/40-codec.md",
-    f"{artifact}/specs/50-tooling.md",
-    f"{artifact}/conformance/manifest.yaml",
-    f"{artifact}/contract/mcp/method_registry.generated.json",
-    f"{artifact}/contract/test-vectors/manifest.json",
-    f"{artifact}/release/README.md",
-    f"{artifact}/release/CHANGELOG.md",
-}
+zip_path, artifact, contract_path = sys.argv[1], sys.argv[2], sys.argv[3]
+contract = json.load(open(contract_path, encoding="utf-8"))
 
 with zipfile.ZipFile(zip_path) as archive:
     names = set(archive.namelist())
 
-missing = sorted(required - names)
+artifact_prefix = f"{artifact}/"
+relative_names = {
+    name[len(artifact_prefix):]
+    for name in names
+    if name.startswith(artifact_prefix) and not name.endswith("/")
+}
+
+missing = sorted(set(contract["required_paths"]) - relative_names)
 if missing:
     print("[FAIL] release archive is missing required paths", file=sys.stderr)
     for item in missing:
         print(f"- {item}", file=sys.stderr)
     sys.exit(1)
 
-ds_store = sorted(name for name in names if name.endswith(".DS_Store"))
-if ds_store:
-    print("[FAIL] release archive contains .DS_Store files", file=sys.stderr)
-    for item in ds_store:
-        print(f"- {item}", file=sys.stderr)
-    sys.exit(1)
+violations = []
+for rel in sorted(relative_names):
+    if any(rel.endswith(suffix) for suffix in contract.get("excluded_suffixes", [])):
+        violations.append((rel, "excluded suffix"))
+    if any(rel.startswith(prefix) for prefix in contract.get("excluded_prefixes", [])):
+        violations.append((rel, "excluded prefix"))
+    if any(token in rel for token in contract.get("excluded_contains", [])):
+        violations.append((rel, "excluded path"))
 
-legacy_evidence = sorted(name for name in names if f"{artifact}/workspace/legacy-migration/evidence/" in name)
-if legacy_evidence:
-    print("[FAIL] release archive contains legacy evidence files", file=sys.stderr)
-    for item in legacy_evidence[:20]:
-        print(f"- {item}", file=sys.stderr)
-    sys.exit(1)
-
-skills = sorted(name for name in names if f"{artifact}/tooling/skills/" in name)
-if skills:
-    print("[FAIL] release archive contains repository-only lifecycle skills", file=sys.stderr)
-    for item in skills[:20]:
-        print(f"- {item}", file=sys.stderr)
-    sys.exit(1)
-
-release_tooling = sorted(name for name in names if f"{artifact}/tooling/release/" in name)
-if release_tooling:
-    print("[FAIL] release archive contains repository-only release template files", file=sys.stderr)
-    for item in release_tooling[:20]:
-        print(f"- {item}", file=sys.stderr)
-    sys.exit(1)
-
-old_release_docs = sorted(name for name in names if f"{artifact}/docs/release/" in name)
-if old_release_docs:
-    print("[FAIL] release archive contains legacy docs/release path", file=sys.stderr)
-    for item in old_release_docs[:20]:
-        print(f"- {item}", file=sys.stderr)
-    sys.exit(1)
-
-old_architecture_docs = sorted(name for name in names if f"{artifact}/docs/architecture/" in name)
-if old_architecture_docs:
-    print("[FAIL] release archive contains legacy docs/architecture path", file=sys.stderr)
-    for item in old_architecture_docs[:20]:
-        print(f"- {item}", file=sys.stderr)
-    sys.exit(1)
-
-old_conformance = sorted(name for name in names if f"{artifact}/docs/conformance/" in name)
-if old_conformance:
-    print("[FAIL] release archive contains legacy docs/conformance path", file=sys.stderr)
-    for item in old_conformance[:20]:
-        print(f"- {item}", file=sys.stderr)
-    sys.exit(1)
-
-old_workspace = sorted(name for name in names if f"{artifact}/docs/workspace/" in name)
-if old_workspace:
-    print("[FAIL] release archive contains legacy docs/workspace path", file=sys.stderr)
-    for item in old_workspace[:20]:
-        print(f"- {item}", file=sys.stderr)
-    sys.exit(1)
-
-workspace_private = sorted(
-    name for name in names
-    if name.startswith(f"{artifact}/workspace/")
-    and name != f"{artifact}/workspace/"
-)
-if workspace_private:
-    print("[FAIL] release archive contains maintainer-only workspace materials", file=sys.stderr)
-    for item in workspace_private[:20]:
-        print(f"- {item}", file=sys.stderr)
-    sys.exit(1)
-
-legacy_spec_dirs = ("0-principles", "1-core", "2-registry", "3-codec", "4-tooling")
-old_specs = sorted(
-    name for name in names
-    if any(f"{artifact}/specs/{legacy_dir}/" in name for legacy_dir in legacy_spec_dirs)
-)
-if old_specs:
-    print("[FAIL] release archive contains legacy nested specs paths", file=sys.stderr)
-    for item in old_specs[:20]:
-        print(f"- {item}", file=sys.stderr)
+if violations:
+    print("[FAIL] release archive contains excluded paths", file=sys.stderr)
+    for item, reason in violations[:40]:
+        print(f"- {item}: {reason}", file=sys.stderr)
     sys.exit(1)
 
 print("[OK] release archive contract paths verified")

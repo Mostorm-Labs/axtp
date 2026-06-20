@@ -1324,7 +1324,7 @@ Capability 描述设备能做什么；`NetworkApConfig` 描述当前或目标配
 
 读法：`status.code=9` 对应 adopted `PERMISSION_DENIED`。候选业务错误名只作为草案 details。
 
-## 8. 错误
+## 7. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
