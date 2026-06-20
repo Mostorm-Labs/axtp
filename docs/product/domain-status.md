@@ -9,6 +9,7 @@
 > 更新规则：新增、删除、采纳、废弃 domain 草案或 registry domain 后，必须同步本矩阵的 Review、Priority 和 Next Step。
 > 计数规则：Drafts 和 Generated 数量由 `tooling/scripts/check-protocol-status.mjs` 校验。
 > 验证方式：只有 `contract/registry/domains/<domain>/domain.yaml` 存在，并且 `pnpm --dir tooling/generators validate:sources` / `validate:protocol` 通过，才算 generated/adopted；其余为草案状态。
+> 草案健康和示例质量：见 [Protocol Draft Health](protocol-draft-health.md)，由 `tooling/scripts/report-protocol-draft-health.mjs` 生成并校验。
 
 本表用于让产品、架构、研发和测试快速判断每个 domain 当前走到哪里。`Generated` 统计当前 generated protocol 中已经落地的方法和事件数量；`video` / `audio` 的 P0 stream 优先级表示要同时采纳 RPC 建流/关流控制面和 STREAM 数据面字段约束。
 

@@ -58,6 +58,7 @@ jobs:
           node tooling/scripts/check-text-paths.mjs
           node tooling/scripts/check-draft-noise.mjs
           tooling/scripts/check-protocol-status.mjs
+          node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/protocol-draft-health.md
 
       - name: Validate release artifact dry run
         shell: bash

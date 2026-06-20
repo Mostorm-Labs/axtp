@@ -27,10 +27,6 @@ contents:
     - workspace/
     - tooling/skills/
     - tooling/release/
-    - docs/release/
-    - docs/architecture/
-    - docs/conformance/
-    - docs/workspace/
     - "**/.DS_Store"
   excluded_legacy_specs_dirs:
     - 0-principles

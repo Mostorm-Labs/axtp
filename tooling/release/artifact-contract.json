@@ -9,6 +9,7 @@
     "docs/guides/product.md",
     "docs/guides/legacy-migration.md",
     "docs/product/domain-status.md",
+    "docs/product/protocol-draft-health.md",
     "docs/product/roadmap.md",
     "CHANGELOG.md",
     "contract/protocol/axtp.protocol.yaml",
@@ -34,11 +35,7 @@
   "excluded_prefixes": [
     "workspace/",
     "tooling/skills/",
-    "tooling/release/",
-    "docs/release/",
-    "docs/architecture/",
-    "docs/conformance/",
-    "docs/workspace/"
+    "tooling/release/"
   ],
   "excluded_legacy_specs_dirs": [
     "0-principles",
