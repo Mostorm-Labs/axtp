@@ -4,6 +4,33 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.8.8
+
+Protocol draft readability and template hygiene patch.
+
+### Protocol
+
+- Keeps AXTP wire, CONTROL, RPC, STREAM, method, event, schema, capability, profile, and error semantics unchanged from `spec/v0.8.7`.
+- Does not change registry YAML, Protocol IR, generated references, MCP artifacts, test vectors, or conformance case behavior.
+
+### Documentation
+
+- Trims repeated capability-section pointers and generic common-error rows from protocol drafts while keeping method request/success examples, feature-specific error notes, state machines, legacy mapping notes, and review markers.
+- Normalizes remaining protocol draft examples by replacing old English error headings, generic failure reasons, and template placeholder values with compact Chinese headings and stable sample values.
+- Updates `workspace/protocol/draft-conventions.md` and the Stage 20 protocol draft template so new drafts keep feature-specific JSON examples but do not copy common capability or error boilerplate.
+- Refreshes `docs/product/protocol-draft-health.md` so product and protocol maintainers can see the current draft line counts, JSON example coverage, and review marker density.
+
+### Release Governance
+
+- Extends the protocol draft noise checker to reject repeated capability pointers, generic common-error rows, old `op=7/8` English headings, placeholder failure reasons, and template sample placeholders.
+- Keeps release artifact contents, manifest paths, runtime dispatch payloads, and release automation behavior unchanged from `spec/v0.8.7`.
+
+### Runtime Impact
+
+- Runtime and SDK teams do not need wire-level, registry, SDK API, generated metadata, or conformance behavior changes for this release.
+- Runtime upgrade workflows should bind to the exact `spec/v0.8.8` tag and consume the release artifact as before.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.8.7
 
 Release artifact governance and backstage documentation slimming patch.
