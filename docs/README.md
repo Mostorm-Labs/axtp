@@ -18,7 +18,7 @@ Release owner 是前台角色；`release/` 是发布操作区，用来管理 spe
 
 | 合同类型 | 读取位置 | Runtime 可直接实现 |
 |---|---|---:|
-| Generated 合同 | [../contract/generated/protocol.md](../contract/generated/protocol.md), [../contract/generated/protocol.json](../contract/generated/protocol.json), `../contract/protocol/axtp.protocol.yaml` | 是 |
+| 生成合同 | [../contract/generated/protocol.md](../contract/generated/protocol.md), [../contract/generated/protocol.json](../contract/generated/protocol.json), `../contract/protocol/axtp.protocol.yaml` | 是 |
 | 人读正式规范 | [../specs/](../specs/README.md) | 是，但必须与 generated / YAML 对齐 |
 | Registry 事实 | `../contract/registry/**`, `../contract/registry/domains/**` | 是 |
 | Conformance | [../conformance/](../conformance/README.md) | 是，作为行为验收面 |
@@ -37,11 +37,11 @@ Release owner 是前台角色；`release/` 是发布操作区，用来管理 spe
 | `tooling/skills/` | Agent lifecycle skills 和流程定义。 | 否 |
 | `../workspace/registry-planning/candidates/` | 历史 / 候选 registry 表。 | 否 |
 
-## Generated 文件
+## 生成文件
 
-从文档编辑角度看，generated 输出是只读文件。如果 generated 内容不对，应修 source YAML、specs 或 generator，然后重新跑生成链。
+从文档编辑角度看，生成输出是只读文件。如果生成内容不对，应修 source YAML、specs 或 generator，然后重新跑生成链。
 
-| Generated 路径 | 来源 |
+| 生成路径 | 来源 |
 |---|---|
 | `../contract/protocol/axtp.protocol.yaml` | `../contract/registry/**`, `../contract/registry/domains/**` |
 | `../contract/generated/**` | Generator 从 Protocol IR 和 registry sources 生成 |

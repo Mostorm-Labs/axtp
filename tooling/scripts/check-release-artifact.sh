@@ -155,3 +155,4 @@ print("[OK] release archive contract paths verified")
 PY
 
 node "$root/tooling/scripts/check-links.mjs" "$root/dist/$artifact"
+node "$root/tooling/scripts/check-frontstage-language.mjs" "$root/dist/$artifact"

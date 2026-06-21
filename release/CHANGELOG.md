@@ -4,6 +4,33 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.8.10
+
+Frontstage language consistency and release artifact safety patch.
+
+### Protocol
+
+- Keeps AXTP wire, CONTROL, RPC, STREAM, method, event, schema, capability, profile, and error semantics unchanged from `spec/v0.8.9`.
+- Does not change registry YAML, Protocol IR, generated references, MCP artifacts, test vectors, or conformance case behavior.
+
+### Documentation
+
+- Normalizes frontstage documentation to Chinese-first wording across the docs reading route, role guides, product domain status, roadmap, and protocol draft health report while preserving protocol terms, paths, IDs, and implementation anchors.
+- Refreshes `docs/product/protocol-draft-health.md` as a release artifact-safe product summary that exposes domain-level health counts without listing backstage `workspace/protocol/**` draft paths.
+- Keeps file-level draft health analysis available through the local report script `--json` mode for maintainers who need backstage queues.
+
+### Release Governance
+
+- Adds `tooling/scripts/check-frontstage-language.mjs` to guard frontstage Chinese-first navigation language and prevent concrete backstage workspace paths from leaking into release artifact product pages.
+- Wires the frontstage language checker into PR validation, spec release validation, local release validation, and release artifact dry-run checks.
+- Extends release artifact dry-run validation so artifact-local frontstage docs are checked after the package is built.
+
+### Runtime Impact
+
+- Runtime and SDK teams do not need wire-level, registry, SDK API, generated metadata, or conformance behavior changes for this release.
+- Runtime upgrade workflows should bind to the exact `spec/v0.8.10` tag and consume the release artifact as before.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.8.9
 
 Protocol draft field readability, Chinese frontstage documentation, and governance patch.

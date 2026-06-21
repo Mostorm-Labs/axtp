@@ -292,94 +292,46 @@ function renderMarkdown(report) {
     },
   );
 
-  const tuningQueue = report.files
-    .filter((file) => file.genericExampleHints > 0 || file.genericOpenQuestions > 0 || file.reviewAsk > 0 || file.reviewFix > 0 || file.reviewBlocker > 0)
-    .sort(
-      (a, b) =>
-        b.genericExampleHints - a.genericExampleHints ||
-        b.genericOpenQuestions - a.genericOpenQuestions ||
-        b.reviewBlocker - a.reviewBlocker ||
-        b.reviewFix - a.reviewFix ||
-        b.reviewAsk - a.reviewAsk ||
-        b.lines - a.lines,
-    )
-    .slice(0, 30);
-
-  const priorityQueue = report.files
-    .filter((file) => file.genericExampleHints > 0 || file.genericOpenQuestions > 0 || file.reviewAsk > 0 || file.reviewFix > 0 || file.reviewBlocker > 0)
-    .sort(
-      (a, b) =>
-        a.priorityRank - b.priorityRank ||
-        b.generated - a.generated ||
-        b.genericExampleHints - a.genericExampleHints ||
-        b.genericOpenQuestions - a.genericOpenQuestions ||
-        b.reviewBlocker - a.reviewBlocker ||
-        b.reviewFix - a.reviewFix ||
-        b.reviewAsk - a.reviewAsk ||
-        b.lines - a.lines,
-    )
-    .slice(0, 30);
-
-  return `# AXTP Protocol Draft Health
+  return `# AXTP 协议草案健康度
 
 本页是产品和协议维护者查看草案健康度、示例质量和待确认问题密度的报告。它不是 runtime 实现合同；可实现事实仍以 \`contract/**\`、\`specs/**\` 和 \`conformance/**\` 为准。
 
-本页在 source repository 中由脚本生成并校验：
+本页是 release artifact-safe 摘要：只展示 domain 级计数和治理状态，不列后台 \`workspace/\` 文件路径。维护者需要文件级队列时，可运行脚本的 \`--json\` 模式在本地分析。
+
+本页由脚本生成并校验：
 
 \`\`\`bash
 node tooling/scripts/report-protocol-draft-health.mjs --write docs/product/protocol-draft-health.md
 node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/protocol-draft-health.md
 \`\`\`
 
-为避免 release artifact 断链，下方后台草案路径以纯文本显示，不作为 Markdown 链接。
+## 摘要
 
-## Summary
-
-| Metric | Count |
+| 指标 | 数量 |
 |---|---:|
-| Draft files | ${total.drafts} |
-| Generated draft files | ${total.generatedDrafts} |
-| Generated method/event facts | ${total.generatedFacts} |
-| Method sections | ${total.methods} |
-| Compact method examples | ${total.compactExamples} |
-| Method example gaps | ${total.exampleGaps} |
-| JSON examples | ${total.jsonExamples} |
-| Invalid JSON examples | ${total.invalidJsonExamples} |
-| Generic example hints | ${total.genericExampleHints} |
-| Generic open questions | ${total.genericOpenQuestions} |
-| Generic field placeholders | ${total.genericFieldPlaceholders} |
+| 草案文件 | ${total.drafts} |
+| 已生成草案文件 | ${total.generatedDrafts} |
+| 已生成 method/event 事实 | ${total.generatedFacts} |
+| Method 小节 | ${total.methods} |
+| 紧凑 method 示例 | ${total.compactExamples} |
+| Method 示例缺口 | ${total.exampleGaps} |
+| JSON 示例 | ${total.jsonExamples} |
+| 无效 JSON 示例 | ${total.invalidJsonExamples} |
+| 模板化示例提示 | ${total.genericExampleHints} |
+| 模板化开放问题 | ${total.genericOpenQuestions} |
+| 模板化字段占位 | ${total.genericFieldPlaceholders} |
 | REVIEW-ASK | ${total.reviewAsk} |
 | REVIEW-DRAFT | ${total.reviewDraft} |
 | REVIEW-FIX | ${total.reviewFix} |
 | REVIEW-BLOCKER | ${total.reviewBlocker} |
-| TBD after adoption | ${total.tbdAfterAdoption} |
+| 采纳后占位残留 | ${total.tbdAfterAdoption} |
 
-## Domain Health Matrix
+## 领域健康矩阵
 
-| Domain | Priority | Drafts | Generated Drafts | Generated Facts | Methods | Example Coverage | Review Markers | Generic Example Hints | Generic Open Questions | Focus |
+| 领域 | 优先级 | 草案 | 已生成草案 | 已生成事实 | Method 数 | 示例覆盖 | Review 标记 | 模板示例 | 模板问题 | 建议动作 |
 |---|---|---:|---:|---:|---:|---:|---|---:|---:|---|
 ${report.domains
   .map((domain) => `| ${domain.domain} | ${domain.priority || "未排期"} | ${domain.drafts} | ${domain.generatedDrafts} | ${domain.generatedFacts} | ${domain.methods} | ${domain.compactExamples}/${domain.methods} | ${reviewSummary(domain)} | ${domain.genericExampleHints} | ${domain.genericOpenQuestions} | ${focus(domain)} |`)
-  .join("\n")}
-
-## Product Priority Tuning Queue
-
-这张表按产品优先级排序，用于决定下一轮先人工调哪些草案。
-
-| File | Priority | Domain | Methods | Generic Example Hints | Generic Open Questions | Review Markers | Lines |
-|---|---|---|---:|---:|---:|---|---:|
-${priorityQueue
-  .map((file) => `| \`${file.file}\` | ${file.priority || "未排期"} | ${file.domain} | ${file.methods} | ${file.genericExampleHints} | ${file.genericOpenQuestions} | ASK ${file.reviewAsk} / DRAFT ${file.reviewDraft} / FIX ${file.reviewFix} / BLOCKER ${file.reviewBlocker} | ${file.lines} |`)
-  .join("\n")}
-
-## Mechanical Example Tuning Queue
-
-这张表按机械示例密度排序。它不是产品优先级，只用于找到模板味最重的草案。
-
-| File | Domain | Methods | Generic Example Hints | Generic Open Questions | Review Markers | Lines |
-|---|---|---:|---:|---:|---|---:|
-${tuningQueue
-  .map((file) => `| \`${file.file}\` | ${file.domain} | ${file.methods} | ${file.genericExampleHints} | ${file.genericOpenQuestions} | ASK ${file.reviewAsk} / DRAFT ${file.reviewDraft} / FIX ${file.reviewFix} / BLOCKER ${file.reviewBlocker} | ${file.lines} |`)
   .join("\n")}
 `;
 }

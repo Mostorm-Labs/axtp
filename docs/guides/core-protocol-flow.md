@@ -51,7 +51,7 @@ sequenceDiagram
 
 Standard Framed runtime 必须按 PayloadType 分发：
 
-| PayloadType | Parser | Phase 1 作用 |
+| PayloadType | 解析器 | Phase 1 作用 |
 |---:|---|---|
 | `0x01` | CONTROL | OPEN / ACCEPT / HEARTBEAT / HEARTBEAT_ACK / CLOSE / CLOSE_ACK；ACK / NACK 预留。 |
 | `0x02` | RPC | Hello / Identify / Identified / Request / Response / Event。 |

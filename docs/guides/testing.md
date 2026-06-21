@@ -1,4 +1,4 @@
-# Testing / Conformance Guide
+# 测试 / Conformance 指南
 
 Conformance 是 runtime、SDK、mock server 和工具仓库的行为验收入口。测试的目标不是从草案猜行为，而是按 runtime 声明的 profile / level，加载当前 spec 的 generated、Protocol IR、specs 和 conformance cases。
 

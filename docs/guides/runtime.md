@@ -1,4 +1,4 @@
-# Runtime / SDK Guide
+# Runtime / SDK 指南
 
 Runtime / SDK 的目标不是重新定义 AXTP，而是消费主仓库已经发布的协议合同，声明自己支持的 profile，并通过 conformance。
 
@@ -111,7 +111,7 @@ WebSocket open
 | RPC session | CONTROL 成功后再执行 Hello / Identify / Identified。 |
 | STREAM | 通过业务 RPC 建立 Stream Context，解析 16B STREAM Header 并按 `streamId` 投递数据。 |
 
-Frame、CONTROL、RPC、STREAM 的完整规则分别见 [Frame and Payload](../../specs/20-core.md)、[Control Session](../../specs/20-core.md)、[RPC Session](../../specs/20-core.md) 和 [Stream Data Plane](../../specs/20-core.md)。长流程参考 [core-protocol-flow.md](core-protocol-flow.md)。
+Frame、CONTROL、RPC、STREAM 的完整规则分别见 [核心协议](../../specs/20-core.md) 和 [核心协议流程指南](core-protocol-flow.md)。
 
 ## 验收定义
 

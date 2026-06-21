@@ -91,6 +91,7 @@ fi
 git diff --check
 bash tooling/scripts/print-spec-version.sh >/dev/null
 node tooling/scripts/check-draft-noise.mjs >/dev/null
+node tooling/scripts/check-frontstage-language.mjs >/dev/null
 node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/protocol-draft-health.md >/dev/null
 tooling/scripts/check-release-artifact.sh "${version}" >/dev/null
 node tooling/scripts/check-links.mjs "dist/axtp-spec-v${version}" >/dev/null

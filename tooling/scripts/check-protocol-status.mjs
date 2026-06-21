@@ -87,7 +87,7 @@ const domainStatus = fs.readFileSync(domainStatusPath, "utf8");
 if (/最后更新：\s*\d{4}-\d{2}-\d{2}/.test(domainStatus)) {
   fail("docs/product/domain-status.md: remove manual Last update dates; Drafts and Generated counts are script-checked");
 }
-if (!/Drafts 和 Generated 数量由 `tooling\/scripts\/check-protocol-status\.mjs` 校验/.test(domainStatus)) {
+if (!/草案数和已生成数量由 `tooling\/scripts\/check-protocol-status\.mjs` 校验/.test(domainStatus)) {
   fail("docs/product/domain-status.md: missing script-checked count policy");
 }
 

@@ -24,13 +24,13 @@
 
 ## 近期优先级
 
-| 优先级 | 目标 | Owner path |
+| 优先级 | 目标 | 责任入口 |
 |---|---|---|
-| P0 | 保持 release artifact、generated protocol 和 conformance validation 绿色。 | [Release Docs](../../release/README.md)、[Testing Guide](../guides/testing.md) |
-| P0 | 使用 Node mock-server 和 runtime conformance 验证 active runtimes 的 TCP / framed 行为。 | Runtime repositories + conformance profiles |
-| P1 | 将高置信度草案从 `workspace/protocol/**` 推进到 registry YAML 和 generated outputs。 | [Protocol Maintainer Guide](../guides/protocol-maintainer.md) |
+| P0 | 保持 release artifact、generated protocol 和 conformance validation 绿色。 | [发布文档](../../release/README.md)、[测试指南](../guides/testing.md) |
+| P0 | 使用 Node mock-server 和 runtime conformance 验证 active runtime 的 TCP / framed 行为。 | Runtime 仓库 + conformance profile |
+| P1 | 将高置信度草案从 `workspace/protocol/**` 推进到 registry YAML 和 generated outputs。 | [协议维护指南](../guides/protocol-maintainer.md) |
 | P1 | 按 domain 澄清产品状态和采纳优先级。 | [Product Domain Status](domain-status.md) |
-| P2 | 只有当 legacy adapter planning 支撑明确迁移目标时才继续推进。 | [Legacy Migration Guide](../guides/legacy-migration.md) |
+| P2 | 只有当 legacy adapter planning 支撑明确迁移目标时才继续推进。 | [Legacy 迁移指南](../guides/legacy-migration.md) |
 
 ## 规则
 

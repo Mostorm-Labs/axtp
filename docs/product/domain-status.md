@@ -1,19 +1,19 @@
-# AXTP Product Domain Status
+# AXTP 产品领域状态
 
 本页是产品 / 架构负责人查看 AXTP 业务能力覆盖、采纳优先级和下一步动作的入口。
 
 这里展示的是产品状态看板，不是 runtime 实现合同。runtime 能直接依赖的合同仍然是 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml`、`contract/generated/**`、`specs/**` 和 `conformance/**`。
 
-## Domain 状态矩阵
+## 领域状态矩阵
 
-> 更新规则：新增、删除、采纳、废弃 domain 草案或 registry domain 后，必须同步本矩阵的 Review、Priority 和 Next Step。
-> 计数规则：Drafts 和 Generated 数量由 `tooling/scripts/check-protocol-status.mjs` 校验。
+> 更新规则：新增、删除、采纳、废弃 domain 草案或 registry domain 后，必须同步本矩阵的评审状态、优先级和下一步。
+> 计数规则：草案数和已生成数量由 `tooling/scripts/check-protocol-status.mjs` 校验。
 > 验证方式：只有 `contract/registry/domains/<domain>/domain.yaml` 存在，并且 `pnpm --dir tooling/generators validate:sources` / `validate:protocol` 通过，才算 generated/adopted；其余为草案状态。
-> 草案健康和示例质量：见 [Protocol Draft Health](protocol-draft-health.md)，由 `tooling/scripts/report-protocol-draft-health.mjs` 生成并校验。
+> 草案健康和示例质量：见 [协议草案健康度](protocol-draft-health.md)，由 `tooling/scripts/report-protocol-draft-health.mjs` 生成并校验。
 
-本表用于让产品、架构、研发和测试快速判断每个 domain 当前走到哪里。`Generated` 统计当前 generated protocol 中已经落地的方法和事件数量；`video` / `audio` 的 P0 stream 优先级表示要同时采纳 RPC 建流/关流控制面和 STREAM 数据面字段约束。
+本表用于让产品、架构、研发和测试快速判断每个 domain 当前走到哪里。`已生成` 统计当前 generated protocol 中已经落地的方法和事件数量；`video` / `audio` 的 P0 stream 优先级表示要同时采纳 RPC 建流/关流控制面和 STREAM 数据面字段约束。
 
-| Domain | Drafts | Review | Generated | Priority | Next Step |
+| 领域 | 草案数 | 评审 | 已生成 | 优先级 | 下一步 |
 |---|---:|---|---:|---|---|
 | audio | 12 | ASK | 13 | 旁路高覆盖 / P0 stream | `audio.algorithm` 与 `audio.stream` 已进入 generated；后续按修订流程维护并补齐剩余 audio 草案确认。 |
 | auth | 3 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
@@ -63,7 +63,7 @@
 | `audio.volume`、`audio.input`、`audio.recording` | 31 条 | `audio.algorithm` 已 generated；这些可作为音频第二批。 |
 | `video.stream`、`video.ndi`、`video.rtsp` | 23 条 | 与 framing、camera、layout 相关，建议等 P2/P3 的控制面边界稳定后采纳。 |
 
-## 后续治理 TODO
+## 后续治理事项
 
 - 将本页从手动维护逐步迁移为从 registry、generated JSON 和 protocol frontmatter 自动生成。
 - legacy 拼写兼容页可在外部旧链接迁移完成后删除；当前正确路径为 `cast-receiver-uxplay` 和 `cast-rxtx-pairing`。

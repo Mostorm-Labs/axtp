@@ -1,40 +1,40 @@
-# AXTP Protocol Draft Health
+# AXTP 协议草案健康度
 
 本页是产品和协议维护者查看草案健康度、示例质量和待确认问题密度的报告。它不是 runtime 实现合同；可实现事实仍以 `contract/**`、`specs/**` 和 `conformance/**` 为准。
 
-本页在 source repository 中由脚本生成并校验：
+本页是 release artifact-safe 摘要：只展示 domain 级计数和治理状态，不列后台 `workspace/` 文件路径。维护者需要文件级队列时，可运行脚本的 `--json` 模式在本地分析。
+
+本页由脚本生成并校验：
 
 ```bash
 node tooling/scripts/report-protocol-draft-health.mjs --write docs/product/protocol-draft-health.md
 node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/protocol-draft-health.md
 ```
 
-为避免 release artifact 断链，下方后台草案路径以纯文本显示，不作为 Markdown 链接。
+## 摘要
 
-## Summary
-
-| Metric | Count |
+| 指标 | 数量 |
 |---|---:|
-| Draft files | 103 |
-| Generated draft files | 9 |
-| Generated method/event facts | 55 |
-| Method sections | 430 |
-| Compact method examples | 430 |
-| Method example gaps | 0 |
-| JSON examples | 1131 |
-| Invalid JSON examples | 0 |
-| Generic example hints | 0 |
-| Generic open questions | 0 |
-| Generic field placeholders | 0 |
+| 草案文件 | 103 |
+| 已生成草案文件 | 9 |
+| 已生成 method/event 事实 | 55 |
+| Method 小节 | 430 |
+| 紧凑 method 示例 | 430 |
+| Method 示例缺口 | 0 |
+| JSON 示例 | 1131 |
+| 无效 JSON 示例 | 0 |
+| 模板化示例提示 | 0 |
+| 模板化开放问题 | 0 |
+| 模板化字段占位 | 0 |
 | REVIEW-ASK | 77 |
 | REVIEW-DRAFT | 122 |
 | REVIEW-FIX | 0 |
 | REVIEW-BLOCKER | 0 |
-| TBD after adoption | 0 |
+| 采纳后占位残留 | 0 |
 
-## Domain Health Matrix
+## 领域健康矩阵
 
-| Domain | Priority | Drafts | Generated Drafts | Generated Facts | Methods | Example Coverage | Review Markers | Generic Example Hints | Generic Open Questions | Focus |
+| 领域 | 优先级 | 草案 | 已生成草案 | 已生成事实 | Method 数 | 示例覆盖 | Review 标记 | 模板示例 | 模板问题 | 建议动作 |
 |---|---|---:|---:|---:|---:|---:|---|---:|---:|---|
 | audio | 旁路高覆盖 / P0 stream | 12 | 2 | 13 | 54 | 54/54 | ASK 2 / DRAFT 7 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
 | auth | 待排期 | 3 | 0 | 0 | 12 | 12/12 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
@@ -57,51 +57,3 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | stream | P0 data-plane plumbing | 2 | 0 | 0 | 18 | 18/18 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | system | P1 | 6 | 0 | 0 | 28 | 28/28 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | video | P0 stream | 12 | 1 | 9 | 51 | 51/51 | ASK 8 / DRAFT 14 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
-
-## Product Priority Tuning Queue
-
-这张表按产品优先级排序，用于决定下一轮先人工调哪些草案。
-
-| File | Priority | Domain | Methods | Generic Example Hints | Generic Open Questions | Review Markers | Lines |
-|---|---|---|---:|---:|---:|---|---:|
-| `workspace/protocol/video/video.stream.md` | P0 stream | video | 6 | 0 | 0 | ASK 4 / DRAFT 6 / FIX 0 / BLOCKER 0 | 958 |
-| `workspace/protocol/audio/audio.stream.md` | 旁路高覆盖 / P0 stream | audio | 5 | 0 | 0 | ASK 2 / DRAFT 7 / FIX 0 / BLOCKER 0 | 921 |
-| `workspace/protocol/video/video.framing.md` | P0 stream | video | 5 | 0 | 0 | ASK 4 / DRAFT 8 / FIX 0 / BLOCKER 0 | 868 |
-| `workspace/protocol/device/device.info.md` | P1 | device | 1 | 0 | 0 | ASK 3 / DRAFT 1 / FIX 0 / BLOCKER 0 | 505 |
-| `workspace/protocol/device/device.enrollment.md` | P1 | device | 3 | 0 | 0 | ASK 6 / DRAFT 12 / FIX 0 / BLOCKER 0 | 678 |
-| `workspace/protocol/firmware/firmware.update.md` | 旁路高覆盖 | firmware | 4 | 0 | 0 | ASK 5 / DRAFT 1 / FIX 0 / BLOCKER 0 | 871 |
-| `workspace/protocol/network/network.ip.md` | 旁路高覆盖 | network | 2 | 0 | 0 | ASK 5 / DRAFT 3 / FIX 0 / BLOCKER 0 | 625 |
-| `workspace/protocol/network/network.interface.md` | 旁路高覆盖 | network | 2 | 0 | 0 | ASK 4 / DRAFT 1 / FIX 0 / BLOCKER 0 | 574 |
-| `workspace/protocol/network/network.wifi.md` | 旁路高覆盖 | network | 7 | 0 | 0 | ASK 3 / DRAFT 9 / FIX 0 / BLOCKER 0 | 1023 |
-| `workspace/protocol/camera/camera.ptz.md` | P3/P4 | camera | 7 | 0 | 0 | ASK 6 / DRAFT 9 / FIX 0 / BLOCKER 0 | 932 |
-| `workspace/protocol/camera/camera.image.md` | P3/P4 | camera | 4 | 0 | 0 | ASK 6 / DRAFT 5 / FIX 0 / BLOCKER 0 | 590 |
-| `workspace/protocol/camera/camera.focus.md` | P3/P4 | camera | 11 | 0 | 0 | ASK 5 / DRAFT 20 / FIX 0 / BLOCKER 0 | 1598 |
-| `workspace/protocol/camera/camera.zoom.md` | P3/P4 | camera | 6 | 0 | 0 | ASK 5 / DRAFT 6 / FIX 0 / BLOCKER 0 | 759 |
-| `workspace/protocol/camera/camera.exposure.md` | P3/P4 | camera | 4 | 0 | 0 | ASK 3 / DRAFT 6 / FIX 0 / BLOCKER 0 | 594 |
-| `workspace/protocol/camera/camera.whiteBalance.md` | P3/P4 | camera | 4 | 0 | 0 | ASK 3 / DRAFT 6 / FIX 0 / BLOCKER 0 | 586 |
-| `workspace/protocol/software/software.config.md` | P7 | software | 3 | 0 | 0 | ASK 7 / DRAFT 9 / FIX 0 / BLOCKER 0 | 701 |
-| `workspace/protocol/software/software.updatePolicy.md` | P7 | software | 3 | 0 | 0 | ASK 6 / DRAFT 8 / FIX 0 / BLOCKER 0 | 678 |
-
-## Mechanical Example Tuning Queue
-
-这张表按机械示例密度排序。它不是产品优先级，只用于找到模板味最重的草案。
-
-| File | Domain | Methods | Generic Example Hints | Generic Open Questions | Review Markers | Lines |
-|---|---|---:|---:|---:|---|---:|
-| `workspace/protocol/software/software.config.md` | software | 3 | 0 | 0 | ASK 7 / DRAFT 9 / FIX 0 / BLOCKER 0 | 701 |
-| `workspace/protocol/camera/camera.ptz.md` | camera | 7 | 0 | 0 | ASK 6 / DRAFT 9 / FIX 0 / BLOCKER 0 | 932 |
-| `workspace/protocol/device/device.enrollment.md` | device | 3 | 0 | 0 | ASK 6 / DRAFT 12 / FIX 0 / BLOCKER 0 | 678 |
-| `workspace/protocol/software/software.updatePolicy.md` | software | 3 | 0 | 0 | ASK 6 / DRAFT 8 / FIX 0 / BLOCKER 0 | 678 |
-| `workspace/protocol/camera/camera.image.md` | camera | 4 | 0 | 0 | ASK 6 / DRAFT 5 / FIX 0 / BLOCKER 0 | 590 |
-| `workspace/protocol/camera/camera.focus.md` | camera | 11 | 0 | 0 | ASK 5 / DRAFT 20 / FIX 0 / BLOCKER 0 | 1598 |
-| `workspace/protocol/firmware/firmware.update.md` | firmware | 4 | 0 | 0 | ASK 5 / DRAFT 1 / FIX 0 / BLOCKER 0 | 871 |
-| `workspace/protocol/camera/camera.zoom.md` | camera | 6 | 0 | 0 | ASK 5 / DRAFT 6 / FIX 0 / BLOCKER 0 | 759 |
-| `workspace/protocol/network/network.ip.md` | network | 2 | 0 | 0 | ASK 5 / DRAFT 3 / FIX 0 / BLOCKER 0 | 625 |
-| `workspace/protocol/video/video.stream.md` | video | 6 | 0 | 0 | ASK 4 / DRAFT 6 / FIX 0 / BLOCKER 0 | 958 |
-| `workspace/protocol/video/video.framing.md` | video | 5 | 0 | 0 | ASK 4 / DRAFT 8 / FIX 0 / BLOCKER 0 | 868 |
-| `workspace/protocol/network/network.interface.md` | network | 2 | 0 | 0 | ASK 4 / DRAFT 1 / FIX 0 / BLOCKER 0 | 574 |
-| `workspace/protocol/network/network.wifi.md` | network | 7 | 0 | 0 | ASK 3 / DRAFT 9 / FIX 0 / BLOCKER 0 | 1023 |
-| `workspace/protocol/camera/camera.exposure.md` | camera | 4 | 0 | 0 | ASK 3 / DRAFT 6 / FIX 0 / BLOCKER 0 | 594 |
-| `workspace/protocol/camera/camera.whiteBalance.md` | camera | 4 | 0 | 0 | ASK 3 / DRAFT 6 / FIX 0 / BLOCKER 0 | 586 |
-| `workspace/protocol/device/device.info.md` | device | 1 | 0 | 0 | ASK 3 / DRAFT 1 / FIX 0 / BLOCKER 0 | 505 |
-| `workspace/protocol/audio/audio.stream.md` | audio | 5 | 0 | 0 | ASK 2 / DRAFT 7 / FIX 0 / BLOCKER 0 | 921 |
