@@ -140,6 +140,26 @@ const bannedLinePatterns = [
     reason: "generic registry/conformance status belongs in frontmatter and product domain status, not each draft",
   },
   {
+    pattern: /^本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry\/generated 事实为准。feature-specific 验收重点见下方测试要点。$/,
+    reason: "generic adoption status belongs in frontmatter and product domain status, not each draft",
+  },
+  {
+    pattern: /^采纳状态：本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry\/generated 事实为准。/,
+    reason: "generic adoption status belongs in frontmatter and product domain status, not each draft",
+  },
+  {
+    pattern: /^\|\s*`[^`]+`\s*采纳前还需确认哪些 schema、事件和 conformance 细节？\s*\|\s*schema \/ conformance\s*\|/,
+    reason: "generic adoption open questions belong in draft-conventions.md; drafts should keep only feature-specific questions",
+  },
+  {
+    pattern: /字段见 6\.1/,
+    reason: "lazy schema pointers must summarize the returned fields and may reference section 6.1 only as supporting detail",
+  },
+  {
+    pattern: /^\|\s*主要未决问题\s*\|\s*`?\[REVIEW-ASK\]/,
+    reason: "速读结论 may summarize open questions but must not duplicate REVIEW-ASK markers already listed in review tables",
+  },
+  {
     pattern: /^#### (?:\d+\.\d+\.\d+ )?Request d block Example \(op=7\)$/,
     reason: "method request examples must be folded into a single d block 示例 subsection",
   },
@@ -356,6 +376,18 @@ function checkKnownExampleValueDrift(relative, text) {
     {
       pattern: /"event": "network\.wifiScanResultReported"[\s\S]{0,300}"reason": "user_request"/,
       reason: "network.wifiScanResultReported reason examples must use scan reasons such as result or complete",
+    },
+    {
+      pattern: /"method": "software\.(?:getConfig|setConfig|resetConfig)"[\s\S]{0,900}"target": "runtime"/,
+      reason: "software.config examples must use supported targets such as launcher instead of the old runtime placeholder",
+    },
+    {
+      pattern: /"method": "software\.(?:getConfig|setConfig|resetConfig)"[\s\S]{0,900}"(?:profile|logLevel|networkMode)":/,
+      reason: "software.config examples must use the current SoftwareConfig shape instead of legacy runtime/profile fields",
+    },
+    {
+      pattern: /"method": "software\.(?:getUpdatePolicy|setUpdatePolicy|resetUpdatePolicy)"[\s\S]{0,900}"(?:mode|allowedWindow|autoInstall)":/,
+      reason: "software.updatePolicy examples must use the current policy.updateMode/schedule/channel/conditions shape",
     },
   ];
 

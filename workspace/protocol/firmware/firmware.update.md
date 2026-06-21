@@ -28,7 +28,7 @@ Capability ID：`firmware.update`
 |---|---|
 | 协议目的 | 让 PC Host 上传单 `.bin` 或多 `.bin` 固件文件；Host 上传完调用 `firmware.finishUpdate`，设备自主 md5 校验、安装和自动重启。 |
 | 当前状态 | generated；已写入 `../../../../contract/registry/domains/firmware/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| Stage 50 生成 | P0 最小字段集已写入 registry source 并生成；P1/P2 reserved 与 legacy `[REVIEW-ASK]` 未采纳。 |
+| Stage 50 生成 | P0 最小字段集已写入 registry source 并生成；P1/P2 reserved 与 legacy open questions 未采纳。 |
 | P0 主流程 | `getUpdateCapabilities` -> `beginUpdate` -> STREAM bytes -> `finishUpdate` -> state/progress events -> reconnect -> `firmware.getInfo`。 |
 | P0 方法 | `firmware.getUpdateCapabilities`, `firmware.beginUpdate`, `firmware.finishUpdate`, `firmware.getUpdateState`。 |
 | P0 事件 | `firmware.updateProgressReported`, `firmware.updateStateChanged`。 |
@@ -466,7 +466,7 @@ Capability：`FirmwareUpdateCapabilities`
 | `hashAlgorithm` | string | yes | `md5` | P0 固定 md5。 |
 | `autoReboot` | boolean | yes | `true`, `false` | 安装完成后是否由设备自动重启。 |
 | `maxChunkSize` | uint32 | no | bytes | Host 可使用的最大 STREAM data 大小。 |
-| `devicePolicyVersion` | string | no | product-defined | `[REVIEW-ASK]` 设备策略版本，用于 Host 解析多文件包。 |
+| `devicePolicyVersion` | string | no | product-defined | 设备策略版本，用于 Host 解析多文件包；是否必填见待确认问题。 |
 
 P0 约定：manifest 必填、finish 必填、不要求签名、不要求 resume、不要求 parallel transfer。为减少字段数量，这些固定规则不再重复放入 capability 字段。
 
@@ -491,7 +491,7 @@ Schema：`FirmwareUpdateManifest`
 | `packageId` | string | yes | product-defined | none | 固件更新包 ID。 |
 | `targetVersion` | string | yes | product-defined | none | 目标版本。 |
 | `files` | array<`FirmwareUpdateFile`> | yes | non-empty | none | 文件列表；单 `.bin` 也是一个文件。 |
-| `devicePolicyVersion` | string | no | product-defined | none | `[REVIEW-ASK]` Host 使用的设备策略版本。 |
+| `devicePolicyVersion` | string | no | product-defined | none | Host 使用的设备策略版本；是否必填见待确认问题。 |
 
 Schema：`FirmwareUpdateFile`
 
@@ -770,7 +770,7 @@ Response:
 
 ## 9. Legacy mapping candidates
 
-以下映射只作为人工审查输入；标为 `[REVIEW-ASK]` 的条目不得直接写入稳定 `legacyRefs`。
+以下映射只作为人工审查输入；open review 条目不得直接写入稳定 `legacyRefs`。
 
 | Source | Legacy item | Candidate mapping | Review status |
 |---|---|---|---|
@@ -825,7 +825,6 @@ Response:
 | `[REVIEW-OK]` | Security baseline | P0 md5，不强制签名。 |
 | `[REVIEW-OK]` | Reboot baseline | 设备自动重启，Host 等待重连。 |
 | `[REVIEW-OK]` | Old P0 `commit/verify/install` | 已处理：不再作为 P0 主流程；降为 P1/advanced，未写入本次 registry source。 |
-| `[REVIEW-ASK]` | Device policy version | 需确认策略 version 是否必填。 |
 
 ## 附录 B. 协议决策记录
 

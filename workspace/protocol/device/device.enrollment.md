@@ -184,7 +184,7 @@ success:
 
 #### 3.2.2 返回结果 Result：`EnrollmentState`
 
-字段见 6.1。
+返回当前纳管 `state`，以及可选 `deviceId`、`workspaceId`、`endpoint`、`updatedAt` 和 `message`。`endpoint` 摘要字段在第 6 章展开。
 
 #### 3.2.3 d block 示例
 

@@ -93,6 +93,13 @@ function countGenericExampleHints(text) {
   return patterns.reduce((total, pattern) => total + countMatches(text, pattern), 0);
 }
 
+function countGenericOpenQuestions(text) {
+  return countMatches(
+    text,
+    /^\| `[^`]+` 采纳前还需确认哪些 schema、事件和 conformance 细节？ \| schema \/ conformance \| 按本文 method\/event 示例逐项确认字段、边界错误和测试用例；确认后再进入 registry review。 \| open \|$/gm,
+  );
+}
+
 function generatedDomainCounts() {
   const generated = JSON.parse(fs.readFileSync(generatedPath, "utf8"));
   const counts = new Map();
@@ -137,6 +144,7 @@ function emptyDomainStats(domain) {
     jsonExamples: 0,
     invalidJsonExamples: 0,
     genericExampleHints: 0,
+    genericOpenQuestions: 0,
     reviewAsk: 0,
     reviewDraft: 0,
     reviewFix: 0,
@@ -191,6 +199,7 @@ function analyze() {
       reviewBlocker: countMatches(text, /\[REVIEW-BLOCKER\]/g),
       tbdAfterAdoption: countMatches(text, /TBD after adoption/g),
       genericExampleHints: countGenericExampleHints(text),
+      genericOpenQuestions: countGenericOpenQuestions(text),
       jsonExamples: jsonExamples.count,
       invalidJsonExamples: jsonExamples.invalid,
       lines: text.split(/\r?\n/).length,
@@ -204,6 +213,7 @@ function analyze() {
     stats.jsonExamples += fileStats.jsonExamples;
     stats.invalidJsonExamples += fileStats.invalidJsonExamples;
     stats.genericExampleHints += fileStats.genericExampleHints;
+    stats.genericOpenQuestions += fileStats.genericOpenQuestions;
     stats.reviewAsk += fileStats.reviewAsk;
     stats.reviewDraft += fileStats.reviewDraft;
     stats.reviewFix += fileStats.reviewFix;
@@ -227,6 +237,7 @@ function focus(stats) {
   if (stats.exampleGaps > 0) return "补 method 示例覆盖";
   if (stats.invalidJsonExamples > 0) return "修 JSON 示例语法";
   if (stats.reviewBlocker > 0 || stats.reviewFix > 0) return "先处理 blocker/fix";
+  if (stats.genericOpenQuestions > 0) return "删除模板 open question";
   if (stats.reviewAsk > 0 && stats.genericExampleHints > 0) return "确认 REVIEW-ASK + 调真实业务示例";
   if (stats.reviewAsk > 0) return "确认 REVIEW-ASK";
   if (stats.genericExampleHints > 0) return "调真实业务示例";
@@ -250,6 +261,7 @@ function renderMarkdown(report) {
       jsonExamples: 0,
       invalidJsonExamples: 0,
       genericExampleHints: 0,
+      genericOpenQuestions: 0,
       reviewAsk: 0,
       reviewDraft: 0,
       reviewFix: 0,
@@ -260,10 +272,11 @@ function renderMarkdown(report) {
   );
 
   const tuningQueue = report.files
-    .filter((file) => file.genericExampleHints > 0 || file.reviewAsk > 0 || file.reviewFix > 0 || file.reviewBlocker > 0)
+    .filter((file) => file.genericExampleHints > 0 || file.genericOpenQuestions > 0 || file.reviewAsk > 0 || file.reviewFix > 0 || file.reviewBlocker > 0)
     .sort(
       (a, b) =>
         b.genericExampleHints - a.genericExampleHints ||
+        b.genericOpenQuestions - a.genericOpenQuestions ||
         b.reviewBlocker - a.reviewBlocker ||
         b.reviewFix - a.reviewFix ||
         b.reviewAsk - a.reviewAsk ||
@@ -272,12 +285,13 @@ function renderMarkdown(report) {
     .slice(0, 30);
 
   const priorityQueue = report.files
-    .filter((file) => file.genericExampleHints > 0 || file.reviewAsk > 0 || file.reviewFix > 0 || file.reviewBlocker > 0)
+    .filter((file) => file.genericExampleHints > 0 || file.genericOpenQuestions > 0 || file.reviewAsk > 0 || file.reviewFix > 0 || file.reviewBlocker > 0)
     .sort(
       (a, b) =>
         a.priorityRank - b.priorityRank ||
         b.generated - a.generated ||
         b.genericExampleHints - a.genericExampleHints ||
+        b.genericOpenQuestions - a.genericOpenQuestions ||
         b.reviewBlocker - a.reviewBlocker ||
         b.reviewFix - a.reviewFix ||
         b.reviewAsk - a.reviewAsk ||
@@ -311,6 +325,7 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | JSON examples | ${total.jsonExamples} |
 | Invalid JSON examples | ${total.invalidJsonExamples} |
 | Generic example hints | ${total.genericExampleHints} |
+| Generic open questions | ${total.genericOpenQuestions} |
 | REVIEW-ASK | ${total.reviewAsk} |
 | REVIEW-DRAFT | ${total.reviewDraft} |
 | REVIEW-FIX | ${total.reviewFix} |
@@ -319,30 +334,30 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 
 ## Domain Health Matrix
 
-| Domain | Priority | Drafts | Generated Drafts | Generated Facts | Methods | Example Coverage | Review Markers | Generic Example Hints | Focus |
-|---|---|---:|---:|---:|---:|---:|---|---:|---|
+| Domain | Priority | Drafts | Generated Drafts | Generated Facts | Methods | Example Coverage | Review Markers | Generic Example Hints | Generic Open Questions | Focus |
+|---|---|---:|---:|---:|---:|---:|---|---:|---:|---|
 ${report.domains
-  .map((domain) => `| ${domain.domain} | ${domain.priority || "未排期"} | ${domain.drafts} | ${domain.generatedDrafts} | ${domain.generatedFacts} | ${domain.methods} | ${domain.compactExamples}/${domain.methods} | ${reviewSummary(domain)} | ${domain.genericExampleHints} | ${focus(domain)} |`)
+  .map((domain) => `| ${domain.domain} | ${domain.priority || "未排期"} | ${domain.drafts} | ${domain.generatedDrafts} | ${domain.generatedFacts} | ${domain.methods} | ${domain.compactExamples}/${domain.methods} | ${reviewSummary(domain)} | ${domain.genericExampleHints} | ${domain.genericOpenQuestions} | ${focus(domain)} |`)
   .join("\n")}
 
 ## Product Priority Tuning Queue
 
 这张表按产品优先级排序，用于决定下一轮先人工调哪些草案。
 
-| File | Priority | Domain | Methods | Generic Example Hints | Review Markers | Lines |
-|---|---|---|---:|---:|---|---:|
+| File | Priority | Domain | Methods | Generic Example Hints | Generic Open Questions | Review Markers | Lines |
+|---|---|---|---:|---:|---:|---|---:|
 ${priorityQueue
-  .map((file) => `| \`${file.file}\` | ${file.priority || "未排期"} | ${file.domain} | ${file.methods} | ${file.genericExampleHints} | ASK ${file.reviewAsk} / DRAFT ${file.reviewDraft} / FIX ${file.reviewFix} / BLOCKER ${file.reviewBlocker} | ${file.lines} |`)
+  .map((file) => `| \`${file.file}\` | ${file.priority || "未排期"} | ${file.domain} | ${file.methods} | ${file.genericExampleHints} | ${file.genericOpenQuestions} | ASK ${file.reviewAsk} / DRAFT ${file.reviewDraft} / FIX ${file.reviewFix} / BLOCKER ${file.reviewBlocker} | ${file.lines} |`)
   .join("\n")}
 
 ## Mechanical Example Tuning Queue
 
 这张表按机械示例密度排序。它不是产品优先级，只用于找到模板味最重的草案。
 
-| File | Domain | Methods | Generic Example Hints | Review Markers | Lines |
-|---|---|---:|---:|---|---:|
+| File | Domain | Methods | Generic Example Hints | Generic Open Questions | Review Markers | Lines |
+|---|---|---:|---:|---:|---|---:|
 ${tuningQueue
-  .map((file) => `| \`${file.file}\` | ${file.domain} | ${file.methods} | ${file.genericExampleHints} | ASK ${file.reviewAsk} / DRAFT ${file.reviewDraft} / FIX ${file.reviewFix} / BLOCKER ${file.reviewBlocker} | ${file.lines} |`)
+  .map((file) => `| \`${file.file}\` | ${file.domain} | ${file.methods} | ${file.genericExampleHints} | ${file.genericOpenQuestions} | ASK ${file.reviewAsk} / DRAFT ${file.reviewDraft} / FIX ${file.reviewFix} / BLOCKER ${file.reviewBlocker} | ${file.lines} |`)
   .join("\n")}
 `;
 }

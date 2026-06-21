@@ -21,7 +21,7 @@ lastReviewed: 2026-06-13
 | 是否使用 STREAM | 否 |
 | Registry readiness | candidate；zoom type、单位、`CommonSetPanTiltZoom` 拆分仍需确认。 |
 | Conformance | needed；需覆盖 capability、set ratio/position、move/stop、event 和 unsupported。 |
-| 主要未决问题 | `[REVIEW-ASK]` optical/digital/default zoom 如何表达；ratio 与 device position 的单位需固件确认。 |
+| 主要未决问题 | optical/digital/default zoom 如何表达；ratio 与 device position 的单位需固件确认。 |
 
 ## 1. 功能说明
 
@@ -738,11 +738,8 @@ success:
 | `Focus.GetZoomInfo` | `camera.getZoomState` | candidate | `digitalBase` / `opticsBase` 字段映射待确认。 |
 | `CommonSetPanTiltZoom` / `CommonGetPanTiltZoom` | `camera.zoom` + `camera.ptz` 拆分候选 | `[REVIEW-ASK]` | 名称含 PTZ，不能直接全部归 zoom。 |
 
-## 10. 采纳状态
 
-本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。feature-specific 验收重点见下方测试要点。
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -752,7 +749,7 @@ success:
 | capability discovery | UI slider 和 zoom type 与 capability 一致。 |
 | event | set/start/stop/reset 都能同步最终状态。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

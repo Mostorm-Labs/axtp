@@ -471,9 +471,3 @@ PowerChangedEvent
 | Schema | Event | 字段定义 |
 |---|---|---|
 | `PowerConfigChangedEvent` | `display.powerConfigChanged` | 见 `display.powerConfigChanged` 事件小节。 |
-
-## 7. 待确认问题
-
-| 问题 | 影响 | 当前建议 | 状态 |
-|---|---|---|---|
-| `display.power` 采纳前还需确认哪些 schema、事件和 conformance 细节？ | schema / conformance | 按本文 method/event 示例逐项确认字段、边界错误和测试用例；确认后再进入 registry review。 | open |

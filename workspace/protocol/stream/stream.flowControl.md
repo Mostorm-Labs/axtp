@@ -1331,9 +1331,3 @@ FlowControlChangedEvent
 | `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
 | `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
 | `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
-
-## 8. 待确认问题
-
-| 问题 | 影响 | 当前建议 | 状态 |
-|---|---|---|---|
-| `stream.flowControl` 采纳前还需确认哪些 schema、事件和 conformance 细节？ | schema / conformance | 按本文 method/event 示例逐项确认字段、边界错误和测试用例；确认后再进入 registry review。 | open |

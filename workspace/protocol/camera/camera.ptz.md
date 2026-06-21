@@ -21,7 +21,7 @@ lastReviewed: 2026-06-13
 | 是否使用 STREAM | 否 |
 | Registry readiness | candidate；movement / stop / preset 是否作为独立方法仍需确认。 |
 | Conformance | needed；需覆盖 capability、move/stop、preset、owner conflict 和 event。 |
-| 主要未决问题 | `[REVIEW-ASK]` `CommonSetPanTiltZoom` 是否拆分到 PTZ+zoom，preset 是否包含 zoom/focus/framing。 |
+| 主要未决问题 | `CommonSetPanTiltZoom` 是否拆分到 PTZ+zoom，preset 是否包含 zoom/focus/framing。 |
 
 ## 1. 功能说明
 
@@ -910,11 +910,8 @@ success:
 | `CommonGetPositionNumberJson` / `CommonSetPositionNumberJson` | preset 查询/保存候选 | `[REVIEW-ASK]` | 需确认 position number 是 PTZ preset 还是房间座位编号。 |
 | `CommonSetPanTiltZoom` / `CommonGetPanTiltZoom` | `camera.ptz` + `camera.zoom` 拆分候选 | `[REVIEW-ASK]` | 名称含 pan/tilt/zoom；payload 单位和字段边界需确认。 |
 
-## 10. 采纳状态
 
-本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。feature-specific 验收重点见下方测试要点。
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -924,7 +921,7 @@ success:
 | capability discovery | UI 控件与 capability 完全一致。 |
 | event | 移动开始/停止/限位/owner 变化均可同步。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

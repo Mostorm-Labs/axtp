@@ -21,7 +21,7 @@ lastReviewed: 2026-06-13
 | 是否使用 STREAM | 否。视频帧数据仍由 `video.stream` 和 STREAM 承载。 |
 | Registry readiness | candidate；已有候选 methods/events，但 mode enum、gallery 边界和 speaker tracking 依赖仍需确认。 |
 | Conformance | needed；需覆盖 capability、mode switch、region tracking、event sync、unsupported/conflict。 |
-| 主要未决问题 | `[REVIEW-ASK]` gallery/no-top-bar 是否归 framing，region tracking carrier 是否作为参数，speaker tracking 音频依赖如何表达。 |
+| 主要未决问题 | gallery/no-top-bar 是否归 framing，region tracking carrier 是否作为参数，speaker tracking 音频依赖如何表达。 |
 
 ## 1. 功能说明
 
@@ -846,11 +846,8 @@ success:
 | `CommonSetSpeakerTrackDelay` / `CommonGetSpeakerTrackDelay` | `speakerTracking.delayMs` | candidate | 单位是否毫秒待确认。 |
 | `Config.MultiSet:Video mode=auto-framing` | `mode=auto_framing` | candidate | VM33 字段仍需按实际 payload 核对。 |
 
-## 10. 采纳状态
 
-本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。feature-specific 验收重点见下方测试要点。
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -860,7 +857,7 @@ success:
 | capability discovery | mode、trackingCarrier、galleryVariants 与 set 参数一致。 |
 | event | set 成功触发 config/state event；失败不触发成功事件。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

@@ -25,10 +25,7 @@ Capability ID：`software.updatePolicy`
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
 | `[REVIEW-DRAFT]` | `software.updatePolicy` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-ASK]` | `software` 域名 | `software` 不在 Taxonomy spec rule 2 的示例列表（但 rule 2 使用 "e.g." 措辞）。 | 采纳前确认是否需要 taxonomy amendment。 |
-| `[REVIEW-ASK]` | `target` 枚举值 | 完整的 target 枚举值列表需要产品和设备确认。 | 采纳前补齐 target enum baseline。 |
-| `[REVIEW-ASK]` | 与 `firmware.updatePolicy` 的关系 | `firmware.updatePolicy` 已回退为 v0.1 骨架。两者是共存还是统一到 `software.updatePolicy(target: "firmware")`？ | 采纳前确认边界。 |
-| `[REVIEW-ASK]` | legacy 映射 | 旧协议命令字段和语义仍需确认。 | 采纳前补齐 legacyRefs 或明确 adapter-only。 |
+| `[REVIEW-DRAFT]` | 采纳前未决项 | taxonomy、target baseline、`firmware.updatePolicy` 边界、updateMode 和 schedule 语义见第 11 章。 | 采纳前逐项关闭或转成 registry proposal。 |
 
 ---
 
@@ -105,7 +102,7 @@ Capability ID：`software.updatePolicy`
 
 #### 3.1.2 返回结果 Result：`SoftwareUpdatePolicy`
 
-字段见 6.1。
+返回 `target` 和 target-specific `policy` 对象。`target="launcher"` 时，`policy` 包含 `updateMode`、`schedule`、`channel` 和可选 `conditions`；完整字段在第 6 章展开。
 
 #### 3.1.3 d block 示例
 
@@ -132,12 +129,19 @@ success:
   },
   "result": {
     "target": "launcher",
-    "mode": "manual",
-    "allowedWindow": {
-      "start": "02:00",
-      "end": "05:00"
-    },
-    "autoInstall": false
+    "policy": {
+      "updateMode": "manual",
+      "schedule": {
+        "start": "02:00",
+        "end": "05:00",
+        "timezone": "Asia/Shanghai"
+      },
+      "channel": "release",
+      "conditions": {
+        "requireIdle": true,
+        "requireWifi": false
+      }
+    }
   }
 }
 ```
@@ -181,7 +185,7 @@ success:
 
 #### 3.2.2 返回结果 Result：`SoftwareUpdatePolicy`
 
-字段见 6.1。
+返回写入后的完整策略快照。`policy` 对象按 target 展开；`launcher` 字段包括 `updateMode`、`schedule`、`channel` 和 `conditions`。
 
 #### 3.2.3 d block 示例
 
@@ -193,7 +197,10 @@ request:
   "method": "software.setUpdatePolicy",
   "params": {
     "target": "launcher",
-    "policy": {}
+    "policy": {
+      "channel": "release",
+      "updateMode": "manual"
+    }
   }
 }
 ```
@@ -209,12 +216,19 @@ success:
   },
   "result": {
     "target": "launcher",
-    "mode": "manual",
-    "allowedWindow": {
-      "start": "02:00",
-      "end": "05:00"
-    },
-    "autoInstall": false
+    "policy": {
+      "updateMode": "manual",
+      "schedule": {
+        "start": "02:00",
+        "end": "05:00",
+        "timezone": "Asia/Shanghai"
+      },
+      "channel": "release",
+      "conditions": {
+        "requireIdle": true,
+        "requireWifi": false
+      }
+    }
   }
 }
 ```
@@ -271,7 +285,7 @@ success:
 
 #### 3.3.2 返回结果 Result：`SoftwareUpdatePolicy`
 
-返回重置后的完整策略，省去额外 round-trip。字段见 6.1。
+返回重置后的完整策略，省去额外 round-trip。`launcher` 示例应回到默认 `updateMode`、`schedule`、`channel` 和 `conditions`。
 
 ---
 
@@ -300,12 +314,19 @@ success:
   },
   "result": {
     "target": "launcher",
-    "mode": "manual",
-    "allowedWindow": {
-      "start": "02:00",
-      "end": "05:00"
-    },
-    "autoInstall": false
+    "policy": {
+      "updateMode": "auto",
+      "schedule": {
+        "start": "02:00",
+        "end": "05:00",
+        "timezone": "Asia/Shanghai"
+      },
+      "channel": "release",
+      "conditions": {
+        "requireIdle": true,
+        "requireWifi": false
+      }
+    }
   }
 }
 ```

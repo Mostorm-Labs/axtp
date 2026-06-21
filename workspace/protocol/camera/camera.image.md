@@ -21,7 +21,7 @@ lastReviewed: 2026-06-13
 | 是否使用 STREAM | 否 |
 | Registry readiness | candidate；字段集合、视角归属和 VM33 Camera 配置拆分仍需确认。 |
 | Conformance | needed；需覆盖 capability、partial set、reset、event、unsupported/range。 |
-| 主要未决问题 | `[REVIEW-ASK]` sightAngle 是否归 image，VM33 Camera 泛配置如何拆分到 image/exposure/whiteBalance。 |
+| 主要未决问题 | sightAngle 是否归 image，VM33 Camera 泛配置如何拆分到 image/exposure/whiteBalance。 |
 
 ## 1. 功能说明
 
@@ -569,11 +569,8 @@ success:
 | `CommonSetSightAngle` / `CommonGetSightAngle` | `camera.image.sightAngle` | `[REVIEW-ASK]` | 需确认是否归 lens/framing。 |
 | `Config.MultiGet:Camera` / `Config.MultiGet:camera` | 拆分到 image/exposure/whiteBalance | `[REVIEW-ASK]` | 不能整体塞进 `camera.image`。 |
 
-## 10. 采纳状态
 
-本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。feature-specific 验收重点见下方测试要点。
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -583,7 +580,7 @@ success:
 | capability discovery | UI 字段、范围、默认值来自 capability。 |
 | event | set/reset/profile 变化均可同步。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

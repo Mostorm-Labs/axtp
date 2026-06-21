@@ -1573,7 +1573,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | `Focus.SetFocusRegion` | `camera.setFocusRegion` / `camera.triggerAutoFocus` | candidate | 点选坐标归一化。 |
 | `Focus.*Zoom` | `camera.zoom` | out-of-scope | 不归 `camera.focus`。 |
 
-采纳状态：本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。registry readiness 为 candidate，但事件拆分、坐标系统和 jog 仍需确认；feature-specific 验收重点见下方测试要点。
+采纳提醒：registry readiness 为 candidate；事件拆分、坐标系统和 jog 控制仍需确认，feature-specific 验收重点见下方测试要点。
 
 ## 10. 测试要点
 

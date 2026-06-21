@@ -21,7 +21,7 @@ lastReviewed: 2026-06-13
 | 是否使用 STREAM | 否 |
 | Registry readiness | candidate；ISO/gain/shutter/EV 单位和 WDR 归属仍需确认。 |
 | Conformance | needed；需覆盖 capability、mode dependency、set/reset/event、非法组合。 |
-| 主要未决问题 | `[REVIEW-ASK]` ISO 与 gain 是否同字段，shutter 单位，EV 枚举/范围，WDR 是否归 exposure。 |
+| 主要未决问题 | ISO 与 gain 是否同字段，shutter 单位，EV 枚举/范围，WDR 是否归 exposure。 |
 
 ## 1. 功能说明
 
@@ -573,11 +573,8 @@ success:
 | VM33 `Exposure.Mode` | `mode` | candidate | mode 枚举待确认。 |
 | VM33 `Exposure.ExposureValue` | `ev` 或 sensor sensitivity | `[REVIEW-ASK]` | 注释和命名不完全一致。 |
 
-## 10. 采纳状态
 
-本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。feature-specific 验收重点见下方测试要点。
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -587,7 +584,7 @@ success:
 | capability discovery | UI 根据 modeDependencies 启禁字段。 |
 | event | set/reset/auto algorithm/profile 变化均同步。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

@@ -21,7 +21,7 @@ lastReviewed: 2026-06-13
 | 是否使用 STREAM | 否 |
 | Registry readiness | candidate；手动白平衡使用色温、RGB gain 或二者都支持仍需确认。 |
 | Conformance | needed；需覆盖 mode dependency、set/reset/event、unsupported/range。 |
-| 主要未决问题 | `[REVIEW-ASK]` VM33 `WhiteBalance.Mode` 枚举、色温单位和 RGB gain 范围需确认。 |
+| 主要未决问题 | VM33 `WhiteBalance.Mode` 枚举、色温单位和 RGB gain 范围需确认。 |
 
 ## 1. 功能说明
 
@@ -565,11 +565,8 @@ success:
 | VM33 `WhiteBalance.Temperature` | `colorTemperatureK` | candidate | 单位和范围需确认。 |
 | `Config.MultiGet:Camera` / `Config.MultiGet:camera` | 拆分到 whiteBalance/image/exposure | `[REVIEW-ASK]` | 不能整体归 `camera.image`。 |
 
-## 10. 采纳状态
 
-本草案尚未 generated；状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。feature-specific 验收重点见下方测试要点。
-
-## 11. 测试要点
+## 10. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -579,7 +576,7 @@ success:
 | capability discovery | UI 根据 modes/modeDependencies 启禁字段。 |
 | event | set/reset/auto algorithm/profile 变化均同步。 |
 
-## 12. 待确认问题
+## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

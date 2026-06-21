@@ -25,10 +25,7 @@ Capability ID：`software.config`
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
 | `[REVIEW-DRAFT]` | `software.config` capability | 本文是根据业务需求创建的协议草案，不是最终事实源。 | 产品/架构/研发确认后进入 `adopt-protocol-draft`。 |
-| `[REVIEW-ASK]` | `software` 域名 | `software` 不在 Taxonomy spec rule 2 的示例列表（但 rule 2 使用 "e.g." 措辞）。 | 采纳前确认是否需要 taxonomy amendment。 |
-| `[REVIEW-ASK]` | `target` 枚举值 | 完整的 target 枚举值列表需要产品和设备确认。 | 采纳前补齐 target enum baseline。 |
-| `[REVIEW-ASK]` | legacy 映射 | 旧协议命令字段和语义仍需确认。 | 采纳前补齐 legacyRefs 或明确 adapter-only。 |
-| `[REVIEW-ASK]` | `displayName` 归属 | `displayName` 在 `device.info` 中为只读，在 `software.config` 中提供写入路径。同一数据两个协议暴露可能引起困惑。 | 采纳前确认是保留此设计还是将写入路径归入 `device.info` 扩展。 |
+| `[REVIEW-DRAFT]` | 采纳前未决项 | taxonomy、target baseline、legacy `ResetConfig` scope 和 `displayName` 归属见第 11 章。 | 采纳前逐项关闭或转成 registry proposal。 |
 
 ---
 
@@ -101,7 +98,7 @@ Capability ID：`software.config`
 
 #### 3.1.2 返回结果 Result：`SoftwareConfig`
 
-字段见 6.1。
+返回 `target` 和 target-specific `config` 对象。`target="launcher"` 时，`config` 至少包含可选 `displayName` 与 `appearance` 外观配置；完整字段在第 6 章展开。
 
 #### 3.1.3 d block 示例
 
@@ -112,10 +109,7 @@ request:
   "id": 101,
   "method": "software.getConfig",
   "params": {
-    "target": "runtime",
-    "sections": [
-      "config"
-    ]
+    "target": "launcher"
   }
 }
 ```
@@ -130,13 +124,15 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "runtime",
-      "profile": "default",
-      "logLevel": "info",
-      "networkMode": "dhcp"
-    },
-    "sampledAt": "2026-06-15T08:00:01Z"
+    "target": "launcher",
+    "config": {
+      "displayName": "Front Desk Display",
+      "appearance": {
+        "panelLayout": "sidebar",
+        "autoHidePanel": false,
+        "autoHideDelay": 5
+      }
+    }
   }
 }
 ```
@@ -180,7 +176,7 @@ success:
 
 #### 3.2.2 返回结果 Result：`SoftwareConfig`
 
-字段见 6.1。
+返回写入后的完整配置快照。`config` 对象按 target 展开；`launcher` 字段包括 `displayName` 和 `appearance`。
 
 #### 3.2.3 d block 示例
 
@@ -191,11 +187,11 @@ request:
   "id": 102,
   "method": "software.setConfig",
   "params": {
-    "target": "runtime",
+    "target": "launcher",
     "config": {
-      "profile": "default",
-      "logLevel": "info",
-      "networkMode": "dhcp"
+      "appearance": {
+        "panelLayout": "focus"
+      }
     }
   }
 }
@@ -211,12 +207,14 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true,
-    "state": {
-      "target": "runtime",
-      "profile": "default",
-      "logLevel": "info",
-      "networkMode": "dhcp"
+    "target": "launcher",
+    "config": {
+      "displayName": "Front Desk Display",
+      "appearance": {
+        "panelLayout": "focus",
+        "autoHidePanel": false,
+        "autoHideDelay": 5
+      }
     }
   }
 }
@@ -275,7 +273,7 @@ success:
 
 #### 3.3.2 返回结果 Result：`SoftwareConfig`
 
-返回重置后的完整配置，省去额外 round-trip。字段见 6.1。
+返回重置后的完整配置，省去额外 round-trip。`launcher` 示例应回到默认 `displayName` 与 `appearance`。
 
 #### 3.3.3 d block 示例
 
@@ -286,7 +284,7 @@ request:
   "id": 103,
   "method": "software.resetConfig",
   "params": {
-    "target": "runtime",
+    "target": "launcher",
     "reason": "config_update"
   }
 }
@@ -302,8 +300,15 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true,
-    "actionId": "software-resetconfig-20260615-001"
+    "target": "launcher",
+    "config": {
+      "displayName": "Display",
+      "appearance": {
+        "panelLayout": "sidebar",
+        "autoHidePanel": false,
+        "autoHideDelay": 5
+      }
+    }
   }
 }
 ```

@@ -280,9 +280,3 @@ ProfileChangedEvent
 ### 6.4 Event Schemas
 
 当前草案暂不定义 event payload schema。
-
-## 7. 待确认问题
-
-| 问题 | 影响 | 当前建议 | 状态 |
-|---|---|---|---|
-| `stream.profile` 采纳前还需确认哪些 schema、事件和 conformance 细节？ | schema / conformance | 按本文 method/event 示例逐项确认字段、边界错误和测试用例；确认后再进入 registry review。 | open |
