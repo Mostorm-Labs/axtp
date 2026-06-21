@@ -470,19 +470,7 @@ VolumeChangedEvent
 |---|---|---|
 | `set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。` | `audio.volumeStateChanged` | 见 `audio.volumeStateChanged` 事件小节。 |
 
-### 6.5 State / Config / Object Schemas
-
-| Schema | 用途 | 状态 |
-|---|---|---|
-| `VolumeState` | 表达 `audio.volume` 的当前状态、配置或摘要。 | `[REVIEW-ASK]` |
-| `VolumeConfig` | 表达 `audio.volume` 的可写配置。 | `[REVIEW-ASK]` |
-
-## 7. 错误
-
-| 错误 | 适用场景 | 说明 |
-|---|---|---|
-
-## 8. 待确认问题
+## 7. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

@@ -471,19 +471,7 @@ InputChangedEvent
 |---|---|---|
 | `InputConfigChangedEvent` | `display.inputConfigChanged` | 见 `display.inputConfigChanged` 事件小节。 |
 
-### 6.5 State / Config / Object Schemas
-
-| Schema | 用途 | 状态 |
-|---|---|---|
-| `InputState` | 表达 `display.input` 的当前状态、配置或摘要。 | `[REVIEW-ASK]` |
-| `InputConfig` | 表达 `display.input` 的可写配置。 | `[REVIEW-ASK]` |
-
-## 7. 错误
-
-| 错误 | 适用场景 | 说明 |
-|---|---|---|
-
-## 8. 待确认问题
+## 7. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

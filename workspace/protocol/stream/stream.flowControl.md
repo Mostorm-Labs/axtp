@@ -124,14 +124,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.1.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.2 `audio.startRecording`
 
@@ -197,14 +189,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.2.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.3 `file.beginUpload`
 
@@ -270,14 +254,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.3.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.4 `firmware.beginUpdate`
 
@@ -343,14 +319,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.4.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.5 `stream.open`
 
@@ -416,14 +384,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.5.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.6 `video.closeStream`
 
@@ -489,14 +449,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.6.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.7 `audio.stopRecording`
 
@@ -562,14 +514,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.7.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.8 `stream.close`
 
@@ -635,14 +579,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.8.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.9 `stream.getCapabilities`
 
@@ -717,14 +653,6 @@ success:
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.9.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.10 `stream.getState`
 
@@ -797,14 +725,6 @@ success:
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.10.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.11 `stream.getStats`
 
@@ -878,14 +798,6 @@ success:
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.11.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.12 `stream.ack`
 
@@ -951,14 +863,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.12.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.13 `stream.windowUpdate`
 
@@ -1024,14 +928,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.13.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.14 `stream.pause`
 
@@ -1097,14 +993,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.14.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.15 `stream.resume`
 
@@ -1170,14 +1058,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.15.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ### 3.16 `stream.abort`
 
@@ -1243,14 +1123,6 @@ success:
 |---|---|---|---|
 | `stream.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
-#### 3.16.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ## 4. 事件 Events
 
@@ -1443,47 +1315,7 @@ FlowControlChangedEvent
   changedFields / state / source / reason / stateRevision
 ```
 
-### 6.2 请求与响应 Schemas
-
-| Schema | 用途 | 字段定义 |
-|---|---|---|
-| `OpenStreamParams` | `video.openStream` request params | 见 `video.openStream` 方法小节。 |
-| `OpenStreamResult` | `video.openStream` result | 见 `video.openStream` 方法小节。 |
-| `StartRecordingParams` | `audio.startRecording` request params | 见 `audio.startRecording` 方法小节。 |
-| `StartRecordingResult` | `audio.startRecording` result | 见 `audio.startRecording` 方法小节。 |
-| `BeginUploadParams` | `file.beginUpload` request params | 见 `file.beginUpload` 方法小节。 |
-| `BeginUploadResult` | `file.beginUpload` result | 见 `file.beginUpload` 方法小节。 |
-| `BeginUpdateParams` | `firmware.beginUpdate` request params | 见 `firmware.beginUpdate` 方法小节。 |
-| `BeginUpdateResult` | `firmware.beginUpdate` result | 见 `firmware.beginUpdate` 方法小节。 |
-| `OpenParams` | `stream.open` request params | 见 `stream.open` 方法小节。 |
-| `OpenResult` | `stream.open` result | 见 `stream.open` 方法小节。 |
-| `CloseStreamParams` | `video.closeStream` request params | 见 `video.closeStream` 方法小节。 |
-| `CloseStreamResult` | `video.closeStream` result | 见 `video.closeStream` 方法小节。 |
-| `StopRecordingParams` | `audio.stopRecording` request params | 见 `audio.stopRecording` 方法小节。 |
-| `StopRecordingResult` | `audio.stopRecording` result | 见 `audio.stopRecording` 方法小节。 |
-| `CloseParams` | `stream.close` request params | 见 `stream.close` 方法小节。 |
-| `CloseResult` | `stream.close` result | 见 `stream.close` 方法小节。 |
-| `GetCapabilitiesParams` | `stream.getCapabilities` request params | 见 `stream.getCapabilities` 方法小节。 |
-| `GetCapabilitiesResult` | `stream.getCapabilities` result | 见 `stream.getCapabilities` 方法小节。 |
-| `GetStateParams` | `stream.getState` request params | 见 `stream.getState` 方法小节。 |
-| `GetStateResult` | `stream.getState` result | 见 `stream.getState` 方法小节。 |
-| `GetStatsParams` | `stream.getStats` request params | 见 `stream.getStats` 方法小节。 |
-| `GetStatsResult` | `stream.getStats` result | 见 `stream.getStats` 方法小节。 |
-| `AckParams` | `stream.ack` request params | 见 `stream.ack` 方法小节。 |
-| `AckResult` | `stream.ack` result | 见 `stream.ack` 方法小节。 |
-| `WindowUpdateParams` | `stream.windowUpdate` request params | 见 `stream.windowUpdate` 方法小节。 |
-| `WindowUpdateResult` | `stream.windowUpdate` result | 见 `stream.windowUpdate` 方法小节。 |
-| `PauseParams` | `stream.pause` request params | 见 `stream.pause` 方法小节。 |
-| `PauseResult` | `stream.pause` result | 见 `stream.pause` 方法小节。 |
-| `ResumeParams` | `stream.resume` request params | 见 `stream.resume` 方法小节。 |
-| `ResumeResult` | `stream.resume` result | 见 `stream.resume` 方法小节。 |
-| `AbortParams` | `stream.abort` request params | 见 `stream.abort` 方法小节。 |
-| `AbortResult` | `stream.abort` result | 见 `stream.abort` 方法小节。 |
-
-### 6.3 Capability Schemas
-
-
-### 6.4 Event Schemas
+### 6.2 Event Schemas
 
 | Schema | Event | 字段定义 |
 |---|---|---|
@@ -1491,17 +1323,14 @@ FlowControlChangedEvent
 | `StatsReportedEvent` | `stream.statsReported` | 见 `stream.statsReported` 事件小节。 |
 | `FlowControlChangedEvent` | `stream.flowControlChanged` | 见 `stream.flowControlChanged` 事件小节。 |
 
-### 6.5 State / Config / Object Schemas
-
-| Schema | 用途 | 状态 |
-|---|---|---|
-| `FlowControlState` | 表达 `stream.flowControl` 的当前状态、配置或摘要。 | `[REVIEW-ASK]` |
-| `FlowControlConfig` | 表达 `stream.flowControl` 的可写配置。 | `[REVIEW-ASK]` |
-
 ## 7. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
+| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
+| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
+| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
+| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ## 8. 待确认问题
 

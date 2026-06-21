@@ -16,7 +16,7 @@ lastReviewed: 2026-06-15
 |---|---|
 | 这个能力做什么 | 管理设备自身 AP/SoftAP 的能力、SSID/安全配置、一次性凭据导出、运行状态和可选客户端列表。 |
 | 当前状态 | generated；已写入 `../../../../contract/registry/domains/network/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
+| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 open review markers 不属于已生成合同。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
 | Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
@@ -910,204 +910,7 @@ Capability 描述设备能做什么；`NetworkApConfig` 描述当前或目标配
 | `NetworkWifiBand` | `2g4`, `5g`, `6g`, `auto` | 与 `network.wifi` 共享。 |
 | `NetworkCredentialType` | `passphrase`, `pairing_token`, `opaque_ref` | 与 `network.wifi` 共享。 |
 
-## 7. JSON 示例
-
-示例只展示 RPC data block，不包裹外层 wire envelope。字段和 ID 在采纳前均为草案；敏感字段均使用占位符。
-
-### 7.1 场景：查询 AP 能力
-
-#### request
-
-```json
-{
-  "id": 101,
-  "method": "network.getApCapabilities",
-  "params": {
-    "interfaceId": "ap0"
-  }
-}
-```
-
-#### response
-
-```json
-{
-  "id": 101,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "capability": "network.ap",
-    "securityTypes": [
-      "wpa2_psk",
-      "wpa3_sae"
-    ],
-    "bands": [
-      "5g"
-    ],
-    "credentialExportModes": [
-      "passphrase"
-    ],
-    "credentialExportPolicies": [
-      "one_time"
-    ],
-    "defaultEnabled": true,
-    "canStartStop": true,
-    "clientListSupported": true,
-    "maxClients": 8
-  }
-}
-```
-
-读法：`defaultEnabled=true` 表示配对主路径默认不需要调用 `network.startAp`。
-
-### 7.2 场景：读取 AP 配置并一次性导出凭据
-
-#### request
-
-```json
-{
-  "id": 102,
-  "method": "network.getApConfig",
-  "params": {
-    "interfaceId": "ap0",
-    "credentialExport": "one_time"
-  }
-}
-```
-
-#### response
-
-```json
-{
-  "id": 102,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "interfaceId": "ap0",
-    "ssid": "NA20-RX-A1",
-    "security": "wpa2_psk",
-    "credential": {
-      "type": "passphrase",
-      "value": "<redacted>",
-      "exportPolicy": "one_time",
-      "expiresAtMs": 0,
-      "exportId": "cred-export-001"
-    },
-    "hidden": false,
-    "band": "5g",
-    "channel": 149,
-    "maxClients": 8
-  }
-}
-```
-
-读法：`credential.value` 是敏感的一次性导出凭据，只用于本地 Host 写入 NT10 Wi-Fi profile。
-
-### 7.3 场景：设置 AP SSID 和密码
-
-#### request
-
-```json
-{
-  "id": 103,
-  "method": "network.setApConfig",
-  "params": {
-    "config": {
-      "interfaceId": "ap0",
-      "ssid": "NA20-RX-A1",
-      "security": "wpa2_psk",
-      "credential": {
-        "type": "passphrase",
-        "value": "<redacted>",
-        "exportPolicy": "redacted"
-      },
-      "hidden": false,
-      "band": "5g",
-      "channel": 149
-    },
-    "apply": "immediate"
-  }
-}
-```
-
-#### response
-
-```json
-{
-  "id": 103,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "config": {
-      "interfaceId": "ap0",
-      "ssid": "NA20-RX-A1",
-      "security": "wpa2_psk",
-      "hidden": false,
-      "band": "5g",
-      "channel": 149
-    },
-    "applied": true,
-    "requiresApRestart": false
-  }
-}
-```
-
-读法：响应不回显明文 AP 密码。配置变化后设备应触发 `network.apConfigChanged`。
-
-### 7.4 场景：AP 状态变化事件
-
-```json
-{
-  "event": "network.apStateChanged",
-  "intent": 2,
-  "data": {
-    "interfaceId": "ap0",
-    "previousState": {
-      "interfaceId": "ap0",
-      "state": "starting"
-    },
-    "state": {
-      "interfaceId": "ap0",
-      "state": "running",
-      "ssid": "NA20-RX-A1",
-      "bssid": "02:00:00:00:20:02",
-      "clientCount": 0
-    },
-    "reason": "user_request"
-  }
-}
-```
-
-读法：AP 状态事件只表达 AP 服务角色状态；AP 本端 IP 由 `network.ipConfigChanged` 表达。
-
-### 7.5 场景：一次性凭据导出被拒绝
-
-```json
-{
-  "id": 104,
-  "status": {
-    "ok": false,
-    "code": 9,
-    "msg": "AP credential export is denied by current policy.",
-    "details": {
-      "candidateError": "NETWORK_CREDENTIAL_EXPORT_DENIED",
-      "supportedCredentialExportModes": [
-        "passphrase"
-      ]
-    }
-  }
-}
-```
-
-读法：`status.code=9` 对应 adopted `PERMISSION_DENIED`。候选业务错误名只作为草案 details。
-
-## 8. 错误
+## 7. 错误
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
@@ -1117,9 +920,9 @@ Capability 描述设备能做什么；`NetworkApConfig` 描述当前或目标配
 | `PERMISSION_DENIED` | 凭据导出、设置配置或停止 AP 被策略拒绝。 | 使用 adopted numeric code `9`。 |
 | `BUSY` | AP 正在启动、停止或重配置。 | 使用 adopted numeric code `5`。 |
 | `NETWORK_CREDENTIAL_EXPORT_DENIED` | 候选业务错误：一次性凭据导出被拒绝。 | `[REVIEW-DRAFT]`；采纳前确认是否需要 feature-specific errorCode。 |
-| `NETWORK_AP_CLIENT_LIST_UNAVAILABLE` | 候选业务错误：客户端列表不可用。 | `[REVIEW-ASK]`；若客户端列表不进 MVP，可不采纳。 |
+| `NETWORK_AP_CLIENT_LIST_UNAVAILABLE` | 候选业务错误：客户端列表不可用。 | `[REVIEW-DRAFT]`；若客户端列表不进 MVP，可不采纳。 |
 
-## 9. Legacy 映射
+## 8. Legacy 映射
 
 Legacy 映射是迁移证据，不是 runtime 合同。
 
@@ -1129,7 +932,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | VM33 `Config.Set:APInfo` | `network.setApConfig` | `[REVIEW-DRAFT]` | `Ssid` 和 `Password` 可映射到 AP config；是否立即重启 AP 待确认。 |
 | VM33 `Wifi.OpenApService` / `Wifi.openApService` | optional `network.startAp` + possible `network.setApConfig` | `[REVIEW-DRAFT]` | 旧 payload 同时带 `Password`、`FreqBand`、`Retransmit`；新协议中 AP 默认开启，开关低优先级。 |
 
-## 10. 测试要点
+## 9. 测试要点
 
 | 类型 | 要点 |
 |---|---|
@@ -1141,7 +944,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | compatibility | VM33 `APInfo` / `OpenApService` 字段可迁移，但旧 `Retransmit` 暂不进入 MVP。 |
 | pairing path | Host 用 AP config 组装 NT10 Wi-Fi profile；AP 本端 IP 和客户端列表仅作为可选验收。 |
 
-## 11. 待确认问题
+## 10. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

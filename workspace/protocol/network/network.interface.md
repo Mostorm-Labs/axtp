@@ -16,7 +16,7 @@ lastReviewed: 2026-06-15
 |---|---|
 | 这个能力做什么 | 枚举设备网络接口，并提供 `network.ap`、`network.wifi`、`network.ip` 引用所需的 `interfaceId`、`roles` 和默认接口信息。 |
 | 当前状态 | generated；已写入 `../../../../contract/registry/domains/network/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
+| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 open review markers 不属于已生成合同。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
 | Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |

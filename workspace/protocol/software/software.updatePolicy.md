@@ -101,7 +101,7 @@ Capability ID：`software.updatePolicy`
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` `[REVIEW-ASK]` | none | 要查询策略的软件对象。 |
+| `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 要查询策略的软件对象。 |
 
 #### 3.1.2 返回结果 Result：`SoftwareUpdatePolicy`
 
@@ -379,7 +379,7 @@ Capability name: `software.updatePolicy`。
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 说明 |
 |---|---|---:|---|---|
-| `supportedTargets` | string[] | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | 支持配置策略的软件对象。 `[REVIEW-ASK]` |
+| `supportedTargets` | string[] | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | 支持配置策略的软件对象；完整 target baseline 见待确认问题。 |
 | `supportedChannels` | string[] | no | `"release"`, `"beta"`, `"alpha"` | 支持的更新通道。 |
 | `supportsSchedule` | boolean | no | `true` / `false` | 是否支持时间窗口配置。 |
 
@@ -410,7 +410,7 @@ Capability name: `software.updatePolicy`。
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `start` | string | yes | `HH:mm`（本地时间） | none | 窗口开始时间。 |
-| `end` | string | yes | `HH:mm`（本地时间） | none | 窗口结束时间。`end < start` 表示跨午夜。 `[REVIEW-ASK]` |
+| `end` | string | yes | `HH:mm`（本地时间） | none | 窗口结束时间。`end < start` 暂按跨午夜候选处理；采纳前见待确认问题。 |
 | `timezone` | string | no | IANA timezone ID | 设备本地时区 | 时区。 |
 
 ### 6.4 `UpdateConditions`
@@ -420,7 +420,7 @@ Capability name: `software.updatePolicy`。
 | `requireIdle` | boolean | no | `true` / `false` | `true` | 是否要求设备空闲时才执行更新。 |
 | `requireWifi` | boolean | no | `true` / `false` | `false` | 是否要求 WiFi 网络下才下载更新。 |
 
-`[REVIEW-ASK]` `conditions` 是否需要标牌特有条件（如 `requirePlaybackIdle`——播放内容时暂停更新）。
+`conditions` 是否需要标牌特有条件（如 `requirePlaybackIdle`——播放内容时暂停更新）见待确认问题。
 
 ---
 
@@ -640,7 +640,7 @@ Capability name: `software.updatePolicy`。
 - `software.resetUpdatePolicy(target: "launcher")` 恢复后策略与默认值一致。
 - 收到 `software.updatePolicyChanged` 事件后，`software.getUpdatePolicy` 返回的策略应与事件 payload 一致。
 - 不支持 `"beta"` 通道的设备传 `channel: "beta"` 时应返回 `NOT_SUPPORTED`。
-- 跨日 window（`end < start`）语义需采纳前确认。`[REVIEW-ASK]`
+- 跨日 window（`end < start`）语义按跨午夜候选处理；采纳前见待确认问题。
 
 ---
 

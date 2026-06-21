@@ -16,7 +16,7 @@ lastReviewed: 2026-06-15
 |---|---|
 | 这个能力做什么 | 管理设备作为 Wi-Fi STA 的能力、profile 保存、扫描、连接、断开和认证/关联状态事件。 |
 | 当前状态 | generated；已写入 `../../../../contract/registry/domains/network/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
+| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 open review markers 不属于已生成合同。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
 | Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
@@ -909,7 +909,7 @@ Capability 描述设备能做什么；Config/Profile 描述保存的目标网络
 | `credential` | `NetworkCredential` | no | object | omitted | 敏感凭据；响应和事件不得明文回显。 |
 | `bssid` | string | no | BSSID | omitted | 目标 BSSID，用于锁定 NA20 AP。 |
 | `hidden` | boolean | no | bool | `false` | 是否连接隐藏 SSID。 |
-| `persist` | boolean | no | bool | `[REVIEW-ASK]` pairing 建议 `true` | 是否持久化保存。 |
+| `persist` | boolean | no | bool | pairing 建议 `true` | 是否持久化保存；最终默认值见待确认问题。 |
 | `autoConnect` | boolean | no | bool | `true` when source=pairing | 后续是否自动连接。 |
 | `source` | string enum | no | `user`, `pairing`, `provisioning`, `legacy` | `user` | profile 来源。 |
 
@@ -957,111 +957,19 @@ Capability 描述设备能做什么；Config/Profile 描述保存的目标网络
 
 ## 7. 交互流程示例 Flow Examples
 
-本章只保留端到端评审需要的关键流。单个 method 的 request / success 形状见第 3 章；公共 envelope、错误响应和 flow 写法见 [Protocol Draft Conventions](../draft-conventions.md)。
+本章只保留端到端顺序；单个 method 的 request / success 示例见第 3 章，event payload 示例见第 4 章。
 
 ### 7.1 查询 Wi-Fi 能力和当前状态
 
-客户端先确认 STA/AP、认证方式和当前连接状态，再决定是否写入 profile 或发起连接。
-
-```json
-{
-  "id": 701,
-  "method": "network.getWifiCapabilities",
-  "params": {
-    "interfaceId": "wlan0"
-  }
-}
-```
-
-```json
-{
-  "id": 702,
-  "method": "network.getWifiState",
-  "params": {
-    "interfaceId": "wlan0"
-  }
-}
-```
+客户端先调用 `network.getWifiCapabilities` 判断 STA/AP、认证方式和保存 profile 能力，再调用 `network.getWifiState` 获取当前连接状态。UI 不应启用 capability 未声明的安全类型、频段或操作。
 
 ### 7.2 写入 profile 并连接
 
-`network.setWifiConfig` 写入连接配置，`network.connectWifi` 发起连接动作；最终联网结果以 `network.wifiStateChanged` 或 `network.getWifiState` 为准。
-
-```json
-{
-  "id": 703,
-  "method": "network.setWifiConfig",
-  "params": {
-    "interfaceId": "wlan0",
-    "profile": {
-      "profileId": "profile_na20",
-      "ssid": "NearHub-Cast-A1",
-      "securityType": "wpa2_psk",
-      "credential": {
-        "type": "passphrase",
-        "secretRef": "<redacted>"
-      },
-      "source": "pairing"
-    },
-    "replaceExisting": true,
-    "makeDefault": true,
-    "connectAfterSave": true
-  }
-}
-```
-
-```json
-{
-  "id": 704,
-  "method": "network.connectWifi",
-  "params": {
-    "interfaceId": "wlan0",
-    "profileId": "profile_na20",
-    "timeoutMs": 15000
-  }
-}
-```
+配对路径先用 `network.setWifiConfig` 写入 profile；当 `source=pairing` 时，草案建议 `connectAfterSave=true`。随后可显式调用 `network.connectWifi` 做手动重试或连接非默认 profile。最终联网结果以 `network.wifiStateChanged` 或 `network.getWifiState` 为准。
 
 ### 7.3 连接成功或失败
 
-连接动作 accepted 后，设备用状态事件报告结果；失败响应或 failed event 应包含可恢复原因，避免客户端猜测。
-
-```json
-{
-  "event": "network.wifiStateChanged",
-  "intent": 1,
-  "data": {
-    "state": {
-      "interfaceId": "wlan0",
-      "state": "connected",
-      "profileId": "profile_na20",
-      "ssid": "NearHub-Cast-A1",
-      "ipReady": true
-    },
-    "previousState": {
-      "interfaceId": "wlan0",
-      "state": "connecting",
-      "profileId": "profile_na20"
-    },
-    "reason": "connect_completed"
-  }
-}
-```
-
-```json
-{
-  "id": 705,
-  "status": {
-    "ok": false,
-    "code": 12,
-    "msg": "Wi-Fi profile was not found.",
-    "details": {
-      "candidateError": "NETWORK_PROFILE_NOT_FOUND",
-      "profileId": "missing_profile"
-    }
-  }
-}
-```
+设备应通过 `network.wifiStateChanged` 上报 `connecting -> connected/failed`，并在失败响应或 failed event 中携带 `failureReason` / candidate error，避免客户端猜测。Wi-Fi `connected` 只表示 STA 链路完成；IP ready 由 `network.ip` 查询或事件确认。
 
 ## 8. 错误
 

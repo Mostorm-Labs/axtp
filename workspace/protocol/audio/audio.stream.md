@@ -16,7 +16,7 @@ lastReviewed: 2026-06-15
 |---|---|
 | 这个能力做什么 | 通过 `audio.openStream` / `audio.closeStream` 建立和关闭 AXTP 实时音频业务流，并用 STREAM 数据面承载音频 chunk。 |
 | 当前状态 | generated；已写入 `../../../../contract/registry/domains/audio/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
+| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 open review markers 不属于已生成合同。 |
 | 主要交互 | RPC + EVENT + STREAM |
 | 是否使用 STREAM | 是。RPC 负责建流、关流和状态；音频数据走 `PayloadType=STREAM`。 |
 | Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
@@ -29,7 +29,7 @@ lastReviewed: 2026-06-15
 
 NA20/NT10 投屏场景中，NT10 插入源端 PC 后自动向 NA20 推送上游 AAC 音频。NA20 只把该上游 source 暴露成 `wireless_cast_audio` source，并通过 `audio.openStream` 建立 `NA20 -> MediaHost` 下游音频 stream。该下游 stream 可以由 NA20 producer 主动请求 Host 接收，也可以由 MediaHost receiver 在 source 仍 `available/receiving` 时主动拉取。
 
-投屏 MVP 确认使用 AAC 透传，不要求 NA20 解码为 PCM 再发送给 MediaHost。AAC 的具体封装 `transportFormat` 是 ADTS、LATM、raw AAC 还是多种都支持，仍为 `[REVIEW-ASK]`。
+投屏 MVP 确认使用 AAC 透传，不要求 NA20 解码为 PCM 再发送给 MediaHost。AAC 的具体封装 `transportFormat` 是 ADTS、LATM、raw AAC 还是多种都支持，仍需设备/固件确认。
 
 ## 2. 能力边界
 
@@ -187,7 +187,7 @@ success:
 | `source` | string | yes | source id | none | 音频源。NA20/NT10 投屏为 `wireless_cast_audio`。 |
 | `peerRole` | enum | yes | `receiver`, `transmitter` | none | 声明接收本请求的对端应扮演的媒体角色。 |
 | `codec` | enum | yes | `aac`, `opus`, `pcm` | none | NA20/NT10 投屏 MVP 使用 `aac`。 |
-| `transportFormat` | enum | no | `adts`, `latm`, `raw_aac` | `[REVIEW-ASK]` | AAC 透传封装。采纳前确认默认值和支持集合。 |
+| `transportFormat` | enum | no | `adts`, `latm`, `raw_aac` | omitted | AAC 透传封装；采纳前确认默认值和支持集合。 |
 | `sampleRate` | uint32 | no | capability range | omitted | 采样率，例如 48000。 |
 | `channels` | uint8 | no | capability range | omitted | 声道数。 |
 | `sampleFormat` | enum | no | `aac`, `pcm_s16le`, `pcm_f32le` | codec default | `codec=aac` 时通常为 `aac`。 |
@@ -678,7 +678,7 @@ Capability name: `audio.stream`。
 | `supportsSourceStateEvent` | bool | yes | bool | none | 是否支持 source available/receiving event。 |
 | `supportsReceiverPull` | bool | yes | bool | none | MediaHost 是否可主动拉取。 |
 | `supportsProducerOpen` | bool | yes | bool | none | NA20 是否可主动 open。 |
-| `aacTransportFormats` | string[] | no | `adts`, `latm`, `raw_aac` | `[REVIEW-ASK]` | AAC 透传封装支持集合。 |
+| `aacTransportFormats` | string[] | no | `adts`, `latm`, `raw_aac` | omitted | AAC 透传封装支持集合；采纳前确认。 |
 | `flowControlManagedByRuntime` | bool | yes | bool | `true` | 普通业务 App 是否无需直接调用公共流控。 |
 
 ## 6. 字段 / Schemas

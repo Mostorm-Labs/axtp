@@ -84,6 +84,14 @@ const bannedLinePatterns = [
     reason: "generic PERMISSION_DENIED row belongs in draft-conventions.md unless it explains feature-specific authorization",
   },
   {
+    pattern: /^\|\s*`[^`]+(?:State|Config)`\s*\|\s*表达 `[^`]+` 的(?:当前状态、配置或摘要|可写配置)。\s*\|\s*`\[REVIEW-ASK\]`\s*\|$/,
+    reason: "placeholder State/Config schema rows must be removed or replaced with real fields",
+  },
+  {
+    pattern: /本文保留的 `\[REVIEW-ASK\]` 不属于已生成合同/,
+    reason: "explanatory text must not contain REVIEW-ASK markers that inflate review counts",
+  },
+  {
     pattern: /读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。/,
     reason: "generic success response explanation belongs in draft-conventions.md",
   },
@@ -359,6 +367,14 @@ function checkKnownExampleValueDrift(relative, text) {
   }
 }
 
+function checkEmptyErrorSections(relative, text) {
+  const emptyErrorSectionPattern =
+    /^## \d+\. 错误\n\n\| 错误 \| 适用场景 \| 说明 \|\n\|---\|---\|---\|\n(?=\n## )/gm;
+  for (const match of text.matchAll(emptyErrorSectionPattern)) {
+    errors.push(`${relative}:${lineNumber(text, match.index)}: empty error sections must be removed or filled with feature-specific errors`);
+  }
+}
+
 for (const file of files) {
   if (shouldSkip(file)) continue;
   const relative = path.relative(root, file);
@@ -391,6 +407,7 @@ for (const file of files) {
   checkMethodNumbering(file, relative, text);
   checkMethodExampleCoverage(file, relative, text);
   checkKnownExampleValueDrift(relative, text);
+  checkEmptyErrorSections(relative, text);
 }
 
 if (errors.length > 0) {

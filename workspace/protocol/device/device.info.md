@@ -16,7 +16,7 @@ lastReviewed: 2026-06-15
 |---|---|
 | 这个能力做什么 | 只读获取当前 AXTP endpoint 代表的主设备身份、产品、硬件、OS、软件、AXTP runtime 和轻量 capability 建模摘要。 |
 | 当前状态 | generated；已写入 `../../../../contract/registry/domains/device/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 `[REVIEW-ASK]` 不属于已生成合同。 |
+| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 open review markers 不属于已生成合同。 |
 | 主要交互 | RPC |
 | 是否使用 STREAM | 否 |
 | Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |

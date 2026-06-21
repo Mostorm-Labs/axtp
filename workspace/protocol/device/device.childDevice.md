@@ -489,19 +489,7 @@ ChildDeviceChangedEvent
 |---|---|---|
 | `低频连接、在线、关系、摘要状态变化通过 RPC Event。` | `device.childDeviceStateChanged` | 见 `device.childDeviceStateChanged` 事件小节。 |
 
-### 6.5 State / Config / Object Schemas
-
-| Schema | 用途 | 状态 |
-|---|---|---|
-| `ChildDeviceState` | 表达 `device.childDevice` 的当前状态、配置或摘要。 | `[REVIEW-ASK]` |
-| `ChildDeviceConfig` | 表达 `device.childDevice` 的可写配置。 | `[REVIEW-ASK]` |
-
-## 7. 错误
-
-| 错误 | 适用场景 | 说明 |
-|---|---|---|
-
-## 8. 待确认问题
+## 7. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

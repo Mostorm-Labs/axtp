@@ -299,19 +299,7 @@ StateChangedEvent
 |---|---|---|
 | `online 变化、uptime reset、CPU/内存摘要跨阈值、runtime 状态变化、runtime recovery 请求或完成。` | `system.stateChanged` | 见 `system.stateChanged` 事件小节。 |
 
-### 6.5 State / Config / Object Schemas
-
-| Schema | 用途 | 状态 |
-|---|---|---|
-| `StateState` | 表达 `system.state` 的当前状态、配置或摘要。 | `[REVIEW-ASK]` |
-| `StateConfig` | 表达 `system.state` 的可写配置。 | `[REVIEW-ASK]` |
-
-## 7. 错误
-
-| 错误 | 适用场景 | 说明 |
-|---|---|---|
-
-## 8. 待确认问题
+## 7. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|

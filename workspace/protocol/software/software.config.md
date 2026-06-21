@@ -97,7 +97,7 @@ Capability ID：`software.config`
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` `[REVIEW-ASK]` | none | 要读取配置的软件对象。 |
+| `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 要读取配置的软件对象。 |
 
 #### 3.1.2 返回结果 Result：`SoftwareConfig`
 
@@ -389,7 +389,7 @@ Capability name: `software.config`。
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 说明 |
 |---|---|---:|---|---|
-| `supportedTargets` | string[] | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | 支持配置的软件对象。 `[REVIEW-ASK]` |
+| `supportedTargets` | string[] | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | 支持配置的软件对象；完整 target baseline 见待确认问题。 |
 | `supportsReset` | boolean | no | `true` / `false` | 是否支持恢复默认配置。 |
 | `resetMayRestartSoftware` | boolean | no | `true` / `false` | 恢复是否可能重启软件。 |
 
@@ -410,7 +410,7 @@ Capability name: `software.config`。
 
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `displayName` | string | no | non-empty, max 64 chars `[REVIEW-ASK]` | omitted（使用设备出厂名称） | 用户可见的设备显示名称。设置后覆盖 `device.info` 返回的 `product.displayName`。`[REVIEW-ASK]` 此字段是否应归 `device.info` 而非 `software.config` 管理。 |
+| `displayName` | string | no | non-empty, max 64 chars | omitted（使用设备出厂名称） | 用户可见的设备显示名称。设置后覆盖 `device.info` 返回的 `product.displayName`；归属问题见待确认问题。 |
 | `appearance` | object | yes | 见子表 | (见子表) | 外观配置。 |
 
 `appearance` 子对象字段：
@@ -421,7 +421,7 @@ Capability name: `software.config`。
 | `autoHidePanel` | boolean | yes | `true` / `false` | `false` | 是否自动隐藏面板。 |
 | `autoHideDelay` | uint32 | yes | `> 0` | `5` | 自动隐藏延迟时间（秒）。仅在 `autoHidePanel` 为 `true` 时生效。 |
 
-`[REVIEW-ASK]` 其他 target（`signagePlayer`, `agent`）的配置字段待产品和设备确认后补充。
+其他 target（`signagePlayer`, `agent`）的配置字段待产品和设备确认后补充；采纳前见待确认问题。
 
 ---
 
@@ -599,7 +599,7 @@ Capability name: `software.config`。
 }
 ```
 
-**读法**：resetConfig 恢复所有配置到出厂默认值（包括 `displayName` 恢复为设备出厂名称），返回完整配置，省去额外 round-trip。`[REVIEW-ASK]` resetConfig 是否也重置 `displayName`。
+**读法**：resetConfig 恢复所有配置到出厂默认值（包括 `displayName` 恢复为设备出厂名称），返回完整配置，省去额外 round-trip；`displayName` 的 reset 语义见待确认问题。
 
 ### 7.4 配置变化事件
 
@@ -662,7 +662,7 @@ Capability name: `software.config`。
 |---|---|---|---|---|
 | `GetAppearanceConfig` | Server -> Device | `software.getConfig(target: "launcher")` | `[REVIEW-DRAFT]` | 字段映射：`panelLayout` → `config.appearance.panelLayout`, `autoHidePanel` → `config.appearance.autoHidePanel`, `autoHideDelay` → `config.appearance.autoHideDelay`。结构从 flat 变为嵌套。 |
 | `SetAppearanceConfig` | Server -> Device | `software.setConfig(target: "launcher")` | `[REVIEW-DRAFT]` | 同上字段映射。旧 flat 字段需 adapter 包装为 `config.appearance.*`。 |
-| `SetDeviceName` | Server -> Device | `software.setConfig(target: "launcher", config: { displayName })` | `[REVIEW-DRAFT]` | 字段映射：`devName` → `config.displayName`。`[REVIEW-ASK]` 是否应在 adapter 中映射还是通过独立 AXTP 方法。 |
+| `SetDeviceName` | Server -> Device | `software.setConfig(target: "launcher", config: { displayName })` | `[REVIEW-DRAFT]` | 字段映射：`devName` → `config.displayName`；是否需要独立 AXTP 方法见待确认问题。 |
 | `ResetConfig` | Server -> Device | `software.resetConfig(target: "launcher")` or `system.reset` | `[REVIEW-ASK]` | 需确认 legacy ResetConfig 是 Launcher 默认配置恢复还是系统级恢复。若是系统级，应走 `system.reset`。 |
 
 ---

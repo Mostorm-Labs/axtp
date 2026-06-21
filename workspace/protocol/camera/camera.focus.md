@@ -21,7 +21,7 @@ lastReviewed: 2026-06-15
 | 是否使用 STREAM | 否 |
 | Registry readiness | candidate；方法和事件轮廓已具备，ID/bitOffset/fieldId 待采纳分配。 |
 | Conformance | needed；需覆盖 capabilities、mode、AF action、manual position、region、jog、state/config events 和 mode conflict。 |
-| 主要未决问题 | `[REVIEW-ASK]` VM33 `Focus.SetFocus` 是绝对位置还是触发 AF；`startFocusMove` 是否进入首批 registry。 |
+| 主要未决问题 | VM33 `Focus.SetFocus` 是绝对位置还是触发 AF；`startFocusMove` 是否进入首批 registry。 |
 
 ## 1. 功能说明
 
@@ -52,7 +52,7 @@ lastReviewed: 2026-06-15
 | `camera.setFocusRegion` | command | 设置持久点选或区域 AF 目标。 | `SetFocusRegionParams` | `FocusCommandResult` | 是，`camera.focusRegionChanged` | `[REVIEW-DRAFT]` |
 | `camera.getFocusRegion` | query | 查询当前 AF target / point / region。 | `GetFocusRegionParams` | `FocusRegionState` | 否 | `[REVIEW-DRAFT]` |
 | `camera.triggerAutoFocus` | action | 触发一次自动对焦。 | `TriggerAutoFocusParams` | `FocusCommandResult` | 是，`camera.focusStateChanged` | `[REVIEW-DRAFT]` |
-| `camera.startFocusMove` | command | near/far jog 移动。 | `StartFocusMoveParams` | `FocusCommandResult` | 是，`camera.focusStateChanged` | `[REVIEW-ASK]` |
+| `camera.startFocusMove` | command | near/far jog 移动。 | `StartFocusMoveParams` | `FocusCommandResult` | 是，`camera.focusStateChanged` | `[REVIEW-DRAFT]` |
 | `camera.stopFocus` | command | 停止 AF、扫描或 jog。 | `StopFocusParams` | `FocusCommandResult` | 是，`camera.focusStateChanged` | `[REVIEW-DRAFT]` |
 
 ### 3.1 `camera.getFocusCapabilities`
@@ -157,26 +157,8 @@ success:
 | `NOT_SUPPORTED` | 设备固定焦且无可控 focus。 | 返回 unsupported feature。 |
 | `UNAVAILABLE` | camera service 尚未初始化。 | 返回可重试原因。 |
 
-#### 3.1.6 错误 d block 示例
 
-```json
-{
-  "id": 101,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Focus capability is unavailable.",
-    "details": {
-      "candidateError": "UNAVAILABLE",
-      "reason": "camera_service_not_ready"
-    }
-  }
-}
-```
-
-读法：失败响应不携带 `result`；客户端应按 `details.reason` 决定是否稍后重试。
-
-#### 3.1.7 规则
+#### 3.1.6 规则
 
 - Query method MUST NOT 因查询本身触发事件。
 - `modes`、`targets`、`positionRange` 缺失时，客户端 MUST 认为对应控制不可用。
@@ -256,26 +238,8 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | 摄像头未打开或被校准占用。 | 返回不可用原因。 |
 
-#### 3.2.6 错误 d block 示例
 
-```json
-{
-  "id": 102,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Camera is unavailable.",
-    "details": {
-      "candidateError": "UNAVAILABLE",
-      "reason": "camera_offline"
-    }
-  }
-}
-```
-
-读法：客户端不应使用旧缓存覆盖为成功状态；可显示不可用态并等待后续事件或人工刷新。
-
-#### 3.2.7 规则
+#### 3.2.6 规则
 
 - `getFocusState` SHOULD 返回设备当前可观测的完整 focus state。
 - 如果某些字段不可观测，字段 MAY 省略，但 MUST 保留 `focusState`。
@@ -358,31 +322,8 @@ success:
 | `NOT_SUPPORTED` | mode 不支持。 | 返回合法 modes。 |
 | `DEVICE_MODE_CONFLICT` | framing、calibration 或其他 owner 占用。 | 返回 owner。 |
 
-#### 3.3.6 错误 d block 示例
 
-```json
-{
-  "id": 103,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Focus mode is not supported.",
-    "details": {
-      "candidateError": "NOT_SUPPORTED",
-      "field": "mode",
-      "supported": [
-        "manual",
-        "auto"
-      ],
-      "actual": "continuous_auto"
-    }
-  }
-}
-```
-
-读法：mode 未生效，设备不应因此触发 `focusModeChanged`。
-
-#### 3.3.7 规则
+#### 3.3.6 规则
 
 - `mode` MUST 来自 `FocusCapabilities.modes`。
 - 重复设置相同 mode SHOULD 成功；状态未变化时 MAY 不触发事件。
@@ -460,24 +401,8 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | camera service 不可用。 | 返回不可用原因。 |
 
-#### 3.4.6 错误 d block 示例
 
-```json
-{
-  "id": 104,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Camera is unavailable.",
-    "details": {
-      "candidateError": "UNAVAILABLE",
-      "reason": "camera_offline"
-    }
-  }
-}
-```
-
-#### 3.4.7 规则
+#### 3.4.6 规则
 
 - Query method MUST NOT 触发事件。
 - 如果实现不提供轻量 get，可在 registry review 中合并到 `camera.getFocusState`。[REVIEW-DRAFT]
@@ -563,29 +488,8 @@ success:
 | `OUT_OF_RANGE` | position 超出能力范围。 | 返回合法范围。 |
 | `DEVICE_MODE_CONFLICT` | 当前不是 manual 且 `applyMode=require_manual`。 | 提示切换手动模式。 |
 
-#### 3.5.6 错误 d block 示例
 
-```json
-{
-  "id": 105,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Focus position is out of range.",
-    "details": {
-      "candidateError": "OUT_OF_RANGE",
-      "field": "position",
-      "min": 0,
-      "max": 1023,
-      "actual": 2048
-    }
-  }
-}
-```
-
-读法：请求未生效，不应触发 position/state changed event。
-
-#### 3.5.7 规则
+#### 3.5.6 规则
 
 - `position` MUST 落在 `FocusCapabilities.positionRange` 内。
 - `applyMode=require_manual` 时，如果当前不是 manual，设备 SHOULD 返回 `DEVICE_MODE_CONFLICT`。
@@ -665,24 +569,8 @@ success:
 |---|---|---|
 | `NOT_SUPPORTED` | 固定焦或设备无可读 position。 | 返回 unsupported。 |
 
-#### 3.6.6 错误 d block 示例
 
-```json
-{
-  "id": 106,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Manual focus position is not supported.",
-    "details": {
-      "candidateError": "NOT_SUPPORTED",
-      "field": "position"
-    }
-  }
-}
-```
-
-#### 3.6.7 规则
+#### 3.6.6 规则
 
 - Query method MUST NOT 触发事件。
 - 对固定焦设备，registry review 可决定是否省略该 method 或返回 `NOT_SUPPORTED`。[REVIEW-DRAFT]
@@ -732,7 +620,7 @@ request:
 }
 ```
 
-读法：`point` 使用归一化坐标；坐标原点和方向需在 registry review 中确认是否与 video/camera 坐标系统一致。[REVIEW-ASK]
+读法：`point` 使用归一化坐标；坐标原点和方向需在 registry review 中与 video/camera 坐标系统统一。
 
 success:
 
@@ -777,33 +665,12 @@ success:
 | `INVALID_ARGUMENT` | `target=point` 但缺少 `point`，或 `target=region` 但缺少 `region`。 | 返回缺失字段。 |
 | `OUT_OF_RANGE` | point/region 坐标越界。 | 返回合法范围。 |
 
-#### 3.7.6 错误 d block 示例
 
-```json
-{
-  "id": 107,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Focus point is out of range.",
-    "details": {
-      "candidateError": "OUT_OF_RANGE",
-      "field": "point.x",
-      "min": 0,
-      "max": 1,
-      "actual": 1.2
-    }
-  }
-}
-```
-
-读法：请求未生效，不应触发 `focusRegionChanged`。
-
-#### 3.7.7 规则
+#### 3.7.6 规则
 
 - `target=point` 时 SHOULD 携带 `point`。
 - `target=region` 时 SHOULD 携带 `region`。
-- 坐标 SHOULD 使用归一化 `0..1` 表达；正式坐标规则待 camera 坐标系统统一确认。[REVIEW-ASK]
+- 坐标 SHOULD 使用归一化 `0..1` 表达；正式坐标规则待 camera 坐标系统统一确认，见待确认问题。
 
 ### 3.8 `camera.getFocusRegion`
 
@@ -883,24 +750,8 @@ success:
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 point/region AF。 | 返回 unsupported target。 |
 
-#### 3.8.6 错误 d block 示例
 
-```json
-{
-  "id": 108,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Focus region is not supported.",
-    "details": {
-      "candidateError": "NOT_SUPPORTED",
-      "target": "region"
-    }
-  }
-}
-```
-
-#### 3.8.7 规则
+#### 3.8.6 规则
 
 - Query method MUST NOT 触发事件。
 - 如果当前 target 不是 `point` 或 `region`，对应 `point`/`region` 字段 SHOULD 省略。
@@ -997,26 +848,8 @@ success:
 | `BUSY` | 已有 AF 或校准动作进行中。 | 稍后重试或先 stop。 |
 | `TIMEOUT` | AF 超时。 | 可允许重试。 |
 
-#### 3.9.6 错误 d block 示例
 
-```json
-{
-  "id": 109,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Auto focus is busy.",
-    "details": {
-      "candidateError": "BUSY",
-      "operationId": "af-41"
-    }
-  }
-}
-```
-
-读法：动作未接受；设备不应因这个失败请求触发新的 focusing event。
-
-#### 3.9.7 规则
+#### 3.9.6 规则
 
 - 成功响应中的 `accepted=true` 不等于 AF 完成。
 - AF 完成、失败或取消 SHOULD 通过 `camera.focusStateChanged` 上报。
@@ -1104,27 +937,10 @@ success:
 | `DEVICE_MODE_CONFLICT` | 当前不是 manual 或设备不能自动切换。 | 提示切换手动。 |
 | `BUSY` | 已有 AF/jog 动作进行中。 | 稍后重试或 stop。 |
 
-#### 3.10.6 错误 d block 示例
 
-```json
-{
-  "id": 110,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Focus move conflicts with current mode.",
-    "details": {
-      "candidateError": "DEVICE_MODE_CONFLICT",
-      "requiredMode": "manual",
-      "currentMode": "continuous_auto"
-    }
-  }
-}
-```
+#### 3.10.6 规则
 
-#### 3.10.7 规则
-
-- 本方法是否进入首批 registry 仍为 `[REVIEW-ASK]`。
+- 本方法是否进入首批 registry 见待确认问题。
 - 如果设备支持 jog，`startFocusMove` SHOULD 搭配 `stopFocus`。
 - 实现 SHOULD 使用 `timeoutMs` 或设备默认超时防止持续移动。
 
@@ -1205,27 +1021,11 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | focus 控制链路不可用。 | 清除本地操作态。 |
 
-#### 3.11.6 错误 d block 示例
 
-```json
-{
-  "id": 111,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Focus control is unavailable.",
-    "details": {
-      "candidateError": "UNAVAILABLE",
-      "reason": "camera_service_not_ready"
-    }
-  }
-}
-```
-
-#### 3.11.7 规则
+#### 3.11.6 规则
 
 - `stopFocus` SHOULD be idempotent：没有进行中的 focus 动作时也可成功返回当前状态。
-- 如果指定 `operationId` 不存在，设备 MAY 返回成功的当前状态，或返回 `INVALID_ARGUMENT`。[REVIEW-ASK]
+- 如果指定 `operationId` 不存在，设备 MAY 返回成功的当前状态，或返回 `INVALID_ARGUMENT`；采纳前需固定 conformance 期望。
 
 ## 4. 事件 Events
 
@@ -1452,7 +1252,7 @@ success:
 
 - `target=point` 时 SHOULD 携带 `point`。
 - `target=region` 时 SHOULD 携带 `region`。
-- 坐标字段规范化规则待 camera 坐标系统统一确认。[REVIEW-ASK]
+- 坐标字段规范化规则待 camera 坐标系统统一确认，见待确认问题。
 
 ## 5. Capability
 
