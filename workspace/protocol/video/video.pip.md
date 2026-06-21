@@ -67,15 +67,14 @@ lastReviewed: 2026-06-15
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `program`；查询对象。 |
 
 #### 3.1.2 返回结果 Result：`GetPipCapabilitiesResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`enabled`、`sourceId`、`position`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.1.3 d block 示例
 
@@ -231,15 +230,19 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `program`；查询对象。 |
 
 #### 3.3.2 返回结果 Result：`GetPipConfigResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `target` | string | yes | see example | none | 查询对象。 |
+| `enabled` | bool | yes | see example | none | 是否启用。 |
+| `sourceId` | string | yes | see example | none | 标识符。 |
+| `position` | string | yes | see example | none | PIP 窗口位置。 |
+| `widthPercent` | uint32 | yes | see example | none | 窗口宽度百分比。 |
+| `heightPercent` | uint32 | yes | see example | none | 窗口高度百分比。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.3.3 d block 示例
 
@@ -250,10 +253,7 @@ request:
   "id": 103,
   "method": "video.getPipConfig",
   "params": {
-    "target": "program",
-    "sections": [
-      "window"
-    ]
+    "target": "program"
   }
 }
 ```
@@ -436,7 +436,6 @@ Capability name: `video.pip`。
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `video.pip` | none | capability 名称。 |
 | `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
-| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
 
 ## 6. 字段 / Schemas
 
@@ -444,7 +443,7 @@ Capability name: `video.pip`。
 
 ```text
 PipCapability
-  capability / supportedTargets / constraints
+  capability / supportedTargets
 PipState
   target / status / sampledAt
 PipChangedEvent

@@ -108,7 +108,7 @@ success:
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
-| `system.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `online 变化、uptime reset、CPU/内存摘要跨阈值、runtime 状态变化、runtime recovery 请求或完成。` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+| `system.stateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `StateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
 #### 3.1.5 错误
 
@@ -136,15 +136,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `device`；查询对象。 |
 
 #### 3.2.2 返回结果 Result：`SystemState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`lifecycle`、`health`、`uptimeSeconds`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.2.3 d block 示例
 
@@ -155,10 +154,7 @@ request:
   "id": 102,
   "method": "system.getState",
   "params": {
-    "target": "device",
-    "sections": [
-      "summary"
-    ]
+    "target": "device"
   }
 }
 ```
@@ -205,13 +201,13 @@ success:
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|
-| `system.stateChanged` | runtime online、health、uptime 或 recovery 状态变化 | `online 变化、uptime reset、CPU/内存摘要跨阈值、runtime 状态变化、runtime recovery 请求或完成。` | 更新 UI 或调用对应 get method 校准 | draft |
+| `system.stateChanged` | runtime online、health、uptime 或 recovery 状态变化 | `StateChangedEvent` | 更新 UI 或调用对应 get method 校准 | draft |
 
 ### 4.1 `system.stateChanged`
 
 **触发条件**：runtime online、health、uptime 或 recovery 状态变化。
 
-#### 4.1.1 Payload：`online 变化、uptime reset、CPU/内存摘要跨阈值、runtime 状态变化、runtime recovery 请求或完成。`
+#### 4.1.1 Payload：`StateChangedEvent`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -266,7 +262,6 @@ Capability name: `system.state`。
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `system.state` | none | capability 名称。 |
 | `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
-| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
 
 ## 6. 字段 / Schemas
 
@@ -274,7 +269,7 @@ Capability name: `system.state`。
 
 ```text
 StateCapability
-  capability / supportedTargets / constraints
+  capability / supportedTargets
 StateState
   target / status / sampledAt
 StateChangedEvent
@@ -297,4 +292,4 @@ StateChangedEvent
 
 | Schema | Event | 字段定义 |
 |---|---|---|
-| `online 变化、uptime reset、CPU/内存摘要跨阈值、runtime 状态变化、runtime recovery 请求或完成。` | `system.stateChanged` | 见 `system.stateChanged` 事件小节。 |
+| `StateChangedEvent` | `system.stateChanged` | 见 `system.stateChanged` 事件小节。 |

@@ -945,7 +945,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | `[REVIEW-OK]` | 不新增 `cast.streaming` | 整体投屏由 video/audio state 聚合，`castSessionId` 只是关联字段。 | 不创建 cast domain。 |
 | `[REVIEW-DRAFT]` | 双入口 open | producer-open 和 receiver-pull 共享 `video.openStream`。 | 评审 `peerRole` 字段和 role policy。 |
 | `[REVIEW-DRAFT]` | source state event | source available/receiving event 支持 Host 后续拉取。 | 评审是否 MVP。 |
-| `[REVIEW-ASK]` | legacy 映射 | Rooms / VM33 / AXDP 字段级含义未完全确认。 | 采纳前补 legacy evidence。 |
+| `[REVIEW-DRAFT]` | legacy 映射 | Rooms / VM33 / AXDP 字段级含义未完全确认；具体 open review 见 legacy 映射表。 | 采纳前补 legacy evidence。 |
 
 ## 附录 B. 协议决策记录
 

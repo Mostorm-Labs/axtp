@@ -890,7 +890,7 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|
-| AAC 透传的 `transportFormat` 是 ADTS、LATM、raw AAC，还是多种都支持？ | schema / conformance | 保留 `transportFormat` 字段，采纳前固定默认值和枚举。 | open |
+| AAC 透传的 `transportFormat` 是 ADTS、LATM、raw AAC，还是多种都支持？ | schema / conformance | 保留 `transportFormat` 字段，采纳前固定默认值和枚举。 | `[REVIEW-ASK]` |
 | `peerRole` 字段是否采用该名称，还是 `peerMediaRole` / `remoteRole`？ | schema / SDK | 保留 `peerRole` 作为草案短名，语义固定为“接收本 request 的对端角色”。 | open |
 | `audio.streamSourceStateChanged` 是否进入 MVP 必选？ | registry / conformance | 为支持 rejected producer-open 后 Host pull，建议进入 MVP。 | open |
 | 同一 source/mediaKind 是否允许多个 active downstream stream？ | product / runtime | NA20/NT10 MVP 建议同一 session 内最多 1 路。 | open |
@@ -906,8 +906,8 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 | `[REVIEW-OK]` | 不新增 `cast.streaming` | 整体投屏由 video/audio state 聚合，`castSessionId` 只是关联字段。 | 不创建 cast domain。 |
 | `[REVIEW-DRAFT]` | 双入口 open | producer-open 和 receiver-pull 共享 `audio.openStream`。 | 评审 `peerRole` 字段和 role policy。 |
 | `[REVIEW-DRAFT]` | source state event | source available/receiving event 支持 Host 后续拉取。 | 评审是否 MVP。 |
-| `[REVIEW-ASK]` | AAC `transportFormat` | 透传封装未最终确认。 | 设备/固件确认。 |
-| `[REVIEW-ASK]` | legacy 映射 | AXDP / Rooms / VM33 / Signage 音频条目未字段级确认。 | 采纳前补 legacy evidence。 |
+| `[REVIEW-DRAFT]` | AAC `transportFormat` | 透传封装未最终确认；具体 open review 见待确认问题。 | 设备/固件确认。 |
+| `[REVIEW-DRAFT]` | legacy 映射 | AXDP / Rooms / VM33 / Signage 音频条目未字段级确认；具体 open review 见 legacy 映射表。 | 采纳前补 legacy evidence。 |
 
 ## 附录 B. 协议决策记录
 

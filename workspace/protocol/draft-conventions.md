@@ -48,6 +48,8 @@
 
 复杂 feature：method/event 小节给出关键字段和 JSON `d` block 示例，第 6 章集中展开复杂对象；method/event 小节必须明确引用 schema 小节，不能只给 schema 名称让读者自己找。
 
+草案如果暂时使用 `target`、`state`、`sampledAt` 这类通用壳字段，method 表格必须至少给出示例 target 值和 `state` 中的关键业务字段摘要。不要只写“当前状态、配置或查询结果”。采纳进入 registry 前，应把这些候选对象收敛为正式 schema 字段。
+
 Capability 字段只描述“设备能做什么”，不得混入 method params/result 或 event payload。
 
 ## Capability Discovery 约定

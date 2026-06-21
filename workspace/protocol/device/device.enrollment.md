@@ -49,7 +49,7 @@ Capability ID：`device.enrollment`
 
 `device.enrollment` 用于设备注册、pairing code 获取、纳管状态查询和变更。它描述"未入管设备成为后台管理对象"的过程，不属于认证会话（`auth.*`），也不属于 room 业务域（`room.*`）。
 
-本文落实 `workspace/flows/signage-device-management.md` 中对 legacy `GetBindCode` / `GetBindConfig` / `SetBindConfig` / `OnBindState` 的最终定域。当前 generated 协议未包含这些方法或事件；本文所有 method、event、schema 均为候选，正式数值为 `TBD after adoption`。
+本文落实 `workspace/flows/signage-device-management.md` 中对 legacy `GetBindCode` / `GetBindConfig` / `SetBindConfig` / `OnBindState` 的最终定域。当前 generated 协议未包含这些方法或事件；本文所有 method、event、schema 均为候选，正式数值在采纳进入 registry 时分配。
 
 **关键证据：** legacy device-sdk 实测中 `GetBindCode` 响应包含 `expiresInSeconds: 1800`（测试 `src/sdk.spec.ts` 中 `createServerSdk register wires command/event handlers` 断言失败暴露）。草案必须保留 `expiresInSeconds` 字段。
 

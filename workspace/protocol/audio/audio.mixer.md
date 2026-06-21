@@ -67,15 +67,20 @@ lastReviewed: 2026-06-15
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `mixer-main`；查询对象。 |
 
 #### 3.1.2 返回结果 Result：`GetMixerCapabilitiesResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `capability` | string | yes | see example | none | capability 名称。 |
+| `maxInputChannels` | uint32 | yes | see example | none | 最大输入通道数。 |
+| `maxMixBuses` | uint32 | yes | see example | none | 最大 mix bus 数量。 |
+| `faderRangeDb` | object | yes | see example | none | 对象。 |
+| `panSupported` | bool | yes | see example | none | 是否支持该能力。 |
+| `muteSupported` | bool | yes | see example | none | 是否支持该能力。 |
+| `soloSupported` | bool | yes | see example | none | 是否支持该能力。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.1.3 d block 示例
 
@@ -148,15 +153,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `mixer-main`；查询对象。 |
 
 #### 3.2.2 返回结果 Result：`GetMixerConfigResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`changedChannels`、`stateRevision`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.2.3 d block 示例
 
@@ -167,11 +171,7 @@ request:
   "id": 102,
   "method": "audio.getMixerConfig",
   "params": {
-    "target": "mixer-main",
-    "sections": [
-      "channels",
-      "buses"
-    ]
+    "target": "mixer-main"
   }
 }
 ```
@@ -457,7 +457,6 @@ Capability name: `audio.mixer`。
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `audio.mixer` | none | capability 名称。 |
 | `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
-| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
 
 ## 6. 字段 / Schemas
 
@@ -465,7 +464,7 @@ Capability name: `audio.mixer`。
 
 ```text
 MixerCapability
-  capability / supportedTargets / constraints
+  capability / supportedTargets
 MixerState
   target / status / sampledAt
 MixerChangedEvent

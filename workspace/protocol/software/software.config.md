@@ -668,7 +668,7 @@ Capability name: `software.config`。
 | `GetAppearanceConfig` | Server -> Device | `software.getConfig(target: "launcher")` | `[REVIEW-DRAFT]` | 字段映射：`panelLayout` → `config.appearance.panelLayout`, `autoHidePanel` → `config.appearance.autoHidePanel`, `autoHideDelay` → `config.appearance.autoHideDelay`。结构从 flat 变为嵌套。 |
 | `SetAppearanceConfig` | Server -> Device | `software.setConfig(target: "launcher")` | `[REVIEW-DRAFT]` | 同上字段映射。旧 flat 字段需 adapter 包装为 `config.appearance.*`。 |
 | `SetDeviceName` | Server -> Device | `software.setConfig(target: "launcher", config: { displayName })` | `[REVIEW-DRAFT]` | 字段映射：`devName` → `config.displayName`；是否需要独立 AXTP 方法见待确认问题。 |
-| `ResetConfig` | Server -> Device | `software.resetConfig(target: "launcher")` or `system.reset` | `[REVIEW-ASK]` | 需确认 legacy ResetConfig 是 Launcher 默认配置恢复还是系统级恢复。若是系统级，应走 `system.reset`。 |
+| `ResetConfig` | Server -> Device | `software.resetConfig(target: "launcher")` or `system.reset` | open review | 需确认 legacy ResetConfig 是 Launcher 默认配置恢复还是系统级恢复。若是系统级，应走 `system.reset`。 |
 
 ---
 

@@ -47,9 +47,9 @@ lastReviewed: 2026-06-15
 
 | Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
 |---|---|---|---|---|---|---|
-| `output.getLayoutConfig` | query | 查询当前输出布局配置 | `0x0B05` | `OutputLayoutGetParams` | 否 | draft |
-| `output.setLayoutConfig` | command | 设置输出布局、区域和源映射 | `0x0B06` | `OutputLayoutSetParams` | 是，`output.layoutChanged` | draft |
-| `output.getLayoutCapabilities` | query | 查询布局能力范围；10 当前未规划该 method，采纳时需决定是否新增，或由 capability 查询统一覆盖 | `TBD after adoption` | `OutputLayoutCapabilitiesParams` | 否 | draft |
+| `output.getLayoutConfig` | query | 查询当前输出布局配置 | `GetLayoutConfigParams` | `OutputLayoutState` | 否 | draft |
+| `output.setLayoutConfig` | command | 设置输出布局、区域和源映射 | `SetLayoutConfigParams` | `SetLayoutConfigResult` | 是，`output.layoutChanged` | draft |
+| `output.getLayoutCapabilities` | query | 查询布局能力范围；当前未规划该 method，采纳时需决定是否新增，或由 capability 查询统一覆盖 | `GetLayoutCapabilitiesParams` | `OutputLayoutCapabilities` | 否 | draft |
 
 ### 3.1 `output.getLayoutConfig`
 
@@ -58,25 +58,24 @@ lastReviewed: 2026-06-15
 | 项 | 内容 |
 |---|---|
 | 调用类型 | query |
-| Params Schema | `0x0B05` |
-| Result Schema | `OutputLayoutGetParams` |
+| Params Schema | `GetLayoutConfigParams` |
+| Result Schema | `OutputLayoutState` |
 | 是否触发事件 | 否 |
 | 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-#### 3.1.1 请求参数 Params：`0x0B05`
+#### 3.1.1 请求参数 Params：`GetLayoutConfigParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `program-output`；查询对象。 |
 
-#### 3.1.2 返回结果 Result：`OutputLayoutGetParams`
+#### 3.1.2 返回结果 Result：`OutputLayoutState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`layout`、`regions`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.1.3 d block 示例
 
@@ -87,10 +86,7 @@ request:
   "id": 101,
   "method": "output.getLayoutConfig",
   "params": {
-    "target": "program-output",
-    "sections": [
-      "layout"
-    ]
+    "target": "program-output"
   }
 }
 ```
@@ -146,20 +142,20 @@ success:
 | 项 | 内容 |
 |---|---|
 | 调用类型 | command |
-| Params Schema | `0x0B06` |
-| Result Schema | `OutputLayoutSetParams` |
+| Params Schema | `SetLayoutConfigParams` |
+| Result Schema | `SetLayoutConfigResult` |
 | 是否触发事件 | 是，状态实际变化后触发 `output.layoutChanged`。 |
 | 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
 
-#### 3.2.1 请求参数 Params：`0x0B06`
+#### 3.2.1 请求参数 Params：`SetLayoutConfigParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | no | target id | `default` | 设置对象；具体 target 集合由 capability 声明。 |
 | `config` | object | yes | see schema | none | 目标配置或状态片段；字段需在采纳前确认。 |
 
-#### 3.2.2 返回结果 Result：`OutputLayoutSetParams`
+#### 3.2.2 返回结果 Result：`SetLayoutConfigResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -226,7 +222,7 @@ success:
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
-| `output.layoutChanged` | 该方法导致状态、配置或动作状态实际变化。 | `0x0B03` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+| `output.layoutChanged` | 该方法导致状态、配置或动作状态实际变化。 | `OutputLayoutChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
 #### 3.2.5 错误
 
@@ -244,25 +240,24 @@ success:
 | 项 | 内容 |
 |---|---|
 | 调用类型 | query |
-| Params Schema | `TBD after adoption` |
-| Result Schema | `OutputLayoutCapabilitiesParams` |
+| Params Schema | `GetLayoutCapabilitiesParams` |
+| Result Schema | `OutputLayoutCapabilities` |
 | 是否触发事件 | 否 |
 | 幂等性 / 异步性 | 幂等；同步返回当前快照。 |
 | 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE` |
 
-#### 3.3.1 请求参数 Params：`TBD after adoption`
+#### 3.3.1 请求参数 Params：`GetLayoutCapabilitiesParams`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `program-output`；查询对象。 |
 
-#### 3.3.2 返回结果 Result：`OutputLayoutCapabilitiesParams`
+#### 3.3.2 返回结果 Result：`OutputLayoutCapabilities`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`layouts`、`maxRegions`、`animatedSwitchSupported`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.3.3 d block 示例
 
@@ -273,11 +268,7 @@ request:
   "id": 103,
   "method": "output.getLayoutCapabilities",
   "params": {
-    "target": "program-output",
-    "sections": [
-      "layouts",
-      "regions"
-    ]
+    "target": "program-output"
   }
 }
 ```
@@ -328,13 +319,13 @@ success:
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|
-| `output.layoutChanged` | 输出布局、区域或源映射变化 | `0x0B03` | 更新 UI 或调用对应 get method 校准 | draft |
+| `output.layoutChanged` | 输出布局、区域或源映射变化 | `OutputLayoutChangedEvent` | 更新 UI 或调用对应 get method 校准 | draft |
 
 ### 4.1 `output.layoutChanged`
 
 **触发条件**：输出布局、区域或源映射变化。
 
-#### 4.1.1 Payload：`0x0B03`
+#### 4.1.1 Payload：`OutputLayoutChangedEvent`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -400,18 +391,17 @@ Capability name: `output.layout`。
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `output.layout` | none | capability 名称。 |
 | `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
-| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
 
 ## 6. 字段 / Schemas
 
 ### 6.1 Schema 层级速览
 
 ```text
-LayoutCapability
-  capability / supportedTargets / constraints
-LayoutState
+OutputLayoutCapabilities
+  capability / supportedTargets
+OutputLayoutState
   target / status / sampledAt
-LayoutChangedEvent
+OutputLayoutChangedEvent
   changedFields / state / source / reason / stateRevision
 ```
 
@@ -419,12 +409,12 @@ LayoutChangedEvent
 
 | Schema | 用途 | 字段定义 |
 |---|---|---|
-| `0x0B05` | `output.getLayoutConfig` request params | 见 `output.getLayoutConfig` 方法小节。 |
-| `OutputLayoutGetParams` | `output.getLayoutConfig` result | 见 `output.getLayoutConfig` 方法小节。 |
-| `0x0B06` | `output.setLayoutConfig` request params | 见 `output.setLayoutConfig` 方法小节。 |
-| `OutputLayoutSetParams` | `output.setLayoutConfig` result | 见 `output.setLayoutConfig` 方法小节。 |
-| `TBD after adoption` | `output.getLayoutCapabilities` request params | 见 `output.getLayoutCapabilities` 方法小节。 |
-| `OutputLayoutCapabilitiesParams` | `output.getLayoutCapabilities` result | 见 `output.getLayoutCapabilities` 方法小节。 |
+| `GetLayoutConfigParams` | `output.getLayoutConfig` request params | 见 `output.getLayoutConfig` 方法小节。 |
+| `OutputLayoutState` | `output.getLayoutConfig` result | 见 `output.getLayoutConfig` 方法小节。 |
+| `SetLayoutConfigParams` | `output.setLayoutConfig` request params | 见 `output.setLayoutConfig` 方法小节。 |
+| `SetLayoutConfigResult` | `output.setLayoutConfig` result | 见 `output.setLayoutConfig` 方法小节。 |
+| `GetLayoutCapabilitiesParams` | `output.getLayoutCapabilities` request params | 见 `output.getLayoutCapabilities` 方法小节。 |
+| `OutputLayoutCapabilities` | `output.getLayoutCapabilities` result | 见 `output.getLayoutCapabilities` 方法小节。 |
 
 ### 6.3 Capability Schemas
 
@@ -433,4 +423,4 @@ LayoutChangedEvent
 
 | Schema | Event | 字段定义 |
 |---|---|---|
-| `0x0B03` | `output.layoutChanged` | 见 `output.layoutChanged` 事件小节。 |
+| `OutputLayoutChangedEvent` | `output.layoutChanged` | 见 `output.layoutChanged` 事件小节。 |

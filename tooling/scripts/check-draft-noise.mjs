@@ -28,6 +28,50 @@ const bannedLinePatterns = [
     reason: "generic supportedMethods/supportedEvents schema overview belongs in draft-conventions.md",
   },
   {
+    pattern: /^\|\s*`sections`\s*\|\s*string\[\]\s*\|\s*no\s*\|\s*section name array\s*\|\s*omitted\s*\|\s*需要返回的字段段；省略表示默认摘要。\s*\|$/,
+    reason: "generic sections query filter must be removed or replaced with feature-specific query fields",
+  },
+  {
+    pattern: /^\|\s*`constraints`\s*\|\s*object\s*\|\s*no\s*\|\s*feature-specific\s*\|\s*omitted\s*\|\s*设备能力限制、范围、模式或策略摘要。\s*\|$/,
+    reason: "generic constraints capability row must be removed or replaced with concrete capability fields",
+  },
+  {
+    pattern: /^\|\s*`target`\s*\|\s*string\s*\|\s*no\s*\|\s*target id\s*\|\s*`default`\s*\|\s*查询对象；具体 target 集合由 capability 声明。\s*\|$/,
+    reason: "generic target row must include a sample value or feature-specific target scope",
+  },
+  {
+    pattern: /^\|\s*`state`\s*\|\s*object\s*\|\s*yes\s*\|\s*see schema\s*\|\s*none\s*\|\s*当前状态、配置或查询结果。\s*\|$/,
+    reason: "generic state result row must summarize feature-specific fields from the example or schema",
+  },
+  {
+    pattern: /^\|\s*`sampledAt`\s*\|\s*string timestamp\s*\|\s*no\s*\|\s*RFC 3339\s*\|\s*omitted\s*\|\s*结果采样时间。\s*\|$/,
+    reason: "generic sampledAt row must explain why the timestamp matters for this response",
+  },
+  {
+    pattern: /正式取值范围由本 feature capability 或 schema 收敛/,
+    reason: "generic target adoption reminder belongs in draft-conventions.md, not every params table",
+  },
+  {
+    pattern: /采纳前应展开为正式 schema 字段/,
+    reason: "generic schema adoption reminder belongs in draft-conventions.md, not every result table",
+  },
+  {
+    pattern: /用于缓存刷新、事件丢失后的校准或 UI 时间戳/,
+    reason: "long generic sampledAt explanation should be shortened in method result tables",
+  },
+  {
+    pattern: /success 示例中的 feature-specific 字段/,
+    reason: "fallback state field summary must be replaced with concrete result fields",
+  },
+  {
+    pattern: /见 success 示例/,
+    reason: "field descriptions must explain the field instead of pointing readers back to the example",
+  },
+  {
+    pattern: /capability\s*\/\s*supportedTargets\s*\/\s*constraints/,
+    reason: "generic capability/constraints schema overview belongs in draft-conventions.md unless constraints are expanded",
+  },
+  {
     pattern: /^\|\s*`<FEATURE_SPECIFIC_ERROR>`\s*\|/,
     reason: "placeholder feature-specific error must be removed or replaced with a named candidate",
   },
@@ -158,6 +202,26 @@ const bannedLinePatterns = [
   {
     pattern: /^\|\s*主要未决问题\s*\|\s*`?\[REVIEW-ASK\]/,
     reason: "速读结论 may summarize open questions but must not duplicate REVIEW-ASK markers already listed in review tables",
+  },
+  {
+    pattern: /^\|\s*(?:Params|Result|Payload) Schema\s*\|\s*`(?:TBD after adoption|0x[0-9A-Fa-f]+|[^`]*[，。；、][^`]*)`\s*\|/,
+    reason: "schema slots must contain candidate schema names, not numeric IDs, TBD markers, or prose",
+  },
+  {
+    pattern: /^#### \d+\.\d+\.\d+ (?:请求参数 Params|返回结果 Result|Payload)：`(?:TBD after adoption|0x[0-9A-Fa-f]+|[^`]*[，。；、][^`]*)`$/,
+    reason: "schema subsection headings must use candidate schema names, not numeric IDs, TBD markers, or prose",
+  },
+  {
+    pattern: /^\|\s*`(?:TBD after adoption|0x[0-9A-Fa-f]+|[^`]*[，。；、][^`]*)`\s*\|\s*(?:`[^`]+` )?(?:request params|result|Event|event|payload)\s*\|/,
+    reason: "schema index rows must use candidate schema names, not numeric IDs, TBD markers, or prose",
+  },
+  {
+    pattern: /^\|\s*`(?:TBD after adoption|0x[0-9A-Fa-f]+|[^`]*[，。；、][^`]*)`\s*\|\s*`[a-z][a-z0-9]*\.[^`]+`\s*\|/,
+    reason: "event schema index rows must use candidate schema names, not numeric IDs, TBD markers, or prose",
+  },
+  {
+    pattern: /^\|\s*`[a-z][a-z0-9]*\.[^`]+`\s*\|[^|]*\|\s*`(?:TBD after adoption|0x[0-9A-Fa-f]+|[^`]*[，。；、][^`]*)`\s*\|/,
+    reason: "event payload schema columns must use candidate schema names, not numeric IDs, TBD markers, or prose",
   },
   {
     pattern: /^#### (?:\d+\.\d+\.\d+ )?Request d block Example \(op=7\)$/,

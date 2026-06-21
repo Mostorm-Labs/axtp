@@ -48,7 +48,6 @@ lastReviewed: 2026-06-15
 | `system.getResetCapabilities` | query | 查询支持的 reset 类型、保护策略和执行约束 | `GetResetCapabilitiesParams` | `ResetCapabilities` | 否 | draft |
 | `system.getResetStatus` | query | 查询 reset / restore 动作的当前状态 | `GetResetStatusParams` | `ResetStatus` | 否 | draft |
 | `system.restoreDefaultSettings` | action | 请求设备恢复默认设置但保留必要身份或网络配置 | `RestoreDefaultSettingsParams` | `RestoreSettingsResult` | 是，`system.resetStatusChanged` | draft |
-| `system.resetStatusChanged` | action | restore accepted、restoring、rebooting、completed、failed 或状态恢复 | `ResetStatusChangedEvent` | `restore accepted、restoring、rebooting、completed、failed 或状态恢复。` | 是，`system.resetStatusChanged` | draft |
 
 ### 3.1 `system.recoverRuntimeState`
 
@@ -213,15 +212,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `device`；查询对象。 |
 
 #### 3.3.2 返回结果 Result：`ResetCapabilities`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`resetTypes`、`confirmationRequired`、`rebootMayOccur`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.3.3 d block 示例
 
@@ -232,11 +230,7 @@ request:
   "id": 103,
   "method": "system.getResetCapabilities",
   "params": {
-    "target": "device",
-    "sections": [
-      "resetTypes",
-      "safety"
-    ]
+    "target": "device"
   }
 }
 ```
@@ -298,15 +292,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `device`；查询对象。 |
 
 #### 3.4.2 返回结果 Result：`ResetStatus`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`resetId`、`phase`、`progressPercent`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.4.3 d block 示例
 
@@ -317,10 +310,7 @@ request:
   "id": 104,
   "method": "system.getResetStatus",
   "params": {
-    "target": "device",
-    "sections": [
-      "status"
-    ]
+    "target": "device"
   }
 }
 ```
@@ -434,78 +424,6 @@ success:
 | `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
 | `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
-### 3.6 `system.resetStatusChanged`
-
-**用途**：restore accepted、restoring、rebooting、completed、failed 或状态恢复。
-
-| 项 | 内容 |
-|---|---|
-| 调用类型 | action |
-| Params Schema | `ResetStatusChangedEvent` |
-| Result Schema | `restore accepted、restoring、rebooting、completed、failed 或状态恢复。` |
-| 是否触发事件 | 是，状态实际变化后触发 `system.resetStatusChanged`。 |
-| 幂等性 / 异步性 | 建议幂等；重复提交相同目标状态应成功，可不重复触发事件。 |
-| 常见错误 | `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED` |
-
-#### 3.6.1 请求参数 Params：`ResetStatusChangedEvent`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 动作对象；具体 target 集合由 capability 声明。 |
-| `reason` | string | no | caller-defined reason | omitted | 调用方给出的动作原因。 |
-
-#### 3.6.2 返回结果 Result：`restore accepted、restoring、rebooting、completed、failed 或状态恢复。`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `accepted` | boolean | yes | `true`, `false` | none | 设备是否接受动作请求。 |
-| `actionId` | string | no | opaque action id | omitted | 动作 ID，用于日志或异步关联。 |
-
-#### 3.6.3 d block 示例
-
-request:
-
-```json
-{
-  "id": 106,
-  "method": "system.resetStatusChanged",
-  "params": {
-    "target": "device",
-    "reason": "reset_progress"
-  }
-}
-```
-
-success:
-
-```json
-{
-  "id": 106,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "accepted": true,
-    "actionId": "system-resetstatuschanged-20260615-001"
-  }
-}
-```
-
-#### 3.6.4 可能触发的事件
-
-| Event | 触发条件 | Payload Schema | 客户端处理建议 |
-|---|---|---|---|
-| `system.resetStatusChanged` | 该方法导致状态、配置或动作状态实际变化。 | `ResetStatusChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
-
-#### 3.6.5 错误
-
-| 错误 | 场景 | 返回建议 |
-|---|---|---|
-| `NOT_SUPPORTED` | 设备不支持该 feature、method、target 或 scope。 | 返回 unsupported feature/method/target。 |
-| `INVALID_ARGUMENT` | 请求字段非法、枚举非法或范围非法。 | 返回具体字段路径和合法范围。 |
-| `PERMISSION_DENIED` | 调用方无权执行该操作。 | 返回权限错误。 |
-| `BUSY` | 设备正在处理冲突操作。 | 建议稍后重试。 |
 
 ## 4. 事件 Events
 
@@ -576,7 +494,6 @@ Capability name: `system.reset`。
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `system.reset` | none | capability 名称。 |
 | `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
-| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
 
 ## 6. 字段 / Schemas
 
@@ -584,7 +501,7 @@ Capability name: `system.reset`。
 
 ```text
 ResetCapability
-  capability / supportedTargets / constraints
+  capability / supportedTargets
 ResetState
   target / status / sampledAt
 ResetChangedEvent
@@ -605,8 +522,6 @@ ResetChangedEvent
 | `ResetStatus` | `system.getResetStatus` result | 见 `system.getResetStatus` 方法小节。 |
 | `RestoreDefaultSettingsParams` | `system.restoreDefaultSettings` request params | 见 `system.restoreDefaultSettings` 方法小节。 |
 | `RestoreSettingsResult` | `system.restoreDefaultSettings` result | 见 `system.restoreDefaultSettings` 方法小节。 |
-| `ResetStatusChangedEvent` | `system.resetStatusChanged` request params | 见 `system.resetStatusChanged` 方法小节。 |
-| `restore accepted、restoring、rebooting、completed、failed 或状态恢复。` | `system.resetStatusChanged` result | 见 `system.resetStatusChanged` 方法小节。 |
 
 ### 6.3 Capability Schemas
 

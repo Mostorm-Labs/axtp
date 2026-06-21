@@ -1,6 +1,6 @@
 # AXTP 合同边界
 
-本文定义事实源顺序和冲突处理规则。它不定义新的 wire 字段、registry entry、生成协议事实或发布流程。
+本文定义事实源顺序和冲突处理规则。它不定义新的 wire 字段、注册表条目、生成协议事实或发布流程。
 
 ## 实现合同
 
@@ -46,19 +46,19 @@ docs/archive/**
 tooling/skills/**
 ```
 
-它们可以辅助评审，但不能绕过 adoption、registry update、generation 和 conformance。
+它们可以辅助评审，但不能绕过采纳、注册表更新、生成和 conformance。
 
 ## 冲突规则
 
 | 冲突 | 以谁为准 | 处理动作 |
 |---|---|---|
-| 生成产物 vs draft | 生成产物 | 修正 draft 或 adoption path。 |
-| 生成产物 vs specs/YAML | YAML/spec/generator source | 修正 source 或 generator，然后 regenerate。 |
+| 生成产物 vs draft | 生成产物 | 修正 draft 或采纳路径。 |
+| 生成产物 vs specs/YAML | YAML/spec/generator source | 修正 source 或 generator，然后重新生成。 |
 | Conformance vs specs/generated | 正式合同 | 修正 conformance 或合同；不要让 runtime 绕过矛盾。 |
-| Roadmap vs generated contract | 生成合同 | Roadmap 必须先进入 business/flow/draft/registry，才能实现。 |
-| Legacy mapping vs generated contract | 生成合同 | 标记 blocked、adapter-private，或进入 migration review。 |
+| Roadmap vs generated contract | 生成合同 | Roadmap 必须先进入 business、flow、draft 和 registry，才能实现。 |
+| Legacy mapping vs generated contract | 生成合同 | 标记为 blocked、adapter-private，或进入 migration review。 |
 
-## Session 边界
+## 会话边界
 
 AXTP 明确区分 link、RPC 和 stream 上下文：
 
@@ -81,7 +81,7 @@ workspace/business or workspace/flows
   -> contract/registry/domains/<domain>/domain.yaml
   -> contract/protocol/axtp.protocol.yaml
   -> contract/generated/**
-  -> conformance and runtime implementation
+  -> conformance 与 runtime 实现
 ```
 
 `domain.feature` 决定业务归属。`method`、`event`、`schema`、`error`、`capability` 和 `profile` 决定机器可读事实。

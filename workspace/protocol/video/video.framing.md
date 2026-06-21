@@ -39,7 +39,7 @@ lastReviewed: 2026-06-13
 
 ## 3. 方法 Methods
 
-方法 ID、bitOffset 和 schema fieldId 均为 `TBD after adoption`。候选方法名采纳前需和 registry appendix / YAML 再次对齐。
+方法 ID、bitOffset 和 schema fieldId 均在采纳进入 registry 时分配正式数值。候选方法名采纳前需和 registry appendix / YAML 再次对齐。
 
 ### 3.0 方法速览
 

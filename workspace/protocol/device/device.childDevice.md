@@ -65,15 +65,14 @@ lastReviewed: 2026-06-15
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `child-device-bus`；查询对象。 |
 
 #### 3.1.2 返回结果 Result：`GetInfoResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`children`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.1.3 d block 示例
 
@@ -84,10 +83,7 @@ request:
   "id": 101,
   "method": "device.getInfo",
   "params": {
-    "target": "child-device-bus",
-    "sections": [
-      "children"
-    ]
+    "target": "child-device-bus"
   }
 }
 ```
@@ -149,15 +145,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `child-device-bus`；查询对象。 |
 
 #### 3.2.2 返回结果 Result：`DeviceTopology`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`children`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.2.3 d block 示例
 
@@ -168,10 +163,7 @@ request:
   "id": 102,
   "method": "device.getTopology",
   "params": {
-    "target": "child-device-bus",
-    "sections": [
-      "children"
-    ]
+    "target": "child-device-bus"
   }
 }
 ```
@@ -233,15 +225,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `child-device-bus`；查询对象。 |
 
 #### 3.3.2 返回结果 Result：`GetChildrenResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`children`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.3.3 d block 示例
 
@@ -252,10 +243,7 @@ request:
   "id": 103,
   "method": "device.getChildren",
   "params": {
-    "target": "child-device-bus",
-    "sections": [
-      "children"
-    ]
+    "target": "child-device-bus"
   }
 }
 ```
@@ -317,15 +305,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `child-device-bus`；查询对象。 |
 
 #### 3.4.2 返回结果 Result：`ChildDeviceInfo`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`children`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.4.3 d block 示例
 
@@ -336,10 +323,7 @@ request:
   "id": 104,
   "method": "device.getChildInfo",
   "params": {
-    "target": "child-device-bus",
-    "sections": [
-      "children"
-    ]
+    "target": "child-device-bus"
   }
 }
 ```
@@ -390,13 +374,13 @@ success:
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|
-| `device.childDeviceStateChanged` | 低频连接、在线、关系、摘要状态变化通过 RPC Event | `低频连接、在线、关系、摘要状态变化通过 RPC Event。` | 更新 UI 或调用对应 get method 校准 | draft |
+| `device.childDeviceStateChanged` | 低频连接、在线、关系、摘要状态变化通过 RPC Event | `ChildDeviceStateChangedEvent` | 更新 UI 或调用对应 get method 校准 | draft |
 
 ### 4.1 `device.childDeviceStateChanged`
 
 **触发条件**：低频连接、在线、关系、摘要状态变化通过 RPC Event。
 
-#### 4.1.1 Payload：`低频连接、在线、关系、摘要状态变化通过 RPC Event。`
+#### 4.1.1 Payload：`ChildDeviceStateChangedEvent`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -452,7 +436,6 @@ Capability name: `device.childDevice`。
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `device.childDevice` | none | capability 名称。 |
 | `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
-| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
 
 ## 6. 字段 / Schemas
 
@@ -460,7 +443,7 @@ Capability name: `device.childDevice`。
 
 ```text
 ChildDeviceCapability
-  capability / supportedTargets / constraints
+  capability / supportedTargets
 ChildDeviceState
   target / status / sampledAt
 ChildDeviceChangedEvent
@@ -487,4 +470,4 @@ ChildDeviceChangedEvent
 
 | Schema | Event | 字段定义 |
 |---|---|---|
-| `低频连接、在线、关系、摘要状态变化通过 RPC Event。` | `device.childDeviceStateChanged` | 见 `device.childDeviceStateChanged` 事件小节。 |
+| `ChildDeviceStateChangedEvent` | `device.childDeviceStateChanged` | 见 `device.childDeviceStateChanged` 事件小节。 |

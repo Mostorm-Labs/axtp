@@ -67,15 +67,14 @@ lastReviewed: 2026-06-15
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `media-library`；查询对象。 |
 
 #### 3.1.2 返回结果 Result：`GetMediaCapabilitiesResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`mediaTypes`、`thumbnailSupported`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.1.3 d block 示例
 
@@ -86,11 +85,7 @@ request:
   "id": 101,
   "method": "storage.getMediaCapabilities",
   "params": {
-    "target": "media-library",
-    "sections": [
-      "capacity",
-      "policy"
-    ]
+    "target": "media-library"
   }
 }
 ```
@@ -151,15 +146,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `media-library`；查询对象。 |
 
 #### 3.2.2 返回结果 Result：`GetMediaConfigResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`status`、`usedBytes`、`availableBytes`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.2.3 d block 示例
 
@@ -170,10 +164,7 @@ request:
   "id": 102,
   "method": "storage.getMediaConfig",
   "params": {
-    "target": "media-library",
-    "sections": [
-      "usage"
-    ]
+    "target": "media-library"
   }
 }
 ```
@@ -435,7 +426,6 @@ Capability name: `storage.media`。
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `storage.media` | none | capability 名称。 |
 | `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
-| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
 
 ## 6. 字段 / Schemas
 
@@ -443,7 +433,7 @@ Capability name: `storage.media`。
 
 ```text
 MediaCapability
-  capability / supportedTargets / constraints
+  capability / supportedTargets
 MediaState
   target / status / sampledAt
 MediaChangedEvent

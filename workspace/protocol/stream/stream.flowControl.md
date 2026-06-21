@@ -597,15 +597,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `stream-session-1`；查询对象。 |
 
 #### 3.9.2 返回结果 Result：`GetCapabilitiesResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`maxWindowBytes`、`supportsPause`、`supportsResume`、`ackPolicy`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.9.3 d block 示例
 
@@ -616,11 +615,7 @@ request:
   "id": 109,
   "method": "stream.getCapabilities",
   "params": {
-    "target": "stream-session-1",
-    "sections": [
-      "flowControl",
-      "limits"
-    ]
+    "target": "stream-session-1"
   }
 }
 ```
@@ -671,15 +666,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `stream-100`；查询对象。 |
 
 #### 3.10.2 返回结果 Result：`GetStateResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `streamId`、`state`、`windowBytes`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.10.3 d block 示例
 
@@ -690,11 +684,7 @@ request:
   "id": 110,
   "method": "stream.getState",
   "params": {
-    "target": "stream-100",
-    "sections": [
-      "lifecycle",
-      "window"
-    ]
+    "target": "stream-100"
   }
 }
 ```
@@ -743,15 +733,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `stream-100`；查询对象。 |
 
 #### 3.11.2 返回结果 Result：`GetStatsResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `streamId`、`bytesSent`、`bytesReceived`、`droppedChunks`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.11.3 d block 示例
 
@@ -762,11 +751,7 @@ request:
   "id": 111,
   "method": "stream.getStats",
   "params": {
-    "target": "stream-100",
-    "sections": [
-      "throughput",
-      "loss"
-    ]
+    "target": "stream-100"
   }
 }
 ```
@@ -1300,7 +1285,6 @@ Capability name: `stream.flowControl`。
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `stream.flowControl` | none | capability 名称。 |
 | `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
-| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
 
 ## 6. 字段 / Schemas
 
@@ -1308,7 +1292,7 @@ Capability name: `stream.flowControl`。
 
 ```text
 FlowControlCapability
-  capability / supportedTargets / constraints
+  capability / supportedTargets
 FlowControlState
   target / status / sampledAt
 FlowControlChangedEvent

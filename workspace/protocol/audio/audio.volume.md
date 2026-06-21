@@ -65,15 +65,14 @@ lastReviewed: 2026-06-15
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `main-output`；查询对象。 |
 
 #### 3.1.2 返回结果 Result：`AudioGetVolumeCapabilitiesResponse`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`unit`、`minLevel`、`maxLevel`、`step`、`muteSupported`、`defaultLevel`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.1.3 d block 示例
 
@@ -84,11 +83,7 @@ request:
   "id": 101,
   "method": "audio.getVolumeCapabilities",
   "params": {
-    "target": "main-output",
-    "sections": [
-      "range",
-      "mute"
-    ]
+    "target": "main-output"
   }
 }
 ```
@@ -149,15 +144,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `main-output`；查询对象。 |
 
 #### 3.2.2 返回结果 Result：`AudioVolumeState`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`level`、`muted`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.2.3 d block 示例
 
@@ -168,11 +162,7 @@ request:
   "id": 102,
   "method": "audio.getVolumeState",
   "params": {
-    "target": "main-output",
-    "sections": [
-      "level",
-      "mute"
-    ]
+    "target": "main-output"
   }
 }
 ```
@@ -281,7 +271,7 @@ success:
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
-| `audio.volumeStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+| `audio.volumeStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `AudioVolumeStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
 #### 3.3.5 错误
 
@@ -354,7 +344,7 @@ success:
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
-| `audio.volumeStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
+| `audio.volumeStateChanged` | 该方法导致状态、配置或动作状态实际变化。 | `AudioVolumeStateChangedEvent` | 可直接更新 UI；需要完整状态时调用对应 get method 校准。 |
 
 #### 3.4.5 错误
 
@@ -433,7 +423,6 @@ Capability name: `audio.volume`。
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `audio.volume` | none | capability 名称。 |
 | `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
-| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
 
 ## 6. 字段 / Schemas
 
@@ -441,7 +430,7 @@ Capability name: `audio.volume`。
 
 ```text
 VolumeCapability
-  capability / supportedTargets / constraints
+  capability / supportedTargets
 VolumeState
   target / status / sampledAt
 VolumeChangedEvent
@@ -468,4 +457,4 @@ VolumeChangedEvent
 
 | Schema | Event | 字段定义 |
 |---|---|---|
-| `set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。` | `audio.volumeStateChanged` | 见 `audio.volumeStateChanged` 事件小节。 |
+| `AudioVolumeStateChangedEvent` | `audio.volumeStateChanged` | 见 `audio.volumeStateChanged` 事件小节。 |

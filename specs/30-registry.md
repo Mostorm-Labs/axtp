@@ -9,11 +9,11 @@
 | 规则 | 要求 |
 |---|---|
 | Domain | MUST 是稳定的业务或协议边界，例如 `audio`、`video`、`device`、`system`、`network`、`firmware`、`capability`、`room` 或 `signage`。 |
-| Feature | MUST 是可 review、可测试、可演进的能力块；它 MUST NOT 是字段名、UI 控件、codec、transport、产品 SKU 或 legacy command id。 |
+| Feature | MUST 是可评审、可测试、可演进的能力块；它 MUST NOT 是字段名、UI 控件、codec、transport、产品 SKU 或 legacy command id。 |
 | Method name | MUST 使用 `domain.actionObject`，或已经采纳的 `domain.verbNoun` 形式。 |
 | Event name | MUST 表达状态变化、结果、进度或上报语义；Event MUST NOT 替代 RPC Response。 |
 | Capability name | SHOULD 使用 `domain.feature`。 |
-| Stream business | 业务流属于业务 domain，例如 `video.stream` 或 `audio.stream`；公共 `stream` 保留给共享 data-plane 或 flow-control 概念。 |
+| Stream business | 业务流属于业务 domain，例如 `video.stream` 或 `audio.stream`；公共 `stream` 保留给共享数据面或 flow-control 概念。 |
 
 分类规则：
 
@@ -43,7 +43,7 @@
 
 `bitOffset` 是供生成 mask 和 discovery 使用的 domain-local metadata。它本身不是 wire id，MUST NOT 替代 methodId 或 eventId 使用。
 
-## Methods
+## 方法 Methods
 
 Method 是 RPC 业务操作。JSON RPC 使用 method name；JSON_BINARY 使用 `methodId:uint16`；两者 MUST 解析到同一个注册事实。
 
@@ -78,7 +78,7 @@ methods:
 
 Runtime MUST 使用生成的 registry 或 Protocol IR 做 method lookup，MUST NOT 维护第二套手写 method table。
 
-## Events
+## 事件 Events
 
 Event 是 RPC 异步通知，用于状态、进度、结果或上报语义。
 
@@ -92,11 +92,11 @@ Event 规则：
 6. Event MUST NOT 表达某个 request 的同步成功/失败；这由 RPC Response 表达。
 7. 高频连续数据 MUST 使用 STREAM。
 
-Domain-scoped event mask 格式由 core RPC 行为定义。bit 0 映射到该 domain 中 registry `bitOffset=0` 的 event。
+Domain-scoped event mask 格式由核心 RPC 行为定义。bit 0 映射到该 domain 中 registry `bitOffset=0` 的 event。
 
 接收方 MUST 按 profile policy 容忍未知或未订阅事件；未知事件处理本身 MUST NOT 使 session 失效。
 
-## Errors
+## 错误 Errors
 
 ErrorCode 是 RPC Response status、CONTROL status 和 STREAM/profile error mapping 共用的数字错误空间。
 
@@ -107,7 +107,7 @@ Error 规则：
 3. Stable errorCode MUST NOT 改变含义或被复用。
 4. RPC 业务失败 SHOULD 由 RPC Response 表达，而不是 Frame Header 或 CONTROL NACK。
 5. CONTROL 协商、frame parse、transport limit 和 stream data-plane 失败 SHOULD 使用 common/frame/control/stream errors。
-6. 细粒度诊断 SHOULD 放在 status details、event payload、diagnostic payload 或 vendor detail fields 中，而不是制造大量重复 error codes。
+6. 细粒度诊断 SHOULD 放在 status details、event payload、diagnostic payload 或 vendor detail fields 中，而不是制造大量重复 error code。
 
 核心范围：
 
@@ -119,9 +119,9 @@ Error 规则：
 | `0x7000-0x7EFF` | vendor |
 | `0x7F00-0x7FFF` | legacy adapter |
 
-Runtime MUST 使用生成的 error enum/lookup，并 SHOULD 为诊断保留未知 error codes。
+Runtime MUST 使用生成的 error enum/lookup，并 SHOULD 为诊断保留未知 error code。
 
-## Profiles
+## 配置 Profile
 
 Profile 是具名实现要求集合。它可以引用 methods、events、types、errors、capabilities、transport profiles 和 frame profiles；它 MUST NOT 重新定义 wire fields。
 
@@ -134,11 +134,11 @@ Profile 规则：
 5. 支持某个 profile 意味着满足 required facts，并通过对应 conformance scope。
 6. 向 stable profile 添加 required facts 可能是 breaking change；添加 optional capability 通常兼容。
 
-Runtime 仓库 MUST 声明自己支持的 profiles，并绑定精确 spec tag、commit 或 release artifact metadata。
+Runtime 仓库 MUST 声明自己支持的 profile，并绑定精确 spec tag、commit 或 release artifact metadata。
 
 ## 校验
 
-Generator validation MUST 至少检查：
+生成器校验 MUST 至少检查：
 
 - method/event/error/profile 名称和数字 ID 全局唯一；
 - method/event/capability 名称与 domain prefix 对齐；

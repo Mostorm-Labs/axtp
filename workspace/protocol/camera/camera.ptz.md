@@ -37,7 +37,7 @@ lastReviewed: 2026-06-13
 
 ## 3. 方法 Methods
 
-方法 ID、bitOffset 和 fieldId 均为 `TBD after adoption`。
+方法 ID、bitOffset 和 fieldId 均在采纳进入 registry 时分配正式数值。
 
 ### 3.0 方法速览
 
@@ -46,8 +46,8 @@ lastReviewed: 2026-06-13
 | `camera.getPtzCapabilities` | query | 查询 PTZ 范围、速度、move 类型和 preset 支持。 | `GetPtzCapabilitiesParams` | `PtzCapabilities` | 否 | `[REVIEW-DRAFT]` |
 | `camera.getPtzState` | query | 查询当前位置、运动状态、owner 和限位。 | `GetPtzStateParams` | `PtzState` | 否 | `[REVIEW-DRAFT]` |
 | `camera.setPtzConfig` | command | 设置绝对/相对 PTZ 目标或 home/reset。 | `SetPtzConfigParams` | `PtzCommandResult` | 是 | `[REVIEW-DRAFT]` |
-| `camera.startPtzMove` | command | 连续移动，适合方向键按住场景。 | `StartPtzMoveParams` | `PtzCommandResult` | 是 | `[REVIEW-ASK]` |
-| `camera.stopPtzMove` | command | 停止连续移动。 | `StopPtzMoveParams` | `PtzCommandResult` | 是 | `[REVIEW-ASK]` |
+| `camera.startPtzMove` | command | 连续移动，适合方向键按住场景。 | `StartPtzMoveParams` | `PtzCommandResult` | 是 | `[REVIEW-DRAFT]` |
+| `camera.stopPtzMove` | command | 停止连续移动。 | `StopPtzMoveParams` | `PtzCommandResult` | 是 | `[REVIEW-DRAFT]` |
 | `camera.callPtzPreset` | command | 调用已保存 preset。 | `CallPtzPresetParams` | `PtzCommandResult` | 是 | `[REVIEW-DRAFT]` |
 | `camera.savePtzPreset` | command | 保存当前 PTZ 为 preset。 | `SavePtzPresetParams` | `PtzPreset` | 否/可选 | `[REVIEW-DRAFT]` |
 
@@ -602,7 +602,7 @@ success:
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
-| TBD | preset 列表变化。 | TBD | `[REVIEW-ASK]` 是否需要 preset event。 |
+| `camera.ptzConfigChanged` | preset 列表变化。 | `PtzConfigChangedEvent` | preset event 是否独立保留见待确认问题。 |
 
 #### 3.7.5 错误
 
@@ -635,7 +635,7 @@ success:
 | Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|
 | `camera.ptzStateChanged` | 位置、运动状态、owner、限位变化。 | `PtzStateChangedEvent` | 更新 PTZ UI；必要时 get 校准。 | `[REVIEW-DRAFT]` |
-| `camera.ptzConfigChanged` | 默认速度、home、preset 配置变化。 | `PtzConfigChangedEvent` | 刷新能力或 preset 列表。 | `[REVIEW-ASK]` |
+| `camera.ptzConfigChanged` | 默认速度、home、preset 配置变化。 | `PtzConfigChangedEvent` | 刷新能力或 preset 列表。 | `[REVIEW-DRAFT]` |
 
 ### 4.1 `camera.ptzStateChanged`
 
@@ -780,7 +780,7 @@ success:
 | `cameraId` | string | no | device-defined | `main` | 摄像头对象。 |
 | `presetId` | string | no | device-defined | auto | preset 标识。 |
 | `name` | string | no | max length TBD | omitted | preset 名称。 |
-| `include` | string[] | no | `ptz`, `zoom`, `focus`, `framing` | `ptz` | `[REVIEW-ASK]` 是否允许包含非 PTZ 状态。 |
+| `include` | string[] | no | `ptz`, `zoom`, `focus`, `framing` | `ptz` | preset 保存范围；是否允许包含非 PTZ 状态见待确认问题。 |
 
 #### `PtzCommandResult`
 
@@ -927,4 +927,5 @@ success:
 |---|---|---|---|
 | 是否新增 `startPtzMove` / `stopPtzMove`？ | 决定方向键体验和 method 数量。 | 推荐保留动作型方法，`setPtzConfig` 只做目标设置。 | `[REVIEW-ASK]` |
 | preset 是否包含 zoom/focus/framing？ | 决定 `PtzPreset.include` 范围。 | 默认只含 PTZ，其它作为可选扩展。 | `[REVIEW-ASK]` |
+| 是否保留 `camera.ptzConfigChanged` 作为 preset/config 事件？ | 影响事件数量和客户端订阅。 | 如 preset 列表和 home/default speed 会变化，建议保留；否则可由 `ptzStateChanged` + get 校准。 | `[REVIEW-ASK]` |
 | `CommonSetPanTiltZoom` 如何拆分？ | 影响 legacy adapter 和正式 schema。 | 暂不写入 YAML，先保留候选映射。 | `[REVIEW-ASK]` |

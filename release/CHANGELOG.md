@@ -4,6 +4,34 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.8.9
+
+Protocol draft field readability, Chinese frontstage documentation, and governance patch.
+
+### Protocol
+
+- Keeps AXTP wire, CONTROL, RPC, STREAM, method, event, schema, capability, profile, and error semantics unchanged from `spec/v0.8.8`.
+- Does not change registry YAML, Protocol IR, generated references, MCP artifacts, test vectors, or conformance case behavior.
+
+### Documentation
+
+- Converts the root README, docs reading route, and formal human-readable `specs/**` corpus to Chinese-first wording while preserving protocol keywords, wire examples, registry IDs, field names, paths, and validator anchor phrases.
+- Removes generic protocol draft field placeholders such as repeated `sections`, `constraints`, empty `state` result descriptions, and repeated adoption-placeholder wording while preserving every method request/success example.
+- Rewrites draft result tables so `target`, `state`, `sampledAt`, and formerly vague result rows carry sample values, concrete field summaries, or field-specific descriptions.
+- Moves repeated schema-adoption guidance into `workspace/protocol/draft-conventions.md` so draft bodies stay focused on feature-specific params, results, events, capability fields, legacy mapping, and review questions.
+- Refreshes `docs/product/protocol-draft-health.md` with `Generic field placeholders` tracking so maintainers can see that method examples remain complete and placeholder text stays at zero.
+
+### Release Governance
+
+- Extends the protocol draft noise checker to reject generic target/state/sampledAt rows, repeated schema-adoption reminders, fallback result descriptions, and "see success example" field descriptions.
+- Keeps release artifact contents, manifest paths, runtime dispatch payloads, and release automation behavior unchanged from `spec/v0.8.8`.
+
+### Runtime Impact
+
+- Runtime and SDK teams do not need wire-level, registry, SDK API, generated metadata, or conformance behavior changes for this release.
+- Runtime upgrade workflows should bind to the exact `spec/v0.8.9` tag and consume the release artifact as before.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.8.8
 
 Protocol draft readability and template hygiene patch.

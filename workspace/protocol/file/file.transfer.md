@@ -360,15 +360,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `file-transfer`；查询对象。 |
 
 #### 3.5.2 返回结果 Result：`GetTransferStateResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`transferId`、`state`、`transferredBytes`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.5.3 d block 示例
 
@@ -379,10 +378,7 @@ request:
   "id": 105,
   "method": "file.getTransferState",
   "params": {
-    "target": "file-transfer",
-    "sections": [
-      "transfer"
-    ]
+    "target": "file-transfer"
   }
 }
 ```
@@ -546,7 +542,6 @@ Capability name: `file.transfer`。
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `file.transfer` | none | capability 名称。 |
 | `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
-| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
 
 ## 6. 字段 / Schemas
 
@@ -554,7 +549,7 @@ Capability name: `file.transfer`。
 
 ```text
 TransferCapability
-  capability / supportedTargets / constraints
+  capability / supportedTargets
 TransferState
   target / status / sampledAt
 TransferChangedEvent

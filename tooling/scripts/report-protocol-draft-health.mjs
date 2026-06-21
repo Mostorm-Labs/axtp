@@ -100,6 +100,23 @@ function countGenericOpenQuestions(text) {
   );
 }
 
+function countGenericFieldPlaceholders(text) {
+  const patterns = [
+    /^\| `sections` \| string\[\] \| no \| section name array \| omitted \| 需要返回的字段段；省略表示默认摘要。 \|$/gm,
+    /^\| `constraints` \| object \| no \| feature-specific \| omitted \| 设备能力限制、范围、模式或策略摘要。 \|$/gm,
+    /^\| `target` \| string \| no \| target id \| `default` \| 查询对象；具体 target 集合由 capability 声明。 \|$/gm,
+    /^\| `state` \| object \| yes \| see schema \| none \| 当前状态、配置或查询结果。 \|$/gm,
+    /^\| `sampledAt` \| string timestamp \| no \| RFC 3339 \| omitted \| 结果采样时间。 \|$/gm,
+    /正式取值范围由本 feature capability 或 schema 收敛/g,
+    /采纳前应展开为正式 schema 字段/g,
+    /用于缓存刷新、事件丢失后的校准或 UI 时间戳/g,
+    /success 示例中的 feature-specific 字段/g,
+    /见 success 示例/g,
+    /capability \/ supportedTargets \/ constraints/g,
+  ];
+  return patterns.reduce((total, pattern) => total + countMatches(text, pattern), 0);
+}
+
 function generatedDomainCounts() {
   const generated = JSON.parse(fs.readFileSync(generatedPath, "utf8"));
   const counts = new Map();
@@ -145,6 +162,7 @@ function emptyDomainStats(domain) {
     invalidJsonExamples: 0,
     genericExampleHints: 0,
     genericOpenQuestions: 0,
+    genericFieldPlaceholders: 0,
     reviewAsk: 0,
     reviewDraft: 0,
     reviewFix: 0,
@@ -200,6 +218,7 @@ function analyze() {
       tbdAfterAdoption: countMatches(text, /TBD after adoption/g),
       genericExampleHints: countGenericExampleHints(text),
       genericOpenQuestions: countGenericOpenQuestions(text),
+      genericFieldPlaceholders: countGenericFieldPlaceholders(text),
       jsonExamples: jsonExamples.count,
       invalidJsonExamples: jsonExamples.invalid,
       lines: text.split(/\r?\n/).length,
@@ -214,6 +233,7 @@ function analyze() {
     stats.invalidJsonExamples += fileStats.invalidJsonExamples;
     stats.genericExampleHints += fileStats.genericExampleHints;
     stats.genericOpenQuestions += fileStats.genericOpenQuestions;
+    stats.genericFieldPlaceholders += fileStats.genericFieldPlaceholders;
     stats.reviewAsk += fileStats.reviewAsk;
     stats.reviewDraft += fileStats.reviewDraft;
     stats.reviewFix += fileStats.reviewFix;
@@ -262,6 +282,7 @@ function renderMarkdown(report) {
       invalidJsonExamples: 0,
       genericExampleHints: 0,
       genericOpenQuestions: 0,
+      genericFieldPlaceholders: 0,
       reviewAsk: 0,
       reviewDraft: 0,
       reviewFix: 0,
@@ -326,6 +347,7 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | Invalid JSON examples | ${total.invalidJsonExamples} |
 | Generic example hints | ${total.genericExampleHints} |
 | Generic open questions | ${total.genericOpenQuestions} |
+| Generic field placeholders | ${total.genericFieldPlaceholders} |
 | REVIEW-ASK | ${total.reviewAsk} |
 | REVIEW-DRAFT | ${total.reviewDraft} |
 | REVIEW-FIX | ${total.reviewFix} |

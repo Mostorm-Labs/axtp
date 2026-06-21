@@ -67,15 +67,18 @@ lastReviewed: 2026-06-15
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `routing-matrix`；查询对象。 |
 
 #### 3.1.2 返回结果 Result：`GetRoutingCapabilitiesResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `capability` | string | yes | see example | none | capability 名称。 |
+| `maxRoutes` | uint32 | yes | see example | none | 最大路由数量。 |
+| `sourceTypes` | string[] | yes | see example | none | 列表。 |
+| `destinationTypes` | string[] | yes | see example | none | 列表。 |
+| `gainPerRouteSupported` | bool | yes | see example | none | 是否支持该能力。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.1.3 d block 示例
 
@@ -150,15 +153,14 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `target` | string | no | target id | `default` | 查询对象；具体 target 集合由 capability 声明。 |
-| `sections` | string[] | no | section name array | omitted | 需要返回的字段段；省略表示默认摘要。 |
+| `target` | string | no | target id | `default` | 示例值 `routing-matrix`；查询对象。 |
 
 #### 3.2.2 返回结果 Result：`GetRoutingConfigResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `state` | object | yes | see schema | none | 当前状态、配置或查询结果。 |
-| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间。 |
+| `state` | object | yes | see schema | none | 当前结果对象；示例字段包括 `target`、`routeCount`、`changedRoutes`。 |
+| `sampledAt` | string timestamp | no | RFC 3339 | omitted | 结果采样时间；客户端可用于缓存和校准。 |
 
 #### 3.2.3 d block 示例
 
@@ -169,10 +171,7 @@ request:
   "id": 102,
   "method": "audio.getRoutingConfig",
   "params": {
-    "target": "routing-matrix",
-    "sections": [
-      "routes"
-    ]
+    "target": "routing-matrix"
   }
 }
 ```
@@ -449,7 +448,6 @@ Capability name: `audio.routing`。
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `audio.routing` | none | capability 名称。 |
 | `supportedTargets` | string[] | no | target id array | omitted | 支持的对象、通道、端口、组件或 scope。 |
-| `constraints` | object | no | feature-specific | omitted | 设备能力限制、范围、模式或策略摘要。 |
 
 ## 6. 字段 / Schemas
 
@@ -457,7 +455,7 @@ Capability name: `audio.routing`。
 
 ```text
 RoutingCapability
-  capability / supportedTargets / constraints
+  capability / supportedTargets
 RoutingState
   target / status / sampledAt
 RoutingChangedEvent

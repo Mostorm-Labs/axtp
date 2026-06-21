@@ -592,14 +592,14 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 
 | legacy 项 | 候选映射 | 状态 | 说明 |
 |---|---|---|---|
-| AXDP `CommonGetIPConfig` | `network.getIpConfig` | `[REVIEW-ASK]` | 需确认旧 payload 是否聚合 DHCP、IP、netmask、gateway。 |
-| AXDP `CommonSetDHCPState` / `CommonGetDHCPState` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | DHCP state 映射到 `mode=dhcp/static/disabled` 的规则待确认。 |
-| AXDP `CommonSetIPAddress` / `CommonGetIPAddress` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | 映射到 `address`。 |
-| AXDP `CommonSetNetMask` / `CommonGetNetMask` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | 旧 netmask 需转换为 `prefixLength`。 |
-| AXDP `CommonSetGateway` / `CommonGetGateway` | `network.setIpConfig` / `network.getIpConfig` | `[REVIEW-ASK]` | 映射到 `gateway`。 |
-| Signage `GetNetworkInfo` | `network.getIpConfig` | `[REVIEW-ASK]` | 需确认是否还包含接口、Wi-Fi 或服务端点字段。 |
-| VM33 `NetWork.SetNetwork` / `NetWork.SetIP` | `network.setIpConfig` | `[REVIEW-ASK]` | 需确认字段路径、静态/DHCP 切换和重启要求。 |
-| VM33 `NetWork.GetNetwork` / `NetWork.GetNetworkStatus` | `network.getIpConfig` | `[REVIEW-ASK]` | 需确认状态字段。 |
+| AXDP `CommonGetIPConfig` | `network.getIpConfig` | open review | 需确认旧 payload 是否聚合 DHCP、IP、netmask、gateway。 |
+| AXDP `CommonSetDHCPState` / `CommonGetDHCPState` | `network.setIpConfig` / `network.getIpConfig` | open review | DHCP state 映射到 `mode=dhcp/static/disabled` 的规则待确认。 |
+| AXDP `CommonSetIPAddress` / `CommonGetIPAddress` | `network.setIpConfig` / `network.getIpConfig` | open review | 映射到 `address`。 |
+| AXDP `CommonSetNetMask` / `CommonGetNetMask` | `network.setIpConfig` / `network.getIpConfig` | open review | 旧 netmask 需转换为 `prefixLength`。 |
+| AXDP `CommonSetGateway` / `CommonGetGateway` | `network.setIpConfig` / `network.getIpConfig` | open review | 映射到 `gateway`。 |
+| Signage `GetNetworkInfo` | `network.getIpConfig` | open review | 需确认是否还包含接口、Wi-Fi 或服务端点字段。 |
+| VM33 `NetWork.SetNetwork` / `NetWork.SetIP` | `network.setIpConfig` | open review | 需确认字段路径、静态/DHCP 切换和重启要求。 |
+| VM33 `NetWork.GetNetwork` / `NetWork.GetNetworkStatus` | `network.getIpConfig` | open review | 需确认状态字段。 |
 
 ## 10. 测试要点
 
@@ -617,8 +617,8 @@ Legacy 映射是迁移证据，不是 runtime 合同。
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|
-| 配对成功是否必须确认 IP ready？ | product / conformance | 当前作为 optional 验收；默认 Wi-Fi connected 可先算基础成功。 | open |
-| AP 本端地址是否由 `network.setIpConfig` 写入？ | schema boundary | 查询 AP 本端地址用 `network.ip`；写入入口和 AP DHCP Server 地址池需确认。 | open |
-| IPv6 是否进入 MVP？ | registry / conformance | 保留 `family=ipv6` 形状，MVP 可先要求 IPv4。 | open |
-| DNS 是否需要独立方法？ | schema | 当前随 IP 配置读写；复杂 DNS 策略 future。 | open |
-| 修改当前控制链路 IP 时如何避免断连？ | runtime / conformance | 使用 `effectiveAfter` 和 `requiresReconnect` 表达风险。 | open |
+| 配对成功是否必须确认 IP ready？ | product / conformance | 当前作为 optional 验收；默认 Wi-Fi connected 可先算基础成功。 | `[REVIEW-ASK]` |
+| AP 本端地址是否由 `network.setIpConfig` 写入？ | schema boundary | 查询 AP 本端地址用 `network.ip`；写入入口和 AP DHCP Server 地址池需确认。 | `[REVIEW-ASK]` |
+| IPv6 是否进入 MVP？ | registry / conformance | 保留 `family=ipv6` 形状，MVP 可先要求 IPv4。 | `[REVIEW-ASK]` |
+| DNS 是否需要独立方法？ | schema | 当前随 IP 配置读写；复杂 DNS 策略 future。 | `[REVIEW-ASK]` |
+| 修改当前控制链路 IP 时如何避免断连？ | runtime / conformance | 使用 `effectiveAfter` 和 `requiresReconnect` 表达风险。 | `[REVIEW-ASK]` |

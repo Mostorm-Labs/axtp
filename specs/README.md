@@ -1,15 +1,15 @@
 # AXTP 规范文本
 
-`specs/` 是手写的 AXTP 正式标准文本。它解释 `contract/` 中机器合同背后的规则；这里不放生成的 registry、候选表、legacy evidence 或工作流 playbook。
+`specs/` 是手写的 AXTP 正式标准文本。它解释 `contract/` 中机器合同背后的规则；这里不放生成的注册表、候选表、legacy 证据或工作流手册。
 
 ## 阅读方式
 
 | 读者 | 推荐阅读 |
 |---|---|
 | Runtime / SDK 实现者 | 先读 [20-core.md](20-core.md)，需要编码细节时再读 [40-codec.md](40-codec.md)。 |
-| Registry / generator 维护者 | 读 [30-registry.md](30-registry.md)、[40-codec.md](40-codec.md)、[50-tooling.md](50-tooling.md)。 |
+| 注册表 / 生成器维护者 | 读 [30-registry.md](30-registry.md)、[40-codec.md](40-codec.md)、[50-tooling.md](50-tooling.md)。 |
 | 产品 / 协议评审 | 读 [30-registry.md](30-registry.md)，再看 `docs/product/domain-status.md`。 |
-| Release owner | 读 [10-contract.md](10-contract.md)、[50-tooling.md](50-tooling.md)、`release/README.md`。 |
+| 发布负责人 | 读 [10-contract.md](10-contract.md)、[50-tooling.md](50-tooling.md)、`release/README.md`。 |
 | 对术语不确定的人 | 读 [00-glossary.md](00-glossary.md)。 |
 
 ## 标准文本
@@ -19,8 +19,8 @@
 | [00-glossary.md](00-glossary.md) | 共享术语。 |
 | [10-contract.md](10-contract.md) | 事实源顺序、冲突处理和非合同材料边界。 |
 | [20-core.md](20-core.md) | Frame、transport profile、CONTROL、RPC、STREAM 和低带宽边界。 |
-| [30-registry.md](30-registry.md) | Domain/feature 分类，以及 method/event/error/profile registry 规则。 |
-| [40-codec.md](40-codec.md) | 类型、schema、capability model、TLV 和字段编号规则。 |
+| [30-registry.md](30-registry.md) | `domain.feature` 分类，以及 method、event、error、profile 注册规则。 |
+| [40-codec.md](40-codec.md) | 类型、schema、capability 模型、TLV 和字段编号规则。 |
 | [50-tooling.md](50-tooling.md) | Registry YAML 到 Protocol IR、生成器行为、版本和发布绑定。 |
 
 ## 权威顺序

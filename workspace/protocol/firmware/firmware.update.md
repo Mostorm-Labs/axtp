@@ -774,12 +774,12 @@ Response:
 
 | Source | Legacy item | Candidate mapping | Review status |
 |---|---|---|---|
-| AXDP HID | `AlphaUpgradeInfo`, `BetaStartUpgrade`, `BetaUpgradeInfo`, `BetaUpgradeInfoEx` | `firmware.beginUpdate` | `[REVIEW-ASK]` 旧包格式、block 信息、md5 字段需设备侧确认。 |
-| AXDP HID | `AlphaUpgradeData`, `BetaUpgradeData`, `BetaUpgradeDataEx` | STREAM `firmware.update` | `[REVIEW-ASK]` 旧 slice index 可映射到 `seqId` 或 byte cursor；最终由 stream profile/adaptor 确认。 |
-| AXDP HID | `BetaStopUpgrade` | `firmware.finishUpdate` | `[REVIEW-ASK]` 旧名是否表示正常结束发送需确认；如果表示停止/取消则应转 P1 cancel。 |
-| Rooms / Signage / VM33 | `RemoteUpgrade`, `CloudUpgrade` | `firmware.beginUpdate(source.type=url)` P1 | `[REVIEW-ASK]` URL 模式不进入 P0。 |
+| AXDP HID | `AlphaUpgradeInfo`, `BetaStartUpgrade`, `BetaUpgradeInfo`, `BetaUpgradeInfoEx` | `firmware.beginUpdate` | open review：旧包格式、block 信息、md5 字段需设备侧确认。 |
+| AXDP HID | `AlphaUpgradeData`, `BetaUpgradeData`, `BetaUpgradeDataEx` | STREAM `firmware.update` | open review：旧 slice index 可映射到 `seqId` 或 byte cursor；最终由 stream profile/adaptor 确认。 |
+| AXDP HID | `BetaStopUpgrade` | `firmware.finishUpdate` | open review：旧名是否表示正常结束发送需确认；如果表示停止/取消则应转 P1 cancel。 |
+| Rooms / Signage / VM33 | `RemoteUpgrade`, `CloudUpgrade` | `firmware.beginUpdate(source.type=url)` P1 | open review：URL 模式不进入 P0。 |
 | Rooms / Signage / VM33 | `UpgradeProgress`, `CloudProgress` | `firmware.getUpdateState` or progress/state events | `[REVIEW-DRAFT]` 主动查询和事件订阅均可表达。 |
-| VM33 | `Upgrade.Version` | `firmware.getInfo` in `firmware.info` | `[REVIEW-ASK]` 与 `device.info` 边界需确认。 |
+| VM33 | `Upgrade.Version` | `firmware.getInfo` in `firmware.info` | open review：与 `device.info` 边界需确认。 |
 
 ## 10. Registry 草案输入摘要
 
