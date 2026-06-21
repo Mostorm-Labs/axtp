@@ -146,7 +146,7 @@ success:
 | `PERMISSION_DENIED` | common | 无权获取 pairing code。 |
 | `INTERNAL_ERROR` | common | 服务端无法生成 code。 |
 
-#### 3.1.5 Error Response d block Example (op=8)
+#### 3.1.5 错误 d block 示例
 
 ```json
 {
@@ -158,7 +158,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "refresh",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -222,7 +222,7 @@ success:
 }
 ```
 
-#### 3.2.4 Error Response d block Example (op=8)
+#### 3.2.4 错误 d block 示例
 
 ```json
 {
@@ -234,7 +234,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "includeEndpoint",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -322,7 +322,7 @@ success:
 
 ---
 
-#### 3.3.6 Error Response d block Example (op=8)
+#### 3.3.6 错误 d block 示例
 
 ```json
 {
@@ -334,7 +334,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "desiredState",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -493,7 +493,7 @@ Capability name: `device.enrollment`。
   },
   "result": {
     "state": "unmanaged",
-    "deviceId": "<DEVICE_ID>"
+    "deviceId": "device-001"
   }
 }
 ```
@@ -509,10 +509,10 @@ Capability name: `device.enrollment`。
   },
   "result": {
     "state": "enrolled",
-    "deviceId": "<DEVICE_ID>",
-    "workspaceId": "<WORKSPACE_ID>",
+    "deviceId": "device-001",
+    "workspaceId": "workspace-001",
     "endpoint": {
-      "endpointId": "<ROOM_ENDPOINT_ID>",
+      "endpointId": "room-endpoint-001",
       "type": "room",
       "displayName": "Boardroom A"
     },
@@ -535,7 +535,7 @@ Capability name: `device.enrollment`。
     "desiredState": "enrolled",
     "reason": "pairing_code_used",
     "endpoint": {
-      "endpointId": "<ROOM_ENDPOINT_ID>",
+      "endpointId": "room-endpoint-001",
       "type": "room",
       "displayName": "Boardroom A"
     }
@@ -555,10 +555,10 @@ Capability name: `device.enrollment`。
   "result": {
     "state": {
       "state": "enrolled",
-      "deviceId": "<DEVICE_ID>",
-      "workspaceId": "<WORKSPACE_ID>",
+      "deviceId": "device-001",
+      "workspaceId": "workspace-001",
       "endpoint": {
-        "endpointId": "<ROOM_ENDPOINT_ID>",
+        "endpointId": "room-endpoint-001",
         "type": "room",
         "displayName": "Boardroom A"
       }
@@ -583,10 +583,10 @@ Capability name: `device.enrollment`。
     "reason": "pairing_code_used",
     "state": {
       "state": "enrolled",
-      "deviceId": "<DEVICE_ID>",
-      "workspaceId": "<WORKSPACE_ID>",
+      "deviceId": "device-001",
+      "workspaceId": "workspace-001",
       "endpoint": {
-        "endpointId": "<ROOM_ENDPOINT_ID>",
+        "endpointId": "room-endpoint-001",
         "type": "room",
         "displayName": "Boardroom A"
       },

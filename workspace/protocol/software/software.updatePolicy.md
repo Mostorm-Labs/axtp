@@ -142,7 +142,7 @@ success:
 }
 ```
 
-#### 3.1.4 Error Response d block Example (op=8)
+#### 3.1.4 错误 d block 示例
 
 ```json
 {
@@ -154,7 +154,7 @@ success:
     "details": {
       "candidateError": "INVALID_ARGUMENT",
       "field": "target",
-      "reason": "example failure"
+      "reason": "invalid field value"
     }
   }
 }
@@ -233,7 +233,7 @@ success:
 | `INVALID_ARGUMENT` | common | policy 字段值非法（如时间格式错误）。 |
 | `PERMISSION_DENIED` | common | 无权修改更新策略。 |
 
-#### 3.2.6 Error Response d block Example (op=8)
+#### 3.2.6 错误 d block 示例
 
 ```json
 {
@@ -245,7 +245,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "target",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -310,7 +310,7 @@ success:
 }
 ```
 
-#### 3.3.4 Error Response d block Example (op=8)
+#### 3.3.4 错误 d block 示例
 
 ```json
 {
@@ -322,7 +322,7 @@ success:
     "details": {
       "candidateError": "INVALID_ARGUMENT",
       "field": "target",
-      "reason": "example failure"
+      "reason": "invalid field value"
     }
   }
 }

@@ -106,7 +106,7 @@ success:
 |---|---|---|
 | `NOT_SUPPORTED` | 设备无白平衡控制。 | 隐藏白平衡设置。 |
 
-#### 3.1.6 Error Response d block Example (op=8)
+#### 3.1.6 错误 d block 示例
 
 ```json
 {
@@ -118,7 +118,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -183,7 +183,7 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | white balance 状态不可读。 | 返回 unavailable detail。 |
 
-#### 3.2.6 Error Response d block Example (op=8)
+#### 3.2.6 错误 d block 示例
 
 ```json
 {
@@ -195,7 +195,7 @@ success:
     "details": {
       "candidateError": "UNAVAILABLE",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "service unavailable"
     }
   }
 }
@@ -268,7 +268,7 @@ success:
 | `DEVICE_MODE_CONFLICT` | auto mode 下写 manual-only 字段。 | 返回 required mode。 |
 | `OUT_OF_RANGE` | 色温或 RGB gain 越界。 | 返回范围。 |
 
-#### 3.3.6 Error Response d block Example (op=8)
+#### 3.3.6 错误 d block 示例
 
 ```json
 {
@@ -280,7 +280,7 @@ success:
     "details": {
       "candidateError": "DEVICE_MODE_CONFLICT",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "request cannot be applied"
     }
   }
 }
@@ -345,7 +345,7 @@ success:
 |---|---|---|
 | `BUSY` | ISP 正忙。 | 稍后重试。 |
 
-#### 3.4.6 Error Response d block Example (op=8)
+#### 3.4.6 错误 d block 示例
 
 ```json
 {
@@ -357,7 +357,7 @@ success:
     "details": {
       "candidateError": "BUSY",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "resource is busy"
     }
   }
 }

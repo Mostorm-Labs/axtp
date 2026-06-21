@@ -128,7 +128,7 @@ success:
 | `INVALID_ARGUMENT` | `roleFilter` 或 `typeFilter` 包含非法枚举。 | 使用 adopted numeric code `10`，并在 details 中指出字段路径。 |
 | `PERMISSION_DENIED` | 当前调用方无权读取接口信息。 | 使用 adopted numeric code `9`。 |
 
-#### 3.1.6 Error Response d block Example (op=8)
+#### 3.1.6 错误 d block 示例
 
 ```json
 {
@@ -140,7 +140,7 @@ success:
     "details": {
       "candidateError": "INVALID_ARGUMENT",
       "field": "roleFilter",
-      "reason": "example failure"
+      "reason": "invalid field value"
     }
   }
 }
@@ -222,7 +222,7 @@ success:
 | `NOT_FOUND` | 指定 `interfaceId` 不存在或当前不可见。 | 使用 adopted numeric code `12`；可在 details 标注候选 `NETWORK_INTERFACE_NOT_FOUND`。 |
 | `PERMISSION_DENIED` | 当前调用方无权读取 MAC 或接口详情。 | 返回可诊断原因，不泄露受限字段。 |
 
-#### 3.2.6 Error Response d block Example (op=8)
+#### 3.2.6 错误 d block 示例
 
 ```json
 {
@@ -234,7 +234,7 @@ success:
     "details": {
       "candidateError": "NOT_FOUND",
       "field": "interfaceId",
-      "reason": "example failure"
+      "reason": "resource not found"
     }
   }
 }
@@ -451,7 +451,7 @@ NetworkInterfaceStateChangedEvent
   "result": {
     "interfaces": [
       {
-        "interfaceId": "<STA_INTERFACE_ID>",
+        "interfaceId": "wlan0",
         "type": "wifi",
         "roles": [
           "sta"
@@ -460,10 +460,10 @@ NetworkInterfaceStateChangedEvent
           "admin": "enabled",
           "link": "up"
         },
-        "macAddress": "<STA_MAC>"
+        "macAddress": "02:00:00:00:10:01"
       },
       {
-        "interfaceId": "<AP_INTERFACE_ID>",
+        "interfaceId": "ap0",
         "type": "wifi",
         "roles": [
           "ap"
@@ -472,12 +472,12 @@ NetworkInterfaceStateChangedEvent
           "admin": "enabled",
           "link": "up"
         },
-        "macAddress": "<AP_MAC>"
+        "macAddress": "02:00:00:00:20:01"
       }
     ],
     "defaults": {
-      "wifiSta": "<STA_INTERFACE_ID>",
-      "ap": "<AP_INTERFACE_ID>"
+      "wifiSta": "wlan0",
+      "ap": "ap0"
     }
   }
 }
@@ -492,7 +492,7 @@ NetworkInterfaceStateChangedEvent
   "event": "network.interfaceStateChanged",
   "intent": 2,
   "data": {
-    "interfaceId": "<STA_INTERFACE_ID>",
+    "interfaceId": "wlan0",
     "previousState": {
       "admin": "enabled",
       "link": "up"
@@ -522,7 +522,7 @@ NetworkInterfaceStateChangedEvent
     "msg": "Network interface was not found.",
     "details": {
       "candidateError": "NETWORK_INTERFACE_NOT_FOUND",
-      "interfaceId": "<MISSING_INTERFACE_ID>"
+      "interfaceId": "missing0"
     }
   }
 }

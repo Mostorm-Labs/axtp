@@ -178,7 +178,7 @@ success:
 | `PERMISSION_DENIED` | 当前调用方无权读取设备身份或序列号。 | 使用 adopted numeric code `9`；敏感字段可省略。 |
 | `INTERNAL_ERROR` | 设备信息服务、OS 查询或 runtime 查询失败。 | 使用 adopted numeric code `14`。 |
 
-#### 3.1.6 Error Response d block Example (op=8)
+#### 3.1.6 错误 d block 示例
 
 ```json
 {
@@ -190,7 +190,7 @@ success:
     "details": {
       "candidateError": "INVALID_ARGUMENT",
       "field": "includeCapabilitySummary",
-      "reason": "example failure"
+      "reason": "invalid field value"
     }
   }
 }
@@ -368,8 +368,8 @@ DeviceInfo
   },
   "result": {
     "identity": {
-      "deviceId": "<DEVICE_ID>",
-      "serialNumber": "<SERIAL_NUMBER>",
+      "deviceId": "device-001",
+      "serialNumber": "SN-2026-0001",
       "vendorId": "nearhub",
       "productId": "na20"
     },
@@ -427,8 +427,8 @@ DeviceInfo
   },
   "result": {
     "identity": {
-      "deviceId": "<DEVICE_ID>",
-      "serialNumber": "<SERIAL_NUMBER>",
+      "deviceId": "device-001",
+      "serialNumber": "SN-2026-0001",
       "vendorId": "nearhub",
       "productId": "nt10"
     },

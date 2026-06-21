@@ -923,7 +923,7 @@ Capability 描述设备能做什么；`NetworkApConfig` 描述当前或目标配
   "id": 101,
   "method": "network.getApCapabilities",
   "params": {
-    "interfaceId": "<AP_INTERFACE_ID>"
+    "interfaceId": "ap0"
   }
 }
 ```
@@ -971,7 +971,7 @@ Capability 描述设备能做什么；`NetworkApConfig` 描述当前或目标配
   "id": 102,
   "method": "network.getApConfig",
   "params": {
-    "interfaceId": "<AP_INTERFACE_ID>",
+    "interfaceId": "ap0",
     "credentialExport": "one_time"
   }
 }
@@ -987,15 +987,15 @@ Capability 描述设备能做什么；`NetworkApConfig` 描述当前或目标配
     "code": 0
   },
   "result": {
-    "interfaceId": "<AP_INTERFACE_ID>",
-    "ssid": "NA20-<receiver-id>",
+    "interfaceId": "ap0",
+    "ssid": "NA20-RX-A1",
     "security": "wpa2_psk",
     "credential": {
       "type": "passphrase",
-      "value": "<ONE_TIME_EXPORTED_AP_PASSPHRASE>",
+      "value": "<redacted>",
       "exportPolicy": "one_time",
       "expiresAtMs": 0,
-      "exportId": "<CREDENTIAL_EXPORT_ID>"
+      "exportId": "cred-export-001"
     },
     "hidden": false,
     "band": "5g",
@@ -1017,12 +1017,12 @@ Capability 描述设备能做什么；`NetworkApConfig` 描述当前或目标配
   "method": "network.setApConfig",
   "params": {
     "config": {
-      "interfaceId": "<AP_INTERFACE_ID>",
-      "ssid": "NA20-<receiver-id>",
+      "interfaceId": "ap0",
+      "ssid": "NA20-RX-A1",
       "security": "wpa2_psk",
       "credential": {
         "type": "passphrase",
-        "value": "<NEW_AP_PASSPHRASE>",
+        "value": "<redacted>",
         "exportPolicy": "redacted"
       },
       "hidden": false,
@@ -1045,8 +1045,8 @@ Capability 描述设备能做什么；`NetworkApConfig` 描述当前或目标配
   },
   "result": {
     "config": {
-      "interfaceId": "<AP_INTERFACE_ID>",
-      "ssid": "NA20-<receiver-id>",
+      "interfaceId": "ap0",
+      "ssid": "NA20-RX-A1",
       "security": "wpa2_psk",
       "hidden": false,
       "band": "5g",
@@ -1067,16 +1067,16 @@ Capability 描述设备能做什么；`NetworkApConfig` 描述当前或目标配
   "event": "network.apStateChanged",
   "intent": 2,
   "data": {
-    "interfaceId": "<AP_INTERFACE_ID>",
+    "interfaceId": "ap0",
     "previousState": {
-      "interfaceId": "<AP_INTERFACE_ID>",
+      "interfaceId": "ap0",
       "state": "starting"
     },
     "state": {
-      "interfaceId": "<AP_INTERFACE_ID>",
+      "interfaceId": "ap0",
       "state": "running",
-      "ssid": "NA20-<receiver-id>",
-      "bssid": "<NA20_AP_BSSID>",
+      "ssid": "NA20-RX-A1",
+      "bssid": "02:00:00:00:20:02",
       "clientCount": 0
     },
     "reason": "user_request"

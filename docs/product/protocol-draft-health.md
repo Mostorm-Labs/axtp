@@ -21,10 +21,10 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | Method sections | 431 |
 | Compact method examples | 431 |
 | Method example gaps | 0 |
-| JSON examples | 1173 |
+| JSON examples | 1158 |
 | Invalid JSON examples | 0 |
 | Generic example hints | 0 |
-| REVIEW-ASK | 312 |
+| REVIEW-ASK | 310 |
 | REVIEW-DRAFT | 112 |
 | REVIEW-FIX | 0 |
 | REVIEW-BLOCKER | 0 |
@@ -34,7 +34,7 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 
 | Domain | Priority | Drafts | Generated Drafts | Generated Facts | Methods | Example Coverage | Review Markers | Generic Example Hints | Focus |
 |---|---|---:|---:|---:|---:|---:|---|---:|---|
-| audio | 旁路高覆盖 / P0 stream | 12 | 2 | 13 | 54 | 54/54 | ASK 29 / DRAFT 5 / FIX 0 / BLOCKER 0 | 0 | 确认 REVIEW-ASK |
+| audio | 旁路高覆盖 / P0 stream | 12 | 2 | 13 | 54 | 54/54 | ASK 27 / DRAFT 5 / FIX 0 / BLOCKER 0 | 0 | 确认 REVIEW-ASK |
 | auth | 待排期 | 3 | 0 | 0 | 12 | 12/12 | ASK 6 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 确认 REVIEW-ASK |
 | camera | P3/P4 | 7 | 0 | 0 | 40 | 40/40 | ASK 46 / DRAFT 48 / FIX 0 / BLOCKER 0 | 0 | 确认 REVIEW-ASK |
 | capability | 待排期 | 1 | 0 | 0 | 4 | 4/4 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 确认 REVIEW-ASK |
@@ -62,36 +62,36 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 
 | File | Priority | Domain | Methods | Generic Example Hints | Review Markers | Lines |
 |---|---|---|---:|---:|---|---:|
-| `workspace/protocol/audio/audio.stream.md` | 旁路高覆盖 / P0 stream | audio | 5 | 0 | ASK 9 / DRAFT 5 / FIX 0 / BLOCKER 0 | 1096 |
-| `workspace/protocol/video/video.stream.md` | P0 stream | video | 6 | 0 | ASK 6 / DRAFT 5 / FIX 0 / BLOCKER 0 | 1154 |
+| `workspace/protocol/audio/audio.stream.md` | 旁路高覆盖 / P0 stream | audio | 5 | 0 | ASK 7 / DRAFT 5 / FIX 0 / BLOCKER 0 | 921 |
+| `workspace/protocol/video/video.stream.md` | P0 stream | video | 6 | 0 | ASK 6 / DRAFT 5 / FIX 0 / BLOCKER 0 | 958 |
 | `workspace/protocol/video/video.framing.md` | P0 stream | video | 5 | 0 | ASK 5 / DRAFT 8 / FIX 0 / BLOCKER 0 | 871 |
-| `workspace/protocol/stream/stream.flowControl.md` | P0 data-plane plumbing | stream | 16 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 1517 |
-| `workspace/protocol/audio/audio.recording.md` | 旁路高覆盖 / P0 stream | audio | 9 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 925 |
-| `workspace/protocol/video/video.ndi.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 561 |
-| `workspace/protocol/video/video.rtsp.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 557 |
-| `workspace/protocol/audio/audio.eq.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 538 |
-| `workspace/protocol/audio/audio.mixer.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 520 |
-| `workspace/protocol/video/video.layout.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 518 |
-| `workspace/protocol/video/video.overlay.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 514 |
-| `workspace/protocol/audio/audio.playback.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 512 |
-| `workspace/protocol/audio/audio.routing.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 512 |
-| `workspace/protocol/video/video.osd.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 511 |
-| `workspace/protocol/video/video.recording.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 511 |
-| `workspace/protocol/video/video.encoder.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 508 |
-| `workspace/protocol/video/video.outputTransform.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 507 |
-| `workspace/protocol/audio/audio.uac.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 506 |
-| `workspace/protocol/audio/audio.dante.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 502 |
-| `workspace/protocol/audio/audio.input.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 499 |
-| `workspace/protocol/video/video.pip.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 499 |
-| `workspace/protocol/video/video.scene.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 499 |
-| `workspace/protocol/audio/audio.output.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 498 |
-| `workspace/protocol/audio/audio.volume.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 496 |
-| `workspace/protocol/stream/stream.profile.md` | P0 data-plane plumbing | stream | 2 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 307 |
+| `workspace/protocol/stream/stream.flowControl.md` | P0 data-plane plumbing | stream | 16 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 1511 |
+| `workspace/protocol/audio/audio.recording.md` | 旁路高覆盖 / P0 stream | audio | 9 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 919 |
+| `workspace/protocol/video/video.ndi.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 555 |
+| `workspace/protocol/video/video.rtsp.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 551 |
+| `workspace/protocol/audio/audio.eq.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 532 |
+| `workspace/protocol/audio/audio.mixer.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 514 |
+| `workspace/protocol/video/video.layout.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 512 |
+| `workspace/protocol/video/video.overlay.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 508 |
+| `workspace/protocol/audio/audio.playback.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 506 |
+| `workspace/protocol/audio/audio.routing.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 506 |
+| `workspace/protocol/video/video.osd.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 505 |
+| `workspace/protocol/video/video.recording.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 505 |
+| `workspace/protocol/video/video.encoder.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 502 |
+| `workspace/protocol/video/video.outputTransform.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 501 |
+| `workspace/protocol/audio/audio.uac.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 500 |
+| `workspace/protocol/audio/audio.dante.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 496 |
+| `workspace/protocol/audio/audio.input.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 493 |
+| `workspace/protocol/video/video.pip.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 493 |
+| `workspace/protocol/video/video.scene.md` | P0 stream | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 493 |
+| `workspace/protocol/audio/audio.output.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 492 |
+| `workspace/protocol/audio/audio.volume.md` | 旁路高覆盖 / P0 stream | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 490 |
+| `workspace/protocol/stream/stream.profile.md` | P0 data-plane plumbing | stream | 2 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 301 |
 | `workspace/protocol/device/device.info.md` | P1 | device | 1 | 0 | ASK 4 / DRAFT 1 / FIX 0 / BLOCKER 0 | 505 |
 | `workspace/protocol/device/device.enrollment.md` | P1 | device | 3 | 0 | ASK 6 / DRAFT 12 / FIX 0 / BLOCKER 0 | 678 |
-| `workspace/protocol/system/system.lifecycle.md` | P1 | system | 9 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 951 |
-| `workspace/protocol/system/system.reset.md` | P1 | system | 6 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 643 |
-| `workspace/protocol/device/device.button.md` | P1 | device | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 529 |
+| `workspace/protocol/system/system.lifecycle.md` | P1 | system | 9 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 945 |
+| `workspace/protocol/system/system.reset.md` | P1 | system | 6 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 637 |
+| `workspace/protocol/device/device.button.md` | P1 | device | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 523 |
 
 ## Mechanical Example Tuning Queue
 
@@ -104,28 +104,28 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | `workspace/protocol/software/software.updatePolicy.md` | software | 3 | 0 | ASK 15 / DRAFT 7 / FIX 0 / BLOCKER 0 | 657 |
 | `workspace/protocol/camera/camera.focus.md` | camera | 11 | 0 | ASK 12 / DRAFT 19 / FIX 0 / BLOCKER 0 | 1798 |
 | `workspace/protocol/camera/camera.ptz.md` | camera | 7 | 0 | ASK 11 / DRAFT 6 / FIX 0 / BLOCKER 0 | 934 |
-| `workspace/protocol/audio/audio.stream.md` | audio | 5 | 0 | ASK 9 / DRAFT 5 / FIX 0 / BLOCKER 0 | 1096 |
 | `workspace/protocol/network/network.ip.md` | network | 2 | 0 | ASK 9 / DRAFT 3 / FIX 0 / BLOCKER 0 | 625 |
+| `workspace/protocol/audio/audio.stream.md` | audio | 5 | 0 | ASK 7 / DRAFT 5 / FIX 0 / BLOCKER 0 | 921 |
 | `workspace/protocol/camera/camera.image.md` | camera | 4 | 0 | ASK 7 / DRAFT 5 / FIX 0 / BLOCKER 0 | 593 |
-| `workspace/protocol/video/video.stream.md` | video | 6 | 0 | ASK 6 / DRAFT 5 / FIX 0 / BLOCKER 0 | 1154 |
+| `workspace/protocol/video/video.stream.md` | video | 6 | 0 | ASK 6 / DRAFT 5 / FIX 0 / BLOCKER 0 | 958 |
 | `workspace/protocol/camera/camera.zoom.md` | camera | 6 | 0 | ASK 6 / DRAFT 6 / FIX 0 / BLOCKER 0 | 762 |
 | `workspace/protocol/device/device.enrollment.md` | device | 3 | 0 | ASK 6 / DRAFT 12 / FIX 0 / BLOCKER 0 | 678 |
-| `workspace/protocol/network/network.wifi.md` | network | 7 | 0 | ASK 5 / DRAFT 9 / FIX 0 / BLOCKER 0 | 1215 |
+| `workspace/protocol/network/network.wifi.md` | network | 7 | 0 | ASK 5 / DRAFT 9 / FIX 0 / BLOCKER 0 | 1115 |
 | `workspace/protocol/video/video.framing.md` | video | 5 | 0 | ASK 5 / DRAFT 8 / FIX 0 / BLOCKER 0 | 871 |
 | `workspace/protocol/network/network.interface.md` | network | 2 | 0 | ASK 5 / DRAFT 1 / FIX 0 / BLOCKER 0 | 574 |
 | `workspace/protocol/camera/camera.exposure.md` | camera | 4 | 0 | ASK 4 / DRAFT 6 / FIX 0 / BLOCKER 0 | 597 |
 | `workspace/protocol/camera/camera.whiteBalance.md` | camera | 4 | 0 | ASK 4 / DRAFT 6 / FIX 0 / BLOCKER 0 | 589 |
 | `workspace/protocol/device/device.info.md` | device | 1 | 0 | ASK 4 / DRAFT 1 / FIX 0 / BLOCKER 0 | 505 |
-| `workspace/protocol/stream/stream.flowControl.md` | stream | 16 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 1517 |
+| `workspace/protocol/stream/stream.flowControl.md` | stream | 16 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 1511 |
 | `workspace/protocol/network/network.ap.md` | network | 7 | 0 | ASK 2 / DRAFT 4 / FIX 0 / BLOCKER 0 | 1154 |
-| `workspace/protocol/system/system.lifecycle.md` | system | 9 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 951 |
-| `workspace/protocol/audio/audio.recording.md` | audio | 9 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 925 |
-| `workspace/protocol/system/system.reset.md` | system | 6 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 643 |
-| `workspace/protocol/file/file.transfer.md` | file | 5 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 612 |
-| `workspace/protocol/signage/signage.playlist.md` | signage | 5 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 595 |
-| `workspace/protocol/video/video.ndi.md` | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 561 |
-| `workspace/protocol/video/video.rtsp.md` | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 557 |
-| `workspace/protocol/audio/audio.eq.md` | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 538 |
-| `workspace/protocol/device/device.button.md` | device | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 529 |
-| `workspace/protocol/input/input.gpio.md` | input | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 525 |
-| `workspace/protocol/auth/auth.permission.md` | auth | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 522 |
+| `workspace/protocol/system/system.lifecycle.md` | system | 9 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 945 |
+| `workspace/protocol/audio/audio.recording.md` | audio | 9 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 919 |
+| `workspace/protocol/system/system.reset.md` | system | 6 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 637 |
+| `workspace/protocol/file/file.transfer.md` | file | 5 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 606 |
+| `workspace/protocol/signage/signage.playlist.md` | signage | 5 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 589 |
+| `workspace/protocol/video/video.ndi.md` | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 555 |
+| `workspace/protocol/video/video.rtsp.md` | video | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 551 |
+| `workspace/protocol/audio/audio.eq.md` | audio | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 532 |
+| `workspace/protocol/device/device.button.md` | device | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 523 |
+| `workspace/protocol/input/input.gpio.md` | input | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 519 |
+| `workspace/protocol/auth/auth.permission.md` | auth | 4 | 0 | ASK 2 / DRAFT 0 / FIX 0 / BLOCKER 0 | 516 |

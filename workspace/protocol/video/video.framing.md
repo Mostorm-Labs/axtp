@@ -120,7 +120,7 @@ success:
 | `NOT_SUPPORTED` | 设备没有 framing 服务。 | UI 隐藏 framing 设置。 |
 | `UNAVAILABLE` | 摄像头链路或算法服务暂不可用。 | 稍后重试或展示不可用原因。 |
 
-#### 3.1.6 Error Response d block Example (op=8)
+#### 3.1.6 错误 d block 示例
 
 ```json
 {
@@ -132,7 +132,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -200,7 +200,7 @@ success:
 | `INVALID_ARGUMENT` | `cameraId` 或 `sourceId` 非法。 | 返回字段路径。 |
 | `UNAVAILABLE` | framing 状态不可读。 | 返回 `unavailableReason` detail。 |
 
-#### 3.2.6 Error Response d block Example (op=8)
+#### 3.2.6 错误 d block 示例
 
 ```json
 {
@@ -212,7 +212,7 @@ success:
     "details": {
       "candidateError": "INVALID_ARGUMENT",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "invalid field value"
     }
   }
 }
@@ -295,7 +295,7 @@ success:
 | `DEVICE_MODE_CONFLICT` | physical PTZ 正被其他控制端占用，或 privacy cover 生效。 | 返回冲突 owner。 |
 | `BUSY` | 算法服务正在切换。 | 建议稍后重试。 |
 
-#### 3.3.6 Error Response d block Example (op=8)
+#### 3.3.6 错误 d block 示例
 
 ```json
 {
@@ -307,7 +307,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -375,7 +375,7 @@ success:
 | `NOT_SUPPORTED` | 设备不支持 reset。 | UI 隐藏恢复默认。 |
 | `BUSY` | 正在切换 mode。 | 稍后重试。 |
 
-#### 3.4.6 Error Response d block Example (op=8)
+#### 3.4.6 错误 d block 示例
 
 ```json
 {
@@ -387,7 +387,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -454,7 +454,7 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | camera pipeline 不可读。 | 返回 unavailable detail。 |
 
-#### 3.5.6 Error Response d block Example (op=8)
+#### 3.5.6 错误 d block 示例
 
 ```json
 {
@@ -466,7 +466,7 @@ success:
     "details": {
       "candidateError": "UNAVAILABLE",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "service unavailable"
     }
   }
 }

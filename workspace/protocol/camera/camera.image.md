@@ -104,7 +104,7 @@ success:
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持基础图像调节。 | 隐藏图像设置。 |
 
-#### 3.1.6 Error Response d block Example (op=8)
+#### 3.1.6 错误 d block 示例
 
 ```json
 {
@@ -116,7 +116,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -182,7 +182,7 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | camera pipeline 不可读。 | 返回不可用原因。 |
 
-#### 3.2.6 Error Response d block Example (op=8)
+#### 3.2.6 错误 d block 示例
 
 ```json
 {
@@ -194,7 +194,7 @@ success:
     "details": {
       "candidateError": "UNAVAILABLE",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "service unavailable"
     }
   }
 }
@@ -270,7 +270,7 @@ success:
 | `INVALID_ARGUMENT` | 字段不支持或组合非法。 | 返回字段路径。 |
 | `BUSY` | ISP 正在切换。 | 稍后重试。 |
 
-#### 3.3.6 Error Response d block Example (op=8)
+#### 3.3.6 错误 d block 示例
 
 ```json
 {
@@ -282,7 +282,7 @@ success:
     "details": {
       "candidateError": "OUT_OF_RANGE",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "value is outside supported range"
     }
   }
 }
@@ -348,7 +348,7 @@ success:
 |---|---|---|
 | `NOT_SUPPORTED` | 不支持 reset。 | 隐藏恢复默认。 |
 
-#### 3.4.6 Error Response d block Example (op=8)
+#### 3.4.6 错误 d block 示例
 
 ```json
 {
@@ -360,7 +360,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }

@@ -119,7 +119,7 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
 |---|---|---:|---|---|---|
 | none | - | - | - | - | P0 不需要请求参数。 |
 
-#### 3.1.1 Error Response d block Example (op=8)
+#### 3.1.1 错误 d block 示例
 
 ```json
 {
@@ -131,7 +131,7 @@ STREAM header 只携带 `streamId`、`seqId`、`cursor` 和 payload bytes。`fil
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "params",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -180,7 +180,7 @@ success:
 |---|---|---:|---|---|---|
 | `manifest` | `FirmwareUpdateManifest` | yes | object | none | 固件包最小摘要。 |
 
-#### 3.2.1 Error Response d block Example (op=8)
+#### 3.2.1 错误 d block 示例
 
 ```json
 {
@@ -192,7 +192,7 @@ success:
     "details": {
       "candidateError": "INVALID_ARGUMENT",
       "field": "manifest",
-      "reason": "example failure"
+      "reason": "invalid field value"
     }
   }
 }
@@ -264,7 +264,7 @@ success:
 |---|---|---:|---|---|---|
 | `updateSessionId` | string | yes | opaque | none | 更新会话 ID。 |
 
-#### 3.3.1 Error Response d block Example (op=8)
+#### 3.3.1 错误 d block 示例
 
 ```json
 {
@@ -276,7 +276,7 @@ success:
     "details": {
       "candidateError": "INVALID_STATE",
       "field": "updateSessionId",
-      "reason": "example failure"
+      "reason": "state does not allow this operation"
     }
   }
 }
@@ -331,7 +331,7 @@ success:
 |---|---|---:|---|---|---|
 | `updateSessionId` | string | yes | opaque | none | 更新会话 ID。 |
 
-#### 3.4.1 Error Response d block Example (op=8)
+#### 3.4.1 错误 d block 示例
 
 ```json
 {
@@ -343,7 +343,7 @@ success:
     "details": {
       "candidateError": "NOT_FOUND",
       "field": "updateSessionId",
-      "reason": "example failure"
+      "reason": "resource not found"
     }
   }
 }

@@ -107,7 +107,7 @@ success:
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持曝光控制。 | 隐藏曝光设置。 |
 
-#### 3.1.6 Error Response d block Example (op=8)
+#### 3.1.6 错误 d block 示例
 
 ```json
 {
@@ -119,7 +119,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -185,7 +185,7 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | sensor 状态不可读。 | 返回 unavailable detail。 |
 
-#### 3.2.6 Error Response d block Example (op=8)
+#### 3.2.6 错误 d block 示例
 
 ```json
 {
@@ -197,7 +197,7 @@ success:
     "details": {
       "candidateError": "UNAVAILABLE",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "service unavailable"
     }
   }
 }
@@ -273,7 +273,7 @@ success:
 | `OUT_OF_RANGE` | ISO/gain/shutter/EV 越界。 | 返回合法范围。 |
 | `INVALID_ARGUMENT` | 字段组合非法。 | 整体失败，不部分生效。 |
 
-#### 3.3.6 Error Response d block Example (op=8)
+#### 3.3.6 错误 d block 示例
 
 ```json
 {
@@ -285,7 +285,7 @@ success:
     "details": {
       "candidateError": "DEVICE_MODE_CONFLICT",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "request cannot be applied"
     }
   }
 }
@@ -351,7 +351,7 @@ success:
 |---|---|---|
 | `BUSY` | sensor 正忙。 | 稍后重试。 |
 
-#### 3.4.6 Error Response d block Example (op=8)
+#### 3.4.6 错误 d block 示例
 
 ```json
 {
@@ -363,7 +363,7 @@ success:
     "details": {
       "candidateError": "BUSY",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "resource is busy"
     }
   }
 }

@@ -109,7 +109,7 @@ success:
 | `NOT_SUPPORTED` | 设备无物理 PTZ。 | 隐藏 PTZ 控件。 |
 | `UNAVAILABLE` | 云台服务不可读。 | 稍后重试。 |
 
-#### 3.1.6 Error Response d block Example (op=8)
+#### 3.1.6 错误 d block 示例
 
 ```json
 {
@@ -121,7 +121,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -187,7 +187,7 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | 云台状态未知。 | 返回状态不可用原因。 |
 
-#### 3.2.6 Error Response d block Example (op=8)
+#### 3.2.6 错误 d block 示例
 
 ```json
 {
@@ -199,7 +199,7 @@ success:
     "details": {
       "candidateError": "UNAVAILABLE",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "service unavailable"
     }
   }
 }
@@ -273,7 +273,7 @@ success:
 | `DEVICE_MODE_CONFLICT` | framing 算法或其他 owner 正在控制云台。 | 返回当前 owner。 |
 | `BUSY` | 云台正在执行不可打断动作。 | 稍后重试或先 stop。 |
 
-#### 3.3.6 Error Response d block Example (op=8)
+#### 3.3.6 错误 d block 示例
 
 ```json
 {
@@ -285,7 +285,7 @@ success:
     "details": {
       "candidateError": "OUT_OF_RANGE",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "value is outside supported range"
     }
   }
 }
@@ -356,7 +356,7 @@ success:
 |---|---|---|
 | `INVALID_ARGUMENT` | direction 或 speed 非法。 | 返回字段路径。 |
 
-#### 3.4.6 Error Response d block Example (op=8)
+#### 3.4.6 错误 d block 示例
 
 ```json
 {
@@ -368,7 +368,7 @@ success:
     "details": {
       "candidateError": "INVALID_ARGUMENT",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "invalid field value"
     }
   }
 }
@@ -437,7 +437,7 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | 云台控制链路不可用。 | 清除移动 UI 状态。 |
 
-#### 3.5.6 Error Response d block Example (op=8)
+#### 3.5.6 错误 d block 示例
 
 ```json
 {
@@ -449,7 +449,7 @@ success:
     "details": {
       "candidateError": "UNAVAILABLE",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "service unavailable"
     }
   }
 }
@@ -519,7 +519,7 @@ success:
 |---|---|---|
 | `NOT_FOUND` | preset 不存在。 | 刷新 preset 列表。 |
 
-#### 3.6.6 Error Response d block Example (op=8)
+#### 3.6.6 错误 d block 示例
 
 ```json
 {
@@ -531,7 +531,7 @@ success:
     "details": {
       "candidateError": "NOT_FOUND",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "resource not found"
     }
   }
 }
@@ -610,7 +610,7 @@ success:
 |---|---|---|
 | `RESOURCE_EXHAUSTED` | preset 数量达到上限。 | 返回上限。 |
 
-#### 3.7.6 Error Response d block Example (op=8)
+#### 3.7.6 错误 d block 示例
 
 ```json
 {
@@ -622,7 +622,7 @@ success:
     "details": {
       "candidateError": "RESOURCE_EXHAUSTED",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "request cannot be applied"
     }
   }
 }

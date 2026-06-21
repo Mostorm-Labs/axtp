@@ -138,7 +138,7 @@ success:
 | `NOT_FOUND` | 指定接口不存在或不支持 IP 配置。 | 使用 adopted numeric code `12`。 |
 | `NOT_SUPPORTED` | 地址族或 feature 不支持。 | 使用 adopted numeric code `3`。 |
 
-#### 3.1.6 Error Response d block Example (op=8)
+#### 3.1.6 错误 d block 示例
 
 ```json
 {
@@ -150,7 +150,7 @@ success:
     "details": {
       "candidateError": "NOT_FOUND",
       "field": "interfaceId",
-      "reason": "example failure"
+      "reason": "resource not found"
     }
   }
 }
@@ -244,7 +244,7 @@ success:
 | `OUT_OF_RANGE` | `prefixLength` 超出地址族范围。 | 使用 adopted numeric code `11`。 |
 | `INVALID_STATE` | 当前接口状态不允许立即应用配置。 | 使用 adopted numeric code `4`。 |
 
-#### 3.2.6 Error Response d block Example (op=8)
+#### 3.2.6 错误 d block 示例
 
 ```json
 {
@@ -256,7 +256,7 @@ success:
     "details": {
       "candidateError": "INVALID_ARGUMENT",
       "field": "interfaceId",
-      "reason": "example failure"
+      "reason": "invalid field value"
     }
   }
 }
@@ -442,7 +442,7 @@ NetworkIpConfigChangedEvent
   "id": 401,
   "method": "network.getIpConfig",
   "params": {
-    "interfaceId": "<STA_INTERFACE_ID>",
+    "interfaceId": "wlan0",
     "family": "ipv4"
   }
 }
@@ -458,14 +458,14 @@ NetworkIpConfigChangedEvent
     "code": 0
   },
   "result": {
-    "interfaceId": "<STA_INTERFACE_ID>",
+    "interfaceId": "wlan0",
     "family": "ipv4",
     "mode": "dhcp",
-    "address": "<DEVICE_IP>",
+    "address": "192.0.2.10",
     "prefixLength": 24,
-    "gateway": "<GATEWAY_IP>",
+    "gateway": "192.0.2.1",
     "dnsServers": [
-      "<DNS_IP>"
+      "198.51.100.53"
     ],
     "source": "dhcp",
     "effective": true
@@ -484,7 +484,7 @@ NetworkIpConfigChangedEvent
   "id": 402,
   "method": "network.setIpConfig",
   "params": {
-    "interfaceId": "<STA_INTERFACE_ID>",
+    "interfaceId": "wlan0",
     "family": "ipv4",
     "mode": "dhcp",
     "apply": "immediate"
@@ -503,14 +503,14 @@ NetworkIpConfigChangedEvent
   },
   "result": {
     "config": {
-      "interfaceId": "<STA_INTERFACE_ID>",
+      "interfaceId": "wlan0",
       "family": "ipv4",
       "mode": "dhcp",
-      "address": "<NEW_DEVICE_IP>",
+      "address": "192.0.2.20",
       "prefixLength": 24,
-      "gateway": "<GATEWAY_IP>",
+      "gateway": "192.0.2.1",
       "dnsServers": [
-        "<DNS_IP>"
+        "198.51.100.53"
       ],
       "source": "dhcp",
       "effective": true
@@ -532,17 +532,17 @@ NetworkIpConfigChangedEvent
   "event": "network.ipConfigChanged",
   "intent": 2,
   "data": {
-    "interfaceId": "<STA_INTERFACE_ID>",
+    "interfaceId": "wlan0",
     "family": "ipv4",
     "config": {
-      "interfaceId": "<STA_INTERFACE_ID>",
+      "interfaceId": "wlan0",
       "family": "ipv4",
       "mode": "dhcp",
-      "address": "<NEW_DEVICE_IP>",
+      "address": "192.0.2.20",
       "prefixLength": 24,
-      "gateway": "<GATEWAY_IP>",
+      "gateway": "192.0.2.1",
       "dnsServers": [
-        "<DNS_IP>"
+        "198.51.100.53"
       ],
       "source": "dhcp",
       "effective": true

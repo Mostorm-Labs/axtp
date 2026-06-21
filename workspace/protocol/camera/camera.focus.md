@@ -157,7 +157,7 @@ success:
 | `NOT_SUPPORTED` | 设备固定焦且无可控 focus。 | 返回 unsupported feature。 |
 | `UNAVAILABLE` | camera service 尚未初始化。 | 返回可重试原因。 |
 
-#### 3.1.6 Error Response d block Example (op=8)
+#### 3.1.6 错误 d block 示例
 
 ```json
 {
@@ -256,7 +256,7 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | 摄像头未打开或被校准占用。 | 返回不可用原因。 |
 
-#### 3.2.6 Error Response d block Example (op=8)
+#### 3.2.6 错误 d block 示例
 
 ```json
 {
@@ -358,7 +358,7 @@ success:
 | `NOT_SUPPORTED` | mode 不支持。 | 返回合法 modes。 |
 | `DEVICE_MODE_CONFLICT` | framing、calibration 或其他 owner 占用。 | 返回 owner。 |
 
-#### 3.3.6 Error Response d block Example (op=8)
+#### 3.3.6 错误 d block 示例
 
 ```json
 {
@@ -460,7 +460,7 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | camera service 不可用。 | 返回不可用原因。 |
 
-#### 3.4.6 Error Response d block Example (op=8)
+#### 3.4.6 错误 d block 示例
 
 ```json
 {
@@ -563,7 +563,7 @@ success:
 | `OUT_OF_RANGE` | position 超出能力范围。 | 返回合法范围。 |
 | `DEVICE_MODE_CONFLICT` | 当前不是 manual 且 `applyMode=require_manual`。 | 提示切换手动模式。 |
 
-#### 3.5.6 Error Response d block Example (op=8)
+#### 3.5.6 错误 d block 示例
 
 ```json
 {
@@ -665,7 +665,7 @@ success:
 |---|---|---|
 | `NOT_SUPPORTED` | 固定焦或设备无可读 position。 | 返回 unsupported。 |
 
-#### 3.6.6 Error Response d block Example (op=8)
+#### 3.6.6 错误 d block 示例
 
 ```json
 {
@@ -777,7 +777,7 @@ success:
 | `INVALID_ARGUMENT` | `target=point` 但缺少 `point`，或 `target=region` 但缺少 `region`。 | 返回缺失字段。 |
 | `OUT_OF_RANGE` | point/region 坐标越界。 | 返回合法范围。 |
 
-#### 3.7.6 Error Response d block Example (op=8)
+#### 3.7.6 错误 d block 示例
 
 ```json
 {
@@ -883,7 +883,7 @@ success:
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 point/region AF。 | 返回 unsupported target。 |
 
-#### 3.8.6 Error Response d block Example (op=8)
+#### 3.8.6 错误 d block 示例
 
 ```json
 {
@@ -997,7 +997,7 @@ success:
 | `BUSY` | 已有 AF 或校准动作进行中。 | 稍后重试或先 stop。 |
 | `TIMEOUT` | AF 超时。 | 可允许重试。 |
 
-#### 3.9.6 Error Response d block Example (op=8)
+#### 3.9.6 错误 d block 示例
 
 ```json
 {
@@ -1104,7 +1104,7 @@ success:
 | `DEVICE_MODE_CONFLICT` | 当前不是 manual 或设备不能自动切换。 | 提示切换手动。 |
 | `BUSY` | 已有 AF/jog 动作进行中。 | 稍后重试或 stop。 |
 
-#### 3.10.6 Error Response d block Example (op=8)
+#### 3.10.6 错误 d block 示例
 
 ```json
 {
@@ -1205,7 +1205,7 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | focus 控制链路不可用。 | 清除本地操作态。 |
 
-#### 3.11.6 Error Response d block Example (op=8)
+#### 3.11.6 错误 d block 示例
 
 ```json
 {
@@ -1661,11 +1661,13 @@ FocusCommandResult
 
 ## 7. 交互流程示例 Flow Examples
 
-本章只展示多个 method/event 组成的端到端业务流程，不再承担单个 method/event 的 API 契约示例。单个 method 的 Request / Success Response / Error Response 示例写在对应 method 小节中；单个 event 的 Event 示例写在对应 event 小节中。
+本章只展示多个 method/event 组成的端到端业务流程，不再承担单个 method/event 的 API 契约示例。单个 method 的 request / success / error 示例写在对应 method 小节中；单个 event 示例写在对应 event 小节中。
 
 ### 7.1 场景：查询能力 -> 点选 AF -> 收到完成事件
 
-#### Step 1. 查询 focus capabilities：Request d block (op=7)
+客户端先查询能力，再发起点选自动对焦；成功响应只表示动作已接受，最终状态以 `camera.focusStateChanged` 或后续 `camera.getFocusState` 为准。
+
+capability request:
 
 ```json
 {
@@ -1677,7 +1679,7 @@ FocusCommandResult
 }
 ```
 
-#### Step 2. 触发点选 AF：Request d block (op=7)
+trigger request:
 
 ```json
 {
@@ -1695,7 +1697,7 @@ FocusCommandResult
 }
 ```
 
-#### Step 3. 收到 AF 完成事件：Event d block (op=6)
+completion event:
 
 ```json
 {
@@ -1720,11 +1722,11 @@ FocusCommandResult
 }
 ```
 
-读法：客户端先用 capability 启用 point AF，再发 action。成功响应只代表 accepted；最终 UI 状态以 `focusStateChanged` 或后续 `getFocusState` 为准。
-
 ### 7.2 场景：设置手动位置失败
 
-#### Error Response d block (op=8)
+该场景只补充跨流程后果：失败响应不携带业务 `result`，也不应触发 changed event；客户端应保留原 UI 状态并提示合法范围。
+
+error:
 
 ```json
 {
@@ -1743,8 +1745,6 @@ FocusCommandResult
   }
 }
 ```
-
-读法：失败响应不携带业务 result，也不应触发 changed event。客户端应保留原 UI 状态并提示合法范围。
 
 ## 8. 错误
 

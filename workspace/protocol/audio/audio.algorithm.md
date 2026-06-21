@@ -168,7 +168,7 @@ success:
 | `INVALID_ARGUMENT` | `items` 中包含非法算法对象名。 | 返回具体非法 item。 |
 | `INTERNAL_ERROR` | 读取能力描述失败。 | 返回内部错误摘要。 |
 
-#### 3.1.6 Error Response d block Example (op=8)
+#### 3.1.6 错误 d block 示例
 
 ```json
 {
@@ -267,7 +267,7 @@ success:
 | `INVALID_ARGUMENT` | selector 结构或对象名非法。 | 返回具体字段路径。 |
 | `INTERNAL_ERROR` | 读取当前配置失败。 | 返回内部错误摘要。 |
 
-#### 3.2.6 Error Response d block Example (op=8)
+#### 3.2.6 错误 d block 示例
 
 ```json
 {
@@ -379,7 +379,7 @@ success:
 | `PERMISSION_DENIED` | 调用方没有权限。 | 返回权限错误。 |
 | `INTERNAL_ERROR` | 应用配置失败。 | 返回内部错误摘要。 |
 
-#### 3.3.6 Error Response d block Example (op=8)
+#### 3.3.6 错误 d block 示例
 
 ```json
 {
@@ -493,7 +493,7 @@ success:
 | `PERMISSION_DENIED` | 调用方没有权限。 | 返回权限错误。 |
 | `INTERNAL_ERROR` | 恢复默认值失败。 | 返回内部错误摘要。 |
 
-#### 3.4.6 Error Response d block Example (op=8)
+#### 3.4.6 错误 d block 示例
 
 ```json
 {

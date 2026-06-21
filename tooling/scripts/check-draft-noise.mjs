@@ -60,6 +60,30 @@ const bannedLinePatterns = [
     reason: "generic test matrix belongs in draft-conventions.md",
   },
   {
+    pattern: /^Capability 字段见第 5 章。复杂 capability 对象在 registry review 前需要拆成独立字段表。$/,
+    reason: "generic capability section pointer belongs in draft-conventions.md",
+  },
+  {
+    pattern: /^\|\s*`NOT_SUPPORTED`\s*\|\s*设备不支持 feature、method、target、scope 或 section。\s*\|\s*优先复用通用错误。\s*\|$/,
+    reason: "generic NOT_SUPPORTED row belongs in draft-conventions.md unless it explains feature-specific conditions",
+  },
+  {
+    pattern: /^\|\s*`INVALID_ARGUMENT`\s*\|\s*参数非法、枚举非法、范围非法。\s*\|\s*应指出具体字段。\s*\|$/,
+    reason: "generic INVALID_ARGUMENT row belongs in draft-conventions.md unless it explains feature-specific fields",
+  },
+  {
+    pattern: /^\|\s*`INVALID_STATE`\s*\|\s*当前状态不允许执行。\s*\|\s*如 lifecycle\/reset\/initialization 冲突。\s*\|$/,
+    reason: "generic INVALID_STATE row belongs in draft-conventions.md unless it explains feature-specific states",
+  },
+  {
+    pattern: /^\|\s*`BUSY`\s*\|\s*设备或资源繁忙。\s*\|\s*如已有动作执行中。\s*\|$/,
+    reason: "generic BUSY row belongs in draft-conventions.md unless it explains feature-specific contention",
+  },
+  {
+    pattern: /^\|\s*`PERMISSION_DENIED`\s*\|\s*调用方权限不足。\s*\|\s*危险操作或敏感信息读取。\s*\|$/,
+    reason: "generic PERMISSION_DENIED row belongs in draft-conventions.md unless it explains feature-specific authorization",
+  },
+  {
     pattern: /读法：成功响应仍然只展示 RPC `d` block，`id` 必须回显请求 `id`。/,
     reason: "generic success response explanation belongs in draft-conventions.md",
   },
@@ -118,6 +142,22 @@ const bannedLinePatterns = [
   {
     pattern: /^#### (?:\d+\.\d+\.\d+ )?Event d block Example \(op=6\)$/,
     reason: "event examples must use the compact Chinese d block 示例 heading",
+  },
+  {
+    pattern: /(?:Request|Success Response|Error Response|Event) d block \(op=[678]\)/,
+    reason: "flow examples must use compact labels like request:, success:, event:, or error: instead of old English op headings",
+  },
+  {
+    pattern: /^#### (?:\d+\.\d+\.\d+ )?Error Response d block Example \(op=8\)$/,
+    reason: "error examples must use the compact Chinese 错误 d block 示例 heading",
+  },
+  {
+    pattern: /"reason": "example failure"/,
+    reason: "example failure is a placeholder; error examples must explain a concrete feature-specific failure",
+  },
+  {
+    pattern: /<(?:STA_INTERFACE_ID|AP_INTERFACE_ID|MISSING_INTERFACE_ID|DEVICE_IP|NEW_DEVICE_IP|GATEWAY_IP|DNS_IP|STA_MAC|AP_MAC|DEVICE_ID|SERIAL_NUMBER|WORKSPACE_ID|ROOM_ENDPOINT_ID|CREDENTIAL_EXPORT_ID|ONE_TIME_EXPORTED_AP_PASSPHRASE|NEW_AP_PASSPHRASE|NA20_AP_BSSID|receiver-id)>/,
+    reason: "protocol draft examples must use stable sample values instead of template placeholders",
   },
   {
     pattern: /原草案(?:示例)?中出现的候选(?:方法|事件)/,

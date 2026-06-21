@@ -106,7 +106,7 @@ success:
 |---|---|---|
 | `NOT_SUPPORTED` | 设备无可控 zoom。 | 隐藏控件。 |
 
-#### 3.1.6 Error Response d block Example (op=8)
+#### 3.1.6 错误 d block 示例
 
 ```json
 {
@@ -118,7 +118,7 @@ success:
     "details": {
       "candidateError": "NOT_SUPPORTED",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "unsupported value"
     }
   }
 }
@@ -182,7 +182,7 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | zoom 状态不可读。 | 返回 unavailable detail。 |
 
-#### 3.2.6 Error Response d block Example (op=8)
+#### 3.2.6 错误 d block 示例
 
 ```json
 {
@@ -194,7 +194,7 @@ success:
     "details": {
       "candidateError": "UNAVAILABLE",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "service unavailable"
     }
   }
 }
@@ -262,7 +262,7 @@ success:
 | `OUT_OF_RANGE` | ratio 或 position 超范围。 | 返回合法范围。 |
 | `DEVICE_MODE_CONFLICT` | framing 或 PTZ preset 正在占用 lens。 | 返回 owner。 |
 
-#### 3.3.6 Error Response d block Example (op=8)
+#### 3.3.6 错误 d block 示例
 
 ```json
 {
@@ -274,7 +274,7 @@ success:
     "details": {
       "candidateError": "OUT_OF_RANGE",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "value is outside supported range"
     }
   }
 }
@@ -343,7 +343,7 @@ success:
 |---|---|---|
 | `INVALID_ARGUMENT` | direction/speed 非法。 | 返回字段路径。 |
 
-#### 3.4.6 Error Response d block Example (op=8)
+#### 3.4.6 错误 d block 示例
 
 ```json
 {
@@ -355,7 +355,7 @@ success:
     "details": {
       "candidateError": "INVALID_ARGUMENT",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "invalid field value"
     }
   }
 }
@@ -422,7 +422,7 @@ success:
 |---|---|---|
 | `UNAVAILABLE` | zoom 控制不可用。 | 清除移动 UI。 |
 
-#### 3.5.6 Error Response d block Example (op=8)
+#### 3.5.6 错误 d block 示例
 
 ```json
 {
@@ -434,7 +434,7 @@ success:
     "details": {
       "candidateError": "UNAVAILABLE",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "service unavailable"
     }
   }
 }
@@ -501,7 +501,7 @@ success:
 |---|---|---|
 | `BUSY` | zoom 正在移动。 | 先 stop 或稍后重试。 |
 
-#### 3.6.6 Error Response d block Example (op=8)
+#### 3.6.6 错误 d block 示例
 
 ```json
 {
@@ -513,7 +513,7 @@ success:
     "details": {
       "candidateError": "BUSY",
       "field": "cameraId",
-      "reason": "example failure"
+      "reason": "resource is busy"
     }
   }
 }

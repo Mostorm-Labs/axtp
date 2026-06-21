@@ -239,13 +239,10 @@ Schema 展开模式必须二选一：
 
 ## 8. 错误
 
+通用错误读法见 `workspace/protocol/draft-conventions.md`。本章只保留会影响 feature 语义的候选错误、特殊触发条件、状态后果或 legacy 兼容说明。
+
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
-| `NOT_SUPPORTED` | 设备不支持 feature、method、target、scope 或 section。 | 优先复用通用错误。 |
-| `INVALID_ARGUMENT` | 参数非法、枚举非法、范围非法。 | 应指出具体字段。 |
-| `INVALID_STATE` | 当前状态不允许执行。 | 如 lifecycle/reset/initialization 冲突。 |
-| `BUSY` | 设备或资源繁忙。 | 如已有动作执行中。 |
-| `PERMISSION_DENIED` | 调用方权限不足。 | 危险操作或敏感信息读取。 |
 | `<NamedCandidateError>` | 候选业务错误。 | 只有存在真实业务语义时保留；采纳前确认是否需要 feature-specific ErrorCode。 |
 
 ## 9. Legacy 映射
