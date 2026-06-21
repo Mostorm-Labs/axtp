@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "room.getScheduleCapabilities",
   "params": {
-    "target": "default",
+    "target": "room-101",
     "sections": [
-      "summary"
+      "calendar",
+      "lookahead"
     ]
   }
 }
@@ -105,9 +106,14 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "room-101",
+      "calendarSources": [
+        "exchange",
+        "google"
+      ],
+      "maxLookaheadHours": 24
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +169,9 @@ request:
   "id": 102,
   "method": "room.getScheduleConfig",
   "params": {
-    "target": "default",
+    "target": "room-101",
     "sections": [
-      "summary"
+      "currentMeeting"
     ]
   }
 }
@@ -182,9 +188,11 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "room-101",
+      "currentMeetingId": "meeting-20260615-0900",
+      "nextStartTime": "2026-06-15T10:00:00Z"
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +248,11 @@ request:
   "id": 103,
   "method": "room.setScheduleConfig",
   "params": {
-    "target": "default",
+    "target": "room-101",
     "config": {
-      "mode": "auto"
+      "calendarSource": "exchange",
+      "showMeetingTitle": true,
+      "lookaheadHours": 8
     }
   }
 }
@@ -258,7 +268,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "room-101",
+      "calendarSource": "exchange",
+      "showMeetingTitle": true,
+      "lookaheadHours": 8
+    }
   }
 }
 ```
@@ -314,8 +330,8 @@ request:
   "id": 104,
   "method": "room.resetScheduleConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "room-101",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +346,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "room-resetscheduleconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +389,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +397,16 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "calendarSource"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "room-101",
+      "calendarSource": "exchange",
+      "showMeetingTitle": true,
+      "lookaheadHours": 8
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "admin_update",
     "stateRevision": 1
   }
 }

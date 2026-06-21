@@ -268,7 +268,7 @@ success:
 | `roles` | `NetworkInterfaceRole[]` | no | see enum | omitted | 接口角色摘要，便于 Host 判断目标接口是否仍是 AP/STA。 |
 | `reason` | string enum | no | `user_request`, `system_policy`, `link_lost`, `link_restored`, `interface_added`, `interface_removed`, `error`, `unknown` | `unknown` | 变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {

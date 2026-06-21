@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "auth.getSessionCapabilities",
   "params": {
-    "target": "default",
+    "target": "operator-console",
     "sections": [
-      "summary"
+      "sessionPolicy",
+      "timeouts"
     ]
   }
 }
@@ -105,9 +106,13 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "operator-console",
+      "maxSessions": 8,
+      "idleTimeoutSeconds": 900,
+      "refreshSupported": true,
+      "revokeSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +168,9 @@ request:
   "id": 102,
   "method": "auth.getSessionConfig",
   "params": {
-    "target": "default",
+    "target": "operator-console",
     "sections": [
-      "summary"
+      "activeSessions"
     ]
   }
 }
@@ -182,9 +187,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "operator-console",
+      "activeSessionCount": 2,
+      "currentSessionId": "session-20260615-001",
+      "expiresInSeconds": 720
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +248,11 @@ request:
   "id": 103,
   "method": "auth.setSessionConfig",
   "params": {
-    "target": "default",
+    "target": "operator-console",
     "config": {
-      "mode": "auto"
+      "idleTimeoutSeconds": 900,
+      "maxSessions": 8,
+      "requireReauthForDangerousActions": true
     }
   }
 }
@@ -258,7 +268,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "operator-console",
+      "idleTimeoutSeconds": 900,
+      "maxSessions": 8,
+      "requireReauthForDangerousActions": true
+    }
   }
 }
 ```
@@ -314,8 +330,8 @@ request:
   "id": 104,
   "method": "auth.resetSessionConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "operator-console",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +346,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "auth-resetsessionconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +389,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +397,16 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "idleTimeoutSeconds"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "operator-console",
+      "idleTimeoutSeconds": 900,
+      "maxSessions": 8,
+      "requireReauthForDangerousActions": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "security_policy_update",
     "stateRevision": 1
   }
 }

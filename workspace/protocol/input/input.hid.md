@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "input.getHidCapabilities",
   "params": {
-    "target": "default",
+    "target": "usb-hid-1",
     "sections": [
-      "summary"
+      "reports",
+      "roles"
     ]
   }
 }
@@ -105,9 +106,15 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "usb-hid-1",
+      "roles": [
+        "keyboard",
+        "mouse",
+        "consumerControl"
+      ],
+      "reportForwardingSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +170,9 @@ request:
   "id": 102,
   "method": "input.getHidConfig",
   "params": {
-    "target": "default",
+    "target": "usb-hid-1",
     "sections": [
-      "summary"
+      "role"
     ]
   }
 }
@@ -182,9 +189,11 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "usb-hid-1",
+      "role": "keyboard",
+      "connected": true
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +249,10 @@ request:
   "id": 103,
   "method": "input.setHidConfig",
   "params": {
-    "target": "default",
+    "target": "usb-hid-1",
     "config": {
-      "mode": "auto"
+      "role": "keyboard",
+      "reportForwardingEnabled": true
     }
   }
 }
@@ -258,7 +268,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "usb-hid-1",
+      "role": "keyboard",
+      "reportForwardingEnabled": true
+    }
   }
 }
 ```
@@ -314,8 +329,8 @@ request:
   "id": 104,
   "method": "input.resetHidConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "usb-hid-1",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +345,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "input-resethidconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +388,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +396,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "reportForwardingEnabled"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "usb-hid-1",
+      "role": "keyboard",
+      "reportForwardingEnabled": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "policy_update",
     "stateRevision": 1
   }
 }

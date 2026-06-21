@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "storage.getDiskCapabilities",
   "params": {
-    "target": "default",
+    "target": "disk0",
     "sections": [
-      "summary"
+      "capacity",
+      "policy"
     ]
   }
 }
@@ -105,9 +106,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "disk0",
+      "mediaType": "ssd",
+      "totalBytes": 512000000000,
+      "writable": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +167,9 @@ request:
   "id": 102,
   "method": "storage.getDiskConfig",
   "params": {
-    "target": "default",
+    "target": "disk0",
     "sections": [
-      "summary"
+      "usage"
     ]
   }
 }
@@ -182,9 +186,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "disk0",
+      "status": "mounted",
+      "usedBytes": 42000000000,
+      "availableBytes": 86000000000
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +247,10 @@ request:
   "id": 103,
   "method": "storage.setDiskConfig",
   "params": {
-    "target": "default",
+    "target": "disk0",
     "config": {
-      "mode": "auto"
+      "mountPolicy": "auto",
+      "smartMonitoring": true
     }
   }
 }
@@ -258,7 +266,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "disk0",
+      "mountPolicy": "auto",
+      "smartMonitoring": true
+    }
   }
 }
 ```
@@ -314,8 +327,8 @@ request:
   "id": 104,
   "method": "storage.resetDiskConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "disk0",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +343,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "storage-resetdiskconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +386,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +394,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "status"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "disk0",
+      "mountPolicy": "auto",
+      "smartMonitoring": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "disk_policy_update",
     "stateRevision": 1
   }
 }

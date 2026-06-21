@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "room.getInfoCapabilities",
   "params": {
-    "target": "default",
+    "target": "room-101",
     "sections": [
-      "summary"
+      "fields",
+      "sources"
     ]
   }
 }
@@ -105,9 +106,17 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "room-101",
+      "fields": [
+        "name",
+        "location",
+        "capacity"
+      ],
+      "writableFields": [
+        "displayName"
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +172,9 @@ request:
   "id": 102,
   "method": "room.getInfoConfig",
   "params": {
-    "target": "default",
+    "target": "room-101",
     "sections": [
-      "summary"
+      "metadata"
     ]
   }
 }
@@ -182,9 +191,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "room-101",
+      "name": "Boardroom 101",
+      "capacity": 12,
+      "location": "HQ-1F"
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +252,10 @@ request:
   "id": 103,
   "method": "room.setInfoConfig",
   "params": {
-    "target": "default",
+    "target": "room-101",
     "config": {
-      "mode": "auto"
+      "displayName": "Boardroom 101",
+      "capacity": 12
     }
   }
 }
@@ -258,7 +271,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "room-101",
+      "displayName": "Boardroom 101",
+      "capacity": 12
+    }
   }
 }
 ```
@@ -314,8 +332,8 @@ request:
   "id": 104,
   "method": "room.resetInfoConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "room-101",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +348,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "room-resetinfoconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +391,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +399,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "displayName"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "room-101",
+      "displayName": "Boardroom 101",
+      "capacity": 12
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "admin_update",
     "stateRevision": 1
   }
 }

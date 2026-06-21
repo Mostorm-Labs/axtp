@@ -115,6 +115,10 @@ const bannedLinePatterns = [
     pattern: /^#### (?:\d+\.\d+\.\d+ )?Success Response d block Example \(op=8\)$/,
     reason: "method success examples must be folded into a single d block 示例 subsection",
   },
+  {
+    pattern: /^#### (?:\d+\.\d+\.\d+ )?Event d block Example \(op=6\)$/,
+    reason: "event examples must use the compact Chinese d block 示例 heading",
+  },
 ];
 
 const templateOnlyBannedLinePatterns = [

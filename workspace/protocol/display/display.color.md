@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "display.getColorCapabilities",
   "params": {
-    "target": "default",
+    "target": "display-main",
     "sections": [
-      "summary"
+      "presets",
+      "temperature"
     ]
   }
 }
@@ -105,9 +106,18 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "display-main",
+      "presets": [
+        "standard",
+        "warm",
+        "presentation"
+      ],
+      "colorTemperatureKelvinRange": {
+        "min": 3000,
+        "max": 9000
+      }
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +173,9 @@ request:
   "id": 102,
   "method": "display.getColorConfig",
   "params": {
-    "target": "default",
+    "target": "display-main",
     "sections": [
-      "summary"
+      "preset"
     ]
   }
 }
@@ -182,9 +192,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "display-main",
+      "preset": "presentation",
+      "colorTemperatureKelvin": 6500,
+      "saturation": 50
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +253,11 @@ request:
   "id": 103,
   "method": "display.setColorConfig",
   "params": {
-    "target": "default",
+    "target": "display-main",
     "config": {
-      "mode": "auto"
+      "preset": "presentation",
+      "colorTemperatureKelvin": 6500,
+      "saturation": 50
     }
   }
 }
@@ -258,7 +273,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "display-main",
+      "preset": "presentation",
+      "colorTemperatureKelvin": 6500,
+      "saturation": 50
+    }
   }
 }
 ```
@@ -314,8 +335,8 @@ request:
   "id": 104,
   "method": "display.resetColorConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "display-main",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +351,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "display-resetcolorconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +394,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +402,16 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "preset"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "display-main",
+      "preset": "presentation",
+      "colorTemperatureKelvin": 6500,
+      "saturation": 50
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "profile_selected",
     "stateRevision": 1
   }
 }

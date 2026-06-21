@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "display.getPowerCapabilities",
   "params": {
-    "target": "default",
+    "target": "display-main",
     "sections": [
-      "summary"
+      "states",
+      "timeouts"
     ]
   }
 }
@@ -105,9 +106,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "display-main",
+      "states": [
+        "on",
+        "standby",
+        "off"
+      ],
+      "wakeSupported": true,
+      "minStandbyTimeoutSeconds": 30
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +171,9 @@ request:
   "id": 102,
   "method": "display.getPowerConfig",
   "params": {
-    "target": "default",
+    "target": "display-main",
     "sections": [
-      "summary"
+      "powerState"
     ]
   }
 }
@@ -182,9 +190,11 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "display-main",
+      "powerState": "on",
+      "standbyTimeoutSeconds": 300
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +250,10 @@ request:
   "id": 103,
   "method": "display.setPowerConfig",
   "params": {
-    "target": "default",
+    "target": "display-main",
     "config": {
-      "mode": "auto"
+      "powerState": "on",
+      "standbyTimeoutSeconds": 300
     }
   }
 }
@@ -258,7 +269,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "display-main",
+      "powerState": "on",
+      "standbyTimeoutSeconds": 300
+    }
   }
 }
 ```
@@ -314,8 +330,8 @@ request:
   "id": 104,
   "method": "display.resetPowerConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "display-main",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +346,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "display-resetpowerconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +389,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,11 +397,12 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "powerState"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "display-main",
+      "powerState": "on",
+      "standbyTimeoutSeconds": 300
     },
     "source": "remoteApp",
     "reason": "user_request",

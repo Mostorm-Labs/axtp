@@ -84,9 +84,10 @@ request:
   "id": 101,
   "method": "audio.getEqCapabilities",
   "params": {
-    "target": "default",
+    "target": "main-output",
     "sections": [
-      "summary"
+      "bands",
+      "ranges"
     ]
   }
 }
@@ -103,9 +104,28 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "main-output",
+      "bandCount": 5,
+      "filterTypes": [
+        "peak",
+        "lowShelf",
+        "highShelf"
+      ],
+      "gainDbRange": {
+        "min": -12,
+        "max": 12,
+        "step": 0.5
+      },
+      "frequencyHzRange": {
+        "min": 20,
+        "max": 20000
+      },
+      "qRange": {
+        "min": 0.3,
+        "max": 10
+      }
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -161,9 +181,9 @@ request:
   "id": 102,
   "method": "audio.getEqConfig",
   "params": {
-    "target": "default",
+    "target": "main-output",
     "sections": [
-      "summary"
+      "bands"
     ]
   }
 }
@@ -180,9 +200,26 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "main-output",
+      "preset": "speech",
+      "bands": [
+        {
+          "bandId": "low",
+          "type": "lowShelf",
+          "frequencyHz": 120,
+          "gainDb": -1.5,
+          "q": 0.7
+        },
+        {
+          "bandId": "mid",
+          "type": "peak",
+          "frequencyHz": 2500,
+          "gainDb": 2,
+          "q": 1.2
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -238,9 +275,18 @@ request:
   "id": 103,
   "method": "audio.setEqConfig",
   "params": {
-    "target": "default",
+    "target": "main-output",
     "config": {
-      "mode": "auto"
+      "preset": "custom",
+      "bands": [
+        {
+          "bandId": "mid",
+          "type": "peak",
+          "frequencyHz": 2500,
+          "gainDb": 3,
+          "q": 1.2
+        }
+      ]
     }
   }
 }
@@ -256,7 +302,14 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "main-output",
+      "preset": "custom",
+      "appliedBands": [
+        "mid"
+      ]
+    }
   }
 }
 ```
@@ -312,8 +365,8 @@ request:
   "id": 104,
   "method": "audio.resetEqConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "main-output",
+    "reason": "restore_flat_eq"
   }
 }
 ```
@@ -328,7 +381,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "eq-reset-20260615-001"
   }
 }
 ```
@@ -354,13 +408,13 @@ success:
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|
-| `audio.eqConfigChanged` | AudioEqConfigChangedEvent | `audio.setEqConfig 或 audio.resetEqConfig 成功改变配置；profile、device policy、restore、factory reset 改变 EQ。` | 更新 UI 或调用对应 get method 校准 | candidate |
+| `audio.eqConfigChanged` | `audio.setEqConfig` 或 `audio.resetEqConfig` 成功改变配置；profile、device policy、restore、factory reset 改变 EQ。 | `AudioEqConfigChangedEvent` | 更新 UI 或调用对应 get method 校准 | candidate |
 
 ### 4.1 `audio.eqConfigChanged`
 
-**触发条件**：AudioEqConfigChangedEvent。
+**触发条件**：`audio.setEqConfig` 或 `audio.resetEqConfig` 成功改变配置；profile、device policy、restore、factory reset 改变 EQ。
 
-#### 4.1.1 Payload：`audio.setEqConfig 或 audio.resetEqConfig 成功改变配置；profile、device policy、restore、factory reset 改变 EQ。`
+#### 4.1.1 Payload：`AudioEqConfigChangedEvent`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -370,7 +424,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -378,15 +432,21 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "bands.mid.gainDb"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "main-output",
+      "preset": "custom",
+      "bands": [
+        {
+          "bandId": "mid",
+          "gainDb": 3
+        }
+      ]
     },
     "source": "remoteApp",
     "reason": "user_request",
-    "stateRevision": 1
+    "stateRevision": 42
   }
 }
 ```

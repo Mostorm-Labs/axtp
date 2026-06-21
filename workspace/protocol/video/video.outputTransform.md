@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "video.getOutputTransformCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "hdmi-out-1"
   }
 }
 ```
@@ -104,10 +101,23 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "video.outputTransform",
+    "rotations": [
+      0,
+      90,
+      180,
+      270
+    ],
+    "mirrorSupported": true,
+    "scaleModes": [
+      "fit",
+      "fill",
+      "stretch"
+    ],
+    "colorSpaces": [
+      "bt709",
+      "bt2020"
+    ]
   }
 }
 ```
@@ -163,9 +173,13 @@ request:
   "id": 102,
   "method": "video.setOutputTransform",
   "params": {
-    "target": "default",
+    "target": "hdmi-out-1",
     "config": {
-      "mode": "auto"
+      "rotation": 0,
+      "mirrorX": false,
+      "mirrorY": false,
+      "scaleMode": "fit",
+      "colorSpace": "bt709"
     }
   }
 }
@@ -181,7 +195,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "hdmi-out-1",
+      "rotation": 0,
+      "mirrorX": false,
+      "scaleMode": "fit"
+    }
   }
 }
 ```
@@ -237,9 +257,10 @@ request:
   "id": 103,
   "method": "video.getOutputTransform",
   "params": {
-    "target": "default",
+    "target": "hdmi-out-1",
     "sections": [
-      "summary"
+      "geometry",
+      "color"
     ]
   }
 }
@@ -255,10 +276,12 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "hdmi-out-1",
+    "rotation": 0,
+    "mirrorX": false,
+    "mirrorY": false,
+    "scaleMode": "fit",
+    "colorSpace": "bt709"
   }
 }
 ```
@@ -314,8 +337,8 @@ request:
   "id": 104,
   "method": "video.resetOutputTransform",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "hdmi-out-1",
+    "reason": "restore_output_defaults"
   }
 }
 ```
@@ -330,7 +353,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-output-transform-hdmi-1"
   }
 }
 ```
@@ -372,7 +396,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +404,18 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "scaleMode",
+      "colorSpace"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "hdmi-out-1",
+      "rotation": 0,
+      "scaleMode": "fit",
+      "colorSpace": "bt709"
     },
     "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1
+    "reason": "display_profile_update",
+    "stateRevision": 10
   }
 }
 ```

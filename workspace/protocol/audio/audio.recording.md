@@ -751,7 +751,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -759,14 +759,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "state",
+      "elapsedMs"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "audio-recorder",
+      "profile": "speech",
+      "container": "wav",
+      "maxDurationSeconds": 1800
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "recording_progress",
     "stateRevision": 1
   }
 }
@@ -800,7 +803,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.2.2 Event d block Example (op=6)
+#### 4.2.2 d block 示例
 
 ```json
 {
@@ -808,14 +811,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "state",
+      "elapsedMs"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "audio-recorder",
+      "profile": "speech",
+      "container": "wav",
+      "maxDurationSeconds": 1800
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "recording_progress",
     "stateRevision": 1
   }
 }

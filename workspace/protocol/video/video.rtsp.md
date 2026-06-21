@@ -86,7 +86,11 @@ request:
   "id": 101,
   "method": "video.getRtspCapabilities",
   "params": {
-    "target": "encoder-main"
+    "target": "rtsp-main",
+    "sections": [
+      "profiles",
+      "auth"
+    ]
   }
 }
 ```
@@ -101,16 +105,19 @@ success:
     "code": 0
   },
   "result": {
-    "capability": "video.rtsp",
-    "maxSessions": 4,
-    "authModes": [
-      "none",
-      "basic"
-    ],
-    "profiles": [
-      "main",
-      "sub"
-    ]
+    "state": {
+      "target": "rtsp-main",
+      "profiles": [
+        "main",
+        "sub"
+      ],
+      "authModes": [
+        "none",
+        "digest"
+      ],
+      "maxClients": 8
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -166,12 +173,11 @@ request:
   "id": 102,
   "method": "video.setRtspConfig",
   "params": {
-    "target": "encoder-main",
+    "target": "rtsp-main",
     "config": {
+      "profile": "main",
       "enabled": true,
-      "port": 8554,
-      "path": "/live/main",
-      "authMode": "basic"
+      "authMode": "digest"
     }
   }
 }
@@ -189,8 +195,10 @@ success:
   "result": {
     "accepted": true,
     "state": {
+      "target": "rtsp-main",
+      "profile": "main",
       "enabled": true,
-      "uri": "rtsp://192.0.2.10:8554/live/main"
+      "authMode": "digest"
     }
   }
 }
@@ -247,10 +255,9 @@ request:
   "id": 103,
   "method": "video.getRtspConfig",
   "params": {
-    "target": "encoder-main",
+    "target": "rtsp-main",
     "sections": [
-      "service",
-      "auth"
+      "session"
     ]
   }
 }
@@ -267,11 +274,12 @@ success:
   },
   "result": {
     "state": {
-      "enabled": true,
-      "port": 8554,
-      "path": "/live/main",
-      "activeSessions": 1
-    }
+      "target": "rtsp-main",
+      "profile": "main",
+      "url": "rtsp://device.example.internal/live/main",
+      "clientCount": 2
+    },
+    "sampledAt": "2026-06-15T08:00:03Z"
   }
 }
 ```
@@ -327,8 +335,8 @@ request:
   "id": 104,
   "method": "video.resetRtspConfig",
   "params": {
-    "target": "encoder-main",
-    "reason": "restore_defaults"
+    "target": "rtsp-main",
+    "reason": "rtsp_client_update"
   }
 }
 ```
@@ -344,11 +352,7 @@ success:
   },
   "result": {
     "accepted": true,
-    "state": {
-      "enabled": false,
-      "port": 8554,
-      "path": "/live/main"
-    }
+    "actionId": "video-resetrtspconfig-20260615-001"
   }
 }
 ```
@@ -391,7 +395,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -399,14 +403,16 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "clientCount"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "rtsp-main",
+      "profile": "main",
+      "enabled": true,
+      "authMode": "digest"
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "rtsp_client_update",
     "stateRevision": 1
   }
 }
@@ -440,7 +446,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.2.2 Event d block Example (op=6)
+#### 4.2.2 d block 示例
 
 ```json
 {
@@ -448,14 +454,16 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "clientCount"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "rtsp-main",
+      "profile": "main",
+      "enabled": true,
+      "authMode": "digest"
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "rtsp_client_update",
     "stateRevision": 1
   }
 }

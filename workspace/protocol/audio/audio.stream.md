@@ -546,7 +546,7 @@ success:
 | `lastSeqId` | uint32 | no | uint32 | omitted | 最近 seq。 |
 | `lastCursor` | uint64 | no | cursorUnit-defined | omitted | 最近 cursor。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {
@@ -595,7 +595,7 @@ success:
 | `lastOpenRejectedReason` | string | no | `receiver_not_ready`, `policy_rejected`, `resource_exhausted`, `unsupported`, `unknown` | omitted | producer-open 被拒原因。 |
 | `receiverTimestampUs` | uint64 | no | microseconds | omitted | NA20 接收时钟时间。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {
@@ -641,7 +641,7 @@ success:
 | `lastSeqId` | uint32 | no | uint32 | omitted | 最近 seq。 |
 | `lastCursor` | uint64 | no | cursorUnit-defined | omitted | 最近 cursor。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {

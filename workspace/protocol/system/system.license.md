@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "system.getLicenseCapabilities",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "licenseTypes",
+      "activation"
     ]
   }
 }
@@ -105,9 +106,15 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "licenseTypes": [
+        "perpetual",
+        "subscription"
+      ],
+      "offlineActivationSupported": true,
+      "gracePeriodDays": 14
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +170,9 @@ request:
   "id": 102,
   "method": "system.getLicenseConfig",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "licenseState"
     ]
   }
 }
@@ -182,9 +189,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "licenseState": "valid",
+      "edition": "pro",
+      "expiresAt": "2027-06-15T00:00:00Z"
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +250,10 @@ request:
   "id": 103,
   "method": "system.setLicenseConfig",
   "params": {
-    "target": "default",
+    "target": "device",
     "config": {
-      "mode": "auto"
+      "edition": "pro",
+      "offlineActivationAllowed": true
     }
   }
 }
@@ -258,7 +269,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "device",
+      "edition": "pro",
+      "offlineActivationAllowed": true
+    }
   }
 }
 ```
@@ -314,8 +330,8 @@ request:
   "id": 104,
   "method": "system.resetLicenseConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "device",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +346,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "system-resetlicenseconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +389,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +397,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "edition"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "device",
+      "edition": "pro",
+      "offlineActivationAllowed": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "license_updated",
     "stateRevision": 1
   }
 }

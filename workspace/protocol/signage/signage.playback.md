@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "signage.getPlaybackCapabilities",
   "params": {
-    "target": "default",
+    "target": "signage-screen-1",
     "sections": [
-      "summary"
+      "states",
+      "controls"
     ]
   }
 }
@@ -105,9 +106,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "signage-screen-1",
+      "states": [
+        "playing",
+        "paused",
+        "stopped"
+      ],
+      "seekSupported": true,
+      "maxPlaylistItems": 200
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -163,8 +171,8 @@ request:
   "id": 102,
   "method": "signage.startPlayback",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "signage-screen-1",
+    "reason": "playlist_started"
   }
 }
 ```
@@ -179,7 +187,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "signage-startplayback-20260615-001"
   }
 }
 ```
@@ -235,8 +244,8 @@ request:
   "id": 103,
   "method": "signage.stopPlayback",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "signage-screen-1",
+    "reason": "playlist_started"
   }
 }
 ```
@@ -251,7 +260,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "signage-stopplayback-20260615-001"
   }
 }
 ```
@@ -307,9 +317,9 @@ request:
   "id": 104,
   "method": "signage.getPlaybackState",
   "params": {
-    "target": "default",
+    "target": "signage-screen-1",
     "sections": [
-      "summary"
+      "playback"
     ]
   }
 }
@@ -326,9 +336,13 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "signage-screen-1",
+      "playbackId": "signage-playback-001",
+      "state": "playing",
+      "itemId": "slide-12",
+      "positionMs": 4200
+    },
+    "sampledAt": "2026-06-15T08:00:04Z"
   }
 }
 ```
@@ -370,7 +384,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -378,14 +392,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "state",
+      "itemId"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "signage-screen-1",
+      "playlistId": "lobby-loop",
+      "startItemId": "slide-12",
+      "loop": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "playlist_started",
     "stateRevision": 1
   }
 }

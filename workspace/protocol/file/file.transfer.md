@@ -87,8 +87,8 @@ request:
   "id": 101,
   "method": "file.beginTransfer",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "file-transfer",
+    "reason": "transfer_progress"
   }
 }
 ```
@@ -103,7 +103,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "file-begintransfer-20260615-001"
   }
 }
 ```
@@ -159,8 +160,8 @@ request:
   "id": 102,
   "method": "file.endTransfer",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "file-transfer",
+    "reason": "transfer_progress"
   }
 }
 ```
@@ -175,7 +176,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "file-endtransfer-20260615-001"
   }
 }
 ```
@@ -231,8 +233,8 @@ request:
   "id": 103,
   "method": "file.cancelTransfer",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "file-transfer",
+    "reason": "transfer_progress"
   }
 }
 ```
@@ -247,7 +249,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "file-canceltransfer-20260615-001"
   }
 }
 ```
@@ -303,8 +306,8 @@ request:
   "id": 104,
   "method": "file.resumeTransfer",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "file-transfer",
+    "reason": "transfer_progress"
   }
 }
 ```
@@ -319,7 +322,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "file-resumetransfer-20260615-001"
   }
 }
 ```
@@ -375,9 +379,9 @@ request:
   "id": 105,
   "method": "file.getTransferState",
   "params": {
-    "target": "default",
+    "target": "file-transfer",
     "sections": [
-      "summary"
+      "transfer"
     ]
   }
 }
@@ -394,9 +398,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "file-transfer",
+      "transferId": "transfer-20260615-001",
+      "state": "running",
+      "transferredBytes": 524288
+    },
+    "sampledAt": "2026-06-15T08:00:05Z"
   }
 }
 ```
@@ -439,7 +446,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -447,14 +454,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "state",
+      "transferredBytes"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "file-transfer",
+      "direction": "download",
+      "fileId": "logs/system.log",
+      "resume": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "transfer_progress",
     "stateRevision": 1
   }
 }
@@ -488,7 +498,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.2.2 Event d block Example (op=6)
+#### 4.2.2 d block 示例
 
 ```json
 {
@@ -496,14 +506,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "state",
+      "transferredBytes"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "file-transfer",
+      "direction": "download",
+      "fileId": "logs/system.log",
+      "resume": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "transfer_progress",
     "stateRevision": 1
   }
 }

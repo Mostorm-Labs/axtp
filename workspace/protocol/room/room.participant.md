@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "room.getParticipantCapabilities",
   "params": {
-    "target": "default",
+    "target": "room-101",
     "sections": [
-      "summary"
+      "roles",
+      "limits"
     ]
   }
 }
@@ -105,9 +106,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "room-101",
+      "maxParticipants": 32,
+      "roles": [
+        "host",
+        "guest",
+        "presenter"
+      ],
+      "presenceSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +171,9 @@ request:
   "id": 102,
   "method": "room.getParticipantConfig",
   "params": {
-    "target": "default",
+    "target": "room-101",
     "sections": [
-      "summary"
+      "participants"
     ]
   }
 }
@@ -182,9 +190,11 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "room-101",
+      "participantCount": 6,
+      "activeSpeakerId": "participant-3"
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +250,10 @@ request:
   "id": 103,
   "method": "room.setParticipantConfig",
   "params": {
-    "target": "default",
+    "target": "room-101",
     "config": {
-      "mode": "auto"
+      "hostId": "participant-1",
+      "speakerTrackingEnabled": true
     }
   }
 }
@@ -258,7 +269,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "room-101",
+      "hostId": "participant-1",
+      "speakerTrackingEnabled": true
+    }
   }
 }
 ```
@@ -314,8 +330,8 @@ request:
   "id": 104,
   "method": "room.resetParticipantConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "room-101",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +346,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "room-resetparticipantconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +389,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +397,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "activeSpeakerId"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "room-101",
+      "hostId": "participant-1",
+      "speakerTrackingEnabled": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "speaker_changed",
     "stateRevision": 1
   }
 }

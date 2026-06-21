@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "system.getInitializationCapabilities",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "phases",
+      "timeouts"
     ]
   }
 }
@@ -105,9 +106,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "phases": [
+        "bootloader",
+        "runtime",
+        "appReady"
+      ],
+      "timeoutSeconds": 120,
+      "progressEventsSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +171,9 @@ request:
   "id": 102,
   "method": "system.getInitializationConfig",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "phase"
     ]
   }
 }
@@ -182,9 +190,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "phase": "appReady",
+      "progressPercent": 100,
+      "completedAt": "2026-06-15T08:00:00Z"
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +251,11 @@ request:
   "id": 103,
   "method": "system.setInitializationConfig",
   "params": {
-    "target": "default",
+    "target": "device",
     "config": {
-      "mode": "auto"
+      "timeoutSeconds": 120,
+      "autoRecover": true,
+      "waitForNetwork": true
     }
   }
 }
@@ -258,7 +271,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "device",
+      "timeoutSeconds": 120,
+      "autoRecover": true,
+      "waitForNetwork": true
+    }
   }
 }
 ```
@@ -314,8 +333,8 @@ request:
   "id": 104,
   "method": "system.resetInitializationConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "device",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +349,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "system-resetinitializationconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +392,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +400,16 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "timeoutSeconds"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "device",
+      "timeoutSeconds": 120,
+      "autoRecover": true,
+      "waitForNetwork": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "policy_update",
     "stateRevision": 1
   }
 }

@@ -85,9 +85,9 @@ request:
   "id": 101,
   "method": "log.listFiles",
   "params": {
-    "target": "default",
+    "target": "logs",
     "sections": [
-      "summary"
+      "files"
     ]
   }
 }
@@ -104,9 +104,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "logs",
+      "root": "system",
+      "files": [
+        {
+          "fileId": "system-20260615.log",
+          "sizeBytes": 16384
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -162,9 +169,9 @@ request:
   "id": 102,
   "method": "log.getFileInfo",
   "params": {
-    "target": "default",
+    "target": "logs",
     "sections": [
-      "summary"
+      "files"
     ]
   }
 }
@@ -181,9 +188,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "logs",
+      "root": "system",
+      "files": [
+        {
+          "fileId": "system-20260615.log",
+          "sizeBytes": 16384
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:02Z"
   }
 }
 ```
@@ -239,8 +253,8 @@ request:
   "id": 103,
   "method": "log.deleteFiles",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "logs",
+    "reason": "log_rotated"
   }
 }
 ```
@@ -255,7 +269,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "log-deletefiles-20260615-001"
   }
 }
 ```
@@ -297,7 +312,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -305,14 +320,16 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "files"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "logs",
+      "root": "system",
+      "retentionDays": 14,
+      "compression": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "log_rotated",
     "stateRevision": 1
   }
 }

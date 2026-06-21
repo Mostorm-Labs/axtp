@@ -84,9 +84,9 @@ request:
   "id": 101,
   "method": "device.getInfo",
   "params": {
-    "target": "root",
+    "target": "runtime",
     "sections": [
-      "capabilitySummary"
+      "registry"
     ]
   }
 }
@@ -102,14 +102,16 @@ success:
     "code": 0
   },
   "result": {
-    "registryRevision": 42,
-    "capabilityCount": 18,
-    "domains": [
-      "device",
-      "network",
-      "audio",
-      "video"
-    ]
+    "state": {
+      "target": "runtime",
+      "domains": [
+        "audio",
+        "video"
+      ],
+      "featureCount": 55,
+      "generatedVersion": "0.8.7"
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -165,8 +167,10 @@ request:
   "id": 102,
   "method": "capability.getRegistry",
   "params": {
-    "includeMethods": true,
-    "includeEvents": true
+    "target": "runtime",
+    "sections": [
+      "registry"
+    ]
   }
 }
 ```
@@ -181,18 +185,16 @@ success:
     "code": 0
   },
   "result": {
-    "registryRevision": 42,
-    "capabilities": [
-      {
-        "capability": "network.wifi",
-        "methods": [
-          "network.getWifiState"
-        ],
-        "events": [
-          "network.wifiStateChanged"
-        ]
-      }
-    ]
+    "state": {
+      "target": "runtime",
+      "domains": [
+        "audio",
+        "video"
+      ],
+      "featureCount": 55,
+      "generatedVersion": "0.8.7"
+    },
+    "sampledAt": "2026-06-15T08:00:02Z"
   }
 }
 ```
@@ -248,8 +250,10 @@ request:
   "id": 103,
   "method": "capability.getDomainRegistry",
   "params": {
-    "domain": "network",
-    "includeFeatures": true
+    "target": "runtime",
+    "sections": [
+      "registry"
+    ]
   }
 }
 ```
@@ -264,14 +268,16 @@ success:
     "code": 0
   },
   "result": {
-    "domain": "network",
-    "features": [
-      "network.interface",
-      "network.ip",
-      "network.wifi",
-      "network.ap"
-    ],
-    "registryRevision": 42
+    "state": {
+      "target": "runtime",
+      "domains": [
+        "audio",
+        "video"
+      ],
+      "featureCount": 55,
+      "generatedVersion": "0.8.7"
+    },
+    "sampledAt": "2026-06-15T08:00:03Z"
   }
 }
 ```
@@ -327,7 +333,10 @@ request:
   "id": 104,
   "method": "capability.getFeatureRegistry",
   "params": {
-    "capability": "network.wifi"
+    "target": "runtime",
+    "sections": [
+      "registry"
+    ]
   }
 }
 ```
@@ -342,15 +351,16 @@ success:
     "code": 0
   },
   "result": {
-    "capability": "network.wifi",
-    "supported": true,
-    "methods": [
-      "network.getWifiCapabilities",
-      "network.getWifiState"
-    ],
-    "events": [
-      "network.wifiStateChanged"
-    ]
+    "state": {
+      "target": "runtime",
+      "domains": [
+        "audio",
+        "video"
+      ],
+      "featureCount": 55,
+      "generatedVersion": "0.8.7"
+    },
+    "sampledAt": "2026-06-15T08:00:04Z"
   }
 }
 ```
@@ -392,7 +402,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -400,14 +410,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "generatedVersion"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "runtime",
+      "includeDraftCapabilities": false,
+      "preferredLanguage": "zh-CN"
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "registry_refreshed",
     "stateRevision": 1
   }
 }

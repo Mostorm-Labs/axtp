@@ -637,7 +637,7 @@ success:
 | `changedFields` | string[] | no | field paths | omitted | 变化字段。 |
 | `reason` | string enum | no | `user_request`, `system_policy`, `factory_reset`, `unknown` | `unknown` | 变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {
@@ -687,7 +687,7 @@ success:
 | `previousState` | `NetworkApState` | no | object | omitted | 变化前状态。 |
 | `reason` | string enum | no | `user_request`, `system_policy`, `config_applied`, `error`, `unknown` | `unknown` | 变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {
@@ -737,7 +737,7 @@ success:
 | `client` | `NetworkApClientInfo` | yes | object | none | 客户端摘要。 |
 | `reason` | string enum | no | `association`, `disconnect`, `timeout`, `unknown` | `unknown` | 变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {

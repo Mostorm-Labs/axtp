@@ -537,7 +537,7 @@ success:
 | 字段表 | 见 6.2「事件 Payload：`AudioAlgorithmConfigChangedEvent`」。 |
 | 配置对象 | `config` 字段使用 `AudioAlgorithmConfig`，见 6.4 和 6.5。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {

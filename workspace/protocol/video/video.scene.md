@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "video.getSceneCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "switcher"
   }
 }
 ```
@@ -104,10 +101,14 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "video.scene",
+    "maxScenes": 32,
+    "transitionTypes": [
+      "cut",
+      "fade",
+      "wipe"
+    ],
+    "previewProgramSupported": true
   }
 }
 ```
@@ -163,9 +164,10 @@ request:
   "id": 102,
   "method": "video.getSceneConfig",
   "params": {
-    "target": "default",
+    "target": "switcher",
     "sections": [
-      "summary"
+      "activeScene",
+      "sceneList"
     ]
   }
 }
@@ -181,10 +183,16 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "switcher",
+    "activeSceneId": "scene-boardroom",
+    "previewSceneId": "scene-guest",
+    "scenes": [
+      {
+        "sceneId": "scene-boardroom",
+        "label": "Boardroom",
+        "layoutPreset": "sideBySide"
+      }
+    ]
   }
 }
 ```
@@ -240,9 +248,13 @@ request:
   "id": 103,
   "method": "video.setSceneConfig",
   "params": {
-    "target": "default",
+    "target": "switcher",
     "config": {
-      "mode": "auto"
+      "activeSceneId": "scene-boardroom",
+      "transition": {
+        "type": "fade",
+        "durationMs": 300
+      }
     }
   }
 }
@@ -258,7 +270,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "switcher",
+      "activeSceneId": "scene-boardroom",
+      "transitionState": "complete"
+    }
   }
 }
 ```
@@ -314,8 +331,8 @@ request:
   "id": 104,
   "method": "video.resetSceneConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "switcher",
+    "reason": "restore_default_scene"
   }
 }
 ```
@@ -330,7 +347,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-scene-switcher"
   }
 }
 ```
@@ -372,7 +390,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +398,16 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "activeSceneId"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "switcher",
+      "activeSceneId": "scene-boardroom",
+      "transitionState": "complete"
     },
     "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1
+    "reason": "scene_recall",
+    "stateRevision": 15
   }
 }
 ```

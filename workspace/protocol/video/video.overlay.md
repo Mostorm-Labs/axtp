@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "video.getOverlayCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "program"
   }
 }
 ```
@@ -104,10 +101,18 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "video.overlay",
+    "maxOverlays": 8,
+    "overlayTypes": [
+      "image",
+      "shape",
+      "web"
+    ],
+    "alphaRange": {
+      "min": 0,
+      "max": 100
+    },
+    "zOrderSupported": true
   }
 }
 ```
@@ -163,9 +168,9 @@ request:
   "id": 102,
   "method": "video.getOverlayConfig",
   "params": {
-    "target": "default",
+    "target": "program",
     "sections": [
-      "summary"
+      "overlays"
     ]
   }
 }
@@ -181,10 +186,18 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "program",
+    "overlays": [
+      {
+        "overlayId": "logo",
+        "type": "image",
+        "assetId": "brand-logo",
+        "x": 32,
+        "y": 32,
+        "alpha": 90,
+        "visible": true
+      }
+    ]
   }
 }
 ```
@@ -240,9 +253,19 @@ request:
   "id": 103,
   "method": "video.setOverlayConfig",
   "params": {
-    "target": "default",
+    "target": "program",
     "config": {
-      "mode": "auto"
+      "overlays": [
+        {
+          "overlayId": "logo",
+          "type": "image",
+          "assetId": "brand-logo",
+          "x": 32,
+          "y": 32,
+          "alpha": 90,
+          "visible": true
+        }
+      ]
     }
   }
 }
@@ -258,7 +281,14 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "program",
+      "overlayCount": 1,
+      "visibleOverlays": [
+        "logo"
+      ]
+    }
   }
 }
 ```
@@ -314,8 +344,8 @@ request:
   "id": 104,
   "method": "video.resetOverlayConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "program",
+    "reason": "clear_overlay_layer"
   }
 }
 ```
@@ -330,7 +360,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-overlay-program"
   }
 }
 ```
@@ -372,7 +403,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +411,18 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "overlays.logo.visible"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "program",
+      "overlayCount": 1,
+      "visibleOverlays": [
+        "logo"
+      ]
     },
     "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1
+    "reason": "overlay_update",
+    "stateRevision": 13
   }
 }
 ```

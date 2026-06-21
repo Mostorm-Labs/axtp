@@ -405,7 +405,7 @@ Payload：`FirmwareUpdateProgressEvent`
 | `progress` | uint8 | no | `0..100` | 整体进度。 |
 | `fileId` | string | no | manifest fileId | 当前文件；没有文件粒度时省略。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {
@@ -438,7 +438,7 @@ Payload：`FirmwareUpdateStateChangedEvent`
 | `state` | string | yes | state enum | 新状态。 |
 | `error` | `FirmwareUpdateErrorInfo` | no | object | 失败详情。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {

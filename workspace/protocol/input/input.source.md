@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "input.getSourceCapabilities",
   "params": {
-    "target": "default",
+    "target": "input-router",
     "sections": [
-      "summary"
+      "sources",
+      "priorities"
     ]
   }
 }
@@ -105,9 +106,15 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "input-router",
+      "sources": [
+        "hdmi1",
+        "usb-c",
+        "ndi1"
+      ],
+      "autoSelectSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +170,9 @@ request:
   "id": 102,
   "method": "input.getSourceConfig",
   "params": {
-    "target": "default",
+    "target": "input-router",
     "sections": [
-      "summary"
+      "activeSource"
     ]
   }
 }
@@ -182,9 +189,11 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "input-router",
+      "activeSource": "hdmi1",
+      "signalPresent": true
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +249,10 @@ request:
   "id": 103,
   "method": "input.setSourceConfig",
   "params": {
-    "target": "default",
+    "target": "input-router",
     "config": {
-      "mode": "auto"
+      "preferredSource": "hdmi1",
+      "autoSelect": true
     }
   }
 }
@@ -258,7 +268,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "input-router",
+      "preferredSource": "hdmi1",
+      "autoSelect": true
+    }
   }
 }
 ```
@@ -314,8 +329,8 @@ request:
   "id": 104,
   "method": "input.resetSourceConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "input-router",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +345,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "input-resetsourceconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +388,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,11 +396,12 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "preferredSource"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "input-router",
+      "preferredSource": "hdmi1",
+      "autoSelect": true
     },
     "source": "remoteApp",
     "reason": "user_request",

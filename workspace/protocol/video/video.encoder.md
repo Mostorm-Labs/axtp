@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "video.getEncoderCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "encoder-main"
   }
 }
 ```
@@ -104,9 +101,22 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
+    "capability": "video.encoder",
+    "codecs": [
+      "h264",
+      "h265"
+    ],
+    "maxResolution": {
+      "width": 3840,
+      "height": 2160
+    },
+    "bitrateKbpsRange": {
+      "min": 512,
+      "max": 50000
+    },
+    "gopFramesRange": {
+      "min": 1,
+      "max": 240
     }
   }
 }
@@ -163,9 +173,10 @@ request:
   "id": 102,
   "method": "video.getEncoderConfig",
   "params": {
-    "target": "default",
+    "target": "encoder-main",
     "sections": [
-      "summary"
+      "codec",
+      "rateControl"
     ]
   }
 }
@@ -181,10 +192,14 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "encoder-main",
+    "codec": "h264",
+    "profile": "main",
+    "width": 1920,
+    "height": 1080,
+    "frameRate": 60,
+    "bitrateKbps": 8000,
+    "gopFrames": 120
   }
 }
 ```
@@ -240,9 +255,12 @@ request:
   "id": 103,
   "method": "video.setEncoderConfig",
   "params": {
-    "target": "default",
+    "target": "encoder-main",
     "config": {
-      "mode": "auto"
+      "codec": "h264",
+      "profile": "main",
+      "bitrateKbps": 8000,
+      "gopFrames": 120
     }
   }
 }
@@ -258,7 +276,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "encoder-main",
+      "codec": "h264",
+      "bitrateKbps": 8000,
+      "gopFrames": 120
+    }
   }
 }
 ```
@@ -314,8 +338,8 @@ request:
   "id": 104,
   "method": "video.resetEncoderConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "encoder-main",
+    "reason": "restore_streaming_defaults"
   }
 }
 ```
@@ -330,7 +354,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-encoder-main"
   }
 }
 ```
@@ -372,7 +397,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +405,18 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "bitrateKbps",
+      "gopFrames"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "encoder-main",
+      "codec": "h264",
+      "bitrateKbps": 8000,
+      "gopFrames": 120
     },
     "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1
+    "reason": "profile_update",
+    "stateRevision": 17
   }
 }
 ```

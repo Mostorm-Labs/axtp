@@ -1256,7 +1256,7 @@ success:
 | `reason` | string enum | no | `trigger_auto_focus`, `focus_completed`, `focus_failed`, `manual_move`, `stop`, `restore_config`, `unknown` | `unknown` | 变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -1316,7 +1316,7 @@ success:
 | `reason` | string enum | no | `user_request`, `profile_changed`, `restore_config`, `unknown` | `unknown` | 变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本。 |
 
-#### 4.2.2 Event d block Example (op=6)
+#### 4.2.2 d block 示例
 
 ```json
 {
@@ -1366,7 +1366,7 @@ success:
 | `reason` | string enum | no | `user_request`, `manual_move`, `restore_config`, `unknown` | `unknown` | 变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本。 |
 
-#### 4.3.2 Event d block Example (op=6)
+#### 4.3.2 d block 示例
 
 ```json
 {
@@ -1418,7 +1418,7 @@ success:
 | `reason` | string enum | no | `user_request`, `touch_focus`, `profile_changed`, `unknown` | `unknown` | 变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本。 |
 
-#### 4.4.2 Event d block Example (op=6)
+#### 4.4.2 d block 示例
 
 ```json
 {

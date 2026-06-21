@@ -84,9 +84,9 @@ request:
   "id": 101,
   "method": "device.getInfo",
   "params": {
-    "target": "root",
+    "target": "child-device-bus",
     "sections": [
-      "childrenSummary"
+      "children"
     ]
   }
 }
@@ -102,10 +102,17 @@ success:
     "code": 0
   },
   "result": {
-    "deviceId": "hub-1",
-    "model": "AXTP-Hub",
-    "childCount": 2,
-    "topologyRevision": 7
+    "state": {
+      "target": "child-device-bus",
+      "children": [
+        {
+          "childId": "camera-main",
+          "type": "camera",
+          "online": true
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -161,8 +168,10 @@ request:
   "id": 102,
   "method": "device.getTopology",
   "params": {
-    "target": "root",
-    "depth": 2
+    "target": "child-device-bus",
+    "sections": [
+      "children"
+    ]
   }
 }
 ```
@@ -177,15 +186,17 @@ success:
     "code": 0
   },
   "result": {
-    "rootId": "hub-1",
-    "topologyRevision": 7,
-    "links": [
-      {
-        "parentId": "hub-1",
-        "childId": "display-1",
-        "relation": "attached"
-      }
-    ]
+    "state": {
+      "target": "child-device-bus",
+      "children": [
+        {
+          "childId": "camera-main",
+          "type": "camera",
+          "online": true
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:02Z"
   }
 }
 ```
@@ -241,8 +252,10 @@ request:
   "id": 103,
   "method": "device.getChildren",
   "params": {
-    "parentId": "hub-1",
-    "includeOffline": false
+    "target": "child-device-bus",
+    "sections": [
+      "children"
+    ]
   }
 }
 ```
@@ -257,19 +270,17 @@ success:
     "code": 0
   },
   "result": {
-    "children": [
-      {
-        "childId": "display-1",
-        "kind": "display",
-        "online": true
-      },
-      {
-        "childId": "camera-1",
-        "kind": "camera",
-        "online": true
-      }
-    ],
-    "topologyRevision": 7
+    "state": {
+      "target": "child-device-bus",
+      "children": [
+        {
+          "childId": "camera-main",
+          "type": "camera",
+          "online": true
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:03Z"
   }
 }
 ```
@@ -325,10 +336,9 @@ request:
   "id": 104,
   "method": "device.getChildInfo",
   "params": {
-    "childId": "display-1",
+    "target": "child-device-bus",
     "sections": [
-      "identity",
-      "state"
+      "children"
     ]
   }
 }
@@ -344,11 +354,17 @@ success:
     "code": 0
   },
   "result": {
-    "childId": "display-1",
-    "model": "Display-4K",
-    "firmwareVersion": "1.2.3",
-    "online": true,
-    "parentId": "hub-1"
+    "state": {
+      "target": "child-device-bus",
+      "children": [
+        {
+          "childId": "camera-main",
+          "type": "camera",
+          "online": true
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:04Z"
   }
 }
 ```
@@ -390,7 +406,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -398,14 +414,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "children.camera-main.online"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "child-device-bus",
+      "discoveryEnabled": true,
+      "includeOfflineDevices": false
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "child_device_online",
     "stateRevision": 1
   }
 }

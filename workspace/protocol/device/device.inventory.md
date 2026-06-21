@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "device.getInventoryCapabilities",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "components",
+      "identifiers"
     ]
   }
 }
@@ -105,9 +106,17 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "componentTypes": [
+        "mainboard",
+        "camera",
+        "microphone",
+        "display"
+      ],
+      "hotplugSupported": true,
+      "serialNumberReadable": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +172,9 @@ request:
   "id": 102,
   "method": "device.getInventoryConfig",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "components"
     ]
   }
 }
@@ -182,9 +191,17 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "components": [
+        {
+          "componentId": "camera-main",
+          "type": "camera",
+          "present": true,
+          "firmwareVersion": "1.4.2"
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +257,10 @@ request:
   "id": 103,
   "method": "device.setInventoryConfig",
   "params": {
-    "target": "default",
+    "target": "device",
     "config": {
-      "mode": "auto"
+      "includeHiddenComponents": false,
+      "reportSerialNumbers": true
     }
   }
 }
@@ -258,7 +276,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "device",
+      "includeHiddenComponents": false,
+      "reportSerialNumbers": true
+    }
   }
 }
 ```
@@ -314,8 +337,8 @@ request:
   "id": 104,
   "method": "device.resetInventoryConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "device",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +353,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "device-resetinventoryconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +396,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +404,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "components.camera-main.firmwareVersion"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "device",
+      "includeHiddenComponents": false,
+      "reportSerialNumbers": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "component_refresh",
     "stateRevision": 1
   }
 }

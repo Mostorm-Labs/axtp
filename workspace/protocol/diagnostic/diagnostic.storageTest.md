@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "diagnostic.getStorageTestCapabilities",
   "params": {
-    "target": "default",
+    "target": "storage-internal",
     "sections": [
-      "summary"
+      "tests",
+      "limits"
     ]
   }
 }
@@ -105,9 +106,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "storage-internal",
+      "supportedTests": [
+        "readWrite",
+        "capacity",
+        "wearLevel"
+      ],
+      "maxDurationSeconds": 300,
+      "reportSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +171,9 @@ request:
   "id": 102,
   "method": "diagnostic.getStorageTestConfig",
   "params": {
-    "target": "default",
+    "target": "storage-internal",
     "sections": [
-      "summary"
+      "lastRun"
     ]
   }
 }
@@ -182,9 +190,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "storage-internal",
+      "lastRunId": "storageTest-run-20260615-001",
+      "lastResult": "passed",
+      "completedAt": "2026-06-15T08:00:00Z"
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +251,14 @@ request:
   "id": 103,
   "method": "diagnostic.setStorageTestConfig",
   "params": {
-    "target": "default",
+    "target": "storage-internal",
     "config": {
-      "mode": "auto"
+      "enabledTests": [
+        "readWrite",
+        "capacity"
+      ],
+      "stopOnFailure": false,
+      "reportLevel": "summary"
     }
   }
 }
@@ -258,7 +274,16 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "storage-internal",
+      "enabledTests": [
+        "readWrite",
+        "capacity"
+      ],
+      "stopOnFailure": false,
+      "reportLevel": "summary"
+    }
   }
 }
 ```
@@ -314,8 +339,8 @@ request:
   "id": 104,
   "method": "diagnostic.resetStorageTestConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "storage-internal",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +355,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "diagnostic-resetstoragetestconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +398,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +406,19 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "lastResult"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "storage-internal",
+      "enabledTests": [
+        "readWrite",
+        "capacity"
+      ],
+      "stopOnFailure": false,
+      "reportLevel": "summary"
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "test_completed",
     "stateRevision": 1
   }
 }

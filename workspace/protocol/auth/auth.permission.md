@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "auth.getPermissionCapabilities",
   "params": {
-    "target": "default",
+    "target": "admin-role",
     "sections": [
-      "summary"
+      "roles",
+      "scopes"
     ]
   }
 }
@@ -105,9 +106,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "admin-role",
+      "supportedScopes": [
+        "device.control",
+        "media.playback",
+        "system.maintenance"
+      ],
+      "delegationSupported": true,
+      "auditRequired": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +171,9 @@ request:
   "id": 102,
   "method": "auth.getPermissionConfig",
   "params": {
-    "target": "default",
+    "target": "admin-role",
     "sections": [
-      "summary"
+      "grants"
     ]
   }
 }
@@ -182,9 +190,17 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "admin-role",
+      "grants": [
+        "device.control",
+        "media.playback"
+      ],
+      "deniedScopes": [
+        "system.factoryReset"
+      ],
+      "revision": 7
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +256,16 @@ request:
   "id": 103,
   "method": "auth.setPermissionConfig",
   "params": {
-    "target": "default",
+    "target": "admin-role",
     "config": {
-      "mode": "auto"
+      "grants": [
+        "device.control",
+        "media.playback"
+      ],
+      "deniedScopes": [
+        "system.factoryReset"
+      ],
+      "auditRequired": true
     }
   }
 }
@@ -258,7 +281,18 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "admin-role",
+      "grants": [
+        "device.control",
+        "media.playback"
+      ],
+      "deniedScopes": [
+        "system.factoryReset"
+      ],
+      "auditRequired": true
+    }
   }
 }
 ```
@@ -314,8 +348,8 @@ request:
   "id": 104,
   "method": "auth.resetPermissionConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "admin-role",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +364,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "auth-resetpermissionconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +407,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +415,21 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "grants"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "admin-role",
+      "grants": [
+        "device.control",
+        "media.playback"
+      ],
+      "deniedScopes": [
+        "system.factoryReset"
+      ],
+      "auditRequired": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "policy_update",
     "stateRevision": 1
   }
 }

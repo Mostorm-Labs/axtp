@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "storage.getVolumeCapabilities",
   "params": {
-    "target": "default",
+    "target": "volume-main",
     "sections": [
-      "summary"
+      "capacity",
+      "policy"
     ]
   }
 }
@@ -105,9 +106,14 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "volume-main",
+      "fileSystems": [
+        "ext4",
+        "exfat"
+      ],
+      "quotaSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +169,9 @@ request:
   "id": 102,
   "method": "storage.getVolumeConfig",
   "params": {
-    "target": "default",
+    "target": "volume-main",
     "sections": [
-      "summary"
+      "usage"
     ]
   }
 }
@@ -182,9 +188,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "volume-main",
+      "status": "mounted",
+      "usedBytes": 42000000000,
+      "availableBytes": 86000000000
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +249,10 @@ request:
   "id": 103,
   "method": "storage.setVolumeConfig",
   "params": {
-    "target": "default",
+    "target": "volume-main",
     "config": {
-      "mode": "auto"
+      "quotaBytes": 128000000000,
+      "readOnly": false
     }
   }
 }
@@ -258,7 +268,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "volume-main",
+      "quotaBytes": 128000000000,
+      "readOnly": false
+    }
   }
 }
 ```
@@ -314,8 +329,8 @@ request:
   "id": 104,
   "method": "storage.resetVolumeConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "volume-main",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +345,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "storage-resetvolumeconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +388,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +396,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "status"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "volume-main",
+      "quotaBytes": 128000000000,
+      "readOnly": false
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "volume_policy_update",
     "stateRevision": 1
   }
 }

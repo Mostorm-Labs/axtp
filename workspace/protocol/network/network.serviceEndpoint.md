@@ -85,9 +85,9 @@ request:
   "id": 101,
   "method": "network.getServiceEndpoints",
   "params": {
-    "target": "default",
+    "target": "runtime-api",
     "sections": [
-      "summary"
+      "endpoints"
     ]
   }
 }
@@ -104,9 +104,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "runtime-api",
+      "endpoints": [
+        {
+          "endpointId": "runtime-api",
+          "url": "https://device.example.internal/axtp",
+          "enabled": true
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -162,9 +169,12 @@ request:
   "id": 102,
   "method": "network.setServiceEndpointConfig",
   "params": {
-    "target": "default",
+    "target": "runtime-api",
     "config": {
-      "enabled": true
+      "endpointId": "runtime-api",
+      "url": "https://device.example.internal/axtp",
+      "enabled": true,
+      "tlsProfile": "device-default"
     }
   }
 }
@@ -180,7 +190,14 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "runtime-api",
+      "endpointId": "runtime-api",
+      "url": "https://device.example.internal/axtp",
+      "enabled": true,
+      "tlsProfile": "device-default"
+    }
   }
 }
 ```
@@ -236,9 +253,9 @@ request:
   "id": 103,
   "method": "network.getServiceEndpointState",
   "params": {
-    "target": "default",
+    "target": "runtime-api",
     "sections": [
-      "summary"
+      "endpoints"
     ]
   }
 }
@@ -255,9 +272,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "runtime-api",
+      "endpoints": [
+        {
+          "endpointId": "runtime-api",
+          "url": "https://device.example.internal/axtp",
+          "enabled": true
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:03Z"
   }
 }
 ```
@@ -299,7 +323,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -307,14 +331,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "endpoints.runtime-api.url"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "runtime-api",
+      "endpointId": "runtime-api",
+      "url": "https://device.example.internal/axtp",
+      "enabled": true,
+      "tlsProfile": "device-default"
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "endpoint_config_update",
     "stateRevision": 1
   }
 }

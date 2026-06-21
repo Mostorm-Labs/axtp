@@ -88,8 +88,10 @@ request:
   "id": 101,
   "method": "signage.getPlaylistItemUrl",
   "params": {
-    "playlistId": "lobby-loop",
-    "itemId": "welcome-video"
+    "target": "signage-screen-1",
+    "sections": [
+      "playlist"
+    ]
   }
 }
 ```
@@ -104,9 +106,13 @@ success:
     "code": 0
   },
   "result": {
-    "itemId": "welcome-video",
-    "url": "https://example.invalid/media/welcome.mp4",
-    "expiresAt": "2026-06-21T22:00:00Z"
+    "state": {
+      "target": "signage-screen-1",
+      "playlistId": "lobby-loop",
+      "itemCount": 24,
+      "activeItemId": "slide-12"
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -162,7 +168,11 @@ request:
   "id": 102,
   "method": "signage.getPlaylistCapabilities",
   "params": {
-    "target": "player-main"
+    "target": "signage-screen-1",
+    "sections": [
+      "playlist",
+      "items"
+    ]
   }
 }
 ```
@@ -177,13 +187,17 @@ success:
     "code": 0
   },
   "result": {
-    "capability": "signage.playlist",
-    "maxItems": 128,
-    "mediaTypes": [
-      "image/png",
-      "video/mp4"
-    ],
-    "scheduleSupported": true
+    "state": {
+      "target": "signage-screen-1",
+      "maxItems": 200,
+      "mediaTypes": [
+        "image",
+        "video",
+        "html"
+      ],
+      "scheduleSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:02Z"
   }
 }
 ```
@@ -239,10 +253,9 @@ request:
   "id": 103,
   "method": "signage.getPlaylistConfig",
   "params": {
-    "target": "player-main",
+    "target": "signage-screen-1",
     "sections": [
-      "playlist",
-      "schedule"
+      "playlist"
     ]
   }
 }
@@ -258,14 +271,13 @@ success:
     "code": 0
   },
   "result": {
-    "playlistId": "lobby-loop",
-    "revision": 12,
-    "items": [
-      {
-        "itemId": "welcome-video",
-        "durationSeconds": 30
-      }
-    ]
+    "state": {
+      "target": "signage-screen-1",
+      "playlistId": "lobby-loop",
+      "itemCount": 24,
+      "activeItemId": "slide-12"
+    },
+    "sampledAt": "2026-06-15T08:00:03Z"
   }
 }
 ```
@@ -321,17 +333,14 @@ request:
   "id": 104,
   "method": "signage.setPlaylistConfig",
   "params": {
-    "target": "player-main",
+    "target": "signage-screen-1",
     "config": {
       "playlistId": "lobby-loop",
-      "replace": true,
-      "items": [
-        {
-          "itemId": "welcome-video",
-          "mediaType": "video/mp4",
-          "durationSeconds": 30
-        }
-      ]
+      "itemIds": [
+        "slide-12",
+        "slide-13"
+      ],
+      "loop": true
     }
   }
 }
@@ -349,9 +358,13 @@ success:
   "result": {
     "accepted": true,
     "state": {
+      "target": "signage-screen-1",
       "playlistId": "lobby-loop",
-      "revision": 13,
-      "itemCount": 1
+      "itemIds": [
+        "slide-12",
+        "slide-13"
+      ],
+      "loop": true
     }
   }
 }
@@ -408,8 +421,8 @@ request:
   "id": 105,
   "method": "signage.resetPlaylistConfig",
   "params": {
-    "target": "player-main",
-    "reason": "restore_factory_playlist"
+    "target": "signage-screen-1",
+    "reason": "playlist_updated"
   }
 }
 ```
@@ -425,11 +438,7 @@ success:
   },
   "result": {
     "accepted": true,
-    "state": {
-      "playlistId": "factory-default",
-      "revision": 1,
-      "itemCount": 0
-    }
+    "actionId": "signage-resetplaylistconfig-20260615-001"
   }
 }
 ```
@@ -471,7 +480,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -479,14 +488,19 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "itemCount"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "signage-screen-1",
+      "playlistId": "lobby-loop",
+      "itemIds": [
+        "slide-12",
+        "slide-13"
+      ],
+      "loop": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "playlist_updated",
     "stateRevision": 1
   }
 }

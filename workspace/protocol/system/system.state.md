@@ -82,8 +82,8 @@ request:
   "id": 101,
   "method": "system.recoverRuntimeState",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "device",
+    "reason": "health_changed"
   }
 }
 ```
@@ -98,7 +98,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "system-recoverruntimestate-20260615-001"
   }
 }
 ```
@@ -151,10 +152,10 @@ request:
 
 ```json
 {
-  "id": 103,
+  "id": 102,
   "method": "system.getState",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
       "summary"
     ]
@@ -166,16 +167,19 @@ success:
 
 ```json
 {
-  "id": 103,
+  "id": 102,
   "status": {
     "ok": true,
     "code": 0
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "lifecycle": "running",
+      "health": "ok",
+      "uptimeSeconds": 86400
+    },
+    "sampledAt": "2026-06-15T08:00:02Z"
   }
 }
 ```
@@ -217,7 +221,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -225,14 +229,14 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "health"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "device",
+      "includeDiagnostics": false
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "health_changed",
     "stateRevision": 1
   }
 }

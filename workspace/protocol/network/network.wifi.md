@@ -665,7 +665,7 @@ success:
 | `changedFields` | string[] | no | field paths | omitted | 变化字段。 |
 | `reason` | string enum | no | `user_request`, `pairing`, `system_policy`, `factory_reset`, `unknown` | `unknown` | 变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {
@@ -720,7 +720,7 @@ success:
 | `previousState` | `NetworkWifiState` | no | object | omitted | 变化前状态。 |
 | `reason` | string enum | no | `connect_started`, `connect_completed`, `auth_failed`, `ap_not_found`, `disconnect`, `link_lost`, `unknown` | `unknown` | 变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {
@@ -772,7 +772,7 @@ success:
 | `complete` | boolean | no | bool | `false` | 是否扫描完成。 |
 | `reason` | string enum | no | `result`, `complete`, `timeout`, `error` | omitted | 上报原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {

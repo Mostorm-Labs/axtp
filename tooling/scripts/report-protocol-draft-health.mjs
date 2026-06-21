@@ -171,7 +171,7 @@ function analyze() {
     domains.set(domain, stats);
 
     const methods = countMatches(text, /^### 3\.\d+ `/gm);
-    const compactExamples = countMatches(text, /^#### \d+\.\d+\.\d+ d block 示例$/gm);
+    const compactExamples = countMatches(text, /^#### 3\.\d+\.\d+ d block 示例$/gm);
     const jsonExamples = countJsonFences(text);
     const fileStats = {
       file: relative,

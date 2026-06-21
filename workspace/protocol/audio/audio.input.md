@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "audio.getInputCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "line-in-1"
   }
 }
 ```
@@ -104,10 +101,18 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "audio.input",
+    "supportedInputTypes": [
+      "balancedLine",
+      "microphone"
+    ],
+    "gainRangeDb": {
+      "min": -12,
+      "max": 48,
+      "step": 1
+    },
+    "phantomPowerSupported": true,
+    "muteSupported": true
   }
 }
 ```
@@ -163,9 +168,11 @@ request:
   "id": 102,
   "method": "audio.getInputConfig",
   "params": {
-    "target": "default",
+    "target": "line-in-1",
     "sections": [
-      "summary"
+      "gain",
+      "phantomPower",
+      "mute"
     ]
   }
 }
@@ -181,10 +188,11 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "line-in-1",
+    "inputType": "microphone",
+    "gainDb": 18,
+    "phantomPower": true,
+    "muted": false
   }
 }
 ```
@@ -240,9 +248,11 @@ request:
   "id": 103,
   "method": "audio.setInputConfig",
   "params": {
-    "target": "default",
+    "target": "line-in-1",
     "config": {
-      "mode": "auto"
+      "gainDb": 21,
+      "phantomPower": true,
+      "muted": false
     }
   }
 }
@@ -258,7 +268,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "line-in-1",
+      "gainDb": 21,
+      "phantomPower": true,
+      "muted": false
+    }
   }
 }
 ```
@@ -314,8 +330,8 @@ request:
   "id": 104,
   "method": "audio.resetInputConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "line-in-1",
+    "reason": "restore_channel_defaults"
   }
 }
 ```
@@ -330,7 +346,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-line-in-1"
   }
 }
 ```
@@ -372,7 +389,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +397,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "gainDb"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "line-in-1",
+      "gainDb": 21,
+      "phantomPower": true,
+      "muted": false
     },
     "source": "remoteApp",
     "reason": "user_request",
-    "stateRevision": 1
+    "stateRevision": 8
   }
 }
 ```

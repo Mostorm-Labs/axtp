@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "audio.getDanteCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "dante-primary"
   }
 }
 ```
@@ -104,10 +101,15 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "audio.dante",
+    "maxRxChannels": 64,
+    "maxTxChannels": 64,
+    "sampleRates": [
+      48000,
+      96000
+    ],
+    "redundancySupported": true,
+    "aes67Supported": true
   }
 }
 ```
@@ -163,9 +165,11 @@ request:
   "id": 102,
   "method": "audio.getDanteConfig",
   "params": {
-    "target": "default",
+    "target": "dante-primary",
     "sections": [
-      "summary"
+      "network",
+      "clock",
+      "routing"
     ]
   }
 }
@@ -181,10 +185,15 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "dante-primary",
+    "enabled": true,
+    "deviceName": "AXTP-Dante-01",
+    "sampleRate": 48000,
+    "clockSource": "network",
+    "primaryInterface": "eth0",
+    "secondaryInterface": "eth1",
+    "txChannels": 16,
+    "rxChannels": 16
   }
 }
 ```
@@ -240,9 +249,12 @@ request:
   "id": 103,
   "method": "audio.setDanteConfig",
   "params": {
-    "target": "default",
+    "target": "dante-primary",
     "config": {
-      "mode": "auto"
+      "enabled": true,
+      "deviceName": "AXTP-Dante-01",
+      "sampleRate": 48000,
+      "clockSource": "network"
     }
   }
 }
@@ -258,7 +270,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "dante-primary",
+      "enabled": true,
+      "sampleRate": 48000,
+      "clockSource": "network"
+    }
   }
 }
 ```
@@ -314,8 +332,8 @@ request:
   "id": 104,
   "method": "audio.resetDanteConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "dante-primary",
+    "reason": "restore_audio_network_defaults"
   }
 }
 ```
@@ -330,7 +348,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-dante-primary"
   }
 }
 ```
@@ -372,7 +391,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +399,18 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "sampleRate",
+      "clockSource"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "dante-primary",
+      "enabled": true,
+      "sampleRate": 48000,
+      "clockSource": "network"
     },
     "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1
+    "reason": "config_update",
+    "stateRevision": 12
   }
 }
 ```

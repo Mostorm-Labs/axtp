@@ -648,7 +648,7 @@ success:
 | `changedFields` | string[] | no | field path array | omitted | 变化字段。 |
 | `reason` | string enum | no | `user_request`, `preset`, `framing_algorithm`, `physical_control`, `limit_reached`, `unknown` | `unknown` | 变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {
@@ -688,7 +688,7 @@ success:
 | `changedFields` | string[] | no | field path array | omitted | 变化字段。 |
 | `reason` | string enum | no | `user_request`, `profile_changed`, `restore_config`, `unknown` | `unknown` | 变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {

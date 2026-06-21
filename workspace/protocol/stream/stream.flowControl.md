@@ -96,8 +96,8 @@ request:
   "id": 101,
   "method": "video.openStream",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -112,7 +112,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "video-openstream-20260615-001"
   }
 }
 ```
@@ -168,8 +169,8 @@ request:
   "id": 102,
   "method": "audio.startRecording",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -184,7 +185,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "audio-startrecording-20260615-001"
   }
 }
 ```
@@ -240,8 +242,8 @@ request:
   "id": 103,
   "method": "file.beginUpload",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -256,7 +258,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "file-beginupload-20260615-001"
   }
 }
 ```
@@ -312,8 +315,8 @@ request:
   "id": 104,
   "method": "firmware.beginUpdate",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -328,7 +331,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "firmware-beginupdate-20260615-001"
   }
 }
 ```
@@ -384,8 +388,8 @@ request:
   "id": 105,
   "method": "stream.open",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -400,7 +404,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "stream-open-20260615-001"
   }
 }
 ```
@@ -456,8 +461,8 @@ request:
   "id": 106,
   "method": "video.closeStream",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -472,7 +477,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "video-closestream-20260615-001"
   }
 }
 ```
@@ -528,8 +534,8 @@ request:
   "id": 107,
   "method": "audio.stopRecording",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -544,7 +550,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "audio-stoprecording-20260615-001"
   }
 }
 ```
@@ -600,8 +607,8 @@ request:
   "id": 108,
   "method": "stream.close",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -616,7 +623,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "stream-close-20260615-001"
   }
 }
 ```
@@ -672,9 +680,10 @@ request:
   "id": 109,
   "method": "stream.getCapabilities",
   "params": {
-    "target": "default",
+    "target": "stream-session-1",
     "sections": [
-      "flowControl"
+      "flowControl",
+      "limits"
     ]
   }
 }
@@ -691,11 +700,13 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
+      "target": "stream-session-1",
       "maxWindowBytes": 262144,
-      "supportsPause": true
+      "supportsPause": true,
+      "supportsResume": true,
+      "ackPolicy": "required"
     },
-    "sampledAt": "2026-06-15T00:00:00Z"
+    "sampledAt": "2026-06-15T08:00:09Z"
   }
 }
 ```
@@ -912,8 +923,8 @@ request:
   "id": 112,
   "method": "stream.ack",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -928,7 +939,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "stream-ack-20260615-001"
   }
 }
 ```
@@ -984,8 +996,8 @@ request:
   "id": 113,
   "method": "stream.windowUpdate",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -1000,7 +1012,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "stream-windowupdate-20260615-001"
   }
 }
 ```
@@ -1056,8 +1069,8 @@ request:
   "id": 114,
   "method": "stream.pause",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -1072,7 +1085,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "stream-pause-20260615-001"
   }
 }
 ```
@@ -1128,8 +1142,8 @@ request:
   "id": 115,
   "method": "stream.resume",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -1144,7 +1158,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "stream-resume-20260615-001"
   }
 }
 ```
@@ -1200,8 +1215,8 @@ request:
   "id": 116,
   "method": "stream.abort",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "stream-session-1",
+    "reason": "flow_control_update"
   }
 }
 ```
@@ -1216,7 +1231,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "stream-abort-20260615-001"
   }
 }
 ```
@@ -1260,7 +1276,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -1268,14 +1284,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "windowBytes",
+      "paused"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "stream-session-1",
+      "streamId": "stream-20260615-001",
+      "windowBytes": 131072,
+      "ackEveryBytes": 32768
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "flow_control_update",
     "stateRevision": 1
   }
 }
@@ -1309,7 +1328,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.2.2 Event d block Example (op=6)
+#### 4.2.2 d block 示例
 
 ```json
 {
@@ -1317,14 +1336,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "windowBytes",
+      "paused"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "stream-session-1",
+      "streamId": "stream-20260615-001",
+      "windowBytes": 131072,
+      "ackEveryBytes": 32768
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "flow_control_update",
     "stateRevision": 1
   }
 }
@@ -1358,7 +1380,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.3.2 Event d block Example (op=6)
+#### 4.3.2 d block 示例
 
 ```json
 {
@@ -1366,14 +1388,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "windowBytes",
+      "paused"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "stream-session-1",
+      "streamId": "stream-20260615-001",
+      "windowBytes": 131072,
+      "ackEveryBytes": 32768
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "flow_control_update",
     "stateRevision": 1
   }
 }

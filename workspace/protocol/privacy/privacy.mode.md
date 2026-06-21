@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "privacy.getModeCapabilities",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "modes",
+      "affectedResources"
     ]
   }
 }
@@ -105,9 +106,19 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "modes": [
+        "normal",
+        "privacy",
+        "presentation"
+      ],
+      "affectedResources": [
+        "camera",
+        "microphone",
+        "indicator"
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +174,9 @@ request:
   "id": 102,
   "method": "privacy.getModeConfig",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "mode"
     ]
   }
 }
@@ -182,9 +193,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "mode": "privacy",
+      "cameraMuted": true,
+      "microphoneMuted": true
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +254,11 @@ request:
   "id": 103,
   "method": "privacy.setModeConfig",
   "params": {
-    "target": "default",
+    "target": "device",
     "config": {
-      "mode": "auto"
+      "mode": "privacy",
+      "cameraMuted": true,
+      "microphoneMuted": true
     }
   }
 }
@@ -258,7 +274,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "device",
+      "mode": "privacy",
+      "cameraMuted": true,
+      "microphoneMuted": true
+    }
   }
 }
 ```
@@ -314,8 +336,8 @@ request:
   "id": 104,
   "method": "privacy.resetModeConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "device",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +352,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "privacy-resetmodeconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +395,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,11 +403,13 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "mode"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "device",
+      "mode": "privacy",
+      "cameraMuted": true,
+      "microphoneMuted": true
     },
     "source": "remoteApp",
     "reason": "user_request",

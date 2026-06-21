@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "display.getBrightnessCapabilities",
   "params": {
-    "target": "default",
+    "target": "display-main",
     "sections": [
-      "summary"
+      "range",
+      "modes"
     ]
   }
 }
@@ -105,9 +106,19 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "display-main",
+      "levelRange": {
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "modes": [
+        "manual",
+        "ambient"
+      ],
+      "defaultLevel": 65
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +174,9 @@ request:
   "id": 102,
   "method": "display.getBrightnessConfig",
   "params": {
-    "target": "default",
+    "target": "display-main",
     "sections": [
-      "summary"
+      "brightness"
     ]
   }
 }
@@ -182,9 +193,11 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "display-main",
+      "level": 65,
+      "mode": "manual"
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +253,10 @@ request:
   "id": 103,
   "method": "display.setBrightnessConfig",
   "params": {
-    "target": "default",
+    "target": "display-main",
     "config": {
-      "mode": "auto"
+      "level": 72,
+      "mode": "manual"
     }
   }
 }
@@ -258,7 +272,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "display-main",
+      "level": 72,
+      "mode": "manual"
+    }
   }
 }
 ```
@@ -314,8 +333,8 @@ request:
   "id": 104,
   "method": "display.resetBrightnessConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "display-main",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +349,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "display-resetbrightnessconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +392,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,11 +400,12 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "level"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "display-main",
+      "level": 72,
+      "mode": "manual"
     },
     "source": "remoteApp",
     "reason": "user_request",

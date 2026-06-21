@@ -84,9 +84,9 @@ request:
   "id": 101,
   "method": "stream.getProfiles",
   "params": {
-    "target": "default",
+    "target": "transport",
     "sections": [
-      "summary"
+      "profiles"
     ]
   }
 }
@@ -103,9 +103,29 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "transport",
+      "profiles": [
+        {
+          "profile": "stream.lowBandwidth",
+          "payloadKinds": [
+            "firmware.update",
+            "log.export"
+          ],
+          "maxChunkBytes": 1024,
+          "resumeSupported": true
+        },
+        {
+          "profile": "stream.media",
+          "payloadKinds": [
+            "audio.recording",
+            "video.recording"
+          ],
+          "maxChunkBytes": 16384,
+          "resumeSupported": true
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -161,9 +181,10 @@ request:
   "id": 102,
   "method": "stream.getProfileCapabilities",
   "params": {
-    "target": "default",
+    "profile": "stream.lowBandwidth",
     "sections": [
-      "summary"
+      "limits",
+      "reliability"
     ]
   }
 }
@@ -180,9 +201,14 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "profile": "stream.lowBandwidth",
+      "maxStreamCount": 2,
+      "maxChunkBytes": 1024,
+      "ackPolicy": "required",
+      "resumeSupported": true,
+      "crcRequired": true
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```

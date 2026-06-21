@@ -291,7 +291,7 @@ success:
 | `previousConfig` | `NetworkIpConfig` | no | object | omitted | 变化前配置。 |
 | `reason` | string enum | no | `user_request`, `dhcp_updated`, `lease_expired`, `link_lost`, `system_policy`, `apply_failed`, `unknown` | `unknown` | 变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {

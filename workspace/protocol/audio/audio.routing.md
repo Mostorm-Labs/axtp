@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "audio.getRoutingCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "routing-matrix"
   }
 }
 ```
@@ -104,10 +101,19 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "audio.routing",
+    "maxRoutes": 128,
+    "sourceTypes": [
+      "input",
+      "stream",
+      "playback"
+    ],
+    "destinationTypes": [
+      "output",
+      "mixBus",
+      "stream"
+    ],
+    "gainPerRouteSupported": true
   }
 }
 ```
@@ -163,9 +169,9 @@ request:
   "id": 102,
   "method": "audio.getRoutingConfig",
   "params": {
-    "target": "default",
+    "target": "routing-matrix",
     "sections": [
-      "summary"
+      "routes"
     ]
   }
 }
@@ -181,10 +187,16 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "routing-matrix",
+    "routes": [
+      {
+        "routeId": "mic1-to-main",
+        "source": "input:mic-1",
+        "destination": "bus:main",
+        "gainDb": 0,
+        "enabled": true
+      }
+    ]
   }
 }
 ```
@@ -240,9 +252,18 @@ request:
   "id": 103,
   "method": "audio.setRoutingConfig",
   "params": {
-    "target": "default",
+    "target": "routing-matrix",
     "config": {
-      "mode": "auto"
+      "replace": false,
+      "routes": [
+        {
+          "routeId": "mic1-to-main",
+          "source": "input:mic-1",
+          "destination": "bus:main",
+          "gainDb": 0,
+          "enabled": true
+        }
+      ]
     }
   }
 }
@@ -258,7 +279,14 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "routing-matrix",
+      "routeCount": 1,
+      "changedRoutes": [
+        "mic1-to-main"
+      ]
+    }
   }
 }
 ```
@@ -314,8 +342,8 @@ request:
   "id": 104,
   "method": "audio.resetRoutingConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "routing-matrix",
+    "reason": "clear_custom_routes"
   }
 }
 ```
@@ -330,7 +358,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-routing-matrix"
   }
 }
 ```
@@ -372,7 +401,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +409,18 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "routes.mic1-to-main"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "routing-matrix",
+      "routeCount": 1,
+      "changedRoutes": [
+        "mic1-to-main"
+      ]
     },
     "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1
+    "reason": "routing_update",
+    "stateRevision": 18
   }
 }
 ```

@@ -86,8 +86,8 @@ request:
   "id": 101,
   "method": "system.recoverRuntimeState",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "device",
+    "reason": "reset_progress"
   }
 }
 ```
@@ -102,7 +102,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "system-recoverruntimestate-20260615-001"
   }
 }
 ```
@@ -158,8 +159,8 @@ request:
   "id": 102,
   "method": "system.restoreFactorySettings",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "device",
+    "reason": "reset_progress"
   }
 }
 ```
@@ -174,7 +175,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "system-restorefactorysettings-20260615-001"
   }
 }
 ```
@@ -230,9 +232,10 @@ request:
   "id": 103,
   "method": "system.getResetCapabilities",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "resetTypes",
+      "safety"
     ]
   }
 }
@@ -249,9 +252,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "resetTypes": [
+        "runtime",
+        "defaultSettings",
+        "factorySettings"
+      ],
+      "confirmationRequired": true,
+      "rebootMayOccur": true
+    },
+    "sampledAt": "2026-06-15T08:00:03Z"
   }
 }
 ```
@@ -307,9 +317,9 @@ request:
   "id": 104,
   "method": "system.getResetStatus",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "status"
     ]
   }
 }
@@ -326,9 +336,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "resetId": "reset-20260615-001",
+      "phase": "restoring",
+      "progressPercent": 45
+    },
+    "sampledAt": "2026-06-15T08:00:04Z"
   }
 }
 ```
@@ -384,8 +397,8 @@ request:
   "id": 105,
   "method": "system.restoreDefaultSettings",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "device",
+    "reason": "reset_progress"
   }
 }
 ```
@@ -400,7 +413,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "system-restoredefaultsettings-20260615-001"
   }
 }
 ```
@@ -456,8 +470,8 @@ request:
   "id": 106,
   "method": "system.resetStatusChanged",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "device",
+    "reason": "reset_progress"
   }
 }
 ```
@@ -472,7 +486,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "system-resetstatuschanged-20260615-001"
   }
 }
 ```
@@ -514,7 +529,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -522,14 +537,16 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "phase",
+      "progressPercent"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "device",
+      "resetType": "defaultSettings",
+      "preserveNetwork": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "reset_progress",
     "stateRevision": 1
   }
 }

@@ -153,7 +153,7 @@ success:
 | `source` | string enum | no | feature-specific | `unknown` | 状态变化来源。 |
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -347,7 +347,7 @@ success:
 
 读法：`result` 返回设置后的完整状态，而不是变化片段；状态实际变化时由 `audio.volume.changed` 事件通知。
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {

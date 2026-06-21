@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "video.getRecordingCapabilities",
   "params": {
-    "target": "default",
+    "target": "encoder-main",
     "sections": [
-      "summary"
+      "formats",
+      "limits"
     ]
   }
 }
@@ -105,9 +106,19 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "encoder-main",
+      "containers": [
+        "mp4",
+        "mkv"
+      ],
+      "videoCodecs": [
+        "h264",
+        "h265"
+      ],
+      "maxDurationSeconds": 7200,
+      "streamDownloadSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,7 +174,10 @@ request:
   "id": 102,
   "method": "video.startRecording",
   "params": {
-    "target": "default",
+    "target": "encoder-main",
+    "profile": "meeting-1080p",
+    "container": "mp4",
+    "maxDurationSeconds": 1800,
     "reason": "user_request"
   }
 }
@@ -179,7 +193,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "recordingId": "recording-20260615-001",
+    "state": {
+      "target": "encoder-main",
+      "state": "recording",
+      "elapsedMs": 0
+    }
   }
 }
 ```
@@ -235,7 +255,8 @@ request:
   "id": 103,
   "method": "video.stopRecording",
   "params": {
-    "target": "default",
+    "target": "encoder-main",
+    "recordingId": "recording-20260615-001",
     "reason": "user_request"
   }
 }
@@ -251,7 +272,10 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "recordingId": "recording-20260615-001",
+    "fileId": "recordings/2026-06-15/meeting-001.mp4",
+    "durationMs": 128400
   }
 }
 ```
@@ -307,9 +331,10 @@ request:
   "id": 104,
   "method": "video.getRecordingState",
   "params": {
-    "target": "default",
+    "target": "encoder-main",
+    "recordingId": "recording-20260615-001",
     "sections": [
-      "summary"
+      "progress"
     ]
   }
 }
@@ -326,9 +351,13 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "encoder-main",
+      "recordingId": "recording-20260615-001",
+      "state": "recording",
+      "elapsedMs": 64000,
+      "outputFileId": "recordings/2026-06-15/meeting-001.mp4"
+    },
+    "sampledAt": "2026-06-15T08:00:02Z"
   }
 }
 ```
@@ -370,7 +399,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -378,15 +407,19 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "state",
+      "elapsedMs"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "encoder-main",
+      "recordingId": "recording-20260615-001",
+      "state": "recording",
+      "elapsedMs": 64000,
+      "outputFileId": "recordings/2026-06-15/meeting-001.mp4"
     },
     "source": "remoteApp",
     "reason": "user_request",
-    "stateRevision": 1
+    "stateRevision": 17
   }
 }
 ```

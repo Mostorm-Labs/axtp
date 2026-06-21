@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "device.getIndicatorCapabilities",
   "params": {
-    "target": "default",
+    "target": "front-panel-led",
     "sections": [
-      "summary"
+      "colors",
+      "patterns"
     ]
   }
 }
@@ -105,9 +106,24 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "front-panel-led",
+      "colors": [
+        "white",
+        "green",
+        "amber",
+        "red"
+      ],
+      "patterns": [
+        "solid",
+        "blink",
+        "pulse"
+      ],
+      "brightnessRange": {
+        "min": 0,
+        "max": 100
+      }
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +179,9 @@ request:
   "id": 102,
   "method": "device.getIndicatorConfig",
   "params": {
-    "target": "default",
+    "target": "front-panel-led",
     "sections": [
-      "summary"
+      "pattern"
     ]
   }
 }
@@ -182,9 +198,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "front-panel-led",
+      "color": "green",
+      "pattern": "solid",
+      "brightness": 60
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +259,11 @@ request:
   "id": 103,
   "method": "device.setIndicatorConfig",
   "params": {
-    "target": "default",
+    "target": "front-panel-led",
     "config": {
-      "mode": "auto"
+      "color": "green",
+      "pattern": "solid",
+      "brightness": 60
     }
   }
 }
@@ -258,7 +279,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "front-panel-led",
+      "color": "green",
+      "pattern": "solid",
+      "brightness": 60
+    }
   }
 }
 ```
@@ -314,8 +341,8 @@ request:
   "id": 104,
   "method": "device.resetIndicatorConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "front-panel-led",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +357,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "device-resetindicatorconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +400,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +408,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "color",
+      "pattern"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "front-panel-led",
+      "color": "green",
+      "pattern": "solid",
+      "brightness": 60
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "call_state_update",
     "stateRevision": 1
   }
 }

@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "audio.getOutputCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "line-out-1"
   }
 }
 ```
@@ -104,10 +101,18 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "audio.output",
+    "supportedOutputTypes": [
+      "lineOut",
+      "speaker"
+    ],
+    "levelRangeDb": {
+      "min": -60,
+      "max": 12,
+      "step": 1
+    },
+    "muteSupported": true,
+    "limiterSupported": true
   }
 }
 ```
@@ -163,9 +168,11 @@ request:
   "id": 102,
   "method": "audio.getOutputConfig",
   "params": {
-    "target": "default",
+    "target": "line-out-1",
     "sections": [
-      "summary"
+      "level",
+      "mute",
+      "limiter"
     ]
   }
 }
@@ -181,10 +188,10 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "line-out-1",
+    "levelDb": -12,
+    "muted": false,
+    "limiterEnabled": true
   }
 }
 ```
@@ -240,9 +247,11 @@ request:
   "id": 103,
   "method": "audio.setOutputConfig",
   "params": {
-    "target": "default",
+    "target": "line-out-1",
     "config": {
-      "mode": "auto"
+      "levelDb": -10,
+      "muted": false,
+      "limiterEnabled": true
     }
   }
 }
@@ -258,7 +267,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "line-out-1",
+      "levelDb": -10,
+      "muted": false,
+      "limiterEnabled": true
+    }
   }
 }
 ```
@@ -314,8 +329,8 @@ request:
   "id": 104,
   "method": "audio.resetOutputConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "line-out-1",
+    "reason": "restore_channel_defaults"
   }
 }
 ```
@@ -330,7 +345,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-line-out-1"
   }
 }
 ```
@@ -372,7 +388,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +396,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "levelDb"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "line-out-1",
+      "levelDb": -10,
+      "muted": false,
+      "limiterEnabled": true
     },
     "source": "remoteApp",
     "reason": "user_request",
-    "stateRevision": 1
+    "stateRevision": 8
   }
 }
 ```

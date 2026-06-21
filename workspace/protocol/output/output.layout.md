@@ -87,9 +87,9 @@ request:
   "id": 101,
   "method": "output.getLayoutConfig",
   "params": {
-    "target": "default",
+    "target": "program-output",
     "sections": [
-      "summary"
+      "layout"
     ]
   }
 }
@@ -106,9 +106,20 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "program-output",
+      "layout": "pip",
+      "regions": [
+        {
+          "regionId": "main",
+          "source": "camera-main"
+        },
+        {
+          "regionId": "pip",
+          "source": "slides"
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -164,9 +175,19 @@ request:
   "id": 102,
   "method": "output.setLayoutConfig",
   "params": {
-    "target": "default",
+    "target": "program-output",
     "config": {
-      "enabled": true
+      "layout": "pip",
+      "regions": [
+        {
+          "regionId": "main",
+          "source": "camera-main"
+        },
+        {
+          "regionId": "pip",
+          "source": "slides"
+        }
+      ]
     }
   }
 }
@@ -182,7 +203,21 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "program-output",
+      "layout": "pip",
+      "regions": [
+        {
+          "regionId": "main",
+          "source": "camera-main"
+        },
+        {
+          "regionId": "pip",
+          "source": "slides"
+        }
+      ]
+    }
   }
 }
 ```
@@ -238,9 +273,10 @@ request:
   "id": 103,
   "method": "output.getLayoutCapabilities",
   "params": {
-    "target": "default",
+    "target": "program-output",
     "sections": [
-      "summary"
+      "layouts",
+      "regions"
     ]
   }
 }
@@ -257,9 +293,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "program-output",
+      "layouts": [
+        "single",
+        "pip",
+        "quad"
+      ],
+      "maxRegions": 4,
+      "animatedSwitchSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:03Z"
   }
 }
 ```
@@ -301,7 +344,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -309,14 +352,25 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "layout",
+      "regions"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "program-output",
+      "layout": "pip",
+      "regions": [
+        {
+          "regionId": "main",
+          "source": "camera-main"
+        },
+        {
+          "regionId": "pip",
+          "source": "slides"
+        }
+      ]
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "layout_selected",
     "stateRevision": 1
   }
 }

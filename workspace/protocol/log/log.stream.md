@@ -85,8 +85,8 @@ request:
   "id": 101,
   "method": "log.openStream",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "log-stream",
+    "reason": "stream_subscribed"
   }
 }
 ```
@@ -101,7 +101,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "log-openstream-20260615-001"
   }
 }
 ```
@@ -157,8 +158,8 @@ request:
   "id": 102,
   "method": "log.closeStream",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "log-stream",
+    "reason": "stream_subscribed"
   }
 }
 ```
@@ -173,7 +174,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "log-closestream-20260615-001"
   }
 }
 ```
@@ -229,9 +231,9 @@ request:
   "id": 103,
   "method": "log.getStreamState",
   "params": {
-    "target": "default",
+    "target": "log-stream",
     "sections": [
-      "summary"
+      "stream"
     ]
   }
 }
@@ -248,9 +250,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "log-stream",
+      "streamId": "log-stream-20260615-001",
+      "level": "info",
+      "subscriberCount": 1
+    },
+    "sampledAt": "2026-06-15T08:00:03Z"
   }
 }
 ```
@@ -292,7 +297,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -300,14 +305,18 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "subscriberCount"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "log-stream",
+      "level": "info",
+      "filters": [
+        "system"
+      ],
+      "includeHistoryLines": 100
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "stream_subscribed",
     "stateRevision": 1
   }
 }

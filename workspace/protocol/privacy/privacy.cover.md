@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "privacy.getCoverCapabilities",
   "params": {
-    "target": "default",
+    "target": "camera-cover",
     "sections": [
-      "summary"
+      "positions",
+      "policy"
     ]
   }
 }
@@ -105,9 +106,15 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "camera-cover",
+      "positions": [
+        "open",
+        "closed"
+      ],
+      "localOverrideSupported": true,
+      "policyLockSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +170,9 @@ request:
   "id": 102,
   "method": "privacy.getCoverConfig",
   "params": {
-    "target": "default",
+    "target": "camera-cover",
     "sections": [
-      "summary"
+      "position"
     ]
   }
 }
@@ -182,9 +189,11 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "camera-cover",
+      "position": "closed",
+      "policyLocked": false
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +249,10 @@ request:
   "id": 103,
   "method": "privacy.setCoverConfig",
   "params": {
-    "target": "default",
+    "target": "camera-cover",
     "config": {
-      "mode": "auto"
+      "position": "closed",
+      "policyLocked": false
     }
   }
 }
@@ -258,7 +268,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "camera-cover",
+      "position": "closed",
+      "policyLocked": false
+    }
   }
 }
 ```
@@ -314,8 +329,8 @@ request:
   "id": 104,
   "method": "privacy.resetCoverConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "camera-cover",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +345,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "privacy-resetcoverconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +388,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +396,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "position"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "camera-cover",
+      "position": "closed",
+      "policyLocked": false
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "privacy_request",
     "stateRevision": 1
   }
 }

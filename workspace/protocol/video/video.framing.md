@@ -499,7 +499,7 @@ success:
 | `applyState` | string enum | yes | `applied`, `applying`, `pending_restart`, `failed` | none | 应用状态。 |
 | `reason` | string enum | no | `user_request`, `physical_control`, `profile_changed`, `restore_config`, `legacy_adapter`, `device_policy`, `unknown` | `unknown` | 变化来源。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {
@@ -546,7 +546,7 @@ success:
 | `state` | `VideoFramingState` | yes | see schema | none | 当前运行态。 |
 | `reason` | string enum | no | `config_changed`, `algorithm_ready`, `resource_conflict`, `dependency_unavailable`, `unknown` | `unknown` | 状态变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {
@@ -586,7 +586,7 @@ success:
 | `previousMode` | string enum | no | same as `mode` | omitted | 旧 mode。 |
 | `reason` | string enum | no | see config event | `unknown` | 变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {

@@ -383,7 +383,7 @@ success:
 | `applyState` | string enum | yes | `applied`, `pending_restart`, `failed` | none | 应用状态。 |
 | `reason` | string enum | no | `user_request`, `reset_to_default`, `auto_algorithm`, `profile_changed`, `legacy_adapter`, `unknown` | `unknown` | 变化原因。 |
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {

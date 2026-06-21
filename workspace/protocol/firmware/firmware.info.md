@@ -83,9 +83,9 @@ request:
   "id": 101,
   "method": "firmware.getInfo",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "versions"
     ]
   }
 }
@@ -102,9 +102,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "component": "runtime",
+      "version": "1.4.2",
+      "build": "20260615.1"
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -146,7 +149,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -154,14 +157,14 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "version"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "device",
+      "includeInactiveSlots": false
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "firmware_inventory_refreshed",
     "stateRevision": 1
   }
 }

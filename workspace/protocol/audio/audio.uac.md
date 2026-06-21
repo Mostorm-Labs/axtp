@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "audio.getUacCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "usb-audio-1"
   }
 }
 ```
@@ -104,10 +101,21 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "audio.uac",
+    "roles": [
+      "device",
+      "host"
+    ],
+    "sampleRates": [
+      48000,
+      96000
+    ],
+    "channelCounts": [
+      2,
+      4,
+      8
+    ],
+    "echoCancellationSupported": true
   }
 }
 ```
@@ -163,9 +171,10 @@ request:
   "id": 102,
   "method": "audio.getUacConfig",
   "params": {
-    "target": "default",
+    "target": "usb-audio-1",
     "sections": [
-      "summary"
+      "role",
+      "format"
     ]
   }
 }
@@ -181,10 +190,12 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "usb-audio-1",
+    "role": "device",
+    "sampleRate": 48000,
+    "inputChannels": 2,
+    "outputChannels": 2,
+    "echoCancellation": true
   }
 }
 ```
@@ -240,9 +251,12 @@ request:
   "id": 103,
   "method": "audio.setUacConfig",
   "params": {
-    "target": "default",
+    "target": "usb-audio-1",
     "config": {
-      "mode": "auto"
+      "role": "device",
+      "sampleRate": 48000,
+      "inputChannels": 2,
+      "outputChannels": 2
     }
   }
 }
@@ -258,7 +272,14 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "usb-audio-1",
+      "role": "device",
+      "sampleRate": 48000,
+      "inputChannels": 2,
+      "outputChannels": 2
+    }
   }
 }
 ```
@@ -314,8 +335,8 @@ request:
   "id": 104,
   "method": "audio.resetUacConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "usb-audio-1",
+    "reason": "restore_usb_audio_defaults"
   }
 }
 ```
@@ -330,7 +351,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-usb-audio-1"
   }
 }
 ```
@@ -372,7 +394,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +402,19 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "sampleRate",
+      "inputChannels"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "usb-audio-1",
+      "role": "device",
+      "sampleRate": 48000,
+      "inputChannels": 2,
+      "outputChannels": 2
     },
     "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1
+    "reason": "usb_profile_update",
+    "stateRevision": 6
   }
 }
 ```

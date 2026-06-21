@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "video.getLayoutCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "program"
   }
 }
 ```
@@ -104,10 +101,17 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "video.layout",
+    "maxWindows": 4,
+    "canvas": {
+      "width": 1920,
+      "height": 1080
+    },
+    "presets": [
+      "single",
+      "sideBySide",
+      "quad"
+    ]
   }
 }
 ```
@@ -163,9 +167,9 @@ request:
   "id": 102,
   "method": "video.getLayoutConfig",
   "params": {
-    "target": "default",
+    "target": "program",
     "sections": [
-      "summary"
+      "windows"
     ]
   }
 }
@@ -181,10 +185,26 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "program",
+    "preset": "sideBySide",
+    "windows": [
+      {
+        "windowId": "left",
+        "sourceId": "hdmi-1",
+        "x": 0,
+        "y": 0,
+        "width": 960,
+        "height": 1080
+      },
+      {
+        "windowId": "right",
+        "sourceId": "hdmi-2",
+        "x": 960,
+        "y": 0,
+        "width": 960,
+        "height": 1080
+      }
+    ]
   }
 }
 ```
@@ -240,9 +260,19 @@ request:
   "id": 103,
   "method": "video.setLayoutConfig",
   "params": {
-    "target": "default",
+    "target": "program",
     "config": {
-      "mode": "auto"
+      "preset": "sideBySide",
+      "windows": [
+        {
+          "windowId": "left",
+          "sourceId": "hdmi-1"
+        },
+        {
+          "windowId": "right",
+          "sourceId": "hdmi-2"
+        }
+      ]
     }
   }
 }
@@ -258,7 +288,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "program",
+      "preset": "sideBySide",
+      "windowCount": 2
+    }
   }
 }
 ```
@@ -314,8 +349,8 @@ request:
   "id": 104,
   "method": "video.resetLayoutConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "program",
+    "reason": "restore_single_source"
   }
 }
 ```
@@ -330,7 +365,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-layout-program"
   }
 }
 ```
@@ -372,7 +408,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +416,17 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "preset",
+      "windows"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "program",
+      "preset": "sideBySide",
+      "windowCount": 2
     },
     "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1
+    "reason": "scene_recall",
+    "stateRevision": 14
   }
 }
 ```

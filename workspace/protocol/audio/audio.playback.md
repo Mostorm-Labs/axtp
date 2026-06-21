@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "audio.getPlaybackCapabilities",
   "params": {
-    "target": "default",
+    "target": "program-output",
     "sections": [
-      "summary"
+      "formats",
+      "limits"
     ]
   }
 }
@@ -105,9 +106,17 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "program-output",
+      "formats": [
+        "wav",
+        "aac",
+        "mp3"
+      ],
+      "maxConcurrentPlayers": 2,
+      "seekSupported": true,
+      "loopSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,7 +172,10 @@ request:
   "id": 102,
   "method": "audio.startPlayback",
   "params": {
-    "target": "default",
+    "target": "program-output",
+    "fileId": "media/welcome.aac",
+    "playlistId": "lobby-loop",
+    "startPositionMs": 0,
     "reason": "user_request"
   }
 }
@@ -179,7 +191,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "playbackId": "playback-20260615-001",
+    "state": {
+      "target": "program-output",
+      "state": "playing",
+      "positionMs": 0
+    }
   }
 }
 ```
@@ -235,7 +253,8 @@ request:
   "id": 103,
   "method": "audio.stopPlayback",
   "params": {
-    "target": "default",
+    "target": "program-output",
+    "playbackId": "playback-20260615-001",
     "reason": "user_request"
   }
 }
@@ -251,7 +270,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "playbackId": "playback-20260615-001",
+    "state": {
+      "target": "program-output",
+      "state": "stopped",
+      "positionMs": 18420
+    }
   }
 }
 ```
@@ -307,9 +332,10 @@ request:
   "id": 104,
   "method": "audio.getPlaybackState",
   "params": {
-    "target": "default",
+    "target": "program-output",
+    "playbackId": "playback-20260615-001",
     "sections": [
-      "summary"
+      "position"
     ]
   }
 }
@@ -326,9 +352,13 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "program-output",
+      "playbackId": "playback-20260615-001",
+      "state": "playing",
+      "positionMs": 12400,
+      "durationMs": 45000
+    },
+    "sampledAt": "2026-06-15T08:00:02Z"
   }
 }
 ```
@@ -370,7 +400,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -378,15 +408,19 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "state",
+      "positionMs"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "program-output",
+      "playbackId": "playback-20260615-001",
+      "state": "playing",
+      "positionMs": 12400,
+      "durationMs": 45000
     },
     "source": "remoteApp",
     "reason": "user_request",
-    "stateRevision": 1
+    "stateRevision": 12
   }
 }
 ```

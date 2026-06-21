@@ -781,7 +781,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -792,11 +792,12 @@ success:
       "state"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "device",
+      "allowRemoteReboot": true,
+      "drainTimeoutSeconds": 30
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "lifecycle_action",
     "stateRevision": 1
   }
 }
@@ -830,7 +831,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.2.2 Event d block Example (op=6)
+#### 4.2.2 d block 示例
 
 ```json
 {
@@ -841,11 +842,12 @@ success:
       "state"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "device",
+      "allowRemoteReboot": true,
+      "drainTimeoutSeconds": 30
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "lifecycle_action",
     "stateRevision": 1
   }
 }

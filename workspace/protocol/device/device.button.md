@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "device.getButtonCapabilities",
   "params": {
-    "target": "default",
+    "target": "front-panel",
     "sections": [
-      "summary"
+      "buttons",
+      "gestures"
     ]
   }
 }
@@ -105,9 +106,20 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "front-panel",
+      "buttonIds": [
+        "power",
+        "privacy",
+        "preset1"
+      ],
+      "supportedGestures": [
+        "press",
+        "longPress",
+        "doublePress"
+      ],
+      "remappable": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +175,9 @@ request:
   "id": 102,
   "method": "device.getButtonConfig",
   "params": {
-    "target": "default",
+    "target": "front-panel",
     "sections": [
-      "summary"
+      "bindings"
     ]
   }
 }
@@ -182,9 +194,17 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "front-panel",
+      "bindings": [
+        {
+          "buttonId": "privacy",
+          "gesture": "press",
+          "action": "privacy.toggleCover"
+        }
+      ],
+      "lockout": false
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +260,17 @@ request:
   "id": 103,
   "method": "device.setButtonConfig",
   "params": {
-    "target": "default",
+    "target": "front-panel",
     "config": {
-      "mode": "auto"
+      "bindings": [
+        {
+          "buttonId": "privacy",
+          "gesture": "press",
+          "action": "privacy.toggleCover"
+        }
+      ],
+      "debounceMs": 40,
+      "longPressMs": 800
     }
   }
 }
@@ -258,7 +286,19 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "front-panel",
+      "bindings": [
+        {
+          "buttonId": "privacy",
+          "gesture": "press",
+          "action": "privacy.toggleCover"
+        }
+      ],
+      "debounceMs": 40,
+      "longPressMs": 800
+    }
   }
 }
 ```
@@ -314,8 +354,8 @@ request:
   "id": 104,
   "method": "device.resetButtonConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "front-panel",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +370,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "device-resetbuttonconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +413,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +421,22 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "bindings.privacy.action"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "front-panel",
+      "bindings": [
+        {
+          "buttonId": "privacy",
+          "gesture": "press",
+          "action": "privacy.toggleCover"
+        }
+      ],
+      "debounceMs": 40,
+      "longPressMs": 800
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "user_mapping_update",
     "stateRevision": 1
   }
 }

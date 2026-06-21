@@ -84,9 +84,10 @@ request:
   "id": 101,
   "method": "audio.getVolumeCapabilities",
   "params": {
-    "target": "default",
+    "target": "main-output",
     "sections": [
-      "summary"
+      "range",
+      "mute"
     ]
   }
 }
@@ -103,9 +104,15 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "main-output",
+      "unit": "percent",
+      "minLevel": 0,
+      "maxLevel": 100,
+      "step": 1,
+      "muteSupported": true,
+      "defaultLevel": 50
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -161,9 +168,10 @@ request:
   "id": 102,
   "method": "audio.getVolumeState",
   "params": {
-    "target": "default",
+    "target": "main-output",
     "sections": [
-      "summary"
+      "level",
+      "mute"
     ]
   }
 }
@@ -180,9 +188,11 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "main-output",
+      "level": 62,
+      "muted": false
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -238,9 +248,10 @@ request:
   "id": 103,
   "method": "audio.setVolumeState",
   "params": {
-    "target": "default",
+    "target": "main-output",
     "config": {
-      "enabled": true
+      "level": 65,
+      "muted": false
     }
   }
 }
@@ -256,7 +267,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "main-output",
+      "level": 65,
+      "muted": false
+    }
   }
 }
 ```
@@ -312,8 +328,8 @@ request:
   "id": 104,
   "method": "audio.resetVolumeState",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "main-output",
+    "reason": "restore_default_level"
   }
 }
 ```
@@ -328,7 +344,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "volume-reset-20260615-001"
   }
 }
 ```
@@ -354,13 +371,13 @@ success:
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|
-| `audio.volumeStateChanged` | AudioVolumeStateChangedEvent | `set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。` | 更新 UI 或调用对应 get method 校准 | candidate |
+| `audio.volumeStateChanged` | set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。 | `AudioVolumeStateChangedEvent` | 更新 UI 或调用对应 get method 校准 | candidate |
 
 ### 4.1 `audio.volumeStateChanged`
 
-**触发条件**：AudioVolumeStateChangedEvent。
+**触发条件**：set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。
 
-#### 4.1.1 Payload：`set/reset 成功改变 level 或 mute；物理按键/HID report；device policy、profile、restore、factory reset 改变 volume。`
+#### 4.1.1 Payload：`AudioVolumeStateChangedEvent`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -370,7 +387,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -378,15 +395,16 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "level"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "main-output",
+      "level": 65,
+      "muted": false
     },
     "source": "remoteApp",
     "reason": "user_request",
-    "stateRevision": 1
+    "stateRevision": 36
   }
 }
 ```

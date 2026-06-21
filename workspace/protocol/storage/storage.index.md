@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "storage.getIndexCapabilities",
   "params": {
-    "target": "default",
+    "target": "media-index",
     "sections": [
-      "summary"
+      "capacity",
+      "policy"
     ]
   }
 }
@@ -105,9 +106,15 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "media-index",
+      "indexedTypes": [
+        "recording",
+        "snapshot",
+        "log"
+      ],
+      "rebuildSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +170,9 @@ request:
   "id": 102,
   "method": "storage.getIndexConfig",
   "params": {
-    "target": "default",
+    "target": "media-index",
     "sections": [
-      "summary"
+      "usage"
     ]
   }
 }
@@ -182,9 +189,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "media-index",
+      "status": "mounted",
+      "usedBytes": 42000000000,
+      "availableBytes": 86000000000
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +250,10 @@ request:
   "id": 103,
   "method": "storage.setIndexConfig",
   "params": {
-    "target": "default",
+    "target": "media-index",
     "config": {
-      "mode": "auto"
+      "autoIndex": true,
+      "includeHidden": false
     }
   }
 }
@@ -258,7 +269,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "media-index",
+      "autoIndex": true,
+      "includeHidden": false
+    }
   }
 }
 ```
@@ -314,8 +330,8 @@ request:
   "id": 104,
   "method": "storage.resetIndexConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "media-index",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +346,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "storage-resetindexconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +389,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +397,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "status"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "media-index",
+      "autoIndex": true,
+      "includeHidden": false
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "index_policy_update",
     "stateRevision": 1
   }
 }

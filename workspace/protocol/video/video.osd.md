@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "video.getOsdCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "program"
   }
 }
 ```
@@ -104,9 +101,16 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
+    "capability": "video.osd",
+    "maxOverlays": 8,
+    "overlayTypes": [
+      "text",
+      "clock",
+      "logo"
+    ],
+    "alphaRange": {
+      "min": 0,
+      "max": 100
     }
   }
 }
@@ -163,9 +167,9 @@ request:
   "id": 102,
   "method": "video.getOsdConfig",
   "params": {
-    "target": "default",
+    "target": "program",
     "sections": [
-      "summary"
+      "overlays"
     ]
   }
 }
@@ -181,10 +185,17 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "program",
+    "overlays": [
+      {
+        "overlayId": "room-name",
+        "type": "text",
+        "text": "Boardroom A",
+        "x": 32,
+        "y": 32,
+        "visible": true
+      }
+    ]
   }
 }
 ```
@@ -240,9 +251,18 @@ request:
   "id": 103,
   "method": "video.setOsdConfig",
   "params": {
-    "target": "default",
+    "target": "program",
     "config": {
-      "mode": "auto"
+      "overlays": [
+        {
+          "overlayId": "room-name",
+          "type": "text",
+          "text": "Boardroom A",
+          "x": 32,
+          "y": 32,
+          "visible": true
+        }
+      ]
     }
   }
 }
@@ -258,7 +278,14 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "program",
+      "overlayCount": 1,
+      "visibleOverlays": [
+        "room-name"
+      ]
+    }
   }
 }
 ```
@@ -314,8 +341,8 @@ request:
   "id": 104,
   "method": "video.resetOsdConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "program",
+    "reason": "clear_overlays"
   }
 }
 ```
@@ -330,7 +357,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-osd-program"
   }
 }
 ```
@@ -372,7 +400,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +408,18 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "overlays.room-name.visible"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "program",
+      "overlayCount": 1,
+      "visibleOverlays": [
+        "room-name"
+      ]
     },
     "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1
+    "reason": "overlay_update",
+    "stateRevision": 11
   }
 }
 ```

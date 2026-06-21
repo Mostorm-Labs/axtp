@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "input.getKvmCapabilities",
   "params": {
-    "target": "default",
+    "target": "kvm-port-1",
     "sections": [
-      "summary"
+      "ports",
+      "modes"
     ]
   }
 }
@@ -105,9 +106,18 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "kvm-port-1",
+      "ports": [
+        "host1",
+        "host2"
+      ],
+      "switchModes": [
+        "manual",
+        "followVideo"
+      ],
+      "usbEmulationSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +173,9 @@ request:
   "id": 102,
   "method": "input.getKvmConfig",
   "params": {
-    "target": "default",
+    "target": "kvm-port-1",
     "sections": [
-      "summary"
+      "activePort"
     ]
   }
 }
@@ -182,9 +192,11 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "kvm-port-1",
+      "activePort": "host1",
+      "usbConnected": true
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +252,10 @@ request:
   "id": 103,
   "method": "input.setKvmConfig",
   "params": {
-    "target": "default",
+    "target": "kvm-port-1",
     "config": {
-      "mode": "auto"
+      "activePort": "host1",
+      "switchMode": "followVideo"
     }
   }
 }
@@ -258,7 +271,12 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "kvm-port-1",
+      "activePort": "host1",
+      "switchMode": "followVideo"
+    }
   }
 }
 ```
@@ -314,8 +332,8 @@ request:
   "id": 104,
   "method": "input.resetKvmConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "kvm-port-1",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +348,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "input-resetkvmconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +391,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +399,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "activePort"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "kvm-port-1",
+      "activePort": "host1",
+      "switchMode": "followVideo"
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "source_selected",
     "stateRevision": 1
   }
 }

@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "audio.getMixerCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "mixer-main"
   }
 }
 ```
@@ -104,10 +101,17 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "audio.mixer",
+    "maxInputChannels": 16,
+    "maxMixBuses": 4,
+    "faderRangeDb": {
+      "min": -90,
+      "max": 12,
+      "step": 0.5
+    },
+    "panSupported": true,
+    "muteSupported": true,
+    "soloSupported": true
   }
 }
 ```
@@ -163,9 +167,10 @@ request:
   "id": 102,
   "method": "audio.getMixerConfig",
   "params": {
-    "target": "default",
+    "target": "mixer-main",
     "sections": [
-      "summary"
+      "channels",
+      "buses"
     ]
   }
 }
@@ -181,10 +186,27 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "mixer-main",
+    "channels": [
+      {
+        "channelId": "mic-1",
+        "faderDb": -6,
+        "pan": 0,
+        "muted": false
+      },
+      {
+        "channelId": "line-1",
+        "faderDb": -12,
+        "pan": -25,
+        "muted": false
+      }
+    ],
+    "buses": [
+      {
+        "busId": "main",
+        "levelDb": -3
+      }
+    ]
   }
 }
 ```
@@ -240,9 +262,16 @@ request:
   "id": 103,
   "method": "audio.setMixerConfig",
   "params": {
-    "target": "default",
+    "target": "mixer-main",
     "config": {
-      "mode": "auto"
+      "channels": [
+        {
+          "channelId": "mic-1",
+          "faderDb": -4,
+          "pan": 0,
+          "muted": false
+        }
+      ]
     }
   }
 }
@@ -258,7 +287,14 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "mixer-main",
+      "changedChannels": [
+        "mic-1"
+      ],
+      "stateRevision": 22
+    }
   }
 }
 ```
@@ -314,8 +350,8 @@ request:
   "id": 104,
   "method": "audio.resetMixerConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "mixer-main",
+    "reason": "restore_mix_defaults"
   }
 }
 ```
@@ -330,7 +366,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-mixer-main"
   }
 }
 ```
@@ -372,7 +409,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +417,18 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "channels.mic-1.faderDb"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "mixer-main",
+      "changedChannels": [
+        "mic-1"
+      ],
+      "stateRevision": 22
     },
     "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1
+    "reason": "mix_adjustment",
+    "stateRevision": 22
   }
 }
 ```

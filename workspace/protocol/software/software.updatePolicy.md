@@ -355,7 +355,7 @@ success:
 
 ---
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {

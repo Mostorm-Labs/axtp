@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "auth.getTokenCapabilities",
   "params": {
-    "target": "default",
+    "target": "operator-console",
     "sections": [
-      "summary"
+      "tokenTypes",
+      "policy"
     ]
   }
 }
@@ -105,9 +106,15 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "operator-console",
+      "tokenTypes": [
+        "access",
+        "refresh"
+      ],
+      "maxLifetimeSeconds": 3600,
+      "rotationSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +170,9 @@ request:
   "id": 102,
   "method": "auth.getTokenConfig",
   "params": {
-    "target": "default",
+    "target": "operator-console",
     "sections": [
-      "summary"
+      "policy"
     ]
   }
 }
@@ -182,9 +189,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "operator-console",
+      "tokenPolicy": "rotating",
+      "activeTokenCount": 3,
+      "nextRotationInSeconds": 600
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +250,11 @@ request:
   "id": 103,
   "method": "auth.setTokenConfig",
   "params": {
-    "target": "default",
+    "target": "operator-console",
     "config": {
-      "mode": "auto"
+      "maxLifetimeSeconds": 3600,
+      "rotationEnabled": true,
+      "audience": "runtime-control"
     }
   }
 }
@@ -258,7 +270,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "operator-console",
+      "maxLifetimeSeconds": 3600,
+      "rotationEnabled": true,
+      "audience": "runtime-control"
+    }
   }
 }
 ```
@@ -314,8 +332,8 @@ request:
   "id": 104,
   "method": "auth.resetTokenConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "operator-console",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +348,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "auth-resettokenconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +391,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +399,16 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "rotationEnabled"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "operator-console",
+      "maxLifetimeSeconds": 3600,
+      "rotationEnabled": true,
+      "audience": "runtime-control"
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "security_policy_update",
     "stateRevision": 1
   }
 }

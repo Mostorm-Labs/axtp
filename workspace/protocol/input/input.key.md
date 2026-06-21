@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "input.getKeyCapabilities",
   "params": {
-    "target": "default",
+    "target": "remote-control",
     "sections": [
-      "summary"
+      "keys",
+      "repeat"
     ]
   }
 }
@@ -105,9 +106,16 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "remote-control",
+      "keyIds": [
+        "enter",
+        "back",
+        "volumeUp"
+      ],
+      "repeatSupported": true,
+      "remappable": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +171,9 @@ request:
   "id": 102,
   "method": "input.getKeyConfig",
   "params": {
-    "target": "default",
+    "target": "remote-control",
     "sections": [
-      "summary"
+      "mapping"
     ]
   }
 }
@@ -182,9 +190,15 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "remote-control",
+      "mappings": [
+        {
+          "keyId": "enter",
+          "action": "ui.select"
+        }
+      ]
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +254,15 @@ request:
   "id": 103,
   "method": "input.setKeyConfig",
   "params": {
-    "target": "default",
+    "target": "remote-control",
     "config": {
-      "mode": "auto"
+      "mappings": [
+        {
+          "keyId": "enter",
+          "action": "ui.select"
+        }
+      ],
+      "repeatDelayMs": 350
     }
   }
 }
@@ -258,7 +278,17 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "remote-control",
+      "mappings": [
+        {
+          "keyId": "enter",
+          "action": "ui.select"
+        }
+      ],
+      "repeatDelayMs": 350
+    }
   }
 }
 ```
@@ -314,8 +344,8 @@ request:
   "id": 104,
   "method": "input.resetKeyConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "remote-control",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +360,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "input-resetkeyconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +403,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +411,20 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "mappings.enter.action"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "remote-control",
+      "mappings": [
+        {
+          "keyId": "enter",
+          "action": "ui.select"
+        }
+      ],
+      "repeatDelayMs": 350
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "user_mapping_update",
     "stateRevision": 1
   }
 }

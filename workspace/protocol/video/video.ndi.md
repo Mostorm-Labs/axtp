@@ -86,7 +86,11 @@ request:
   "id": 101,
   "method": "video.getNdiCapabilities",
   "params": {
-    "target": "encoder-main"
+    "target": "ndi-source-main",
+    "sections": [
+      "discovery",
+      "transport"
+    ]
   }
 }
 ```
@@ -101,12 +105,13 @@ success:
     "code": 0
   },
   "result": {
-    "capability": "video.ndi",
-    "discoveryModes": [
-      "mdns"
-    ],
-    "maxSources": 2,
-    "tallySupported": true
+    "state": {
+      "target": "ndi-source-main",
+      "discoverySupported": true,
+      "groupsSupported": true,
+      "maxSources": 16
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -162,11 +167,13 @@ request:
   "id": 102,
   "method": "video.setNdiConfig",
   "params": {
-    "target": "encoder-main",
+    "target": "ndi-source-main",
     "config": {
-      "enabled": true,
-      "sourceName": "Room-101 Main",
-      "discoveryMode": "mdns"
+      "sourceName": "AXTP Camera Main",
+      "groups": [
+        "studio"
+      ],
+      "lowLatency": true
     }
   }
 }
@@ -184,9 +191,12 @@ success:
   "result": {
     "accepted": true,
     "state": {
-      "enabled": true,
-      "sourceName": "Room-101 Main",
-      "discoveryMode": "mdns"
+      "target": "ndi-source-main",
+      "sourceName": "AXTP Camera Main",
+      "groups": [
+        "studio"
+      ],
+      "lowLatency": true
     }
   }
 }
@@ -243,10 +253,9 @@ request:
   "id": 103,
   "method": "video.getNdiConfig",
   "params": {
-    "target": "encoder-main",
+    "target": "ndi-source-main",
     "sections": [
-      "service",
-      "source"
+      "session"
     ]
   }
 }
@@ -263,10 +272,12 @@ success:
   },
   "result": {
     "state": {
-      "enabled": true,
-      "sourceName": "Room-101 Main",
-      "activeReceivers": 1
-    }
+      "target": "ndi-source-main",
+      "sourceName": "AXTP Camera Main",
+      "connected": true,
+      "bitrateKbps": 12000
+    },
+    "sampledAt": "2026-06-15T08:00:03Z"
   }
 }
 ```
@@ -322,8 +333,8 @@ request:
   "id": 104,
   "method": "video.resetNdiConfig",
   "params": {
-    "target": "encoder-main",
-    "reason": "restore_defaults"
+    "target": "ndi-source-main",
+    "reason": "ndi_state_update"
   }
 }
 ```
@@ -339,10 +350,7 @@ success:
   },
   "result": {
     "accepted": true,
-    "state": {
-      "enabled": false,
-      "sourceName": "AXTP Device"
-    }
+    "actionId": "video-resetndiconfig-20260615-001"
   }
 }
 ```
@@ -385,7 +393,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -393,14 +401,19 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "connected",
+      "bitrateKbps"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "ndi-source-main",
+      "sourceName": "AXTP Camera Main",
+      "groups": [
+        "studio"
+      ],
+      "lowLatency": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "ndi_state_update",
     "stateRevision": 1
   }
 }
@@ -434,7 +447,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.2.2 Event d block Example (op=6)
+#### 4.2.2 d block 示例
 
 ```json
 {
@@ -442,14 +455,19 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "connected",
+      "bitrateKbps"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "ndi-source-main",
+      "sourceName": "AXTP Camera Main",
+      "groups": [
+        "studio"
+      ],
+      "lowLatency": true
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "ndi_state_update",
     "stateRevision": 1
   }
 }

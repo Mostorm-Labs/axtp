@@ -18,7 +18,7 @@ Stage 20. Create or update an AXTP business protocol draft in `workspace/protoco
 - Do not split method examples into separate request and success headings. Generic error envelope examples are not copied into every method.
 - Follow `workspace/protocol/draft-conventions.md` for JSON envelope, error, schema expansion, flow example, and contract-boundary conventions. Drafts should link to the common convention instead of repeating those rules.
 - Business feature examples assume the RPC Session is already `APP_READY`; show only feature-specific RPC `d` blocks after the common convention link.
-- Method examples use one heading named `d block 示例` and label the two blocks as `request:` and `success:`. Error Response examples are only kept when they show feature-specific errors, special `details`, recovery behavior, or state consequences. Event examples live in the Events section unless the method-specific trigger behavior would be unclear without one.
+- Method examples use one heading named `d block 示例` and label the two blocks as `request:` and `success:`. Error Response examples are only kept when they show feature-specific errors, special `details`, recovery behavior, or state consequences. Event examples live in the Events section, use a `d block 示例` heading, and are only kept when payload shape, async state, cache semantics, or trigger behavior would be unclear without one.
 - Do not use JSON-RPC 2.0 (`jsonrpc: "2.0"`) as an AXTP wire example unless explicitly documenting an external adapter representation.
 - Always leave `[REVIEW-*]` markers for human review. Unconfirmed facts must be `[REVIEW-ASK]`, `[REVIEW-DRAFT]`, `[REVIEW-FIX]`, or `[REVIEW-BLOCKER]`.
 
@@ -93,7 +93,7 @@ Use `apply_patch` for manual edits. A draft must include:
 - params/result field table headings that include the schema name, such as `请求参数 Params：SetVolumeParams` and `返回结果 Result：AudioVolumeState`
 - event section with two layers: `4.0 事件速览` and one independent subsection per event
 - event overview table columns: Event, 触发条件, Payload Schema, 客户端处理建议, 状态
-- per-event detail blocks with trigger conditions, Payload Schema, payload field table, event `d` block example, client handling advice, and event rules
+- per-event detail blocks with trigger conditions, Payload Schema, payload field table, one compact event `d block 示例` when needed, client handling advice, and event rules
 - event payload field table headings that include the schema name, such as `Payload：XxxChangedEvent`
 - capability table with field, type, required, range/enum, and description
 - schema field tables with field, type, required, range/enum, default, and description
@@ -128,7 +128,7 @@ When creating a new draft or materially updating an existing draft, keep method 
 - Keep examples minimal: include only fields needed to understand target/scope, params, result shape, accepted-vs-final-state semantics, created IDs, STREAM setup, credentials, or legacy field conversion.
 - Do not create separate Request / Success Response headings just to show `op=7`, `op=8`, `status.ok`, or `id` echoing; those are common conventions.
 - Add Error Response examples only when the feature has a meaningful error branch, permission boundary, candidate error, partial-apply rule, or recovery instruction.
-- Keep Event examples in the Events section when payload shape, intent, changedFields, state snapshot, async transition, or client cache behavior needs review.
+- Keep Event examples in the Events section when payload shape, intent, changedFields, state snapshot, async transition, or client cache behavior needs review. Use `d block 示例` as the heading; do not use the old English `Event d block Example (op=6)` heading.
 - Examples SHOULD show only the RPC `d` block to keep long feature drafts readable.
 - Request examples must include `id`, `method`, and optional `params`; `id` must be non-zero.
 - Response examples must echo request `id`, include `status.ok`, and use numeric `status.code`; use `0` for success.

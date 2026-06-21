@@ -86,10 +86,7 @@ request:
   "id": 101,
   "method": "video.getPipCapabilities",
   "params": {
-    "target": "default",
-    "sections": [
-      "summary"
-    ]
+    "target": "program"
   }
 }
 ```
@@ -104,10 +101,16 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "capability": "video.pip",
+    "maxPipWindows": 2,
+    "positions": [
+      "topLeft",
+      "topRight",
+      "bottomLeft",
+      "bottomRight"
+    ],
+    "minSizePercent": 10,
+    "maxSizePercent": 50
   }
 }
 ```
@@ -163,9 +166,13 @@ request:
   "id": 102,
   "method": "video.setPipConfig",
   "params": {
-    "target": "default",
+    "target": "program",
     "config": {
-      "mode": "auto"
+      "enabled": true,
+      "sourceId": "camera-2",
+      "position": "topRight",
+      "widthPercent": 25,
+      "heightPercent": 25
     }
   }
 }
@@ -181,7 +188,13 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "program",
+      "enabled": true,
+      "sourceId": "camera-2",
+      "position": "topRight"
+    }
   }
 }
 ```
@@ -237,9 +250,9 @@ request:
   "id": 103,
   "method": "video.getPipConfig",
   "params": {
-    "target": "default",
+    "target": "program",
     "sections": [
-      "summary"
+      "window"
     ]
   }
 }
@@ -255,10 +268,12 @@ success:
     "code": 0
   },
   "result": {
-    "state": {
-      "target": "default",
-      "status": "ok"
-    }
+    "target": "program",
+    "enabled": true,
+    "sourceId": "camera-2",
+    "position": "topRight",
+    "widthPercent": 25,
+    "heightPercent": 25
   }
 }
 ```
@@ -314,8 +329,8 @@ request:
   "id": 104,
   "method": "video.resetPipConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "program",
+    "reason": "disable_pip"
   }
 }
 ```
@@ -330,7 +345,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "reset-pip-program"
   }
 }
 ```
@@ -372,7 +388,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,15 +396,18 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "enabled",
+      "position"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "program",
+      "enabled": true,
+      "sourceId": "camera-2",
+      "position": "topRight"
     },
     "source": "remoteApp",
-    "reason": "user_request",
-    "stateRevision": 1
+    "reason": "layout_update",
+    "stateRevision": 9
   }
 }
 ```

@@ -86,9 +86,10 @@ request:
   "id": 101,
   "method": "diagnostic.getCalibrationCapabilities",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "tests",
+      "limits"
     ]
   }
 }
@@ -105,9 +106,15 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "supportedTests": [
+        "cameraCalibration",
+        "audioCalibration"
+      ],
+      "maxDurationSeconds": 300,
+      "reportSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:00Z"
   }
 }
 ```
@@ -163,9 +170,9 @@ request:
   "id": 102,
   "method": "diagnostic.getCalibrationConfig",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "lastRun"
     ]
   }
 }
@@ -182,9 +189,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "lastRunId": "calibration-run-20260615-001",
+      "lastResult": "passed",
+      "completedAt": "2026-06-15T08:00:00Z"
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -240,9 +250,14 @@ request:
   "id": 103,
   "method": "diagnostic.setCalibrationConfig",
   "params": {
-    "target": "default",
+    "target": "device",
     "config": {
-      "mode": "auto"
+      "enabledTests": [
+        "cameraCalibration",
+        "audioCalibration"
+      ],
+      "stopOnFailure": false,
+      "reportLevel": "summary"
     }
   }
 }
@@ -258,7 +273,16 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "state": {
+      "target": "device",
+      "enabledTests": [
+        "cameraCalibration",
+        "audioCalibration"
+      ],
+      "stopOnFailure": false,
+      "reportLevel": "summary"
+    }
   }
 }
 ```
@@ -314,8 +338,8 @@ request:
   "id": 104,
   "method": "diagnostic.resetCalibrationConfig",
   "params": {
-    "target": "default",
-    "reason": "user_request"
+    "target": "device",
+    "reason": "restore_default_config"
   }
 }
 ```
@@ -330,7 +354,8 @@ success:
     "code": 0
   },
   "result": {
-    "accepted": true
+    "accepted": true,
+    "actionId": "diagnostic-resetcalibrationconfig-20260615-001"
   }
 }
 ```
@@ -372,7 +397,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -380,14 +405,19 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "lastResult"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "device",
+      "enabledTests": [
+        "cameraCalibration",
+        "audioCalibration"
+      ],
+      "stopOnFailure": false,
+      "reportLevel": "summary"
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "test_completed",
     "stateRevision": 1
   }
 }

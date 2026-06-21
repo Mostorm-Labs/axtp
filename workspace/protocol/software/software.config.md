@@ -112,7 +112,10 @@ request:
   "id": 101,
   "method": "software.getConfig",
   "params": {
-    "target": "launcher"
+    "target": "runtime",
+    "sections": [
+      "config"
+    ]
   }
 }
 ```
@@ -127,15 +130,13 @@ success:
     "code": 0
   },
   "result": {
-    "target": "launcher",
-    "config": {
-      "appearance": {
-        "panelLayout": "compact",
-        "autoHide": true
-      },
-      "displayName": "NearHub Display Controller"
+    "state": {
+      "target": "runtime",
+      "profile": "default",
+      "logLevel": "info",
+      "networkMode": "dhcp"
     },
-    "updatedAt": "2026-06-15T10:00:00Z"
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -190,9 +191,11 @@ request:
   "id": 102,
   "method": "software.setConfig",
   "params": {
-    "target": "launcher",
+    "target": "runtime",
     "config": {
-      "mode": "auto"
+      "profile": "default",
+      "logLevel": "info",
+      "networkMode": "dhcp"
     }
   }
 }
@@ -208,15 +211,13 @@ success:
     "code": 0
   },
   "result": {
-    "target": "launcher",
-    "config": {
-      "appearance": {
-        "panelLayout": "compact",
-        "autoHide": true
-      },
-      "displayName": "NearHub Display Controller"
-    },
-    "updatedAt": "2026-06-15T10:00:00Z"
+    "accepted": true,
+    "state": {
+      "target": "runtime",
+      "profile": "default",
+      "logLevel": "info",
+      "networkMode": "dhcp"
+    }
   }
 }
 ```
@@ -285,7 +286,8 @@ request:
   "id": 103,
   "method": "software.resetConfig",
   "params": {
-    "target": "launcher"
+    "target": "runtime",
+    "reason": "config_update"
   }
 }
 ```
@@ -300,15 +302,8 @@ success:
     "code": 0
   },
   "result": {
-    "target": "launcher",
-    "config": {
-      "appearance": {
-        "panelLayout": "compact",
-        "autoHide": true
-      },
-      "displayName": "NearHub Display Controller"
-    },
-    "updatedAt": "2026-06-15T10:00:00Z"
+    "accepted": true,
+    "actionId": "software-resetconfig-20260615-001"
   }
 }
 ```
@@ -366,7 +361,7 @@ success:
 
 ---
 
-#### Event d block Example (op=6)
+#### d block 示例
 
 ```json
 {
@@ -375,10 +370,12 @@ success:
   "data": {
     "target": "launcher",
     "config": {
-      "mode": "auto"
+      "launchOnBoot": true,
+      "defaultView": "dashboard"
     },
     "changedFields": [
-      "state"
+      "launchOnBoot",
+      "defaultView"
     ],
     "reason": "user_request"
   }

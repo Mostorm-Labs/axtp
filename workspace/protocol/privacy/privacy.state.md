@@ -84,9 +84,10 @@ request:
   "id": 101,
   "method": "privacy.getStateCapabilities",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "resources",
+      "policy"
     ]
   }
 }
@@ -103,9 +104,15 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "resources": [
+        "camera",
+        "microphone",
+        "speaker"
+      ],
+      "policyLockSupported": true
+    },
+    "sampledAt": "2026-06-15T08:00:01Z"
   }
 }
 ```
@@ -161,9 +168,9 @@ request:
   "id": 102,
   "method": "privacy.getState",
   "params": {
-    "target": "default",
+    "target": "device",
     "sections": [
-      "summary"
+      "privacy"
     ]
   }
 }
@@ -180,9 +187,12 @@ success:
   },
   "result": {
     "state": {
-      "target": "default",
-      "status": "ok"
-    }
+      "target": "device",
+      "mode": "privacy",
+      "cameraMuted": true,
+      "microphoneMuted": true
+    },
+    "sampledAt": "2026-06-15T08:00:02Z"
   }
 }
 ```
@@ -224,7 +234,7 @@ success:
 | `reason` | string enum | no | feature-specific | `unknown` | 状态变化原因。 |
 | `stateRevision` | uint32 | no | monotonic counter | omitted | 状态版本，用于多端同步和去重。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -232,14 +242,15 @@ success:
   "intent": 1,
   "data": {
     "changedFields": [
-      "state"
+      "mode"
     ],
     "state": {
-      "target": "default",
-      "status": "ok"
+      "target": "device",
+      "mode": "privacy",
+      "policyLocked": false
     },
     "source": "remoteApp",
-    "reason": "user_request",
+    "reason": "privacy_request",
     "stateRevision": 1
   }
 }
