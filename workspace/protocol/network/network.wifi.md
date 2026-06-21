@@ -467,10 +467,8 @@ success:
     "accepted": true,
     "state": {
       "interfaceId": "wlan0",
-      "state": "connected",
-      "profileId": "profile_na20",
-      "ssid": "NearHub-Cast-A1",
-      "ipReady": true
+      "state": "disconnected",
+      "profileId": "profile_na20"
     }
   }
 }
@@ -542,10 +540,8 @@ success:
     "accepted": true,
     "state": {
       "interfaceId": "wlan0",
-      "state": "connected",
-      "profileId": "profile_na20",
-      "ssid": "NearHub-Cast-A1",
-      "ipReady": true
+      "state": "disconnected",
+      "profileId": "profile_na20"
     }
   }
 }
@@ -729,10 +725,8 @@ success:
   "data": {
     "state": {
       "interfaceId": "wlan0",
-      "state": "connected",
-      "profileId": "profile_na20",
-      "ssid": "NearHub-Cast-A1",
-      "ipReady": true
+      "state": "disconnected",
+      "profileId": "profile_na20"
     },
     "previousState": {
       "interfaceId": "wlan0",
@@ -741,7 +735,7 @@ success:
       "ssid": "NearHub-Cast-A1",
       "ipReady": true
     },
-    "reason": "user_request"
+    "reason": "disconnect"
   }
 }
 ```
@@ -779,7 +773,7 @@ success:
   "event": "network.wifiScanResultReported",
   "intent": 1,
   "data": {
-    "reason": "user_request"
+    "reason": "result"
   }
 }
 ```

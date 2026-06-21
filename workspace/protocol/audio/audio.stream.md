@@ -318,7 +318,7 @@ request:
   "method": "audio.closeStream",
   "params": {
     "streamId": 4097,
-    "reason": "user_request"
+    "reason": "user_stop"
   }
 }
 ```
@@ -334,7 +334,8 @@ success:
   },
   "result": {
     "streamId": 4097,
-    "state": "streaming",
+    "state": "closed",
+    "reason": "user_stop",
     "alreadyClosed": false
   }
 }
@@ -604,9 +605,8 @@ success:
   "data": {
     "source": "wireless_cast_audio",
     "mediaKind": "audio",
-    "state": "streaming",
-    "reason": "user_request",
-    "lastOpenRejectedReason": "user_request"
+    "state": "receiving",
+    "reason": "nt10_inserted"
   }
 }
 ```

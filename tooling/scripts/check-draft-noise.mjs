@@ -263,6 +263,62 @@ function checkMethodNumbering(file, relative, text) {
   });
 }
 
+function checkKnownExampleValueDrift(relative, text) {
+  const checks = [
+    {
+      pattern: /"method": "audio\.closeStream"[\s\S]{0,320}"reason": "user_request"/,
+      reason: "audio.closeStream example reason must use the closeStream enum such as user_stop",
+    },
+    {
+      pattern: /"method": "video\.closeStream"[\s\S]{0,320}"reason": "user_request"/,
+      reason: "video.closeStream example reason must use the closeStream enum such as user_stop",
+    },
+    {
+      pattern: /"method": "audio\.closeStream"[\s\S]{0,900}"state": "streaming"/,
+      reason: "audio.closeStream success example must not return streaming; close result state is closing/closed/failed",
+    },
+    {
+      pattern: /"method": "video\.closeStream"[\s\S]{0,900}"state": "streaming"/,
+      reason: "video.closeStream success example must not return streaming; close result state is closing/closed/failed",
+    },
+    {
+      pattern: /"event": "audio\.streamSourceStateChanged"[\s\S]{0,500}"state": "streaming"/,
+      reason: "audio stream source state example must use source states such as receiving, not stream lifecycle state streaming",
+    },
+    {
+      pattern: /"event": "video\.streamSourceStateChanged"[\s\S]{0,500}"state": "streaming"/,
+      reason: "video stream source state example must use source states such as receiving, not stream lifecycle state streaming",
+    },
+    {
+      pattern: /"event": "audio\.streamSourceStateChanged"[\s\S]{0,650}"(?:reason|lastOpenRejectedReason)": "user_request"/,
+      reason: "audio stream source state reason examples must use the source-state reason enum",
+    },
+    {
+      pattern: /"event": "video\.streamSourceStateChanged"[\s\S]{0,650}"(?:reason|lastOpenRejectedReason)": "user_request"/,
+      reason: "video stream source state reason examples must use the source-state reason enum",
+    },
+    {
+      pattern: /"method": "network\.disconnectWifi"[\s\S]{0,900}"state": "connected"/,
+      reason: "network.disconnectWifi success example must not report connected as the resulting state",
+    },
+    {
+      pattern: /"event": "network\.wifiStateChanged"[\s\S]{0,650}"reason": "user_request"/,
+      reason: "network.wifiStateChanged reason examples must use wifi state reasons such as connect_completed or disconnect",
+    },
+    {
+      pattern: /"event": "network\.wifiScanResultReported"[\s\S]{0,300}"reason": "user_request"/,
+      reason: "network.wifiScanResultReported reason examples must use scan reasons such as result or complete",
+    },
+  ];
+
+  for (const { pattern, reason } of checks) {
+    const match = text.match(pattern);
+    if (match?.index !== undefined) {
+      errors.push(`${relative}:${lineNumber(text, match.index)}: ${reason}`);
+    }
+  }
+}
+
 for (const file of files) {
   if (shouldSkip(file)) continue;
   const relative = path.relative(root, file);
@@ -294,6 +350,7 @@ for (const file of files) {
   });
   checkMethodNumbering(file, relative, text);
   checkMethodExampleCoverage(file, relative, text);
+  checkKnownExampleValueDrift(relative, text);
 }
 
 if (errors.length > 0) {
