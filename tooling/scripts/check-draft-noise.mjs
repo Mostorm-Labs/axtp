@@ -119,6 +119,14 @@ const bannedLinePatterns = [
     pattern: /^#### (?:\d+\.\d+\.\d+ )?Event d block Example \(op=6\)$/,
     reason: "event examples must use the compact Chinese d block 示例 heading",
   },
+  {
+    pattern: /原草案(?:示例)?中出现的候选(?:方法|事件)/,
+    reason: "drafts must describe method/event purpose directly instead of carrying intermediate drafting placeholders",
+  },
+  {
+    pattern: /MVP 字段范围是否完整/,
+    reason: "generic MVP field-range review questions belong in draft-conventions.md, not every draft",
+  },
 ];
 
 const templateOnlyBannedLinePatterns = [

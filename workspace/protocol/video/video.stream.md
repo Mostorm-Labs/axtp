@@ -801,288 +801,92 @@ VideoChunkHeaderV1 + H.264 bytes
 | session lost 清理全部 stream | AXTP session/transport lost 后，旧 `streamId`、open/close response 和 STREAM packet 全部失效。 |
 | streamId 不快速复用 | 同一 AXTP session 内不应快速复用媒体 streamId；若复用，需要额外 instance guard。 |
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
-示例只展示 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。字段和 ID 在采纳前均为草案。
+本章只保留端到端评审需要的关键流。单个 method 的 request / success 形状见第 3 章；公共 envelope、错误响应和 flow 写法见 [Protocol Draft Conventions](../draft-conventions.md)。
 
-### 7.1 场景：MediaHost 查询视频 stream 能力和 source 状态
+### 7.1 查询视频 STREAM 能力和 source 状态
 
-#### request
+客户端先确认编码、分辨率、方向和 source 状态，再决定是否打开 STREAM。
 
 ```json
 {
-  "id": 900,
+  "id": 701,
   "method": "video.getStreamCapabilities",
   "params": {
-    "source": "wireless_cast",
+    "source": "wireless_cast_video",
     "includeRuntimeState": true
   }
 }
 ```
 
-#### response
-
 ```json
 {
-  "id": 900,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "capability": "video.stream",
-    "sources": [
-      {
-        "sourceId": "wireless_cast",
-        "type": "wireless_cast",
-        "codecs": ["h264"],
-        "codecFormats": ["annexb"],
-        "currentState": "receiving",
-        "parameterSetsInKeyFrame": true
-      }
-    ],
-    "streamProfiles": ["media.video"],
-    "openModes": ["producer_open", "receiver_pull"],
-    "peerRoles": ["receiver", "transmitter"],
-    "supportsSourceStateEvent": true,
-    "supportsSyncGroup": true,
-    "flowControlManagedByRuntime": true
+  "id": 702,
+  "method": "video.getStreamSourceState",
+  "params": {
+    "source": "wireless_cast_video"
   }
 }
 ```
 
-读法：MediaHost 可用该 query 判断 `wireless_cast` 是否仍 `available/receiving`，以及当前设备是否允许 producer-open 和 receiver-pull 两种建流方式。
+### 7.2 打开 H.264 视频 STREAM
 
-### 7.2 场景：NA20 producer 主动请求 MediaHost 接收视频
-
-#### request
+`video.openStream` 成功只表示控制面接受建流；实际数据面是否开始传输，以 `video.streamStateChanged` 和 STREAM frame 状态为准。
 
 ```json
 {
-  "id": 1001,
+  "id": 703,
   "method": "video.openStream",
   "params": {
-    "source": "wireless_cast",
+    "source": "wireless_cast_video",
     "peerRole": "receiver",
     "codec": "h264",
     "codecFormat": "annexb",
     "stream": "main",
-    "streamProfile": "media.video",
-    "cursorUnit": "timestampUs",
-    "syncGroupId": "cast-sync-001",
-    "castSessionId": "cast-session-001",
-    "clockDomain": "nt10_media_clock",
-    "receiverClockDomain": "na20_receive_clock"
-  }
-}
-```
-
-#### response
-
-```json
-{
-  "id": 1001,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "streamId": 101,
-    "state": "opening",
-    "source": "wireless_cast",
-    "peerRole": "receiver",
-    "codec": "h264",
-    "codecFormat": "annexb",
-    "streamProfile": "media.video",
-    "cursorUnit": "timestampUs",
-    "syncGroupId": "cast-sync-001",
-    "castSessionId": "cast-session-001",
-    "clockDomain": "nt10_media_clock",
-    "receiverClockDomain": "na20_receive_clock",
-    "parameterSetsInKeyFrame": true
-  }
-}
-```
-
-读法：NA20 是 requester/producer，MediaHost 是 responder/receiver。MediaHost accepted 前，NA20 不得发送 `streamId=101` 的 STREAM。
-
-### 7.3 场景：NA20 主动 open 被拒后通知 Host 可拉取
-
-#### request
-
-```json
-{
-  "id": 1002,
-  "method": "video.openStream",
-  "params": {
-    "source": "wireless_cast",
-    "peerRole": "receiver",
-    "codec": "h264",
-    "codecFormat": "annexb",
-    "streamProfile": "media.video",
-    "syncGroupId": "cast-sync-001"
-  }
-}
-```
-
-#### failure response
-
-```json
-{
-  "id": 1002,
-  "status": {
-    "ok": false,
-    "code": 5,
-    "msg": "Receiver is not ready.",
-    "details": {
-      "candidateError": "VIDEO_RECEIVER_NOT_READY",
-      "source": "wireless_cast"
-    }
-  }
-}
-```
-
-#### event
-
-```json
-{
-  "event": "video.streamSourceStateChanged",
-  "intent": 1,
-  "data": {
-    "source": "wireless_cast",
-    "mediaKind": "video",
-    "state": "receiving",
-    "codecs": ["h264"],
-    "castSessionId": "cast-session-001",
-    "retainable": true,
-    "reason": "producer_open_rejected",
-    "lastOpenRejectedReason": "receiver_not_ready"
-  }
-}
-```
-
-读法：拒绝 producer-open 不创建 `streamId`，NA20 也不发送 STREAM。该 event 只说明 source 仍可用，MediaHost 后续可主动拉取。
-
-### 7.4 场景：MediaHost receiver 主动拉取 available source
-
-#### request
-
-```json
-{
-  "id": 2001,
-  "method": "video.openStream",
-  "params": {
-    "source": "wireless_cast",
-    "peerRole": "transmitter",
-    "codec": "h264",
-    "codecFormat": "annexb",
-    "streamProfile": "media.video",
-    "syncGroupId": "cast-sync-001"
-  }
-}
-```
-
-#### response
-
-```json
-{
-  "id": 2001,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "streamId": 102,
-    "state": "opening",
-    "source": "wireless_cast",
-    "peerRole": "transmitter",
-    "codec": "h264",
-    "codecFormat": "annexb",
-    "streamProfile": "media.video",
-    "cursorUnit": "timestampUs",
-    "syncGroupId": "cast-sync-001",
-    "clockDomain": "nt10_media_clock",
-    "receiverClockDomain": "na20_receive_clock",
-    "parameterSetsInKeyFrame": true
-  }
-}
-```
-
-读法：MediaHost 是 requester/receiver，NA20 是 responder/transmitter。成功后仍然只建立 `NA20 -> MediaHost` downstream stream。
-
-### 7.5 场景：MediaHost 关闭接收但保留 upstream source
-
-#### request
-
-```json
-{
-  "id": 2002,
-  "method": "video.closeStream",
-  "params": {
-    "streamId": 102,
-    "peerRole": "transmitter",
-    "reason": "receiver_closed",
-    "finalCursor": 1710000010000000
-  }
-}
-```
-
-#### response
-
-```json
-{
-  "id": 2002,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "streamId": 102,
-    "state": "closed",
-    "reason": "receiver_closed",
-    "alreadyClosed": false
-  }
-}
-```
-
-读法：该 close 只关闭 Host 接收侧和 NA20->MediaHost downstream stream，不代表 `wireless_cast` upstream source 停止。
-
-### 7.6 场景：source 不可用导致 receiver-pull 失败
-
-#### request
-
-```json
-{
-  "id": 2003,
-  "method": "video.openStream",
-  "params": {
-    "source": "wireless_cast",
-    "peerRole": "transmitter",
-    "codec": "h264",
-    "codecFormat": "annexb",
     "streamProfile": "media.video"
   }
 }
 ```
 
-#### failure response
-
 ```json
 {
-  "id": 2003,
-  "status": {
-    "ok": false,
-    "code": 2050,
-    "msg": "Wireless cast video source is not available.",
-    "details": {
-      "candidateError": "MEDIA_SOURCE_UNAVAILABLE",
-      "source": "wireless_cast"
-    }
+  "event": "video.streamStateChanged",
+  "intent": 1,
+  "data": {
+    "streamId": 4097,
+    "state": "streaming",
+    "source": "wireless_cast_video",
+    "codec": "h264"
   }
 }
 ```
 
-读法：`2050` 是 adopted `MEDIA_SOURCE_UNAVAILABLE`。请求不产生 streamId，也不会触发 `video.streamStateChanged(streaming)`。
+### 7.3 请求关键帧和关闭 STREAM
+
+关键帧请求用于弱网恢复或新订阅端追帧；关闭 STREAM 后客户端应停止期待后续 media payload。
+
+```json
+{
+  "id": 704,
+  "method": "video.requestKeyFrame",
+  "params": {
+    "streamId": 4097,
+    "reason": "receiver_reopen"
+  }
+}
+```
+
+```json
+{
+  "id": 705,
+  "method": "video.closeStream",
+  "params": {
+    "streamId": 4097,
+    "reason": "user_stop"
+  }
+}
+```
 
 ## 8. 错误
 

@@ -961,78 +961,52 @@ Capability 描述设备能做什么；Config/Profile 描述保存的目标网络
 | `NetworkCredentialType` | `passphrase`, `pairing_token`, `opaque_ref` | 与 `network.ap` 共享。 |
 | `NetworkWifiFailureReason` | `auth_failed`, `ap_not_found`, `timeout`, `unsupported_security`, `credential_invalid`, `policy_denied`, `link_lost`, `unknown` | 连接失败原因；DHCP/IP 失败归 `network.ip`。 |
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
-示例只展示 RPC data block，不包裹外层 wire envelope。字段和 ID 在采纳前均为草案；敏感字段均使用占位符。
+本章只保留端到端评审需要的关键流。单个 method 的 request / success 形状见第 3 章；公共 envelope、错误响应和 flow 写法见 [Protocol Draft Conventions](../draft-conventions.md)。
 
-### 7.1 场景：查询 Wi-Fi STA 能力
+### 7.1 查询 Wi-Fi 能力和当前状态
 
-#### request
+客户端先确认 STA/AP、认证方式和当前连接状态，再决定是否写入 profile 或发起连接。
 
 ```json
 {
-  "id": 201,
+  "id": 701,
   "method": "network.getWifiCapabilities",
   "params": {
-    "interfaceId": "<STA_INTERFACE_ID>"
+    "interfaceId": "wlan0"
   }
 }
 ```
 
-#### response
-
 ```json
 {
-  "id": 201,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "capability": "network.wifi",
-    "securityTypes": [
-      "wpa2_psk",
-      "wpa3_sae"
-    ],
-    "bands": [
-      "5g"
-    ],
-    "credentialImportModes": [
-      "passphrase"
-    ],
-    "savedProfilesSupported": true,
-    "scanSupported": true,
-    "autoConnectSupported": true
+  "id": 702,
+  "method": "network.getWifiState",
+  "params": {
+    "interfaceId": "wlan0"
   }
 }
 ```
 
-读法：NT10 至少需要支持保存 profile、导入 `passphrase` 并发起连接。
+### 7.2 写入 profile 并连接
 
-### 7.2 场景：写入 NA20 AP profile 并立即连接
-
-#### request
+`network.setWifiConfig` 写入连接配置，`network.connectWifi` 发起连接动作；最终联网结果以 `network.wifiStateChanged` 或 `network.getWifiState` 为准。
 
 ```json
 {
-  "id": 202,
+  "id": 703,
   "method": "network.setWifiConfig",
   "params": {
-    "interfaceId": "<STA_INTERFACE_ID>",
+    "interfaceId": "wlan0",
     "profile": {
-      "ssid": "NA20-<receiver-id>",
-      "security": "wpa2_psk",
+      "profileId": "profile_na20",
+      "ssid": "NearHub-Cast-A1",
+      "securityType": "wpa2_psk",
       "credential": {
         "type": "passphrase",
-        "value": "<ONE_TIME_EXPORTED_AP_PASSPHRASE>",
-        "exportPolicy": "one_time",
-        "expiresAtMs": 0,
-        "exportId": "<CREDENTIAL_EXPORT_ID>"
+        "secretRef": "<redacted>"
       },
-      "bssid": "<NA20_AP_BSSID>",
-      "hidden": false,
-      "persist": true,
-      "autoConnect": true,
       "source": "pairing"
     },
     "replaceExisting": true,
@@ -1042,126 +1016,58 @@ Capability 描述设备能做什么；Config/Profile 描述保存的目标网络
 }
 ```
 
-#### response
-
 ```json
 {
-  "id": 202,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "profileId": "<WIFI_PROFILE_ID>",
-    "connectStarted": true,
-    "config": {
-      "interfaceId": "<STA_INTERFACE_ID>",
-      "defaultProfileId": "<WIFI_PROFILE_ID>",
-      "profiles": [
-        {
-          "profileId": "<WIFI_PROFILE_ID>",
-          "ssid": "NA20-<receiver-id>",
-          "security": "wpa2_psk",
-          "bssid": "<NA20_AP_BSSID>",
-          "hidden": false,
-          "persist": true,
-          "autoConnect": true,
-          "source": "pairing"
-        }
-      ]
-    }
+  "id": 704,
+  "method": "network.connectWifi",
+  "params": {
+    "interfaceId": "wlan0",
+    "profileId": "profile_na20",
+    "timeoutMs": 15000
   }
 }
 ```
 
-读法：`source=pairing` 时即使省略 `connectAfterSave` 也默认连接；示例显式写出是为了标明配对语义。响应不回显 credential。
+### 7.3 连接成功或失败
 
-### 7.3 场景：Wi-Fi 连接成功事件
+连接动作 accepted 后，设备用状态事件报告结果；失败响应或 failed event 应包含可恢复原因，避免客户端猜测。
 
 ```json
 {
   "event": "network.wifiStateChanged",
-  "intent": 2,
+  "intent": 1,
   "data": {
-    "interfaceId": "<STA_INTERFACE_ID>",
-    "previousState": {
-      "interfaceId": "<STA_INTERFACE_ID>",
-      "state": "connecting",
-      "profileId": "<WIFI_PROFILE_ID>"
-    },
     "state": {
-      "interfaceId": "<STA_INTERFACE_ID>",
+      "interfaceId": "wlan0",
       "state": "connected",
-      "profileId": "<WIFI_PROFILE_ID>",
-      "ssid": "NA20-<receiver-id>",
-      "bssid": "<NA20_AP_BSSID>",
-      "rssiDbm": -48
+      "profileId": "profile_na20",
+      "ssid": "NearHub-Cast-A1",
+      "ipReady": true
+    },
+    "previousState": {
+      "interfaceId": "wlan0",
+      "state": "connecting",
+      "profileId": "profile_na20"
     },
     "reason": "connect_completed"
   }
 }
 ```
 
-读法：`connected` 只表示 Wi-Fi 认证/关联成功。若产品要求 IP ready，调用方继续查询 `network.getIpConfig` 或等待 `network.ipConfigChanged`。
-
-### 7.4 场景：手动重试连接
-
-#### request
-
 ```json
 {
-  "id": 203,
-  "method": "network.connectWifi",
-  "params": {
-    "interfaceId": "<STA_INTERFACE_ID>",
-    "profileId": "<WIFI_PROFILE_ID>",
-    "timeoutMs": 15000
-  }
-}
-```
-
-#### response
-
-```json
-{
-  "id": 203,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "accepted": true,
-    "state": {
-      "interfaceId": "<STA_INTERFACE_ID>",
-      "state": "connecting",
-      "profileId": "<WIFI_PROFILE_ID>",
-      "ssid": "NA20-<receiver-id>",
-      "bssid": "<NA20_AP_BSSID>"
-    }
-  }
-}
-```
-
-读法：显式 connect 主要用于手动重试或非 pairing profile。
-
-### 7.5 场景：profile 不存在失败响应
-
-```json
-{
-  "id": 204,
+  "id": 705,
   "status": {
     "ok": false,
     "code": 12,
     "msg": "Wi-Fi profile was not found.",
     "details": {
       "candidateError": "NETWORK_PROFILE_NOT_FOUND",
-      "profileId": "<MISSING_PROFILE_ID>"
+      "profileId": "missing_profile"
     }
   }
 }
 ```
-
-读法：`status.code=12` 对应 adopted `NOT_FOUND`。候选业务错误名只作为草案 details。
 
 ## 8. 错误
 

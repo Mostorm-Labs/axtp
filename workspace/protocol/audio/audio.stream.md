@@ -734,17 +734,17 @@ AudioChunkHeaderV1 + AAC bytes
 | session lost 清理全部 stream | AXTP session/transport lost 后，旧 `streamId`、open/close response 和 STREAM packet 全部失效。 |
 | streamId 不快速复用 | 同一 AXTP session 内不应快速复用媒体 streamId；若复用，需要额外 instance guard。 |
 
-## 7. JSON 示例
+## 7. 交互流程示例 Flow Examples
 
-示例只展示 RPC `d` 数据块，不包裹外层 `sid` / `op` / `d` wire envelope。字段和 ID 在采纳前均为草案。
+本章只保留端到端评审需要的关键流。单个 method 的 request / success 形状见第 3 章；公共 envelope、错误响应和 flow 写法见 [Protocol Draft Conventions](../draft-conventions.md)。
 
-### 7.1 场景：MediaHost 查询音频 stream 能力和 source 状态
+### 7.1 查询音频 STREAM 能力和 source 状态
 
-#### request
+客户端先查询能力和 source 状态，再决定使用 receiver pull 还是 producer push。
 
 ```json
 {
-  "id": 910,
+  "id": 701,
   "method": "audio.getStreamCapabilities",
   "params": {
     "source": "wireless_cast_audio",
@@ -753,49 +753,23 @@ AudioChunkHeaderV1 + AAC bytes
 }
 ```
 
-#### response
-
 ```json
 {
-  "id": 910,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "capability": "audio.stream",
-    "sources": [
-      {
-        "sourceId": "wireless_cast_audio",
-        "type": "wireless_cast",
-        "codecs": ["aac"],
-        "transportFormats": ["adts"],
-        "sampleRates": [48000],
-        "channels": [2],
-        "currentState": "receiving"
-      }
-    ],
-    "streamProfiles": ["media.audio"],
-    "openModes": ["producer_open", "receiver_pull"],
-    "peerRoles": ["receiver", "transmitter"],
-    "supportsSourceStateEvent": true,
-    "supportsSyncGroup": true,
-    "flowControlManagedByRuntime": true
+  "id": 702,
+  "method": "audio.getStreamSourceState",
+  "params": {
+    "source": "wireless_cast_audio"
   }
 }
 ```
 
-读法：MediaHost 可用该 query 判断 `wireless_cast_audio` 是否仍 `available/receiving`，以及当前设备是否允许 producer-open 和 receiver-pull 两种建流方式。示例中的 `transportFormats=["adts"]` 仍是占位，最终值需按 `[REVIEW-ASK]` 确认。
+### 7.2 打开 AAC 透传音频 STREAM
 
-### 7.2 场景：NA20 producer 主动请求 MediaHost 接收 AAC 透传音频
-
-下面示例使用 `transportFormat=adts` 作为占位示例；最终默认封装仍为 `[REVIEW-ASK]`。
-
-#### request
+`audio.openStream` 成功只表示控制面接受建流；实际数据面是否开始传输，以 `audio.streamStateChanged` 和 STREAM frame 状态为准。
 
 ```json
 {
-  "id": 1101,
+  "id": 703,
   "method": "audio.openStream",
   "params": {
     "source": "wireless_cast_audio",
@@ -804,70 +778,32 @@ AudioChunkHeaderV1 + AAC bytes
     "transportFormat": "adts",
     "sampleRate": 48000,
     "channels": 2,
-    "streamProfile": "media.audio",
-    "cursorUnit": "timestampUs",
-    "syncGroupId": "cast-sync-001",
-    "castSessionId": "cast-session-001",
-    "clockDomain": "nt10_media_clock",
-    "receiverClockDomain": "na20_receive_clock"
+    "streamProfile": "media.audio"
   }
 }
 ```
 
-#### response
-
 ```json
 {
-  "id": 1101,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "streamId": 201,
-    "state": "opening",
+  "event": "audio.streamStateChanged",
+  "intent": 1,
+  "data": {
+    "streamId": 4097,
+    "state": "streaming",
     "source": "wireless_cast_audio",
-    "peerRole": "receiver",
     "codec": "aac",
-    "transportFormat": "adts",
-    "sampleRate": 48000,
-    "channels": 2,
-    "streamProfile": "media.audio",
-    "cursorUnit": "timestampUs",
-    "syncGroupId": "cast-sync-001",
-    "castSessionId": "cast-session-001",
-    "clockDomain": "nt10_media_clock",
-    "receiverClockDomain": "na20_receive_clock"
+    "transportFormat": "adts"
   }
 }
 ```
 
-读法：NA20 是 requester/producer，MediaHost 是 responder/receiver。MediaHost accepted 前，NA20 不得发送 `streamId=201` 的 STREAM。
+### 7.3 producer-open 被拒后的 fallback
 
-### 7.3 场景：NA20 主动 open 被拒后通知 Host 可拉取
-
-#### request
+如果接收端暂不可用，producer-open 不创建 `streamId`，producer 不发送 STREAM。source 仍可用时，设备可发送 source event，MediaHost 后续再用 `peerRole=transmitter` 主动拉取。
 
 ```json
 {
-  "id": 1102,
-  "method": "audio.openStream",
-  "params": {
-    "source": "wireless_cast_audio",
-    "peerRole": "receiver",
-    "codec": "aac",
-    "transportFormat": "adts",
-    "streamProfile": "media.audio",
-    "syncGroupId": "cast-sync-001"
-  }
-}
-```
-
-#### failure response
-
-```json
-{
-  "id": 1102,
+  "id": 704,
   "status": {
     "ok": false,
     "code": 5,
@@ -880,8 +816,6 @@ AudioChunkHeaderV1 + AAC bytes
 }
 ```
 
-#### event
-
 ```json
 {
   "event": "audio.streamSourceStateChanged",
@@ -890,140 +824,31 @@ AudioChunkHeaderV1 + AAC bytes
     "source": "wireless_cast_audio",
     "mediaKind": "audio",
     "state": "receiving",
-    "codecs": ["aac"],
-    "transportFormats": ["adts"],
-    "castSessionId": "cast-session-001",
-    "retainable": true,
+    "codecs": [
+      "aac"
+    ],
+    "transportFormats": [
+      "adts"
+    ],
     "reason": "producer_open_rejected",
     "lastOpenRejectedReason": "receiver_not_ready"
   }
 }
 ```
 
-读法：拒绝 producer-open 不创建 `streamId`，NA20 也不发送 STREAM。该 event 只说明 source 仍可用，MediaHost 后续可主动拉取。
-
-### 7.4 场景：MediaHost receiver 主动拉取 available source
-
-#### request
-
 ```json
 {
-  "id": 2101,
+  "id": 705,
   "method": "audio.openStream",
   "params": {
     "source": "wireless_cast_audio",
     "peerRole": "transmitter",
     "codec": "aac",
     "transportFormat": "adts",
-    "streamProfile": "media.audio",
-    "syncGroupId": "cast-sync-001"
-  }
-}
-```
-
-#### response
-
-```json
-{
-  "id": 2101,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "streamId": 202,
-    "state": "opening",
-    "source": "wireless_cast_audio",
-    "peerRole": "transmitter",
-    "codec": "aac",
-    "transportFormat": "adts",
-    "sampleRate": 48000,
-    "channels": 2,
-    "streamProfile": "media.audio",
-    "cursorUnit": "timestampUs",
-    "syncGroupId": "cast-sync-001",
-    "clockDomain": "nt10_media_clock",
-    "receiverClockDomain": "na20_receive_clock"
-  }
-}
-```
-
-读法：MediaHost 是 requester/receiver，NA20 是 responder/transmitter。成功后仍然只建立 `NA20 -> MediaHost` downstream stream。
-
-### 7.5 场景：MediaHost 关闭接收但保留 upstream source
-
-#### request
-
-```json
-{
-  "id": 2102,
-  "method": "audio.closeStream",
-  "params": {
-    "streamId": 202,
-    "peerRole": "transmitter",
-    "reason": "receiver_closed",
-    "finalCursor": 1710000010000000
-  }
-}
-```
-
-#### response
-
-```json
-{
-  "id": 2102,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "streamId": 202,
-    "state": "closed",
-    "reason": "receiver_closed",
-    "alreadyClosed": false
-  }
-}
-```
-
-读法：该 close 只关闭 Host 接收侧和 NA20->MediaHost downstream stream，不代表 `wireless_cast_audio` upstream source 停止。
-
-### 7.6 场景：请求 PCM fallback 失败
-
-#### request
-
-```json
-{
-  "id": 2103,
-  "method": "audio.openStream",
-  "params": {
-    "source": "wireless_cast_audio",
-    "peerRole": "transmitter",
-    "codec": "pcm",
-    "sampleFormat": "pcm_s16le",
     "streamProfile": "media.audio"
   }
 }
 ```
-
-#### failure response
-
-```json
-{
-  "id": 2103,
-  "status": {
-    "ok": false,
-    "code": 2051,
-    "msg": "PCM fallback is not supported for wireless_cast_audio.",
-    "details": {
-      "candidateError": "MEDIA_CODEC_UNSUPPORTED",
-      "source": "wireless_cast_audio",
-      "requestedCodec": "pcm"
-    }
-  }
-}
-```
-
-读法：`2051` 是 adopted `MEDIA_CODEC_UNSUPPORTED`。NA20/NT10 投屏 MVP 确认为 AAC 透传，不要求 NA20 解码 PCM 后给 Host。
 
 ## 8. 错误
 
