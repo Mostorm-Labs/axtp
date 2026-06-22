@@ -1,6 +1,7 @@
 # AXTP 注册表
 
 本文定义注册表的分类、条目模型、ID 稳定性、兼容性和校验规则。当前注册事实位于 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**`。
+机器可读的 domain high-byte 分配位于 `contract/registry/core/domain_registry.yaml`；runtime/tool generator MUST 使用该文件、source registry 或 Protocol IR 推导 domain 分配，MUST NOT 维护第二套手写 domain 表。
 
 ## 领域与功能分类
 
