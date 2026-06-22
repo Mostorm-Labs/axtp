@@ -19,3 +19,16 @@
 | `0x0E06` | `network.apConfigChanged` | network | draft | NetworkApConfigChangedEvent |
 | `0x0E07` | `network.apStateChanged` | network | draft | NetworkApStateChangedEvent |
 | `0x0E08` | `network.apClientChanged` | network | draft | NetworkApClientChangedEvent |
+| `0x1601` | `cast.sessionIncoming` | cast | draft | CastSessionIncomingEvent |
+| `0x1602` | `cast.sessionStateChanged` | cast | draft | CastSessionStateChangedEvent |
+| `0x1603` | `cast.sessionStarted` | cast | draft | CastSessionStartedEvent |
+| `0x1604` | `cast.sessionStopped` | cast | draft | CastSessionStoppedEvent |
+| `0x1605` | `cast.sessionFailed` | cast | draft | CastSessionFailedEvent |
+| `0x1606` | `cast.audioChanged` | cast | draft | CastAudioChangedEvent |
+| `0x1607` | `cast.pinCodeChanged` | cast | draft | CastPinCodeChangedEvent |
+| `0x1608` | `cast.pinCodeRequired` | cast | draft | CastPinCodeRequiredEvent |
+| `0x1609` | `cast.pinCodeAuthFailed` | cast | draft | CastPinCodeAuthFailedEvent |
+| `0x160A` | `cast.windowChanged` | cast | draft | CastWindowChangedEvent |
+| `0x160B` | `cast.backendChanged` | cast | draft | CastBackendChangedEvent |
+| `0x160C` | `cast.flowControlChanged` | cast | draft | CastFlowControlChangedEvent |
+| `0x160D` | `cast.statusChanged` | cast | draft | CastStatusChangedEvent |

@@ -1,14 +1,23 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: cast
 feature: cast.flowControl
-registry:
+registry: ../../../../contract/registry/domains/cast/domain.yaml
 lastReviewed: 2026-06-22
 ---
 
 # cast.flowControl
+
+## 0. 采纳状态
+
+| 项目 | 内容 |
+|---|---|
+| 当前状态 | generated；已写入 `../../../../contract/registry/domains/cast/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
+| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准。 |
+| 本次采纳 | `cast.getFlowControlState`、`cast.setRenderFps`、`cast.setFlowPolicy`、`cast.flowControlChanged` 和低频统计字段外形。 |
+| 未采纳 | 外部 keyframe request 维持不暴露；后续语义变更走 `amend-adopted-protocol`。 |
 
 ## 1. Purpose
 

@@ -130,7 +130,8 @@ const domainByHighByte: Record<number, string> = {
   0x12: "diagnostic",
   0x13: "sensor",
   0x14: "auth",
-  0x15: "privacy"
+  0x15: "privacy",
+  0x16: "cast"
 };
 
 function assertRegistryDomainRanges<T extends { id: number; name: string; domain: string }>(
