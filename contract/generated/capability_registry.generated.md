@@ -15,3 +15,10 @@
 | `0x0E02` | `network.ip` | network | draft | object | NetworkIpCapability |
 | `0x0E03` | `network.wifi` | network | draft | object | NetworkWifiCapabilities |
 | `0x0E04` | `network.ap` | network | draft | object | NetworkApCapabilities |
+| `0x1601` | `cast.session` | cast | draft | object | CastSessionCapability |
+| `0x1602` | `cast.audio` | cast | draft | object | CastAudioCapability |
+| `0x1603` | `cast.pinCode` | cast | draft | object | CastPinCodeCapability |
+| `0x1604` | `cast.window` | cast | draft | object | CastWindowCapability |
+| `0x1605` | `cast.backend` | cast | draft | object | CastBackendCapability |
+| `0x1606` | `cast.flowControl` | cast | draft | object | CastFlowControlCapability |
+| `0x1607` | `cast.status` | cast | draft | object | CastStatusCapability |

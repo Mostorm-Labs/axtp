@@ -124,7 +124,8 @@ function errorCategory(code: number): string {
     0x12: "diagnostic",
     0x13: "sensor",
     0x14: "auth",
-    0x15: "privacy"
+    0x15: "privacy",
+    0x16: "cast"
   };
   if (code <= 0x00ff) return "common";
   const highByte = code >> 8;

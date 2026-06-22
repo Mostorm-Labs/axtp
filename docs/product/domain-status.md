@@ -17,7 +17,7 @@
 |---|---:|---|---:|---|---|
 | audio | 12 | ASK | 13 | 旁路高覆盖 / P0 stream | `audio.algorithm` 与 `audio.stream` 已进入 generated；后续按修订流程维护并补齐剩余 audio 草案确认。 |
 | auth | 3 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
-| cast | 7 | ASK | 0 | P2 / 投屏接收端控制 | 新增 AirPlay receiver 控制草案，覆盖 session、PIN、audio、window、backend、flowControl、status；下一步确认 LAN auth 入口策略、AirPlay 名称 schema、无窗口控制行为和聚合状态裁剪策略。 |
+| cast | 7 | ASK / generated | 31 | P2 / 投屏接收端控制 | `cast.*` confirmed subset 已进入 generated；PIN 格式、AirPlay 名称 schema、无窗口行为和聚合状态裁剪策略作为后续修订项。 |
 | camera | 7 | ASK | 0 | P3/P4 | 补产品/设备/legacy 确认。 |
 | capability | 1 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | device | 6 | ASK | 1 | P1 | `device.info` 已进入 generated；继续补 `device.childDevice`、`device.enrollment` 等通用底座确认。 |

@@ -1,14 +1,23 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: cast
 feature: cast.status
-registry:
+registry: ../../../../contract/registry/domains/cast/domain.yaml
 lastReviewed: 2026-06-22
 ---
 
 # cast.status
+
+## 0. 采纳状态
+
+| 项目 | 内容 |
+|---|---|
+| 当前状态 | generated；已写入 `../../../../contract/registry/domains/cast/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
+| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准。 |
+| 本次采纳 | `cast.getStatus`、`cast.statusChanged`、receiver/session/PIN/audio/window/backend/flowControl 聚合摘要字段外形。 |
+| 未采纳 | statusChanged 节流、聚合裁剪和敏感字段呈现策略等 Review Items 不属于已生成合同；后续语义变更走 `amend-adopted-protocol`。 |
 
 ## 1. Purpose
 

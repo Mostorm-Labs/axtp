@@ -115,7 +115,7 @@ Error 规则：
 |---:|---|
 | `0x0000-0x00FF` | common / frame / control / rpc |
 | `0x0100-0x05FF` | device / capability / system / firmware / stream |
-| `0x0600-0x15FF` | business domains |
+| `0x0600-0x16FF` | business domains |
 | `0x7000-0x7EFF` | vendor |
 | `0x7F00-0x7FFF` | legacy adapter |
 
