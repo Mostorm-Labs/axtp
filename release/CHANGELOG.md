@@ -4,6 +4,44 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.9.0
+
+Cast receiver protocol registry and generated contract expansion.
+
+### Protocol
+
+- Adds the `cast` business domain as a generated AXTP protocol surface for AirPlay/UxPlay receiver control.
+- Adds generated cast methods for session state, AirPlay receiver name, local audio playback/mute, PIN protection, window state, backend status/restart, receiver-local flow control, and aggregate status.
+- Adds generated cast events for incoming session, phase/state changes, started/stopped/failed sessions, audio/PIN/window/backend/flow-control/status changes, and PIN authentication notifications.
+
+### Registry
+
+- Registers the `0x16xx` business domain range for `cast` and maps the generator/validator high byte to the `cast` domain.
+- Adds `contract/registry/domains/cast/domain.yaml` with 18 methods, 13 events, 7 capabilities, and the supporting cast schema set.
+- Marks the cast protocol drafts as generated and updates product domain status/health summaries to reflect 31 generated cast method/event facts.
+
+### Schemas
+
+- Adds cast receiver phase and session schemas, including `receiverPhase` states for incoming, authenticating, stream starting, streaming, rendering, interrupted, stopping, ended, and failed.
+- Adds schemas for PIN visibility/redaction, local audio state, window bounds/mode, backend state/errors, flow-control policy/statistics, and aggregate cast status.
+- Keeps open product policies such as PIN format, AirPlay name constraints, no-window behavior, and status throttling out of the generated contract until they are amended explicitly.
+
+### Conformance
+
+- Does not add new conformance cases in this release.
+- Generator validation, protocol validation, generated drift checks, protocol status checks, and protocol snapshot tests cover the new generated registry surface.
+
+### Migration
+
+- Existing runtimes remain compatible with earlier `spec/v0.8.x` contracts if they do not advertise or implement cast capabilities.
+- Runtimes that want AirPlay/UxPlay receiver control should bind to `spec/v0.9.0` and implement the generated `cast.*` methods, events, capabilities, and schema references from `contract/generated/protocol.json`.
+
+### Runtime Impact
+
+- Runtime and SDK teams should regenerate protocol metadata from `spec/v0.9.0` before exposing cast receiver controls.
+- Existing non-cast behavior, CONTROL/RPC/STREAM wire layout, shared errors, and previously generated domains are unchanged.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.8.10
 
 Frontstage language consistency and release artifact safety patch.
