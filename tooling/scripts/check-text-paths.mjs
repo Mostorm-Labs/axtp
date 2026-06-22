@@ -20,25 +20,7 @@ const legacySpecsPattern = new RegExp(`specs/(?:${legacySpecsDirs.join("|")})/[^
 const legacyRegistryAppendixPattern = new RegExp(`specs/${"2-registry"}/appendix/[^\\s\`"'<>),\\]]+`, "g");
 const unprefixedSpecs = ["glossary", "contract", "core", "registry", "codec", "tooling"];
 const unprefixedSpecsPattern = new RegExp(`specs/(?:${unprefixedSpecs.join("|")})\\.md`, "g");
-const legacyCompatibilityPages = new Map([
-  [
-    path.join("workspace", "business", "cast-reciever-uxplay.md"),
-    "Use [cast-receiver-uxplay.md](cast-receiver-uxplay.md) for the current business requirement.",
-  ],
-  [
-    path.join("workspace", "business", "cast-rxtx-paring.md"),
-    "Use [cast-rxtx-pairing.md](cast-rxtx-pairing.md) for the current business requirement.",
-  ],
-  [
-    path.join("workspace", "flows", "cast-reciever-uxplay.md"),
-    "Use [cast-receiver-uxplay.md](cast-receiver-uxplay.md) for the current flow.",
-  ],
-  [
-    path.join("workspace", "flows", "cast-rxtx-paring.md"),
-    "Use [cast-rxtx-pairing.md](cast-rxtx-pairing.md) for the current flow.",
-  ],
-]);
-const legacyCompatibilityPathPattern =
+const removedLegacyPathPattern =
   /workspace\/(?:business|flows)\/(?:cast-reciever-uxplay|cast-rxtx-paring)\.md/g;
 const activeRepoPathPattern =
   /(?:docs\/(?!archive\/)[^\s`"'<>),\]]+\.(?:md|yaml|yml|json)|workspace\/(?:business|flows|legacy-migration\/classification|legacy-migration\/generated|protocol|registry-planning|runtime)\/[^\s`"'<>),\]]+\.(?:csv|json|md|pdf|txt|xlsx|yaml|yml)|tooling\/(?:release|scripts|skills)\/[^\s`"'<>),\]]+\.(?:json|md|mjs|sh|yaml|yml)|contract\/registry\/domains\/[A-Za-z0-9_.-]+\/domain\.yaml|specs\/[^\s`"'<>),\]]+\.md|release\/[^\s`"'<>),\]]+\.md|conformance\/[^\s`"'<>),\]]+\.(?:json|md|yaml|yml))/g;
@@ -90,32 +72,6 @@ function isLegacyMigrationCandidatePath(file, candidate) {
   );
 }
 
-function checkLegacyCompatibilityPages() {
-  for (const [relative, requiredLink] of legacyCompatibilityPages.entries()) {
-    const file = path.join(root, relative);
-    if (!fs.existsSync(file)) {
-      errors.push(`${relative}: legacy compatibility page is missing`);
-      continue;
-    }
-    const text = fs.readFileSync(file, "utf8");
-    const lines = text.split(/\r?\n/);
-    if (lines.length > 7) {
-      errors.push(`${relative}: legacy compatibility page must stay short`);
-    }
-    if (lines[0] !== "# Moved") {
-      errors.push(`${relative}: legacy compatibility page must start with "# Moved"`);
-    }
-    if (!text.includes("This legacy path is kept for compatibility.")) {
-      errors.push(`${relative}: legacy compatibility page must explain compatibility-only status`);
-    }
-    if (!text.includes(requiredLink)) {
-      errors.push(`${relative}: legacy compatibility page must link to the current spelling`);
-    }
-  }
-}
-
-checkLegacyCompatibilityPages();
-
 const files = walk(root);
 for (const file of files) {
   const relative = path.relative(root, file);
@@ -140,10 +96,8 @@ for (const file of files) {
     report(file, match[0], "current specs files must use numeric prefixes");
   }
 
-  if (!legacyCompatibilityPages.has(relative)) {
-    for (const match of text.matchAll(legacyCompatibilityPathPattern)) {
-      report(file, match[0], "legacy misspelled compatibility path must not be linked from active docs");
-    }
+  for (const match of text.matchAll(removedLegacyPathPattern)) {
+    report(file, match[0], "removed legacy misspelled path must not be linked from active docs");
   }
 
   for (const match of text.matchAll(/workspace\/protocol\/[^\s`"'<>),\]]+\.md(?:#[^\s`"'<>),\]]+)?/g)) {

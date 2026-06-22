@@ -101,7 +101,24 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 | AXTP session/transport lost | NA20 被拔出、重启、掉电，或 USB HID / Standard Framed session 断开。 | generated + runtime；不经业务 `closeStream`，仍存活的一端本地将该 session 下全部 stream 置为 terminal state。 |
 | receiver lost / timeout | MediaHost 崩溃、退出、卡死或长时间不消费 STREAM。 | runtime / draft policy；NA20 停止向旧 session 发送数据，释放 stream context，可保留 NT10 上游输入直到新 Host session 建立或设备策略停止上游。 |
 
-### 2.4 Actors And Boundaries
+### 2.4 Receiver Phase Projection
+
+HID/NA20 不新增独立 `cast.streaming` method domain，但 MediaHost/Launcher 可以把 source state、stream state 和播放器状态聚合为统一 `receiverPhase`，与 AirPlay / UxPlay 的接收端阶段对齐。
+
+| receiverPhase | HID/NA20 观测条件 | 说明 |
+|---|---|---|
+| `idle` | 没有 active upstream source，也没有 active downstream stream。 | NA20 可用但未在接收投屏。 |
+| `incoming` | NT10 插入后，NA20 检测到 `wireless_cast` source `available` / `receiving`。 | 表示收到投屏意图或源已经出现。 |
+| `authenticating` | 通常不出现。 | HID/NA20 主流程无用户 PIN；可在聚合摘要中表达 `authRequired=false`。 |
+| `streamStarting` | `video.openStream` / `audio.openStream` 已 accepted，任一路处于 `opening`。 | 已建下游 stream context，但还不能判定用户可见播放。 |
+| `streaming` | video/audio stream 进入 `streaming`，并开始收到对应 STREAM chunk。 | 表示数据面流动；不等价于播放器已经显示画面。 |
+| `rendering` | MediaHost player 完成首帧渲染或开始音频播放。 | AV MVP 可要求视频和音频都 ready 后再展示整体成功。 |
+| `interrupted` | receiver inactive 但 source retained，或短暂缺包/背压/receiver timeout 仍可恢复。 | 与 source stop 区分；可恢复时不应直接进入终态。 |
+| `stopping` | MediaHost 或 NA20 发起 `closeStream`，或 source stopped 正在关闭 active stream。 | 用于展示正在收敛，不复用旧 streamId。 |
+| `ended` | user stop、receiver close 或 source stop 后所有相关 stream 正常关闭。 | 回到等待新 source / open 的稳定状态。 |
+| `failed` | open failed、source failed、session lost、hard unplug 或不可恢复媒体错误。 | 硬断流不等待业务 `closeStream`。 |
+
+### 2.5 Actors And Boundaries
 
 | Actor / boundary | Responsibility | Protocol boundary |
 |---|---|---|
@@ -131,6 +148,7 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 | Decision | NA20 被拔出、重启、掉电，或 MediaHost 崩溃/退出时，不要求补发业务 `closeStream`；按 AXTP session/transport hard-disconnect 处理，仍存活的一端本地终止该 session 下所有 stream。 | `[REVIEW-OK]` |
 | Decision | session lost 后旧 `streamId`、旧 stream context 和未完成 close/open response 全部作废；重连恢复必须新建 AXTP session 并重新 open audio/video stream。 | `[REVIEW-OK]` |
 | Decision | `openStream` 是新 session 上的建流请求，不是旧 stream 恢复；被请求端可拒绝，producer accepted 前不得发送 STREAM；任一端 `closeStream` 可取消 opening/streaming；同一 session 内同一 source/mediaKind 只能有一个 active downstream stream instance。 | `[REVIEW-OK]` |
+| Decision | 运行时可把 HID/NA20 source state、stream state 和播放器首帧聚合为 `receiverPhase`；该聚合只服务 UI/重连校准，不新增独立 AXTP method domain。 | `[REVIEW-OK]` |
 | Assumption | 为避免旧 close/STREAM 影响新流，同一 AXTP session 内媒体 streamId 不应快速复用；若复用必须有 stream instance 或 castSessionId 校验。 | `[REVIEW-DRAFT]` |
 | Assumption | 实时投屏低延迟优先，视频丢包优先请求关键帧，音频丢包优先丢弃过旧 chunk，不默认重传历史媒体数据。 | `[REVIEW-DRAFT]` |
 | Decision | MediaHost MVP 同时从 NA20 接收视频和音频；不按 audio-only 范围设计。 | `[REVIEW-OK]` |
@@ -141,7 +159,7 @@ Flow 文档负责描述业务场景和交互步骤、判断每一步协议覆盖
 | Non-goal | 不设计 NT10 到 NA20 的私有 Wi-Fi 媒体协议、无线丢包恢复或 Wi-Fi 加密细节。 | `[REVIEW-OK]` |
 | Non-goal | 不设计设备升级、AP/Wi-Fi 配对、UI 文案或上位机播放器内部渲染实现。 | `[REVIEW-OK]` |
 | Non-goal | 不把 H.264/AAC 大数据塞进普通 RPC response；媒体数据必须走 STREAM 数据面。 | `[REVIEW-OK]` |
-| Non-goal | 不新增独立 `cast.streaming` domain；MediaHost 聚合 video/audio state 表达整体投屏状态。 | `[REVIEW-OK]` |
+| Non-goal | 不新增独立 `cast.streaming` method domain；整体投屏阶段由 MediaHost/Launcher 聚合为 `receiverPhase`。 | `[REVIEW-OK]` |
 
 ## 4. Protocol Coverage
 
@@ -198,6 +216,7 @@ sequenceDiagram
     SourcePC-->>NT10: Power and source media available
     NT10->>NA20: Auto-start wireless cast(H.264 Annex-B + AAC passthrough)
     NA20-->>NA20: Mark video/audio source available or receiving
+    MediaHost-->>MediaHost: receiverPhase=incoming, authRequired=false
     Note over NA20,MediaHost: Opening only creates NA20->MediaHost downstream streams; it does not stop or rebuild NT10->NA20 upstream media.
 
     alt Producer-open accepted
@@ -223,12 +242,15 @@ sequenceDiagram
 
     NA20-->>MediaHost: Draft video.streamStateChanged(streaming)
     NA20-->>MediaHost: Draft audio.streamStateChanged(streaming)
+    MediaHost-->>MediaHost: receiverPhase=streaming
     MediaHost->>Player: Create decoders and A/V sync group
 
     loop realtime media
         NA20-->>MediaHost: STREAM(videoStreamId, seqId, cursor=timestampUs, H.264 chunk)
         NA20-->>MediaHost: STREAM(audioStreamId, seqId, cursor=timestampUs, AAC chunk)
         MediaHost->>Player: Decode, jitter-buffer, sync, render/play
+        Player-->>MediaHost: first frame rendered / audio playback started
+        MediaHost-->>MediaHost: receiverPhase=rendering
     end
 
     alt MediaHost stops receiving first
@@ -274,11 +296,11 @@ sequenceDiagram
 | 6 | NA20 | 检测音频 source available/receiving，并选择主动请求 Host 接收或发出 source state。 | 收到 NT10 AAC 输入。 | Draft `audio.openStream` from NA20, or per-media source available/receiving event | source, codec=aac, transportFormat, sampleRate, channels, peer media role=receiver when producer-open, sync/clock metadata | 若 producer-open 被接受，MediaHost 创建 AAC decoder/playback pipeline；若只发 source event，MediaHost 缓存可拉取状态。 | draft amendment | 可能只有音频或只有视频进入 available/receiving；AV MVP 成功仍需要两路都成功建流。 |
 | 7 | MediaHost | 响应 NA20 producer-open。 | open request valid, resources available。 | Draft openStream response | accept/reject, stream context confirmation, limits | 接受时双方确认 streamId、codec、syncGroup、clock；拒绝时不创建下游 stream。 | draft amendment | 拒绝后 NA20 不发送该 streamId 的 STREAM；若 source 仍 available/receiving，可发 source event 提醒 Host 主动拉取。 |
 | 8 | MediaHost | 在 source available/receiving 时主动拉取视频或音频。 | Host receiver service ready, source state known or queried。 | Draft `video.openStream` / `audio.openStream` from MediaHost | source, mediaKind, peer media role=transmitter, requested profile/format, sync metadata | NA20 知道自己是 transmitter/producer，接受后创建新的 NA20->MediaHost downstream stream context。 | draft amendment | source 已停止则返回 unavailable；资源不足则 Host 保持 source cache 并等待下一次 state event 或用户重试。 |
-| 9 | NA20 | 视频进入 streaming 状态。 | Video stream accepted and producer bound。 | Draft `video.streamStateChanged` | streamId, state, codec, resolution, syncGroupId | MediaHost 开始接收 H.264 STREAM。 | draft | 启动失败需暴露 media stream start failure。 |
-| 10 | NA20 | 音频进入 streaming 状态。 | Audio stream accepted and producer bound。 | Draft `audio.streamStateChanged` | streamId, state, codec=aac, sampleRate, channels, syncGroupId | MediaHost 开始接收 AAC STREAM。 | draft | 启动失败需区分 source 不可用、codec 不支持、音频设备忙。 |
+| 9 | NA20 | 视频进入 streaming 状态。 | Video stream accepted and producer bound。 | Draft `video.streamStateChanged` | streamId, state, codec, resolution, syncGroupId | MediaHost 开始接收 H.264 STREAM；聚合 `receiverPhase=streaming`。 | draft | 启动失败需暴露 media stream start failure。 |
+| 10 | NA20 | 音频进入 streaming 状态。 | Audio stream accepted and producer bound。 | Draft `audio.streamStateChanged` | streamId, state, codec=aac, sampleRate, channels, syncGroupId | MediaHost 开始接收 AAC STREAM；聚合 `receiverPhase=streaming`。 | draft | 启动失败需区分 source 不可用、codec 不支持、音频设备忙。 |
 | 11 | NA20 | 发送视频数据。 | Video stream accepted/opened。 | `PayloadType=STREAM` | streamId, seqId, cursor, video chunk envelope, H.264 bytes | MediaHost 按 seqId 检测丢包并重组帧。 | generated + draft | Core STREAM generated；video chunk envelope/profile binding 仍是 draft。 |
 | 12 | NA20 | 发送音频数据。 | Audio stream accepted/opened。 | `PayloadType=STREAM` | streamId, seqId, cursor, audio chunk envelope, AAC bytes | MediaHost 按 timestamp 放入音频 jitter buffer。 | generated + draft | Core STREAM generated；audio chunk envelope/profile binding 仍是 draft。 |
-| 13 | MediaHost / Player | 音频与视频同步播放。 | video/audio share syncGroupId and clock semantics。 | local-only using stream metadata | syncGroupId, timestampUs, receiverClockDomain | Player 做 A/V sync、缓冲控制和漂移修正。 | local-only | 缺少源媒体时间戳或 clock mapping 时需草案补字段。 |
+| 13 | MediaHost / Player | 音频与视频同步播放。 | video/audio share syncGroupId and clock semantics。 | local-only using stream metadata | syncGroupId, timestampUs, receiverClockDomain | Player 做 A/V sync、缓冲控制和漂移修正；首帧/播放开始后聚合 `receiverPhase=rendering`。 | local-only | 缺少源媒体时间戳或 clock mapping 时需草案补字段。 |
 | 14 | MediaHost | 提前停止接收某一路或全部媒体。 | Streaming active, user stop or receiver resource policy。 | Draft `audio.closeStream` / `video.closeStream` | streamId, peer media role=transmitter, reason=receiver_closed/user_stop/not_needed | NA20 关闭对应 NA20->MediaHost downstream streamId，停止向 Host 发送 STREAM；NT10->NA20 upstream source 可继续 active。 | draft amendment | close 必须幂等；若 NA20 已关闭，返回 already closed 或等价 closed；不得把 receiver close 当成 source stop。 |
 | 15 | MediaHost / NA20 | 用户重新打开投屏窗口，从保留的 upstream source 重新接收。 | NT10->NA20 upstream source retained, Host receiver service ready。 | Draft `video.openStream` / `audio.openStream` from MediaHost or NA20 re-offer | source, peer media role=transmitter or receiver by initiator, new stream context, sync metadata | 建立新的 NA20->MediaHost downstream streamId；无需重建 NT10->NA20 无线推流。 | draft amendment | 若 upstream source 已超时或停止，则 NA20 返回 source unavailable 或等待新的 NT10 source ready。 |
 | 16 | User / Source PC | 用户拔出 NT10 或源端停止。 | Streaming active, receiver inactive, or source receiving。 | non-protocol | source power/media lost | NT10 不再向 NA20 发流；NA20 retained source 失效。 | non-protocol | NA20 不保留 streamId 等待快速重连；重连后重新 open。 |
@@ -300,6 +322,7 @@ sequenceDiagram
 | receiver pulls source | MediaHost 窗口打开、receiver service 恢复或用户重新选择 source | Draft `video.openStream` / `audio.openStream` from MediaHost | source id, mediaKind, peer media role=transmitter, requested profile/format | NA20 作为 transmitter/producer 接受后创建新的 downstream streamId。 | draft amendment |
 | video opening / streaming / closed | producer-open 或 receiver-pull accepted 后，NA20 发送或关闭视频流 | Draft `video.streamStateChanged` | streamId, state, codec, syncGroupId, reason | 创建/释放 video decoder。 | draft |
 | audio opening / streaming / closed | producer-open 或 receiver-pull accepted 后，NA20 发送或关闭音频流 | Draft `audio.streamStateChanged` | streamId, state, codec, syncGroupId, reason | 创建/释放 audio decoder。 | draft |
+| receiverPhase streaming / rendering | stream 进入 `streaming`，随后播放器首帧或音频播放开始 | local aggregated state | receiverPhase, source id, active stream ids, firstFrame/audioStarted | UI 先展示正在接收，再展示已开始播放；重连后可由 source/stream/player state 重建。 | local-only |
 | receiver closes video | MediaHost 用户停止、切换 source 或资源不足 | Draft `video.closeStream` from MediaHost | streamId, peer media role=transmitter, reason=receiver_closed/user_stop/not_needed | NA20 停止该 Host downstream video producer 并关闭 streamId；不默认停止 NT10 upstream video source。 | draft amendment |
 | receiver closes audio | MediaHost 用户停止、切换 source 或资源不足 | Draft `audio.closeStream` from MediaHost | streamId, peer media role=transmitter, reason=receiver_closed/user_stop/not_needed | NA20 停止该 Host downstream audio producer 并关闭 streamId；不默认停止 NT10 upstream audio source。 | draft amendment |
 | receiver reopens retained source | MediaHost 播放窗口重新打开，且 NA20 仍保留 NT10 upstream source | Draft `video.openStream` / `audio.openStream` from MediaHost or NA20 re-offer | source id, mediaKind, peer media role, new stream context, syncGroupId/castSessionId | 基于 retained source 建立新的 downstream streamId。 | draft amendment |
@@ -339,7 +362,7 @@ sequenceDiagram
 | AXTP RPC request 方向需要支持设备调用 Host。 | core RPC / runtime profile | bidirectional request/response or explicit Host-side receiver service | `tooling/skills/50-generate-axtp-protocol/SKILL.md` after core/spec adoption, plus Stage 20 for feature role policy | `[REVIEW-DRAFT]` 本 flow 依赖 NA20 能向 MediaHost 发起业务 RPC request；generated 输出仍需同步。 |
 | 音视频同步字段需要采纳。 | `video.stream` / `audio.stream` | `syncGroupId`, `castSessionId`, `clockDomain`, `receiverClockDomain`, `timestampBaseUs`, `firstPtsUs` | `tooling/skills/30-adopt-protocol-draft/SKILL.md` after review | `[REVIEW-DRAFT]` 时间戳来源包含 NT10 源媒体时钟和 NA20 接收时钟。 |
 | NT10 开始/停止无线推流为可选 source proxy control。 | `video.stream` optional source control | `video.startStreamSource`, `video.stopStreamSource`, `video.getStreamSourceState`, `video.streamSourceStateChanged` | `tooling/skills/20-draft-business-protocol/SKILL.md` only if MVP/P1 需要修改草案 | `[REVIEW-OK]` 主流程不依赖该控制；可通过 NA20 控制，但 NA20 与 NT10 之间实现看设备。 |
-| 整体投屏会话状态不新建独立 domain。 | none | MediaHost 聚合 video/audio state；`castSessionId` 仅作为透明关联字段。 | Runtime/App implementation | `[REVIEW-OK]` 不治理独立 `cast.streaming`。 |
+| 整体投屏会话状态不新建独立 method domain。 | none | MediaHost/Launcher 聚合 source、stream 和 player state 为 `receiverPhase`；`castSessionId` 仅作为透明关联字段。 | Runtime/App implementation | `[REVIEW-OK]` 不治理独立 `cast.streaming`。 |
 
 ### 8.3 Candidate Feature Boundaries
 
@@ -378,7 +401,10 @@ sequenceDiagram
 
 - MediaHost 能通过 `AXTP-USB-HID` 与 NA20 建立 Standard Framed session，并接收 `PayloadType=STREAM`。
 - 用户将 NT10 插入源端 PC 后，NT10 自动向 NA20 发起无线投屏；主流程不要求 MediaHost 先发开始投屏命令。
+- HID/NA20 主流程不要求用户密码鉴权；统一 `receiverPhase` 中的 `authenticating` 通常跳过，并以 `authRequired=false` 或等价摘要表达。
 - NT10 插入只触发 NA20 上游 source 进入 available/receiving；建流必须显式通过 `video.openStream` / `audio.openStream` 完成。
+- MediaHost/Launcher 必须能从 source available/receiving、stream opening/streaming 和播放器首帧状态聚合 `incoming`、`streamStarting`、`streaming`、`rendering`。
+- `receiverPhase=streaming` 只表示 STREAM 数据开始流动；`receiverPhase=rendering` 必须等首帧渲染或音频播放开始后才进入。
 - `openStream` 必须同时支持 producer-initiated open 和 receiver-initiated pull：NA20 主动请求时声明对端 MediaHost 是 receiver，MediaHost 主动拉取时声明对端 NA20 是 transmitter/producer。
 - 两种 open 方式都只建立 NA20->MediaHost downstream stream，不得隐式停止、断开或重建 NT10->NA20 upstream source。
 - MediaHost 拒绝 NA20 producer-open 后，NA20 不得发送该 streamId 的 STREAM；若 source 仍 available/receiving，NA20 可发出 source available/receiving event，让 MediaHost 后续主动拉取。
