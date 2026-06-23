@@ -12,9 +12,9 @@ lastReviewed: 2026-06-17
 
 版本：v0.9（已采纳）
 
-归属域：`software`（DomainId `0x16`）
+归属域：`software`（DomainId `0x17`）
 
-Capability ID：`software.updatePolicy`（capability `0x1602`）
+Capability ID：`software.updatePolicy`（capability `0x1702`）
 
 适用范围：设备上运行的软件对象（Launcher、signagePlayer、agent 等）的自动更新策略配置。
 
@@ -31,9 +31,9 @@ Capability ID：`software.updatePolicy`（capability `0x1602`）
 ---
 
 **v0.9 变更说明（采纳）：**
-经 `adopt-protocol-draft` skill 采纳，machine 事实源落地为 `registry/domains/software/domain.yaml`（追加到已存在的 software domain，DomainId `0x16`）。本草案冻结为正式提案，审核标记表第 1 行 `[REVIEW-DRAFT]` → `[REVIEW-ADOPTED]`，标题区补 DomainId/capabilityId，并新增「采纳记录 (Adoption)」节记录已分配正式 ID、错误码决策、Schema 名映射、限定采纳范围与后续约束。§0/§3.0/§4.0/§10 同步标注已采纳状态与 ID。
+经 `adopt-protocol-draft` skill 采纳，machine 事实源落地为 `registry/domains/software/domain.yaml`（追加到已存在的 software domain，DomainId `0x17`）。本草案冻结为正式提案，审核标记表第 1 行 `[REVIEW-DRAFT]` → `[REVIEW-ADOPTED]`，标题区补 DomainId/capabilityId，并新增「采纳记录 (Adoption)」节记录已分配正式 ID、错误码决策、Schema 名映射、限定采纳范围与后续约束。§0/§3.0/§4.0/§10 同步标注已采纳状态与 ID。
 本次为**局部采纳**：仅固化 `target: "launcher"` 的更新策略字段（`updateMode` / `schedule` / `channel` / `conditions`）为强类型 schema；`signagePlayer`/`agent` 的 policy 字段保留为开放 `string` target（待产品补充后再 re-adopt）。`updateMode` 枚举写入 `auto`/`manual`/`notify`（`notify` 待 P0 确认，变更走 amend）；`schedule` 跨午夜（`end < start`）按候选语义写入 description；`conditions` 仅含 `requireIdle`/`requireWifi`（标牌特有条件如 `requirePlaybackIdle` 保留）。§12 的 5 条 `[REVIEW-ASK]` 标注为 `[REVIEW-ADOPTED-SCOPED]`。
-本次不新增业务错误码（4 个 common 码已覆盖）；不落地 legacy mapping 到 registry（与 `software.config` / `signage.playlist` 采纳一致，legacy 映射作为草案 §9 记录保留）；不改 MVP profile。Generator 源码（`generators/src/validator.ts`、`protocolValidator.ts`、`protocolBuilder.ts` 三处 `domainByHighByte`）已在 `software.config` 采纳时补 `0x16: "software"`，无需再改，`validate:sources` 通过。generated 产物（`protocol/axtp.protocol.yaml`、`docs/generated/*`、`tooling/mcp/*`）由 Stage 50 重生成。
+本次不新增业务错误码（4 个 common 码已覆盖）；不落地 legacy mapping 到 registry（与 `software.config` / `signage.playlist` 采纳一致，legacy 映射作为草案 §9 记录保留）；不改 MVP profile。Generator 源码（`generators/src/validator.ts`、`protocolValidator.ts`、`protocolBuilder.ts` 三处 `domainByHighByte`）已在 `software.config` 采纳时补 `0x17: "software"`，无需再改，`validate:sources` 通过。generated 产物（`protocol/axtp.protocol.yaml`、`docs/generated/*`、`tooling/mcp/*`）由 Stage 50 重生成。
 
 **v0.8 变更说明：**
 对齐 20-draft-business-protocol skill 与 `protocol-draft-template.md` 的 JSON 示例约定（业务语义、schema、错误码、legacy 映射均不变）：
@@ -41,14 +41,14 @@ Capability ID：`software.updatePolicy`（capability `0x1602`）
 (2) 将原集中式第 7 节 12 个 JSON 示例迁移到各 method/event 小节：每个 method 补齐 Request / Success Response / Error Response `d block` 内联示例 + 错误表 + `规则`；event 补齐 Event `d block` 示例 + 客户端处理建议 + `规则`。method/event 子标题改为带编号风格（`3.x.1`…`4.1.1`…），示例标题统一标注 `op=7` / `op=8` / `op=6`。
 (3) 第 7 节改为 `## 7. 交互流程示例 Flow Examples`，只保留端到端 flow（查询→修改→事件校准 / 恢复默认→事件 / 失败请求不触发事件 / 跨午夜与 null 清除）。
 (4) 补齐附录 A–D（协议审核标记 / 决策记录 / Registry 草案输入 / 采纳检查清单），文件顶部「协议审核标记」表收敛为指引段、完整记录迁入附录 A。
-(5) 同步 sibling flow 文档 `docs/flows/signage-device-management.md` 中 `software.updatePolicy` 版本引用 v0.7 → v0.8。
+(5) 同步 sibling flow 文档 `workspace/flows/signage-device-management.md` 中 `software.updatePolicy` 版本引用 v0.7 → v0.8。
 本次不改 schema 定义（6.0–6.8）、错误码（§8 数值已核实全部正确：`NOT_SUPPORTED` 0x0003 / `INVALID_STATE` 0x0004 / `PERMISSION_DENIED` 0x0009 / `INVALID_ARGUMENT` 0x000A，均 `status: mvp`）、legacy 映射（9.1–9.4）；JSON 示例的业务内容（字段值、错误码、placeholder）原样迁移，只改位置、标题与「d block」称谓。
 
 **v0.7 变更说明：**
 (1) 统一 sibling 草案 `software.config` 版本引用为 v0.5（协议审核标记表、v0.6 变更说明第 1 条、§12 三处曾误记为 v0.4，与同草案另几处 v0.5 自相矛盾）。
 (2) 修正 §12 与协议审核标记表中 flow step 一致性条目的过时描述：flow 文档 step 16/19/21 现已修正为"返回标准成功响应（无 result body）；触发对应 *Changed 事件"；澄清原"Flow step 20"系笔误（实为 step 21）。两条记录改为闭环状态。
 (3) frontmatter `lastReviewed` 更新；标题版本升至 v0.7。
-(4) 配套修正 sibling flow 文档 `docs/flows/signage-device-management.md` 中跨午夜 schedule 语义"已确认"措辞为草案候选 `[REVIEW-ASK]`，并对齐全部 `software.updatePolicy` 版本引用至 v0.7。
+(4) 配套修正 sibling flow 文档 `workspace/flows/signage-device-management.md` 中跨午夜 schedule 语义"已确认"措辞为草案候选 `[REVIEW-ASK]`，并对齐全部 `software.updatePolicy` 版本引用至 v0.7。
 
 **v0.6 变更说明：**
 (1) §12 software.config 错误码条目从 `[REVIEW-FIX]` 更新为 `[REVIEW-RESOLVED]`：sibling 草案 `software.config` 已修正至 v0.5，§8 错误码现为正确值（`0x0009` / `0x0004` / `0x000A`）。
@@ -83,19 +83,19 @@ Capability ID：`software.updatePolicy`（capability `0x1602`）
 
 ## 采纳记录 (Adoption)
 
-本文于 2026-06-17 经 `adopt-protocol-draft` skill（`docs/dev/skills/30-adopt-protocol-draft`）采纳。machine 事实源为 `registry/domains/software/domain.yaml`；本草案为正式提案，YAML 与 generated 产物不一致时以 registry YAML 为准。
+本文于 2026-06-17 经 `adopt-protocol-draft` skill（`tooling/skills/30-adopt-protocol-draft`）采纳。machine 事实源为 `registry/domains/software/domain.yaml`；本草案为正式提案，YAML 与 generated 产物不一致时以 registry YAML 为准。
 
 ### A.1 已分配正式 ID
 
-DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已在 `software.config` 采纳时补，`validate:sources` 通过）。
+DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已在 `software.config` 采纳时补，`validate:sources` 通过）。
 
 | 条目 | ID | bitOffset | 备注 |
 |---|---|---:|---|
-| method `software.getUpdatePolicy` | `0x1604` | 3 | request `SoftwareGetUpdatePolicyParams` / response `SoftwareUpdatePolicy` |
-| method `software.setUpdatePolicy` | `0x1605` | 4 | request `SoftwareSetUpdatePolicyParams` / response `SoftwareSetUpdatePolicyResult`（命名空，IR 归一化为 `Empty`） |
-| method `software.resetUpdatePolicy` | `0x1606` | 5 | request `SoftwareResetUpdatePolicyParams` / response `SoftwareUpdatePolicy` |
-| event `software.updatePolicyChanged` | `0x1602` | 1 | payload `SoftwareUpdatePolicyChangedEvent`；trigger `setUpdatePolicy` / `resetUpdatePolicy` |
-| capability `software.updatePolicy` | `0x1602` | — | schema `SoftwareUpdatePolicyCapability` |
+| method `software.getUpdatePolicy` | `0x1704` | 3 | request `SoftwareGetUpdatePolicyParams` / response `SoftwareUpdatePolicy` |
+| method `software.setUpdatePolicy` | `0x1705` | 4 | request `SoftwareSetUpdatePolicyParams` / response `SoftwareSetUpdatePolicyResult`（命名空，IR 归一化为 `Empty`） |
+| method `software.resetUpdatePolicy` | `0x1706` | 5 | request `SoftwareResetUpdatePolicyParams` / response `SoftwareUpdatePolicy` |
+| event `software.updatePolicyChanged` | `0x1702` | 1 | payload `SoftwareUpdatePolicyChangedEvent`；trigger `setUpdatePolicy` / `resetUpdatePolicy` |
+| capability `software.updatePolicy` | `0x1702` | — | schema `SoftwareUpdatePolicyCapability` |
 
 低字节计数惯例（与 `software.config` / `signage.playlist` 一致）：method / event / capability 各自独立从 `0x01` 起编号，三者可同号共存（不同命名空间）。method bitOffset 续编 `software.config`（0/1/2）之后为 3/4/5；event bitOffset 续编 `software.configChanged`（0）之后为 1；均满足 generator `assertDomainBitOffsets` 从 0 起连续要求。
 
@@ -129,7 +129,7 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已在 `softw
 | `PERMISSION_DENIED` | ✓ mvp | `0x0009` | setUpdatePolicy / resetUpdatePolicy（无权修改） |
 | `INVALID_STATE` | ✓ mvp | `0x0004` | setUpdatePolicy / resetUpdatePolicy（软件升级中） |
 
-**未新增** software 业务错误码。draft §8 候选 Errors 表的 4 个码均已在 v0.6 确认为 common mvp 码（非候选），本次直接复用。software domain 的错误码段（`0x1600`-`0x16FF`）保持空。
+**未新增** software 业务错误码。draft §8 候选 Errors 表的 4 个码均已在 v0.6 确认为 common mvp 码（非候选），本次直接复用。software domain 的错误码段（`0x1700`-`0x17FF`）保持空。
 
 ### A.4 限定采纳范围
 
@@ -147,9 +147,9 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已在 `softw
 
 ### A.5 后续约束
 
-- 本草案已采纳部分（launcher target 的 method/event/schema/capability/错误码）的**语义变更**，必须走 `docs/dev/skills/40-amend-adopted-protocol/SKILL.md`，不得直接改 `registry/domains/software/domain.yaml` 而不更新草案。
+- 本草案已采纳部分（launcher target 的 method/event/schema/capability/错误码）的**语义变更**，必须走 `tooling/skills/40-amend-adopted-protocol/SKILL.md`，不得直接改 `registry/domains/software/domain.yaml` 而不更新草案。
 - 未采纳部分（`signagePlayer` / `agent` policy 字段、`notify` P0 范围、跨午夜最终语义、标牌特有 conditions、firmware 边界统一）确认后，必须**先更新本草案**（补 §6.X schema 表、关闭对应 `[REVIEW-ASK]`），再走 `30-adopt-protocol-draft` re-adopt 增量事实到 `registry/domains/software/domain.yaml`。
-- `docs/generated/*`、`protocol/axtp.protocol.yaml`、`tooling/mcp/*` 等 generated 产物由 Stage 50（`docs/dev/skills/50-generate-axtp-protocol/SKILL.md`）重生成，**不得手改**。
+- `docs/generated/*`、`protocol/axtp.protocol.yaml`、`tooling/mcp/*` 等 generated 产物由 Stage 50（`tooling/skills/50-generate-axtp-protocol/SKILL.md`）重生成，**不得手改**。
 - Legacy mapping（§9 `GetUpdateConfig` / `SetUpdateConfig`）不落地 registry；§9.3 classification 差异（CSV / `firmware.md` 错归 `firmware.updatePolicy`、generated map 用旧名 `update.getConfig`/`update.setConfig`）由 legacy-migration 专项处理。
 
 ---
@@ -226,9 +226,9 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已在 `softw
 
 | Method | methodId | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
 |---|---|---|---|---|---|---|---|
-| `software.getUpdatePolicy` | `0x1604` | query | 查询当前软件更新策略。 | `SoftwareGetUpdatePolicyParams` | `SoftwareUpdatePolicy` | 否 | `[REVIEW-ADOPTED]` |
-| `software.setUpdatePolicy` | `0x1605` | command | 设置软件更新策略。 | `SoftwareSetUpdatePolicyParams` | —（仅 status 确认） | 是，变化后触发 `software.updatePolicyChanged`。 | `[REVIEW-ADOPTED]` |
-| `software.resetUpdatePolicy` | `0x1606` | command | 恢复软件默认更新策略。 | `SoftwareResetUpdatePolicyParams` | `SoftwareUpdatePolicy` | 是，变化后触发 `software.updatePolicyChanged`。 | `[REVIEW-ADOPTED]` |
+| `software.getUpdatePolicy` | `0x1704` | query | 查询当前软件更新策略。 | `SoftwareGetUpdatePolicyParams` | `SoftwareUpdatePolicy` | 否 | `[REVIEW-ADOPTED]` |
+| `software.setUpdatePolicy` | `0x1705` | command | 设置软件更新策略。 | `SoftwareSetUpdatePolicyParams` | —（仅 status 确认） | 是，变化后触发 `software.updatePolicyChanged`。 | `[REVIEW-ADOPTED]` |
+| `software.resetUpdatePolicy` | `0x1706` | command | 恢复软件默认更新策略。 | `SoftwareResetUpdatePolicyParams` | `SoftwareUpdatePolicy` | 是，变化后触发 `software.updatePolicyChanged`。 | `[REVIEW-ADOPTED]` |
 
 ### 3.1 `software.getUpdatePolicy`
 
@@ -597,7 +597,7 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已在 `softw
 
 | Event | eventId | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|---|
-| `software.updatePolicyChanged` | `0x1602` | 策略被 set、reset 或设备策略修改。 | `SoftwareUpdatePolicyChangedEvent` | 刷新更新策略页面；必要时调用 getUpdatePolicy 校准。 | `[REVIEW-ADOPTED]` |
+| `software.updatePolicyChanged` | `0x1702` | 策略被 set、reset 或设备策略修改。 | `SoftwareUpdatePolicyChangedEvent` | 刷新更新策略页面；必要时调用 getUpdatePolicy 校准。 | `[REVIEW-ADOPTED]` |
 
 ### 4.1 `software.updatePolicyChanged`
 
@@ -797,7 +797,7 @@ Capability name: `software.updatePolicy`。
 
 ### 7.1 场景：运维查询并修改 Launcher 更新策略
 
-运维查询当前策略，按需做单字段 partial 更新（切换到 Beta 通道），通过事件校准。对应 `docs/flows/signage-device-management.md` 阶段 2/4。
+运维查询当前策略，按需做单字段 partial 更新（切换到 Beta 通道），通过事件校准。对应 `workspace/flows/signage-device-management.md` 阶段 2/4。
 
 #### Step 1. software.getUpdatePolicy：Request d block (op=7)
 
@@ -1066,7 +1066,7 @@ Success Response d block (op=8)：
 
 ## 9. Legacy 映射
 
-以下映射基于 `docs/legacy-migration/evidence/NearHub-Launcher数字标牌设备管理通用管理命令.md`。
+以下映射基于 `workspace/legacy-migration/evidence/NearHub-Launcher数字标牌设备管理通用管理命令.md`。
 
 ### 9.1 `GetUpdateConfig` → `software.getUpdatePolicy(target: "launcher")`
 
@@ -1133,20 +1133,20 @@ Success Response d block (op=8)：
 
 **状态**：`[REVIEW-DRAFT]`（signage_sdk.md 已更新；CSV 和 firmware.md 待同步）
 
-Legacy classification CSV（`docs/legacy-migration/classification/legacy-protocol-classification.csv`）和 `docs/legacy-migration/classification/firmware.md` 将 `GetUpdateConfig` / `SetUpdateConfig` 归入 `firmware.updatePolicy` → `firmware.getUpdatePolicyConfig` / `firmware.setUpdatePolicyConfig`。
+Legacy classification CSV（`workspace/legacy-migration/classification/legacy-protocol-classification.csv`）和 `workspace/legacy-migration/classification/firmware.md` 将 `GetUpdateConfig` / `SetUpdateConfig` 归入 `firmware.updatePolicy` → `firmware.getUpdatePolicyConfig` / `firmware.setUpdatePolicyConfig`。
 
-Flow 文档（`docs/flows/signage-device-management.md`）已 re-classified 到 `software.updatePolicy`（target: `"launcher"`）。理由：这些命令管理的是 Launcher 软件的自动更新设置，不是设备固件 OTA 策略。
+Flow 文档（`workspace/flows/signage-device-management.md`）已 re-classified 到 `software.updatePolicy`（target: `"launcher"`）。理由：这些命令管理的是 Launcher 软件的自动更新设置，不是设备固件 OTA 策略。
 
-Generated legacy-to-axtp map（`docs/legacy-migration/generated/legacy-to-axtp-map.generated.yaml`）仍使用旧通用名 `update.getConfig` / `update.setConfig`，既不是 `firmware.updatePolicy` 也不是 `software.updatePolicy`。
+Generated legacy-to-axtp map（`workspace/legacy-migration/generated/legacy-to-axtp-map.generated.yaml`）仍使用旧通用名 `update.getConfig` / `update.setConfig`，既不是 `firmware.updatePolicy` 也不是 `software.updatePolicy`。
 
 **修正进度**：
 
 1. `software.updatePolicy` 分类为正确归属（软件更新策略，非固件 OTA）。**已确认**。
-2. `docs/legacy-migration/classification/by-source/signage_sdk.md` 已更新：GetUpdateConfig / SetUpdateConfig 映射到 `software.updatePolicy`。**已完成**。
-3. `docs/legacy-migration/classification/legacy-protocol-classification.csv` 仍将 GetUpdateConfig / SetUpdateConfig 归入 `firmware.updatePolicy`。**待修正**为 `software.updatePolicy`。
-4. `docs/legacy-migration/classification/firmware.md` 仍包含 GetUpdateConfig / SetUpdateConfig 行。**待移除**（这些行应出现在 `software.md` 或保留在 signage.md）。
-5. `docs/legacy-migration/generated/legacy-to-axtp-map.generated.yaml` 仍使用旧通用名 `update.getConfig` / `update.setConfig`。**待重新生成**为 `software.getUpdatePolicy` / `software.setUpdatePolicy`。
-6. `docs/protocol/firmware/firmware.updatePolicy.md` 保持为 v0.1 骨架，等待真实固件 OTA 策略需求填充。**无需变动**。
+2. `workspace/legacy-migration/classification/by-source/signage_sdk.md` 已更新：GetUpdateConfig / SetUpdateConfig 映射到 `software.updatePolicy`。**已完成**。
+3. `workspace/legacy-migration/classification/legacy-protocol-classification.csv` 仍将 GetUpdateConfig / SetUpdateConfig 归入 `firmware.updatePolicy`。**待修正**为 `software.updatePolicy`。
+4. `workspace/legacy-migration/classification/firmware.md` 仍包含 GetUpdateConfig / SetUpdateConfig 行。**待移除**（这些行应出现在 `software.md` 或保留在 signage.md）。
+5. `workspace/legacy-migration/generated/legacy-to-axtp-map.generated.yaml` 仍使用旧通用名 `update.getConfig` / `update.setConfig`。**待重新生成**为 `software.getUpdatePolicy` / `software.setUpdatePolicy`。
+6. `workspace/protocol/firmware/firmware.updatePolicy.md` 保持为 v0.1 骨架，等待真实固件 OTA 策略需求填充。**无需变动**。
 
 ### 9.4 Adapter 层结构变换说明
 

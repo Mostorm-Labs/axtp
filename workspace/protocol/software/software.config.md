@@ -12,9 +12,9 @@ lastReviewed: 2026-06-17
 
 版本：v0.8（已采纳）
 
-归属域：`software`（DomainId `0x16`）
+归属域：`software`（DomainId `0x17`）
 
-Capability ID：`software.config`（capability `0x1601`）
+Capability ID：`software.config`（capability `0x1701`）
 
 适用范围：设备上运行的软件对象（Launcher、signagePlayer、agent 等）的运行配置读取、设置和恢复默认。
 
@@ -24,8 +24,8 @@ Capability ID：`software.config`（capability `0x1601`）
 
 | 标记 | 条目 | 审核结论 | 后续动作 |
 |---|---|---|---|
-| `[REVIEW-ADOPTED]` | `software.config` capability | 本文已采纳（见下方「采纳记录 (Adoption)」），machine 事实源为 `registry/domains/software/domain.yaml`。 | generated 产物由 `docs/dev/skills/50-generate-axtp-protocol` 重跑生效。 |
-| `[REVIEW-RESOLVED]` | `software` 域名 | Taxonomy spec rule 2 为 "e.g." 措辞（非穷举列表），rule 8 允许新增 domain 且 MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入；本草案已在 `docs/flows/signage-device-management.md` steps 8/16/19/23 使用。 | 采纳时无需 taxonomy amendment。 |
+| `[REVIEW-ADOPTED]` | `software.config` capability | 本文已采纳（见下方「采纳记录 (Adoption)」），machine 事实源为 `registry/domains/software/domain.yaml`。 | generated 产物由 `tooling/skills/50-generate-axtp-protocol` 重跑生效。 |
+| `[REVIEW-RESOLVED]` | `software` 域名 | Taxonomy spec rule 2 为 "e.g." 措辞（非穷举列表），rule 8 允许新增 domain 且 MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入；本草案已在 `workspace/flows/signage-device-management.md` steps 8/16/19/23 使用。 | 采纳时无需 taxonomy amendment。 |
 | `[REVIEW-ASK]` | `target` 枚举值 | 完整的 target 枚举值列表需要产品和设备确认。 | 采纳前补齐 target enum baseline。 |
 | `[REVIEW-DRAFT]` | legacy 映射 | 已完成 evidence-based 字段映射。`GetAppearanceConfig` / `SetAppearanceConfig` / `SetDeviceName` 映射到 `software.config`；`ResetConfig` 映射到 `system.restoreFactorySettings`。 | 采纳前确认 Adapter 层实现计划。 |
 | `[REVIEW-RESOLVED]` | `displayName` 归属 | `device.info.md`（line 185）确认 `displayName` 本轮只读返回、不提供写入接口；flow 文档 §11 已 REVIEW-RESOLVED。两草案一致：写入在 `software.config`、只读在 `device.info`。 | 采纳前最终确认。 |
@@ -33,9 +33,9 @@ Capability ID：`software.config`（capability `0x1601`）
 ---
 
 **v0.8 变更说明（采纳）：**
-经 `adopt-protocol-draft` skill 采纳，machine 事实源落地为 `registry/domains/software/domain.yaml`（新增 software domain，DomainId `0x16`）。本草案冻结为正式提案，审核标记表第 1 行 `[REVIEW-DRAFT]` → `[REVIEW-ADOPTED]`，标题区补 DomainId/capabilityId，并新增「采纳记录 (Adoption)」节记录已分配正式 ID、错误码决策、Schema 名映射、限定采纳范围与后续约束。§0/§3.0/§4.0/§10 同步标注已采纳状态与 ID。
+经 `adopt-protocol-draft` skill 采纳，machine 事实源落地为 `registry/domains/software/domain.yaml`（新增 software domain，DomainId `0x17`）。本草案冻结为正式提案，审核标记表第 1 行 `[REVIEW-DRAFT]` → `[REVIEW-ADOPTED]`，标题区补 DomainId/capabilityId，并新增「采纳记录 (Adoption)」节记录已分配正式 ID、错误码决策、Schema 名映射、限定采纳范围与后续约束。§0/§3.0/§4.0/§10 同步标注已采纳状态与 ID。
 本次为**局部采纳**：仅固化 `target: "launcher"` 的配置字段（`displayName` + `appearance`）为强类型 schema；`signagePlayer`/`agent` 的配置字段保留为开放 `string` target（待产品补充后再 re-adopt）。`resetConfig` 语义确认为「重置所有 launcher 配置含 `displayName`（恢复设备出厂名）」，§12 该项 `[REVIEW-ASK]` → `[REVIEW-RESOLVED]`。
-本次不新增业务错误码（4 个 common 码已覆盖）；不落地 legacy mapping 到 registry（与 `signage.playlist` 采纳一致，legacy 映射作为草案 §9 记录保留）；不改 MVP profile。Generator 源码（`generators/src/validator.ts`、`protocolValidator.ts`、`protocolBuilder.ts` 三处 `domainByHighByte`）已补 `0x16: "software"`，`validate:sources` 通过。generated 产物（`protocol/axtp.protocol.yaml`、`docs/generated/*`、`tooling/mcp/*`）由 Stage 50 重生成。
+本次不新增业务错误码（4 个 common 码已覆盖）；不落地 legacy mapping 到 registry（与 `signage.playlist` 采纳一致，legacy 映射作为草案 §9 记录保留）；不改 MVP profile。Generator 源码（`generators/src/validator.ts`、`protocolValidator.ts`、`protocolBuilder.ts` 三处 `domainByHighByte`）已补 `0x17: "software"`，`validate:sources` 通过。generated 产物（`protocol/axtp.protocol.yaml`、`docs/generated/*`、`tooling/mcp/*`）由 Stage 50 重生成。
 
 **v0.7 变更说明：**
 对齐 20-draft-business-protocol skill 与 `protocol-draft-template.md` 的 JSON 示例约定（业务语义、schema、错误码、legacy 映射、审核标记均不变），与已对齐的兄弟草案 `device.enrollment` v0.9 / `signage.playlist` v1.3 结构一致：
@@ -51,7 +51,7 @@ Capability ID：`software.config`（capability `0x1601`）
 (4) frontmatter `lastReviewed` 同步至 2026-06-15；§7.2b 示例 `id: 201` 改为 `5` 消除跳号。
 
 **v0.5 变更说明：**
-(1) 基于 Taxonomy spec rule 2（"e.g." 措辞，非穷举列表）与 rule 8（新增 domain MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入；本草案已在 `docs/flows/signage-device-management.md` steps 8/16/19/23 使用），关闭 `software` domain `[REVIEW-ASK]`：采纳时无需 taxonomy amendment。
+(1) 基于 Taxonomy spec rule 2（"e.g." 措辞，非穷举列表）与 rule 8（新增 domain MUST 可追溯到 `docs/flows`/`docs/protocol` 评审输入；本草案已在 `workspace/flows/signage-device-management.md` steps 8/16/19/23 使用），关闭 `software` domain `[REVIEW-ASK]`：采纳时无需 taxonomy amendment。
 (2) 基于 `device.info.md`（line 185，`displayName` 本轮只读返回、不提供写入接口）与 flow 文档 §11（已 REVIEW-RESOLVED），同步关闭 `displayName` 归属 `[REVIEW-ASK]`：写入路径在 `software.config`、只读返回在 `device.info`。
 (3) 同步 `lastReviewed`。
 (4) §8 候选 Errors Review 列对齐：`INVALID_ARGUMENT` / `PERMISSION_DENIED` / `INVALID_STATE` 从 `[REVIEW-DRAFT]` 改为 `—`，与同表 `NOT_SUPPORTED` 一致——三者均为 `registry/error/error_code.yaml` 中 `status: mvp` 的已采纳 common 码，非草案候选。与 sibling 草案 `software.updatePolicy` v0.6 一致。
@@ -67,20 +67,20 @@ Capability ID：`software.config`（capability `0x1601`）
 
 ## 采纳记录 (Adoption)
 
-本文于 2026-06-17 经 `adopt-protocol-draft` skill（`docs/dev/skills/30-adopt-protocol-draft`）采纳。machine 事实源为 `registry/domains/software/domain.yaml`；本草案为正式提案，YAML 与 generated 产物不一致时以 registry YAML 为准。
+本文于 2026-06-17 经 `adopt-protocol-draft` skill（`tooling/skills/30-adopt-protocol-draft`）采纳。machine 事实源为 `registry/domains/software/domain.yaml`；本草案为正式提案，YAML 与 generated 产物不一致时以 registry YAML 为准。
 
 ### A.1 已分配正式 ID
 
-DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已补，`validate:sources` 通过）。
+DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`validate:sources` 通过）。
 
 | 条目 | ID | bitOffset | 备注 |
 |---|---|---:|---|
-| DomainId (software) | `0x16` | — | 下一个空闲高字节（0x15 privacy 之后） |
-| method `software.getConfig` | `0x1601` | 0 | request `SoftwareGetConfigParams` / response `SoftwareConfig` |
-| method `software.setConfig` | `0x1602` | 1 | request `SoftwareSetConfigParams` / response `SoftwareSetConfigResult`（命名空，IR 归一化为 `Empty`） |
-| method `software.resetConfig` | `0x1603` | 2 | request `SoftwareResetConfigParams` / response `SoftwareConfig` |
-| event `software.configChanged` | `0x1601` | 0 | payload `SoftwareConfigChangedEvent`；trigger `setConfig` / `resetConfig` |
-| capability `software.config` | `0x1601` | — | schema `SoftwareConfigCapability` |
+| DomainId (software) | `0x17` | — | cast 已占用 0x16，software 用 0x17 |
+| method `software.getConfig` | `0x1701` | 0 | request `SoftwareGetConfigParams` / response `SoftwareConfig` |
+| method `software.setConfig` | `0x1702` | 1 | request `SoftwareSetConfigParams` / response `SoftwareSetConfigResult`（命名空，IR 归一化为 `Empty`） |
+| method `software.resetConfig` | `0x1703` | 2 | request `SoftwareResetConfigParams` / response `SoftwareConfig` |
+| event `software.configChanged` | `0x1701` | 0 | payload `SoftwareConfigChangedEvent`；trigger `setConfig` / `resetConfig` |
+| capability `software.config` | `0x1701` | — | schema `SoftwareConfigCapability` |
 
 低字节计数惯例（与 `signage.playlist` 一致）：method / event / capability 各自独立从 `0x01` 起编号，三者可同号共存（不同命名空间）。
 
@@ -111,7 +111,7 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已补，`val
 | `PERMISSION_DENIED` | ✓ mvp | `0x0009` | setConfig / resetConfig（无权修改） |
 | `INVALID_STATE` | ✓ mvp | `0x0004` | setConfig / resetConfig（软件升级或恢复中） |
 
-**未新增** software 业务错误码。draft §8 候选 Errors 表的 4 个码均已在 v0.5 确认为 common mvp 码（非候选），本次直接复用。software domain 的错误码段（`0x1600`-`0x16FF`）保持空。
+**未新增** software 业务错误码。draft §8 候选 Errors 表的 4 个码均已在 v0.5 确认为 common mvp 码（非候选），本次直接复用。software domain 的错误码段（`0x1700`-`0x17FF`）保持空。
 
 ### A.4 限定采纳范围
 
@@ -127,9 +127,9 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已补，`val
 
 ### A.5 后续约束
 
-- 本草案已采纳部分（launcher target 的 method/event/schema/capability/错误码）的**语义变更**，必须走 `docs/dev/skills/40-amend-adopted-protocol/SKILL.md`，不得直接改 `registry/domains/software/domain.yaml` 而不更新草案。
+- 本草案已采纳部分（launcher target 的 method/event/schema/capability/错误码）的**语义变更**，必须走 `tooling/skills/40-amend-adopted-protocol/SKILL.md`，不得直接改 `registry/domains/software/domain.yaml` 而不更新草案。
 - 未采纳部分（`signagePlayer` / `agent` 配置字段）补充后，必须**先更新本草案**（补 §6.X schema 表、关闭对应 `[REVIEW-ASK]`），再走 `30-adopt-protocol-draft` re-adopt 增量事实到 `registry/domains/software/domain.yaml`。
-- `docs/generated/*`、`protocol/axtp.protocol.yaml`、`tooling/mcp/*` 等 generated 产物由 Stage 50（`docs/dev/skills/50-generate-axtp-protocol/SKILL.md`）重生成，**不得手改**。
+- `docs/generated/*`、`protocol/axtp.protocol.yaml`、`tooling/mcp/*` 等 generated 产物由 Stage 50（`tooling/skills/50-generate-axtp-protocol/SKILL.md`）重生成，**不得手改**。
 
 ---
 
@@ -174,11 +174,11 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已补，`val
 
 `software.config` 用于设备上运行的软件对象的运行配置，例如 Launcher、signagePlayer、agent。通过 `target` 参数区分不同软件对象，每个对象有独立的配置字段集。
 
-本草案在 signage 设备管理流程（`docs/flows/signage-device-management.md`）中覆盖以下交互步骤：步骤 8（查询外观配置）、步骤 16（设置设备名称）、步骤 19（设置外观配置）、步骤 23（恢复默认软件配置）。配置同步采用"云查询设备状态 + 比对差异 + 按需下发"模式。
+本草案在 signage 设备管理流程（`workspace/flows/signage-device-management.md`）中覆盖以下交互步骤：步骤 8（查询外观配置）、步骤 16（设置设备名称）、步骤 19（设置外观配置）、步骤 23（恢复默认软件配置）。配置同步采用"云查询设备状态 + 比对差异 + 按需下发"模式。
 
 本草案合并了原 `device.appearance` 草案中的外观配置能力和 legacy `SetDeviceName` 设备名设置能力：Launcher 的面板布局、自动隐藏等配置统一作为 `software.config` 的 `target: "launcher"` 配置片段的 `appearance` 子对象；设备显示名称作为 `displayName` 字段提供写入路径，与 `device.info` 的只读 `product.displayName` 保持一致。
 
-注意：系统级恢复、恢复出厂、清除 OS 或设备基线配置仍属于 `system.reset`；`software.config` 不隐式执行系统恢复。Legacy `ResetConfig`（恢复出厂设置、设备重启）映射到 `system.restoreFactorySettings`（见 `docs/protocol/system/system.reset.md`），不映射到 `software.resetConfig`。
+注意：系统级恢复、恢复出厂、清除 OS 或设备基线配置仍属于 `system.reset`；`software.config` 不隐式执行系统恢复。Legacy `ResetConfig`（恢复出厂设置、设备重启）映射到 `system.restoreFactorySettings`（见 `workspace/protocol/system/system.reset.md`），不映射到 `software.resetConfig`。
 
 ---
 
@@ -202,9 +202,9 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已补，`val
 
 | Method | methodId | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
 |---|---|---|---|---|---|---|---|
-| `software.getConfig` | `0x1601` | query | 读取软件配置。 | `SoftwareGetConfigParams` | `SoftwareConfig` | 否 | `[REVIEW-ADOPTED]` |
-| `software.setConfig` | `0x1602` | command | 设置软件配置。 | `SoftwareSetConfigParams` | —（仅 status 确认） | 是，变化后触发 `software.configChanged`。 | `[REVIEW-ADOPTED]` |
-| `software.resetConfig` | `0x1603` | command | 恢复软件默认配置。 | `SoftwareResetConfigParams` | `SoftwareConfig` | 是，变化后触发 `software.configChanged`。 | `[REVIEW-ADOPTED]` |
+| `software.getConfig` | `0x1701` | query | 读取软件配置。 | `SoftwareGetConfigParams` | `SoftwareConfig` | 否 | `[REVIEW-ADOPTED]` |
+| `software.setConfig` | `0x1702` | command | 设置软件配置。 | `SoftwareSetConfigParams` | —（仅 status 确认） | 是，变化后触发 `software.configChanged`。 | `[REVIEW-ADOPTED]` |
+| `software.resetConfig` | `0x1703` | command | 恢复软件默认配置。 | `SoftwareResetConfigParams` | `SoftwareConfig` | 是，变化后触发 `software.configChanged`。 | `[REVIEW-ADOPTED]` |
 
 ### 3.1 `software.getConfig`
 
@@ -564,7 +564,7 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已补，`val
 
 | Event | eventId | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
 |---|---|---|---|---|---|
-| `software.configChanged` | `0x1601` | 软件配置被 set、reset 或设备策略修改。 | `SoftwareConfigChangedEvent` | 局部更新 UI；必要时调用 getConfig 校准。 | `[REVIEW-ADOPTED]` |
+| `software.configChanged` | `0x1701` | 软件配置被 set、reset 或设备策略修改。 | `SoftwareConfigChangedEvent` | 局部更新 UI；必要时调用 getConfig 校准。 | `[REVIEW-ADOPTED]` |
 
 ### 4.1 `software.configChanged`
 
@@ -767,7 +767,7 @@ Capability name: `software.config`。
 
 ### 7.1 场景：查询外观 → 修改外观 → 事件确认
 
-运维人员查询当前 Launcher 配置，切换面板布局为专注模式并启用自动隐藏，通过事件确认配置生效。对应 `docs/flows/signage-device-management.md` 阶段 2（配置同步）与阶段 4（设备管理）。
+运维人员查询当前 Launcher 配置，切换面板布局为专注模式并启用自动隐藏，通过事件确认配置生效。对应 `workspace/flows/signage-device-management.md` 阶段 2（配置同步）与阶段 4（设备管理）。
 
 #### Step 1. software.getConfig：Request d block (op=7)
 
@@ -836,7 +836,7 @@ Capability name: `software.config`。
 
 ### 7.2 场景：恢复默认配置
 
-运维人员恢复 Launcher 出厂默认配置，通过 result 和事件确认。对应 `docs/flows/signage-device-management.md` 阶段 4 步骤 23。
+运维人员恢复 Launcher 出厂默认配置，通过 result 和事件确认。对应 `workspace/flows/signage-device-management.md` 阶段 4 步骤 23。
 
 #### Step 1. software.resetConfig：Request d block (op=7)
 
@@ -918,7 +918,7 @@ Capability name: `software.config`。
 
 ## 9. Legacy 映射
 
-以下映射基于 `docs/legacy-migration/evidence/NearHub-Launcher数字标牌设备管理通用管理命令.md`。分类条目详见 `docs/legacy-migration/classification/by-source/signage_sdk.md`，其中 `GetAppearanceConfig`（line 557）、`SetAppearanceConfig`（line 580）和 `SetDeviceName`（line 81）均标记为 high confidence 映射到 `software.config`。
+以下映射基于 `workspace/legacy-migration/evidence/NearHub-Launcher数字标牌设备管理通用管理命令.md`。分类条目详见 `workspace/legacy-migration/classification/by-source/signage_sdk.md`，其中 `GetAppearanceConfig`（line 557）、`SetAppearanceConfig`（line 580）和 `SetDeviceName`（line 81）均标记为 high confidence 映射到 `software.config`。
 
 ### 9.1 `GetAppearanceConfig` → `software.getConfig(target: "launcher")`
 
@@ -977,13 +977,13 @@ Capability name: `software.config`。
 |---|---|---|---|
 | *(no params)* | — | `system.restoreFactorySettings` | Legacy 无参数。AXTP 使用 `system.restoreFactorySettings`。 |
 
-**重要结论**：Legacy `ResetConfig` 描述为"恢复出厂设置。注意：执行后设备通常会自动重启"。这是系统级出厂恢复（设备重启），不是软件配置默认值恢复。因此映射到 `system.restoreFactorySettings`（见 `docs/protocol/system/system.reset.md`），**不映射到** `software.resetConfig`。
+**重要结论**：Legacy `ResetConfig` 描述为"恢复出厂设置。注意：执行后设备通常会自动重启"。这是系统级出厂恢复（设备重启），不是软件配置默认值恢复。因此映射到 `system.restoreFactorySettings`（见 `workspace/protocol/system/system.reset.md`），**不映射到** `software.resetConfig`。
 
 **区分**：
 - `software.resetConfig(target: "launcher")` — 恢复 Launcher 运行配置到当前版本默认值，不重启设备。
 - `system.restoreFactorySettings` — 恢复出厂设置，设备重启，可能回退 Launcher 等软件组件到出厂初始版本。
 
-**Legacy classification 验证**：`docs/legacy-migration/classification/system.md` 已将 signage_sdk 的 `ResetConfig` 映射到 `system.initialization` → `system.reset`，与本文结论一致。
+**Legacy classification 验证**：`workspace/legacy-migration/classification/system.md` 已将 signage_sdk 的 `ResetConfig` 映射到 `system.initialization` → `system.reset`，与本文结论一致。
 
 ### 9.4b `software.resetConfig` — AXTP-only
 

@@ -93,7 +93,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 
 ### 命名与附录差异说明
 
-`docs/specs/2-registry/appendix/method-candidates.md` §6.13 与 `event-candidates.md` §5.14 为非规范性占位规划，其中 signage 条目（如 `0x0D01`=`signage.listMedia`、`signage.playlistChanged`）与本文评审后的正式名不一致。已采纳正式名以本文 `domain.feature` 治理为准；附录将在 `50-generate-axtp-protocol` 阶段同步刷新。
+`workspace/registry-planning/candidates/method-candidates.md` §6.13 与 `event-candidates.md` §5.14 为非规范性占位规划，其中 signage 条目（如 `0x0D01`=`signage.listMedia`、`signage.playlistChanged`）与本文评审后的正式名不一致。已采纳正式名以本文 `domain.feature` 治理为准；附录将在 `50-generate-axtp-protocol` 阶段同步刷新。
 
 ### 后续约束
 
@@ -162,7 +162,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 
 `signage.playlist` 定义数字标牌播放列表的全量同步、查询、恢复默认和播放项资源 URL 刷新。
 
-本文落实 `docs/flows/signage-device-management.md` 中对 legacy `SetPlaylistConfig` / `GetPlaylistConfig` / `GetPlaylistItemUrl` 的最终定域。当前 generated 协议未包含这些方法或事件；本文所有 method、event、schema 均为候选，正式数值为 `TBD after adoption`。
+本文落实 `workspace/flows/signage-device-management.md` 中对 legacy `SetPlaylistConfig` / `GetPlaylistConfig` / `GetPlaylistItemUrl` 的最终定域。当前 generated 协议未包含这些方法或事件；本文所有 method、event、schema 均为候选，正式数值为 `TBD after adoption`。
 
 **需求来源**：NearHub Launcher 数字标牌设备管理 — 播放列表管理。
 
@@ -1063,7 +1063,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 - Event payload MUST 放在 `d.data` 中。
 - 失败的 `setPlaylistConfig` / `resetPlaylistConfig` MUST NOT 触发本事件。
 
-> **事件 payload schema 说明**：本草案为 `playlistConfigChanged` 定义独立 payload schema `PlaylistConfigChangedEvent`（含 `reason` + 可选 `playlists`）。`docs/flows/signage-device-management.md` §7 将该事件 payload 记为 `PlaylistConfigResult` 属场景级简化表述；**正式 payload schema 以本草案为准**。如需同步 flow 文档表述，转 10-plan-protocol-flow（不在 20-draft-business-protocol 边界内）。
+> **事件 payload schema 说明**：本草案为 `playlistConfigChanged` 定义独立 payload schema `PlaylistConfigChangedEvent`（含 `reason` + 可选 `playlists`）。`workspace/flows/signage-device-management.md` §7 将该事件 payload 记为 `PlaylistConfigResult` 属场景级简化表述；**正式 payload schema 以本草案为准**。如需同步 flow 文档表述，转 10-plan-protocol-flow（不在 20-draft-business-protocol 边界内）。
 
 ---
 
@@ -1411,7 +1411,7 @@ Capability name: `signage.playlist`。
 | `GetPlaylistConfig` | 通用管理命令 · 已研发 | Server ↔ Device | `signage.getPlaylistConfig` | 逐字段映射见 9.2。 |
 | `GetPlaylistItemUrl` | 通用管理命令 · 已研发 | Device → Server | `signage.getPlaylistItemUrl` | 逐字段映射见 9.3。 |
 
-> **证据源文件**：`docs/legacy-migration/evidence/NearHub-Launcher数字标牌设备管理通用管理命令.md`。
+> **证据源文件**：`workspace/legacy-migration/evidence/NearHub-Launcher数字标牌设备管理通用管理命令.md`。
 
 > **AXTP-only 新增（无 legacy 对应）**：`signage.getPlaylistCapabilities`（能力查询）、`signage.resetPlaylistConfig`（恢复默认）、`unsplash` 播放项类型、`signage.playlistConfigChanged` 事件均为 AXTP 新增能力，legacy NearHub Launcher 无对应命令。迁移所有者据此判断完整 delta——legacy 侧仅有 `SetPlaylistConfig` / `GetPlaylistConfig` / `GetPlaylistItemUrl` 三个命令可映射，其余为纯新增。
 
@@ -1526,7 +1526,7 @@ Legacy Device → Server，请求 `{ itemId }`，响应 `{ url / urls, expiresAt
 
 以下 generated 文件当前包含 signage 播放列表相关映射，采纳阶段需同步更新。
 
-**`docs/legacy-migration/generated/legacy-to-axtp-map.generated.yaml`** 当前映射：
+**`workspace/legacy-migration/generated/legacy-to-axtp-map.generated.yaml`** 当前映射：
 
 | Legacy entry | 当前 target method | Status |
 |---|---|---|
@@ -1534,7 +1534,7 @@ Legacy Device → Server，请求 `{ itemId }`，响应 `{ url / urls, expiresAt
 | `GetPlaylistConfig` | `signage.getPlaylistConfig` | draft |
 | `GetPlaylistItemUrl` | `signage.getPlaylistItemUrl` | draft |
 
-**`docs/legacy-migration/generated/registry-patches.generated.yaml`** 当前条目：
+**`workspace/legacy-migration/generated/registry-patches.generated.yaml`** 当前条目：
 
 | 当前 ID | 当前名称 | 当前 domain | 当前 schema 名称 |
 |---|---|---|---|
