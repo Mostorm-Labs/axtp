@@ -4,6 +4,51 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.10.0
+
+Signage, software, and device enrollment business protocol adoption, plus generator-driven domain registry expansion.
+
+### Protocol
+
+- Adds the `signage` business domain as a generated AXTP protocol surface for digital signage playlist synchronization, query, reset, and playlist item URL refresh.
+- Adds generated signage methods for playlist capabilities, playlist config get/set/reset, and playlist item URL refresh.
+- Adds the `software` business domain as a generated AXTP protocol surface for device software configuration and update policy control.
+- Adds generated software methods for software config get/set/reset and update policy get/set/reset.
+- Adds the `device.enrollment` protocol surface into the `device` domain as a generated AXTP protocol surface for pairing code and device enrollment state.
+- Adds generated device methods for pairing code retrieval and enrollment state get/set.
+- Adds generated events for signage playlist config changes, software config changes, software update policy changes, and device enrollment state changes.
+
+### Registry
+
+- Adds generator-driven domain registry source files `contract/registry/domains/signage/domain.yaml`, `contract/registry/domains/software/domain.yaml`, and `contract/registry/domains/device/domain.yaml`, with 15 new methods, 4 new events, and 5 new capabilities across the signage, software, and device enrollment surfaces.
+- Extends `contract/registry/core/domain_registry.yaml` with the high-byte-to-domain map covering `device` (`0x01`), `signage` (`0x0D`), and `software` (`0x0E`), and maps the generator/validator high byte to each new domain.
+- Adds new error codes `ENROLLMENT_CODE_EXPIRED` and `ENROLLMENT_CODE_ALREADY_USED` for device enrollment pairing flow.
+- Promotes the domain registry to a generator-driven model so domain YAML sources feed generator validation and generated artifacts directly.
+- Marks the signage, software, and device enrollment protocol drafts as generated and updates product domain status/health summaries to reflect the new generated method/event facts.
+
+### Schemas
+
+- Adds generated schemas for signage playlist config, capabilities, and item URL refresh, including playlist item descriptor and validation constraints.
+- Adds generated schemas for software config payloads and update policy descriptors.
+- Adds generated schemas for device enrollment pairing code, enrollment state, and enrollment state change payloads.
+- Keeps open product policies such as playlist rotation rules, software config value bounds, and update policy scheduling out of the generated contract until they are amended explicitly.
+
+### Conformance
+
+- Does not add new hand-written conformance cases in this release.
+- Generator validation, protocol validation, generated drift checks, protocol status checks, and protocol snapshot tests cover the new generated registry surface.
+
+### Migration
+
+- Keeps signage, software, and device enrollment legacy mapping notes in `workspace/protocol/**` drafts as non-contract review material until each legacy alias is confirmed.
+- Updates `workspace/legacy-migration/MIGRATION_DASHBOARD.md` to reflect the new signage, software, and device enrollment adoption status.
+
+### Runtime Impact
+
+- Runtime and SDK teams should regenerate protocol metadata from `spec/v0.10.0` before exposing signage, software, or device enrollment controls.
+- Existing non-signage, non-software, and non-enrollment behavior, CONTROL/RPC/STREAM wire layout, shared errors, and previously generated domains are unchanged and remain backward compatible with `spec/v0.9.0`.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.9.0
 
 Cast receiver protocol registry and generated contract expansion.
