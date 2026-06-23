@@ -90,17 +90,17 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已补，`val
 
 | 草案 schema 名（§6） | registry schema 名 | 说明 |
 |---|---|---|
-| `SoftwareConfig`（§6.1） | `SoftwareConfig` | response / event 共用；`config` 字段 `type: bytes` 承载 target-specific JSON |
+| `SoftwareConfig`（§6.1） | `SoftwareConfig` | response / event 共用；`config` 字段强类型为 `LauncherConfig` |
 | `LauncherAppearance`（§6.3） | `LauncherAppearance` | 旁定义强类型，供 SDK 生成 |
 | `SoftwareGetConfigParams`（§6.4） | `SoftwareGetConfigParams` | |
 | `SoftwareSetConfigParams`（§6.5） | `SoftwareSetConfigParams` | |
 | `SoftwareResetConfigParams`（§6.6） | `SoftwareConfigChangedEvent` | |
 | `SoftwareConfigChangedEvent`（§6.7） | `SoftwareConfigChangedEvent` | |
-| —（新增） | `LauncherConfig` | 旁定义：`displayName` + `appearance`，承载 `config` bytes 的 launcher 结构 |
+| —（新增） | `LauncherConfig` | `displayName` + `appearance`；`config` 字段直接引用此强类型（target=launcher） |
 | —（新增） | `SoftwareSetConfigResult` | 命名空 schema（`fields: []`），IR 归一化为 `Empty`，对齐 `signage.setPlaylistConfig` |
 | 草案 §5 capability 字段 | `SoftwareConfigCapability` | `supportedTargets` / `supportsReset` / `resetMayRestartSoftware` |
 
-**编码方式**（与 `signage.playlist` 对齐）：`SoftwareConfig.config`、`SoftwareSetConfigParams.config`、`SoftwareConfigChangedEvent.config` 统一用 `type: bytes` + `max_length: 8192` + description 承载 target-specific 动态 JSON；`target: "launcher"` 的结构由旁定义的 `LauncherConfig` / `LauncherAppearance` 强类型 schema 表达，SDK 可据此生成结构化类型。
+**编码方式**：`SoftwareConfig.config`、`SoftwareSetConfigParams.config`、`SoftwareConfigChangedEvent.config` 直接强类型为 `LauncherConfig`（`target=launcher` 时，嵌套 `LauncherAppearance`）；SDK 据此生成结构化类型。未来扩展其他 target 时再演进。
 
 ### A.3 错误码决策
 
@@ -327,7 +327,7 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已补，`val
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
-| `config` | object | yes | target-specific fields | none | 要设置的配置片段。未出现的字段保持不变。 |
+| `config` | LauncherConfig | yes | see §6.2 | none | 要设置的配置片段。未出现的字段保持不变。 |
 
 #### 3.2.2 Request d block Example (op=7)
 
@@ -586,7 +586,7 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已补，`val
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 变化的软件对象。 |
-| `config` | object | yes | target-specific fields | none | 变化后的完整配置片段。 |
+| `config` | LauncherConfig | yes | see §6.2 | none | 变化后的完整配置片段。 |
 | `changedFields` | string[] | no | field paths | omitted | 变化的字段路径列表。字段路径使用点号分隔嵌套层级，如 `"appearance.panelLayout"` 表示 `config.appearance.panelLayout` 字段变化。 |
 | `reason` | string | no | `"user_request"`, `"restore_default"`, `"device_policy"`, `"unknown"` | `"unknown"` | 变化原因。 |
 
@@ -659,7 +659,7 @@ Capability name: `software.config`。
 响应 / 事件共用
   SoftwareConfig
     target: string
-    config: object（target-specific）
+    config: LauncherConfig
       ┌─ target: "launcher"
       │    displayName: string
       │    appearance: LauncherAppearance
@@ -675,7 +675,7 @@ Capability name: `software.config`。
 
 阅读规则：
 
-- `config` 是 target-specific 动态对象；字段集合由 `target` 值决定。当前草案只定义了 `target: "launcher"` 的字段。
+- `config` 当前 `target=launcher` 时为 `LauncherConfig` 结构（见 §6.2）；未来扩展其他 target（signagePlayer、agent）时再演进。
 - `displayName` 在 `software.config` 中提供写入路径；`device.info` 的 `product.displayName` 为只读返回同值（跨 capability 同步）。
 - `appearance` 是 `config` 的子对象，包含面板布局和自动隐藏配置。Legacy 使用 flat 结构（三个字段为顶层），AXTP 使用嵌套结构。
 - `SoftwareConfig` 同时用于 `software.getConfig` / `software.resetConfig` 的 Result 和 `software.configChanged` 事件 Payload。
@@ -685,7 +685,7 @@ Capability name: `software.config`。
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
-| `config` | object | yes | target-specific fields | none | 配置值。具体字段由 target 决定。 |
+| `config` | LauncherConfig | yes | see §6.2 | none | 配置值。具体字段由 target 决定。 |
 
 ### 6.2 `target: "launcher"` 配置字段
 
@@ -742,7 +742,7 @@ Capability name: `software.config`。
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
-| `config` | object | yes | target-specific fields | none | 要设置的配置片段。未出现的字段保持不变（partial update 语义）。`target: "launcher"` 时见 6.2。 |
+| `config` | LauncherConfig | yes | see §6.2 | none | 要设置的配置片段。未出现的字段保持不变（partial update 语义）。`target: "launcher"` 时见 6.2。 |
 
 ### 6.6 `SoftwareResetConfigParams`
 
@@ -755,7 +755,7 @@ Capability name: `software.config`。
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 变化的软件对象。 |
-| `config` | object | yes | target-specific fields | none | 变化后的完整配置片段。 |
+| `config` | LauncherConfig | yes | see §6.2 | none | 变化后的完整配置片段。 |
 | `changedFields` | string[] | no | field paths（dot-notation） | omitted | 变化的字段路径列表。字段路径使用点号分隔嵌套层级，如 `"appearance.panelLayout"`。 |
 | `reason` | string | no | `"user_request"`, `"restore_default"`, `"device_policy"`, `"unknown"` | `"unknown"` | 变化原因。 |
 

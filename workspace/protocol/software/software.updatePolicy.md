@@ -105,18 +105,18 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已在 `softw
 
 | 草案 schema 名（§6） | registry schema 名 | 说明 |
 |---|---|---|
-| `SoftwareUpdatePolicy`（§6.1） | `SoftwareUpdatePolicy` | response / event 共用；`policy` 字段 `type: bytes` 承载 target-specific JSON |
+| `SoftwareUpdatePolicy`（§6.1） | `SoftwareUpdatePolicy` | response / event 共用；`policy` 字段强类型为 `LauncherUpdatePolicy` |
 | `SoftwareGetUpdatePolicyParams`（§6.5） | `SoftwareGetUpdatePolicyParams` | |
 | `SoftwareSetUpdatePolicyParams`（§6.6） | `SoftwareSetUpdatePolicyParams` | |
 | `SoftwareResetUpdatePolicyParams`（§6.7） | `SoftwareResetUpdatePolicyParams` | |
 | `SoftwareUpdatePolicyChangedEvent`（§6.8） | `SoftwareUpdatePolicyChangedEvent` | |
 | `UpdateSchedule`（§6.3） | `UpdateSchedule` | 旁定义强类型，供 SDK 生成 |
 | `UpdateConditions`（§6.4） | `UpdateConditions` | 旁定义强类型，供 SDK 生成 |
-| —（新增） | `LauncherUpdatePolicy` | 旁定义：`updateMode` + `schedule` + `channel` + `conditions`，承载 `policy` bytes 的 launcher 结构 |
+| —（新增） | `LauncherUpdatePolicy` | `updateMode` + `schedule` + `channel` + `conditions`；`policy` 字段直接引用此强类型（target=launcher） |
 | —（新增） | `SoftwareSetUpdatePolicyResult` | 命名空 schema（`fields: []`），IR 归一化为 `Empty`，对齐 `software.setConfig` |
 | 草案 §5 capability 字段 | `SoftwareUpdatePolicyCapability` | `supportedTargets` / `supportedChannels` / `supportsSchedule` / `supportsReset` |
 
-**编码方式**（与 `software.config` 对齐）：`SoftwareUpdatePolicy.policy`、`SoftwareSetUpdatePolicyParams.policy`、`SoftwareUpdatePolicyChangedEvent.policy` 统一用 `type: bytes` + `max_length: 8192` + description 承载 target-specific 动态 JSON；`target: "launcher"` 的结构由旁定义的 `LauncherUpdatePolicy` / `UpdateSchedule` / `UpdateConditions` 强类型 schema 表达，SDK 可据此生成结构化类型。
+**编码方式**：`SoftwareUpdatePolicy.policy`、`SoftwareSetUpdatePolicyParams.policy`、`SoftwareUpdatePolicyChangedEvent.policy` 直接强类型为 `LauncherUpdatePolicy`（`target=launcher` 时，嵌套 `UpdateSchedule` / `UpdateConditions`）；SDK 据此生成结构化类型。未来扩展其他 target 时再演进。
 
 **null 语义保留**：草案 §6.2 的 `schedule: null`（显式清除时间窗口）与 `conditions: null`（显式清除所有前置条件）语义在 `LauncherUpdatePolicy` schema description 中保留；`null` 与 omitted（保持不变）的区分在 `SoftwareSetUpdatePolicyParams.policy` description 中说明。
 
@@ -266,7 +266,7 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已在 `softw
 
 #### 3.1.3 返回结果 Result：`SoftwareUpdatePolicy`
 
-字段见 6.1（`policy` 为 target-specific 动态对象，`target: "launcher"` 时字段见 6.2）。`schedule` / `conditions` 可为 `null`（显式清除）或 omitted（保持不变），null 语义见 6.2。
+字段见 6.1（`policy` 强类型为 `LauncherUpdatePolicy`，`target: "launcher"` 时字段见 6.2）。`schedule` / `conditions` 可为 `null`（显式清除）或 omitted（保持不变），null 语义见 6.2。
 
 #### 3.1.4 Success Response d block Example (op=8)
 
@@ -354,7 +354,7 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已在 `softw
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
-| `policy` | object | yes | target-specific fields | none | 要设置的策略片段。未出现的字段保持不变。 |
+| `policy` | LauncherUpdatePolicy | yes | see §6.2 | none | 要设置的策略片段。未出现的字段保持不变。 |
 
 #### 3.2.2 Request d block Example (op=7)
 
@@ -619,7 +619,7 @@ DomainId `0x16` = `software`（generator 三处 `domainByHighByte` 已在 `softw
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 变化的软件对象。 |
-| `policy` | object | yes | target-specific fields | none | 变化后的完整策略。 |
+| `policy` | LauncherUpdatePolicy | yes | see §6.2 | none | 变化后的完整策略。 |
 | `changedFields` | string[] | no | field paths（dot-notation） | omitted | 变化的字段路径列表。字段路径使用点号分隔嵌套层级，如 `"schedule.start"` 表示 `policy.schedule.start` 字段变化。 |
 | `reason` | string | no | `"user_request"`, `"restore_default"`, `"device_policy"`, `"unknown"` | `"unknown"` | 变化原因。 |
 
@@ -698,7 +698,7 @@ Capability name: `software.updatePolicy`。
 响应 / 事件共用
   SoftwareUpdatePolicy
     target: string
-    policy: object（target-specific）
+    policy: LauncherUpdatePolicy
       ┌─ target: "launcher"
       │    updateMode: string
       │    schedule: UpdateSchedule | null
@@ -713,7 +713,7 @@ Capability name: `software.updatePolicy`。
 
 阅读规则：
 
-- `policy` 是 target-specific 动态对象；字段集合由 `target` 值决定。当前草案只定义了 `target: "launcher"` 的字段。
+- `policy` 当前 `target=launcher` 时为 `LauncherUpdatePolicy` 结构（见 §6.2）；未来扩展其他 target（signagePlayer、agent）时再演进。
 - `schedule` 和 `conditions` 均可为 `null`（显式清除）或 omitted（保持不变）。详见 §6.2 null 语义说明。
 - `SoftwareUpdatePolicy` 同时用于 `software.getUpdatePolicy` / `software.resetUpdatePolicy` 的 Result 和 `software.updatePolicyChanged` 事件 Payload。
 - `software.setUpdatePolicy` 仅返回 status 确认（无 Result body）；通过事件或后续 get 调用确认变化。
@@ -723,7 +723,7 @@ Capability name: `software.updatePolicy`。
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
-| `policy` | object | yes | target-specific fields | none | 更新策略。 |
+| `policy` | LauncherUpdatePolicy | yes | see §6.2 | none | 更新策略。 |
 
 ### 6.2 `target: "launcher"` 策略字段
 
@@ -772,7 +772,7 @@ Capability name: `software.updatePolicy`。
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
-| `policy` | object | yes | target-specific fields | none | 要设置的策略片段。未出现的字段保持不变（partial update 语义）。`target: "launcher"` 时见 6.2。 |
+| `policy` | LauncherUpdatePolicy | yes | see §6.2 | none | 要设置的策略片段。未出现的字段保持不变（partial update 语义）。`target: "launcher"` 时见 6.2。 |
 
 ### 6.7 `SoftwareResetUpdatePolicyParams`
 
@@ -785,7 +785,7 @@ Capability name: `software.updatePolicy`。
 | 字段 | 类型 | 必填 | 范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 变化的软件对象。 |
-| `policy` | object | yes | target-specific fields | none | 变化后的完整策略。 |
+| `policy` | LauncherUpdatePolicy | yes | see §6.2 | none | 变化后的完整策略。 |
 | `changedFields` | string[] | no | field paths（dot-notation） | omitted | 变化的字段路径列表。字段路径使用点号分隔嵌套层级，如 `"schedule.start"`。 |
 | `reason` | string | no | `"user_request"`, `"restore_default"`, `"device_policy"`, `"unknown"` | `"unknown"` | 变化原因。 |
 
