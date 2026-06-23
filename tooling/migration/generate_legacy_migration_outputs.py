@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate AXTP legacy migration planning artifacts.
 
-The generator intentionally writes docs/legacy-migration/generated/* only. It treats
+The generator intentionally writes workspace/legacy-migration/generated/* only. It treats
 registry changes as candidate patches and keeps AXTP Core facts read-only.
 """
 
@@ -206,7 +206,7 @@ def should_stream(name: str, payload: str, desc: str) -> bool:
 def read_existing_legacy_mappings() -> list[Mapping]:
     return [
         Mapping(
-            source="registry/legacy/legacy_mapping.yaml",
+            source="contract/registry/legacy/legacy_mapping.yaml",
             legacy_protocol="axdp_hid",
             legacy_id="0x000B0002",
             legacy_name="BetaDeviceInfo",
@@ -222,7 +222,7 @@ def read_existing_legacy_mappings() -> list[Mapping]:
             notes=["Authoritative existing mapping retained."],
         ),
         Mapping(
-            source="registry/legacy/legacy_mapping.yaml",
+            source="contract/registry/legacy/legacy_mapping.yaml",
             legacy_protocol="axdp_hid",
             legacy_id="0x000B0042",
             legacy_name="BetaBrightnessSet",
@@ -293,7 +293,7 @@ def read_axdp_methods() -> list[Mapping]:
         stream = should_stream(v2, payload, desc)
         rows.append(
             Mapping(
-                source="docs/legacy-migration/evidence/AXDP设备能力协议集.xlsx:USB设备HID交互协议集",
+                source="workspace/legacy-migration/evidence/AXDP设备能力协议集.xlsx:USB设备HID交互协议集",
                 legacy_protocol="axdp_hid",
                 legacy_id=legacy_id,
                 legacy_name=legacy_name,
@@ -337,7 +337,7 @@ def read_vm33_methods() -> tuple[list[Mapping], list[Mapping], list[Mapping], li
         stream = should_stream(method, payload, desc)
         methods.append(
             Mapping(
-                source="docs/legacy-migration/evidence/VM33_Protocol_V1_V2_Mapping.xlsx:V1_V2_Method_Mapping",
+                source="workspace/legacy-migration/evidence/VM33_Protocol_V1_V2_Mapping.xlsx:V1_V2_Method_Mapping",
                 legacy_protocol="vm33_http_json",
                 legacy_id=legacy_id,
                 legacy_name=legacy_name,
@@ -363,7 +363,7 @@ def read_vm33_methods() -> tuple[list[Mapping], list[Mapping], list[Mapping], li
         domain = event.split(".", 1)[0] if "." in event else "event"
         events.append(
             Mapping(
-                source="docs/legacy-migration/evidence/VM33_Protocol_V1_V2_Mapping.xlsx:Event_Subscribe_Mapping",
+                source="workspace/legacy-migration/evidence/VM33_Protocol_V1_V2_Mapping.xlsx:Event_Subscribe_Mapping",
                 legacy_protocol="vm33_http_json",
                 legacy_id=clean(row.get("EventId")),
                 legacy_name=clean(row.get("V1来源")),
@@ -388,7 +388,7 @@ def read_vm33_methods() -> tuple[list[Mapping], list[Mapping], list[Mapping], li
         domain = key.split(".", 1)[0] if "." in key else "config"
         caps.append(
             Mapping(
-                source="docs/legacy-migration/evidence/VM33_Protocol_V1_V2_Mapping.xlsx:Config_Name_Mapping",
+                source="workspace/legacy-migration/evidence/VM33_Protocol_V1_V2_Mapping.xlsx:Config_Name_Mapping",
                 legacy_protocol="vm33_http_json",
                 legacy_id=clean(row.get("ConfigId")),
                 legacy_name=clean(row.get("V1 Name")),
@@ -701,7 +701,7 @@ def build_registry_patch(rows: list[Mapping]) -> dict[str, Any]:
         domain_files.append(
             {
                 "domain": domain,
-                "file": f"registry/domains/{domain}/domain.yaml",
+                "file": f"contract/registry/domains/{domain}/domain.yaml",
                 "action": "create_or_merge_candidate",
             }
         )
@@ -709,12 +709,12 @@ def build_registry_patch(rows: list[Mapping]) -> dict[str, Any]:
     return {
         "generated_from": {
             "sources": [
-                "protocol/axtp.protocol.yaml",
-                "registry/**/*.yaml",
-                "docs/legacy-migration/evidence/*.xlsx",
-                "docs/legacy-migration/evidence/*.md",
-                "docs/legacy-migration/plans/*.md",
-                "docs/legacy-migration/plans/AXTP_Legacy_Migration_Matrix.xlsx",
+                "contract/protocol/axtp.protocol.yaml",
+                "contract/registry/**/*.yaml",
+                "workspace/legacy-migration/evidence/*.xlsx",
+                "workspace/legacy-migration/evidence/*.md",
+                "workspace/legacy-migration/plans/*.md",
+                "workspace/legacy-migration/plans/AXTP_Legacy_Migration_Matrix.xlsx",
             ],
             "policy": {
                 "frame_header": "unchanged",
@@ -849,13 +849,13 @@ def build_test_vectors(rows: list[Mapping]) -> dict[str, Any]:
     vectors = [
         {
             "id": "axdp-beta-device-info-existing",
-            "source": "registry/legacy/legacy_mapping.yaml",
+            "source": "contract/registry/legacy/legacy_mapping.yaml",
             "legacy": {"protocol": "axdp_hid", "cmdValue": "0x000B0002", "name": "BetaDeviceInfo", "payloadHex": ""},
             "expect": {"targetKind": "rpc_method", "method": "device.getInfo", "requestSchema": "DeviceGetInfoRequest", "responseSchema": "DeviceGetInfoResponse", "error": "SUCCESS"},
         },
         {
             "id": "axdp-beta-brightness-existing",
-            "source": "registry/legacy/legacy_mapping.yaml",
+            "source": "contract/registry/legacy/legacy_mapping.yaml",
             "legacy": {"protocol": "axdp_hid", "cmdValue": "0x000B0042", "name": "BetaBrightnessSet", "payloadHex": "32"},
             "expect": {"targetKind": "rpc_method", "method": "display.setBrightness", "request": {"value": 50}, "error": "SUCCESS"},
         },
@@ -1056,7 +1056,7 @@ def build_cpp_plan(rows: list[Mapping]) -> str:
 
 ## Goal
 
-Provide a C++ legacy adapter skeleton that consumes `docs/legacy-migration/generated/legacy-to-axtp-map.generated.yaml` and exposes LEGACY_PROTOCOLS traffic as AXTP v1 RPC/Event/STREAM operations.
+Provide a C++ legacy adapter skeleton that consumes `workspace/legacy-migration/generated/legacy-to-axtp-map.generated.yaml` and exposes LEGACY_PROTOCOLS traffic as AXTP v1 RPC/Event/STREAM operations.
 
 ## Components
 

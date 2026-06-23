@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import csv
 import html
+import json
 import re
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
@@ -17,13 +18,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-LEGACY_DIR = ROOT / "docs" / "legacy-migration" / "evidence"
-PROTOCOL_DIR = ROOT / "docs" / "protocol"
-SPECS_DIR = ROOT / "docs" / "specs"
-OUT_DIR = ROOT / "docs" / "legacy-migration" / "classification"
+LEGACY_DIR = ROOT / "workspace" / "legacy-migration" / "evidence"
+PROTOCOL_DIR = ROOT / "workspace" / "protocol"
+GENERATED_PROTOCOL_JSON = ROOT / "contract" / "generated" / "protocol.json"
+OUT_DIR = ROOT / "workspace" / "legacy-migration" / "classification"
 
-METHOD_SPEC = "docs/specs/2-registry/02-Methods-Registry.md"
-EVENT_SPEC = "docs/specs/2-registry/03-Events-Registry.md"
+METHOD_SPEC = "specs/30-registry.md"
+EVENT_SPEC = "specs/30-registry.md"
 
 
 def source_rel(path: Path) -> str:
@@ -155,18 +156,19 @@ def load_symbol_sources() -> tuple[dict[str, set[str]], set[str], set[str]]:
         for token in event_pat.findall(text):
             events.add(token)
 
-    for spec, store in [(SPECS_DIR / "2-registry/02-Methods-Registry.md", methods), (SPECS_DIR / "2-registry/03-Events-Registry.md", events)]:
-        if not spec.exists():
-            continue
-        rel = source_rel(spec)
-        text = spec.read_text(encoding="utf-8", errors="ignore")
-        for token in token_pat.findall(text):
-            token_sources[token].add(rel)
-        for token in token_pat.findall(text):
-            if spec.name == "02-Methods-Registry.md":
-                store.add(token)
-            elif spec.name == "03-Events-Registry.md":
-                store.add(token)
+    if GENERATED_PROTOCOL_JSON.exists():
+        rel = source_rel(GENERATED_PROTOCOL_JSON)
+        model = json.loads(GENERATED_PROTOCOL_JSON.read_text(encoding="utf-8"))
+        for item in model.get("methods", []):
+            token = item.get("name")
+            if isinstance(token, str):
+                token_sources[token].add(rel)
+                methods.add(token)
+        for item in model.get("events", []):
+            token = item.get("name")
+            if isinstance(token, str):
+                token_sources[token].add(rel)
+                events.add(token)
     return token_sources, methods, events
 
 
@@ -527,16 +529,16 @@ def protocol_doc_for(capability: str) -> str:
 def target_basis(method: str, event: str, protocol_doc: str, capability: str) -> str:
     token = event or method
     if token and protocol_doc and token in TOKEN_SOURCES and protocol_doc in TOKEN_SOURCES[token]:
-        return f"matched docs/protocol ({protocol_doc})"
+        return f"matched workspace/protocol ({protocol_doc})"
     if protocol_doc:
-        return f"capability has docs/protocol draft ({protocol_doc}); method/event is taxonomy/spec candidate"
+        return f"capability has workspace/protocol draft ({protocol_doc}); method/event is taxonomy/spec candidate"
     if method and method in KNOWN_METHODS:
         return f"matched method registry ({METHOD_SPEC})"
     if event and event in KNOWN_EVENTS:
         return f"matched event registry ({EVENT_SPEC})"
     if capability.startswith("vendor."):
         return "adapter-only / needs split before registry"
-    return "Naming and Taxonomy spec candidate; docs/protocol document not created yet"
+    return "Naming and Taxonomy spec candidate; workspace/protocol document not created yet"
 
 
 def contains_any(blob: str, *parts: str) -> bool:
@@ -1444,7 +1446,7 @@ def write_markdown(entries: list[Entry], csv_path: Path) -> Path:
 
     text = f"""# Legacy Protocol Domain-Feature Classification
 
-本目录是 AXDP / VM33 / Rooms / Signage legacy intake 的逐条分类结果，不是 AXTP registry 事实源。分类依据为 `docs/specs/2-registry/01-Naming-and-Taxonomy.md`、`docs/specs/4-tooling/01-YAML-Mapping.md`，并对照 `docs/protocol` 下已成型的业务协议文档。
+本目录是 AXDP / VM33 / Rooms / Signage legacy intake 的逐条分类结果，不是 AXTP registry 事实源。分类依据为 `specs/30-registry.md`、`specs/50-tooling.md`，并对照 `workspace/protocol` 下已成型的业务协议文档。
 
 生成脚本：`tooling/legacy_classification/classify_legacy_protocols.py`
 
@@ -1455,7 +1457,7 @@ CSV 明细：`{csv_path.relative_to(ROOT)}`
 - `legacy_command_name` / `legacy_class` / `legacy_method` / `legacy_event` / `legacy_config_name` 分开展示旧协议原始字段。
 - `target_domain` / `target_feature` / `target_capability` 表示按 Naming and Taxonomy spec 归类后的能力块。
 - `target_axtp_method` / `target_axtp_event` 表示建议落到的 AXTP method/event；没有正式协议文档的条目会标明 taxonomy/spec candidate。
-- `target_protocol_doc` 优先指向 `docs/protocol` 中已有设计文档；为空表示该 domain.feature 还需要补业务协议文档或 domain YAML。
+- `target_protocol_doc` 优先指向 `workspace/protocol` 中已有设计文档；为空表示该 domain.feature 还需要补业务协议文档或 domain YAML。
 
 ## 分类原则
 
@@ -1463,7 +1465,7 @@ CSV 明细：`{csv_path.relative_to(ROOT)}`
 - `Config / State / Mode / Scan / Connection` 默认不是 feature；它们进入 method、event 或 schema 字段。
 - `stream` 只承担公共流控和数据面；文件、固件、视频、音频、日志流归各自业务域。
 - 泛 `ConfigJson` 或缺少具体 payload/Name 的条目标为 `adapter_only` 或 `needs_split`，不能直接进入正式 capability。
-- 本清单不修改 `docs/legacy-migration/plans/`、`registry/`、`protocol/axtp.protocol.yaml` 或 generated artifacts。
+- 本清单不修改 `workspace/legacy-migration/plans/`、`contract/registry/`、`contract/protocol/axtp.protocol.yaml` 或 generated artifacts。
 
 ## 按 Source 查看
 
@@ -1531,7 +1533,7 @@ def write_domain_indexes(entries: list[Entry]) -> list[Path]:
         sorted_entries = sorted(domain_entries, key=lambda x: (x.target_capability, x.source_protocol, x.source_line, x.legacy_wire_name))
         text = f"""# {domain} Legacy Classification
 
-本文件从 `legacy-protocol-classification.csv` 按 domain 切分生成，用于后续撰写 `registry/domains/{domain}/domain.yaml` 前的人工审查。
+本文件从 `legacy-protocol-classification.csv` 按 domain 切分生成，用于后续撰写 `contract/registry/domains/{domain}/domain.yaml` 前的人工审查。
 
 {md_table(entry_rows(sorted_entries))}
 """
@@ -1553,7 +1555,7 @@ def write_source_indexes(entries: list[Entry]) -> list[Path]:
         sorted_entries = sorted(source_entries, key=lambda x: (x.source_file, x.source_line, x.legacy_entry_type, x.legacy_wire_name))
         text = f"""# {source} Legacy Classification
 
-本文件从 `legacy-protocol-classification.csv` 按 legacy source 切分生成，逐条展示原协议字段、AXTP domain.feature、建议 method/event 和已匹配的 `docs/protocol` 文档。
+本文件从 `legacy-protocol-classification.csv` 按 legacy source 切分生成，逐条展示原协议字段、AXTP domain.feature、建议 method/event 和已匹配的 `workspace/protocol` 文档。
 
 {md_table(entry_rows(sorted_entries))}
 """

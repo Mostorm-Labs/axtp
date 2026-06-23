@@ -1,4 +1,4 @@
-name: Validate Conformance Cases
+name: Validate AXTP Spec
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  validate-conformance:
+  validate-spec:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout AXTP spec
@@ -28,13 +28,39 @@ jobs:
           corepack enable
           corepack prepare pnpm@11.3.0 --activate
 
-      - name: Build generator
+      - name: Install generator dependencies
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --dir generators install --frozen-lockfile
-          pnpm --dir generators build
+          pnpm --dir tooling/generators install --frozen-lockfile
+
+      - name: Validate generator and generated artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/generators build
+          pnpm --dir tooling/generators lint
+          pnpm --dir tooling/generators test
+          pnpm --dir tooling/generators validate
+          pnpm --dir tooling/generators validate:sources
+          pnpm --dir tooling/generators validate:protocol
+          tooling/scripts/check-generated-drift.sh
 
       - name: Validate conformance cases
         shell: bash
-        run: scripts/validate-conformance.sh
+        run: tooling/scripts/validate-conformance.sh
+
+      - name: Validate docs and protocol status
+        shell: bash
+        run: |
+          set -euo pipefail
+          tooling/scripts/check-links.mjs
+          node tooling/scripts/check-text-paths.mjs
+          node tooling/scripts/check-frontstage-language.mjs
+          node tooling/scripts/check-draft-noise.mjs
+          tooling/scripts/check-protocol-status.mjs
+          node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/protocol-draft-health.md
+
+      - name: Validate release artifact dry run
+        shell: bash
+        run: tooling/scripts/check-release-artifact.sh 0.0.0
