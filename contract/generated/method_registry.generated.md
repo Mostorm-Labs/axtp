@@ -3,6 +3,9 @@
 | methodId | name | domain | status | request | response | legacy |
 |---:|---|---|---|---|---|---|
 | `0x0101` | `device.getInfo` | device | draft | GetDeviceInfoParams | DeviceInfo | - |
+| `0x0102` | `device.getPairingCode` | device | draft | DeviceGetPairingCodeParams | DevicePairingCodeInfo | - |
+| `0x0103` | `device.getEnrollmentState` | device | draft | DeviceGetEnrollmentStateParams | DeviceEnrollmentInfo | - |
+| `0x0104` | `device.setEnrollmentState` | device | draft | DeviceSetEnrollmentStateParams | DeviceSetEnrollmentStateResult | - |
 | `0x0401` | `firmware.getUpdateCapabilities` | firmware | draft | Empty | FirmwareUpdateCapabilities | - |
 | `0x0402` | `firmware.beginUpdate` | firmware | draft | BeginUpdateParams | BeginUpdateResult | - |
 | `0x0408` | `firmware.getUpdateState` | firmware | draft | GetUpdateStateParams | FirmwareUpdateState | - |
@@ -22,6 +25,11 @@
 | `0x0911` | `audio.closeStream` | audio | draft | AudioCloseStreamParams | AudioCloseStreamResult | - |
 | `0x0912` | `audio.getStreamState` | audio | draft | AudioGetStreamStateParams | AudioStreamState | - |
 | `0x0913` | `audio.getStreamSourceState` | audio | draft | AudioGetStreamSourceStateParams | AudioStreamSourceState | - |
+| `0x0D01` | `signage.getPlaylistCapabilities` | signage | draft | SignageGetPlaylistCapabilitiesParams | SignagePlaylistCapabilitiesResult | - |
+| `0x0D02` | `signage.getPlaylistConfig` | signage | draft | SignageGetPlaylistConfigParams | SignagePlaylistConfigResult | - |
+| `0x0D03` | `signage.setPlaylistConfig` | signage | draft | SignageSetPlaylistConfigParams | SignageSetPlaylistConfigResult | - |
+| `0x0D04` | `signage.resetPlaylistConfig` | signage | draft | SignageResetPlaylistConfigParams | SignagePlaylistConfigResult | - |
+| `0x0D05` | `signage.getPlaylistItemUrl` | signage | draft | SignageGetPlaylistItemUrlParams | SignageGetPlaylistItemUrlResult | - |
 | `0x0E02` | `network.getIpConfig` | network | draft | NetworkGetIpConfigParams | NetworkIpConfig | - |
 | `0x0E03` | `network.setIpConfig` | network | draft | NetworkSetIpConfigParams | NetworkSetIpConfigResult | - |
 | `0x0E04` | `network.getWifiConfig` | network | draft | NetworkGetWifiConfigParams | NetworkWifiConfig | - |
@@ -58,3 +66,9 @@
 | `0x1610` | `cast.setRenderFps` | cast | draft | CastSetRenderFpsParams | CastFlowControlState | - |
 | `0x1611` | `cast.setFlowPolicy` | cast | draft | CastSetFlowPolicyParams | CastFlowControlState | - |
 | `0x1612` | `cast.getStatus` | cast | draft | CastGetStatusParams | CastStatus | - |
+| `0x1701` | `software.getConfig` | software | draft | SoftwareGetConfigParams | SoftwareConfig | - |
+| `0x1702` | `software.setConfig` | software | draft | SoftwareSetConfigParams | SoftwareSetConfigResult | - |
+| `0x1703` | `software.resetConfig` | software | draft | SoftwareResetConfigParams | SoftwareConfig | - |
+| `0x1704` | `software.getUpdatePolicy` | software | draft | SoftwareGetUpdatePolicyParams | SoftwareUpdatePolicy | - |
+| `0x1705` | `software.setUpdatePolicy` | software | draft | SoftwareSetUpdatePolicyParams | SoftwareSetUpdatePolicyResult | - |
+| `0x1706` | `software.resetUpdatePolicy` | software | draft | SoftwareResetUpdatePolicyParams | SoftwareUpdatePolicy | - |

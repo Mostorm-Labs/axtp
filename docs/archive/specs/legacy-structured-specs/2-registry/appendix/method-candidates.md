@@ -88,6 +88,7 @@ EVENT:
 | `0x1300-0x13FF` | `sensor.*` | 传感器控制 | P2 |
 | `0x1400-0x14FF` | `auth.*` | 认证与访问控制 | P2 |
 | `0x1500-0x15FF` | `privacy.*` | 隐私遮挡与隐私状态 | P2 |
+| `0x1600-0x16FF` | `software.*` | 软件对象运行配置 | P2 |
 | `0x7000-0x7FFF` | `vendor.*` | 厂商私有方法 | 按需 |
 | `0x8000-0xFFFF` | reserved | 保留，不用于 MethodId/EventId | 否 |
 

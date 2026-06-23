@@ -20,7 +20,7 @@
 | cast | 7 | ASK / generated | 31 | P2 / 投屏接收端控制 | `cast.*` confirmed subset 已进入 generated；PIN 格式、AirPlay 名称 schema、无窗口行为和聚合状态裁剪策略作为后续修订项。 |
 | camera | 7 | ASK | 0 | P3/P4 | 补产品/设备/legacy 确认。 |
 | capability | 1 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
-| device | 6 | ASK | 1 | P1 | `device.info` 已进入 generated；继续补 `device.childDevice`、`device.enrollment` 等通用底座确认。 |
+| device | 6 | ASK | 5 | P1 | `device.info`、`device.enrollment` 已进入 generated；继续补 `device.childDevice` 等通用底座确认。 |
 | diagnostic | 10 | ASK | 0 | P5 | 补产品/设备/legacy 确认。 |
 | display | 6 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | file | 2 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
@@ -31,8 +31,8 @@
 | output | 1 | ASK | 0 | P2b | 补产品/设备/legacy 确认。 |
 | privacy | 3 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | room | 5 | ASK | 0 | P7 | 补产品/设备/legacy 确认。 |
-| signage | 2 | ASK | 0 | P7 | 补产品/设备/legacy 确认。`signage.media`/`signage.osd`/`signage.schedule` 已合并到其他域。 |
-| software | 2 | ASK | 0 | P7 | `software.config` 与 `software.updatePolicy` 仍为 workspace 草案，主要承接应用/launcher 侧配置和更新策略。 |
+| signage | 2 | ASK | 6 | P7 | `signage.playlist` 已进入 generated；补产品/设备/legacy 确认。`signage.media`/`signage.osd`/`signage.schedule` 已合并到其他域。 |
+| software | 2 | ASK | 8 | P7 | `software.config`、`software.updatePolicy` 已进入 generated，承接应用/launcher 侧配置和更新策略。 |
 | storage | 6 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | stream | 2 | ASK | 0 | P0 data-plane plumbing | Phase 1 需要通用 STREAM open/data/close 语义支撑 audio/video；具体业务参数仍由 audio/video profile 定义。 |
 | system | 6 | ASK | 0 | P1 | 补产品/设备/legacy 确认，优先进入采纳批次。 |

@@ -87,3 +87,7 @@ domains:
     domain: cast
     status: draft
     description: Cast receiver control for AirPlay/UxPlay and receiver-side status.
+  - high_byte: 0x17
+    domain: software
+    status: draft
+    description: Runtime configuration and update policy for software objects.

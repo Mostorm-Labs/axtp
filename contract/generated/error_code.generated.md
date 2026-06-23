@@ -70,6 +70,8 @@
 | `0x0107` | `DEVICE_MODE_CONFLICT` | device | mvp | false |
 | `0x0108` | `DEVICE_RESOURCE_BUSY` | device | mvp | true |
 | `0x0109` | `DEVICE_HARDWARE_FAILURE` | device | draft | false |
+| `0x010A` | `ENROLLMENT_CODE_EXPIRED` | device | draft | true |
+| `0x010B` | `ENROLLMENT_CODE_ALREADY_USED` | device | draft | false |
 | `0x0201` | `CAPABILITY_NOT_FOUND` | capability | mvp | false |
 | `0x0202` | `CAPABILITY_DOMAIN_NOT_FOUND` | capability | mvp | false |
 | `0x0203` | `CAPABILITY_METHOD_UNSUPPORTED` | capability | mvp | false |
