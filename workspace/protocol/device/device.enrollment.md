@@ -1,10 +1,10 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: device
 feature: device.enrollment
-registry:
+registry: ../../../../contract/registry/domains/device/domain.yaml
 lastReviewed: 2026-06-16
 ---
 

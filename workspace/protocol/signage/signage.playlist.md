@@ -1,10 +1,10 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: signage
 feature: signage.playlist
-registry:
+registry: ../../../../contract/registry/domains/signage/domain.yaml
 lastReviewed: 2026-06-16
 ---
 

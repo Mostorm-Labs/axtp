@@ -1,10 +1,10 @@
 ---
-status: draft
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: software
 feature: software.config
-registry:
+registry: ../../../../contract/registry/domains/software/domain.yaml
 lastReviewed: 2026-06-17
 ---
 
