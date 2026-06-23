@@ -252,7 +252,7 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已在 `softw
 
 #### 3.1.2 返回结果 Result：`SoftwareUpdatePolicy`
 
-字段见 6.1（`policy` 强类型为 `LauncherUpdatePolicy`，`target: "launcher"` 时字段见 6.2）。`schedule` / `conditions` 可为 `null`（显式清除）或 omitted（保持不变），null 语义见 6.2。
+返回 `target`（软件对象）+ `policy`（强类型 `LauncherUpdatePolicy`：`updateMode`/`schedule`/`channel`/`conditions`；`target=launcher` 时字段见 §6.2）。`schedule` / `conditions` 可为 `null`（显式清除）或 omitted（保持不变），null 语义见 §6.2。完整 schema 详见 §6.1。
 
 #### 3.1.3 d block 示例
 
@@ -475,7 +475,7 @@ error（feature-specific：设备不支持 Beta 通道）:
 
 #### 3.3.2 返回结果 Result：`SoftwareUpdatePolicy`
 
-返回重置后的完整策略，省去额外 round-trip。字段见 6.1（`target: "launcher"` 时 policy 字段见 6.2）。
+返回重置后的完整策略，省去额外 round-trip；`target` + `policy`（强类型 `LauncherUpdatePolicy`，`target=launcher` 时见 §6.2）。完整 schema 详见 §6.1。
 
 #### 3.3.3 d block 示例
 

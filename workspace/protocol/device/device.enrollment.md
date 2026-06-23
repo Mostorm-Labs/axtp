@@ -359,7 +359,7 @@ success:
 
 #### 3.2.2 返回结果 Result：`EnrollmentInfo`
 
-字段见 6.1。
+返回 `EnrollmentInfo`：`state`（纳管状态枚举 `unmanaged`/`pairing_available`/`pending`/`enrolled`/`failed`/`unenrolling`）+ `deviceId`/`workspaceId`/`endpoint`/`enrolledAt`（`enrolled`/`unenrolling` 时填充）+ `updatedAt`/`message`。完整 schema 详见 §6.1。
 
 #### 3.2.3 d block 示例
 
@@ -390,10 +390,10 @@ success:
   },
   "result": {
     "state": "enrolled",
-    "deviceId": "<DEVICE_ID>",
-    "workspaceId": "<WORKSPACE_ID>",
+    "deviceId": "device-7f3a2e1b",
+    "workspaceId": "ws-2c8e1a90",
     "endpoint": {
-      "endpointId": "<ROOM_ENDPOINT_ID>",
+      "endpointId": "room-9f4a2e1c",
       "type": "room",
       "displayName": "Boardroom A",
       "profileId": "<PROFILE_ID>"
@@ -415,7 +415,7 @@ success:
   },
   "result": {
     "state": "unmanaged",
-    "deviceId": "<DEVICE_ID>"
+    "deviceId": "device-7f3a2e1b"
   }
 }
 ```
@@ -489,7 +489,7 @@ request:
     "desiredState": "enrolled",
     "reason": "pairing_code_used",
     "endpoint": {
-      "endpointId": "<ROOM_ENDPOINT_ID>",
+      "endpointId": "room-9f4a2e1c",
       "type": "room",
       "displayName": "Boardroom A",
       "profileId": "<PROFILE_ID>"
@@ -512,10 +512,10 @@ success:
   "result": {
     "state": {
       "state": "enrolled",
-      "deviceId": "<DEVICE_ID>",
-      "workspaceId": "<WORKSPACE_ID>",
+      "deviceId": "device-7f3a2e1b",
+      "workspaceId": "ws-2c8e1a90",
       "endpoint": {
-        "endpointId": "<ROOM_ENDPOINT_ID>",
+        "endpointId": "room-9f4a2e1c",
         "type": "room",
         "displayName": "Boardroom A",
         "profileId": "<PROFILE_ID>"
@@ -565,10 +565,10 @@ error:
     "reason": "pairing_code_used",
     "state": {
       "state": "enrolled",
-      "deviceId": "<DEVICE_ID>",
-      "workspaceId": "<WORKSPACE_ID>",
+      "deviceId": "device-7f3a2e1b",
+      "workspaceId": "ws-2c8e1a90",
       "endpoint": {
-        "endpointId": "<ROOM_ENDPOINT_ID>",
+        "endpointId": "room-9f4a2e1c",
         "type": "room",
         "displayName": "Boardroom A",
         "profileId": "<PROFILE_ID>"
@@ -681,10 +681,10 @@ error:
     "reason": "pairing_code_used",
     "state": {
       "state": "enrolled",
-      "deviceId": "<DEVICE_ID>",
-      "workspaceId": "<WORKSPACE_ID>",
+      "deviceId": "device-7f3a2e1b",
+      "workspaceId": "ws-2c8e1a90",
       "endpoint": {
-        "endpointId": "<ROOM_ENDPOINT_ID>",
+        "endpointId": "room-9f4a2e1c",
         "type": "room",
         "displayName": "Boardroom A",
         "profileId": "<PROFILE_ID>"
@@ -916,7 +916,7 @@ Capability name: `device.enrollment`（capability `0x0102`，schema `DeviceEnrol
     "desiredState": "enrolled",
     "reason": "pairing_code_used",
     "endpoint": {
-      "endpointId": "<ROOM_ENDPOINT_ID>",
+      "endpointId": "room-9f4a2e1c",
       "type": "room",
       "displayName": "Boardroom A",
       "profileId": "<PROFILE_ID>"
@@ -940,10 +940,10 @@ Capability name: `device.enrollment`（capability `0x0102`，schema `DeviceEnrol
     "reason": "pairing_code_used",
     "state": {
       "state": "enrolled",
-      "deviceId": "<DEVICE_ID>",
-      "workspaceId": "<WORKSPACE_ID>",
+      "deviceId": "device-7f3a2e1b",
+      "workspaceId": "ws-2c8e1a90",
       "endpoint": {
-        "endpointId": "<ROOM_ENDPOINT_ID>",
+        "endpointId": "room-9f4a2e1c",
         "type": "room",
         "displayName": "Boardroom A",
         "profileId": "<PROFILE_ID>"
@@ -987,7 +987,7 @@ Capability name: `device.enrollment`（capability `0x0102`，schema `DeviceEnrol
   "result": {
     "state": {
       "state": "unenrolling",
-      "deviceId": "<DEVICE_ID>",
+      "deviceId": "device-7f3a2e1b",
       "message": "Device reassigned to different workspace.",
       "updatedAt": "2026-06-11T12:00:00Z"
     },
@@ -1031,10 +1031,10 @@ Capability name: `device.enrollment`（capability `0x0102`，schema `DeviceEnrol
   },
   "result": {
     "state": "enrolled",
-    "deviceId": "<DEVICE_ID>",
-    "workspaceId": "<WORKSPACE_ID>",
+    "deviceId": "device-7f3a2e1b",
+    "workspaceId": "ws-2c8e1a90",
     "endpoint": {
-      "endpointId": "<ROOM_ENDPOINT_ID>",
+      "endpointId": "room-9f4a2e1c",
       "type": "room",
       "displayName": "Boardroom A",
       "profileId": "<PROFILE_ID>"
@@ -1173,7 +1173,7 @@ AXTP 转换结果：
   "desiredState": "enrolled",
   "reason": "server_claimed",
   "endpoint": {
-    "endpointId": "<ROOM_ENDPOINT_ID>",
+    "endpointId": "room-9f4a2e1c",
     "type": "room",
     "displayName": "Boardroom A",
     "profileId": "<PROFILE_ID>"

@@ -228,7 +228,7 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 
 #### 3.1.2 返回结果 Result：`SoftwareConfig`
 
-字段见 6.1。
+返回 `target`（软件对象）+ `config`（强类型 `LauncherConfig`：`displayName` + `appearance`；`target=launcher` 时字段见 §6.2）。完整 schema 详见 §6.1。
 
 #### 3.1.3 d block 示例
 
@@ -460,7 +460,7 @@ error（feature-specific，见 §3.2.5）:
 
 #### 3.3.2 返回结果 Result：`SoftwareConfig`
 
-返回重置后的完整配置，省去额外 round-trip。字段见 6.1。
+返回重置后的完整配置，省去额外 round-trip；`target` + `config`（强类型 `LauncherConfig`，`target=launcher` 时见 §6.2）。完整 schema 详见 §6.1。
 
 #### 3.3.3 d block 示例
 
