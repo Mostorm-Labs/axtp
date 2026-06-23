@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version="${1:-0.0.0-ci}"
+version="${1:-0.0.0}"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 artifact="axtp-spec-v$version"
 zip_path="$root/dist/$artifact.zip"
