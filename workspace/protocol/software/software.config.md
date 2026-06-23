@@ -226,7 +226,13 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` `[REVIEW-ASK]` | none | 要读取配置的软件对象。 |
 
-#### 3.1.2 Request d block Example (op=7)
+#### 3.1.2 返回结果 Result：`SoftwareConfig`
+
+字段见 6.1。
+
+#### 3.1.3 d block 示例
+
+request:
 
 ```json
 {
@@ -240,11 +246,7 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 
 读法：`target` 指定要读取的软件对象；本例查询 Launcher 配置（`displayName` + `appearance`）。
 
-#### 3.1.3 返回结果 Result：`SoftwareConfig`
-
-字段见 6.1。
-
-#### 3.1.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -269,38 +271,20 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 
 读法：`result.config` 为该 target 的完整配置片段（见 §6.1）；`displayName` 与 `device.info` 的 `product.displayName` 返回同值。
 
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 配置变化由 `software.configChanged` 表达（见 §4.1）。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
-| `NOT_SUPPORTED` | common | target 不支持。 |
+| `NOT_SUPPORTED` | common | target 不支持。示例（op=8）：`code: 3`，`details.field: "target"`，设备不支持该 target（如 `"agent"` 尚未实现）；客户端应隐藏对应配置入口或回退到只读展示。 |
 | `INVALID_ARGUMENT` | common | target 值非法。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 4,
-  "status": {
-    "ok": false,
-    "code": 3,
-    "msg": "Not supported.",
-    "details": {
-      "field": "target"
-    }
-  }
-}
-```
-
-读法：`NOT_SUPPORTED`（0x0003），设备不支持该 target（如 `"agent"` 尚未实现）；客户端应隐藏对应配置入口或回退到只读展示。
-
-#### 3.1.8 规则
+#### 3.1.6 规则
 
 - Request MUST 使用 `op=7`。
 - Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
@@ -329,7 +313,16 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 软件对象。 |
 | `config` | LauncherConfig | yes | see §6.2 | none | 要设置的配置片段。未出现的字段保持不变。 |
 
-#### 3.2.2 Request d block Example (op=7)
+#### 3.2.2 返回结果 Result
+
+`software.setConfig` 返回标准成功响应（无 `result` 字段）。调用者如需确认配置变化，可通过以下方式：
+
+1. 等待 `software.configChanged` 事件获取变化后的完整配置。
+2. 调用 `software.getConfig` 主动查询最新配置。
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -350,14 +343,7 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 
 读法：partial update 语义——只传需要修改的 `appearance` 字段，`displayName` 保持不变。仅修改 `displayName` 时传 `config: { "displayName": "Lobby Display" }`（见 §7.1 flow 与 §9.3 legacy 映射）；`appearance` 子对象字段含义见 §6.3。
 
-#### 3.2.3 返回结果 Result
-
-`software.setConfig` 返回标准成功响应（无 `result` 字段）。调用者如需确认配置变化，可通过以下方式：
-
-1. 等待 `software.configChanged` 事件获取变化后的完整配置。
-2. 调用 `software.getConfig` 主动查询最新配置。
-
-#### 3.2.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -369,9 +355,44 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 }
 ```
 
-读法：成功响应仅含 status，无业务 result body；配置实际变化后由 `software.configChanged`（op=6）推送完整配置（见 §3.2.5）。
+读法：成功响应仅含 status，无业务 result body；配置实际变化后由 `software.configChanged`（op=6）推送完整配置（见 §3.2.4）。
 
-#### 3.2.5 可能触发的事件
+error（feature-specific，见 §3.2.5）:
+
+`INVALID_ARGUMENT`（0x000A）——`autoHideDelay` 必须 `> 0`，传 `0` 返回参数非法，设备配置保持不变（见 §6.3 校验规则）：
+
+```json
+{
+  "id": 8,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid argument.",
+    "details": {
+      "field": "config.appearance.autoHideDelay",
+      "reason": "must_be_positive"
+    }
+  }
+}
+```
+
+`INVALID_STATE`（0x0004）——软件正在升级或恢复中时返回，`status.details.reason` 为 `"software_updating"`，配置修改需等待更新完成：
+
+```json
+{
+  "id": 7,
+  "status": {
+    "ok": false,
+    "code": 4,
+    "msg": "Operation not allowed in current state.",
+    "details": {
+      "reason": "software_updating"
+    }
+  }
+}
+```
+
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
@@ -397,53 +418,18 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 }
 ```
 
-读法：本事件对应 §3.2.2 的 setConfig 调用（仅 `appearance` 变化），`displayName` 未变故不在 `changedFields` 中；`changedFields` 用点号路径标明变化的字段，`config` 为变化后的完整片段。多字段同时变化的事件形态见 §4.1.2。
+读法：本事件对应 §3.2.3 的 setConfig 调用（仅 `appearance` 变化），`displayName` 未变故不在 `changedFields` 中；`changedFields` 用点号路径标明变化的字段，`config` 为变化后的完整片段。多字段同时变化的事件形态见 §4.1.2。
 
-#### 3.2.6 错误
+#### 3.2.5 错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
 | `NOT_SUPPORTED` | common | target 不支持。 |
-| `INVALID_ARGUMENT` | common | config 字段值非法。 |
+| `INVALID_ARGUMENT` | common | config 字段值非法。feature-specific 示例（op=8）见 §3.2.3：`autoHideDelay ≤ 0` 返回 `code: 10` + `details.field: "config.appearance.autoHideDelay"` + `details.reason: "must_be_positive"`，设备配置保持不变。 |
 | `PERMISSION_DENIED` | common | 无权修改配置。 |
-| `INVALID_STATE` | common | 软件正在升级或恢复中。 |
+| `INVALID_STATE` | common | 软件正在升级或恢复中。feature-specific 示例（op=8）见 §3.2.3：返回 `code: 4` + `details.reason: "software_updating"`，配置修改需等待更新完成。 |
 
-#### 3.2.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 8,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid argument.",
-    "details": {
-      "field": "config.appearance.autoHideDelay",
-      "reason": "must_be_positive"
-    }
-  }
-}
-```
-
-读法：`INVALID_ARGUMENT`（0x000A），`autoHideDelay` 必须 `> 0`，传 `0` 返回参数非法；设备配置保持不变（见 §6.3 校验规则）。
-
-软件正在升级或恢复中时返回 `INVALID_STATE`（0x0004 / `code: 4`），`status.details.reason` 为 `"software_updating"`，配置修改需等待更新完成：
-
-```json
-{
-  "id": 7,
-  "status": {
-    "ok": false,
-    "code": 4,
-    "msg": "Operation not allowed in current state.",
-    "details": {
-      "reason": "software_updating"
-    }
-  }
-}
-```
-
-#### 3.2.8 规则
+#### 3.2.6 规则
 
 - Request MUST 使用 `op=7`。
 - Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
@@ -472,7 +458,13 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 |---|---|---:|---|---|---|
 | `target` | string | yes | `"launcher"`, `"signagePlayer"`, `"agent"` | none | 要恢复默认配置的软件对象。 |
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result：`SoftwareConfig`
+
+返回重置后的完整配置，省去额外 round-trip。字段见 6.1。
+
+#### 3.3.3 d block 示例
+
+request:
 
 ```json
 {
@@ -486,11 +478,7 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 
 读法：仅恢复指定 target 的运行配置到当前版本默认值，不影响其他软件对象、系统配置或设备身份，不触发设备重启（系统级出厂恢复使用 `system.restoreFactorySettings`，见 §9.4）。
 
-#### 3.3.3 返回结果 Result：`SoftwareConfig`
-
-返回重置后的完整配置，省去额外 round-trip。字段见 6.1。
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -515,39 +503,21 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 
 读法：`resetConfig` 恢复所有配置到出厂默认值（`displayName` 恢复为设备出厂名称、`appearance` 恢复为默认值），返回完整配置。`[REVIEW-ASK]` resetConfig 是否也重置 `displayName`。
 
-#### 3.3.5 可能触发的事件
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | `software.configChanged` | 配置实际变化时触发，`reason` 为 `restore_default`。 | `SoftwareConfigChangedEvent` | 用 result 或事件 payload 更新 UI（完整事件定义见 §4.1）。 |
 
-#### 3.3.6 错误
+#### 3.3.5 错误
 
 | Error | 类别 | 说明 |
 |---|---|---|
 | `NOT_SUPPORTED` | common | target 不支持。 |
-| `PERMISSION_DENIED` | common | 无权重置配置。 |
-| `INVALID_STATE` | common | 软件正在升级或恢复中。 |
+| `PERMISSION_DENIED` | common | 无权重置配置。示例（op=8）：`code: 9`，`details.field: "target"`，操作者对指定 target 无重置权限。 |
+| `INVALID_STATE` | common | 软件正在升级或恢复中（`code: 4`，同 setConfig §3.2.3）。 |
 
-#### 3.3.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 6,
-  "status": {
-    "ok": false,
-    "code": 9,
-    "msg": "Permission denied.",
-    "details": {
-      "field": "target"
-    }
-  }
-}
-```
-
-读法：`PERMISSION_DENIED`（0x0009），操作者对指定 target 无重置权限；软件升级或恢复中时返回 `INVALID_STATE`（0x0004 / `code: 4`）。
-
-#### 3.3.8 规则
+#### 3.3.6 规则
 
 - Request MUST 使用 `op=7`。
 - Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
@@ -590,7 +560,7 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 | `changedFields` | string[] | no | field paths | omitted | 变化的字段路径列表。字段路径使用点号分隔嵌套层级，如 `"appearance.panelLayout"` 表示 `config.appearance.panelLayout` 字段变化。 |
 | `reason` | string | no | `"user_request"`, `"restore_default"`, `"device_policy"`, `"unknown"` | `"unknown"` | 变化原因。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -612,7 +582,7 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已补，`val
 }
 ```
 
-读法：本示例展示 `displayName` + `appearance` 同时变化的多字段 `changedFields`（对应一次同时修改两者的 `software.setConfig`）；`config` 为变化后的完整片段，`changedFields` 用点号路径标明具体变化字段。仅 `appearance` 变化的事件形态见 §3.2.5。
+读法：本示例展示 `displayName` + `appearance` 同时变化的多字段 `changedFields`（对应一次同时修改两者的 `software.setConfig`）；`config` 为变化后的完整片段，`changedFields` 用点号路径标明具体变化字段。仅 `appearance` 变化的事件形态见 §3.2.4。
 
 #### 4.1.3 客户端处理建议
 
@@ -769,7 +739,7 @@ Capability name: `software.config`。
 
 运维人员查询当前 Launcher 配置，切换面板布局为专注模式并启用自动隐藏，通过事件确认配置生效。对应 `workspace/flows/signage-device-management.md` 阶段 2（配置同步）与阶段 4（设备管理）。
 
-#### Step 1. software.getConfig：Request d block (op=7)
+#### Step 1. software.getConfig：请求 (op=7)
 
 ```json
 {
@@ -781,9 +751,9 @@ Capability name: `software.config`。
 }
 ```
 
-设备返回当前配置（完整成功响应见 §3.1.4）：`displayName: "Meeting Room A"`，`appearance: { panelLayout: "sidebar", autoHidePanel: false, autoHideDelay: 5 }`。
+设备返回当前配置（完整成功响应见 §3.1.3）：`displayName: "Meeting Room A"`，`appearance: { panelLayout: "sidebar", autoHidePanel: false, autoHideDelay: 5 }`。
 
-#### Step 2. software.setConfig：Request d block (op=7)
+#### Step 2. software.setConfig：请求 (op=7)
 
 运维人员只修改 `appearance`（partial update，`displayName` 保持不变）：
 
@@ -804,11 +774,11 @@ Capability name: `software.config`。
 }
 ```
 
-设备返回标准成功响应（完整响应见 §3.2.4，无 result body）。
+设备返回标准成功响应（完整响应见 §3.2.3，无 result body）。
 
-#### Step 3. software.configChanged：Event d block (op=6)
+#### Step 3. software.configChanged：事件 (op=6)
 
-配置实际变化触发事件（完整事件定义见 §4.1，本场景事件形态见 §3.2.5）：
+配置实际变化触发事件（完整事件定义见 §4.1，本场景事件形态见 §3.2.4）：
 
 ```json
 {
@@ -838,7 +808,7 @@ Capability name: `software.config`。
 
 运维人员恢复 Launcher 出厂默认配置，通过 result 和事件确认。对应 `workspace/flows/signage-device-management.md` 阶段 4 步骤 23。
 
-#### Step 1. software.resetConfig：Request d block (op=7)
+#### Step 1. software.resetConfig：请求 (op=7)
 
 ```json
 {
@@ -850,9 +820,9 @@ Capability name: `software.config`。
 }
 ```
 
-#### Step 2. software.resetConfig：Success Response d block (op=8)
+#### Step 2. software.resetConfig：成功响应 (op=8)
 
-设备返回重置后的完整配置（见 §3.3.4）：
+设备返回重置后的完整配置（见 §3.3.3）：
 
 ```json
 {
@@ -877,9 +847,9 @@ Capability name: `software.config`。
 
 读法：`resetConfig` 返回完整配置，省去额外 round-trip；`displayName` 恢复为设备出厂名称、`appearance` 恢复默认值。`[REVIEW-ASK]` resetConfig 是否也重置 `displayName`。
 
-#### Step 3. software.configChanged：Event d block (op=6)
+#### Step 3. software.configChanged：事件 (op=6)
 
-配置实际变化触发事件，`reason` 为 `restore_default`（见 §3.3.5 / §4.1）：
+配置实际变化触发事件，`reason` 为 `restore_default`（见 §3.3.4 / §4.1）：
 
 ```json
 {

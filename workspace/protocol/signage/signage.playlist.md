@@ -233,19 +233,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 |---|---|---:|---|---|---|
 | *(无必填参数)* | | | | | 读取完整能力范围，无需过滤参数。 |
 
-#### 3.1.2 Request d block Example (op=7)
-
-```json
-{
-  "id": 1,
-  "method": "signage.getPlaylistCapabilities",
-  "params": {}
-}
-```
-
-读法：请求为空，返回设备支持的播放项类型集合、数量限制与功能开关。`id` 由调用方分配且非零。
-
-#### 3.1.3 返回结果 Result：`PlaylistCapabilitiesResult`
+#### 3.1.2 返回结果 Result：`PlaylistCapabilitiesResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -256,7 +244,19 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 | `supportsUrlRefresh` | boolean | yes | `true`, `false` | none | 是否支持播放项资源 URL 刷新（`getPlaylistItemUrl`）。 |
 | `supportsReset` | boolean | yes | `true`, `false` | none | 是否支持恢复默认播放列表（`resetPlaylistConfig`）。 |
 
-#### 3.1.4 Success Response d block Example (op=8)
+#### 3.1.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 1,
+  "method": "signage.getPlaylistCapabilities",
+  "params": {}
+}
+```
+
+success:
 
 ```json
 {
@@ -276,37 +276,22 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-读法：`supportedItemTypes` 告诉调用方该设备支持哪些播放项类型；`supportsUrlRefresh: true` 表示设备会主动调用 `getPlaylistItemUrl` 刷新过期 URL。
+读法：request 为空，返回设备支持的播放项类型集合、数量限制与功能开关；`id` 由调用方分配且非零。success 中 `supportedItemTypes` 告诉调用方该设备支持哪些播放项类型，`supportsUrlRefresh: true` 表示设备会主动调用 `getPlaylistItemUrl` 刷新过期 URL。
 
-#### 3.1.5 可能触发的事件
+#### 3.1.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.1.6 错误
+#### 3.1.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 `signage.playlist` 能力。 | 返回 unsupported capability。 |
 | `INTERNAL_ERROR` | 设备读取能力信息失败。 | 返回内部错误，调用方可稍后重试。 |
 
-#### 3.1.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 1,
-  "status": {
-    "ok": false,
-    "code": 3,
-    "msg": "signage.playlist capability is not supported."
-  }
-}
-```
-
-读法：失败响应使用 `op=8`，`id` 回显请求 `id`，`status.ok=false` 且不携带业务 `result`。`code: 3` 对应 common `NOT_SUPPORTED`（0x0003）。
-
-#### 3.1.8 规则
+#### 3.1.6 规则
 
 - Request MUST 使用 `op=7`。
 - Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
@@ -331,7 +316,15 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 |---|---|---:|---|---|---|
 | *(无必填参数)* | | | | | 读取完整配置，无需过滤参数。 |
 
-#### 3.2.2 Request d block Example (op=7)
+#### 3.2.2 返回结果 Result：`PlaylistConfigResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `playlists` | `Playlist[]` | yes | see `Playlist` schema | none | 当前播放列表配置数组。空数组表示无播放列表。 |
+
+#### 3.2.3 d block 示例
+
+request:
 
 ```json
 {
@@ -341,15 +334,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-读法：请求为空，返回设备当前持有的完整 `playlists` 数组（含所有 `default` / `scheduled` 列表及其播放项）。
-
-#### 3.2.3 返回结果 Result：`PlaylistConfigResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `playlists` | `Playlist[]` | yes | see `Playlist` schema | none | 当前播放列表配置数组。空数组表示无播放列表。 |
-
-#### 3.2.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -364,37 +349,22 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-读法：空 `playlists` 表示设备当前无播放列表（显示空状态），不视为错误。
+读法：request 为空，返回设备当前持有的完整 `playlists` 数组（含所有 `default` / `scheduled` 列表及其播放项）；success 中空 `playlists` 表示设备当前无播放列表（显示空状态），不视为错误。
 
-#### 3.2.5 可能触发的事件
+#### 3.2.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
 | 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
 
-#### 3.2.6 错误
+#### 3.2.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 `signage.playlist` 能力。 | 返回 unsupported capability。 |
 | `INTERNAL_ERROR` | 设备读取播放列表配置失败。 | 返回内部错误，调用方可稍后重试。 |
 
-#### 3.2.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 2,
-  "status": {
-    "ok": false,
-    "code": 14,
-    "msg": "Failed to read playlist config."
-  }
-}
-```
-
-读法：`code: 14` 对应 common `INTERNAL_ERROR`（0x000E）。失败响应不携带业务 `result`。
-
-#### 3.2.8 规则
+#### 3.2.6 规则
 
 - Request MUST 使用 `op=7`。
 - Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
@@ -419,7 +389,13 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 |---|---|---:|---|---|---|
 | `playlists` | `Playlist[]` | yes | see `Playlist` schema | none | 播放列表配置数组。非空。 |
 
-#### 3.3.2 Request d block Example (op=7)
+#### 3.3.2 返回结果 Result
+
+全量替换成功后**无 result body**，仅返回标准 success status。设备随后触发 `signage.playlistConfigChanged`。
+
+#### 3.3.3 d block 示例
+
+request:
 
 主示例（`default` 类型播放列表，含 image / video / website / unsplash 四种播放项）：
 
@@ -493,7 +469,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-补充 Request 示例 A — `default` + `scheduled` 共存，展示 scheduled 时间约束（周一到周五 09:00–18:00）：
+补充 request 示例 A — `default` + `scheduled` 共存，展示 scheduled 时间约束（周一到周五 09:00–18:00）：
 
 ```json
 {
@@ -545,9 +521,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-读法：`startDate` < `endDate`，`startTime < endTime` 落在同一天内（不跨午夜）；`days` 指定周一到周五生效。`scheduled` 命中时间窗口时优先播放，否则回落 `default`（见 §2.1）。
-
-补充 Request 示例 B — `clock` 类型播放项（无远程 URL 资源，`settings` 只含 `clocks`）：
+补充 request 示例 B — `clock` 类型播放项（无远程 URL 资源，`settings` 只含 `clocks`）：
 
 ```json
 {
@@ -579,13 +553,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-读法：`clock` 类型不依赖远程 URL，`getPlaylistItemUrl` 对 `clock` 返回 `NOT_SUPPORTED`。
-
-#### 3.3.3 返回结果 Result
-
-全量替换成功后**无 result body**，仅返回标准 success status。设备随后触发 `signage.playlistConfigChanged`。
-
-#### 3.3.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -597,9 +565,43 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-读法：成功响应只有 `status`，不携带业务 `result`；调用方通过 `getPlaylistConfig` 或等待 `playlistConfigChanged` 事件确认落地。
+error:
 
-#### 3.3.5 可能触发的事件
+失败示例 A — `scheduled` 时间约束违反（`startDate == endDate` 但 `startTime > endTime`）：
+
+```json
+{
+  "id": 12,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Invalid scheduled time range: startTime must be <= endTime when startDate equals endDate.",
+    "details": {
+      "field": "playlists[1].startTime"
+    }
+  }
+}
+```
+
+失败示例 B — `playlists` 为空数组（候选业务码 `SIGNAGE_PLAYLIST_EMPTY`，示例借用 common `INVALID_ARGUMENT` 并写入 `candidateError`，见 §8 双轨制说明）：
+
+```json
+{
+  "id": 13,
+  "status": {
+    "ok": false,
+    "code": 10,
+    "msg": "Playlists array must not be empty.",
+    "details": {
+      "candidateError": "SIGNAGE_PLAYLIST_EMPTY"
+    }
+  }
+}
+```
+
+读法：request 中 `startDate` < `endDate`、`startTime < endTime` 落在同一天内（不跨午夜），`days` 指定周一到周五生效，`scheduled` 命中时间窗口时优先播放否则回落 `default`（见 §2.1）；`clock` 类型不依赖远程 URL，`getPlaylistItemUrl` 对 `clock` 返回 `NOT_SUPPORTED`。success 只有 `status`、不携带业务 `result`，调用方通过 `getPlaylistConfig` 或等待 `playlistConfigChanged` 事件确认落地。error 失败响应使用 `op=8` 且不携带业务 `result`，校验失败不落地、不触发事件；`code: 10` 对应 common `INVALID_ARGUMENT`（0x000A）。
+
+#### 3.3.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
@@ -638,7 +640,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 
 读法：`reason` 标明变更由 `setPlaylistConfig` 触发。`playlists` 可选携带变更后完整配置，客户端可直接使用，也可省略后通过 `getPlaylistConfig` 获取（见 §4.1）。
 
-#### 3.3.6 错误
+#### 3.3.5 错误
 
 | Error | Code | 触发条件 |
 |---|---|---|
@@ -648,43 +650,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 | `NOT_SUPPORTED` | 0x0003 | 设备不支持 `signage.playlist` 能力或当前模式不可写。 |
 | `PERMISSION_DENIED` | 0x0009 | 调用方无权修改播放列表配置。 |
 
-#### 3.3.7 Error Response d block Example (op=8)
-
-失败示例 A — `scheduled` 时间约束违反（`startDate == endDate` 但 `startTime > endTime`）：
-
-```json
-{
-  "id": 12,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Invalid scheduled time range: startTime must be <= endTime when startDate equals endDate.",
-    "details": {
-      "field": "playlists[1].startTime"
-    }
-  }
-}
-```
-
-失败示例 B — `playlists` 为空数组（候选业务码 `SIGNAGE_PLAYLIST_EMPTY`，示例借用 common `INVALID_ARGUMENT` 并写入 `candidateError`，见 §8 双轨制说明）：
-
-```json
-{
-  "id": 13,
-  "status": {
-    "ok": false,
-    "code": 10,
-    "msg": "Playlists array must not be empty.",
-    "details": {
-      "candidateError": "SIGNAGE_PLAYLIST_EMPTY"
-    }
-  }
-}
-```
-
-读法：失败响应使用 `op=8` 且不携带业务 `result`；校验失败不落地、不触发事件。`code: 10` 对应 common `INVALID_ARGUMENT`（0x000A）。
-
-#### 3.3.8 规则
+#### 3.3.6 规则
 
 - Request MUST 使用 `op=7`。
 - Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
@@ -711,7 +677,15 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 |---|---|---:|---|---|---|
 | *(无必填参数)* | | | | | 恢复默认配置。`[REVIEW-ASK]` 是否支持 scoped reset（如只重置 scheduled 播放列表）需产品确认。 |
 
-#### 3.4.2 Request d block Example (op=7)
+#### 3.4.2 返回结果 Result：`PlaylistConfigResult`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `playlists` | `Playlist[]` | yes | see `Playlist` | none | 重置后的默认播放列表配置数组。 |
+
+#### 3.4.3 d block 示例
+
+request:
 
 ```json
 {
@@ -721,15 +695,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-读法：请求为空，设备恢复出厂默认播放列表配置（本例默认为空播放列表，由产品定义）。
-
-#### 3.4.3 返回结果 Result：`PlaylistConfigResult`
-
-| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
-|---|---|---:|---|---|---|
-| `playlists` | `Playlist[]` | yes | see `Playlist` | none | 重置后的默认播放列表配置数组。 |
-
-#### 3.4.4 Success Response d block Example (op=8)
+success:
 
 ```json
 {
@@ -744,9 +710,9 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-读法：`resetPlaylistConfig` 返回重置后的默认播放列表配置（此处为空数组，表示出厂默认无播放列表）。
+读法：request 为空，设备恢复出厂默认播放列表配置（本例默认为空播放列表，由产品定义）；success 返回重置后的默认播放列表配置（此处为空数组，表示出厂默认无播放列表）。
 
-#### 3.4.5 可能触发的事件
+#### 3.4.4 可能触发的事件
 
 | Event | 触发条件 | Payload Schema | 客户端处理建议 |
 |---|---|---|---|
@@ -767,29 +733,14 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 
 读法：客户端收到 `reason: "reset_config"` 后应丢弃本地播放列表缓存，用返回的 `playlists` 或重新 `getPlaylistConfig` 校准。
 
-#### 3.4.6 错误
+#### 3.4.5 错误
 
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `NOT_SUPPORTED` | 设备不支持 `signage.playlist` 能力，或 capability `supportsReset: false`。 | 返回 unsupported capability / operation。 |
 | `INTERNAL_ERROR` | 设备恢复默认失败。 | 返回内部错误，调用方可稍后重试。 |
 
-#### 3.4.7 Error Response d block Example (op=8)
-
-```json
-{
-  "id": 6,
-  "status": {
-    "ok": false,
-    "code": 3,
-    "msg": "Reset is not supported on this device."
-  }
-}
-```
-
-读法：`code: 3` 对应 common `NOT_SUPPORTED`（0x0003）。失败时不改变配置、不触发事件。
-
-#### 3.4.8 规则
+#### 3.4.6 规则
 
 - Request MUST 使用 `op=7`。
 - Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
@@ -815,21 +766,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 |---|---|---:|---|---|---|
 | `itemId` | string (UUID) | yes | UUID format | none | 播放项唯一标识。 |
 
-#### 3.5.2 Request d block Example (op=7)
-
-```json
-{
-  "id": 7,
-  "method": "signage.getPlaylistItemUrl",
-  "params": {
-    "itemId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-  }
-}
-```
-
-读法：设备检测到 `itemId` 对应播放项的 URL 即将过期时主动调用，用返回的 `settings` 替换本地缓存。
-
-#### 3.5.3 返回结果 Result：`GetPlaylistItemUrlResult`
+#### 3.5.2 返回结果 Result：`GetPlaylistItemUrlResult`
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -845,7 +782,21 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 | `website` | `url`, `ignoreCertificateError`, `refreshIntervalSecs` |
 | `unsplash` | `photos`, `delaySeconds`, `expiresAt` |
 
-#### 3.5.4 Success Response d block Example (op=8)
+#### 3.5.3 d block 示例
+
+request:
+
+```json
+{
+  "id": 7,
+  "method": "signage.getPlaylistItemUrl",
+  "params": {
+    "itemId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+  }
+}
+```
+
+success:
 
 主示例（`image` 类型）：
 
@@ -867,7 +818,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-补充 Success 示例（video / website / unsplash 类型）：
+补充 success 示例（video / website / unsplash 类型）：
 
 ```json
 {
@@ -917,24 +868,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-读法：设备用返回的 `settings` 直接替换本地缓存的该 item `settings`；不同 `type` 对应不同字段集合（见上方子集表）。
-
-#### 3.5.5 可能触发的事件
-
-| Event | 触发条件 | Payload Schema | 客户端处理建议 |
-|---|---|---|---|
-| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
-
-#### 3.5.6 错误
-
-| Error | Code | 触发条件 |
-|---|---|---|
-| `SUCCESS` | 0x0000 | 返回刷新后的 `type` + `settings`。 |
-| `NOT_SUPPORTED` | 0x0003 | 播放项类型为 `clock`（无远程 URL 资源）。 |
-| `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` | TBD | `itemId` 不存在于当前播放列表中。 |
-| `SIGNAGE_PLAYLIST_URL_EXPIRED` | TBD | 资源 URL 已不可用且无法刷新。 |
-
-#### 3.5.7 Error Response d block Example (op=8)
+error:
 
 失败示例 A — `clock` 类型不支持 URL 刷新：
 
@@ -981,9 +915,24 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 }
 ```
 
-读法：设备收到 `SIGNAGE_PLAYLIST_URL_EXPIRED` 类错误应停止对该 `itemId` 重试，并通过重新 `getPlaylistConfig` 或等待 `playlistConfigChanged` 获取更新后的配置。`code: 12` 对应 common `NOT_FOUND`（0x000C）。失败响应不携带业务 `result`。
+读法：request 中设备检测到 `itemId` 对应播放项的 URL 即将过期时主动调用；success 中设备用返回的 `settings` 直接替换本地缓存的该 item `settings`，不同 `type` 对应不同字段集合（见上方子集表）；error 中设备收到 `SIGNAGE_PLAYLIST_URL_EXPIRED` 类错误应停止对该 `itemId` 重试，并通过重新 `getPlaylistConfig` 或等待 `playlistConfigChanged` 获取更新后的配置，`code: 12` 对应 common `NOT_FOUND`（0x000C），失败响应不携带业务 `result`。
 
-#### 3.5.8 规则
+#### 3.5.4 可能触发的事件
+
+| Event | 触发条件 | Payload Schema | 客户端处理建议 |
+|---|---|---|---|
+| 无 | query method 不应因查询触发状态变化事件。 | none | 无需处理。 |
+
+#### 3.5.5 错误
+
+| Error | Code | 触发条件 |
+|---|---|---|
+| `SUCCESS` | 0x0000 | 返回刷新后的 `type` + `settings`。 |
+| `NOT_SUPPORTED` | 0x0003 | 播放项类型为 `clock`（无远程 URL 资源）。 |
+| `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` | TBD | `itemId` 不存在于当前播放列表中。 |
+| `SIGNAGE_PLAYLIST_URL_EXPIRED` | TBD | 资源 URL 已不可用且无法刷新。 |
+
+#### 3.5.6 规则
 
 - Request MUST 使用 `op=7`。
 - Success / Error Response MUST 使用 `op=8`，并回显 Request 的 `d.id`。
@@ -1014,7 +963,7 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 | `reason` | string (enum) | yes | `set_config`, `reset_config` | none | 变更原因。`set_config` 由 `setPlaylistConfig` 触发；`reset_config` 由 `resetPlaylistConfig` 触发。 |
 | `playlists` | `Playlist[]` | no | see `Playlist` schema | omitted | 变更后的完整播放列表。设备可选择省略以减小 payload，客户端调用 `getPlaylistConfig` 获取。`[REVIEW-ASK]` 是否总是携带完整 playlists 需产品确认。 |
 
-#### 4.1.2 Event d block Example (op=6)
+#### 4.1.2 d block 示例
 
 ```json
 {
@@ -1247,13 +1196,13 @@ Capability name: `signage.playlist`。
 
 ## 7. 交互流程示例 Flow Examples
 
-本章只展示多个 method/event 组成的端到端业务流程。单个 method 的 Request / Success Response / Error Response 示例见第 3 章；单个 event 的 Event 示例见第 4 章。
+本章只展示多个 method/event 组成的端到端业务流程。单个 method 的 request / success / error `d block` 示例见第 3 章；单个 event 的 `d block` 示例见第 4 章。
 
 ### 7.1 场景：能力发现 → 全量同步 → 配置变更事件
 
 设备上线（RPC Session 已 `APP_READY`）后，云端先查询能力，再全量下发播放列表；设备成功落地后发出配置变更事件，调用方据此刷新本地缓存。
 
-#### Step 1. 能力发现：`signage.getPlaylistCapabilities` Request d block (op=7)
+#### Step 1. 能力发现：`signage.getPlaylistCapabilities` 请求 (op=7)
 
 ```json
 {
@@ -1263,7 +1212,7 @@ Capability name: `signage.playlist`。
 }
 ```
 
-#### Step 2. 能力发现：Success Response d block (op=8)
+#### Step 2. 能力发现：成功响应 (op=8)
 
 ```json
 {
@@ -1277,7 +1226,7 @@ Capability name: `signage.playlist`。
 }
 ```
 
-#### Step 3. 全量同步：`signage.setPlaylistConfig` Request d block (op=7)
+#### Step 3. 全量同步：`signage.setPlaylistConfig` 请求 (op=7)
 
 ```json
 {
@@ -1307,7 +1256,7 @@ Capability name: `signage.playlist`。
 }
 ```
 
-#### Step 4. 全量同步：Success Response d block (op=8)
+#### Step 4. 全量同步：成功响应 (op=8)
 
 ```json
 {
@@ -1316,7 +1265,7 @@ Capability name: `signage.playlist`。
 }
 ```
 
-#### Step 5. 配置落地通知：`signage.playlistConfigChanged` Event d block (op=6)
+#### Step 5. 配置落地通知：`signage.playlistConfigChanged` 事件 (op=6)
 
 ```json
 {
@@ -1328,13 +1277,13 @@ Capability name: `signage.playlist`。
 }
 ```
 
-读法：`setPlaylistConfig` 成功仅返回 success status（无 result body），调用方通过本事件确认落地；若事件 payload 省略 `playlists`，调用方应调用 `signage.getPlaylistConfig` 校准。校验失败（如 §3.3.7 scheduled 约束 / 空列表）不会走到 Step 4/5，直接返回错误且不触发事件。
+读法：`setPlaylistConfig` 成功仅返回 success status（无 result body），调用方通过本事件确认落地；若事件 payload 省略 `playlists`，调用方应调用 `signage.getPlaylistConfig` 校准。校验失败（如 §3.3.3 scheduled 约束 / 空列表 error 示例）不会走到 Step 4/5，直接返回错误且不触发事件。
 
 ### 7.2 场景：资源 URL 即将过期，设备主动 Pull 刷新
 
 设备检测到某 image 播放项 URL 即将过期，主动调用 `signage.getPlaylistItemUrl` 拉取新 URL；若资源已不可用，设备改走全量校准。
 
-#### Step 1. URL 刷新：`signage.getPlaylistItemUrl` Request d block (op=7)
+#### Step 1. URL 刷新：`signage.getPlaylistItemUrl` 请求 (op=7)
 
 ```json
 {
@@ -1346,7 +1295,7 @@ Capability name: `signage.playlist`。
 }
 ```
 
-#### Step 2. URL 刷新：Success Response d block (op=8)
+#### Step 2. URL 刷新：成功响应 (op=8)
 
 ```json
 {
@@ -1363,7 +1312,7 @@ Capability name: `signage.playlist`。
 }
 ```
 
-#### Step 3（失败分支）. 资源已过期：Error Response d block (op=8)
+#### Step 3（失败分支）. 资源已过期：错误响应 (op=8)
 
 ```json
 {
@@ -1393,11 +1342,11 @@ Capability name: `signage.playlist`。
 | `INTERNAL_ERROR` | 0x000E | common | 设备内部错误（`getPlaylistCapabilities` / `getPlaylistConfig` / `resetPlaylistConfig` 执行失败）。 | [REVIEW-ADOPTED] |
 | `NOT_FOUND` | 0x000C | common | 指定资源不存在：`itemId` 不存在于当前播放列表、资源 URL 已过期且无法刷新。 | [REVIEW-ADOPTED] |
 
-> 采纳决策：候选业务码 `SIGNAGE_PLAYLIST_EMPTY` / `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` / `SIGNAGE_PLAYLIST_URL_EXPIRED` **不新增为独立业务码，统一复用 common 错误码**（见上方「采纳记录」错误码决策表）。signage domain 错误码区段 `0x0D00-0x0DFF` 保持空；§3.3.7 / §3.5.7 JSON 示例中的 `candidateError` 占位以 common 码为准（空列表→`INVALID_ARGUMENT`，item 不存在/URL 过期→`NOT_FOUND`）。
+> 采纳决策：候选业务码 `SIGNAGE_PLAYLIST_EMPTY` / `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` / `SIGNAGE_PLAYLIST_URL_EXPIRED` **不新增为独立业务码，统一复用 common 错误码**（见上方「采纳记录」错误码决策表）。signage domain 错误码区段 `0x0D00-0x0DFF` 保持空；§3.3.3 / §3.5.3 JSON 示例中的 `candidateError` 占位以 common 码为准（空列表→`INVALID_ARGUMENT`，item 不存在/URL 过期→`NOT_FOUND`）。
 
 > 通用错误码数值取自 `registry/error/error_code.yaml`。业务域错误 `SIGNAGE_PLAYLIST_*` 落点在业务域区段 `0x0600-0x15FF`，编号 `TBD after adoption`，由 registry 采纳时分配。
 
-> **错误码双轨制说明**：上表 `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` / `SIGNAGE_PLAYLIST_EMPTY` / `SIGNAGE_PLAYLIST_URL_EXPIRED` 为**候选业务错误码**，数值 `TBD after adoption`。在候选码尚未分配数值前，本文 JSON 示例（§3.3.7 / §3.5.7）按 20-draft-business-protocol 约定借用**语义最近的 common 错误码**（`NOT_FOUND` 0x000C、`INVALID_ARGUMENT` 0x000A），并将候选名写入 `status.details.candidateError`。采纳阶段需对每个候选码做二选一决定：**新增为独立业务码**（落入 `0x0600-0x15FF`），还是**直接复用对应 common 码**（减少 registry 膨胀）。见 §12 待确认问题。
+> **错误码双轨制说明**：上表 `SIGNAGE_PLAYLIST_ITEM_NOT_FOUND` / `SIGNAGE_PLAYLIST_EMPTY` / `SIGNAGE_PLAYLIST_URL_EXPIRED` 为**候选业务错误码**，数值 `TBD after adoption`。在候选码尚未分配数值前，本文 JSON 示例（§3.3.3 / §3.5.3）按 20-draft-business-protocol 约定借用**语义最近的 common 错误码**（`NOT_FOUND` 0x000C、`INVALID_ARGUMENT` 0x000A），并将候选名写入 `status.details.candidateError`。采纳阶段需对每个候选码做二选一决定：**新增为独立业务码**（落入 `0x0600-0x15FF`），还是**直接复用对应 common 码**（减少 registry 膨胀）。见 §12 待确认问题。
 
 ---
 
