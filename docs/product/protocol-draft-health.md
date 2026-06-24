@@ -16,21 +16,21 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | 指标 | 数量 |
 |---|---:|
 | 草案文件 | 110 |
-| 已生成草案文件 | 16 |
-| 已生成 method/event 事实 | 86 |
+| 已生成草案文件 | 20 |
+| 已生成 method/event 事实 | 104 |
 | Method 小节 | 448 |
 | 紧凑 method 示例 | 448 |
 | Method 示例缺口 | 0 |
-| JSON 示例 | 1177 |
+| JSON 示例 | 1214 |
 | 无效 JSON 示例 | 0 |
 | 模板化示例提示 | 0 |
 | 模板化开放问题 | 0 |
 | 模板化字段占位 | 0 |
-| REVIEW-ASK | 88 |
-| REVIEW-DRAFT | 126 |
-| REVIEW-FIX | 0 |
+| REVIEW-ASK | 134 |
+| REVIEW-DRAFT | 139 |
+| REVIEW-FIX | 1 |
 | REVIEW-BLOCKER | 0 |
-| 采纳后占位残留 | 0 |
+| 采纳后占位残留 | 27 |
 
 ## 领域健康矩阵
 
@@ -41,7 +41,7 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | camera | P3/P4 | 7 | 0 | 0 | 40 | 40/40 | ASK 28 / DRAFT 52 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
 | capability | 待排期 | 1 | 0 | 0 | 4 | 4/4 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | cast | P2 / 投屏接收端控制 | 7 | 7 | 31 | 18 | 18/18 | ASK 11 / DRAFT 4 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
-| device | P1 | 6 | 1 | 1 | 20 | 20/20 | ASK 9 / DRAFT 13 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
+| device | P1 | 6 | 2 | 5 | 20 | 20/20 | ASK 19 / DRAFT 19 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
 | diagnostic | P5 | 10 | 0 | 0 | 39 | 39/39 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | display | 待排期 | 6 | 0 | 0 | 24 | 24/24 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | file | 待排期 | 2 | 0 | 0 | 8 | 8/8 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
@@ -52,8 +52,8 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | output | P2b | 1 | 0 | 0 | 3 | 3/3 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | privacy | 待排期 | 3 | 0 | 0 | 10 | 10/10 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | room | P7 | 5 | 0 | 0 | 20 | 20/20 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
-| signage | P7 | 2 | 0 | 0 | 9 | 9/9 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
-| software | P7 | 2 | 0 | 0 | 6 | 6/6 | ASK 13 / DRAFT 17 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
+| signage | P7 | 2 | 1 | 6 | 9 | 9/9 | ASK 12 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
+| software | P7 | 2 | 2 | 8 | 6 | 6/6 | ASK 37 / DRAFT 24 / FIX 1 / BLOCKER 0 | 0 | 0 | 先处理 blocker/fix |
 | storage | 待排期 | 6 | 0 | 0 | 24 | 24/24 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | stream | P0 data-plane plumbing | 2 | 0 | 0 | 18 | 18/18 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | system | P1 | 6 | 0 | 0 | 28 | 28/28 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |

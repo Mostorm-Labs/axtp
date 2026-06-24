@@ -2,6 +2,7 @@
 
 | eventId | name | domain | status | schema |
 |---:|---|---|---|---|
+| `0x0102` | `device.enrollmentStateChanged` | device | draft | DeviceEnrollmentStateChangedEvent |
 | `0x0402` | `firmware.updateProgressReported` | firmware | draft | FirmwareUpdateProgressEvent |
 | `0x0403` | `firmware.updateStateChanged` | firmware | draft | FirmwareUpdateStateChangedEvent |
 | `0x0806` | `video.streamStateChanged` | video | draft | VideoStreamStateChangedEvent |
@@ -11,6 +12,7 @@
 | `0x0902` | `audio.streamStateChanged` | audio | draft | AudioStreamStateChangedEvent |
 | `0x0903` | `audio.streamSourceStateChanged` | audio | draft | AudioStreamSourceStateChangedEvent |
 | `0x0904` | `audio.streamStatsReported` | audio | draft | AudioStreamStatsReportedEvent |
+| `0x0D01` | `signage.playlistConfigChanged` | signage | draft | SignagePlaylistConfigChangedEvent |
 | `0x0E01` | `network.interfaceStateChanged` | network | draft | NetworkInterfaceStateChangedEvent |
 | `0x0E02` | `network.ipConfigChanged` | network | draft | NetworkIpConfigChangedEvent |
 | `0x0E03` | `network.wifiConfigChanged` | network | draft | NetworkWifiConfigChangedEvent |
@@ -32,3 +34,5 @@
 | `0x160B` | `cast.backendChanged` | cast | draft | CastBackendChangedEvent |
 | `0x160C` | `cast.flowControlChanged` | cast | draft | CastFlowControlChangedEvent |
 | `0x160D` | `cast.statusChanged` | cast | draft | CastStatusChangedEvent |
+| `0x1701` | `software.configChanged` | software | draft | SoftwareConfigChangedEvent |
+| `0x1702` | `software.updatePolicyChanged` | software | draft | SoftwareUpdatePolicyChangedEvent |
