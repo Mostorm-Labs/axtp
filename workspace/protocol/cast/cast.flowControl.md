@@ -247,3 +247,85 @@ event:
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|
 | 是否暴露外部 keyframe request？ | scope | 不暴露；内部自动触发。 | `[REVIEW-OK]` |
+
+## 8. Schema Reference
+
+> 本节按当前 `contract/registry/domains/cast/domain.yaml` 整理字段事实；`Required=yes` 表示编码数据必须携带该字段，`Required=no` 表示可省略。`Empty` schema 无字段，未展开。
+
+### CastGetFlowControlStateParams
+
+Selector for cast receiver flow control state.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `includeStats` | no | `bool` | `0x01` | default=true | Whether to include low-frequency diagnostic counters. |
+| `includePolicy` | no | `bool` | `0x02` | default=true | Whether to include current flow policy fields. |
+| `sessionId` | no | `string` | `0x03` | maxLength=128 | Optional receiver-local session id. |
+
+### CastFlowControlState
+
+Receiver-local cast flow control policy and low-frequency statistics.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `targetRenderFps` | yes | `number` | `0x01` | min=0 | Configured target render fps; zero means uncapped. |
+| `inputFps` | no | `number` | `0x02` | min=0 | Estimated incoming media frame rate. |
+| `renderFps` | no | `number` | `0x03` | min=0 | Estimated local render frame rate. |
+| `dropMode` | yes | `enum` | `0x04` | enum=drop-late/drop-oldest/render-latest | Local frame drop policy. |
+| `videoQueueFrames` | yes | `uint32` | `0x05` | min=1 | Maximum queued video frames. |
+| `videoQueueDepth` | no | `uint32` | `0x06` | - | Current queued video frame depth. |
+| `audioQueueDepth` | no | `uint32` | `0x07` | - | Current queued audio frame depth when known. |
+| `lateFrameThresholdMs` | yes | `uint32` | `0x08` | - | Late-frame threshold in milliseconds. |
+| `overlayEnabled` | yes | `bool` | `0x09` | - | Whether diagnostics overlay is enabled. |
+| `droppedFrames` | no | `uint64` | `0x0A` | - | Low-frequency dropped-frame counter. |
+| `lateFrames` | no | `uint64` | `0x0B` | - | Low-frequency late-frame counter. |
+| `keyframeRequestCount` | no | `uint32` | `0x0C` | - | Internal keyframe requests triggered by receiver policy. |
+| `keyFrameOnDropBurst` | no | `bool` | `0x0D` | - | Whether the receiver may internally request a keyframe after a drop burst. |
+| `changedFields` | no | `Array<string>` | `0x0E` | itemType=string | Field names changed by the latest operation or event. |
+| `sampledAt` | no | `string` | `0x0F` | maxLength=64 | Timestamp for this flow sample. |
+
+### CastSetRenderFpsParams
+
+Request to set receiver-local target render fps.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `fps` | yes | `number` | `0x01` | min=0 | Target local render fps; zero means uncapped. |
+| `sessionId` | no | `string` | `0x02` | maxLength=128 | Optional receiver-local session id. |
+| `scope` | no | `enum` | `0x03` | enum=currentSession/default | State target hint; this is not an authorization scope. |
+
+### CastSetFlowPolicyParams
+
+Request to update receiver-local queue, late-frame, drop, and overlay policy.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `videoQueueFrames` | no | `uint32` | `0x01` | min=1 | Maximum queued video frames. |
+| `lateFrameThresholdMs` | no | `uint32` | `0x02` | - | Late-frame threshold in milliseconds. |
+| `dropMode` | no | `enum` | `0x03` | enum=drop-late/drop-oldest/render-latest | Local frame drop policy. |
+| `overlayEnabled` | no | `bool` | `0x04` | - | Whether receiver diagnostics overlay is enabled. |
+| `sessionId` | no | `string` | `0x05` | maxLength=128 | Optional receiver-local session id. |
+| `scope` | no | `enum` | `0x06` | enum=currentSession/default | State target hint; this is not an authorization scope. |
+
+### CastFlowControlChangedEvent
+
+Event payload for cast flow control changes or low-frequency diagnostic samples.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `changedFields` | yes | `Array<string>` | `0x01` | itemType=string | Field names changed or sampled by this event. |
+| `state` | yes | `CastFlowControlState` | `0x02` | - | Flow control state after the change or sample. |
+| `reason` | no | `enum` | `0x03` | enum=manualFlowControl/diagnosticsSample/sessionStarted/sessionStopped/unknown | Change or sampling reason. |
+| `sampledAt` | no | `string` | `0x04` | maxLength=64 | Timestamp for this event. |
+
+### CastFlowControlCapability
+
+Capability descriptor for cast.flowControl.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `supportsRenderFps` | no | `bool` | `0x01` | default=true | Whether receiver-local target render fps can be controlled. |
+| `supportsQueuePolicy` | no | `bool` | `0x02` | default=true | Whether queue and late-frame policy can be controlled. |
+| `supportsOverlay` | no | `bool` | `0x03` | default=true | Whether diagnostics overlay can be controlled. |
+| `supportsStats` | no | `bool` | `0x04` | default=true | Whether low-frequency flow diagnostics are reported. |
+| `exposesExternalKeyframeRequest` | no | `bool` | `0x05` | default=false | Whether a public keyframe request method is exposed; current draft keeps this false. |

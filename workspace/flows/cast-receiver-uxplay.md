@@ -41,7 +41,7 @@
 | LAN auth 入口策略 | draft | `Identify.d.authentication`, `auth.session`, `auth.token` | 确认是否需要 token / HMAC 和 Origin 白名单。 |
 | AirPlay 名称 | draft | `cast.getAirPlayName`, `cast.setAirPlayName` | 名称长度、字符集、立即生效和失败恢复。 |
 | 投屏会话查询与停止 | draft | `cast.getSession`, `cast.stopSession`, `cast.session*` | 状态枚举和无活动会话时的幂等性。 |
-| 聚合状态 | draft | `cast.getStatus`, `cast.statusChanged` | 聚合字段、敏感字段裁剪和事件节流。 |
+| 快照状态 | draft | `cast.getStatus` | 当前快照、敏感字段裁剪；不提供 `cast.statusChanged` 持续聚合事件。 |
 | PIN / 密码保护 | draft | `cast.getPinCodeConfig`, `cast.setPinCodeConfig`, `cast.setPinCode`, `cast.pinCode*` | PIN 格式、明文可见性和日志脱敏验证。 |
 | 投屏音频 | draft | `cast.getAudio`, `cast.setAudio`, `cast.setMuted`, `cast.audioChanged` | `enabled` / `muted` 关系和 `setMuted` 是否独立保留。 |
 | 投屏窗口 | draft | `cast.getWindowState`, `cast.setWindowState`, `cast.windowChanged` | 无活动窗口时拒绝还是记住预设；是否需要 public show / hide。 |
@@ -133,7 +133,7 @@ sequenceDiagram
 
 - 密码保护关闭时，source 可直接进入投屏；密码保护开启时，等待密码、鉴权成功、鉴权失败不得误报为 `receiverPhase=streaming` 或 `receiverPhase=rendering`。
 - `receiverPhase=streaming` 表示媒体数据开始流动；`receiverPhase=rendering` 必须等到 Render Core 首帧或音频播放开始。
-- 控制端重连后优先用 `cast.getStatus` 校准；事件丢失时再调用 feature-specific get method。
+- 控制端初次连接、重连或事件丢失后优先用 `cast.getStatus` 校准；持续变化由 feature-specific events 承担，必要时再调用 feature-specific get method。
 - Backend 重启需要固定 `cast.sessionStopped` 与 `cast.backendChanged` 的顺序和用户可理解原因。
 - 本地 fps cap 生效后，`inputFps` 和 `renderFps` 不能混淆，队列和端到端延迟不得持续增长。
 - LAN 控制口如启用 auth，应在入口层完成身份校验；`cast.*` 内部普通操作不再按 scope 拆分。

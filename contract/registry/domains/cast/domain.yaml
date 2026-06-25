@@ -256,7 +256,7 @@ methods:
     status: draft
     bitOffset: 17
     since: 1.0.0
-    description: Return a low-frequency aggregate cast receiver status summary.
+    description: Return a current cast receiver snapshot for UI reload, reconnect, or event-loss recovery.
     rpc_op: request_response
     request_schema: CastGetStatusParams
     response_schema: CastStatus
@@ -408,18 +408,6 @@ events:
     severity: info
     trigger: [cast.setRenderFps, cast.setFlowPolicy, diagnostics sample]
     capabilities: [cast.flowControl]
-
-  - id: 0x160D
-    name: cast.statusChanged
-    domain: cast
-    status: draft
-    bitOffset: 12
-    since: 1.0.0
-    description: Emitted when low-frequency aggregate cast status sections change.
-    event_schema: CastStatusChangedEvent
-    severity: info
-    trigger: [session changed, audio changed, PIN changed, window changed, backend changed, flow control changed]
-    capabilities: [cast.status]
 
 types:
   CastSourceSummary:
@@ -1488,16 +1476,6 @@ types:
         type: CastRect
         required: false
         description: Current window bounds when available.
-      - id: 0x08
-        name: previousNormalBounds
-        type: CastRect
-        required: false
-        description: Normal-mode bounds recorded before fullscreen or topmost mode.
-      - id: 0x09
-        name: restoredBounds
-        type: CastRect
-        required: false
-        description: Bounds restored by the latest transition.
       - id: 0x0A
         name: changedFields
         type: array
@@ -1931,7 +1909,7 @@ types:
 
   CastGetStatusParams:
     kind: object
-    description: Selector for aggregate cast receiver status.
+    description: Selector for current cast receiver snapshot.
     fields:
       - id: 0x01
         name: include
@@ -1949,7 +1927,7 @@ types:
 
   CastReceiverSummary:
     kind: object
-    description: Aggregate receiver role and protocol-neutral phase summary.
+    description: Snapshot receiver role and protocol-neutral phase summary.
     fields:
       - id: 0x01
         name: role
@@ -1979,7 +1957,7 @@ types:
 
   CastSessionStatusSummary:
     kind: object
-    description: Aggregate active session summary for status views.
+    description: Snapshot active session summary for status views.
     fields:
       - id: 0x01
         name: sessionId
@@ -2014,7 +1992,7 @@ types:
 
   CastPinCodeStatusSummary:
     kind: object
-    description: Aggregate PIN summary for status views.
+    description: Snapshot PIN summary for status views.
     fields:
       - id: 0x01
         name: enabled
@@ -2051,7 +2029,7 @@ types:
 
   CastStatus:
     kind: object
-    description: Low-frequency aggregate cast receiver status.
+    description: Current cast receiver snapshot for reconnect and event-loss recovery.
     fields:
       - id: 0x01
         name: receiver
@@ -2093,35 +2071,12 @@ types:
         type: string
         required: true
         max_length: 64
-        description: Timestamp for this aggregate snapshot.
+        description: Timestamp for this status snapshot.
       - id: 0x09
         name: redacted
         type: bool
         required: false
-        description: Whether any sensitive aggregate fields were withheld.
-
-  CastStatusChangedEvent:
-    kind: object
-    description: Event payload for low-frequency aggregate status changes.
-    fields:
-      - id: 0x01
-        name: changedSections
-        type: array
-        array:
-          item_type: string
-        required: true
-        description: Status section names changed by this event.
-      - id: 0x02
-        name: status
-        type: CastStatus
-        required: true
-        description: Aggregate status after the change.
-      - id: 0x03
-        name: sampledAt
-        type: string
-        required: true
-        max_length: 64
-        description: Timestamp for this aggregate event.
+        description: Whether any sensitive snapshot fields were withheld.
 
   CastSessionCapability:
     kind: object
@@ -2241,7 +2196,7 @@ types:
         type: bool
         required: false
         default: true
-        description: Whether normal mode can restore previous normal bounds.
+        description: Whether normal mode can restore remembered normal-mode bounds.
       - id: 0x04
         name: noWindowPolicy
         type: enum
@@ -2316,7 +2271,7 @@ types:
 
   CastStatusCapability:
     kind: object
-    description: Capability descriptor for cast.status.
+    description: Capability descriptor for cast.status snapshot query.
     fields:
       - id: 0x01
         name: sections
@@ -2324,19 +2279,13 @@ types:
         array:
           item_type: string
         required: true
-        description: Aggregate status sections the receiver can report.
+        description: Status snapshot sections the receiver can report.
       - id: 0x02
         name: supportsSensitiveRedaction
         type: bool
         required: false
         default: true
         description: Whether sensitive status fields can be withheld and marked redacted.
-      - id: 0x03
-        name: supportsStatusChangedEvent
-        type: bool
-        required: false
-        default: true
-        description: Whether low-frequency aggregate status change events are supported.
 
 capabilities:
   - id: 0x1601
@@ -2398,6 +2347,6 @@ capabilities:
     domain: cast
     status: draft
     since: 1.0.0
-    description: Device supports low-frequency aggregate cast receiver status query and change events.
+    description: Device supports current cast receiver status snapshot query.
     type: object
     schema: CastStatusCapability

@@ -224,3 +224,73 @@ event:
 |---|---|---|---|
 | `enabled` 与 `muted` 的有效状态公式是否进入 registry？ | schema / UI | 使用 `effectivePlayback` 承载实际结果。 | `[REVIEW-ASK]` |
 | `cast.setMuted` 是否独立保留？ | method model | 保留候选；采纳时可合并到 `setAudio`。 | `[REVIEW-ASK]` |
+
+## 8. Schema Reference
+
+> 本节按当前 `contract/registry/domains/cast/domain.yaml` 整理字段事实；`Required=yes` 表示编码数据必须携带该字段，`Required=no` 表示可省略。`Empty` schema 无字段，未展开。
+
+### CastGetAudioParams
+
+Selector for local cast audio state.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `includeEffective` | no | `bool` | `0x01` | default=true | Whether to include effective local playback state. |
+| `sessionId` | no | `string` | `0x02` | maxLength=128 | Optional receiver-local session id. |
+
+### CastAudioState
+
+Local cast audio playback and mute state.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `enabled` | yes | `bool` | `0x01` | default=false | Whether local receiver playback is enabled. |
+| `muted` | yes | `bool` | `0x02` | default=false | Whether local receiver output is muted. |
+| `effectivePlayback` | yes | `bool` | `0x03` | - | Whether audio is effectively playing locally after state and session conditions are applied. |
+| `scope` | no | `enum` | `0x04` | enum=currentSession/default | State target hint represented by this snapshot. |
+| `sessionId` | no | `string` | `0x05` | maxLength=128 | Receiver-local session id for session-specific state. |
+| `source` | no | `enum` | `0x06` | enum=defaultConfig/externalSet/localUi/sessionStarted/sessionStopped/unknown | Source of the latest state value. |
+| `reason` | no | `enum` | `0x07` | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Latest audio state transition reason. |
+| `changedFields` | no | `Array<string>` | `0x08` | itemType=string | Field names changed by the latest operation or event. |
+| `updatedAt` | no | `string` | `0x09` | maxLength=64 | Timestamp for this audio state. |
+
+### CastSetAudioParams
+
+Request to enable or disable local cast audio playback.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `enabled` | yes | `bool` | `0x01` | - | Whether local receiver playback is enabled. |
+| `sessionId` | no | `string` | `0x02` | maxLength=128 | Optional receiver-local session id. |
+| `scope` | no | `enum` | `0x03` | enum=currentSession/default | State target hint; this is not an authorization scope. |
+
+### CastSetMutedParams
+
+Request to mute or unmute local cast audio output.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `muted` | yes | `bool` | `0x01` | - | Whether local receiver output is muted. |
+| `sessionId` | no | `string` | `0x02` | maxLength=128 | Optional receiver-local session id. |
+| `scope` | no | `enum` | `0x03` | enum=currentSession/default | State target hint; this is not an authorization scope. |
+
+### CastAudioChangedEvent
+
+Event payload for local cast audio state changes.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `changedFields` | yes | `Array<string>` | `0x01` | itemType=string | Field names changed by this event. |
+| `state` | yes | `CastAudioState` | `0x02` | - | State after the change. |
+| `reason` | no | `enum` | `0x03` | enum=externalSet/localUi/sessionStarted/sessionStopped/unknown | Change reason. |
+| `updatedAt` | no | `string` | `0x04` | maxLength=64 | Timestamp for this event. |
+
+### CastAudioCapability
+
+Capability descriptor for cast.audio.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `defaultEnabled` | no | `bool` | `0x01` | default=false | Default local playback enablement for received cast audio. |
+| `supportsMute` | no | `bool` | `0x02` | default=true | Whether local mute state can be controlled separately. |
+| `reportsEffectivePlayback` | no | `bool` | `0x03` | default=true | Whether the receiver reports effective local playback state. |

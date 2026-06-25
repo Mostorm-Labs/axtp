@@ -249,3 +249,114 @@ auth failed:
 | PIN 格式、长度和字符集如何定义？ | backend / schema | 采纳前按 UxPlay / NearCast 实现收敛。 | `[REVIEW-ASK]` |
 | 修改 PIN 是否影响正在进行的鉴权？ | behavior | 默认影响后续请求；进行中鉴权策略待确认。 | `[REVIEW-ASK]` |
 | 明文 PIN 的可见性和脱敏如何验证？ | security | 保留明文 response / event，日志和诊断必须脱敏。 | `[REVIEW-ASK]` |
+
+## 8. Schema Reference
+
+> 本节按当前 `contract/registry/domains/cast/domain.yaml` 整理字段事实；`Required=yes` 表示编码数据必须携带该字段，`Required=no` 表示可省略。`Empty` schema 无字段，未展开。
+
+### CastGetPinCodeConfigParams
+
+Selector for cast PIN protection configuration.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `includeSecret` | no | `bool` | `0x01` | default=false | Whether authorized clients request plaintext PIN material. |
+
+### CastPinCodeConfig
+
+Cast PIN protection state and optional plaintext PIN value.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `enabled` | yes | `bool` | `0x01` | default=true | Whether PIN protection is enabled. |
+| `hasPinCode` | yes | `bool` | `0x02` | - | Whether a current PIN exists. |
+| `pinCode` | no | `string` | `0x03` | - | Plaintext PIN value when visible to the caller. |
+| `pinDisplay` | no | `enum` | `0x04` | enum=hidden/authorizedClients/localUi/both | Where the current PIN may be displayed. |
+| `generatedBy` | no | `enum` | `0x05` | enum=nearcast/uxplay/external/unknown | Component or actor that generated the current PIN. |
+| `visibility` | no | `enum` | `0x06` | enum=hidden/authorizedOnly/localUi/both | Visibility policy for the PIN value. |
+| `expiresAt` | no | `string` | `0x07` | maxLength=64 | Expiration timestamp when applicable. |
+| `redactionRequired` | no | `bool` | `0x08` | default=true | Whether logs, diagnostics, and error summaries must redact the PIN. |
+| `changedFields` | no | `Array<string>` | `0x09` | itemType=string | Field names changed by the latest operation or event. |
+| `updatedAt` | no | `string` | `0x0A` | maxLength=64 | Timestamp for this PIN state. |
+| `redacted` | no | `bool` | `0x0B` | - | Whether sensitive fields were withheld in this snapshot. |
+
+### CastSetPinCodeConfigParams
+
+Request to update cast PIN protection configuration.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `enabled` | no | `bool` | `0x01` | - | Whether PIN protection is enabled. |
+| `pinDisplay` | no | `enum` | `0x02` | enum=hidden/authorizedClients/localUi/both | Where the current PIN may be displayed. |
+| `rotatePin` | no | `bool` | `0x03` | default=false | Whether the receiver should rotate or regenerate the PIN. |
+| `visibility` | no | `enum` | `0x04` | enum=hidden/authorizedOnly/localUi/both | Visibility policy for responses and events. |
+
+### CastSetPinCodeParams
+
+Request to set the active cast PIN value.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `pinCode` | yes | `string` | `0x01` | - | Opaque PIN value; concrete format is backend or product policy. |
+| `expirePrevious` | no | `bool` | `0x02` | default=true | Whether prior PIN material should stop being accepted. |
+| `visibility` | no | `enum` | `0x03` | enum=hidden/authorizedOnly/localUi/both | Visibility policy for the new PIN. |
+
+### CastPinCodeChangedEvent
+
+Event payload for PIN configuration or PIN state changes.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `changedFields` | yes | `Array<string>` | `0x01` | itemType=string | Field names changed by this event. |
+| `config` | yes | `CastPinCodeConfig` | `0x02` | - | PIN state after the change. |
+| `reason` | no | `enum` | `0x03` | enum=externalSet/localUi/generated/backendChanged/unknown | Change reason. |
+| `updatedAt` | no | `string` | `0x04` | maxLength=64 | Timestamp for this event. |
+
+### CastPinCodeRequiredEvent
+
+Event payload for a session waiting for PIN authentication.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `sessionId` | no | `string` | `0x01` | maxLength=128 | Receiver-local session id. |
+| `source` | no | `CastSourceSummary` | `0x02` | - | Source waiting for authentication. |
+| `pinCode` | no | `string` | `0x03` | - | Plaintext PIN value when visible to the event subscriber. |
+| `visibility` | no | `enum` | `0x04` | enum=hidden/authorizedOnly/localUi/both | Visibility policy for this event payload. |
+| `redactionRequired` | no | `bool` | `0x05` | default=true | Whether logs and diagnostics must redact this PIN value. |
+| `requestedAt` | no | `string` | `0x06` | maxLength=64 | Timestamp when PIN input was requested. |
+
+### CastSourceSummary
+
+Summary of a cast source device or local AXTP sender.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `name` | no | `string` | `0x01` | maxLength=128 | User-visible source name when known. |
+| `model` | no | `string` | `0x02` | maxLength=128 | Source model identifier when known. |
+| `address` | no | `string` | `0x03` | maxLength=128 | Network or transport address summary when safe to expose. |
+| `sourceId` | no | `string` | `0x04` | maxLength=128 | Receiver-local source identifier. |
+| `protocol` | no | `enum` | `0x05` | enum=airplay/hid/unknown | Protocol path that produced the source summary. |
+
+### CastPinCodeAuthFailedEvent
+
+Event payload for failed PIN authentication.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `sessionId` | no | `string` | `0x01` | maxLength=128 | Receiver-local session id. |
+| `source` | no | `CastSourceSummary` | `0x02` | - | Source that failed authentication. |
+| `authFailureReason` | no | `enum` | `0x03` | enum=wrongPin/timeout/cancelled/tooManyAttempts/unknown | Authentication failure reason. |
+| `attemptCount` | no | `uint16` | `0x04` | - | Attempt count visible to the receiver. |
+| `failedAt` | no | `string` | `0x05` | maxLength=64 | Timestamp when authentication failed. |
+
+### CastPinCodeCapability
+
+Capability descriptor for cast.pinCode.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `defaultEnabled` | no | `bool` | `0x01` | default=true | Whether PIN protection is enabled by default. |
+| `supportsPlaintextResponse` | no | `bool` | `0x02` | default=true | Whether authorized responses or events may carry plaintext PIN values. |
+| `supportedPinDisplays` | no | `Array<string>` | `0x03` | itemType=string | PIN display policies supported by the receiver. |
+| `supportsGeneratedPin` | no | `bool` | `0x04` | default=true | Whether the receiver can generate a default PIN. |
+| `redactionRequired` | no | `bool` | `0x05` | default=true | Whether logs, diagnostics, and error summaries must redact PIN values. |

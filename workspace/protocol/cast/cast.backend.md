@@ -179,3 +179,92 @@ event:
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|
 | 重启时 session/backend 事件顺序如何固定？ | UI / conformance | 先 `backendChanged(restarting)`，再 `sessionStopped(backendRestart)`，最后 `backendChanged(ready/failed)`。 | `[REVIEW-ASK]` |
+
+## 8. Schema Reference
+
+> 本节按当前 `contract/registry/domains/cast/domain.yaml` 整理字段事实；`Required=yes` 表示编码数据必须携带该字段，`Required=no` 表示可省略。`Empty` schema 无字段，未展开。
+
+### CastGetBackendStatusParams
+
+Selector for cast backend status.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `includeLastError` | no | `bool` | `0x01` | default=false | Whether to include the last backend error summary. |
+
+### CastBackendStatus
+
+Cast backend state, process summary, discoverability, and last error.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `backendType` | yes | `enum` | `0x01` | enum=uxplay/unknown | Backend implementation type. |
+| `state` | yes | `enum` | `0x02` | enum=starting/ready/restarting/exited/failed/disabled | Backend runtime state. |
+| `discoverable` | yes | `bool` | `0x03` | - | Whether the cast service is discoverable by sources. |
+| `pid` | no | `uint32` | `0x04` | - | Backend process id when available. |
+| `version` | no | `string` | `0x05` | maxLength=128 | Backend version or build identifier. |
+| `activeSessionId` | no | `string` | `0x06` | maxLength=128 | Active cast session id currently owned by the backend. |
+| `restartInProgress` | yes | `bool` | `0x07` | default=false | Whether a backend restart is currently in progress. |
+| `lastError` | no | `CastLastError` | `0x08` | - | Last backend error summary when requested and available. |
+| `updatedAt` | no | `string` | `0x09` | maxLength=64 | Timestamp for this backend status. |
+
+### CastLastError
+
+Redactable backend or receiver error summary.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `code` | no | `string` | `0x01` | maxLength=64 | Backend-local or AXTP-visible error code. |
+| `message` | no | `string` | `0x02` | maxLength=512 | Human-readable error summary suitable for authorized clients. |
+| `occurredAt` | no | `string` | `0x03` | maxLength=64 | Timestamp when the error was observed. |
+| `redacted` | no | `bool` | `0x04` | default=false | Whether sensitive details were removed from this summary. |
+
+### CastRestartBackendParams
+
+Request to restart the cast backend.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `reason` | no | `enum` | `0x01` | enum=manualRecovery/configChanged/backendUnhealthy/unknown | Caller-visible restart reason. |
+| `force` | no | `bool` | `0x02` | default=false | Whether the backend adapter may force cleanup before restart. |
+
+### CastRestartBackendResult
+
+Result of requesting a cast backend restart.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `accepted` | yes | `bool` | `0x01` | - | Whether the receiver accepted the restart request. |
+| `backendType` | yes | `enum` | `0x02` | enum=uxplay/unknown | Backend implementation affected by the restart. |
+| `state` | yes | `enum` | `0x03` | enum=starting/ready/restarting/exited/failed/disabled | Backend state after accepting the restart request. |
+| `restartId` | no | `string` | `0x04` | maxLength=128 | Receiver-local restart operation id. |
+| `activeSessionEnded` | yes | `bool` | `0x05` | - | Whether an active cast session was ended by the restart. |
+| `endedSessionId` | no | `string` | `0x06` | maxLength=128 | Session ended by the restart. |
+| `sessionStopReason` | no | `enum` | `0x07` | enum=backendRestart/backendExited/error/unknown | Session stop reason reported for the ended session. |
+| `estimatedReadyInMs` | no | `uint32` | `0x08` | - | Estimated backend recovery time in milliseconds. |
+| `updatedAt` | no | `string` | `0x09` | maxLength=64 | Timestamp for this restart result. |
+
+### CastBackendChangedEvent
+
+Event payload for cast backend state changes.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `changedFields` | yes | `Array<string>` | `0x01` | itemType=string | Field names changed by this event. |
+| `state` | yes | `CastBackendStatus` | `0x02` | - | Backend status after the change. |
+| `reason` | no | `enum` | `0x03` | enum=manualRecovery/configChanged/backendUnhealthy/backendExited/unknown | Change reason. |
+| `restartId` | no | `string` | `0x04` | maxLength=128 | Restart operation id when this event is restart-related. |
+| `activeSessionEnded` | no | `bool` | `0x05` | - | Whether this backend change ended an active session. |
+| `endedSessionId` | no | `string` | `0x06` | maxLength=128 | Session ended by this backend change. |
+| `updatedAt` | no | `string` | `0x07` | maxLength=64 | Timestamp for this event. |
+
+### CastBackendCapability
+
+Capability descriptor for cast.backend.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `backendTypes` | yes | `Array<string>` | `0x01` | itemType=string | Backend implementations controlled by the receiver. |
+| `supportsRestart` | no | `bool` | `0x02` | default=true | Whether cast.restartBackend is supported. |
+| `reportsProcess` | no | `bool` | `0x03` | default=true | Whether backend process metadata such as pid may be reported. |
+| `supportsLastError` | no | `bool` | `0x04` | default=true | Whether last backend error summaries are available. |

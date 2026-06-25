@@ -337,3 +337,207 @@ stopped by backend restart:
 | `receiverPhase` 是否完整采用当前集合？ | schema / conformance | 先采用统一阶段集合；采纳前补 conformance case。 | `[REVIEW-DRAFT]` |
 | `stopSession` 无活动会话时幂等成功还是错误？ | behavior | 待产品确认。 | `[REVIEW-ASK]` |
 | first frame / interrupted 是否需要专门事件？ | event model | first frame 由 `sessionStarted(receiverPhase=rendering)` 表达；interrupted 默认并入 `sessionStateChanged`。 | `[REVIEW-DRAFT]` |
+
+## 8. Schema Reference
+
+> 本节按当前 `contract/registry/domains/cast/domain.yaml` 整理字段事实；`Required=yes` 表示编码数据必须携带该字段，`Required=no` 表示可省略。`Empty` schema 无字段，未展开。
+
+### CastGetSessionParams
+
+Selector for cast receiver and active session summary.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `include` | no | `Array<string>` | `0x01` | itemType=string | Optional summary sections, such as source, media, or airPlayName. |
+| `sessionId` | no | `string` | `0x02` | maxLength=128 | Optional receiver-local session id to query. |
+
+### CastSessionState
+
+Current receiver phase and active session state.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `receiverState` | yes | `enum` | `0x01` | enum=disabled/starting/ready/busy/failed | Receiver service availability state. |
+| `sessionId` | no | `string` | `0x02` | maxLength=128 | Receiver-local active session id. |
+| `receiverPhase` | yes | `enum` | `0x03` | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Protocol-neutral receiver phase used by UI and reconnection calibration. |
+| `sessionState` | no | `enum` | `0x04` | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | AirPlay or backend-specific session state detail. |
+| `protocol` | no | `enum` | `0x05` | enum=airplay/hid/unknown | Cast protocol path currently represented by this state. |
+| `airPlayName` | no | `string` | `0x06` | maxLength=128 | Current published AirPlay receiver display name. |
+| `source` | no | `CastSourceSummary` | `0x07` | - | Source device summary. |
+| `media` | no | `CastMediaSummary` | `0x08` | - | Low-frequency media summary. |
+| `backendState` | no | `enum` | `0x09` | enum=starting/ready/restarting/exited/failed/disabled | Current backend state summary. |
+| `reason` | no | `enum` | `0x0A` | enum=sessionStarted/mediaFlowStarted/externalRequest/sourceClosed/backendRestart/backendExited/authFailed/error/unknown | Last state transition reason. |
+| `authRequired` | no | `bool` | `0x0B` | - | Whether this session path currently requires authentication. |
+| `updatedAt` | no | `string` | `0x0C` | maxLength=64 | Timestamp for this state snapshot. |
+
+### CastSourceSummary
+
+Summary of a cast source device or local AXTP sender.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `name` | no | `string` | `0x01` | maxLength=128 | User-visible source name when known. |
+| `model` | no | `string` | `0x02` | maxLength=128 | Source model identifier when known. |
+| `address` | no | `string` | `0x03` | maxLength=128 | Network or transport address summary when safe to expose. |
+| `sourceId` | no | `string` | `0x04` | maxLength=128 | Receiver-local source identifier. |
+| `protocol` | no | `enum` | `0x05` | enum=airplay/hid/unknown | Protocol path that produced the source summary. |
+
+### CastMediaSummary
+
+Low-frequency media summary for a cast session.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `firstFrame` | no | `bool` | `0x01` | - | Whether the first visible frame has rendered. |
+| `width` | no | `uint32` | `0x02` | - | Current media width in pixels. |
+| `height` | no | `uint32` | `0x03` | - | Current media height in pixels. |
+| `orientation` | no | `enum` | `0x04` | enum=landscape/portrait/unknown | Current media orientation summary. |
+| `inputFps` | no | `number` | `0x05` | min=0 | Estimated incoming media frame rate. |
+| `renderFps` | no | `number` | `0x06` | min=0 | Estimated local render frame rate. |
+| `audioActive` | no | `bool` | `0x07` | - | Whether local receiver audio output is active. |
+
+### CastStopSessionParams
+
+Request to stop an active cast session.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `sessionId` | no | `string` | `0x01` | maxLength=128 | Optional receiver-local session id; omitted means current active session. |
+| `reason` | no | `enum` | `0x02` | enum=externalRequest/localUi/backendRestart/shutdown/unknown | Caller-visible reason for stopping the session. |
+| `force` | no | `bool` | `0x03` | default=false | Whether the receiver may force backend/session cleanup. |
+
+### CastStopSessionResult
+
+Result of a cast session stop request.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `accepted` | yes | `bool` | `0x01` | - | Whether the receiver accepted the stop request. |
+| `sessionId` | no | `string` | `0x02` | maxLength=128 | Session affected by the request. |
+| `previousReceiverPhase` | no | `enum` | `0x03` | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Receiver phase before the stop transition. |
+| `receiverPhase` | yes | `enum` | `0x04` | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Receiver phase after accepting the stop request. |
+| `previousState` | no | `enum` | `0x05` | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Backend-specific state before the stop transition. |
+| `sessionState` | no | `enum` | `0x06` | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Backend-specific state after accepting the stop request. |
+| `reason` | no | `enum` | `0x07` | enum=externalRequest/sourceClosed/backendRestart/backendExited/shutdown/unknown | Applied stop reason. |
+| `noActiveSession` | no | `bool` | `0x08` | - | Whether no active session existed when the request was processed. |
+| `updatedAt` | no | `string` | `0x09` | maxLength=64 | Timestamp for the result. |
+
+### CastAirPlayNameState
+
+AirPlay display name and backend publish state.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `displayName` | yes | `string` | `0x01` | maxLength=128 | Current AirPlay display name. |
+| `previousDisplayName` | no | `string` | `0x02` | maxLength=128 | Previous display name when a change was applied. |
+| `source` | no | `enum` | `0x03` | enum=configured/default/backend/unknown | Source of the current display name. |
+| `apply` | no | `enum` | `0x04` | enum=immediate/onNextBackendStart | Apply timing used for the latest update. |
+| `publishState` | yes | `enum` | `0x05` | enum=published/republishing/pending/failed/unpublished | Bonjour or backend service publish state. |
+| `backendType` | no | `enum` | `0x06` | enum=uxplay/unknown | Backend that owns the published name. |
+| `updatedAt` | no | `string` | `0x07` | maxLength=64 | Timestamp for this name state. |
+
+### CastSetAirPlayNameParams
+
+Request to set the AirPlay receiver display name.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `displayName` | yes | `string` | `0x01` | maxLength=128 | Target AirPlay display name. |
+| `apply` | no | `enum` | `0x02` | enum=immediate/onNextBackendStart | Requested backend apply timing. |
+
+### CastSessionIncomingEvent
+
+Event payload for a new incoming cast session.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `sessionId` | no | `string` | `0x01` | maxLength=128 | Receiver-local session id assigned to the incoming session. |
+| `receiverPhase` | yes | `enum` | `0x02` | enum=incoming/authenticating | Receiver phase entered for the incoming session. |
+| `protocol` | no | `enum` | `0x03` | enum=airplay/hid/unknown | Protocol path used by the incoming session. |
+| `source` | no | `CastSourceSummary` | `0x04` | - | Source summary when available. |
+| `authRequired` | no | `bool` | `0x05` | - | Whether this incoming session requires authentication. |
+| `incomingAt` | no | `string` | `0x06` | maxLength=64 | Timestamp when the incoming session was observed. |
+
+### CastSessionStateChangedEvent
+
+Event payload for receiver phase or backend session state changes.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `sessionId` | no | `string` | `0x01` | maxLength=128 | Receiver-local session id. |
+| `previousReceiverPhase` | no | `enum` | `0x02` | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Previous receiver phase. |
+| `receiverPhase` | yes | `enum` | `0x03` | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | New receiver phase. |
+| `previousState` | no | `enum` | `0x04` | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Previous backend-specific session state. |
+| `sessionState` | no | `enum` | `0x05` | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | New backend-specific session state. |
+| `protocol` | no | `enum` | `0x06` | enum=airplay/hid/unknown | Protocol path represented by this event. |
+| `authRequired` | no | `bool` | `0x07` | - | Whether the current session phase requires authentication. |
+| `media` | no | `CastMediaSummary` | `0x08` | - | Low-frequency media summary at the time of transition. |
+| `reason` | no | `enum` | `0x09` | enum=sessionStarted/mediaFlowStarted/externalRequest/sourceClosed/backendRestart/backendExited/authFailed/error/unknown | Transition reason. |
+| `updatedAt` | no | `string` | `0x0A` | maxLength=64 | Timestamp for the transition. |
+
+### CastSessionStartedEvent
+
+Event payload for a user-visible cast session start.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `sessionId` | yes | `string` | `0x01` | maxLength=128 | Receiver-local started session id. |
+| `receiverPhase` | yes | `enum` | `0x02` | enum=rendering | Receiver phase after first visible frame or local playback starts. |
+| `sessionState` | no | `enum` | `0x03` | enum=casting | Backend-specific state after session start. |
+| `protocol` | no | `enum` | `0x04` | enum=airplay/hid/unknown | Protocol path represented by the started session. |
+| `source` | no | `CastSourceSummary` | `0x05` | - | Source summary when available. |
+| `media` | no | `CastMediaSummary` | `0x06` | - | Media summary at session start. |
+| `startedAt` | no | `string` | `0x07` | maxLength=64 | Timestamp when the session became user-visible. |
+
+### CastSessionStoppedEvent
+
+Event payload for a stopped cast session.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `sessionId` | no | `string` | `0x01` | maxLength=128 | Receiver-local stopped session id. |
+| `previousReceiverPhase` | no | `enum` | `0x02` | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Receiver phase before stop completion. |
+| `receiverPhase` | yes | `enum` | `0x03` | enum=ended/failed/idle | Receiver phase after stop completion. |
+| `previousState` | no | `enum` | `0x04` | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Backend-specific state before stop completion. |
+| `sessionState` | no | `enum` | `0x05` | enum=ended/failed/idle | Backend-specific state after stop completion. |
+| `reason` | no | `enum` | `0x06` | enum=externalRequest/sourceClosed/backendRestart/backendExited/shutdown/error/unknown | Stop reason. |
+| `backendType` | no | `enum` | `0x07` | enum=uxplay/unknown | Backend type associated with the stopped session. |
+| `stoppedAt` | no | `string` | `0x08` | maxLength=64 | Timestamp when the stop was observed. |
+
+### CastSessionFailedEvent
+
+Event payload for cast session failure.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `sessionId` | no | `string` | `0x01` | maxLength=128 | Receiver-local failed session id when assigned. |
+| `receiverPhase` | yes | `enum` | `0x02` | enum=failed | Receiver phase after failure. |
+| `sessionState` | no | `enum` | `0x03` | enum=failed | Backend-specific failed state. |
+| `protocol` | no | `enum` | `0x04` | enum=airplay/hid/unknown | Protocol path represented by the failed session. |
+| `source` | no | `CastSourceSummary` | `0x05` | - | Source summary when available. |
+| `reason` | no | `enum` | `0x06` | enum=connectionFailed/authFailed/negotiationFailed/backendFailed/mediaFailed/unknown | Failure reason. |
+| `error` | no | `CastLastError` | `0x07` | - | Redactable error summary. |
+| `failedAt` | no | `string` | `0x08` | maxLength=64 | Timestamp when the failure was observed. |
+
+### CastLastError
+
+Redactable backend or receiver error summary.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `code` | no | `string` | `0x01` | maxLength=64 | Backend-local or AXTP-visible error code. |
+| `message` | no | `string` | `0x02` | maxLength=512 | Human-readable error summary suitable for authorized clients. |
+| `occurredAt` | no | `string` | `0x03` | maxLength=64 | Timestamp when the error was observed. |
+| `redacted` | no | `bool` | `0x04` | default=false | Whether sensitive details were removed from this summary. |
+
+### CastSessionCapability
+
+Capability descriptor for cast.session.
+
+| Field | Required | Type | Field ID | Constraints / default | Description |
+|---|---:|---|---:|---|---|
+| `protocols` | yes | `Array<string>` | `0x01` | itemType=string | Cast protocol paths represented by the receiver. |
+| `receiverPhases` | yes | `Array<string>` | `0x02` | itemType=string | Supported protocol-neutral receiver phases. |
+| `supportsAirPlayName` | no | `bool` | `0x03` | default=true | Whether AirPlay display name query and update are supported. |
+| `supportsStopSession` | no | `bool` | `0x04` | default=true | Whether active cast sessions can be stopped through cast.stopSession. |
+| `backendTypes` | no | `Array<string>` | `0x05` | itemType=string | Backend implementations represented by this receiver. |

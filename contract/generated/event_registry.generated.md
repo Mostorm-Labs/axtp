@@ -33,6 +33,5 @@
 | `0x160A` | `cast.windowChanged` | cast | draft | CastWindowChangedEvent |
 | `0x160B` | `cast.backendChanged` | cast | draft | CastBackendChangedEvent |
 | `0x160C` | `cast.flowControlChanged` | cast | draft | CastFlowControlChangedEvent |
-| `0x160D` | `cast.statusChanged` | cast | draft | CastStatusChangedEvent |
 | `0x1701` | `software.configChanged` | software | draft | SoftwareConfigChangedEvent |
 | `0x1702` | `software.updatePolicyChanged` | software | draft | SoftwareUpdatePolicyChangedEvent |

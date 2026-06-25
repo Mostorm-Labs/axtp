@@ -2933,16 +2933,6 @@ schemas:
         type: CastRect
         required: false
         description: Current window bounds when available.
-      - fieldId: 8
-        name: previousNormalBounds
-        type: CastRect
-        required: false
-        description: Normal-mode bounds recorded before fullscreen or topmost mode.
-      - fieldId: 9
-        name: restoredBounds
-        type: CastRect
-        required: false
-        description: Bounds restored by the latest transition.
       - fieldId: 10
         name: changedFields
         type: array
@@ -3413,7 +3403,7 @@ schemas:
         description: Timestamp for this event.
   CastGetStatusParams:
     kind: object
-    description: Selector for aggregate cast receiver status.
+    description: Selector for current cast receiver snapshot.
     fields:
       - fieldId: 1
         name: include
@@ -3430,7 +3420,7 @@ schemas:
         description: Whether authorized callers request sensitive summary fields.
   CastReceiverSummary:
     kind: object
-    description: Aggregate receiver role and protocol-neutral phase summary.
+    description: Snapshot receiver role and protocol-neutral phase summary.
     fields:
       - fieldId: 1
         name: role
@@ -3475,7 +3465,7 @@ schemas:
         description: Protocol-neutral receiver phase.
   CastSessionStatusSummary:
     kind: object
-    description: Aggregate active session summary for status views.
+    description: Snapshot active session summary for status views.
     fields:
       - fieldId: 1
         name: sessionId
@@ -3532,7 +3522,7 @@ schemas:
         description: User-visible source name.
   CastPinCodeStatusSummary:
     kind: object
-    description: Aggregate PIN summary for status views.
+    description: Snapshot PIN summary for status views.
     fields:
       - fieldId: 1
         name: enabled
@@ -3576,7 +3566,7 @@ schemas:
         description: Visibility policy applied to this summary.
   CastStatus:
     kind: object
-    description: Low-frequency aggregate cast receiver status.
+    description: Current cast receiver snapshot for reconnect and event-loss recovery.
     fields:
       - fieldId: 1
         name: receiver
@@ -3618,34 +3608,12 @@ schemas:
         type: string
         required: true
         maxLength: 64
-        description: Timestamp for this aggregate snapshot.
+        description: Timestamp for this status snapshot.
       - fieldId: 9
         name: redacted
         type: bool
         required: false
-        description: Whether any sensitive aggregate fields were withheld.
-  CastStatusChangedEvent:
-    kind: object
-    description: Event payload for low-frequency aggregate status changes.
-    fields:
-      - fieldId: 1
-        name: changedSections
-        type: array
-        required: true
-        array:
-          itemType: string
-        description: Status section names changed by this event.
-      - fieldId: 2
-        name: status
-        type: CastStatus
-        required: true
-        description: Aggregate status after the change.
-      - fieldId: 3
-        name: sampledAt
-        type: string
-        required: true
-        maxLength: 64
-        description: Timestamp for this aggregate event.
+        description: Whether any sensitive snapshot fields were withheld.
   CastSessionCapability:
     kind: object
     description: Capability descriptor for cast.session.
@@ -3761,7 +3729,7 @@ schemas:
         type: bool
         required: false
         default: true
-        description: Whether normal mode can restore previous normal bounds.
+        description: Whether normal mode can restore remembered normal-mode bounds.
       - fieldId: 4
         name: noWindowPolicy
         type: enum
@@ -3836,7 +3804,7 @@ schemas:
         description: Whether a public keyframe request method is exposed; current draft keeps this false.
   CastStatusCapability:
     kind: object
-    description: Capability descriptor for cast.status.
+    description: Capability descriptor for cast.status snapshot query.
     fields:
       - fieldId: 1
         name: sections
@@ -3844,19 +3812,13 @@ schemas:
         required: true
         array:
           itemType: string
-        description: Aggregate status sections the receiver can report.
+        description: Status snapshot sections the receiver can report.
       - fieldId: 2
         name: supportsSensitiveRedaction
         type: bool
         required: false
         default: true
         description: Whether sensitive status fields can be withheld and marked redacted.
-      - fieldId: 3
-        name: supportsStatusChangedEvent
-        type: bool
-        required: false
-        default: true
-        description: Whether low-frequency aggregate status change events are supported.
   GetDeviceInfoParams:
     kind: object
     description: Optional selector for the read-only device information snapshot.
@@ -7642,7 +7604,7 @@ methods:
       - OUT_OF_RANGE
       - UNAVAILABLE
   - name: cast.getStatus
-    description: Return a low-frequency aggregate cast receiver status summary.
+    description: Return a current cast receiver snapshot for UI reload, reconnect, or event-loss recovery.
     methodId: 5650
     bitOffset: 17
     domain: cast
@@ -8960,25 +8922,6 @@ events:
       - diagnostics sample
     capabilities:
       - cast.flowControl
-  - name: cast.statusChanged
-    description: Emitted when low-frequency aggregate cast status sections change.
-    eventId: 5645
-    bitOffset: 12
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastStatusChangedEvent
-    severity: info
-    trigger:
-      - session changed
-      - audio changed
-      - PIN changed
-      - window changed
-      - backend changed
-      - flow control changed
-    capabilities:
-      - cast.status
   - name: device.enrollmentStateChanged
     description: Emitted after device.setEnrollmentState actually changes the enrollment state, or after a device-internal
       policy modifies it (e.g. pairing code expiry fallback, server-side revoke).
@@ -10593,7 +10536,7 @@ capabilities:
     type: object
     schema: CastFlowControlCapability
   - name: cast.status
-    description: Device supports low-frequency aggregate cast receiver status query and change events.
+    description: Device supports current cast receiver status snapshot query.
     capabilityId: 5639
     domain: cast
     since: 1.0.0

@@ -4,6 +4,46 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.11.0
+
+Cast receiver snapshot status and window schema simplification.
+
+### Protocol
+
+- Keeps AirPlay receiver name control in the `cast.session` surface through the existing `cast.getAirPlayName` and `cast.setAirPlayName` methods.
+- Refines `cast.status` into a current snapshot query only: `cast.getStatus` remains the reconnect, initial-load, and event-loss recovery calibration entry point.
+- Removes the draft `cast.statusChanged` aggregate event so continuous updates are represented by feature-specific cast events and clients can call `cast.getStatus` when they need to resynchronize.
+- Simplifies `CastWindowState` by removing `previousNormalBounds` and `restoredBounds`; `bounds` is the single protocol field for the current window rectangle.
+- Adds schema reference tables with requiredness, field IDs, types, constraints, and defaults to the generated cast protocol draft documents.
+
+### Registry
+
+- Updates `contract/registry/domains/cast/domain.yaml` and generated protocol outputs to remove one draft event, reducing the generated cast method/event facts from 31 to 30.
+- Removes `CastStatusChangedEvent` and `supportsStatusChangedEvent` from the generated cast status contract.
+- Preserves existing cast method IDs, event IDs, field IDs, and bit offsets for the retained generated surface; removed window field IDs `0x08` and `0x09` are not reused.
+
+### Schemas
+
+- Updates `CastStatus`, `CastGetStatusParams`, receiver/session/PIN status summaries, and `CastStatusCapability` descriptions to use snapshot terminology.
+- Updates `CastWindowState` examples and schema references so get/set/event results all report the current window state shape through `bounds`.
+- Keeps sensitive status redaction behavior as a draft review item while retaining `redacted` markers in the current snapshot schema.
+
+### Conformance
+
+- Does not add new hand-written conformance cases in this release.
+- Generator validation, protocol validation, generated drift checks, protocol status checks, release artifact checks, and protocol snapshot tests cover the cast registry and generated output changes.
+
+### Migration
+
+- Cast runtimes and SDKs that previously consumed the draft `cast.statusChanged` event should stop advertising or subscribing to that event and use feature-specific events plus `cast.getStatus` for resynchronization.
+- Cast clients should treat `CastWindowState.bounds` as the current rectangle and remove dependencies on `previousNormalBounds` or `restoredBounds`.
+
+### Runtime Impact
+
+- Runtime and SDK teams should regenerate protocol metadata from `spec/v0.11.0` before exposing the revised cast status and window surfaces.
+- Existing non-cast behavior, CONTROL/RPC/STREAM wire layout, shared errors, and generated domains outside `cast` are unchanged from `spec/v0.10.0`.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.10.0
 
 Signage, software, and device enrollment business protocol adoption, plus generator-driven domain registry expansion.
