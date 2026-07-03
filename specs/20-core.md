@@ -179,6 +179,8 @@ JSON/CBOR/MSGPACK RPC envelope：
 | `op` | uint8 操作码。 |
 | `d` | op-specific object；允许 empty object。 |
 
+`sid` 的规范类型是 `uint32`。JSON / CBOR / MSGPACK envelope 中，未分配前使用空字符串；Identified 后使用固定 8 位十六进制字符串，例如 `"00000003"` 或 `"12345678"`。JSON_BINARY fixed header 中使用 4B Big-Endian / network byte order `uint32`，未分配前为 `0`。
+
 必需 RPC op：
 
 | op | 名称 | 必需行为 |
@@ -190,6 +192,8 @@ JSON/CBOR/MSGPACK RPC envelope：
 | `7` | `Request` | Identified 后的业务 method request。 |
 | `8` | `RequestResponse` | 业务 result 或 error。 |
 
+RequestResponse 的 `d.status` 在 JSON / CBOR / MSGPACK envelope 中 MUST 是 object，且 MUST 携带 `status.ok` 和 `status.code`。成功响应 MUST 使用 `status.ok=true`、`status.code=0`；失败响应 MUST 使用 `status.ok=false` 和非零 `status.code`，且 MUST NOT 携带业务 `result`。JSON_BINARY fixed header 中的 `statusCode:uint16` 与 `status.code` 语义一致，但 JSON envelope MUST NOT 使用数字形式的 `status` 简写。
+
 最小 RPC JSON 序列：
 
 ```json
@@ -197,7 +201,7 @@ JSON/CBOR/MSGPACK RPC envelope：
 { "sid": "", "op": 2, "d": { "randomSeed": 305419896, "eventMasks": "090101" } }
 { "sid": "12345678", "op": 3, "d": { "accepted": true } }
 { "sid": "12345678", "op": 7, "d": { "id": 1, "method": "audio.getAlgorithmConfig", "params": {} } }
-{ "sid": "12345678", "op": 8, "d": { "id": 1, "status": 0, "result": {} } }
+{ "sid": "12345678", "op": 8, "d": { "id": 1, "status": { "ok": true, "code": 0 }, "result": {} } }
 ```
 
 在 Standard Framed JSON RPC 中，RPC payload 是 `rpcEncoding(1B) + JSON bytes`；当 `selectedRpcEncoding=JSON` 时，`rpcEncoding=0x01`。在 WebSocket Unframed JSON 中，WebSocket message payload 正好就是 JSON object。
@@ -206,9 +210,11 @@ Hello 中的 `axtpVersion` 是 AXTP spec compatibility authority。`rpcVersion` 
 
 Identify MUST 包含 `randomSeed:uint32`。Logical Server MUST 在生成 `sid` 时把 `randomSeed` 与本地状态混合；它 MUST NOT 直接把 `randomSeed` 当作 `sid`。`randomSeed` 不是认证 secret。
 
+生成新 `sid` 时，Logical Server MUST 避免 `0` 和当前仍有效 RPC Session 的 `sid` 冲突。JSON canonical sender form SHOULD 使用大写 hex；receiver MAY 接受小写 hex。JSON `sid` MUST NOT 使用 `0x` 前缀、UUID、任意 token、负数、浮点数或带业务前缀的字符串。
+
 Identified 之后，如果 method 的 domain.feature、capability 或 role policy 允许，双方 MAY 发起 RPC Request。这不改变 Hello / Identify / Identified 的逻辑角色，也不改变 CONTROL 的物理角色。
 
-APP_READY 后，malformed、empty、non-hex、zero 或缺失的 `sid` MUST 被拒绝。
+APP_READY 后，malformed、empty、非 8 位 hex、zero 或缺失的 `sid` MUST 被拒绝。
 
 Standard Framed RPC MUST 在 payload 前添加 `rpcEncoding`。JSON (`0x01`) 是 Phase 1 互操作必需编码。高吞吐或嵌入式 Standard Framed profile SHOULD 实现 JSON_BINARY (`0x04`)。
 

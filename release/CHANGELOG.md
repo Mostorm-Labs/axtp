@@ -4,6 +4,40 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.11.1
+
+Core RPC envelope clarification patch.
+
+### Protocol
+
+- Corrects the core RPC JSON RequestResponse example so `d.status` is an object carrying `status.ok` and `status.code` instead of a numeric shortcut.
+- Clarifies that JSON / CBOR / MSGPACK RequestResponse envelopes MUST carry `status.ok` and `status.code`, while JSON_BINARY uses its fixed-header `statusCode:uint16` with the same semantics.
+- Restores the explicit `sid` generation and encoding rules in the current core spec: `sid` is a `uint32`, JSON forms are fixed 8-character hex strings after Identified, `0` is reserved, and examples such as `"00000003"` are valid non-zero session IDs.
+
+### Registry
+
+- Does not change registry YAML, generated method/event/capability facts, schema facts, profile facts, or stable IDs.
+
+### Schemas
+
+- Does not change business schema definitions.
+
+### Conformance
+
+- Does not add new hand-written conformance cases in this release.
+- Existing generator validation, protocol validation, generated drift checks, release artifact checks, and Markdown/link checks cover the corrected core text.
+
+### Migration
+
+- Runtime implementations that already use `status.ok` / `status.code` and fixed 8-character hex `sid` values do not need code changes.
+- Implementations that copied the erroneous `status: 0` JSON example should emit the standard status object form.
+
+### Runtime Impact
+
+- Runtime and SDK teams are not required to regenerate generated business protocol metadata for this patch, because machine-readable registry facts are unchanged.
+- Existing CONTROL/RPC/STREAM wire layout, generated domains, shared errors, and `cast` contract facts remain unchanged from `spec/v0.11.0`.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.11.0
 
 Cast receiver snapshot status and window schema simplification.
