@@ -175,11 +175,11 @@ JSON/CBOR/MSGPACK RPC envelope：
 
 | 字段 | 规则 |
 |---|---|
-| `sid` | 分配前为空字符串；Identified 后固定为 8 位 hex 字符。 |
+| `sid` | 分配前为空字符串；Identified 后携带 Logical Server 分配的 session 字符串。AXTP-native 生成端使用 8 位 hex；接收端按 opaque string 兼容。 |
 | `op` | uint8 操作码。 |
 | `d` | op-specific object；允许 empty object。 |
 
-`sid` 的规范类型是 `uint32`。JSON / CBOR / MSGPACK envelope 中，未分配前使用空字符串；Identified 后使用固定 8 位十六进制字符串，例如 `"00000003"` 或 `"12345678"`。JSON_BINARY fixed header 中使用 4B Big-Endian / network byte order `uint32`，未分配前为 `0`。
+AXTP-native `sid` 生成使用非零 `uint32`，在 JSON / CBOR / MSGPACK envelope 中渲染为固定 8 位十六进制字符串，例如 `"00000003"` 或 `"12345678"`。对象编码接收端 MUST NOT 要求收到的 `sid` 一定是 8 位 hex；Identified 后应把 Logical Server 分配的非空字符串按 opaque value 保存，并在后续 Request / Response / Event 中精确携带。JSON_BINARY fixed header 中仍使用 4B Big-Endian / network byte order `uint32`，未分配前为 `0`。
 
 必需 RPC op：
 
@@ -210,11 +210,11 @@ Hello 中的 `axtpVersion` 是 AXTP spec compatibility authority。`rpcVersion` 
 
 Identify MUST 包含 `randomSeed:uint32`。Logical Server MUST 在生成 `sid` 时把 `randomSeed` 与本地状态混合；它 MUST NOT 直接把 `randomSeed` 当作 `sid`。`randomSeed` 不是认证 secret。
 
-生成新 `sid` 时，Logical Server MUST 避免 `0` 和当前仍有效 RPC Session 的 `sid` 冲突。JSON canonical sender form SHOULD 使用大写 hex；receiver MAY 接受小写 hex。JSON `sid` MUST NOT 使用 `0x` 前缀、UUID、任意 token、负数、浮点数或带业务前缀的字符串。
+生成新 `sid` 时，AXTP-native Logical Server MUST 避免 `0` 和当前仍有效 RPC Session 的 `sid` 冲突，并 SHOULD 使用大写 8 位 hex 作为 JSON canonical sender form。对象编码 receiver MUST 接受非空字符串形式的已分配 `sid`，包括非 8 位 hex 的 legacy / external 值；它 MUST 按精确字符串匹配 session，不得把 `sid` 当作认证 secret 或用户 token。
 
 Identified 之后，如果 method 的 domain.feature、capability 或 role policy 允许，双方 MAY 发起 RPC Request。这不改变 Hello / Identify / Identified 的逻辑角色，也不改变 CONTROL 的物理角色。
 
-APP_READY 后，malformed、empty、非 8 位 hex、zero 或缺失的 `sid` MUST 被拒绝。
+APP_READY 后，JSON / CBOR / MSGPACK envelope 中缺失、非字符串、空字符串或未知 session 的 `sid` MUST 被拒绝；JSON_BINARY 中 zero 或未知 session 的 `sid` MUST 被拒绝。
 
 Standard Framed RPC MUST 在 payload 前添加 `rpcEncoding`。JSON (`0x01`) 是 Phase 1 互操作必需编码。高吞吐或嵌入式 Standard Framed profile SHOULD 实现 JSON_BINARY (`0x04`)。
 

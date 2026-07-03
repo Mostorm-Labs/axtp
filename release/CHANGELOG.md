@@ -4,6 +4,40 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.11.2
+
+Core RPC `sid` receiver compatibility patch.
+
+### Protocol
+
+- Clarifies that AXTP-native Logical Servers should continue generating `sid` values as non-zero `uint32` rendered as 8-character hex strings in JSON object encodings.
+- Loosens JSON / CBOR / MSGPACK receiver requirements so assigned `sid` values are treated as opaque non-empty strings, allowing legacy or external session strings that are not 8-character hex.
+- Keeps JSON_BINARY `sid` as a 4-byte Big-Endian `uint32`, with `0` reserved for the unassigned state.
+
+### Registry
+
+- Does not change registry YAML, generated method/event/capability facts, schema facts, profile facts, or stable IDs.
+
+### Schemas
+
+- Does not change business schema definitions.
+
+### Conformance
+
+- Does not add new hand-written conformance cases in this release.
+- Existing generator validation, protocol validation, generated drift checks, release artifact checks, and Markdown/link checks cover the clarified core text.
+
+### Migration
+
+- JSON runtimes and SDKs that previously rejected assigned `sid` strings only because they were not 8-character hex should preserve and match the returned non-empty string instead.
+- AXTP-native servers may continue producing 8-character hex `sid` strings such as `"00000003"`.
+
+### Runtime Impact
+
+- Runtime and SDK teams are not required to regenerate generated business protocol metadata for this patch, because machine-readable registry facts are unchanged.
+- Existing CONTROL/RPC/STREAM wire layout, generated domains, shared errors, and business contract facts remain unchanged from `spec/v0.11.1`.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.11.1
 
 Core RPC envelope clarification patch.
