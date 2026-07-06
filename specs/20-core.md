@@ -202,7 +202,10 @@ RequestResponse 的 `d.status` 在 JSON / CBOR / MSGPACK envelope 中 MUST 是 o
 { "sid": "12345678", "op": 3, "d": { "accepted": true } }
 { "sid": "12345678", "op": 7, "d": { "id": 1, "method": "audio.getAlgorithmConfig", "params": {} } }
 { "sid": "12345678", "op": 8, "d": { "id": 1, "status": { "ok": true, "code": 0 }, "result": {} } }
+{ "sid": "12345678", "op": 6, "d": { "event": "audio.algorithmConfigChanged", "data": { "reason": "user_request", "applyState": "applied" } } }
 ```
+
+Event 的业务 payload 不重复携带 `sid`。发送方 MUST 在 RPC envelope 或 JSON_BINARY fixed header 中携带当前 RPC session 的 `sid`；接收方按 envelope/header 校验、路由和鉴权后，再把 `d.data` 作为 event payload 交给业务处理。
 
 在 Standard Framed JSON RPC 中，RPC payload 是 `rpcEncoding(1B) + JSON bytes`；当 `selectedRpcEncoding=JSON` 时，`rpcEncoding=0x01`。在 WebSocket Unframed JSON 中，WebSocket message payload 正好就是 JSON object。
 
