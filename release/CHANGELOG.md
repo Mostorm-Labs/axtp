@@ -4,6 +4,45 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.12.0
+
+Cast receiver audio delay compensation and event envelope clarification.
+
+### Protocol
+
+- Adds `cast.setAudioDelay` so receivers can configure local cast audio playback delay compensation, with `0` disabling compensation.
+- Documents the intended receiver behavior: audio delay shifts local output timing only, does not change media cursors, and does not replace AV drift correction.
+- Clarifies that JSON RPC event payload data does not repeat `sid`, while every event message still carries `sid` in the outer `sid/op/d` envelope.
+
+### Registry
+
+- Extends the generated `cast` domain with `cast.setAudioDelay` as method `0x1613`, `bitOffset=18`, request schema `CastSetAudioDelayParams`, response schema `CastAudioState`, and event `cast.audioChanged`.
+- Updates `cast.audioChanged` metadata so delay changes are part of the event trigger surface.
+- Preserves existing cast method IDs, event IDs, field IDs, and bit offsets for previously generated facts.
+
+### Schemas
+
+- Adds `CastSetAudioDelayParams.audioDelayMs:uint32` with range `0..1000`.
+- Adds optional `CastAudioState.audioDelayMs` with default `250`.
+- Adds `CastAudioCapability.supportsAudioDelay`, `defaultAudioDelayMs`, and `maxAudioDelayMs` capability fields.
+
+### Conformance
+
+- Does not add new hand-written conformance cases in this release.
+- Generator build, generator tests, source validation, protocol validation, and generated protocol output checks cover the new registry and schema facts.
+
+### Migration
+
+- Cast runtimes may keep existing behavior if they do not advertise or implement audio delay support.
+- Cast receivers that implement `cast.audio` should expose the configured delay through `CastAudioState.audioDelayMs` and clear runtime PCM delay buffers on stream open, close, device reopen, or format change.
+- Event consumers should continue reading RPC `sid` from the outer event envelope, not from event `data`.
+
+### Runtime Impact
+
+- Runtime and SDK teams should regenerate protocol metadata from `spec/v0.12.0` before exposing `cast.setAudioDelay` or the new cast audio capability fields.
+- Existing CONTROL/RPC/STREAM wire layout, generated domains outside `cast`, shared errors, and previously generated cast facts remain backward compatible with `spec/v0.11.2`.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.11.2
 
 Core RPC `sid` receiver compatibility patch.
