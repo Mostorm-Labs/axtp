@@ -1908,6 +1908,36 @@
       "idHex": "0x1612"
     },
     {
+      "id": 5651,
+      "bitOffset": 18,
+      "name": "cast.setAudioDelay",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Set receiver-local audio playback delay compensation for cast audio.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastSetAudioDelayParams",
+      "responseSchema": "CastAudioState",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.audio"
+      ],
+      "events": [
+        "cast.audioChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "OUT_OF_RANGE",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x1613"
+    },
+    {
       "id": 5889,
       "bitOffset": 0,
       "name": "software.getConfig",

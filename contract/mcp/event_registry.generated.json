@@ -514,7 +514,7 @@
       "name": "cast.audioChanged",
       "domain": "cast",
       "status": "draft",
-      "description": "Emitted when local cast audio playback or mute state changes.",
+      "description": "Emitted when local cast audio playback, mute, or delay compensation state changes.",
       "since": "1.0.0",
       "deprecated": false,
       "eventSchema": "CastAudioChangedEvent",
@@ -522,6 +522,7 @@
       "trigger": [
         "cast.setAudio",
         "cast.setMuted",
+        "cast.setAudioDelay",
         "local UI",
         "session started",
         "session stopped"

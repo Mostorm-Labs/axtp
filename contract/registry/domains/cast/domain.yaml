@@ -104,6 +104,21 @@ methods:
     events: [cast.audioChanged]
     errors: [SUCCESS, INVALID_ARGUMENT, UNAVAILABLE]
 
+  - id: 0x1613
+    name: cast.setAudioDelay
+    domain: cast
+    status: draft
+    bitOffset: 18
+    since: 1.0.0
+    description: Set receiver-local audio playback delay compensation for cast audio.
+    rpc_op: request_response
+    request_schema: CastSetAudioDelayParams
+    response_schema: CastAudioState
+    recommended_encoding: [json, tlv]
+    capabilities: [cast.audio]
+    events: [cast.audioChanged]
+    errors: [SUCCESS, INVALID_ARGUMENT, OUT_OF_RANGE, UNAVAILABLE]
+
   - id: 0x1608
     name: cast.getPinCodeConfig
     domain: cast
@@ -331,10 +346,10 @@ events:
     status: draft
     bitOffset: 5
     since: 1.0.0
-    description: Emitted when local cast audio playback or mute state changes.
+    description: Emitted when local cast audio playback, mute, or delay compensation state changes.
     event_schema: CastAudioChangedEvent
     severity: info
-    trigger: [cast.setAudio, cast.setMuted, local UI, session started, session stopped]
+    trigger: [cast.setAudio, cast.setMuted, cast.setAudioDelay, local UI, session started, session stopped]
     capabilities: [cast.audio]
 
   - id: 0x1607
@@ -1065,6 +1080,30 @@ types:
         enum: [currentSession, default]
         description: State target hint; this is not an authorization scope.
 
+  CastSetAudioDelayParams:
+    kind: object
+    description: Request to set receiver-local audio playback delay compensation.
+    fields:
+      - id: 0x01
+        name: audioDelayMs
+        type: uint32
+        required: true
+        min: 0
+        max: 1000
+        description: Target local audio playback delay in milliseconds; zero disables delay compensation.
+      - id: 0x02
+        name: sessionId
+        type: string
+        required: false
+        max_length: 128
+        description: Optional receiver-local session id.
+      - id: 0x03
+        name: scope
+        type: enum
+        required: false
+        enum: [currentSession, default]
+        description: State target hint; default persists the receiver delay for future sessions.
+
   CastAudioState:
     kind: object
     description: Local cast audio playback and mute state.
@@ -1123,6 +1162,14 @@ types:
         required: false
         max_length: 64
         description: Timestamp for this audio state.
+      - id: 0x0A
+        name: audioDelayMs
+        type: uint32
+        required: false
+        min: 0
+        max: 1000
+        default: 250
+        description: Configured receiver-local audio playback delay in milliseconds; zero disables compensation.
 
   CastAudioChangedEvent:
     kind: object
@@ -2138,6 +2185,27 @@ types:
         required: false
         default: true
         description: Whether the receiver reports effective local playback state.
+      - id: 0x04
+        name: supportsAudioDelay
+        type: bool
+        required: false
+        default: true
+        description: Whether receiver-local audio playback delay compensation can be configured.
+      - id: 0x05
+        name: defaultAudioDelayMs
+        type: uint32
+        required: false
+        min: 0
+        max: 1000
+        default: 250
+        description: Default receiver-local audio playback delay in milliseconds.
+      - id: 0x06
+        name: maxAudioDelayMs
+        type: uint32
+        required: false
+        min: 0
+        default: 1000
+        description: Maximum supported receiver-local audio playback delay in milliseconds.
 
   CastPinCodeCapability:
     kind: object
