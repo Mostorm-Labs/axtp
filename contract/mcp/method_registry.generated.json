@@ -236,6 +236,250 @@
       "idHex": "0x040B"
     },
     {
+      "id": 1281,
+      "bitOffset": 0,
+      "name": "stream.getCapabilities",
+      "domain": "stream",
+      "status": "draft",
+      "description": "Return common STREAM runtime flow-control, statistics, and clock-report capabilities.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "Empty",
+      "responseSchema": "StreamFlowControlCapabilities",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x0501"
+    },
+    {
+      "id": 1282,
+      "bitOffset": 1,
+      "name": "stream.getState",
+      "domain": "stream",
+      "status": "draft",
+      "description": "Return runtime state for one STREAM context, or aggregate runtime state when streamId is omitted.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "StreamSelector",
+      "responseSchema": "StreamState",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x0502"
+    },
+    {
+      "id": 1283,
+      "bitOffset": 2,
+      "name": "stream.getStats",
+      "domain": "stream",
+      "status": "draft",
+      "description": "Return bounded transport-level statistics for one STREAM context, or aggregate statistics when streamId is omitted.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "StreamSelector",
+      "responseSchema": "StreamStats",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x0503"
+    },
+    {
+      "id": 1284,
+      "bitOffset": 3,
+      "name": "stream.ack",
+      "domain": "stream",
+      "status": "draft",
+      "description": "Acknowledge received STREAM packet ranges so the sender can release flow-control window.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "StreamAckParams",
+      "responseSchema": "StreamAckResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [
+        "stream.flowControlChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY"
+      ],
+      "idHex": "0x0504"
+    },
+    {
+      "id": 1285,
+      "bitOffset": 4,
+      "name": "stream.windowUpdate",
+      "domain": "stream",
+      "status": "draft",
+      "description": "Update receive window or sender credit for an existing STREAM context.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "StreamWindowUpdateParams",
+      "responseSchema": "StreamWindowUpdateResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [
+        "stream.flowControlChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY"
+      ],
+      "idHex": "0x0505"
+    },
+    {
+      "id": 1286,
+      "bitOffset": 5,
+      "name": "stream.pause",
+      "domain": "stream",
+      "status": "draft",
+      "description": "Pause data-plane sending for an existing STREAM context without closing the owning media or transfer profile.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "StreamPauseParams",
+      "responseSchema": "StreamActionResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [
+        "stream.flowControlChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY"
+      ],
+      "idHex": "0x0506"
+    },
+    {
+      "id": 1287,
+      "bitOffset": 6,
+      "name": "stream.resume",
+      "domain": "stream",
+      "status": "draft",
+      "description": "Resume data-plane sending for a paused STREAM context.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "StreamResumeParams",
+      "responseSchema": "StreamActionResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [
+        "stream.flowControlChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY"
+      ],
+      "idHex": "0x0507"
+    },
+    {
+      "id": 1288,
+      "bitOffset": 7,
+      "name": "stream.abort",
+      "domain": "stream",
+      "status": "draft",
+      "description": "Abort an existing STREAM runtime context on an exceptional path; normal business close remains profile-specific.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "StreamAbortParams",
+      "responseSchema": "StreamActionResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [
+        "stream.stateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY"
+      ],
+      "idHex": "0x0508"
+    },
+    {
       "id": 2059,
       "bitOffset": 1,
       "name": "video.openStream",

@@ -1429,6 +1429,36 @@
             "itemType": "string"
           },
           "description": "Optional AAC transport format strings; exact supported set remains product-confirmed."
+        },
+        {
+          "id": 10,
+          "name": "supportedAudioPtsModes",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional audio PTS modes such as derivedFromSeq and explicit."
+        },
+        {
+          "id": 11,
+          "name": "supportedPacketizationModes",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional audio packetization modes such as fixedSamplesPerPacket."
+        },
+        {
+          "id": 12,
+          "name": "supportsSourceCaptureTimestampCursor",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Whether STREAM cursorUnit sourceCaptureTimestampUs is supported."
         }
       ]
     },
@@ -1629,6 +1659,60 @@
           "required": false,
           "deprecated": false,
           "description": "Preferred maximum STREAM payload data size."
+        },
+        {
+          "id": 16,
+          "name": "audioPtsMode",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "default": "derivedFromSeq",
+          "description": "Audio PTS mode; NA20/NT10 MVP uses derivedFromSeq."
+        },
+        {
+          "id": 17,
+          "name": "timebase",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "default": 48000,
+          "description": "Audio PTS timebase in ticks per second."
+        },
+        {
+          "id": 18,
+          "name": "samplesPerPacket",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "default": 1024,
+          "description": "Fixed samples consumed by each STREAM packet when packetizationMode is fixedSamplesPerPacket."
+        },
+        {
+          "id": 19,
+          "name": "firstMediaSeqId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "default": 0,
+          "description": "First STREAM seqId used as the base for derived audio PTS."
+        },
+        {
+          "id": 20,
+          "name": "audioPtsBase",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "default": 0,
+          "description": "Audio PTS value corresponding to firstMediaSeqId."
+        },
+        {
+          "id": 21,
+          "name": "packetizationMode",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "default": "fixedSamplesPerPacket",
+          "description": "Audio packetization mode; NA20/NT10 MVP uses fixedSamplesPerPacket."
         }
       ]
     },
@@ -1770,6 +1854,54 @@
           "required": false,
           "deprecated": false,
           "description": "Negotiated maximum STREAM payload data size."
+        },
+        {
+          "id": 17,
+          "name": "audioPtsMode",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "description": "Negotiated audio PTS mode."
+        },
+        {
+          "id": 18,
+          "name": "timebase",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Negotiated audio PTS timebase in ticks per second."
+        },
+        {
+          "id": 19,
+          "name": "samplesPerPacket",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Fixed samples consumed by each STREAM packet when packetizationMode is fixedSamplesPerPacket."
+        },
+        {
+          "id": 20,
+          "name": "firstMediaSeqId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "First STREAM seqId used as the base for derived audio PTS."
+        },
+        {
+          "id": 21,
+          "name": "audioPtsBase",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "Audio PTS value corresponding to firstMediaSeqId."
+        },
+        {
+          "id": 22,
+          "name": "packetizationMode",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "description": "Negotiated audio packetization mode."
         }
       ]
     },
@@ -9573,6 +9705,779 @@
       ]
     },
     {
+      "name": "StreamFlowControlCapabilities",
+      "type": "object",
+      "description": "Common STREAM runtime flow-control and diagnostics capability summary.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 32,
+          "description": "Fixed capability name stream.flowControl."
+        },
+        {
+          "id": 2,
+          "name": "supportsAck",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether stream.ack is supported."
+        },
+        {
+          "id": 3,
+          "name": "supportsWindowUpdate",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether stream.windowUpdate is supported."
+        },
+        {
+          "id": 4,
+          "name": "supportsPauseResume",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether stream.pause and stream.resume are supported."
+        },
+        {
+          "id": 5,
+          "name": "supportsAbort",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether stream.abort is supported."
+        },
+        {
+          "id": 6,
+          "name": "supportsStats",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether stream.getState, stream.getStats, and stats events are supported."
+        },
+        {
+          "id": 7,
+          "name": "supportsClockReport",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether stream.clockReport timing samples are supported."
+        },
+        {
+          "id": 8,
+          "name": "defaultWindowBytes",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Default receive window in bytes, if advertised."
+        },
+        {
+          "id": 9,
+          "name": "clockReportIntervalMs",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Suggested clock-report interval in milliseconds."
+        }
+      ]
+    },
+    {
+      "name": "StreamSelector",
+      "type": "object",
+      "description": "Selector for a STREAM runtime context; omit streamId for aggregate state when the method allows it.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier."
+        }
+      ]
+    },
+    {
+      "name": "StreamState",
+      "type": "object",
+      "description": "Common runtime state for a STREAM context or aggregate stream runtime.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier, omitted for aggregate state."
+        },
+        {
+          "id": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "opening",
+            "streaming",
+            "paused",
+            "draining",
+            "closing",
+            "closed",
+            "aborted",
+            "failed",
+            "aggregate"
+          ],
+          "description": "Common STREAM runtime state."
+        },
+        {
+          "id": 3,
+          "name": "paused",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Whether data-plane sending is currently paused."
+        },
+        {
+          "id": 4,
+          "name": "windowBytes",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Current advertised receive window or sender credit in bytes."
+        },
+        {
+          "id": 5,
+          "name": "ackedSeqId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Highest contiguous STREAM seqId acknowledged by the receiver."
+        },
+        {
+          "id": 6,
+          "name": "lastSeqId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Last observed or sent STREAM seqId."
+        },
+        {
+          "id": 7,
+          "name": "lastCursor",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "Last observed STREAM cursor value."
+        },
+        {
+          "id": 8,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "ack",
+            "windowUpdate",
+            "pause",
+            "resume",
+            "abort",
+            "timeout",
+            "peerClosed",
+            "transportLost",
+            "diagnosticSample",
+            "unknown"
+          ],
+          "description": "Reason associated with the current state or last state change."
+        }
+      ]
+    },
+    {
+      "name": "StreamStats",
+      "type": "object",
+      "description": "Bounded STREAM transport-level runtime statistics.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier, omitted for aggregate stats."
+        },
+        {
+          "id": 2,
+          "name": "packets",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "Number of STREAM packets observed."
+        },
+        {
+          "id": 3,
+          "name": "bytes",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "Number of STREAM payload bytes observed."
+        },
+        {
+          "id": 4,
+          "name": "droppedPackets",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "Number of dropped STREAM packets."
+        },
+        {
+          "id": 5,
+          "name": "seqGaps",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "Number of detected seqId gaps."
+        },
+        {
+          "id": 6,
+          "name": "jitterMs",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Estimated transport jitter in milliseconds."
+        },
+        {
+          "id": 7,
+          "name": "lastSeqId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Last observed STREAM seqId."
+        },
+        {
+          "id": 8,
+          "name": "lastCursor",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "Last observed STREAM cursor value."
+        },
+        {
+          "id": 9,
+          "name": "latestClockReportAgeMs",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Age of the latest clock report sample known to the receiver."
+        }
+      ]
+    },
+    {
+      "name": "StreamAckParams",
+      "type": "object",
+      "description": "Request payload for acknowledging received STREAM packet ranges.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "id": 2,
+          "name": "ackedSeqId",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Highest contiguous STREAM seqId received."
+        },
+        {
+          "id": 3,
+          "name": "ackedCursor",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "Optional cursor value associated with ackedSeqId."
+        },
+        {
+          "id": 4,
+          "name": "missingSeqIds",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "uint32"
+          },
+          "description": "Optional sparse list of missing seqId values for diagnostics."
+        }
+      ]
+    },
+    {
+      "name": "StreamAckResult",
+      "type": "object",
+      "description": "Result of a STREAM ACK update.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether the ACK update was accepted."
+        },
+        {
+          "id": 2,
+          "name": "state",
+          "type": "StreamState",
+          "required": false,
+          "deprecated": false,
+          "description": "Updated STREAM runtime state, when returned."
+        }
+      ]
+    },
+    {
+      "name": "StreamWindowUpdateParams",
+      "type": "object",
+      "description": "Request payload for updating receive window or sender credit.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "id": 2,
+          "name": "windowBytes",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Advertised receive window or sender credit in bytes."
+        },
+        {
+          "id": 3,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "bufferAvailable",
+            "bufferPressure",
+            "manualFlowControl",
+            "diagnosticSample",
+            "unknown"
+          ],
+          "description": "Reason for the window update."
+        }
+      ]
+    },
+    {
+      "name": "StreamWindowUpdateResult",
+      "type": "object",
+      "description": "Result of a STREAM window update.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether the window update was accepted."
+        },
+        {
+          "id": 2,
+          "name": "state",
+          "type": "StreamState",
+          "required": false,
+          "deprecated": false,
+          "description": "Updated STREAM runtime state, when returned."
+        }
+      ]
+    },
+    {
+      "name": "StreamPauseParams",
+      "type": "object",
+      "description": "Request payload for pausing a STREAM runtime context.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "id": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "bufferPressure",
+            "userRequest",
+            "diagnostic",
+            "unknown"
+          ],
+          "description": "Pause reason."
+        }
+      ]
+    },
+    {
+      "name": "StreamResumeParams",
+      "type": "object",
+      "description": "Request payload for resuming a STREAM runtime context.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "id": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "bufferAvailable",
+            "userRequest",
+            "diagnostic",
+            "unknown"
+          ],
+          "description": "Resume reason."
+        }
+      ]
+    },
+    {
+      "name": "StreamAbortParams",
+      "type": "object",
+      "description": "Request payload for aborting a STREAM runtime context.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "id": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "timeout",
+            "peerClosed",
+            "transportLost",
+            "userRequest",
+            "profileFailure",
+            "unknown"
+          ],
+          "description": "Abort reason."
+        },
+        {
+          "id": 3,
+          "name": "message",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 256,
+          "description": "Optional diagnostic message."
+        }
+      ]
+    },
+    {
+      "name": "StreamActionResult",
+      "type": "object",
+      "description": "Result of a pause, resume, or abort action.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether the action was accepted."
+        },
+        {
+          "id": 2,
+          "name": "state",
+          "type": "StreamState",
+          "required": false,
+          "deprecated": false,
+          "description": "Updated STREAM runtime state, when returned."
+        }
+      ]
+    },
+    {
+      "name": "StreamStateChangedEvent",
+      "type": "object",
+      "description": "Event payload for common STREAM runtime state changes.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier, omitted for aggregate state changes."
+        },
+        {
+          "id": 2,
+          "name": "state",
+          "type": "StreamState",
+          "required": true,
+          "deprecated": false,
+          "description": "New STREAM runtime state."
+        }
+      ]
+    },
+    {
+      "name": "StreamStatsReportedEvent",
+      "type": "object",
+      "description": "Event payload for common STREAM statistics reports.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier, omitted for aggregate stats."
+        },
+        {
+          "id": 2,
+          "name": "stats",
+          "type": "StreamStats",
+          "required": true,
+          "deprecated": false,
+          "description": "Bounded STREAM transport-level statistics."
+        }
+      ]
+    },
+    {
+      "name": "StreamFlowControlChangedEvent",
+      "type": "object",
+      "description": "Event payload for ACK, window, pause, or resume changes.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "id": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "ack",
+            "windowUpdate",
+            "pause",
+            "resume",
+            "bufferPressure",
+            "bufferAvailable",
+            "diagnosticSample",
+            "unknown"
+          ],
+          "description": "Flow-control change reason."
+        },
+        {
+          "id": 3,
+          "name": "state",
+          "type": "StreamState",
+          "required": false,
+          "deprecated": false,
+          "description": "Updated STREAM runtime state, when returned."
+        }
+      ]
+    },
+    {
+      "name": "StreamClockMediaAnchor",
+      "type": "object",
+      "description": "One media timeline anchor carried by stream.clockReport.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "STREAM data-plane stream identifier for this media timeline."
+        },
+        {
+          "id": 2,
+          "name": "mediaPts",
+          "type": "uint64",
+          "required": true,
+          "deprecated": false,
+          "description": "Media PTS at the anchor point; audio derivedFromSeq uses sample-count PTS, video sameAsCursor uses capture timestamp PTS."
+        },
+        {
+          "id": 3,
+          "name": "timebase",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Media PTS timebase in ticks per second, such as 48000 for audio or 1000000 for video."
+        },
+        {
+          "id": 4,
+          "name": "anchorNt10MonotonicUs",
+          "type": "uint64",
+          "required": true,
+          "deprecated": false,
+          "description": "NT10 source monotonic timestamp corresponding to mediaPts."
+        },
+        {
+          "id": 5,
+          "name": "seqId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Optional STREAM seqId associated with the media anchor."
+        },
+        {
+          "id": 6,
+          "name": "cursor",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "Optional STREAM cursor associated with the media anchor."
+        }
+      ]
+    },
+    {
+      "name": "StreamClockReportEvent",
+      "type": "object",
+      "description": "Latest-wins timing sample linking NT10 media anchors, NT10 source clock, NA20 relay clock, and receiver arrival time.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "reportSeq",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Source or relay report sequence number."
+        },
+        {
+          "id": 2,
+          "name": "syncGroupId",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Synchronization group that links related audio and video streams."
+        },
+        {
+          "id": 3,
+          "name": "sourceDeviceId",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Source device identifier, such as NT10."
+        },
+        {
+          "id": 4,
+          "name": "sourceClockDomain",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Source monotonic clock domain for this report."
+        },
+        {
+          "id": 5,
+          "name": "nt10ReportMonotonicUs",
+          "type": "uint64",
+          "required": true,
+          "deprecated": false,
+          "description": "NT10 source monotonic timestamp sampled when the report was produced."
+        },
+        {
+          "id": 6,
+          "name": "sentAtNt10MonotonicUs",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "NT10 source monotonic timestamp sampled when the report was sent to NA20."
+        },
+        {
+          "id": 7,
+          "name": "na20ReceivedAtUs",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "NA20 monotonic timestamp sampled when the source report or associated media anchor was received."
+        },
+        {
+          "id": 8,
+          "name": "na20SentAtUs",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "NA20 monotonic timestamp sampled when the AXTP event was sent to MediaHost."
+        },
+        {
+          "id": 9,
+          "name": "audio",
+          "type": "StreamClockMediaAnchor",
+          "required": false,
+          "deprecated": false,
+          "description": "Optional audio media timeline anchor."
+        },
+        {
+          "id": 10,
+          "name": "video",
+          "type": "StreamClockMediaAnchor",
+          "required": false,
+          "deprecated": false,
+          "description": "Optional video media timeline anchor."
+        },
+        {
+          "id": 11,
+          "name": "discontinuity",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "default": false,
+          "description": "Whether this report follows a media or source clock discontinuity."
+        },
+        {
+          "id": 12,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "periodic",
+            "streamOpened",
+            "streamResumed",
+            "discontinuity",
+            "sourceReset",
+            "diagnosticSample",
+            "unknown"
+          ],
+          "description": "Report reason."
+        }
+      ]
+    },
+    {
       "name": "VideoGetStreamCapabilitiesParams",
       "type": "object",
       "description": "Selector for video stream capability.",
@@ -9676,6 +10581,36 @@
           "required": true,
           "deprecated": false,
           "description": "Whether normal applications can rely on runtime-managed STREAM flow control."
+        },
+        {
+          "id": 9,
+          "name": "supportedVideoPtsModes",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional video PTS modes such as sameAsCursor and explicit."
+        },
+        {
+          "id": 10,
+          "name": "supportedPacketizationModes",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional video packetization modes such as completeFrame."
+        },
+        {
+          "id": 11,
+          "name": "supportsSourceCaptureTimestampCursor",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Whether STREAM cursorUnit sourceCaptureTimestampUs is supported."
         }
       ]
     },
@@ -9859,6 +10794,33 @@
           "required": false,
           "deprecated": false,
           "description": "Preferred maximum STREAM payload data size."
+        },
+        {
+          "id": 14,
+          "name": "videoPtsMode",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "default": "sameAsCursor",
+          "description": "Video PTS mode; NA20/NT10 MVP uses sameAsCursor."
+        },
+        {
+          "id": 15,
+          "name": "timebase",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "default": 1000000,
+          "description": "Video PTS timebase in ticks per second."
+        },
+        {
+          "id": 16,
+          "name": "packetizationMode",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "default": "completeFrame",
+          "description": "Video packetization mode; NA20/NT10 MVP uses completeFrame."
         }
       ]
     },
@@ -9973,6 +10935,30 @@
           "required": false,
           "deprecated": false,
           "description": "Negotiated maximum STREAM payload data size."
+        },
+        {
+          "id": 14,
+          "name": "videoPtsMode",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "description": "Negotiated video PTS mode."
+        },
+        {
+          "id": 15,
+          "name": "timebase",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Negotiated video PTS timebase in ticks per second."
+        },
+        {
+          "id": 16,
+          "name": "packetizationMode",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "description": "Negotiated video packetization mode."
         }
       ]
     },

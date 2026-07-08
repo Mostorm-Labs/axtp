@@ -195,12 +195,15 @@ success:
 | `frameRate` | number | no | capability range | omitted | 期望帧率。 |
 | `bitrateKbps` | uint32 | no | capability range | omitted | 期望码率。 |
 | `streamProfile` | string | no | `media.video` | `media.video` | STREAM profile。 |
-| `cursorUnit` | enum | no | `timestampUs` | `timestampUs` | STREAM 16B header 中 `cursor` 的业务单位。 |
+| `cursorUnit` | enum | no | `timestampUs`, `sourceCaptureTimestampUs` | `sourceCaptureTimestampUs` for wireless cast | STREAM 16B header 中 `cursor` 的业务单位；NA20/NT10 投屏使用 NT10 源端采集时间戳。 |
 | `syncGroupId` | string | no | product/session scoped | omitted | 与 audio stream 绑定的同步组，可由 requester 指定或 responder 返回。 |
 | `castSessionId` | string | no | product/session scoped | omitted | 投屏会话关联 ID，不单独创建 cast domain。 |
 | `clockDomain` | string | no | `nt10_media_clock`, source-defined | `nt10_media_clock` for wireless cast | 媒体时间戳来源。 |
 | `receiverClockDomain` | string | no | `na20_receive_clock`, receiver-defined | omitted | NA20 接收时钟域，用于 jitter/诊断。 |
 | `maxDataSize` | uint32 | no | transport/profile limit | omitted | 单个 STREAM payload data 最大大小建议。 |
+| `videoPtsMode` | enum | no | `sameAsCursor`, `explicit` | `sameAsCursor` for wireless cast | 视频 PTS 来源；MVP 中 video PTS 等于 STREAM `cursor`。 |
+| `timebase` | uint32 | no | ticks/sec | `1000000` for wireless cast | video PTS 的 timebase。 |
+| `packetizationMode` | enum | no | `completeFrame`, `fragmentedFrame` | `completeFrame` for wireless cast | 视频 packetization 模式；MVP 每个 STREAM packet 是完整帧。 |
 
 #### 3.2.2 返回结果 Result：`VideoOpenStreamResult`
 
@@ -213,13 +216,16 @@ success:
 | `codec` | enum | yes | `h264`, `mjpeg`, `raw` | none | 实际 codec。 |
 | `codecFormat` | enum | no | `annexb`, `avcc` | omitted | H.264 格式。 |
 | `streamProfile` | string | yes | `media.video` | none | 归一化后的 profile。 |
-| `cursorUnit` | enum | yes | `timestampUs` | none | STREAM `cursor` 单位。 |
+| `cursorUnit` | enum | yes | `timestampUs`, `sourceCaptureTimestampUs` | none | STREAM `cursor` 单位。 |
 | `syncGroupId` | string | no | product/session scoped | omitted | 与音频同步组。 |
 | `castSessionId` | string | no | product/session scoped | omitted | 投屏会话关联 ID。 |
 | `clockDomain` | string | no | source-defined | omitted | 源媒体时钟域。 |
 | `receiverClockDomain` | string | no | receiver-defined | omitted | 接收时钟域。 |
 | `maxDataSize` | uint32 | no | negotiated limit | omitted | 每个 STREAM chunk data 最大长度。 |
 | `parameterSetsInKeyFrame` | bool | no | `true`, `false` | capability default | `wireless_cast` H.264 Annex-B 必须为 `true`。 |
+| `videoPtsMode` | enum | no | `sameAsCursor`, `explicit` | omitted | 协商后的视频 PTS 来源。 |
+| `timebase` | uint32 | no | ticks/sec | omitted | 协商后的 video PTS timebase。 |
+| `packetizationMode` | enum | no | `completeFrame`, `fragmentedFrame` | omitted | 协商后的视频 packetization 模式。 |
 
 #### 3.2.3 d block 示例
 
@@ -253,8 +259,11 @@ success:
     "peerRole": "receiver",
     "codec": "h264",
     "streamProfile": "media.video",
-    "cursorUnit": "timestampUs",
-    "parameterSetsInKeyFrame": true
+    "cursorUnit": "sourceCaptureTimestampUs",
+    "parameterSetsInKeyFrame": true,
+    "videoPtsMode": "sameAsCursor",
+    "timebase": 1000000,
+    "packetizationMode": "completeFrame"
   }
 }
 ```
@@ -780,15 +789,14 @@ VideoChunkHeaderV1 + H.264 bytes
 
 `VideoChunkHeaderV1` 是 STREAM data 内的视频业务 envelope，位于 STREAM 16B header 之后。二进制字段编号和布局以 contract/registry/generated schema 为准；不得把这些字段加入 STREAM 16B header。
 
+NA20/NT10 MVP 使用 `packetizationMode=completeFrame` 和 `videoPtsMode=sameAsCursor`。该模式下每个 STREAM packet 是完整视频帧，video PTS 等于 STREAM `cursor`，`timebase=1000000`；媒体层不需要 `frameOffset` / `frameLength` 来描述拆包，AXTP transport fragmentation 必须在 STREAM parser 前完成重组。
+
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `headerLength` | uint16 | yes | bytes | none | envelope 长度。 |
-| `flags` | bitmap | yes | `frameStart`, `frameEnd`, `keyFrame`, `config` | none | chunk 标记。 |
+| `flags` | bitmap | yes | `keyFrame`, `config`, `discontinuity` | none | 完整帧标记。 |
 | `frameId` | uint32 | yes | uint32 | none | 视频帧 ID。 |
-| `frameOffset` | uint32 | yes | bytes | none | 当前 chunk 在帧内偏移。 |
-| `frameLength` | uint32 | no | bytes | omitted | 完整帧长度。 |
-| `timestampUs` | uint64 | yes | microseconds | none | NT10 源媒体时间戳。 |
-| `receiverTimestampUs` | uint64 | no | microseconds | omitted | NA20 接收时钟时间戳。 |
+| `sourceCaptureTimestampUs` | uint64 | no | microseconds | STREAM `cursor` | 可省略；默认使用 STREAM `cursor` 表达 NT10 源端采集时间戳。 |
 | `payloadBytes` | bytes | yes | H.264 Annex-B / other codec bytes | none | 实际视频数据。 |
 
 ### 6.4 State / lifecycle 约束

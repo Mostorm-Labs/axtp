@@ -10,6 +10,14 @@
 | `0x0402` | `firmware.beginUpdate` | firmware | draft | BeginUpdateParams | BeginUpdateResult | - |
 | `0x0408` | `firmware.getUpdateState` | firmware | draft | GetUpdateStateParams | FirmwareUpdateState | - |
 | `0x040B` | `firmware.finishUpdate` | firmware | draft | FinishUpdateParams | FinishUpdateResult | - |
+| `0x0501` | `stream.getCapabilities` | stream | draft | Empty | StreamFlowControlCapabilities | - |
+| `0x0502` | `stream.getState` | stream | draft | StreamSelector | StreamState | - |
+| `0x0503` | `stream.getStats` | stream | draft | StreamSelector | StreamStats | - |
+| `0x0504` | `stream.ack` | stream | draft | StreamAckParams | StreamAckResult | - |
+| `0x0505` | `stream.windowUpdate` | stream | draft | StreamWindowUpdateParams | StreamWindowUpdateResult | - |
+| `0x0506` | `stream.pause` | stream | draft | StreamPauseParams | StreamActionResult | - |
+| `0x0507` | `stream.resume` | stream | draft | StreamResumeParams | StreamActionResult | - |
+| `0x0508` | `stream.abort` | stream | draft | StreamAbortParams | StreamActionResult | - |
 | `0x080B` | `video.openStream` | video | draft | VideoOpenStreamParams | VideoOpenStreamResult | - |
 | `0x080C` | `video.closeStream` | video | draft | VideoCloseStreamParams | VideoCloseStreamResult | - |
 | `0x080D` | `video.getStreamState` | video | draft | VideoGetStreamStateParams | VideoStreamState | - |
