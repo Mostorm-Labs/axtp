@@ -35,7 +35,7 @@
 - Flutter: `lib/src/wire.dart`, `test/axtp_flutter_test.dart`, and `test/conformance/conformance_test.dart`.
 - Python: `src/axtp_runtime/wire_io.py`, `src/axtp_runtime/broker.py`, `tests/test_runtime.py`, and `tests/conformance/test_conformance.py`.
 - Mock server: `generated/node-mock-server/src/main.ts`, `generated/node-mock-server/src/smoke.ts`, `generated/cpp-mock-server/src/main.cpp`, `generated/cpp-mock-server/tests/smoke.cpp`, generator source `devtools/generators/src/emitters/mockServer.ts`, and `devtools/conformance/conformance_runner.mjs`.
-- All runtimes: `devtools/conformance/runtime-profile.yaml` and `.github/workflows/upgrade-axtp-spec.yml` only where required to include the new shared cases.
+- All runtimes: each repository's runtime profile and upgrade workflow only where required to include the new shared cases.
 
 ## Task 1: Make Advisory Version Behavior Normative
 
@@ -425,12 +425,12 @@ git commit -m "Add cross version degradation to mock server"
 ## Task 11: Upgrade Workflow And Cross-Repository Verification
 
 **Files:**
-- Modify: `../axtp-c-runtime/.github/workflows/upgrade-axtp-spec.yml` and `../axtp-c-runtime/devtools/conformance/runtime-profile.yaml`
-- Modify: `../axtp-cpp-runtime/.github/workflows/upgrade-axtp-spec.yml` and `../axtp-cpp-runtime/devtools/conformance/runtime-profile.yaml`
-- Modify: `../axtp-flutter-runtime/.github/workflows/upgrade-axtp-spec.yml` and `../axtp-flutter-runtime/devtools/conformance/runtime-profile.yaml`
-- Modify: `../axtp-ts-runtime/.github/workflows/upgrade-axtp-spec.yml` and `../axtp-ts-runtime/devtools/conformance/runtime-profile.yaml`
-- Modify: `../axtp-python-runtime/.github/workflows/upgrade-axtp-spec.yml` and `../axtp-python-runtime/devtools/conformance/runtime-profile.yaml`
-- Modify: `../axtp-mock-server/.github/workflows/upgrade-axtp-spec.yml` and `../axtp-mock-server/devtools/conformance/runtime-profile.yaml`
+- Modify: each runtime's upgrade workflow and runtime profile file for C.
+- Modify: each runtime's upgrade workflow and runtime profile file for C++.
+- Modify: each runtime's upgrade workflow and runtime profile file for Flutter.
+- Modify: each runtime's upgrade workflow and runtime profile file for TypeScript.
+- Modify: each runtime's upgrade workflow and runtime profile file for Python.
+- Modify: each runtime's upgrade workflow and runtime profile file for the mock server.
 
 - [ ] **Step 1: Assert each declared RPC profile includes advisory cases**
 
