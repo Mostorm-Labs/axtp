@@ -185,7 +185,7 @@ AXTP-native `sid` 生成使用非零 `uint32`，在 JSON / CBOR / MSGPACK envelo
 
 | op | 名称 | 必需行为 |
 |---:|---|---|
-| `0` | `Hello` | Logical Server 公告 AXTP version/auth requirements。 |
+| `0` | `Hello` | Logical Server 公告可选 AXTP version diagnostics 和 auth requirements。 |
 | `2` | `Identify` | Logical Client 发送 identity、`randomSeed`、auth 和 event subscription intent。 |
 | `3` | `Identified` | Logical Server 分配 `sid`；session 进入 app-ready。 |
 | `6` | `Event` | 低频 event 投递。 |
@@ -209,7 +209,11 @@ Event 的业务 payload 不重复携带 `sid`。发送方 MUST 在 RPC envelope 
 
 在 Standard Framed JSON RPC 中，RPC payload 是 `rpcEncoding(1B) + JSON bytes`；当 `selectedRpcEncoding=JSON` 时，`rpcEncoding=0x01`。在 WebSocket Unframed JSON 中，WebSocket message payload 正好就是 JSON object。
 
-Hello 中的 `axtpVersion` 是 AXTP spec compatibility authority。`rpcVersion` 和 `negotiatedRpcVersion` 只是过渡字段；新发送方 SHOULD 省略它们，接收方 MAY 接受值 `1`，且接收方 MUST 拒绝其它值，除非未来发布的 spec 另有规定。
+Hello 中的 `axtpVersion` 是 optional advisory diagnostics metadata。它不协商 feature，也不是 AXTP compatibility authority。无论该字段缺失、不是合法 SemVer，还是 major、minor 或 patch 不同，接收方 MUST NOT 因此拒绝或延迟 `Hello -> Identify -> Identified`、改变 retry/reconnect 策略，或影响不相关 RPC 的可用性。实现 MAY 把观测值分类并记录到日志、telemetry 或 diagnostics，但分类结果 MUST NOT 成为 session admission gate。
+
+`protocolVersion`、`rpcVersion` 和 `negotiatedRpcVersion` 是 deprecated compatibility inputs；新发送方 SHOULD 省略它们。接收方 MAY 为兼容性读取它们，但 MUST NOT 把它们变成 session admission gate。
+
+RPC `Hello.axtpVersion` 与 Standard Frame Header 的 `Version` 是不同层次的字段。Frame Header `Version` 是 hard wire parsing boundary；如果接收方无法安全解析该 frame layout，MUST 使用 `FRAME_VERSION_UNSUPPORTED` 拒绝该 frame。这个 frame parsing rule 不得被推导为对 RPC `axtpVersion` 的拒绝规则。
 
 Identify MUST 包含 `randomSeed:uint32`。Logical Server MUST 在生成 `sid` 时把 `randomSeed` 与本地状态混合；它 MUST NOT 直接把 `randomSeed` 当作 `sid`。`randomSeed` 不是认证 secret。
 

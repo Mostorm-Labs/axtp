@@ -5157,7 +5157,7 @@ Bounded runtime statistics for a video stream.
 | 0x0000 | SUCCESS | common | info | No | stable | Operation completed successfully. |
 | 0x0001 | UNKNOWN_ERROR | common | error | No | stable | Unknown error. |
 | 0x0002 | NOT_IMPLEMENTED | common | error | No | stable | Feature is not implemented. |
-| 0x0003 | NOT_SUPPORTED | common | error | No | stable | Feature is not supported by the current device or mode. |
+| 0x0003 | NOT_SUPPORTED | common | error | No | stable | Canonical error new senders use when a registered operation is unavailable under the current runtime, device, profile, mode, or capability set; the session remains usable. |
 | 0x0004 | INVALID_STATE | common | error | No | stable | Operation is not allowed in the current state. |
 | 0x0005 | BUSY | common | warning | Yes | stable | Device or resource is busy. |
 | 0x0006 | TIMEOUT | common | warning | Yes | stable | Operation timed out. |
@@ -5202,8 +5202,8 @@ Bounded runtime statistics for a video stream.
 | 0x0033 | RPC_PAYLOAD_INVALID | rpc | error | No | stable | RPC payload is invalid. |
 | 0x0034 | RPC_BODY_ENCODING_UNSUPPORTED | rpc | error | No | stable | RPC body encoding is not supported. |
 | 0x0035 | RPC_BODY_DECODE_FAILED | rpc | error | No | stable | RPC body decoding failed. |
-| 0x0036 | RPC_METHOD_NOT_FOUND | rpc | error | No | stable | MethodId or method name is not registered. |
-| 0x0037 | RPC_METHOD_NOT_SUPPORTED | rpc | error | No | stable | Method exists but is not supported by the current device. |
+| 0x0036 | RPC_METHOD_NOT_FOUND | rpc | error | No | stable | MethodId or method name is not registered; do not use for a registered but currently unavailable method. |
+| 0x0037 | RPC_METHOD_NOT_SUPPORTED | rpc | error | No | stable | Compatibility error for a registered but unsupported method. Receivers must continue to decode it; new senders use common NOT_SUPPORTED. |
 | 0x0038 | RPC_METHOD_DISABLED | rpc | error | No | draft | Method is disabled. |
 | 0x0039 | RPC_REQUEST_ID_INVALID | rpc | error | No | stable | RPC requestId is invalid. |
 | 0x003A | RPC_PARAM_MISSING | rpc | error | No | stable | Required RPC parameter is missing. |
@@ -5226,7 +5226,7 @@ Bounded runtime statistics for a video stream.
 | 0x010B | ENROLLMENT_CODE_ALREADY_USED | device | error | No | draft | Pairing code has already been used. |
 | 0x0201 | CAPABILITY_NOT_FOUND | capability | error | No | stable | Capability does not exist. |
 | 0x0202 | CAPABILITY_DOMAIN_NOT_FOUND | capability | error | No | stable | Capability domain does not exist. |
-| 0x0203 | CAPABILITY_METHOD_UNSUPPORTED | capability | error | No | stable | Method capability is not supported. |
+| 0x0203 | CAPABILITY_METHOD_UNSUPPORTED | capability | error | No | stable | Compatibility error for an unsupported method capability. Receivers must continue to decode it; new senders use common NOT_SUPPORTED. |
 | 0x0204 | CAPABILITY_EVENT_UNSUPPORTED | capability | error | No | stable | Event capability is not supported. |
 | 0x0205 | CAPABILITY_STREAM_UNSUPPORTED | capability | error | No | stable | Stream capability is not supported. |
 | 0x0206 | CAPABILITY_ENCODING_UNSUPPORTED | capability | error | No | stable | Encoding capability is not supported. |

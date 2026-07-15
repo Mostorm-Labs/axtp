@@ -1,44 +1,29 @@
-id: event.unsubscribe_event
-title: Reidentify can clear event subscription intent
+id: event.unsupported_capability_not_emitted
+title: Sender does not emit an event whose capability is absent
 since: spec/v0.0.2
 level: event
 semantic:
-  kind: unsubscribed_event_sender_suppression
+  kind: unsupported_event_sender_suppression
 profiles:
   - event
-  - websocket-jsonrpc
+  - core
 
 given:
+  device_profile: eventless_audio_device
+  capability: audio.algorithm
   event: audio.algorithmConfigChanged
-  device_profile: audio_device
+  event_capability_available: false
   session:
     state: identified
 
 steps:
-  - id: unsubscribe
-    role: precondition
-    direction: client_to_server
-    jsonrpc:
-      op: REIDENTIFY
-      d:
-        eventMasks: ""
-
-  - id: unsubscribe_response
-    role: precondition
-    responseTo: unsubscribe
-    direction: server_to_client
-    expect:
-      jsonrpc:
-        op: IDENTIFIED
-
   - id: trigger_request
-    role: trigger
-    triggeredBy: unsubscribe_response
     direction: client_to_server
+    role: trigger
     rpc:
       encoding: json
       op: REQUEST
-      requestId: 46
+      requestId: 51
       method: audio.setAlgorithmConfig
       params:
         config:
@@ -46,47 +31,48 @@ steps:
             enabled: false
 
   - id: trigger_response
-    role: trigger
     responseTo: trigger_request
     direction: server_to_client
+    role: trigger
     expect:
       rpc:
         op: REQUEST_RESPONSE
-        requestId: 46
+        requestId: 51
         statusCode: SUCCESS
 
   - id: no_event
-    role: observe
     triggeredBy: trigger_response
     direction: client_observes
+    role: observe
     expect:
       no_event:
         name: audio.algorithmConfigChanged
         withinMs: 500
 
   - id: liveness_request
-    role: liveness
     triggeredBy: no_event
     direction: client_to_server
+    role: liveness
     rpc:
       encoding: json
       op: REQUEST
-      requestId: 47
+      requestId: 52
       method: audio.getAlgorithmConfig
       params: {}
 
   - id: liveness_response
-    role: liveness
     responseTo: liveness_request
     direction: server_to_client
+    role: liveness
     expect:
       rpc:
         op: REQUEST_RESPONSE
-        requestId: 47
+        requestId: 52
         statusCode: SUCCESS
 
 assertions:
-  - identified.op == IDENTIFIED
+  - capability.events does not contain "audio.algorithmConfigChanged"
   - trigger_response.statusCode == SUCCESS
   - no audio.algorithmConfigChanged event observed within 500ms
   - liveness_response.statusCode == SUCCESS
+  - session.state == identified

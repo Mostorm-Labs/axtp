@@ -13958,7 +13958,7 @@
       "status": "stable",
       "severity": "error",
       "retryable": false,
-      "message": "Feature is not supported by the current device or mode."
+      "message": "Canonical error new senders use when a registered operation is unavailable under the current runtime, device, profile, mode, or capability set; the session remains usable."
     },
     {
       "name": "INVALID_STATE",
@@ -14408,7 +14408,7 @@
       "status": "stable",
       "severity": "error",
       "retryable": false,
-      "message": "MethodId or method name is not registered."
+      "message": "MethodId or method name is not registered; do not use for a registered but currently unavailable method."
     },
     {
       "name": "RPC_METHOD_NOT_SUPPORTED",
@@ -14418,7 +14418,7 @@
       "status": "stable",
       "severity": "error",
       "retryable": false,
-      "message": "Method exists but is not supported by the current device."
+      "message": "Compatibility error for a registered but unsupported method. Receivers must continue to decode it; new senders use common NOT_SUPPORTED."
     },
     {
       "name": "RPC_METHOD_DISABLED",
@@ -14648,7 +14648,7 @@
       "status": "stable",
       "severity": "error",
       "retryable": false,
-      "message": "Method capability is not supported."
+      "message": "Compatibility error for an unsupported method capability. Receivers must continue to decode it; new senders use common NOT_SUPPORTED."
     },
     {
       "name": "CAPABILITY_EVENT_UNSUPPORTED",
