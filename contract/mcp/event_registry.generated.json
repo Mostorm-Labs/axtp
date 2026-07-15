@@ -727,7 +727,7 @@
       "name": "cast.flowControlChanged",
       "domain": "cast",
       "status": "draft",
-      "description": "Emitted when receiver-local cast flow policy or low-frequency flow statistics change.",
+      "description": "Emitted when receiver-local cast flow policy, video stream parameters, or low-frequency flow statistics change.",
       "since": "1.0.0",
       "deprecated": false,
       "eventSchema": "CastFlowControlChangedEvent",
@@ -735,6 +735,7 @@
       "trigger": [
         "cast.setRenderFps",
         "cast.setFlowPolicy",
+        "cast.setVideoStreamParams",
         "diagnostics sample"
       ],
       "capabilities": [

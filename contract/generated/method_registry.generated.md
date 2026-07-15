@@ -75,6 +75,7 @@
 | `0x1611` | `cast.setFlowPolicy` | cast | draft | CastSetFlowPolicyParams | CastFlowControlState | - |
 | `0x1612` | `cast.getStatus` | cast | draft | CastGetStatusParams | CastStatus | - |
 | `0x1613` | `cast.setAudioDelay` | cast | draft | CastSetAudioDelayParams | CastAudioState | - |
+| `0x1614` | `cast.setVideoStreamParams` | cast | draft | CastSetVideoStreamParamsParams | CastSetVideoStreamParamsResult | - |
 | `0x1701` | `software.getConfig` | software | draft | SoftwareGetConfigParams | SoftwareConfig | - |
 | `0x1702` | `software.setConfig` | software | draft | SoftwareSetConfigParams | SoftwareSetConfigResult | - |
 | `0x1703` | `software.resetConfig` | software | draft | SoftwareResetConfigParams | SoftwareConfig | - |

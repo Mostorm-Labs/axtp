@@ -814,7 +814,7 @@ errors:
   - id: 0x0806
     name: MEDIA_BITRATE_UNSUPPORTED
     domain: video
-    status: draft
+    status: mvp
     description: Requested media bitrate is unsupported.
     retryable: false
 

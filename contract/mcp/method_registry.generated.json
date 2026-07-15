@@ -485,7 +485,7 @@
       "name": "video.openStream",
       "domain": "video",
       "status": "draft",
-      "description": "Open a real-time video STREAM and return the negotiated streamId and media metadata.",
+      "description": "Open a real-time video STREAM and return the negotiated streamId and media metadata; an active stream must be closed before opening a replacement, while a source without an active stream may be opened directly.",
       "since": "1.0.0",
       "deprecated": false,
       "rpcOp": "request_response",
@@ -512,6 +512,7 @@
         "MEDIA_CODEC_UNSUPPORTED",
         "MEDIA_RESOLUTION_UNSUPPORTED",
         "MEDIA_FRAMERATE_UNSUPPORTED",
+        "MEDIA_BITRATE_UNSUPPORTED",
         "MEDIA_STREAM_START_FAILED"
       ],
       "idHex": "0x080B"
@@ -2180,6 +2181,44 @@
         "UNAVAILABLE"
       ],
       "idHex": "0x1613"
+    },
+    {
+      "id": 5652,
+      "bitOffset": 19,
+      "name": "cast.setVideoStreamParams",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Request cast video stream parameter reconfiguration; an active stream is coordinated through close then open, while a source without an active stream is opened directly.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastSetVideoStreamParamsParams",
+      "responseSchema": "CastSetVideoStreamParamsResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.flowControl"
+      ],
+      "events": [
+        "cast.flowControlChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "OUT_OF_RANGE",
+        "NOT_SUPPORTED",
+        "BUSY",
+        "MEDIA_SOURCE_UNAVAILABLE",
+        "MEDIA_FRAMERATE_UNSUPPORTED",
+        "MEDIA_BITRATE_UNSUPPORTED",
+        "MEDIA_STREAM_START_FAILED",
+        "MEDIA_STREAM_STOP_FAILED",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x1614"
     },
     {
       "id": 5889,

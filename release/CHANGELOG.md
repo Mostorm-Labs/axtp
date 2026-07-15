@@ -4,6 +4,47 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.13.0
+
+NT10 source video encoder parameter control through the Nearcast cast flow-control surface.
+
+### Protocol
+
+- Adds `cast.setVideoStreamParams` under `cast.flowControl` so Nearcast can configure the current cast session's NT10/source encoder frame rate and bitrate.
+- Defines coordinated active-stream replacement as `video.closeStream(reason=encodingReconfigure)` followed by `video.openStream(peerRole=transmitter)` with a new `streamId`; idle sources open directly.
+- Keeps audio running, preserves the existing `syncGroupId`, and defines rollback to the previous parameters and stream when the replacement open fails.
+- Defines parameter precedence as explicit `video.openStream` values, then current-session cast values, then source/profile defaults; omitted set fields remain unchanged and only `resetFields` clears them.
+
+### Registry
+
+- Adds `cast.setVideoStreamParams` as method `0x1614`, `bitOffset=19`, bound to the existing `cast.flowControl` capability and `cast.flowControlChanged` event.
+- Extends cast flow-control capability and state metadata with video parameter support, active reconfiguration support, desired/effective encoder values, reconfiguration state, stream identifiers, rollback status, and diagnostics.
+- Extends `video.stream` source, open, state, event, and close-reason facts with encoder frame-rate/bitrate capabilities and `encodingReconfigure` lifecycle metadata.
+- Promotes `MEDIA_BITRATE_UNSUPPORTED` to the MVP error set and exposes it from the relevant cast/video methods.
+
+### Schemas
+
+- Adds `CastSetVideoStreamParamsParams`, `CastSetVideoStreamParamsResult`, and `CastVideoStreamParamsState`.
+- Extends `CastFlowControlState`, `CastFlowControlChangedEvent`, `CastFlowControlCapability`, `VideoStreamSource`, `VideoStreamState`, and `VideoStreamStateChangedEvent` without changing existing field IDs.
+- Treats zero encoder frame rate or bitrate as invalid; callers omit fields to preserve current values and use `resetFields` to restore source/profile defaults.
+
+### Conformance
+
+- Adds capability degradation coverage proving unsupported encoder control returns `NOT_SUPPORTED` without closing the AXTP session.
+- Adds idle-open, active close/open replacement, explicit-open precedence, rollback, validation, and concurrent-`BUSY` cases.
+- Expands the shared conformance manifest from 30 to 36 cases.
+
+### Migration
+
+- Existing runtimes remain compatible when they do not advertise `cast.flowControl.supportsVideoStreamParams`; registered-but-unavailable calls return `NOT_SUPPORTED`.
+- Implementations that advertise the new fields must preserve session-local values, reject unsupported profile values with typed media errors, and serialize active reconfiguration operations.
+
+### Runtime Impact
+
+- `axtp-cpp-runtime` should bind to `spec/v0.13.0`, regenerate protocol metadata, implement or explicitly degrade `cast.setVideoStreamParams`, and run the new conformance cases.
+- Existing CONTROL/RPC/STREAM framing and previously registered method, event, capability, and schema IDs remain backward compatible with `spec/v0.12.0`.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.12.0
 
 Cast receiver audio delay compensation and event envelope clarification.

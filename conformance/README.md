@@ -106,6 +106,24 @@ Executable step 使用唯一 `id` 标识步骤，以 `captureAs` 命名其输出
 
 Case-level `semantic.kind` 和 step `role`（如 `trigger`、`degraded`、`observe`、`liveness`）承载 machine-readable invariants。Validator 按 semantic/role 关联 exact error、bounded non-emission 和后续 success，不依赖 YAML 中的固定 step index；runner 可在不破坏 capture dependency 和 protocol ordering 的前提下插入 diagnostics 或等价重排。
 
+## Cast / video encoder parameter conformance
+
+`cast.setVideoStreamParams` 的 conformance 覆盖 Nearcast 通过 WS 控制面配置 NT10 source encoder 的目标帧率和码率。该配置只属于当前 cast session；一次 `video.openStream` 中显式提供的 `frameRate` / `bitrateKbps` 优先级更高，且不会写回 session 默认值。`cast.setRenderFps` 仍然只控制本地 renderer，不属于本组 case。
+
+声明 `capability` level 的 runtime 至少执行 `capability.video_stream_params_not_supported`：当 `supportsVideoStreamParams` 或选定 source 的 encoder capability 缺失时，必须精确返回 `NOT_SUPPORTED`，不能关闭 AXTP session，随后受支持 RPC 必须成功。
+
+声明 `stream` level 的 runtime 还必须覆盖以下生命周期约束：
+
+| Required case | 必测行为 |
+|---|---|
+| `stream.video_stream_params_idle_open` | source 没有 active video stream 时直接 `video.openStream`，不得发送 close；结果回显 negotiated frame rate / bitrate。 |
+| `stream.video_stream_params_active_reconfigure` | active stream 必须按 `closeStream(old, reason=encodingReconfigure)`、terminal closed、`openStream(peerRole=transmitter, new params)` 顺序替换；旧 streamId 作废，音频及 `syncGroupId` 保持。 |
+| `stream.video_stream_params_precedence` | `video.openStream` 显式值覆盖 session 参数，且显式值不持久化到 session。 |
+| `stream.video_stream_params_rollback` | 新 open 返回 `MEDIA_FRAMERATE_UNSUPPORTED`、`MEDIA_BITRATE_UNSUPPORTED` 或 `MEDIA_STREAM_START_FAILED` 时，尝试旧参数恢复；分别验证 `rolledBack + rollbackApplied` 和恢复失败时 `failed + 无 active stream`。 |
+| `stream.video_stream_params_validation` | 空更新、字段与 `resetFields` 冲突、profile 越界以及重配置并发请求分别返回 `INVALID_ARGUMENT`、媒体能力错误或 `BUSY`。 |
+
+不支持 source encoder 参数或 active reconfigure 的 UxPlay/AirPlay receiver 不得模拟成功，应返回 `NOT_SUPPORTED`；该降级不影响同一 session 的其他 RPC。
+
 ## STREAM P0 范围
 
 Phase 1 STREAM conformance 验收的是 audio/video 媒体流数据面：

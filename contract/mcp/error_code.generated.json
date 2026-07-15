@@ -1164,7 +1164,7 @@
       "id": 2054,
       "name": "MEDIA_BITRATE_UNSUPPORTED",
       "domain": "video",
-      "status": "draft",
+      "status": "mvp",
       "description": "Requested media bitrate is unsupported.",
       "deprecated": false,
       "retryable": false,

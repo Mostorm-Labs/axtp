@@ -23,6 +23,7 @@ levels:
       - capability.unknown_optional_field_ignored
       - capability.known_optional_feature_not_supported
       - capability.profile_mismatch_not_supported
+      - capability.video_stream_params_not_supported
 
   event:
     description: RPC event decode/encode behavior.
@@ -39,6 +40,11 @@ levels:
       - stream.stream_open
       - stream.stream_data
       - stream.stream_close
+      - stream.video_stream_params_idle_open
+      - stream.video_stream_params_active_reconfigure
+      - stream.video_stream_params_precedence
+      - stream.video_stream_params_rollback
+      - stream.video_stream_params_validation
 
   websocket-jsonrpc:
     description: WebSocket unframed JSON RPC behavior.

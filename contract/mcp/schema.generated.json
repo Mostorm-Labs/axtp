@@ -4848,6 +4848,288 @@
       ]
     },
     {
+      "name": "CastSetVideoStreamParamsParams",
+      "type": "object",
+      "description": "Request to update the active cast video stream frame rate or bitrate, optionally resetting selected fields.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "sessionId",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Optional receiver-local cast session id."
+        },
+        {
+          "id": 2,
+          "name": "frameRate",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "description": "Optional target encoded video frame rate; zero is invalid, omission leaves the current session value unchanged or unset if never configured, and only resetFields clears it and restores the source/profile default."
+        },
+        {
+          "id": 3,
+          "name": "bitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "description": "Optional target encoded video bitrate in kbps; zero is invalid, omission leaves the current session value unchanged or unset if never configured, and only resetFields clears it and restores the source/profile default."
+        },
+        {
+          "id": 4,
+          "name": "resetFields",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional video parameter field names to reset to the source or profile default."
+        }
+      ]
+    },
+    {
+      "name": "CastSetVideoStreamParamsResult",
+      "type": "object",
+      "description": "Result and reconfiguration status for cast video stream parameter changes.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether the receiver accepted the requested video parameter change."
+        },
+        {
+          "id": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "pending",
+            "applied",
+            "failed",
+            "rolledBack",
+            "unchanged"
+          ],
+          "description": "Reconfiguration lifecycle state."
+        },
+        {
+          "id": 3,
+          "name": "sessionId",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Receiver-local cast session id associated with the result."
+        },
+        {
+          "id": 4,
+          "name": "reconfigureId",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Identifier for this video stream reconfiguration operation."
+        },
+        {
+          "id": 5,
+          "name": "previousStreamId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Previously active video stream id when the operation replaced a stream."
+        },
+        {
+          "id": 6,
+          "name": "activeStreamId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Currently active video stream id after the operation."
+        },
+        {
+          "id": 7,
+          "name": "sourceVideo",
+          "type": "CastVideoStreamParamsState",
+          "required": true,
+          "deprecated": false,
+          "description": "Effective source video stream parameter state after the request."
+        }
+      ]
+    },
+    {
+      "name": "CastVideoStreamParamsState",
+      "type": "object",
+      "description": "Desired and effective cast source video stream parameters and reconfiguration state.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "sessionId",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Receiver-local cast session id."
+        },
+        {
+          "id": 2,
+          "name": "source",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Source identifier whose video stream parameters are represented."
+        },
+        {
+          "id": 3,
+          "name": "desiredFrameRate",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "description": "Requested video encoder frame rate, if one is pending or configured; zero is invalid."
+        },
+        {
+          "id": 4,
+          "name": "desiredBitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "description": "Requested video encoder bitrate in kbps, if one is pending or configured; zero is invalid."
+        },
+        {
+          "id": 5,
+          "name": "effectiveFrameRate",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "description": "Effective encoded video frame rate currently applied by the source."
+        },
+        {
+          "id": 6,
+          "name": "effectiveBitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "description": "Effective encoded video bitrate in kbps currently applied by the source."
+        },
+        {
+          "id": 7,
+          "name": "streamProfile",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "Effective video STREAM profile."
+        },
+        {
+          "id": 8,
+          "name": "encoder",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Encoder or encoder profile selected for the source video stream."
+        },
+        {
+          "id": 9,
+          "name": "reconfigureId",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Most recent video stream reconfiguration operation id."
+        },
+        {
+          "id": 10,
+          "name": "state",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "idle",
+            "pending",
+            "closing",
+            "opening",
+            "streaming",
+            "failed",
+            "rolledBack"
+          ],
+          "description": "Current source video stream reconfiguration state."
+        },
+        {
+          "id": 11,
+          "name": "phase",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "idle",
+            "pending",
+            "closing",
+            "opening",
+            "streaming",
+            "failed",
+            "rolledBack"
+          ],
+          "description": "Current source video stream lifecycle phase during reconfiguration."
+        },
+        {
+          "id": 12,
+          "name": "previousStreamId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Previous active downstream video stream id when a reconfiguration replaces it."
+        },
+        {
+          "id": 13,
+          "name": "activeStreamId",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Active downstream video stream id, if one is established."
+        },
+        {
+          "id": 14,
+          "name": "rollbackApplied",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Whether the previous stream parameters were restored after a failed reconfiguration."
+        },
+        {
+          "id": 15,
+          "name": "lastError",
+          "type": "CastLastError",
+          "required": false,
+          "deprecated": false,
+          "description": "Last reconfiguration or stream lifecycle error, when available."
+        },
+        {
+          "id": 16,
+          "name": "changedFields",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Video parameter fields changed by the most recent operation."
+        }
+      ]
+    },
+    {
       "name": "CastFlowControlState",
       "type": "object",
       "description": "Receiver-local cast flow control policy and low-frequency statistics.",
@@ -4984,6 +5266,14 @@
           "deprecated": false,
           "maxLength": 64,
           "description": "Timestamp for this flow sample."
+        },
+        {
+          "id": 16,
+          "name": "sourceVideo",
+          "type": "CastVideoStreamParamsState",
+          "required": false,
+          "deprecated": false,
+          "description": "Effective source video stream parameters and reconfiguration state."
         }
       ]
     },
@@ -5019,6 +5309,8 @@
           "deprecated": false,
           "enum": [
             "manualFlowControl",
+            "videoStreamParams",
+            "videoStreamReconfigure",
             "diagnosticsSample",
             "sessionStarted",
             "sessionStopped",
@@ -5034,6 +5326,23 @@
           "deprecated": false,
           "maxLength": 64,
           "description": "Timestamp for this event."
+        },
+        {
+          "id": 5,
+          "name": "sourceVideo",
+          "type": "CastVideoStreamParamsState",
+          "required": false,
+          "deprecated": false,
+          "description": "Effective source video stream parameter state associated with this event."
+        },
+        {
+          "id": 6,
+          "name": "reconfigureId",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Video stream reconfiguration operation id associated with this event."
         }
       ]
     },
@@ -5670,6 +5979,55 @@
           "deprecated": false,
           "default": false,
           "description": "Whether a public keyframe request method is exposed; current draft keeps this false."
+        },
+        {
+          "id": 6,
+          "name": "supportsVideoStreamParams",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "default": false,
+          "description": "Whether cast.setVideoStreamParams can update source video frame rate or bitrate."
+        },
+        {
+          "id": 7,
+          "name": "supportsActiveVideoReconfigure",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "default": false,
+          "description": "Whether active video stream parameter changes may reconfigure or replace the current stream."
+        },
+        {
+          "id": 8,
+          "name": "supportedVideoStreamProfiles",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Video STREAM profiles supported by cast.setVideoStreamParams; each profile may declare source-specific support and frame-rate/bitrate ranges."
+        },
+        {
+          "id": 9,
+          "name": "supportedVideoEncoders",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Encoder or encoder profile identifiers exposed for source video reconfiguration."
+        },
+        {
+          "id": 10,
+          "name": "supportsSourceSpecificVideoParams",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "default": true,
+          "description": "Whether video parameter support and ranges may vary by source and are described by the selected video profile."
         }
       ]
     },
@@ -10677,6 +11035,46 @@
           "required": false,
           "deprecated": false,
           "description": "Runtime source state, such as available, receiving, stopped, or unavailable."
+        },
+        {
+          "id": 7,
+          "name": "bitratesKbps",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "uint32"
+          },
+          "description": "Supported encoded video bitrates in kbps."
+        },
+        {
+          "id": 8,
+          "name": "encoder",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Encoder or encoder profile identifier used by this source."
+        },
+        {
+          "id": 9,
+          "name": "supportsReconfigure",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "default": false,
+          "description": "Whether active downstream video encoding parameters can be reconfigured via close then open without restarting the upstream source."
+        },
+        {
+          "id": 10,
+          "name": "reconfigureFields",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Video stream fields that can be changed by an encoding reconfiguration."
         }
       ]
     },
@@ -10732,7 +11130,8 @@
           "type": "uint32",
           "required": false,
           "deprecated": false,
-          "description": "Requested frame rate."
+          "min": 1,
+          "description": "Requested frame rate for the selected video encoder target; zero is invalid and omission uses the source/session default."
         },
         {
           "id": 7,
@@ -10740,7 +11139,8 @@
           "type": "uint32",
           "required": false,
           "deprecated": false,
-          "description": "Requested bitrate in kbps."
+          "min": 1,
+          "description": "Requested bitrate in kbps for the selected video encoder target; zero is invalid and omission uses the source/session default."
         },
         {
           "id": 8,
@@ -10892,7 +11292,8 @@
           "type": "uint32",
           "required": false,
           "deprecated": false,
-          "description": "Negotiated frame rate."
+          "min": 1,
+          "description": "Negotiated frame rate; zero is invalid and omission means the source/session default was used."
         },
         {
           "id": 9,
@@ -10900,7 +11301,8 @@
           "type": "uint32",
           "required": false,
           "deprecated": false,
-          "description": "Negotiated bitrate in kbps."
+          "min": 1,
+          "description": "Negotiated bitrate in kbps; zero is invalid and omission means the source/session default was used."
         },
         {
           "id": 10,
@@ -10989,6 +11391,17 @@
           "type": "enum",
           "required": false,
           "deprecated": false,
+          "enum": [
+            "receiver_closed",
+            "user_stop",
+            "not_needed",
+            "source_disconnected",
+            "producer_stopped",
+            "session_lost",
+            "receiver_timeout",
+            "encodingReconfigure",
+            "error"
+          ],
           "description": "Close reason."
         },
         {
@@ -11028,6 +11441,17 @@
           "type": "enum",
           "required": false,
           "deprecated": false,
+          "enum": [
+            "receiver_closed",
+            "user_stop",
+            "not_needed",
+            "source_disconnected",
+            "producer_stopped",
+            "session_lost",
+            "receiver_timeout",
+            "encodingReconfigure",
+            "error"
+          ],
           "description": "Final close reason."
         },
         {
@@ -11151,6 +11575,24 @@
           "required": false,
           "deprecated": false,
           "description": "Failure reason when state is failed."
+        },
+        {
+          "id": 12,
+          "name": "frameRate",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "description": "Effective negotiated video frame rate; zero is invalid and omission means the source/session default was used."
+        },
+        {
+          "id": 13,
+          "name": "bitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "description": "Effective negotiated video bitrate in kbps; zero is invalid and omission means the source/session default was used."
         }
       ]
     },
@@ -11309,6 +11751,24 @@
           "required": false,
           "deprecated": false,
           "description": "Optional bounded stream statistics."
+        },
+        {
+          "id": 6,
+          "name": "frameRate",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "description": "Effective video frame rate at the time of this event; zero is invalid and omission means the source/session default was used."
+        },
+        {
+          "id": 7,
+          "name": "bitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "description": "Effective video bitrate in kbps at the time of this event; zero is invalid and omission means the source/session default was used."
         }
       ]
     },

@@ -17,11 +17,11 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 |---|---:|
 | 草案文件 | 110 |
 | 已生成草案文件 | 21 |
-| 已生成 method/event 事实 | 116 |
-| Method 小节 | 441 |
-| 紧凑 method 示例 | 441 |
+| 已生成 method/event 事实 | 117 |
+| Method 小节 | 442 |
+| 紧凑 method 示例 | 442 |
 | Method 示例缺口 | 0 |
-| JSON 示例 | 1197 |
+| JSON 示例 | 1199 |
 | 无效 JSON 示例 | 0 |
 | 模板化示例提示 | 0 |
 | 模板化开放问题 | 0 |
@@ -40,7 +40,7 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | auth | 待排期 | 3 | 0 | 0 | 12 | 12/12 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | camera | P3/P4 | 7 | 0 | 0 | 40 | 40/40 | ASK 28 / DRAFT 52 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
 | capability | 待排期 | 1 | 0 | 0 | 4 | 4/4 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
-| cast | P2 / 投屏接收端控制 | 7 | 7 | 31 | 19 | 19/19 | ASK 9 / DRAFT 4 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
+| cast | P2 / 投屏接收端控制 | 7 | 7 | 32 | 20 | 20/20 | ASK 9 / DRAFT 4 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
 | device | P1 | 6 | 2 | 5 | 20 | 20/20 | ASK 19 / DRAFT 19 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
 | diagnostic | P5 | 10 | 0 | 0 | 39 | 39/39 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | display | 待排期 | 6 | 0 | 0 | 24 | 24/24 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |

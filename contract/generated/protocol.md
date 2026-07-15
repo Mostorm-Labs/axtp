@@ -39,7 +39,7 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
-| cast | 19 | 12 |
+| cast | 20 | 12 |
 | device | 4 | 1 |
 | firmware | 4 | 2 |
 | network | 18 | 8 |
@@ -220,7 +220,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | Domain | Methods |
 | ---- | ---- |
 | audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
-| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay |
+| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams |
 | device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
@@ -644,6 +644,7 @@ Type: `AudioStreamSourceState`
 - [cast.setFlowPolicy](#castsetflowpolicy)
 - [cast.getStatus](#castgetstatus)
 - [cast.setAudioDelay](#castsetaudiodelay)
+- [cast.setVideoStreamParams](#castsetvideostreamparams)
 
 ---
 
@@ -1274,6 +1275,7 @@ Type: `CastFlowControlState`
 | ?keyFrameOnDropBurst | Boolean | 0x0D | Whether the receiver may internally request a keyframe after a drop burst. | None | Omit if not used. |
 | ?changedFields | Array<String> | 0x0E | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?sampledAt | String | 0x0F | Timestamp for this flow sample. | maxLength=64 | Omit if not used. |
+| ?sourceVideo | CastVideoStreamParamsState | 0x10 | Effective source video stream parameters and reconfiguration state. | None | Omit if not used. |
 
 ---
 
@@ -1322,6 +1324,7 @@ Type: `CastFlowControlState`
 | ?keyFrameOnDropBurst | Boolean | 0x0D | Whether the receiver may internally request a keyframe after a drop burst. | None | Omit if not used. |
 | ?changedFields | Array<String> | 0x0E | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?sampledAt | String | 0x0F | Timestamp for this flow sample. | maxLength=64 | Omit if not used. |
+| ?sourceVideo | CastVideoStreamParamsState | 0x10 | Effective source video stream parameters and reconfiguration state. | None | Omit if not used. |
 
 ---
 
@@ -1373,6 +1376,7 @@ Type: `CastFlowControlState`
 | ?keyFrameOnDropBurst | Boolean | 0x0D | Whether the receiver may internally request a keyframe after a drop burst. | None | Omit if not used. |
 | ?changedFields | Array<String> | 0x0E | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?sampledAt | String | 0x0F | Timestamp for this flow sample. | maxLength=64 | Omit if not used. |
+| ?sourceVideo | CastVideoStreamParamsState | 0x10 | Effective source video stream parameters and reconfiguration state. | None | Omit if not used. |
 
 ---
 
@@ -1457,6 +1461,47 @@ Type: `CastAudioState`
 | ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
 | ?audioDelayMs | UInt32 | 0x0A | Configured receiver-local audio playback delay in milliseconds; zero disables compensation. | min=0, max=1000 | Default: 250 |
+
+---
+
+### cast.setVideoStreamParams
+
+Request cast video stream parameter reconfiguration; an active stream is coordinated through close then open, while a source without an active stream is opened directly.
+
+- Method ID: `0x1614`
+- Domain: `cast`
+- bitOffset: `19`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.flowControl`
+- Possible Events: `cast.flowControlChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `OUT_OF_RANGE`, `NOT_SUPPORTED`, `BUSY`, `MEDIA_SOURCE_UNAVAILABLE`, `MEDIA_FRAMERATE_UNSUPPORTED`, `MEDIA_BITRATE_UNSUPPORTED`, `MEDIA_STREAM_START_FAILED`, `MEDIA_STREAM_STOP_FAILED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetVideoStreamParamsParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Optional receiver-local cast session id. | maxLength=128 | Omit if not used. |
+| ?frameRate | UInt32 | 0x02 | Optional target encoded video frame rate; zero is invalid, omission leaves the current session value unchanged or unset if never configured, and only resetFields clears it and restores the source/profile default. | min=1 | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x03 | Optional target encoded video bitrate in kbps; zero is invalid, omission leaves the current session value unchanged or unset if never configured, and only resetFields clears it and restores the source/profile default. | min=1 | Omit if not used. |
+| ?resetFields | Array<String> | 0x04 | Optional video parameter field names to reset to the source or profile default. | array.itemType=string | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastSetVideoStreamParamsResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the receiver accepted the requested video parameter change. | None | N/A |
+| state | Enum | 0x02 | Reconfiguration lifecycle state. | enum=pending/applied/failed/rolledBack/unchanged | N/A |
+| ?sessionId | String | 0x03 | Receiver-local cast session id associated with the result. | maxLength=128 | Omit if not used. |
+| ?reconfigureId | String | 0x04 | Identifier for this video stream reconfiguration operation. | maxLength=128 | Omit if not used. |
+| ?previousStreamId | UInt32 | 0x05 | Previously active video stream id when the operation replaced a stream. | None | Omit if not used. |
+| ?activeStreamId | UInt32 | 0x06 | Currently active video stream id after the operation. | None | Omit if not used. |
+| sourceVideo | CastVideoStreamParamsState | 0x07 | Effective source video stream parameter state after the request. | None | N/A |
 
 ---
 
@@ -3140,7 +3185,7 @@ Type: `StreamActionResult`
 
 ### video.openStream
 
-Open a real-time video STREAM and return the negotiated streamId and media metadata.
+Open a real-time video STREAM and return the negotiated streamId and media metadata; an active stream must be closed before opening a replacement, while a source without an active stream may be opened directly.
 
 - Method ID: `0x080B`
 - Domain: `video`
@@ -3150,7 +3195,7 @@ Open a real-time video STREAM and return the negotiated streamId and media metad
 - Encodings: `json`, `tlv`
 - Required Capabilities: `video.stream`
 - Possible Events: `video.streamStateChanged`, `video.streamSourceStateChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `BUSY`, `RESOURCE_EXHAUSTED`, `MEDIA_SOURCE_NOT_FOUND`, `MEDIA_SOURCE_UNAVAILABLE`, `MEDIA_CODEC_UNSUPPORTED`, `MEDIA_RESOLUTION_UNSUPPORTED`, `MEDIA_FRAMERATE_UNSUPPORTED`, `MEDIA_STREAM_START_FAILED`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `BUSY`, `RESOURCE_EXHAUSTED`, `MEDIA_SOURCE_NOT_FOUND`, `MEDIA_SOURCE_UNAVAILABLE`, `MEDIA_CODEC_UNSUPPORTED`, `MEDIA_RESOLUTION_UNSUPPORTED`, `MEDIA_FRAMERATE_UNSUPPORTED`, `MEDIA_BITRATE_UNSUPPORTED`, `MEDIA_STREAM_START_FAILED`
 
 #### Request Fields
 
@@ -3163,8 +3208,8 @@ Type: `VideoOpenStreamParams`
 | codec | Enum | 0x03 | Requested video codec, such as h264, h265, mjpeg, or raw. | None | N/A |
 | ?width | UInt32 | 0x04 | Requested frame width in pixels. | None | Omit if not used. |
 | ?height | UInt32 | 0x05 | Requested frame height in pixels. | None | Omit if not used. |
-| ?frameRate | UInt32 | 0x06 | Requested frame rate. | None | Omit if not used. |
-| ?bitrateKbps | UInt32 | 0x07 | Requested bitrate in kbps. | None | Omit if not used. |
+| ?frameRate | UInt32 | 0x06 | Requested frame rate for the selected video encoder target; zero is invalid and omission uses the source/session default. | min=1 | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x07 | Requested bitrate in kbps for the selected video encoder target; zero is invalid and omission uses the source/session default. | min=1 | Omit if not used. |
 | ?streamProfile | String | 0x08 | STREAM profile name. | maxLength=64 | Default: "media.video" |
 | ?cursorUnit | Enum | 0x09 | STREAM cursor unit, such as timestampUs or frameIndex. | None | Omit if not used. |
 | ?syncGroupId | String | 0x0A | Optional synchronization group identifier. | maxLength=128 | Omit if not used. |
@@ -3188,8 +3233,8 @@ Type: `VideoOpenStreamResult`
 | codec | Enum | 0x05 | Negotiated codec. | None | N/A |
 | ?width | UInt32 | 0x06 | Negotiated frame width. | None | Omit if not used. |
 | ?height | UInt32 | 0x07 | Negotiated frame height. | None | Omit if not used. |
-| ?frameRate | UInt32 | 0x08 | Negotiated frame rate. | None | Omit if not used. |
-| ?bitrateKbps | UInt32 | 0x09 | Negotiated bitrate in kbps. | None | Omit if not used. |
+| ?frameRate | UInt32 | 0x08 | Negotiated frame rate; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x09 | Negotiated bitrate in kbps; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
 | streamProfile | String | 0x0A | Normalized stream profile. | maxLength=64 | N/A |
 | cursorUnit | Enum | 0x0B | STREAM cursor unit. | None | N/A |
 | ?syncGroupId | String | 0x0C | Synchronization group identifier. | maxLength=128 | Omit if not used. |
@@ -3222,7 +3267,7 @@ Type: `VideoCloseStreamParams`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
 | ?peerRole | Enum | 0x02 | Peer role in this stream. | None | Omit if not used. |
-| ?reason | Enum | 0x03 | Close reason. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Close reason. | enum=receiver_closed/user_stop/not_needed/source_disconnected/producer_stopped/session_lost/receiver_timeout/encodingReconfigure/error | Omit if not used. |
 | ?finalCursor | UInt64 | 0x04 | Last processed cursor value. | None | Omit if not used. |
 
 #### Response Fields
@@ -3233,7 +3278,7 @@ Type: `VideoCloseStreamResult`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | streamId | UInt32 | 0x01 | Closed stream identifier. | None | N/A |
 | state | Enum | 0x02 | Close state, such as closing, closed, or failed. | None | N/A |
-| ?reason | Enum | 0x03 | Final close reason. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Final close reason. | enum=receiver_closed/user_stop/not_needed/source_disconnected/producer_stopped/session_lost/receiver_timeout/encodingReconfigure/error | Omit if not used. |
 | ?alreadyClosed | Boolean | 0x04 | Whether the stream was already terminal before this request. | None | Default: false |
 
 ---
@@ -3277,6 +3322,8 @@ Type: `VideoStreamState`
 | ?lastCursor | UInt64 | 0x09 | Last known cursor value. | None | Omit if not used. |
 | ?keyFrameRequested | Boolean | 0x0A | Whether a key frame has been requested and is pending. | None | Omit if not used. |
 | ?failureReason | Enum | 0x0B | Failure reason when state is failed. | None | Omit if not used. |
+| ?frameRate | UInt32 | 0x0C | Effective negotiated video frame rate; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x0D | Effective negotiated video bitrate in kbps; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
 
 ---
 
@@ -3843,7 +3890,7 @@ Type: `CastBackendChangedEvent`
 
 ### cast.flowControlChanged
 
-Emitted when receiver-local cast flow policy or low-frequency flow statistics change.
+Emitted when receiver-local cast flow policy, video stream parameters, or low-frequency flow statistics change.
 
 - Event ID: `0x160C`
 - Domain: `cast`
@@ -3851,7 +3898,7 @@ Emitted when receiver-local cast flow policy or low-frequency flow statistics ch
 - Status: `draft`
 - Severity: `info`
 - Added in v1.0.0
-- Trigger: `cast.setRenderFps`, `cast.setFlowPolicy`, `diagnostics sample`
+- Trigger: `cast.setRenderFps`, `cast.setFlowPolicy`, `cast.setVideoStreamParams`, `diagnostics sample`
 - Required Capabilities: `cast.flowControl`
 
 #### Payload Fields
@@ -3862,8 +3909,10 @@ Type: `CastFlowControlChangedEvent`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | changedFields | Array<String> | 0x01 | Field names changed or sampled by this event. | array.itemType=string | N/A |
 | state | CastFlowControlState | 0x02 | Flow control state after the change or sample. | None | N/A |
-| ?reason | Enum | 0x03 | Change or sampling reason. | enum=manualFlowControl/diagnosticsSample/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?reason | Enum | 0x03 | Change or sampling reason. | enum=manualFlowControl/videoStreamParams/videoStreamReconfigure/diagnosticsSample/sessionStarted/sessionStopped/unknown | Omit if not used. |
 | ?sampledAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+| ?sourceVideo | CastVideoStreamParamsState | 0x05 | Effective source video stream parameter state associated with this event. | None | Omit if not used. |
+| ?reconfigureId | String | 0x06 | Video stream reconfiguration operation id associated with this event. | maxLength=128 | Omit if not used. |
 
 ---
 
@@ -4427,6 +4476,8 @@ Type: `VideoStreamStateChangedEvent`
 | source | String | 0x03 | Bound video source. | maxLength=128 | N/A |
 | ?reason | Enum | 0x04 | State change reason. | None | Omit if not used. |
 | ?stats | VideoStreamStats | 0x05 | Optional bounded stream statistics. | None | Omit if not used. |
+| ?frameRate | UInt32 | 0x06 | Effective video frame rate at the time of this event; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x07 | Effective video bitrate in kbps at the time of this event; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
 
 ---
 
@@ -4850,6 +4901,31 @@ Summary of a cast source device or local AXTP sender.
 
 ---
 
+## CastVideoStreamParamsState
+
+Desired and effective cast source video stream parameters and reconfiguration state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local cast session id. | maxLength=128 | Omit if not used. |
+| ?source | String | 0x02 | Source identifier whose video stream parameters are represented. | maxLength=128 | Omit if not used. |
+| ?desiredFrameRate | UInt32 | 0x03 | Requested video encoder frame rate, if one is pending or configured; zero is invalid. | min=1 | Omit if not used. |
+| ?desiredBitrateKbps | UInt32 | 0x04 | Requested video encoder bitrate in kbps, if one is pending or configured; zero is invalid. | min=1 | Omit if not used. |
+| ?effectiveFrameRate | UInt32 | 0x05 | Effective encoded video frame rate currently applied by the source. | min=1 | Omit if not used. |
+| ?effectiveBitrateKbps | UInt32 | 0x06 | Effective encoded video bitrate in kbps currently applied by the source. | min=1 | Omit if not used. |
+| ?streamProfile | String | 0x07 | Effective video STREAM profile. | maxLength=64 | Omit if not used. |
+| ?encoder | String | 0x08 | Encoder or encoder profile selected for the source video stream. | maxLength=128 | Omit if not used. |
+| ?reconfigureId | String | 0x09 | Most recent video stream reconfiguration operation id. | maxLength=128 | Omit if not used. |
+| ?state | Enum | 0x0A | Current source video stream reconfiguration state. | enum=idle/pending/closing/opening/streaming/failed/rolledBack | Omit if not used. |
+| ?phase | Enum | 0x0B | Current source video stream lifecycle phase during reconfiguration. | enum=idle/pending/closing/opening/streaming/failed/rolledBack | Omit if not used. |
+| ?previousStreamId | UInt32 | 0x0C | Previous active downstream video stream id when a reconfiguration replaces it. | None | Omit if not used. |
+| ?activeStreamId | UInt32 | 0x0D | Active downstream video stream id, if one is established. | None | Omit if not used. |
+| ?rollbackApplied | Boolean | 0x0E | Whether the previous stream parameters were restored after a failed reconfiguration. | None | Omit if not used. |
+| ?lastError | CastLastError | 0x0F | Last reconfiguration or stream lifecycle error, when available. | None | Omit if not used. |
+| ?changedFields | Array<String> | 0x10 | Video parameter fields changed by the most recent operation. | array.itemType=string | Omit if not used. |
+
+---
+
 ## ControlAcceptBody
 
 Kind: `object`
@@ -5270,7 +5346,7 @@ Bounded runtime statistics for a video stream.
 | 0x0803 | MEDIA_CODEC_UNSUPPORTED | video | error | No | stable | Requested media codec or sample format is unsupported. |
 | 0x0804 | MEDIA_RESOLUTION_UNSUPPORTED | video | error | No | stable | Requested video resolution is unsupported. |
 | 0x0805 | MEDIA_FRAMERATE_UNSUPPORTED | video | error | No | stable | Requested video frame rate is unsupported. |
-| 0x0806 | MEDIA_BITRATE_UNSUPPORTED | video | error | No | draft | Requested media bitrate is unsupported. |
+| 0x0806 | MEDIA_BITRATE_UNSUPPORTED | video | error | No | stable | Requested media bitrate is unsupported. |
 | 0x0807 | MEDIA_STREAM_START_FAILED | video | warning | Yes | stable | Device failed to start the requested media stream. |
 | 0x0808 | MEDIA_STREAM_STOP_FAILED | video | warning | Yes | draft | Device failed to stop the media stream. |
 | 0x0809 | MEDIA_FRAME_DROPPED | video | warning | Yes | draft | Media frame was dropped. |
