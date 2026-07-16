@@ -116,10 +116,10 @@ Case-level `semantic.kind` 和 step `role`（如 `trigger`、`degraded`、`obser
 
 | Required case | 必测行为 |
 |---|---|
-| `stream.video_stream_params_idle_open` | source 没有 active video stream 时直接 `video.openStream`，不得发送 close；结果回显 negotiated frame rate / bitrate。 |
-| `stream.video_stream_params_active_reconfigure` | active stream 必须按 `closeStream(old, reason=encodingReconfigure)`、terminal closed、`openStream(peerRole=transmitter, new params)` 顺序替换；旧 streamId 作废，音频及 `syncGroupId` 保持。 |
+| `stream.video_stream_params_idle_open` | source 完全没有 active audio/video stream 时，直接以新 streamId 和新 `syncGroupId` 建立完整 audio/video AV pair，不得发送 close；结果回显 negotiated frame rate / bitrate。存在 partial media state 时不得按 idle 处理。 |
+| `stream.video_stream_params_active_reconfigure` | active 音视频 pair 必须先分别 `closeStream` 并等待两路 terminal `closed` barrier，再以新 streamId 和共享的新 `syncGroupId` 分别 `openStream(peerRole=transmitter)`；视频 close 使用 `reason=encodingReconfigure`，且 `applied` 只能在两路 open result 之后。 |
 | `stream.video_stream_params_precedence` | `video.openStream` 显式值覆盖 session 参数，且显式值不持久化到 session。 |
-| `stream.video_stream_params_rollback` | 新 open 返回 `MEDIA_FRAMERATE_UNSUPPORTED`、`MEDIA_BITRATE_UNSUPPORTED` 或 `MEDIA_STREAM_START_FAILED` 时，尝试旧参数恢复；分别验证 `rolledBack + rollbackApplied` 和恢复失败时 `failed + 无 active stream`。 |
+| `stream.video_stream_params_rollback` | 新 open 返回 `MEDIA_FRAMERATE_UNSUPPORTED`、`MEDIA_BITRATE_UNSUPPORTED` 或 `MEDIA_STREAM_START_FAILED` 时，先完成 audio/video 双 close barrier，再以 fresh `syncGroupId` 双路新 open；清理 partial replacement 后尝试旧参数恢复，分别验证 `rolledBack + rollbackApplied` 和失败时无 complete active AV pair。 |
 | `stream.video_stream_params_validation` | 空更新、字段与 `resetFields` 冲突、profile 越界以及重配置并发请求分别返回 `INVALID_ARGUMENT`、媒体能力错误或 `BUSY`。 |
 
 不支持 source encoder 参数或 active reconfigure 的 UxPlay/AirPlay receiver 不得模拟成功，应返回 `NOT_SUPPORTED`；该降级不影响同一 session 的其他 RPC。
