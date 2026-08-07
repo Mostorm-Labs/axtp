@@ -82,3 +82,6 @@
 | `0x1704` | `software.getUpdatePolicy` | software | draft | SoftwareGetUpdatePolicyParams | SoftwareUpdatePolicy | - |
 | `0x1705` | `software.setUpdatePolicy` | software | draft | SoftwareSetUpdatePolicyParams | SoftwareSetUpdatePolicyResult | - |
 | `0x1706` | `software.resetUpdatePolicy` | software | draft | SoftwareResetUpdatePolicyParams | SoftwareUpdatePolicy | - |
+| `0x1801` | `sport.getEventDetectionCapabilities` | sport | draft | GetEventDetectionCapabilitiesParams | GetEventDetectionCapabilitiesResult | - |
+| `0x1802` | `sport.getEventDetectionConfig` | sport | draft | GetEventDetectionConfigParams | SportEventDetectionState | - |
+| `0x1803` | `sport.setEventDetectionConfig` | sport | draft | SetEventDetectionConfigParams | SetEventDetectionConfigResult | - |

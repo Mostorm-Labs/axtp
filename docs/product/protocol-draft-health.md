@@ -15,13 +15,13 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 
 | 指标 | 数量 |
 |---|---:|
-| 草案文件 | 110 |
+| 草案文件 | 112 |
 | 已生成草案文件 | 21 |
-| 已生成 method/event 事实 | 117 |
-| Method 小节 | 442 |
-| 紧凑 method 示例 | 442 |
+| 已生成 method/event 事实 | 122 |
+| Method 小节 | 445 |
+| 紧凑 method 示例 | 445 |
 | Method 示例缺口 | 0 |
-| JSON 示例 | 1199 |
+| JSON 示例 | 1211 |
 | 无效 JSON 示例 | 0 |
 | 模板化示例提示 | 0 |
 | 模板化开放问题 | 0 |
@@ -54,6 +54,7 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | room | P7 | 5 | 0 | 0 | 20 | 20/20 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | signage | P7 | 2 | 1 | 6 | 9 | 9/9 | ASK 12 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
 | software | P7 | 2 | 2 | 8 | 6 | 6/6 | ASK 37 / DRAFT 24 / FIX 1 / BLOCKER 0 | 0 | 0 | 先处理 blocker/fix |
+| sport | 未排期 | 2 | 0 | 5 | 3 | 3/3 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 维护 generated 合同 |
 | storage | 待排期 | 6 | 0 | 0 | 24 | 24/24 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | stream | P0 data-plane plumbing | 2 | 1 | 12 | 10 | 10/10 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 维护 generated 合同 |
 | system | P1 | 6 | 0 | 0 | 28 | 28/28 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |

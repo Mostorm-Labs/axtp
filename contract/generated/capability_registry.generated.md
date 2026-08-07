@@ -27,3 +27,5 @@
 | `0x1607` | `cast.status` | cast | draft | object | CastStatusCapability |
 | `0x1701` | `software.config` | software | draft | object | SoftwareConfigCapability |
 | `0x1702` | `software.updatePolicy` | software | draft | object | SoftwareUpdatePolicyCapability |
+| `0x1801` | `sport.eventDetection` | sport | draft | object | SportEventDetectionCapabilities |
+| `0x1802` | `sport.basketball` | sport | draft | object | SportBasketballCapability |

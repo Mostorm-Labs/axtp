@@ -291,6 +291,30 @@
       "type": "object",
       "schema": "SoftwareUpdatePolicyCapability",
       "idHex": "0x1702"
+    },
+    {
+      "id": 6145,
+      "name": "sport.eventDetection",
+      "domain": "sport",
+      "status": "draft",
+      "description": "Device supports cross-sport event detection capability discovery, per-sport toggle control, runtime state events, and unified sport event delivery.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "SportEventDetectionCapabilities",
+      "idHex": "0x1801"
+    },
+    {
+      "id": 6146,
+      "name": "sport.basketball",
+      "domain": "sport",
+      "status": "draft",
+      "description": "Device supports basketball shot and goal event semantics through sport.eventDetection.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "SportBasketballCapability",
+      "idHex": "0x1802"
     }
   ]
 }

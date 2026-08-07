@@ -782,6 +782,50 @@
         "software.updatePolicy"
       ],
       "idHex": "0x1702"
+    },
+    {
+      "id": 6145,
+      "bitOffset": 0,
+      "name": "sport.eventDetectionStateChanged",
+      "domain": "sport",
+      "status": "draft",
+      "description": "Emitted when one sport type changes effective enabled state, runtime state, availability, or apply state.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "eventSchema": "SportEventDetectionStateChangedEvent",
+      "severity": "info",
+      "trigger": [
+        "sport.setEventDetectionConfig",
+        "device restart",
+        "restore default",
+        "local policy",
+        "detector availability change"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "idHex": "0x1801"
+    },
+    {
+      "id": 6146,
+      "bitOffset": 1,
+      "name": "sport.eventDetected",
+      "domain": "sport",
+      "status": "draft",
+      "description": "Emitted when an enabled sport detector identifies a registered business event using a sport and event type discriminator.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "eventSchema": "SportEventDetectedEvent",
+      "severity": "info",
+      "trigger": [
+        "registered sport event detected",
+        "detector ready",
+        "detector degraded when policy permits"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "idHex": "0x1802"
     }
   ]
 }

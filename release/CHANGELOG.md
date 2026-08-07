@@ -4,6 +4,47 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.14.0
+
+Cross-sport event detection registry and VM33PRO basketball shot/goal event contract.
+
+### Protocol
+
+- Adds the `sport` domain and the shared `sport.eventDetection` control surface for capability discovery, per-sport detection toggles, runtime state, and unified business events.
+- Adds `sport.getEventDetectionCapabilities`, `sport.getEventDetectionConfig`, and `sport.setEventDetectionConfig`.
+- Adds `sport.eventDetectionStateChanged` and `sport.eventDetected` for device-to-App WebSocket event delivery.
+- Fixes the MVP lifecycle policy for VM33PRO: one active sport at a time, persistent detection toggles, factory-reset default disabled, and no new events after the detector reaches `disabled`.
+
+### Registry
+
+- Registers `sport` at high-byte `0x18` with method IDs `0x1801`-`0x1803`, event IDs `0x1801`-`0x1802`, and capability IDs `0x1801`-`0x1802`.
+- Adds `sport.basketball` as a specialization capability with `shot` and `goal` event types.
+- Reuses common errors; no basketball-specific error code or legacy mapping is added.
+
+### Schemas
+
+- Adds cross-sport capability, state, state-change, and unified event envelope schemas.
+- Adds `SportEventDetails`, `SportBasketballShotDetails`, and `SportBasketballGoalDetails`.
+- Requires `eventId`, `sequence`, `occurredAt`, and `details` in detected-event payloads; `confidence` and `trainingSessionId` remain optional.
+- Requires every basketball `goal` to reference `shotId`; one `shot` produces at most one `goal`.
+
+### Conformance
+
+- Generator source validation, Protocol IR validation, generated drift checks, and the generator test suite pass for the expanded registry.
+- No new hand-written conformance vectors are added in this release; MVP does not promise disconnect replay, history queries, or exactly-once delivery.
+
+### Migration
+
+- Existing runtimes remain compatible when they do not advertise `sport.eventDetection` or `sport.basketball`.
+- Basketball-capable runtimes should use the shared event-detection methods and route `sport.eventDetected` by `sportType` and `eventType`.
+- Any future replay/history capability or legacy adapter requires a separate reviewed amendment.
+
+### Runtime Impact
+
+- Runtime and SDK teams should bind to `spec/v0.14.0`, regenerate protocol metadata, implement or explicitly degrade the new sport capabilities, and run the generated validation/conformance checks.
+- Existing CONTROL/RPC/STREAM wire layout and previously registered domains remain backward compatible with `spec/v0.13.0`.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.13.0
 
 NT10 source video encoder parameter control through the Nearcast cast flow-control surface.

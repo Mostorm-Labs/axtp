@@ -39,3 +39,5 @@
 | `0x160C` | `cast.flowControlChanged` | cast | draft | CastFlowControlChangedEvent |
 | `0x1701` | `software.configChanged` | software | draft | SoftwareConfigChangedEvent |
 | `0x1702` | `software.updatePolicyChanged` | software | draft | SoftwareUpdatePolicyChangedEvent |
+| `0x1801` | `sport.eventDetectionStateChanged` | sport | draft | SportEventDetectionStateChangedEvent |
+| `0x1802` | `sport.eventDetected` | sport | draft | SportEventDetectedEvent |
