@@ -35,7 +35,8 @@
 | RPC Session | 通过 RPC Hello / Identify / Identified 建立的应用 session。 |
 | Stream Context | 发送 STREAM 数据前，由已采纳 RPC method 或 profile 创建的单 stream 元数据。 |
 | Endpoint | 可以被 AXTP 逻辑寻址并独立接收或产生 RPC 的实体。Endpoint 可以是设备、Agent、应用实例、Cloud service、Room、Software service 或其他逻辑资源，不等同于物理连接。 |
-| Endpoint ID (`endpointId`) | Endpoint 的稳定 opaque string identity。在同一寻址/管理域内 MUST 唯一；它不是 `sid`、Frame `SourceId/DestinationId`、IP、USB path 或当前 parent Agent。 |
+| Endpoint Key (`endpointKey`) | 用于确定性生成 AXTP-native `endpointId` 的稳定 identity input。相同逻辑 Endpoint 的 `endpointKey` MUST 始终保持字节级一致；不同逻辑 Endpoint MUST NOT 共用同一个 `endpointKey`。 |
+| Endpoint ID (`endpointId`) | Endpoint 的稳定 opaque string identity。在同一寻址/管理域内 MUST 唯一；AXTP-native sender 根据稳定 `endpointKey` 确定性生成，同一 `endpointKey` 每次得到相同 `endpointId`。它不是 `sid`、Frame `SourceId/DestinationId`、IP、USB path 或当前 parent Agent。 |
 | Endpoint Provider | 当前节点内部负责到达或执行某个 Endpoint 的 provider，例如本地业务实现、协议 adapter、child AXTP session 或下级 Agent session。Provider 是本地路由事实，不是 RPC wire 路径。 |
 | Endpoint Projection | Agent/relay 将下级 provider 中可寻址 Endpoint 平铺到自己的可见 Endpoint 集合，使上游只使用最终 `endpointId`，而无需知道多级 Agent 拓扑。 |
 | `sessionId` | 可选的 CONTROL link identifier，用于 trace 或未来 resume；不是业务 session id。 |
