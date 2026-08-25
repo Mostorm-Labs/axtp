@@ -21,7 +21,7 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | Method 小节 | 442 |
 | 紧凑 method 示例 | 442 |
 | Method 示例缺口 | 0 |
-| JSON 示例 | 1199 |
+| JSON 示例 | 1200 |
 | 无效 JSON 示例 | 0 |
 | 模板化示例提示 | 0 |
 | 模板化开放问题 | 0 |
