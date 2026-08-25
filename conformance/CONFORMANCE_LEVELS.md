@@ -14,6 +14,8 @@ Conformance level 是测试入口，不是协议功能清单的替代品。具�
 | L3 | Low-bandwidth / HID / BLE profile | 低带宽、短包、分片、降级 profile。 | MCU、BLE、UART、HID-64 等受限链路。 |
 | L4 | Business domain conformance | 已 generated 业务 domain 的 method/event/schema 行为。 | 交付设备、业务 SDK、客户 release runtime。 |
 
+`endpoint-relay` 是独立的 optional behavior level，不改变 L0-L4 的传输/业务分层。Cloud、Agent、Gateway 或需要通过 `m.src` / `m.dst` 代理下级 Endpoint 的 runtime 可以额外声明它；普通直连设备或只实现 JSON_BINARY 的 MCU 不需要声明。
+
 ## L0: WebSocket JSON RPC Only
 
 | 项 | 要求 |
@@ -21,7 +23,7 @@ Conformance level 是测试入口，不是协议功能清单的替代品。具�
 | 适用 runtime | App、Web、Node、Python、WS-only mock server、云端控制面。 |
 | 必须 profile | `websocket-jsonrpc`，以及 shared `core` RPC 行为。 |
 | 必须 case 分类 | `session/**`、`rpc/**`、`error/**` 中与 WS-JSON 相关的 case。 |
-| 可选 case | `capability/**`、`event/**`，取决于 runtime 声明。 |
+| 可选 case | `capability/**`、`event/**`、`endpoint-relay`，取决于 runtime 声明。 |
 | 可声明不支持 | `framed-binary`、`stream`、低带宽 profile。 |
 
 L0 不要求 Frame Header、CRC16、CONTROL、STREAM data packet 或 JSON_BINARY RPC Header。
@@ -33,7 +35,7 @@ L0 不要求 Frame Header、CRC16、CONTROL、STREAM data packet 或 JSON_BINARY
 | 适用 runtime | TCP、USB HID、设备端 C/C++ runtime、需要 framed wire 的 SDK、Node TCP mock-server。 |
 | 必须 profile | `framed-binary`，以及 shared `core` RPC 行为。 |
 | 必须 case 分类 | `handshake/**`、`session/**`、`rpc/**`、`error/**`。 |
-| 可选 case | `capability/**`、`event/**`、`stream/**`。 |
+| 可选 case | `capability/**`、`event/**`、`stream/**`、对象编码 `endpoint-relay`。 |
 | 可声明不支持 | STREAM、低带宽 profile、业务 domain conformance。 |
 
 L1 必须完成 `CONTROL OPEN / ACCEPT` 后才允许进入 RPC Hello / Identify / Identified。
@@ -74,6 +76,20 @@ L3 当前是规划等级。没有对应 profile 和 case 前，runtime 不应宣
 
 L4 只验收已经 generated 的业务 domain。`workspace/protocol/**` draft-only 能力不能直接成为 L4 必测项。
 
+## Optional: Endpoint Relay
+
+`endpoint-relay` 验收对象编码 RPC 的稳定 Endpoint address 与透明 relay 语义。它不是新的网络路由协议，也不要求 runtime 实现任意 Agent mesh。
+
+声明该 level 的 runtime 必须覆盖：
+
+| Case | 必测行为 |
+|---|---|
+| `rpc.endpoint_metadata_compatibility` | 缺失 `m` 的旧 `{sid,op,d}` 消息仍可用；未知 structurally-valid optional metadata 不使 session 失效；Request/Response 的 endpoint address 正确反转。 |
+| `rpc.endpoint_relay_addressing` | `m.dst` 是唯一 string destination；relay 通过本地 `endpointId -> provider` 解析目标，不要求 wire route/nextHop。 |
+| `event.endpoint_fanout_addressing` | Event 可省略 `m.dst` 并由 subscription/policy fanout；多份 outbound copy 保持原始 `m.src`，每份最多一个 string `m.dst`。 |
+
+该 level 当前只适用于支持 `{ sid, op, m?, d }` 的 JSON/CBOR/MSGPACK 等对象编码 RPC。现有 JSON_BINARY 15B fixed header 不因该 level 改变，也不隐式获得 `m.src` / `m.dst`。
+
 ## 如何声明不支持
 
 Runtime 可以不支持某个 level 或 profile，但必须显式声明。
@@ -104,6 +120,21 @@ profiles:
 levels:
   - L0
   - L1
+unsupported:
+  - stream
+```
+
+Cloud/Agent relay runtime 可以额外声明：
+
+```yaml
+runtime: axent
+spec: spec/v0.0.x
+profiles:
+  - websocket-jsonrpc
+  - endpoint-relay
+levels:
+  - L0
+  - endpoint-relay
 unsupported:
   - stream
 ```
