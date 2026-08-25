@@ -196,11 +196,46 @@ Endpoint 是可以被 AXTP 逻辑寻址并独立接收或产生 RPC 的实体。
 
 - MUST 是非空 string，并 SHOULD 不超过 128 UTF-8 bytes；
 - MUST 在所属寻址/管理域中唯一；
-- SHOULD 在 transport 重连、RPC `sid` 变化和进程/设备重启后保持稳定，只要实现能够持久化身份；
+- MUST 对同一个逻辑 Endpoint 稳定：transport 重连、RPC `sid` 变化和进程/设备重启不得导致新的 `endpointId`；
 - MUST NOT 从当前 `sid`、request id、IP address、TCP/WebSocket connection id、USB path、BLE connection handle 或当前 parent Agent 直接推导；
 - MUST NOT 被接收方按前缀解析来决定 Endpoint type；类型和拓扑属于 discovery/registry/business data。
 
-AXTP-native App、Agent、Cloud service 或其他软件 Endpoint SHOULD 在首次创建时生成随机/时间有序的持久唯一 ID，并持久化后复用。物理设备优先使用设备证书/公钥、持久 device UUID 或 vendor/product/serial 等稳定 identity evidence，在 IdentityStore 中解析到既有 `endpointId`；identity fingerprint 只是 resolve key，不是 `endpointId` 本身。无法获得可靠稳定 identity evidence 的设备 MAY 使用临时/弱 identity，但实现 MUST NOT 把 transport path 伪装成永久 Endpoint identity。
+AXTP-native Endpoint 使用一个稳定的 `endpointKey` 确定性生成 `endpointId`。规则固定为：
+
+```text
+canonicalInput = UTF-8("AXTP-ENDPOINT-v1|" + endpointKey)
+digest         = SHA-256(canonicalInput)
+endpointId     = "ep_" + lowerHex(digest[0..15])
+```
+
+也就是取 SHA-256 的前 16 bytes，以 32 个小写 hex 字符表示。AXTP-native sender 生成的 canonical `endpointId` 形态为：
+
+```text
+ep_<32 lowercase hex chars>
+```
+
+确定性规则：
+
+1. 相同 `endpointKey` MUST 每次生成完全相同的 `endpointId`；
+2. 不同逻辑 Endpoint MUST NOT 共用同一个 `endpointKey`；
+3. 一个 Endpoint 一旦选择 `endpointKey`，在该 Endpoint 生命周期内 MUST NOT 因重启、重连、换 IP、换 USB port 或更换 parent Agent 而改变；
+4. receiver MUST 把 `endpointId` 当作 opaque string。为了兼容 legacy/external sender，receiver MUST NOT 要求收到的 `endpointId` 一定符合 `ep_<32hex>` canonical sender form，只要该值是合法的非空 Endpoint ID。
+
+`endpointKey` 本身不在 wire 上发送，只作为本地稳定身份输入。推荐来源保持简单：
+
+| Endpoint | `endpointKey` 建议来源 |
+|---|---|
+| App | `app:<productNamespace>:<persistentInstallationId>`；`persistentInstallationId` 首次安装生成一次并持久化。 |
+| Agent | `agent:<productNamespace>:<persistentInstallationId>`；首次安装生成一次并持久化。 |
+| Cloud / Service / Room / Software | `service:<namespace>:<stableResourceId>`；使用管理系统已经稳定存在的资源 ID。 |
+| AXTP-native Device | 优先使用设备自身持久 `deviceUuid` 或稳定 public-key identity。 |
+| Legacy / Child Device | 使用协议能够稳定取得的设备 identity，例如 `deviceUuid`，其次 stable public key，再其次 `vendor + product + serialNumber` 的 canonical identity。 |
+
+对于软件 Endpoint，首次创建一个随机 UUID 作为 `persistentInstallationId` 是允许的；关键不是每次重新生成 UUID，而是**生成一次、持久化、以后始终用同一个值作为 `endpointKey` 的组成部分**。删除该持久 identity 并重新安装/重新 provision 表示创建了新的逻辑 Endpoint，因此 MAY 得到新的 `endpointId`。
+
+对于物理 Device，`endpointKey` MUST 来自设备本身的稳定 identity，而不是当前 Agent。这样同一个 Device 从 Agent A 移到 Agent B，只要两边取得相同的稳定 device identity，就会确定性得到相同 `endpointId`。产品/profile SHOULD 固定 identity evidence 的选择优先级，避免同一设备因为后续出现新的 identity field 而切换 `endpointKey`。
+
+无法取得或持久化稳定 `endpointKey` 的对象不能保证稳定 Endpoint identity。此类对象 SHOULD 只作为 provider-local `childId` / 临时资源存在，直到完成稳定 identity 绑定后再向上游投影为可寻址 Endpoint。Identity fingerprint MAY 用于构造或查找 `endpointKey`，但 fingerprint 本身不是 wire `endpointId`。
 
 ### RPC message metadata
 
