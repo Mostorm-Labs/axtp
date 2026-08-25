@@ -107,6 +107,22 @@
         }
       ]
     },
+    "rpcMetadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "src": { "type": "string", "minLength": 1 },
+        "dst": { "type": "string", "minLength": 1 }
+      }
+    },
+    "expectRpcMetadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "src": { "$ref": "#/$defs/typeExpectation" },
+        "dst": { "$ref": "#/$defs/typeExpectation" }
+      }
+    },
     "rpc": {
       "type": "object",
       "required": ["op", "requestId"],
@@ -143,6 +159,7 @@
           ]
         },
         "op": { "type": "string", "minLength": 1 },
+        "m": { "$ref": "#/$defs/rpcMetadata" },
         "d": { "type": "object", "additionalProperties": true }
       }
     },
@@ -161,6 +178,7 @@
       "properties": {
         "sid": { "$ref": "#/$defs/typeExpectation" },
         "op": { "type": "string", "minLength": 1 },
+        "m": { "$ref": "#/$defs/expectRpcMetadata" },
         "d": { "type": "object", "additionalProperties": true }
       }
     },
