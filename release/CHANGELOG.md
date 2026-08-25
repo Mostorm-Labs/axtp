@@ -4,6 +4,44 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.15.0
+
+Object-RPC endpoint relay addressing, merged through PR #11 at authority commit `2d88ff4c369411d8e3afbb551886d423bd63bb82`.
+
+### Protocol
+
+- Adds optional object-RPC endpoint addressing metadata for a caller-selected destination endpoint and a relay-selected source endpoint, while preserving operation on peers that omit endpoint metadata.
+- Defines deterministic endpoint identity keys and endpoint-ID assignment so a relay can address child or virtual endpoints consistently.
+- Defines single-destination RPC relay and event fanout semantics, including source endpoint metadata for relayed events.
+- Clarifies the endpoint-relay codec representation in the core and codec specifications.
+- Incorporates the previously merged cast AV reconfiguration documentation: active NT10 encoder parameter changes rebuild the complete audio/video pair with new stream IDs and a new shared sync group.
+
+### Registry
+
+- Does not add or renumber generated method, event, capability, error, or schema IDs.
+- Keeps endpoint relay metadata optional and compatible with implementations that do not advertise the endpoint-relay profile.
+
+### Schemas
+
+- Extends the conformance case schema to express endpoint metadata and relay addressing expectations without changing existing generated business schemas.
+
+### Conformance
+
+- Adds the `endpoint-relay` profile and cases for endpoint metadata compatibility, single-destination RPC relay addressing, and event fanout addressing.
+- Registers endpoint relay requirements in the conformance-level documentation and manifest.
+- Updates the video-stream parameter reconfiguration cases to reflect full audio/video replacement and rollback semantics.
+
+### Migration
+
+- Existing object-RPC implementations remain valid when endpoint metadata is absent; relays and endpoints that support the optional profile must use the defined deterministic identity and addressing rules.
+- Runtime implementations of `cast.setVideoStreamParams` must treat active reconfiguration as complete AV-pair replacement, invalidating old stream IDs and sync group IDs.
+
+### Runtime Impact
+
+- Runtime and SDK teams that implement object-RPC endpoint relays should bind to `spec/v0.15.0`, add the optional endpoint-relay profile, and run the new relay conformance cases.
+- Runtime implementations of NT10 encoder parameter control should follow the clarified AV replacement lifecycle before advertising active video reconfiguration support.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.13.0
 
 NT10 source video encoder parameter control through the Nearcast cast flow-control surface.
