@@ -207,7 +207,14 @@ node --test rule-coverage.test.mjs
 0 fail
 ```
 
-This local evidence proves the pure relationship algorithm only. It does **not** replace the required full repository CI, YAML/schema integration, existing conformance validation, or release-artifact dry run.
+Static preflight also confirmed:
+
+```text
+validate-rule-coverage.mjs: node --check PASS
+Rule YAML: parse PASS
+```
+
+This local evidence proves the pure relationship algorithm and basic syntax only. It does **not** replace the required full repository CI, YAML/schema integration, existing conformance validation, or release-artifact dry run.
 
 ## 9. Why normative specs were not rewritten
 
