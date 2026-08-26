@@ -2,6 +2,8 @@ id: handshake.open_accept
 title: CONTROL OPEN / ACCEPT handshake
 since: spec/v0.0.2
 level: framed-binary
+authorityRules:
+  - CONTROL.SESSION.001
 profiles:
   - framed-binary
 
