@@ -1,0 +1,140 @@
+schemaVersion: 1
+program: AXTP Authority Governance v1
+protectedRelease: spec/v0.15.0
+protectedReleaseCommit: 1bf9e89ede12470e20733d4cea4e50edad989528
+migrationBranch: chatgpt/axtp-authority-governance-v1
+
+findings:
+  - id: AXTP-GOV-001
+    priority: P0
+    gate: G1
+    class: GOV-AMBIGUITY
+    title: Workspace proposals can claim runtime contract authority
+    status: open
+    evidence:
+      - workspace/protocol/README.md
+      - workspace/protocol/audio/audio.algorithm.md
+    expectedDisposition: Remove contract authority from workspace and link accepted proposals to canonical adoption targets.
+
+  - id: AXTP-GOV-002
+    priority: P0
+    gate: G2
+    class: GOV-AMBIGUITY
+    title: Release, protocol, registry, schema and wire version dimensions use overloaded names
+    status: open
+    evidence:
+      - contract/registry/version.yaml
+      - contract/registry/core/protocol_meta.yaml
+      - release/AXTP_SPEC_VERSIONING.zh-CN.md
+      - release/AXTP_RUNTIME_UPDATE_FLOW.md
+    expectedDisposition: Establish explicit SpecIdentity semantics while preserving compatibility aliases where required.
+
+  - id: AXTP-GOV-003
+    priority: P0
+    gate: G4
+    class: DERIVATION-DEFECT
+    title: Test-vector emitter hard-codes semantic vectors and binary truth instead of deriving them from SpecModel
+    status: open
+    evidence:
+      - tooling/generators/src/emitters/testVectors.ts
+      - contract/test-vectors/manifest.json
+    expectedDisposition: Introduce canonical vector recipes and derive current-core bytes from declared authority.
+
+  - id: AXTP-GOV-004
+    priority: P1
+    gate: G3
+    class: VERIFICATION-GAP
+    title: Normative requirements lack stable Rule IDs and explicit rule-to-conformance coverage
+    status: open
+    evidence:
+      - specs/20-core.md
+      - specs/30-registry.md
+      - conformance/manifest.yaml
+      - conformance/cases/
+    expectedDisposition: Seed stable Rule IDs and bidirectional Rule-to-Evidence traceability.
+
+  - id: AXTP-GOV-005
+    priority: P1
+    gate: G5
+    class: GOV-STRUCTURE
+    title: Backstage proposal, legacy and workflow material creates AI retrieval ambiguity
+    status: open
+    evidence:
+      - workspace/
+      - docs/superpowers/
+      - tooling/skills/
+    expectedDisposition: Define a compact frontstage retrieval set and machine-readable backstage boundaries.
+
+  - id: AXTP-GOV-006
+    priority: P1
+    gate: G5
+    class: GOV-STRUCTURE
+    title: Downstream consumer adoption evidence does not close back into AXTP authority
+    status: open
+    evidence:
+      - release/AXTP_RUNTIME_UPDATE_FLOW.md
+    expectedDisposition: Define evidence-backed consumer adoption status without fabricating downstream PASS results.
+
+  - id: AXTP-GOV-007
+    priority: P1
+    gate: G5
+    class: GOV-STRUCTURE
+    title: Repository review ownership is coarse and main currently has no branch protection
+    status: open
+    evidence:
+      - .github/CODEOWNERS
+      - github://Mostorm-Labs/axtp/branches/main
+    observed:
+      mainProtected: false
+      repositoryRulesets: []
+    expectedDisposition: Separate ownership for core, domains, verification, security and release/tooling; define required protected-branch policy outside protocol semantics.
+
+  - id: AXTP-GOV-008
+    priority: P1
+    gate: G5
+    class: GOV-STRUCTURE
+    title: Large domain-level registry authoring units reduce review and AI isolation
+    status: open
+    evidence:
+      - contract/registry/domains/
+    expectedDisposition: Plan feature-level canonical source units with deterministic domain aggregation and zero identifier/semantic change.
+
+  - id: AXTP-GOV-009
+    priority: P1
+    gate: G5
+    class: GOV-STRUCTURE
+    title: Proposal corpus remains larger and more duplicative than necessary for delta-oriented review
+    status: open
+    evidence:
+      - workspace/protocol/
+      - docs/product/protocol-draft-health.md
+    observed:
+      draftFiles: 110
+      methodSections: 442
+      jsonExamples: 1200
+      reviewAsk: 132
+      reviewDraft: 139
+    expectedDisposition: Retain proposal rationale/delta/open questions while projecting canonical facts from registry/generated authority.
+
+  - id: AXTP-GOV-010
+    priority: P1
+    gate: G5
+    class: VERIFICATION-GAP
+    title: Protocol security has repository reporting policy but no complete normative threat-model authority
+    status: open
+    evidence:
+      - SECURITY.md
+      - specs/
+    expectedDisposition: Define a future security-authority project and release gate without introducing new wire semantics inside G0-G5.
+
+  - id: AXTP-GOV-011
+    priority: P1
+    gate: G1
+    class: GOV-AMBIGUITY
+    title: Generated lifecycle wording and protocol stability wording are mixed across artifacts
+    status: open
+    evidence:
+      - workspace/protocol/README.md
+      - contract/generated/capability_registry.generated.md
+      - contract/mcp/method_registry.generated.json
+    expectedDisposition: Separate artifact lifecycle from protocol fact stability and eliminate overloaded status interpretation.
