@@ -1,6 +1,8 @@
-# AXTP 协议草案健康度
+# AXTP Protocol Proposal 健康度
 
-本页是产品和协议维护者查看草案健康度、示例质量和待确认问题密度的报告。它不是 runtime 实现合同；可实现事实仍以 `contract/**`、`specs/**` 和 `conformance/**` 为准。
+本页用于查看 proposal 健康度、示例质量、accepted proposal 数量和待确认问题密度。它不是 runtime 实现合同；可实现事实仍以 `contract/**`、适用的 `specs/**`、`conformance/**` 和 spec release identity 为准。
+
+特别注意：**accepted proposal 与 generated fact 是两种不同 authority class**。本页分别统计，不再使用“已生成草案”这一混合概念。
 
 本页是 release artifact-safe 摘要：只展示 domain 级计数和治理状态，不列后台 `workspace/` 文件路径。维护者需要文件级队列时，可运行脚本的 `--json` 模式在本地分析。
 
@@ -15,9 +17,9 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 
 | 指标 | 数量 |
 |---|---:|
-| 草案文件 | 110 |
-| 已生成草案文件 | 21 |
-| 已生成 method/event 事实 | 117 |
+| Proposal 文件 | 110 |
+| Accepted proposal | 21 |
+| Generated method/event facts | 117 |
 | Method 小节 | 442 |
 | 紧凑 method 示例 | 442 |
 | Method 示例缺口 | 0 |
@@ -34,7 +36,7 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 
 ## 领域健康矩阵
 
-| 领域 | 优先级 | 草案 | 已生成草案 | 已生成事实 | Method 数 | 示例覆盖 | Review 标记 | 模板示例 | 模板问题 | 建议动作 |
+| 领域 | 优先级 | Proposal | Accepted proposal | Generated facts | Method 数 | 示例覆盖 | Review 标记 | 模板示例 | 模板问题 | 建议动作 |
 |---|---|---:|---:|---:|---:|---:|---|---:|---:|---|
 | audio | 旁路高覆盖 / P0 stream | 12 | 2 | 13 | 54 | 54/54 | ASK 2 / DRAFT 7 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
 | auth | 待排期 | 3 | 0 | 0 | 12 | 12/12 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
@@ -55,6 +57,6 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | signage | P7 | 2 | 1 | 6 | 9 | 9/9 | ASK 12 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
 | software | P7 | 2 | 2 | 8 | 6 | 6/6 | ASK 37 / DRAFT 24 / FIX 1 / BLOCKER 0 | 0 | 0 | 先处理 blocker/fix |
 | storage | 待排期 | 6 | 0 | 0 | 24 | 24/24 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
-| stream | P0 data-plane plumbing | 2 | 1 | 12 | 10 | 10/10 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 维护 generated 合同 |
+| stream | P0 data-plane plumbing | 2 | 1 | 12 | 10 | 10/10 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 维护 canonical/generated authority |
 | system | P1 | 6 | 0 | 0 | 28 | 28/28 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | video | P0 stream | 12 | 1 | 9 | 51 | 51/51 | ASK 8 / DRAFT 14 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
