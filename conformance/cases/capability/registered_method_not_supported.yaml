@@ -2,6 +2,8 @@ id: capability.registered_method_not_supported
 title: Registered but unavailable method returns exact NOT_SUPPORTED
 since: spec/v0.0.2
 level: capability
+authorityRules:
+  - RPC.METHOD.002
 semantic:
   kind: registered_method_unavailable
 profiles:
