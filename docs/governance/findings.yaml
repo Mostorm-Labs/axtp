@@ -144,7 +144,7 @@ findings:
     gate: G5
     class: GOV-STRUCTURE
     title: Downstream consumer adoption evidence does not close back into AXTP authority
-    status: open
+    status: closed
     evidence:
       - release/AXTP_RUNTIME_UPDATE_FLOW.md
       - docs/governance/consumer-evidence/README.md
@@ -153,12 +153,18 @@ findings:
       - tooling/scripts/validate-consumer-evidence.mjs
       - tooling/scripts/consumer-evidence.test.mjs
       - tooling/scripts/validate-conformance.sh
+      - github://Mostorm-Labs/axtp/actions/runs/33020869297
     observed:
       initialConsumers: 6
       initialPassClaims: 0
       initialState: all-unverified
-    verificationPending:
-      - full repository CI must validate schema, semantic PASS gating and integration with the conformance validation entry point
+      functionalGateHead: 04559cd4df33dfbaa25f7c87f5b90baabf776e10
+      functionalGateRun: 33020869297
+    resolution:
+      - G5 established a repository-only consumer evidence ledger with explicit unverified, in-progress, pass, fail and stale states; it does not redefine Spec release or protocol authority.
+      - Semantic validation rejects duplicate consumer repositories and rejects adoptionStatus pass unless exact Spec lock, consumer implementation identity, declared profiles, conformance PASS, exact external CI run/tested commit and verification timestamp are present.
+      - The six known downstream repositories are seeded as unverified and the ledger contains zero fabricated PASS claims.
+      - Full Validate AXTP Spec run 33020869297 completed success on exact functional head 04559cd4df33dfbaa25f7c87f5b90baabf776e10; consumer evidence validation reported 6 consumers inside the conformance validation entry point.
     expectedDisposition: Define evidence-backed consumer adoption status without fabricating downstream PASS results.
 
   - id: AXTP-GOV-007
@@ -273,7 +279,7 @@ findings:
     gate: G5
     class: DERIVATION-DEFECT
     title: Generated human protocol Markdown embeds independent protocol facts outside ProtocolModel projection
-    status: open
+    status: closed
     evidence:
       - tooling/generators/src/emitters/protocolMarkdown.ts
       - tooling/generators/src/protocolProjectionFacts.ts
@@ -281,10 +287,15 @@ findings:
       - contract/registry/core/rpc_op.yaml
       - specs/20-core.md
       - contract/generated/protocol.md
+      - contract/generated/README.md
+      - github://Mostorm-Labs/axtp/actions/runs/33020869297
     observed:
       - Protocol Markdown previously embedded the Standard Frame header byte count and selected JSON RPC op numbers as emitter literals.
-      - G5 now derives those projection facts from canonical rpc_op.yaml and the normative Standard Frame field table without extending Protocol IR.
-      - Current authority values should preserve generated Markdown bytes; full generator tests/generated drift remain the required closure evidence.
-    verificationPending:
-      - full generator build, Vitest and generated-drift validation must prove the projection repair and byte-preserving output
+      - G5 derives those projection facts from canonical rpc_op.yaml and the normative Standard Frame field table without extending Protocol IR.
+      - Remaining fixed explanatory prose is explicitly non-authoritative reading guidance and cannot override Registry, specs, Protocol IR, Rule or conformance authority.
+    resolution:
+      - Numeric/layout protocol facts suitable for deterministic projection are loaded fail-closed through ProtocolProjectionFacts rather than authored as emitter literals.
+      - Fixed explanatory template prose is separated from protocol facts by the generated-directory authority contract in contract/generated/README.md.
+      - Full Validate AXTP Spec run 33020869297 completed success on exact functional head 04559cd4df33dfbaa25f7c87f5b90baabf776e10 with 56/56 generator tests, including the protocol Markdown authority-boundary mutation test.
+      - Source/Protocol IR validation and generated drift passed, proving the derivation repair preserves current generated output while removing independent numeric ownership from the emitter.
     expectedDisposition: Refactor generated human-readable framework/opcode prose to model-driven projections or explicitly separate non-authoritative explanatory template text from protocol facts.
