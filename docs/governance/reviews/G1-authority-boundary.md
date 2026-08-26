@@ -1,6 +1,6 @@
 # AXTP G1 — Authority Boundary Closure
 
-Status: **IN PROGRESS**  
+Status: **READY FOR FULL VERIFICATION**  
 Prerequisite: G0 PASS  
 Primary findings: `AXTP-GOV-001`, `AXTP-GOV-011`
 
@@ -27,11 +27,11 @@ contract: true
 generated: true
 ```
 
-Repository search found **21 active `workspace/protocol/**` proposals containing `contract: true`**. That was a path-class contradiction and an AI retrieval hazard.
+Repository search found **21 active `workspace/protocol/**` proposals containing `contract: true`**. This was both a path-class contradiction and an AI retrieval hazard.
 
-## 3. G1 target metadata model
+## 3. Authority Metadata v2
 
-Maintained `workspace/protocol/**` proposals converge to:
+Maintained `workspace/protocol/<domain>/<domain.feature>.md` proposals now use:
 
 ```yaml
 ---
@@ -45,19 +45,27 @@ lastReviewed: YYYY-MM-DD
 ---
 ```
 
-### Rules
+Rules:
 
 1. `authorityClass` is always `proposal` inside `workspace/protocol/**`.
-2. `lifecycle: accepted` means the proposal was adopted elsewhere; it does not make the proposal a contract.
-3. `protocolStability` describes the canonical protocol fact, not proposal authority.
+2. `lifecycle: accepted` means the proposal was adopted elsewhere; it never promotes the Markdown file into runtime authority.
+3. `protocolStability` describes the canonical protocol fact and is independent from proposal lifecycle.
 4. New proposals default to `lifecycle: captured` + `protocolStability: draft`.
-5. `adoptedBy` is one scalar primary canonical Registry owner. Secondary Registry/spec files belong in the Adoption/Amendment note.
-6. `contract`, `generated`, `status`, and `registry` are prohibited in migrated v2 proposal frontmatter.
-7. Current-state wording must never say a workspace proposal itself is directly implementable.
+5. `adoptedBy` is one scalar primary canonical Registry owner; secondary canonical sources belong in Adoption/Amendment notes.
+6. Migrated v2 proposal frontmatter prohibits `status`, `contract`, `generated`, and `registry`.
+7. Current-state wording must never claim that a workspace proposal itself is directly implementable.
+
+The key semantic distinction is:
+
+```text
+accepted != stable
+```
+
+A proposal may be accepted while its canonical protocol fact remains draft.
 
 ## 4. Retrieval rule
 
-After G1 closure, runtime/SDK/firmware implementation agents must treat these paths as non-contract regardless of proposal lifecycle:
+Runtime/SDK/firmware implementation agents must treat the following paths as non-contract regardless of lifecycle:
 
 ```text
 workspace/business/**
@@ -70,123 +78,115 @@ docs/superpowers/**
 tooling/skills/**
 ```
 
-They may be read for rationale, history, migration, evidence or protocol-authoring tasks only.
+These paths may be read for rationale, history, migration, evidence or protocol-authoring work only.
 
-## 5. Migration strategy
+## 5. Source fix
 
-### G1-A — Authoring source fix
-
-Fix the mechanism that creates proposals before migrating historical data:
-
-- protocol proposal reference template;
-- Stage 20 draft skill;
-- Stage 30 adoption skill;
-- Stage 40 amendment skill;
-- Stage 50 generation boundary;
-- workspace protocol README and conventions;
-- proposal status validator;
-- proposal health report vocabulary.
-
-### G1-B — Historical accepted proposal normalization
-
-For each active legacy accepted/generated proposal:
-
-- preserve protocol body and historical rationale;
-- migrate only authority metadata/current-state wording;
-- set `lifecycle: accepted` when canonical adoption is demonstrable;
-- set `protocolStability` from actual canonical Registry status, not from adoption state;
-- add scalar `adoptedBy` primary canonical owner;
-- do not edit method IDs, event IDs, schema fields, examples or wire semantics.
-
-Non-adopted legacy proposals may remain temporarily readable through the validator during G1; the source template prevents creating new legacy-format proposals. Broader proposal corpus normalization is G5 unless needed to remove active authority ambiguity.
-
-## 6. Source-fix checkpoint — 2026-08-26
-
-The authoring mechanism has been changed on `chatgpt/axtp-authority-governance-v1`:
+G1 fixes the mechanism before treating the historical corpus:
 
 | Surface | G1 behavior |
 |---|---|
-| Stage 20 template | emits `authorityClass: proposal`, `lifecycle: captured`, `protocolStability: draft`, empty `adoptedBy` |
+| Stage 20 proposal template | emits `authorityClass: proposal`, `lifecycle: captured`, `protocolStability: draft`, empty `adoptedBy` |
 | Stage 20 skill | cannot create `contract/generated/status/registry` shadow-authority metadata |
-| Stage 30 skill | adoption creates canonical Registry facts; proposal becomes `accepted`, never contract |
-| Stage 40 skill | amendment preserves proposal authority class; canonical source carries semantic change |
+| Stage 30 skill | adoption writes canonical Registry facts; proposal becomes accepted, never contract |
+| Stage 40 skill | amendment preserves proposal authority; semantic change occurs in canonical source |
 | Stage 50 skill | one-way `Registry -> IR -> generated`; does not read/write proposal authority metadata |
-| README / conventions | define absolute workspace non-contract rule and scalar `adoptedBy` |
-| status validator | validates template source, v2 metadata, scalar canonical `adoptedBy`, and direct-implementation prohibition |
-| health report | separates `Accepted proposal` from `Generated facts`; removes “generated draft” mixed concept |
+| README / conventions | absolute workspace non-contract rule and scalar `adoptedBy` |
+| status validator | validates the template source, v2 metadata, canonical `adoptedBy`, and direct-implementation prohibition |
+| proposal health report | separates `Accepted proposal` from `Generated facts` |
 
-RED baseline evidence is recorded in `docs/governance/reviews/G1-source-fix-red-baseline.md`.
+The pre-fix authoring defect is captured in `docs/governance/reviews/G1-source-fix-red-baseline.md`.
 
-This checkpoint is **not G1 PASS**. The historical accepted-proposal corpus must still close before the gate can pass.
+## 6. Historical accepted-proposal migration
 
-## 7. Historical migration state
-
-At the original baseline: 21 active proposals claimed `contract: true`.
-
-Already normalized in the current branch include the accepted `cast.*` set, `device.info`, `device.enrollment`, and `audio.algorithm`. `audio.algorithm` also now uses scalar:
-
-```yaml
-adoptedBy: contract/registry/domains/audio/domain.yaml
-```
-
-The remaining historical accepted proposals identified by the last status check are:
+Original baseline:
 
 ```text
-audio.stream
-firmware.update
-network.interface
-network.ip
-network.wifi
-network.ap
-signage.playlist
-software.config
-software.updatePolicy
-stream.flowControl
-video.stream
+active workspace/protocol proposals with contract:true = 21
 ```
 
-Canonical Registry review confirms all 11 are **accepted proposals whose current protocol facts are still `draft`**, so their target metadata is:
+Current branch:
 
-```yaml
-authorityClass: proposal
-lifecycle: accepted
-protocolStability: draft
-adoptedBy: contract/registry/domains/<domain>/domain.yaml
+```text
+active accepted/generated proposals still using contract:true = 0
 ```
 
-This distinction is intentional: **accepted != stable**.
+All 21 active shadow-authority proposals have been migrated to Authority Metadata v2, including the accepted `cast.*`, `audio.algorithm`, `audio.stream`, `device.info`, `device.enrollment`, `firmware.update`, `network.*`, `signage.playlist`, `software.*`, `stream.flowControl`, and `video.stream` surfaces.
+
+For each migrated proposal:
+
+- the proposal remains `authorityClass: proposal`;
+- `lifecycle: accepted` is used only where canonical adoption is demonstrable;
+- `protocolStability` is taken from the actual canonical Registry state rather than inferred from adoption;
+- `adoptedBy` points to the primary canonical Registry owner as a scalar path;
+- current-state wording says implementation must use canonical/generated/conformance authority;
+- no protocol IDs, field IDs, method/event semantics, schema semantics, wire formats or runtime behavior were intentionally changed.
+
+Canonical review confirmed that the last 11 migrated accepted proposals remain `protocolStability: draft`; `audio.algorithm` remains `stable` because its canonical Registry facts are actually stable. This verifies the lifecycle/stability split rather than flattening both dimensions.
+
+The final five large historical files were migrated mechanically with a guarded one-shot workflow. Before commit it asserted that, after masking the approved current-status rows, the document body remained byte-for-byte unchanged. The resulting migration commit was `2882548c753b65176a4e129cd287a9acd6f208ac`. The temporary migration workflow was removed immediately afterward.
+
+## 7. Targeted preflight evidence
+
+A one-shot G1 authority preflight was run before reopening the main migration PR.
+
+Successful run:
+
+```text
+GitHub Actions run: 32951426806
+Result: PASS
+```
+
+The run verified:
+
+- JavaScript syntax for `check-protocol-status.mjs` and `report-protocol-draft-health.mjs`;
+- local Markdown links;
+- plain-text repository paths;
+- Chinese-first frontstage navigation language;
+- protocol proposal template-noise rules;
+- proposal authoring source and Authority Metadata v2 consistency;
+- scalar canonical `adoptedBy` targets;
+- product domain matrix consistency;
+- generated protocol proposal-health report freshness;
+- `git diff --check`.
+
+The report generator refreshed `docs/product/protocol-draft-health.md` in commit `7349be2b9a1fd1d6e02b215e9cbc963f18513180`. The temporary preflight workflow was then removed.
+
+This targeted preflight is not a substitute for the repository's existing full `Validate AXTP Spec` workflow; that is the remaining G1 exit evidence.
 
 ## 8. Defect classification
 
-| Finding | Class | Disposition |
+| Finding | Class | Current disposition |
 |---|---|---|
-| AXTP-GOV-001 | GOV-AMBIGUITY | FIX-IN-GATE |
-| AXTP-GOV-011 | GOV-AMBIGUITY | FIX-IN-GATE |
-| legacy authoring template recreates shadow authority | GOV-AMBIGUITY / GOV-TOOLING | FIXED-IN-G1-SOURCE-CHECKPOINT; gate still open pending corpus migration |
-| duplicated proposal payload/reference material | GOV-STRUCTURE | DEFER to G5 unless required to remove authority ambiguity |
-| any canonical-vs-proposal semantic mismatch | DOC-DRIFT or PROTOCOL-SEMANTIC after review | do not silently resolve in G1 |
+| AXTP-GOV-001 | GOV-AMBIGUITY | READY-FOR-FULL-VERIFICATION |
+| AXTP-GOV-011 | GOV-AMBIGUITY | READY-FOR-FULL-VERIFICATION |
+| legacy authoring source recreates shadow authority | GOV-AMBIGUITY / GOV-TOOLING | FIXED-IN-G1 |
+| duplicated proposal payload/reference material | GOV-STRUCTURE | DEFER-WITH-OWNER: G5 |
+| any future canonical-vs-proposal semantic mismatch | DOC-DRIFT or PROTOCOL-SEMANTIC | must not be silently resolved in G1 |
 
-## 9. Five drift reviews — current state
+No G1 finding requires a protocol-semantic amendment.
+
+## 9. Five drift reviews
 
 ### Authority drift
 
-**FIX-IN-GATE.** Authoring source has been fixed; 11 historical accepted proposals still require metadata normalization before the original 21-file contradiction is fully closed.
+**PASS, PENDING FULL-CI CONFIRMATION.** Source creation rules and all 21 active accepted/generated shadow-authority proposals are migrated. `workspace/protocol/**` no longer has a runtime-contract exception.
 
 ### Semantic duplication
 
-**DEFER-WITH-OWNER (G5).** G1 changes classification, not the full 110-proposal corpus shape.
+**DEFER-WITH-OWNER: G5.** G1 closes authority ambiguity but intentionally does not shrink the full 110-proposal corpus.
 
 ### Derivation drift
 
-**PASS FOR CURRENT G1 SCOPE.** G1 changes authoring/governance tooling and proposal metadata, not Registry/Protocol IR/generated protocol facts.
+**PASS, PENDING FULL-CI CONFIRMATION.** G1 does not modify canonical Registry protocol facts or Protocol IR semantics. Stage 50 is explicitly one-way from Registry to generated authority.
 
 ### Verification drift
 
-**PASS FOR CURRENT G1 SCOPE, FINAL EVIDENCE PENDING.** Conformance semantics are unchanged. Full repository validation will be rerun only after the historical migration is internally closed.
+**PASS, PENDING FULL-CI CONFIRMATION.** The targeted authority preflight passed. The existing full generator/conformance/release workflow remains the final exit evidence.
 
 ### Release / consumer drift
 
-**PASS FOR CURRENT G1 SCOPE.** No release tag, release artifact, runtime lock or wire fact is being changed.
+**PASS, PENDING FULL-CI CONFIRMATION.** No release tag, release artifact or runtime spec lock has been changed.
 
 ## 10. Semantic impact check
 
@@ -198,19 +198,14 @@ Stable identifier change = NONE
 Canonical Registry semantic change = NONE
 ```
 
-## 11. Exit blockers
+## 11. Remaining exit blocker
 
-G1 MUST NOT be marked PASS until:
+All content-level G1 exit blockers are closed. The only remaining blocker is fresh full repository verification on the completed branch using the existing `Validate AXTP Spec` workflow.
 
-- all maintained accepted/generated `workspace/protocol/**` proposals no longer claim `contract: true`;
-- accepted proposal current-state wording does not claim direct implementation authority;
-- lifecycle and protocol stability remain distinct;
-- accepted proposals link to scalar canonical adoption targets;
-- runtime/AI retrieval guidance treats workspace as non-contract with no exception;
-- fresh repository verification evidence is obtained after migration closure.
+G1 MUST remain non-PASS until that full workflow confirms generator/tests, source validation, Protocol IR/generated drift, conformance, docs/status and release dry-run remain valid together.
 
 ## 12. Current decision
 
-**IN PROGRESS**
+**READY FOR FULL VERIFICATION**
 
-The authoring source defect is closed. Historical accepted-proposal normalization remains the active G1 work item. No protocol-semantic decision is required for that normalization.
+The source mechanism and historical accepted-proposal corpus are closed. Reopen the existing migration PR once, run the repository's normal full validation, and promote G1 to PASS only if that evidence is green.
