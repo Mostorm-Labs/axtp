@@ -29,12 +29,27 @@ findings:
     gate: G2
     class: GOV-AMBIGUITY
     title: Release, protocol, registry, schema and wire version dimensions use overloaded names
-    status: open
+    status: ready-for-full-verification
     evidence:
+      - docs/governance/reviews/G2-spec-identity.md
       - contract/registry/version.yaml
       - contract/registry/core/protocol_meta.yaml
+      - specs/20-core.md
+      - specs/50-tooling.md
+      - release/README.md
       - release/AXTP_SPEC_VERSIONING.zh-CN.md
+      - release/AXTP_SPEC_VERSIONING.md
       - release/AXTP_RUNTIME_UPDATE_FLOW.md
+      - docs/guides/runtime.md
+      - conformance/cases/session/axtp_version_advisory.yaml
+    resolution:
+      - Canonical SpecIdentity semantics now separate release, protocol-semantics, Standard Frame wire, registry/schema model, authority schema, generator, runtime implementation and Hello advisory dimensions.
+      - spec/vX.Y.Z and release/dispatch spec_version are frozen as repository release identity only.
+      - protocol.version is classified as protocolSemantics.version; it is not release identity or a generic session gate.
+      - Historical protocol.specVersion is classified as a legacy alias of Standard Frame wire generation, consistent with the v1 Core freeze history and Header Version authority.
+      - contract/registry/version.yaml version fields are preserved as legacy metadata mirrors rather than promoted into a second compatibility authority.
+      - Hello.d.axtpVersion remains diagnostic/advisory only, backed by existing conformance coverage.
+      - Existing machine fields are not physically renamed in G2; any future rename requires an explicit tooling/schema migration with downstream verification.
     expectedDisposition: Establish explicit SpecIdentity semantics while preserving compatibility aliases where required.
 
   - id: AXTP-GOV-003
