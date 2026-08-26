@@ -1,40 +1,52 @@
-# 协议草案模板
+# 协议 Proposal 模板
 
-创建或重写 `workspace/protocol/<domain>/<domain.feature>.md` 时，使用这份轻量中文模板。
+创建或重写 `workspace/protocol/<domain>/<domain.feature>.md` 时，使用这份模板。
 
-草案目标是让评审者快速看懂协议意图、接口形状、字段含义、测试重点和采纳风险。它不是最终机器事实源。正式事实源仍然是 `contract/registry/**/*.yaml`、`contract/protocol/axtp.protocol.yaml`、`contract/generated/**` 和 `conformance/**`。
+这类文件是 **proposal / review artifact**，用于记录为什么提出某项协议设计、候选接口形状、兼容性判断、legacy 证据、评审结论和后续 amendment。它在任何 lifecycle 下都不是 runtime / SDK / firmware implementation contract。
 
-公共 RPC envelope、成功/失败响应读法、错误约定、schema 展开和 flow example 写法维护在 `workspace/protocol/draft-conventions.md`。每个 method 保留一个最小可读的 `d block 示例`，用 `request:` / `success:` 展示可调用形状；复杂错误、事件、STREAM、异步状态机、权限分支和 legacy 字段转换再补 feature-specific 示例。
+正式实现事实只能来自 canonical / derived / verification authority：`contract/registry/**`、`contract/protocol/axtp.protocol.yaml`、`contract/generated/**`、适用的 `specs/**`、`conformance/**` 和明确的 spec release identity。
+
+公共 RPC envelope、错误、schema 展开、flow example 和 authority metadata 规则见 `workspace/protocol/draft-conventions.md`。
 
 ````markdown
 ---
-status: draft
-contract: false
-generated: false
+authorityClass: proposal
+lifecycle: captured
+protocolStability: draft
 domain: <domain>
 feature: <domain.feature>
-registry:
+adoptedBy:
 lastReviewed: YYYY-MM-DD
 ---
 
 # <domain.feature>
+
+> 本文是 AXTP protocol proposal，不是实现合同。runtime / SDK / firmware 不得从本文 prose、示例或候选 ID 推导正式协议事实。
 
 ## 0. 速读结论
 
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | <一句话说明> |
-| 当前状态 | draft / review-ok / generated / deprecated |
-| 是否可直接实现 | 否。draft/review-ok 阶段仅供评审；正式实现以 registry / generated 为准。 |
+| Proposal lifecycle | captured / reviewing / accepted / superseded / archived |
+| Protocol stability | draft / experimental / stable / deprecated / reserved |
+| Canonical adoption | none；accepted 后填写 frontmatter `adoptedBy` 指向 primary canonical registry owner |
+| 是否可直接实现 | 否。实现必须读取 canonical / generated / conformance authority。 |
 | 主要交互 | RPC / RPC + EVENT / RPC + STREAM |
 | 是否使用 STREAM | 是 / 否 |
 | Registry readiness | none / partial / candidate / ready |
 | Conformance | none / needed / ready |
-| 主要未决问题 | <一句话列出，若无则写“暂无”> |
+| 主要未决问题 | <一句话列出；若无则写“暂无”> |
 
 ## 1. 功能说明
 
 用 3-5 句话说明这个 feature 解决什么问题、面向哪些调用方、适用于哪些设备或场景。公共 envelope、错误、schema 展开和 flow 写法遵循 [Protocol Draft Conventions](../draft-conventions.md)。
+
+如果该 proposal 已 accepted，应在本节或 adoption note 中说明：
+
+- primary canonical owner：`<adoptedBy>`；
+- 其他相关 canonical source（如 error/profile/shared schema）可在正文列出，但不要把 `adoptedBy` 写成 YAML list；
+- 正式 methodId / eventId / fieldId / errorCode / schema 以 canonical/generated authority 为准。
 
 ## 2. 能力边界
 
@@ -49,10 +61,10 @@ lastReviewed: YYYY-MM-DD
 
 ### 3.0 方法速览
 
-| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 状态 |
+| Method | 调用类型 | 用途 | Params Schema | Result Schema | 是否触发事件 | 协议稳定度 |
 |---|---|---|---|---|---|---|
-| `<domain.feature>.get` | query | 查询当前状态或配置 | `GetXxxParams` | `XxxState` | 否 | draft / review-ok |
-| `<domain.feature>.set` | command | 设置目标状态或配置 | `SetXxxParams` | `XxxState` | 是，`<domain.feature>.changed` | draft / review-ok |
+| `<domain.feature>.get` | query | 查询当前状态或配置 | `GetXxxParams` | `XxxState` | 否 | draft / experimental / stable |
+| `<domain.feature>.set` | command | 设置目标状态或配置 | `SetXxxParams` | `XxxState` | 是，`<domain.feature>.changed` | draft / experimental / stable |
 
 ### 3.1 `<domain.feature>.<method>`
 
@@ -108,7 +120,7 @@ success:
 }
 ```
 
-示例只展示 RPC `d` block。公共 `op`、`sid`、成功/失败 envelope 和 `id` 回显规则见 [Protocol Draft Conventions](../draft-conventions.md)。如果 method 无 `params` 或无业务 `result`，可以省略对应对象；不要拆成独立 Request / Success Response 标题。
+示例只帮助评审 payload 形状，不是独立 wire truth。正式 ID、field 编号、错误码和 schema 以 canonical/generated authority 为准。
 
 #### 3.1.4 可能触发的事件
 
@@ -134,9 +146,9 @@ success:
 
 ### 4.0 事件速览
 
-| Event | 触发条件 | Payload Schema | 客户端处理建议 | 状态 |
+| Event | 触发条件 | Payload Schema | 客户端处理建议 | 协议稳定度 |
 |---|---|---|---|---|
-| `<domain.feature>.changed` | <触发条件> | `<ChangedEvent>` | <直接更新 UI / 调用 get 校准 / 可忽略> | draft / review-ok |
+| `<domain.feature>.changed` | <触发条件> | `<ChangedEvent>` | <直接更新 UI / 调用 get 校准 / 可忽略> | draft / experimental / stable |
 
 ### 4.1 `<domain.feature>.changed`
 
@@ -167,8 +179,6 @@ success:
 }
 ```
 
-事件 payload 不直观、包含嵌套对象、字段转换、状态机分支或客户端缓存语义时，应保留 feature-specific event `d` block 示例。简单 changed event 可以只保留 payload 字段表和客户端处理建议。
-
 #### 4.1.3 客户端处理建议
 
 | 场景 | 建议 |
@@ -187,8 +197,6 @@ success:
 
 Capability name: `<domain.feature>`。
 
-设备通过 capability 声明是否支持该 feature，以及支持哪些范围、模式、对象或约束。Capability 字段只描述“设备能做什么”，不得混入 method params/result 或 event payload。
-
 | 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `capability` | string | yes | fixed `<domain.feature>` | none | capability 名称。 |
@@ -199,11 +207,6 @@ Capability name: `<domain.feature>`。
 ### 6.1 Schema 层级速览
 
 说明本 feature 有哪些核心数据对象，以及它们分别用于 method params、method result、event payload 还是 capability。
-
-Schema 展开模式必须二选一：
-
-- 简单 feature：method/event 章节已经直接展开字段表和最小 `d block 示例`，本章只保留 schema 索引，避免重复。
-- 复杂 feature：method/event 章节保留关键字段；本章集中展开复杂对象；必要时在 method/event `d block 示例` 中展示关键 payload。
 
 ### 6.2 请求与响应 Schemas
 
@@ -235,8 +238,6 @@ Schema 展开模式必须二选一：
 
 只在存在真实端到端顺序时保留本章，例如 capability discovery -> set method -> changed event、action accepted -> progress event、failure request -> no event、STREAM open -> STREAM data -> close、reconnect -> get state calibration。
 
-单个 method/event 的普通用法不要写成本章；放在对应 method/event 的字段表、规则和 `d block 示例` 中。
-
 ## 8. 错误
 
 通用错误读法见 `workspace/protocol/draft-conventions.md`。本章只保留会影响 feature 语义的候选错误、特殊触发条件、状态后果或 legacy 兼容说明。
@@ -247,15 +248,13 @@ Schema 展开模式必须二选一：
 
 ## 9. Legacy 映射
 
-Legacy 映射是迁移证据，不是 runtime 合同。如果没有 legacy 映射，写“暂无”。
+Legacy 映射是迁移证据，不是 runtime contract。如果没有 legacy 映射，写“暂无”。
 
 | legacy 项 | 候选映射 | 状态 | 说明 |
 |---|---|---|---|
 | `<legacy command / field>` | `<domain.method>` / `<event>` / adapter-only | `[REVIEW-ASK]` / `[REVIEW-OK]` / `[REVIEW-DRAFT]` | <说明> |
 
 ## 10. 测试重点与采纳风险
-
-不要在每篇草案里复制固定 Registry / Conformance 状态表，也不要单独复述 frontmatter 里的草案状态。草案状态以 frontmatter、Product Domain Status 和 registry/generated 事实为准。本章只写 feature-specific 采纳风险和测试重点。
 
 | 类型 | 要点 |
 |---|---|
@@ -274,8 +273,6 @@ Legacy 映射是迁移证据，不是 runtime 合同。如果没有 legacy 映�
 | <问题> | schema / registry / conformance / legacy / product behavior | <当前建议> | open / decided / blocked |
 
 ## 可选附录：复杂 / 高风险 feature 增强
-
-reset / factory restore、firmware.ota、security/auth、network.config、storage.format、lifecycle/reboot/shutdown，或任何会导致断连、数据清除、权限变化、软件版本变化、设备身份变化的能力，可以追加以下附录。
 
 ### 附录 A. 协议审核标记
 
@@ -304,63 +301,39 @@ reset / factory restore、firmware.ota、security/auth、network.config、storag
 - [ ] conformance cases 已规划。
 ````
 
-## 示例片段：method 示例减肥后的写法
+## Authority metadata transitions
 
-下面展示每个 method 保留一个紧凑 `d block 示例` 的写法，不表示正式 registry 命名或 ID。复杂错误和事件示例不要塞进 method；除非它们直接影响 method 评审，否则放到错误或事件章节。
+新建 proposal：
 
-````markdown
-#### 3.2.3 d block 示例
-
-request:
-
-```json
-{
-  "id": 101,
-  "method": "audio.volume.set",
-  "params": {
-    "target": "master",
-    "level": 42,
-    "muted": false
-  }
-}
+```yaml
+authorityClass: proposal
+lifecycle: captured
+protocolStability: draft
+adoptedBy:
 ```
 
-success:
+进入人工评审时可改为：
 
-```json
-{
-  "id": 101,
-  "status": {
-    "ok": true,
-    "code": 0
-  },
-  "result": {
-    "target": "master",
-    "level": 42,
-    "muted": false
-  }
-}
+```yaml
+lifecycle: reviewing
 ```
 
-读法：`result` 返回设置后的完整状态，而不是变化片段；状态实际变化时由 `audio.volume.changed` 事件通知。
+Stage 30 采纳成功后：
 
-#### 4.1.2 d block 示例
-
-```json
-{
-  "event": "audio.volume.changed",
-  "intent": 1,
-  "data": {
-    "changedFields": [
-      "level"
-    ],
-    "state": {
-      "target": "master",
-      "level": 42,
-      "muted": false
-    },
-    "reason": "user_request"
-  }
-}
+```yaml
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: <canonical fact stability>
+adoptedBy: contract/registry/<primary canonical owner>.yaml
 ```
-````
+
+`adoptedBy` 是**单个 scalar primary canonical owner**。若采纳同时修改 error/profile/shared schema 等其他 canonical 文件，在正文 adoption note 中列出，不把 frontmatter 扩展成列表。
+
+严禁在 v2 proposal frontmatter 中重新引入：
+
+```yaml
+status:
+contract:
+generated:
+registry:
+```
