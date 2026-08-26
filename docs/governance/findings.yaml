@@ -10,7 +10,7 @@ findings:
     gate: G1
     class: GOV-AMBIGUITY
     title: Workspace proposals can claim runtime contract authority
-    status: ready-for-full-verification
+    status: closed
     evidence:
       - workspace/protocol/README.md
       - workspace/protocol/draft-conventions.md
@@ -20,7 +20,8 @@ findings:
     resolution:
       - Authority Metadata v2 fixes the authoring source so workspace/protocol always remains proposal authority.
       - All 21 active accepted/generated proposals that previously claimed contract:true have been migrated to proposal authority metadata and scalar canonical adoptedBy links.
-      - Targeted G1 authority preflight 32951426806 passed; full existing repository CI remains the final gate evidence.
+      - Targeted G1 authority preflight 32951426806 passed.
+      - Full Validate AXTP Spec run 32952949759 passed on the corrected functional state; exact-head closure evidence is retained in Draft PR #12 Checks.
     expectedDisposition: Remove contract authority from workspace and link accepted proposals to canonical adoption targets.
 
   - id: AXTP-GOV-002
@@ -139,7 +140,7 @@ findings:
     gate: G1
     class: GOV-AMBIGUITY
     title: Generated lifecycle wording and protocol stability wording are mixed across artifacts
-    status: ready-for-full-verification
+    status: closed
     evidence:
       - workspace/protocol/README.md
       - workspace/protocol/draft-conventions.md
@@ -147,9 +148,11 @@ findings:
       - tooling/skills/30-adopt-protocol-draft/SKILL.md
       - tooling/skills/40-amend-adopted-protocol/SKILL.md
       - tooling/scripts/report-protocol-draft-health.mjs
+      - docs/governance/reviews/G1-authority-boundary.md
     resolution:
       - Proposal lifecycle and protocol stability are now separate fields with independent enumerations.
       - Accepted proposals preserve the canonical Registry fact stability instead of treating generated/adopted state as stable.
       - Proposal health reporting now separates Accepted proposal from Generated facts.
-      - Targeted G1 authority preflight 32951426806 passed; full existing repository CI remains the final gate evidence.
+      - Targeted G1 authority preflight 32951426806 passed.
+      - Full Validate AXTP Spec run 32952949759 passed on the corrected functional state; exact-head closure evidence is retained in Draft PR #12 Checks.
     expectedDisposition: Separate artifact lifecycle from protocol fact stability and eliminate overloaded status interpretation.
