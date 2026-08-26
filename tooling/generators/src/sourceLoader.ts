@@ -7,6 +7,7 @@ import { loadSpec } from "./loader.js";
 import type { ProtocolSourceModel } from "./sourceModel.js";
 import type { Capability, ErrorCode, Event, Field, LegacyMapping, Method, Schema } from "./models.js";
 import { normalizeId } from "./util.js";
+import { loadVectorRecipeCatalog } from "./vectorRecipes.js";
 
 async function loadYamlFile(filePath: string): Promise<any> {
   try {
@@ -169,9 +170,21 @@ export async function loadProtocolSources(specRoot: string): Promise<ProtocolSou
   const registryDir = path.join(specRoot, "contract", "registry");
   const protocolMetaPath = path.join(registryDir, "core", "protocol_meta.yaml");
   const domainRegistryPath = path.join(registryDir, "core", "domain_registry.yaml");
-  const protocolMeta = await loadYamlFile(protocolMetaPath);
+  const vectorRecipeDir = path.join(specRoot, "contract", "vector-recipes");
+  const currentVectorRecipePath = path.join(vectorRecipeDir, "current-core.yaml");
+  const historicalVectorRecipePath = path.join(vectorRecipeDir, "historical.yaml");
+  const [protocolMeta, vectorRecipes] = await Promise.all([
+    loadYamlFile(protocolMetaPath),
+    loadVectorRecipeCatalog(specRoot)
+  ]);
   const domainFiles = await listYamlFiles(path.join(registryDir, "domains"));
-  const sourceFiles = [protocolMetaPath, ...(existsSync(domainRegistryPath) ? [domainRegistryPath] : []), ...domainFiles];
+  const sourceFiles = [
+    protocolMetaPath,
+    ...(existsSync(domainRegistryPath) ? [domainRegistryPath] : []),
+    ...domainFiles,
+    currentVectorRecipePath,
+    historicalVectorRecipePath
+  ];
   const profiles: Array<Record<string, unknown>> = [];
 
   for (const file of domainFiles) {
@@ -186,5 +199,5 @@ export async function loadProtocolSources(specRoot: string): Promise<ProtocolSou
     profiles.push(...asArray(doc.profiles));
   }
 
-  return { ...spec, protocolMeta, sourceFiles, profiles };
+  return { ...spec, protocolMeta, sourceFiles, profiles, vectorRecipes };
 }
