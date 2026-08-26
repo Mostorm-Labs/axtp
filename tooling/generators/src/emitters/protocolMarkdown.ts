@@ -10,6 +10,7 @@ import type {
   SchemaField,
   WireExample
 } from "../protocolModel.js";
+import { loadProtocolProjectionFacts, type ProtocolProjectionFacts } from "../protocolProjectionFacts.js";
 import { hex, writeTextFile } from "../util.js";
 
 function esc(value: unknown): string {
@@ -342,7 +343,7 @@ function streamSupportLabel(t: ProtocolModel["transports"][number]): string {
   return yesNo(t.supportsStream);
 }
 
-function renderProtocolFramework(model: ProtocolModel): string[] {
+function renderProtocolFramework(model: ProtocolModel, facts: ProtocolProjectionFacts): string[] {
   const framed = model.transports.filter((transport) => transport.frameProfile !== "none");
   const unframed = model.transports.filter((transport) => transport.frameProfile === "none");
   const framedRpcEncodings = [...new Set(framed.flatMap((transport) => transport.rpcEncodings ?? []))];
@@ -351,7 +352,7 @@ function renderProtocolFramework(model: ProtocolModel): string[] {
     "",
     "AXTP v1 has two formal integration paths:",
     "",
-    "- **Standard Framed**: uses the 12-byte Standard Frame header, CONTROL OPEN/ACCEPT, HEARTBEAT/CLOSE, RPC, STREAM, fragmentation and CRC16. ACK/NACK reliability is future/profile-level work.",
+    `- **Standard Framed**: uses the ${facts.standardFrameHeaderBytes}-byte Standard Frame header, CONTROL OPEN/ACCEPT, HEARTBEAT/CLOSE, RPC, STREAM, fragmentation and CRC16. ACK/NACK reliability is future/profile-level work.`,
     "- **WebSocket Unframed JSON**: uses the JSON `sid`/`op`/`d` envelope directly over WebSocket. It is RPC-only and does not carry CONTROL or STREAM payloads.",
     "",
     ...table(
@@ -380,7 +381,7 @@ function renderProtocolFramework(model: ProtocolModel): string[] {
   ];
 }
 
-function renderConnectionProfiles(model: ProtocolModel): string[] {
+function renderConnectionProfiles(model: ProtocolModel, facts: ProtocolProjectionFacts): string[] {
   const rows = model.transports.map((t) => [
     t.name,
     t.family,
@@ -450,12 +451,12 @@ function renderConnectionProfiles(model: ProtocolModel): string[] {
       "| WebSocket Unframed JSON | Standard Framed AXTP |",
       "| --- | --- |",
       "| WebSocket Upgrade | Transport connect + CONTROL OPEN/ACCEPT |",
-      "| Hello (op=0) | RPC Hello |",
-      "| Identify (op=2) | RPC Identify |",
-      "| Identified (op=3) | RPC Identified |",
-      "| REQUEST (op=7) | RPC Request |",
-      "| REQUEST_RESPONSE (op=8) | RPC RequestResponse |",
-      "| EVENT (op=6) | RPC Event |",
+      `| Hello (op=${facts.rpcOps.HELLO}) | RPC Hello |`,
+      `| Identify (op=${facts.rpcOps.IDENTIFY}) | RPC Identify |`,
+      `| Identified (op=${facts.rpcOps.IDENTIFIED}) | RPC Identified |`,
+      `| REQUEST (op=${facts.rpcOps.REQUEST}) | RPC Request |`,
+      `| REQUEST_RESPONSE (op=${facts.rpcOps.REQUEST_RESPONSE}) | RPC RequestResponse |`,
+      `| EVENT (op=${facts.rpcOps.EVENT}) | RPC Event |`,
       "| WebSocket Close | CONTROL CLOSE or transport close |",
       "| Not supported | STREAM |"
     );
@@ -539,7 +540,7 @@ function renderWireExamples(model: ProtocolModel): string[] {
   return lines;
 }
 
-export function renderProtocolMarkdown(model: ProtocolModel): string {
+export function renderProtocolMarkdown(model: ProtocolModel, facts: ProtocolProjectionFacts): string {
   const schemas = typeMap(model);
   const referencedTypes = referencedTypeNames(model);
   const additionalTypes = model.schemas
@@ -572,7 +573,7 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
       ]
     ),
     "",
-    ...renderProtocolFramework(model),
+    ...renderProtocolFramework(model, facts),
     "",
     "## Design Goals / Non-Goals",
     "",
@@ -610,7 +611,7 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
       ])
     ),
     "",
-    ...renderConnectionProfiles(model),
+    ...renderConnectionProfiles(model, facts),
     "",
     ...renderPayloadTypes(model),
     "",
@@ -681,5 +682,6 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
 }
 
 export async function emitProtocolMarkdown(model: ProtocolModel, outDir: string): Promise<void> {
-  await writeTextFile(path.join(outDir, "protocol.md"), renderProtocolMarkdown(model));
+  const facts = await loadProtocolProjectionFacts(model.specRoot);
+  await writeTextFile(path.join(outDir, "protocol.md"), renderProtocolMarkdown(model, facts));
 }
