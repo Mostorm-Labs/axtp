@@ -191,3 +191,17 @@ findings:
       - Targeted G1 authority preflight 32951426806 passed.
       - Full Validate AXTP Spec run 32952949759 passed on the corrected functional state; exact-head closure evidence is retained in Draft PR #12 Checks.
     expectedDisposition: Separate artifact lifecycle from protocol fact stability and eliminate overloaded status interpretation.
+
+  - id: AXTP-GOV-012
+    priority: P1
+    gate: G5
+    class: DERIVATION-DEFECT
+    title: Generated human protocol Markdown embeds independent protocol facts outside ProtocolModel projection
+    status: open
+    evidence:
+      - tooling/generators/src/emitters/protocolMarkdown.ts
+      - contract/generated/protocol.md
+    observed:
+      - Protocol Markdown rendering includes hard-coded framework/layout claims and explicit RPC op-number examples that are not all resolved from ProtocolModel at render time.
+      - No independent current-core golden-vector bytes are sourced from this emitter.
+    expectedDisposition: Refactor generated human-readable framework/opcode prose to model-driven projections or explicitly separate non-authoritative explanatory template text from protocol facts.
