@@ -1,11 +1,11 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: draft
 domain: software
 feature: software.updatePolicy
-registry: ../../../../contract/registry/domains/software/domain.yaml
-lastReviewed: 2026-06-17
+adoptedBy: contract/registry/domains/software/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # AXTP software.updatePolicy 协议草案
@@ -159,8 +159,8 @@ DomainId `0x17` = `software`（generator 三处 `domainByHighByte` 已在 `softw
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 配置 Launcher / signagePlayer / agent 等软件对象的自动更新行为模式、时间窗口、通道和前置条件。 |
-| 当前状态 | draft（已采纳） |
-| 是否可直接实现 | 是。machine 事实源为 `registry/domains/software/domain.yaml`。 |
+| 当前状态 | accepted proposal；canonical facts 已写入 `contract/registry/domains/software/domain.yaml` 并生成；对应 protocol stability 仍为 draft。 |
+| 是否可直接实现 | 否。本文保留设计说明、adoption/review context；runtime 必须读取 canonical / generated / conformance authority。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
 | Registry readiness | adopted |

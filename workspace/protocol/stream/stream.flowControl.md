@@ -1,11 +1,11 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: draft
 domain: stream
 feature: stream.flowControl
-registry: ../../../../contract/registry/domains/stream/domain.yaml
-lastReviewed: 2026-07-08
+adoptedBy: contract/registry/domains/stream/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # stream.flowControl
@@ -15,8 +15,8 @@ lastReviewed: 2026-07-08
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 提供 STREAM 数据面的通用运行期控制、统计、ACK/window、暂停/恢复/中止，以及 `stream.clockReport` 时钟诊断事件。 |
-| 当前状态 | generated；已写入 `../../../../contract/registry/domains/stream/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的说明性边界不替代生成合同。 |
+| 当前状态 | accepted proposal；canonical facts 已写入 `contract/registry/domains/stream/domain.yaml` 并生成；对应 protocol stability 仍为 draft。 |
+| 是否可直接实现 | 否。本文保留设计说明、adoption/review context；runtime 必须读取 canonical / generated / conformance authority。 |
 | 主要交互 | RPC + EVENT |
 | 是否修改 STREAM 16B header | 否。`streamId`、`seqId`、`cursor` 保持不变。 |
 | 是否使用 STREAM | 本 feature 管理已有 STREAM，不定义媒体或文件 payload。 |

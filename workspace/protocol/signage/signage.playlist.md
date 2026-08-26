@@ -1,11 +1,11 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: draft
 domain: signage
 feature: signage.playlist
-registry: ../../../../contract/registry/domains/signage/domain.yaml
-lastReviewed: 2026-06-16
+adoptedBy: contract/registry/domains/signage/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # AXTP signage.playlist 协议草案
@@ -126,8 +126,8 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 数字标牌播放列表全量同步、查询、恢复默认和播放项资源 URL 刷新。 |
-| 当前状态 | draft（已采纳；见下方「采纳记录」） |
-| 是否可直接实现 | 是（采纳后）。machine 事实源为 `registry/domains/signage/domain.yaml`，实现以 generated 为准。 |
+| 当前状态 | accepted proposal；canonical facts 已写入 `contract/registry/domains/signage/domain.yaml` 并生成；对应 protocol stability 仍为 draft。 |
+| 是否可直接实现 | 否。本文保留设计说明、adoption/review context；runtime 必须读取 canonical / generated / conformance authority。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
 | Registry readiness | adopted |
