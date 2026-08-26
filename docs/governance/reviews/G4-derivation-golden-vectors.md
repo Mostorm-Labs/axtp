@@ -1,6 +1,6 @@
 # AXTP G4 — Derivation & Golden Vector Closure
 
-Status: **READY FOR FULL VERIFICATION**  
+Status: **PASS**  
 Prerequisite: G3 PASS  
 Primary finding: `AXTP-GOV-003`
 
@@ -30,29 +30,22 @@ G4 changes how verification bytes are derived. It does not change the protocol t
 
 ## 3. Root defect
 
-Before G4, `tooling/generators/src/emitters/testVectors.ts` accepted `_spec: SpecModel` but never used `_spec`. It authored:
+Before G4, `tooling/generators/src/emitters/testVectors.ts` accepted `_spec: SpecModel` but never used `_spec`. It authored the vector list, semantic expectations, implicit current/legacy classification and seven final hex strings.
 
-- the vector list;
-- semantic expectations;
-- current/legacy classification implicitly;
-- seven final hex strings.
-
-Therefore generated drift only proved that the same hard-coded strings could be re-emitted. It did **not** prove that vectors followed registry/Protocol IR authority.
-
-This is `AXTP-GOV-003 / DERIVATION-DEFECT`.
+Generated drift therefore only proved that the same hard-coded strings could be re-emitted. It did **not** prove that vectors followed registry/Protocol IR authority. This is `AXTP-GOV-003 / DERIVATION-DEFECT`.
 
 ## 4. RED evidence
 
 Before production implementation, an isolated executable RED harness demonstrated two independent failures:
 
-1. mutate the active method authority ID and the old emitter output remains byte-for-byte unchanged;
-2. the pre-G4 `stream_object_chunk` has 32 bytes while its `PayloadLength=20` implies a valid Standard Frame must have `12 + 20 + 2 = 34` bytes, proving the required CRC footer is absent.
+1. mutating the active method authority ID left the old emitter output byte-for-byte unchanged;
+2. the pre-G4 `stream_object_chunk` had 32 bytes while `PayloadLength=20` requires `12 + 20 + 2 = 34` bytes for a valid Standard Frame, proving the CRC footer was absent.
 
-The failures were caused by the missing authority derivation / stale output, not by harness syntax or environment setup.
+The failures were caused by missing authority derivation / stale output, not by harness syntax or environment setup.
 
 ## 5. Existing vector classification
 
-Detailed inspection found that the old first five files were not valid current-core golden bytes and therefore could not be blindly preserved as current truth.
+The old first five files were not valid current-core golden bytes and therefore could not be blindly preserved as current truth.
 
 | Vector | Pre-G4 classification | Current authority mismatch |
 |---|---|---|
@@ -64,7 +57,7 @@ Detailed inspection found that the old first five files were not valid current-c
 | `compact_crc8_error` | historical compatibility | Compact framing is outside AXTP v1 Core. |
 | `compact_message_id_overflow` | historical compatibility | Compact framing is outside AXTP v1 Core. |
 
-The preservation rule is therefore:
+Preservation rule:
 
 ```text
 valid current historical bytes → preserve current byte-for-byte
@@ -72,7 +65,7 @@ stale pseudo-golden bytes      → preserve as history + derive current replacem
 non-core compatibility bytes   → preserve as history, never count as current-core
 ```
 
-No protocol source was changed to justify these replacements. The current authority already required the new/current shapes.
+No protocol source was changed to justify the replacements. Current authority already required the corrected/current shapes.
 
 ## 6. Canonical recipe authority boundary
 
@@ -84,7 +77,7 @@ contract/vector-recipes/historical.yaml
 contract/vector-recipes/README.md
 ```
 
-Current-core recipes may choose semantic fixture values such as `sid`, `requestId`, `messageId`, stream cursor/data, and named fields. They may not contain final current hex or copied numeric protocol IDs.
+Current-core recipes may choose semantic fixture values such as `sid`, `requestId`, `messageId`, stream cursor/data and named fields. They may not contain final current hex or copied numeric protocol IDs.
 
 The generator resolves by name from current source:
 
@@ -96,7 +89,7 @@ The generator resolves by name from current source:
 - schema and nested field IDs/types;
 - byte order and CRC rules.
 
-Historical recipes are explicitly different: `historicalHex` is permitted only because their authority role is evidence preservation, not current protocol definition.
+Historical recipes are explicitly different: `historicalHex` is permitted only because their authority role is evidence preservation, not current protocol definition. Historical hex values are quoted YAML strings so raw bytes cannot be changed by YAML numeric coercion.
 
 ## 7. Narrow deterministic encoder
 
@@ -116,11 +109,11 @@ The encoder intentionally implements only the G4 seed evidence surface:
 - Standard Framed JSON event fixture;
 - current 16B STREAM header + opaque data.
 
-It explicitly fails on unsupported general-purpose codec features instead of silently inventing semantics. This is a verification encoder, not a runtime codec.
+Unsupported general-purpose codec features fail explicitly rather than silently inventing semantics. This is a verification encoder, not a runtime codec.
 
-## 8. GREEN evidence before repository CI
+## 8. TDD / integration evidence
 
-An isolated executable GREEN harness using the same derivation contracts passed five contracts:
+Isolated GREEN contracts passed before repository integration:
 
 ```text
 CRC16-CCITT-FALSE known answer "123456789" = 0x29B1
@@ -130,7 +123,17 @@ nested schema field-id mutation changes TLV output
 complete STREAM Standard Frame validates its CRC and has 34 bytes
 ```
 
-Repository tests were also authored for recipe validation and encoder authority mutation before the production modules were added. Full TypeScript/build integration is intentionally withheld from PASS until GitHub full CI executes the actual repository dependency graph.
+Fresh full CI later confirmed the real repository dependency graph:
+
+```text
+Test Files = 5 passed / 5
+Generator tests = 55 passed / 55
+vectorEncoding.test.ts = 5 / 5
+vectorRecipes.test.ts = 4 / 4
+validator.test.ts = 13 / 13
+protocolValidator.test.ts = 32 / 32
+releaseScripts.test.ts = 1 / 1
+```
 
 ## 9. Current replacement vectors
 
@@ -176,24 +179,29 @@ After G4, `testVectors.ts` only:
 4. projects historical hex to declared historical paths;
 5. emits current/historical provenance metadata.
 
-It no longer owns current vector IDs, method/event facts, current hex, or current wire layouts.
-
-Generator snapshot tests now include an emitter-level mutation proof: changing the active source `OPEN` opcode changes emitted bytes.
+It no longer owns current vector IDs, method/event facts, current hex or current wire layouts. Generator tests include an emitter-level mutation proof: changing the active source `OPEN` opcode changes emitted bytes.
 
 ## 12. Generated drift and release provenance
 
-`check-generated-drift.sh` now recursively diffs the complete generated `contract/test-vectors` tree, including nested historical paths.
+`check-generated-drift.sh` recursively diffs the complete generated `contract/test-vectors` tree, including nested historical paths.
 
-Release construction now ships both:
+Release construction ships both:
 
 ```text
 contract/vector-recipes/**
 contract/test-vectors/**
 ```
 
-The artifact contract requires the two recipe YAML files, so future release consumers can inspect the derivation input as well as the output bytes.
+The artifact contract and `manifest.template.yaml` both declare recipe provenance paths, so future release consumers can inspect derivation input as well as output bytes.
 
-`contract/vector-recipes/README.md` documents the source/derived/history boundary without requiring maintainer-only tooling to interpret the classification.
+Fresh CI evidence:
+
+```text
+[OK] generated artifacts match canonical registry and vector recipe sources
+[OK] release archive contract paths verified
+[OK] local Markdown links resolved
+[OK] frontstage docs use Chinese-first navigation language
+```
 
 ## 13. Full emitter audit
 
@@ -210,40 +218,53 @@ The artifact contract requires the two recipe YAML files, so future release cons
 
 `AXTP-GOV-012` is explicitly registered rather than silently expanding G4 into a full generated-doc rewrite.
 
-## 14. Defect classification
+## 14. Intermediate CI defect classifications
+
+G4 preserved the failure history instead of collapsing it into the final PASS:
+
+| Run | Failure | Classification | Resolution |
+|---|---|---|---|
+| `32979267051` | TypeScript 5.9 typed-array generic mismatch in local JSON_BINARY body variable. | IMPLEMENTATION_DEFECT | widened only the local `body` annotation; no encoder/byte logic changed. |
+| `32979555868` | negative test fixture failed earlier validation; unquoted historical hex parsed by YAML as non-string. | TEST_DEFECT + recipe serialization defect | made negative fixture otherwise valid; quoted all historical raw hex strings. |
+| `32979744517` | all generator/generated, conformance and docs checks passed; release manifest omitted newly required recipe paths. | IMPLEMENTATION_DEFECT / release metadata drift | added `contract/vector-recipes/` to release manifest contents. |
+| `32979904060` | none. | PASS | full functional-state verification. |
+
+Each prior repair was independently demonstrated by the next run progressing beyond the previous failure layer.
+
+## 15. Defect classification
 
 | Finding | Class | G4 disposition |
 |---|---|---|
-| `AXTP-GOV-003` | DERIVATION-DEFECT | FIXED-IN-G4; pending full verification. |
+| `AXTP-GOV-003` | DERIVATION-DEFECT | CLOSED by G4 functional evidence. |
 | pre-G4 first five current vectors | DERIVATION-DEFECT / stale evidence | preserved historically; current replacements derived from current authority. |
 | Compact pair counted beside current vectors | GOV-AMBIGUITY / derivation classification | moved to historical compatibility projection. |
 | `protocolMarkdown.ts` independent human protocol facts | DERIVATION-DEFECT | `AXTP-GOV-012`, deferred to G5; non-vector and non-wire-source. |
 
 No G4 finding requires a `PROTOCOL-SEMANTIC` amendment.
 
-## 15. Five drift reviews
+## 16. Five drift reviews
 
 ### Authority drift
 
-**PASS, pending full-CI confirmation.** Current-core recipes reference names and semantic fixture values; protocol IDs/layouts remain owned by existing current authority. Historical hex is explicitly non-current evidence.
+**PASS.** Current-core recipes reference names and semantic fixture values; protocol IDs/layouts remain owned by existing current authority. Historical hex is explicitly non-current evidence.
 
 ### Semantic duplication
 
-**PASS, pending full-CI confirmation.** No current final hex is authored in recipes or emitter. The narrow encoder implements already-frozen wire rules. Additional human Markdown duplication is separately registered as `AXTP-GOV-012`.
+**PASS.** No current final hex is authored in recipes or emitter. The narrow encoder implements already-frozen wire rules. Additional human Markdown duplication is separately registered as `AXTP-GOV-012`.
 
 ### Derivation drift
 
-**PASS, pending full-CI confirmation.** Current chain is recipe → active source resolution → deterministic encoding → digest → generated file. Recursive drift validation will prove repository outputs reproduce from that chain.
+**PASS.** Current chain is recipe → active source resolution → deterministic encoding → digest → generated file. Recursive generated-drift CI passed.
 
 ### Verification drift
 
-**PASS, pending full-CI confirmation.** Old defective bytes are not deleted; they are historical evidence. Current vectors are separated from legacy/non-core fixtures and carry provenance/digests.
+**PASS.** Old defective bytes are not deleted; they are historical evidence. Current vectors are separated from legacy/non-core fixtures and carry provenance/digests. Conformance remains 39 cases; Rule coverage remains 10 covered + 1 structural-only + 0 uncovered.
 
 ### Release / consumer drift
 
-**PASS, pending full-CI confirmation.** Existing five current filenames remain stable. Recipes are added to release artifacts. Compact historical paths move, but the files remain available and are explicitly no longer current-core evidence.
+**PASS.** Existing five current filenames remain stable. Recipes are shipped in release artifacts and declared in release manifest metadata. Compact historical paths move, but files remain available and are explicitly no longer current-core evidence.
 
-## 16. Semantic impact check
+## 17. Semantic impact check
 
 ```text
 Wire semantic impact = NONE
@@ -256,32 +277,34 @@ spec/v0.15.0 mutation = NONE
 Derived vector bytes changed = YES, fully classified as stale-evidence correction
 ```
 
-## 17. Exit criteria
+## 18. Full functional verification evidence
 
-G4 may close only after a fresh full repository run proves:
-
-- generator TypeScript build/lint passes;
-- all generator unit tests including recipe/encoder/emitter mutation tests pass;
-- `validate`, `validate:sources`, and `validate:protocol` pass;
-- recursive generated drift passes exactly;
-- conformance and G3 Rule coverage remain green;
-- docs/status/path checks remain green;
-- release artifact dry run includes recipes and vectors and passes link/path rules;
-- no protocol semantic source changed;
-- `AXTP-GOV-003` can be closed from evidence, not intent.
-
-## 18. Functional-head freeze
-
-Completed G4 functional head before full CI:
+Fresh full run:
 
 ```text
-2f9d367f3acff56a427dc09813ff962c80c83227
+Validate AXTP Spec run = 32979904060
+verified branch head   = 880e6f717fac6d84edecbfef2910cd9606d5a6ed
+result                 = SUCCESS
 ```
 
-No further G4 implementation edits are planned before the full validation run. Any failure will be classified before repair rather than patched opportunistically.
+The run proved:
 
-## 19. Current decision
+- TypeScript build/lint: PASS;
+- generator tests: 55/55 PASS;
+- registry/source/Protocol IR validation: PASS;
+- recursive generated vector drift: PASS;
+- G3 Rule coverage helper: 3/3 PASS;
+- conformance cases: 39 valid;
+- Rule coverage: 11 rules, 10 covered, 1 structural-only, 0 uncovered;
+- docs/status/path checks: PASS;
+- release artifact dry-run and recipe provenance contract: PASS.
 
-**READY FOR FULL VERIFICATION**
+## 19. Closure rule
 
-Implementation/content is complete enough for one intentional Gate-boundary full CI run. PR #12 should remain closed for any repair; only an exact current-head run may count as G4 functional evidence. If CI fails, classify the failure before modifying the branch.
+G4 is **PASS** from the fresh functional evidence above. `AXTP-GOV-003` may be closed. The review/finding closure commits create a new governance-only head; one final exact-head `Validate AXTP Spec` run is required as closure evidence, following the same G1–G3 discipline. No further G4 implementation/content change is authorized before that run.
+
+## 20. Current decision
+
+**PASS**
+
+The golden-vector trust boundary is closed for current-core evidence: current bytes are authority-derived, stale/legacy bytes are historical, and release consumers receive both recipes and generated evidence. Final exact-head closure evidence is retained in Draft PR #12 checks after the governance-only closure commits.
