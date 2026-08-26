@@ -8,4 +8,6 @@ if [[ ! -d "$root/tooling/generators/node_modules" ]]; then
   exit 1
 fi
 
+node --test "$root/tooling/scripts/rule-coverage.test.mjs"
 node "$root/tooling/scripts/validate-conformance.mjs" "$root"
+node "$root/tooling/scripts/validate-rule-coverage.mjs" "$root" --check
