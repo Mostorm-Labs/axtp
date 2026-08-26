@@ -1,45 +1,52 @@
 import path from "node:path";
 import { rm } from "node:fs/promises";
-import type { SpecModel } from "../models.js";
+import type { ProtocolSourceModel } from "../sourceModel.js";
+import { deriveCurrentVector } from "../vectorEncoding.js";
 import { toJsonStable, writeTextFile } from "../util.js";
 
-interface Vector {
-  name: string;
-  payloadType: string;
-  encoding: string;
-  hexFile: string;
-  expectDecode?: Record<string, unknown>;
-  expectError?: string;
+function bytesToHex(bytes: Uint8Array): string {
+  return Buffer.from(bytes).toString("hex").toUpperCase();
 }
 
-export async function emitTestVectors(_spec: SpecModel, outDir: string): Promise<void> {
-  await emitTestVectorFiles(_spec, path.join(outDir, "test_vectors"));
+export async function emitTestVectors(source: ProtocolSourceModel, outDir: string): Promise<void> {
+  await emitTestVectorFiles(source, path.join(outDir, "test_vectors"));
 }
 
-export async function emitTestVectorFiles(_spec: SpecModel, dir: string): Promise<void> {
+export async function emitTestVectorFiles(source: ProtocolSourceModel, dir: string): Promise<void> {
   await rm(dir, { recursive: true, force: true });
-  const vectors: Vector[] = [
-    { name: "control_open", payloadType: "CONTROL", encoding: "tlv", hexFile: "control_open.hex", expectDecode: { opcode: "OPEN" } },
-    { name: "rpc_audio_get_algorithm_config_request", payloadType: "RPC", encoding: "tlv", hexFile: "rpc_audio_get_algorithm_config.hex", expectDecode: { method: "audio.getAlgorithmConfig" } },
-    { name: "rpc_audio_set_algorithm_config_request", payloadType: "RPC", encoding: "tlv", hexFile: "rpc_audio_set_algorithm_config.hex", expectDecode: { method: "audio.setAlgorithmConfig", field: "noiseSuppression.level" } },
-    { name: "event_audio_algorithm_config_changed", payloadType: "RPC", encoding: "tlv", hexFile: "event_audio_algorithm_config_changed.hex", expectDecode: { event: "audio.algorithmConfigChanged", field: "noiseSuppression.level" } },
-    { name: "stream_object_chunk", payloadType: "STREAM", encoding: "binary", hexFile: "stream_object_chunk.hex", expectDecode: { streamId: 9 } },
-    { name: "compact_crc8_error", payloadType: "RPC", encoding: "tlv", hexFile: "compact_crc8_error.hex", expectError: "FRAME_CRC_ERROR" },
-    { name: "compact_message_id_overflow", payloadType: "RPC", encoding: "tlv", hexFile: "compact_message_id_overflow.hex", expectError: "COMPACT_MESSAGE_ID_OVERFLOW" }
-  ];
 
-  const hexData: Record<string, string> = {
-    "control_open.hex": "4158010100050110000100010100010000",
-    "rpc_audio_get_algorithm_config.hex": "41580102000B0110000200010207000000010901000000",
-    "rpc_audio_set_algorithm_config.hex": "41580102000E0110000300010207000000010902000001010103",
-    "event_audio_algorithm_config_changed.hex": "41580102000E0110000400010206000000000901000001010101",
-    "stream_object_chunk.hex": "41580103001401100005000100000009000000010000000000000001AABBCCDD",
-    "compact_crc8_error.hex": "121101020701000000020500000101015000",
-    "compact_message_id_overflow.hex": "1211FF01020701000000020500000101015000"
-  };
+  const derived = source.vectorRecipes.currentCore.map((recipe) => deriveCurrentVector(source, recipe));
+  const vectors = derived.map((vector) => ({
+    name: vector.name,
+    classification: "current-core",
+    authorityRules: vector.authorityRules,
+    recipe: vector.recipe,
+    derivation: vector.derivation,
+    payloadType: vector.payloadType,
+    encoding: vector.encoding,
+    hexFile: vector.hexFile,
+    wireDigest: vector.wireDigest,
+    ...(vector.expectDecode ? { expectDecode: vector.expectDecode } : {}),
+    ...(vector.expectError ? { expectError: vector.expectError } : {})
+  }));
+
+  const historicalFixtures = source.vectorRecipes.historical.map((fixture) => ({
+    name: fixture.id,
+    classification: fixture.classification,
+    reason: fixture.reason,
+    recipe: `contract/vector-recipes/historical.yaml#${fixture.id}`,
+    derivation: "preserved-historical",
+    ...(fixture.originalHexFile ? { originalHexFile: fixture.originalHexFile } : {}),
+    hexFile: fixture.outputPath,
+    ...(fixture.payloadType ? { payloadType: fixture.payloadType } : {}),
+    ...(fixture.encoding ? { encoding: fixture.encoding } : {}),
+    ...(fixture.expectDecode ? { expectDecode: fixture.expectDecode } : {}),
+    ...(fixture.expectError ? { expectError: fixture.expectError } : {})
+  }));
 
   await Promise.all([
-    writeTextFile(path.join(dir, "manifest.json"), toJsonStable({ vectors })),
-    ...Object.entries(hexData).map(([file, content]) => writeTextFile(path.join(dir, file), content))
+    writeTextFile(path.join(dir, "manifest.json"), toJsonStable({ vectors, historicalFixtures })),
+    ...derived.map((vector) => writeTextFile(path.join(dir, vector.hexFile), bytesToHex(vector.bytes))),
+    ...source.vectorRecipes.historical.map((fixture) => writeTextFile(path.join(dir, fixture.outputPath), fixture.historicalHex.toUpperCase()))
   ]);
 }
