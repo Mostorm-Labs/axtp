@@ -1,0 +1,145 @@
+schemaVersion: 1
+currentCore:
+  - id: control_open
+    classification: current-core
+    authorityRules:
+      - CORE.FRAME.001
+      - CONTROL.SESSION.001
+    hexFile: control_open.hex
+    profile: standard-framed
+    frame:
+      payloadType: CONTROL
+      sourceId: 1
+      destinationId: 16
+      messageId: 1
+      frameIndex: 0
+      frameCount: 1
+    payload:
+      kind: control
+      opcode: OPEN
+      controlId: 1
+      status: SUCCESS
+      body:
+        schema: ControlOpenBody
+        values:
+          maxFrameSize: 4096
+          supportedPayloadTypes:
+            bitmapFrom: payloadTypes
+            names: [CONTROL, RPC, STREAM]
+          supportedRpcEncodings:
+            bitmapFrom: rpcEncodings
+            names: [JSON, JSON_BINARY]
+          heartbeatIntervalMs: 1000
+          ackMode: 0
+    expectDecode:
+      opcode: OPEN
+
+  - id: rpc_audio_get_algorithm_config_request
+    classification: current-core
+    authorityRules:
+      - CORE.FRAME.001
+    hexFile: rpc_audio_get_algorithm_config.hex
+    profile: standard-framed
+    frame:
+      payloadType: RPC
+      sourceId: 1
+      destinationId: 16
+      messageId: 2
+      frameIndex: 0
+      frameCount: 1
+    payload:
+      kind: json-binary-request
+      rpcEncoding: JSON_BINARY
+      rpcOp: REQUEST
+      sid: 305419896
+      requestId: 1
+      method: audio.getAlgorithmConfig
+      status: SUCCESS
+      bodyEncoding: NONE
+    expectDecode:
+      method: audio.getAlgorithmConfig
+
+  - id: rpc_audio_set_algorithm_config_request
+    classification: current-core
+    authorityRules:
+      - CORE.FRAME.001
+    hexFile: rpc_audio_set_algorithm_config.hex
+    profile: standard-framed
+    frame:
+      payloadType: RPC
+      sourceId: 1
+      destinationId: 16
+      messageId: 3
+      frameIndex: 0
+      frameCount: 1
+    payload:
+      kind: json-binary-request
+      rpcEncoding: JSON_BINARY
+      rpcOp: REQUEST
+      sid: 305419896
+      requestId: 2
+      method: audio.setAlgorithmConfig
+      status: SUCCESS
+      bodyEncoding: TLV8
+      body:
+        config:
+          noiseSuppression:
+            level: 3
+    expectDecode:
+      method: audio.setAlgorithmConfig
+      field: noiseSuppression.level
+
+  - id: event_audio_algorithm_config_changed
+    classification: current-core
+    authorityRules:
+      - CORE.FRAME.001
+    hexFile: event_audio_algorithm_config_changed.hex
+    profile: standard-framed
+    frame:
+      payloadType: RPC
+      sourceId: 1
+      destinationId: 16
+      messageId: 4
+      frameIndex: 0
+      frameCount: 1
+    payload:
+      kind: json-event
+      rpcEncoding: JSON
+      rpcOp: EVENT
+      sid: "12345678"
+      event: audio.algorithmConfigChanged
+      data:
+        reason: user_request
+        applyState: applied
+        requiresAudioRestart: false
+        config:
+          noiseSuppression:
+            level: 1
+        changedFields:
+          - noiseSuppression.level
+    expectDecode:
+      event: audio.algorithmConfigChanged
+      field: noiseSuppression.level
+
+  - id: stream_object_chunk
+    classification: current-core
+    authorityRules:
+      - CORE.FRAME.001
+      - STREAM.FRAME.001
+    hexFile: stream_object_chunk.hex
+    profile: standard-framed
+    frame:
+      payloadType: STREAM
+      sourceId: 1
+      destinationId: 16
+      messageId: 5
+      frameIndex: 0
+      frameCount: 1
+    payload:
+      kind: stream
+      streamId: 9
+      seqId: 1
+      cursor: 1
+      dataHex: AABBCCDD
+    expectDecode:
+      streamId: 9
