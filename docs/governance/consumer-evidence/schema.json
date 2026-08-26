@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mostorm-labs.github.io/axtp/governance/consumer-evidence.schema.json",
+  "title": "AXTP Consumer Adoption Evidence Ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "consumers"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "consumers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/consumer" }
+    }
+  },
+  "$defs": {
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9A-Fa-f]{40}$"
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "specLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "commit"],
+      "properties": {
+        "tag": {
+          "type": "string",
+          "pattern": "^spec/v[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "commit": { "$ref": "#/$defs/commit" }
+      }
+    },
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "commit"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "commit": { "$ref": "#/$defs/commit" }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "id", "url", "commit"],
+      "properties": {
+        "repository": { "$ref": "#/$defs/repository" },
+        "id": { "type": "integer", "minimum": 1 },
+        "url": {
+          "type": "string",
+          "pattern": "^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/actions/runs/[0-9]+(?:/.*)?$"
+        },
+        "commit": { "$ref": "#/$defs/commit" }
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "enum": ["not-run", "in-progress", "pass", "fail", "stale"]
+        },
+        "run": { "$ref": "#/$defs/run" }
+      }
+    },
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "kind", "adoptionStatus"],
+      "properties": {
+        "repository": { "$ref": "#/$defs/repository" },
+        "kind": {
+          "enum": ["runtime", "sdk", "tool", "mock"]
+        },
+        "adoptionStatus": {
+          "enum": ["unverified", "in-progress", "pass", "fail", "stale"]
+        },
+        "specLock": { "$ref": "#/$defs/specLock" },
+        "implementation": { "$ref": "#/$defs/implementation" },
+        "declaredProfiles": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "conformance": { "$ref": "#/$defs/conformance" },
+        "verifiedAt": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "adoptionStatus": { "const": "pass" } },
+            "required": ["adoptionStatus"]
+          },
+          "then": {
+            "required": ["specLock", "implementation", "declaredProfiles", "conformance", "verifiedAt"],
+            "properties": {
+              "conformance": {
+                "required": ["status", "run"],
+                "properties": {
+                  "status": { "const": "pass" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
