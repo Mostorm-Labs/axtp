@@ -1,11 +1,11 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: draft
 domain: firmware
 feature: firmware.update
-registry: ../../../../contract/registry/domains/firmware/domain.yaml
-lastReviewed: 2026-06-15
+adoptedBy: contract/registry/domains/firmware/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # AXTP firmware.update 协议草案
@@ -18,7 +18,7 @@ Capability ID：`firmware.update`
 
 数据面：Standard Framed `STREAM`，默认 Stream Profile 为 `firmware.update`。
 
-本文是 Stage 20 `draft-business-protocol` 草案，基于 `workspace/flows/device-firmware-update.md`。本文不是 machine truth，也不是 runtime implementation contract；稳定事实必须在人工评审后进入 contract/registry/YAML，再由 Generator 生成 `contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**`。
+本文是已采纳的 protocol proposal / readable rationale，基于 `workspace/flows/device-firmware-update.md`。它不是 machine truth，也不是 runtime implementation contract；当前 canonical facts 已进入 `contract/registry/domains/firmware/domain.yaml` 并由 Generator 投影到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。本文中的历史 review/open questions 仅作为后续 amendment 输入。
 
 本版按评审意见收敛字段：P0 只保留“能力查询、创建会话、STREAM 上传、finish 移交、状态/进度观察”必须字段。断点续传、批次提交、Host 外部 verify/install、URL/file 暂存、A/B confirm、rollback、签名和 sha256 均作为 P1/P2 预留，不在 P0 字段表中展开。
 
@@ -27,7 +27,8 @@ Capability ID：`firmware.update`
 | 项目 | 内容 |
 |---|---|
 | 协议目的 | 让 PC Host 上传单 `.bin` 或多 `.bin` 固件文件；Host 上传完调用 `firmware.finishUpdate`，设备自主 md5 校验、安装和自动重启。 |
-| 当前状态 | generated；已写入 `../../../../contract/registry/domains/firmware/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
+| 当前状态 | accepted proposal；canonical facts 已写入 `contract/registry/domains/firmware/domain.yaml` 并生成；对应 protocol stability 仍为 draft。 |
+| 是否可直接实现 | 否。runtime / SDK / firmware 必须读取 canonical / generated / conformance authority。 |
 | Stage 50 生成 | P0 最小字段集已写入 registry source 并生成；P1/P2 reserved 与 legacy open questions 未采纳。 |
 | P0 主流程 | `getUpdateCapabilities` -> `beginUpdate` -> STREAM bytes -> `finishUpdate` -> state/progress events -> reconnect -> `firmware.getInfo`。 |
 | P0 方法 | `firmware.getUpdateCapabilities`, `firmware.beginUpdate`, `firmware.finishUpdate`, `firmware.getUpdateState`。 |
