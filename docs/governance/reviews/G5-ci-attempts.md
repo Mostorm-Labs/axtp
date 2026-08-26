@@ -73,10 +73,21 @@ For `AXTP-GOV-012`, numeric/layout facts suitable for deterministic projection a
 
 These observations are review evidence only. They do not replace executable repository validation.
 
+## Runner recovery observed
+
+After the runner/check-suite cleanup, previously delayed validation records became visible as completed successful runs:
+
+- run `32989075353` completed `success` on historical G5 head `56f8e5b3aff986fe1269b4476f636a2dc407f7c8`;
+- run `32989244799` completed `success` on historical G5 head `5d8107e60e8a0600785804d5f5dacaa45a1a1095`.
+
+These runs demonstrate that the repository validation path is executable again, but neither run is current-head closure evidence. They MUST NOT be used as the final G5 Gate result for a later branch head.
+
+Draft PR #12 was reopened after recovery and resolved its head to the current migration branch. This record update intentionally creates a normal `pull_request synchronize` event so GitHub can submit a fresh `Validate AXTP Spec` run against the new exact head. No protocol, registry, generated-contract, conformance-semantic, consumer-evidence behavior, or validation implementation is changed by this recovery record.
+
 ## Current Gate status
 
 ```text
-G5 = BLOCKED_ENVIRONMENT
+G5 = READY_FOR_REVERIFICATION
 blocking layer = exact-head GitHub Actions execution
 repository defect evidence = NONE
 protocol semantic impact evidence = NONE
@@ -93,4 +104,4 @@ The blocker clears when a fresh `Validate AXTP Spec` run is created for the curr
 3. record G5 PASS;
 4. perform one final exact-head closure run using the established G1-G4 discipline.
 
-No further repository implementation change is justified solely to work around the stuck check suite.
+No further repository implementation change is justified solely to work around the prior stuck check suite.
