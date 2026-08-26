@@ -77,6 +77,7 @@ copy_dir "$root/contract/generated" "$artifact_dir/contract/generated" "generate
 copy_dir "$root/specs" "$artifact_dir/specs" "specs"
 copy_dir "$root/contract/registry" "$artifact_dir/contract/registry" "registry"
 copy_dir "$root/contract/mcp" "$artifact_dir/contract/mcp" "MCP registry artifacts"
+copy_dir "$root/contract/vector-recipes" "$artifact_dir/contract/vector-recipes" "vector recipe provenance"
 copy_dir "$root/contract/test-vectors" "$artifact_dir/contract/test-vectors" "test vectors"
 copy_dir "$root/conformance" "$artifact_dir/conformance" "conformance"
 copy_dir "$root/release" "$artifact_dir/release" "release docs"
