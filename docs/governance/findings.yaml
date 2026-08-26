@@ -299,3 +299,27 @@ findings:
       - Full Validate AXTP Spec run 33020869297 completed success on exact functional head 04559cd4df33dfbaa25f7c87f5b90baabf776e10 with 56/56 generator tests, including the protocol Markdown authority-boundary mutation test.
       - Source/Protocol IR validation and generated drift passed, proving the derivation repair preserves current generated output while removing independent numeric ownership from the emitter.
     expectedDisposition: Refactor generated human-readable framework/opcode prose to model-driven projections or explicitly separate non-authoritative explanatory template text from protocol facts.
+
+  - id: AXTP-GOV-013
+    priority: P1
+    gate: Task7
+    class: GOV-AMBIGUITY
+    title: Governance v1 broad G5 required-work text conflicts with approved narrowed G5 execution authority
+    status: closed
+    evidence:
+      - docs/governance/AXTP_AUTHORITY_ARCHITECTURE_AND_REPOSITORY_GOVERNANCE_V1.md
+      - docs/governance/AXTP_GOVERNANCE_V1_G5_SCOPE_AMENDMENT.md
+      - docs/governance/README.md
+      - docs/governance/reviews/G5-information-architecture-consumer.md
+      - docs/governance/reviews/G5-closure.md
+      - docs/governance/reviews/G0-G5-final-closure.md
+    observed:
+      - Governance v1 Section 18 originally listed proposal compaction, feature-level Registry decomposition and ownership improvements as broad G5 required work.
+      - The later approved G5 execution authority correctly treated those items as non-blocking deferred programs and narrowed G5 to retrieval review, consumer evidence closure, generated-human projection repair and explicit defer contracts.
+      - Without explicit supersession, two effective governance texts could answer the G5 exit question differently.
+    resolution:
+      - Task 7 classified the mismatch as an Aegis AUTHORITY_CONFLICT at the governance layer, not as a protocol or implementation defect.
+      - AXTP_GOVERNANCE_V1_G5_SCOPE_AMENDMENT.md now supersedes only Section 18 G5 Required work / Exit criteria and formalizes the already-approved narrowed execution scope.
+      - docs/governance/README.md is the current governance navigation entry and lists Governance v1, the scope amendment, the finding register and final program closure together.
+      - Governance v1 Sections 1-17, G0-G4, Section 19 and Section 20 remain current; no protocol authority or upstream architecture conclusion is rewritten.
+    expectedDisposition: Reconcile Governance v1 with the approved G5 scope through explicit scope-specific supersession, preserving deferred work and all protected protocol invariants.
