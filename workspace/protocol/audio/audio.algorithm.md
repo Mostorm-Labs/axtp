@@ -4,8 +4,7 @@ lifecycle: accepted
 protocolStability: stable
 domain: audio
 feature: audio.algorithm
-adoptedBy:
-  - contract/registry/domains/audio/domain.yaml
+adoptedBy: contract/registry/domains/audio/domain.yaml
 lastReviewed: 2026-08-26
 ---
 
