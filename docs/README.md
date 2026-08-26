@@ -1,49 +1,83 @@
 # AXTP 文档阅读路线
 
-`docs/` 是仓库的公开阅读入口。默认先从角色指南进入；维护者专用输入放在根目录 `workspace/`，不属于新人默认浏览路径。
+`docs/` 是 AXTP 仓库的前台阅读入口。默认从角色指南进入，不要从 `workspace/`、历史计划或 agent workflow 开始理解 runtime contract。
 
-## 前台入口
+## 角色入口
 
 | 角色 | 入口 |
 |---|---|
 | 产品 / 架构 | [guides/product.md](guides/product.md) |
-| Runtime / SDK 研发 | [guides/runtime.md](guides/runtime.md) |
+| Runtime / SDK / Firmware | [guides/runtime.md](guides/runtime.md) |
 | 测试 / Conformance | [guides/testing.md](guides/testing.md) |
 | 协议维护 | [guides/protocol-maintainer.md](guides/protocol-maintainer.md) |
 | Release owner | [../release/README.md](../release/README.md) |
+| Repository governance | [governance/AXTP_AUTHORITY_ARCHITECTURE_AND_REPOSITORY_GOVERNANCE_V1.md](governance/AXTP_AUTHORITY_ARCHITECTURE_AND_REPOSITORY_GOVERNANCE_V1.md) |
 
-Release owner 是前台角色；`release/` 是发布操作区，用来管理 spec tag、artifact、changelog 和 runtime update flow。它不是 runtime 行为合同源。
+## Runtime implementation authority
 
-## 实现合同
+Runtime/SDK/Firmware 默认只从以下 frontstage authority surfaces 获取正式协议事实：
 
-| 合同类型 | 读取位置 | Runtime 可直接实现 |
-|---|---|---:|
-| 生成合同 | [../contract/generated/protocol.md](../contract/generated/protocol.md), [../contract/generated/protocol.json](../contract/generated/protocol.json), `../contract/protocol/axtp.protocol.yaml` | 是 |
-| 人读正式规范 | [../specs/](../specs/README.md) | 是，但必须与 generated / YAML 对齐 |
-| Registry 事实 | `../contract/registry/**`, `../contract/registry/domains/**` | 是 |
-| Conformance | [../conformance/](../conformance/README.md) | 是，作为行为验收面 |
-| Release 状态 | [../release/](../release/README.md) | 是，用于版本绑定 |
+| Authority | 位置 | 用途 |
+|---|---|---|
+| Release identity | `spec/vMAJOR.MINOR.PATCH`、exact commit 或 release artifact | 可重现绑定基线。 |
+| Canonical registry | `../contract/registry/**` | 手写机器事实源。 |
+| Protocol IR | `../contract/protocol/axtp.protocol.yaml` | 聚合机器模型；generated/read-only。 |
+| Generated reference | `../contract/generated/**`、`../contract/mcp/**` | runtime/SDK/tool 消费视图。 |
+| Formal specs | [../specs/](../specs/README.md) | wire/session/registry/codec/tooling normative context。 |
+| Verification | [../conformance/](../conformance/README.md) | executable behavior acceptance。 |
+| Release binding | [../release/](../release/README.md) | tag/artifact/spec-lock 和 downstream update contract。 |
 
-## 后台工作区
+如果这些 surface 之间出现冲突，按 [Contract and Source-of-Truth Rules](../specs/10-contract.md) 和 repository governance 处理；不要从 backstage proposal 猜测一个新的 runtime 事实。
 
-不要默认浏览这些目录。只有当角色指南或维护任务明确指向它们时再进入。
-默认 release artifact 只包含 `release/` 下的发布操作文档；其他 workspace 目录是仓库内维护输入，不进入默认发布包。
+## Backstage / non-contract material
 
-| 目录 | 用途 | Runtime 合同 |
-|---|---|---:|
-| `workspace/` | 维护者工作区：business 输入、flow、协议草案、legacy 迁移。 | 否 |
-| [../release/](../release/README.md) | 发布操作文档：tag、artifact、changelog、spec lock、runtime update flow。 | 否，除版本绑定外 |
-| `docs/archive/` | 历史审计、旧 spec 形态和过期决策背景。 | 否 |
-| `tooling/skills/` | Agent lifecycle skills 和流程定义。 | 否 |
-| `../workspace/registry-planning/candidates/` | 历史 / 候选 registry 表。 | 否 |
+以下路径不属于 runtime implementation authority，**不存在“accepted 以后自动变成 contract”的例外**：
 
-## 生成文件
-
-从文档编辑角度看，生成输出是只读文件。如果生成内容不对，应修 source YAML、specs 或 generator，然后重新跑生成链。
-
-| 生成路径 | 来源 |
+| 路径 | 用途 |
 |---|---|
-| `../contract/protocol/axtp.protocol.yaml` | `../contract/registry/**`, `../contract/registry/domains/**` |
-| `../contract/generated/**` | Generator 从 Protocol IR 和 registry sources 生成 |
-| `../contract/mcp/**` | Generator 输出 |
-| `../contract/test-vectors/**` | Generator 或 test-vector tooling 输出 |
+| `../workspace/business/**` | business intent / requirement evidence |
+| `../workspace/flows/**` | scenario / interaction planning |
+| `../workspace/protocol/**` | protocol proposal / rationale / amendment context |
+| `../workspace/legacy-*/**` | legacy migration evidence |
+| `../workspace/registry-planning/**` | historical/candidate registry planning |
+| `../workspace/runtime/**` | maintainer deep reference / implementation investigation |
+| `archive/**` | historical audit / superseded material |
+| `superpowers/**` | design/implementation plans and workflow artifacts |
+| `../tooling/skills/**` | agent lifecycle workflow instructions |
+
+这些材料可以帮助回答“为什么如此设计”“历史系统怎么迁移”“下一步如何 author protocol”，但不能覆盖 canonical/generated authority。
+
+## Proposal 与 accepted authority 的关系
+
+```text
+workspace proposal
+   ↓ review / adoption
+canonical registry + specs
+   ↓ deterministic generation
+Protocol IR / generated reference
+   ↓ verification
+conformance
+   ↓ release
+immutable spec identity
+```
+
+`workspace/protocol/**` 中 `lifecycle: accepted` 只表示 proposal 已被右侧 canonical authority 采纳；runtime 实现仍读取 canonical/generated surface。
+
+## Generated files
+
+从维护角度，以下路径是只读派生产物：
+
+| 生成路径 | 上游 |
+|---|---|
+| `../contract/protocol/axtp.protocol.yaml` | canonical registry/spec sources |
+| `../contract/generated/**` | Protocol IR / registry generator |
+| `../contract/mcp/**` | generator |
+| `../contract/test-vectors/**` | generator / vector derivation tooling |
+
+生成内容错误时修上游 source 或 generator，再重新生成；不得直接手改生成物制造协议事实。
+
+## AI / agent 默认检索规则
+
+实现型任务应先读取 release identity + canonical/generated authority + conformance，再按需要读取 formal specs。只有需求追踪、协议设计、legacy migration、审计或 supersession 任务才主动展开 backstage material。
+
+这条规则用于降低 retrieval pollution：更多文档并不等于更多 authority，默认检索集合必须小而确定。
