@@ -299,17 +299,13 @@ docs/governance/reviews/G5-closure.md
 
 No Task 7 change touches `specs/**`, `contract/**`, `conformance/**`, `tooling/**`, release behavior, or CI workflows.
 
-Frozen Task 7 functional-closure head:
-
-```text
-2271f631836c261de151c3685b3b6d8bdc29e047
-```
+The exact commit containing this record is intentionally **not embedded here** because doing so would create a self-invalidating commit loop. The immutable Task 7 functional-head SHA is captured externally by Draft PR #12 and the corresponding GitHub Actions run. Only a run whose own `head_sha` equals that PR head is valid evidence.
 
 ## 12. Pre-final decision
 
 All substantive Task 7 reviews are complete. `AXTP-GOV-013` has been repaired at the governance authority layer and all G0-G5 prerequisites are PASS.
 
-Under the same evidence discipline used for G1-G5, final program PASS requires one fresh full `Validate AXTP Spec` run whose immutable `head_sha` equals the frozen Task 7 functional-closure head above.
+Under the same evidence discipline used for G1-G5, final program PASS requires one fresh full `Validate AXTP Spec` run whose immutable `head_sha` equals the frozen Task 7 functional-closure head.
 
 Until that run succeeds:
 
