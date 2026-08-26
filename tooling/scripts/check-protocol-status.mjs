@@ -42,6 +42,9 @@ function boolValue(value) {
   return value === "true" ? true : value === "false" ? false : undefined;
 }
 
+const allowedLifecycles = new Set(["captured", "reviewing", "accepted", "superseded", "archived"]);
+const allowedProtocolStability = new Set(["draft", "experimental", "stable", "deprecated", "reserved"]);
+
 const generated = JSON.parse(fs.readFileSync(generatedPath, "utf8"));
 const generatedFeatures = new Set();
 const generatedCounts = new Map();
@@ -65,21 +68,55 @@ for (const file of walkProtocolDrafts(protocolDraftRoot)) {
   const { text, data } = readFrontmatter(file);
   const domain = data.domain || path.relative(protocolDraftRoot, file).split(path.sep)[0];
   draftCounts.set(domain, (draftCounts.get(domain) ?? 0) + 1);
+
+  const isV2 = data.authorityClass !== undefined || data.lifecycle !== undefined || data.protocolStability !== undefined || data.adoptedBy !== undefined;
+  const isGenerated = generatedFeatures.has(data.feature);
+
+  if (isV2) {
+    if (!data.authorityClass || !data.lifecycle || !data.protocolStability || !data.feature) {
+      fail(`${relative}: incomplete proposal authority metadata v2`);
+      continue;
+    }
+    if (data.authorityClass !== "proposal") {
+      fail(`${relative}: workspace/protocol authorityClass must be proposal`);
+    }
+    if (!allowedLifecycles.has(data.lifecycle)) {
+      fail(`${relative}: invalid proposal lifecycle ${data.lifecycle}`);
+    }
+    if (!allowedProtocolStability.has(data.protocolStability)) {
+      fail(`${relative}: invalid protocolStability ${data.protocolStability}`);
+    }
+    if (data.contract !== undefined || data.generated !== undefined || data.status !== undefined || data.registry !== undefined) {
+      fail(`${relative}: proposal authority metadata v2 must not mix legacy status/contract/generated/registry fields`);
+    }
+
+    if (isGenerated) {
+      if (data.lifecycle !== "accepted") {
+        fail(`${relative}: generated feature ${data.feature} must use lifecycle accepted`);
+      }
+      if (!data.adoptedBy) {
+        fail(`${relative}: accepted feature ${data.feature} must declare adoptedBy canonical authority`);
+      }
+      if (/当前 generated 协议没有 adopted/.test(text)) {
+        fail(`${relative}: accepted proposal still says the feature is not adopted`);
+      }
+    } else if (data.lifecycle === "accepted") {
+      fail(`${relative}: lifecycle accepted but ${data.feature} is not present in contract/generated/protocol.json`);
+    }
+    continue;
+  }
+
+  // Legacy proposal metadata remains temporarily readable for non-adopted drafts
+  // during the G1 migration, but it may never claim runtime authority.
   if (!data.status || data.contract === undefined || data.generated === undefined || !data.feature) {
     fail(`${relative}: missing required protocol frontmatter`);
     continue;
   }
-
-  const isGenerated = generatedFeatures.has(data.feature);
-  if (isGenerated) {
-    if (data.status !== "generated" || boolValue(data.contract) !== true || boolValue(data.generated) !== true) {
-      fail(`${relative}: generated feature ${data.feature} must use status/generated/contract true frontmatter`);
-    }
-    if (/当前 generated 协议没有 adopted/.test(text)) {
-      fail(`${relative}: generated draft still says the feature is not adopted`);
-    }
-  } else if (boolValue(data.generated) === true || boolValue(data.contract) === true || data.status === "generated") {
-    fail(`${relative}: frontmatter says generated but ${data.feature} is not present in contract/generated/protocol.json`);
+  if (boolValue(data.contract) === true) {
+    fail(`${relative}: workspace proposal must not claim contract: true; migrate to proposal authority metadata v2`);
+  }
+  if (boolValue(data.generated) === true || data.status === "generated" || isGenerated) {
+    fail(`${relative}: adopted/generated feature ${data.feature} must migrate to proposal authority metadata v2`);
   }
 }
 
@@ -123,4 +160,4 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log("[OK] protocol draft frontmatter and product domain matrix counts match workspace and generated protocol");
+console.log("[OK] protocol proposal authority metadata and product domain matrix match workspace and generated protocol");
