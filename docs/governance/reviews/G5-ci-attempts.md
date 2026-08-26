@@ -82,26 +82,53 @@ After the runner/check-suite cleanup, previously delayed validation records beca
 
 These runs demonstrate that the repository validation path is executable again, but neither run is current-head closure evidence. They MUST NOT be used as the final G5 Gate result for a later branch head.
 
-Draft PR #12 was reopened after recovery and resolved its head to the current migration branch. This record update intentionally creates a normal `pull_request synchronize` event so GitHub can submit a fresh `Validate AXTP Spec` run against the new exact head. No protocol, registry, generated-contract, conformance-semantic, consumer-evidence behavior, or validation implementation is changed by this recovery record.
+Draft PR #12 was reopened after recovery and resolved its head to the current migration branch. A governance-evidence update then created exact functional head `04559cd4df33dfbaa25f7c87f5b90baabf776e10` and submitted a fresh pull-request validation.
+
+## Functional re-verification — run 33020869297
+
+The recovery condition was satisfied by a fresh executable workflow:
+
+```text
+workflow   = Validate AXTP Spec
+run        = 33020869297
+head_sha   = 04559cd4df33dfbaa25f7c87f5b90baabf776e10
+PR         = #12
+status     = completed
+conclusion = success
+```
+
+The run completed the full repository path:
+
+```text
+generator tests          = 56/56 PASS
+generated drift          = PASS
+conformance cases        = 39 PASS
+normative Rule coverage  = 10 covered + 1 structural-only + 0 uncovered
+consumer evidence        = 6 consumers / PASS
+docs/status/path checks  = PASS
+release artifact dry run = PASS
+```
+
+Classification:
+
+```text
+prior environment blocker = CLEARED
+repository defect evidence = NONE
+protocol semantic impact   = NONE
+functional G5 evidence      = PASS
+```
+
+The AJV `strictTypes` messages emitted while compiling one conditional consumer-evidence schema branch are advisory warnings only: the schema and semantic validator completed successfully and the current ledger passed. They are not evidence of a failed G5 contract.
 
 ## Current Gate status
 
 ```text
-G5 = READY_FOR_REVERIFICATION
-blocking layer = exact-head GitHub Actions execution
-repository defect evidence = NONE
-protocol semantic impact evidence = NONE
+G5 functional verification = PASS
+AXTP-GOV-006               = CLOSED FROM EVIDENCE
+AXTP-GOV-012               = CLOSED FROM EVIDENCE
+final G5 verdict            = PENDING FINAL EXACT-HEAD CLOSURE RUN
 ```
 
-`AXTP-GOV-006` and `AXTP-GOV-012` remain open until executable full repository CI proves the new AJV/semantic validator, Vitest projection test, generated drift, conformance integration, docs/status checks, and release dry-run on an exact current head.
+The functional PASS is now frozen. PR #12 was closed before writing the closure-only finding and review records.
 
-## Recovery condition
-
-The blocker clears when a fresh `Validate AXTP Spec` run is created for the current migration-branch head and completes all repository validation steps. At that point:
-
-1. classify any real test/build failure before repair;
-2. if green, close `AXTP-GOV-006` and `AXTP-GOV-012` from evidence;
-3. record G5 PASS;
-4. perform one final exact-head closure run using the established G1-G4 discipline.
-
-No further repository implementation change is justified solely to work around the prior stuck check suite.
+The next valid evidence must be a full `Validate AXTP Spec` run whose immutable `head_sha` equals the closure-record branch head. No further implementation or protocol change is justified unless that run exposes a real defect.
