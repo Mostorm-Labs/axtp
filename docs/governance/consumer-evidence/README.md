@@ -4,6 +4,10 @@ This directory is mutable repository-governance evidence for downstream adoption
 
 The Spec release defines what a consumer is expected to implement. `ledger.yaml` records whether a specific runtime, SDK, tool, or mock has externally demonstrated adoption.
 
+## Release boundary
+
+`docs/governance/consumer-evidence/**` is repository-only governance state. It must not be added to the Spec release manifest or artifact contract. A released Spec snapshot remains immutable protocol/release authority; this ledger may change later as consumers produce or invalidate adoption evidence.
+
 ## Status
 
 - `unverified`: evidence is absent or insufficient.
