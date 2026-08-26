@@ -11,3 +11,4 @@ fi
 node --test "$root/tooling/scripts/rule-coverage.test.mjs"
 node "$root/tooling/scripts/validate-conformance.mjs" "$root"
 node "$root/tooling/scripts/validate-rule-coverage.mjs" "$root" --check
+node "$root/tooling/scripts/validate-consumer-evidence.mjs" "$root"
