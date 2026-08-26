@@ -2,6 +2,8 @@ id: rpc.method_not_found
 title: Unknown method returns RPC_METHOD_NOT_FOUND
 since: spec/v0.0.2
 level: core
+authorityRules:
+  - RPC.METHOD.001
 profiles:
   - core
   - websocket-jsonrpc
