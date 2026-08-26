@@ -72,12 +72,25 @@ findings:
     gate: G3
     class: VERIFICATION-GAP
     title: Normative requirements lack stable Rule IDs and explicit rule-to-conformance coverage
-    status: open
+    status: ready-for-full-verification
     evidence:
-      - specs/20-core.md
-      - specs/30-registry.md
-      - conformance/manifest.yaml
+      - docs/governance/reviews/G3-rule-verification.md
+      - contract/rules/rules.yaml
+      - contract/rules/README.md
+      - conformance/schemas/conformance-case.schema.json
       - conformance/cases/
+      - tooling/scripts/lib/rule-coverage.mjs
+      - tooling/scripts/rule-coverage.test.mjs
+      - tooling/scripts/validate-rule-coverage.mjs
+      - tooling/scripts/validate-conformance.sh
+    resolution:
+      - Seeded 11 stable current-core Rule IDs covering frame identity, CONTROL, RPC session/compatibility/method/event behavior, codec forward compatibility, STREAM header shape and Endpoint Relay addressing.
+      - Existing specs remain semantic authority; the Rule registry provides stable verification metadata and source pointers without redefining protocol behavior.
+      - Case authorityRules is the single authored Rule-to-Case edge; reverse Rule-to-Case coverage is derived by tooling rather than duplicated in the Rule registry.
+      - Ten seeded rules use executable covered disposition; CORE.FRAME.001 explicitly uses structural-only evidence because current conformance DSL does not inject invalid raw Standard Frame versions.
+      - Coverage validation rejects unknown Rule references, covered rules without cases, malformed evidence/dispositions, and any seeded stable MUST rule left uncovered.
+      - Existing selected conformance cases retain their original executable steps/assertions; only authorityRules metadata was added.
+      - Pure coverage helper completed an isolated RED-to-GREEN node:test cycle with 3/3 passing tests; full repository validation remains the Gate blocker.
     expectedDisposition: Seed stable Rule IDs and bidirectional Rule-to-Evidence traceability.
 
   - id: AXTP-GOV-005
