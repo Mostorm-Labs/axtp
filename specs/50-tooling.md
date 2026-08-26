@@ -1,6 +1,6 @@
 # AXTP 工具链与版本
 
-本文定义源注册表 YAML 如何生成 Protocol IR、生成参考、发布包和 runtime binding metadata。
+本文定义源注册表 YAML 如何生成 Protocol IR、生成参考、发布包和 runtime binding metadata，并定义 tooling 如何解释 AXTP 的多个版本身份。
 
 ## 从源模型到合同
 
@@ -30,14 +30,17 @@ contract/registry/**/*.yaml
 
 | 输入 | 职责 |
 |---|---|
+| `contract/registry/core/protocol_meta.yaml` | Protocol IR 顶层 protocol semantics / legacy version projections、wire description、transport/profile 和 core architecture metadata。 |
 | `contract/registry/core/*.yaml` | PayloadType、RPC op、encoding、CONTROL opcode 和 core enum。 |
 | `contract/registry/error/error_code.yaml` | Core/shared error registry。 |
 | `contract/registry/schema/*.yaml` | Core/shared schema。 |
 | `contract/registry/capability/*.yaml` | Core/shared capability/profile facts。 |
 | `contract/registry/domains/<domain>/domain.yaml` | 业务 domain 的 methods、events、schemas、errors、capabilities 和 profiles。 |
-| `contract/registry/version.yaml` | Spec/contract/registry/schema/wire metadata。 |
+| `contract/registry/version.yaml` | 历史 registry/spec/schema/wire metadata surface；继续被 tooling 读取和 release artifact 保留，但 G2 后不得把裸字段名解释成新的 canonical identity。 |
 
 业务事实只有在评审、采纳和注册表更新之后才进入 source model。
+
+当前 Protocol IR 顶层 `protocol.*` metadata 由 `core/protocol_meta.yaml` 投影。`version.yaml` 的 `spec.version/registry_version/schema_version/wire_version` 当前是兼容/历史 metadata mirror，不是一个独立的 runtime negotiation authority。
 
 ## 生成器要求
 
@@ -79,15 +82,61 @@ contract/registry/**/*.yaml
 | `tooling/scripts/check-release-artifact.sh <version>` | Release artifact 包含可消费合同，并排除 maintainer-only material。 |
 | `tooling/scripts/validate-conformance.sh` | Conformance manifest 和 cases 结构有效。 |
 
-## 版本
+## Spec Identity / Version Model
 
-AXTP 使用 tag 发布不可变 spec snapshot：
+任何 version 字段都必须先回答：**这个 version 在版本化什么？**
+
+Canonical semantic names：
+
+| Canonical name | 当前值/示例 | Tooling 解释 |
+|---|---|---|
+| `release.version` | `0.15.0` | `spec/v0.15.0` 对应的整个 repository authority snapshot；runtime lock / artifact / dispatch 使用这个 namespace。 |
+| `protocolSemantics.generation` | `1` | AXTP v1 Core semantic family；当前没有独立 machine field。 |
+| `protocolSemantics.version` | `1.0.0` | 当前由 `protocol_meta.yaml protocol.version` 投影到 Protocol IR。 |
+| `wire.standardFrameVersion` | `1` / `0x01` | Standard Frame Header `Version`；hard parser compatibility boundary。 |
+| `registrySchema.version` | `1.0.0` | registry/schema authoring model generation。 |
+| `authoritySchema.version` | `1` | repository governance metadata generation；不进入 protocol wire。 |
+| `generator.version` | `1.0.0` | operational generator identity。 |
+| `runtimeImplementation.version` | `v0.15.0.R` | downstream consumer release identity。 |
+| `advisoryHelloVersion` | `Hello.d.axtpVersion` | peer diagnostics string；不得做 admission/feature gate。 |
+
+完整版本规则见 `release/AXTP_SPEC_VERSIONING.zh-CN.md`。
+
+### Existing compatibility aliases
+
+当前机器格式含有历史命名，G2 冻结其语义但不做物理重命名：
+
+| Existing field | Canonical meaning |
+|---|---|
+| `protocol.version` | `protocolSemantics.version` |
+| `protocol.specVersion` | legacy alias of `wire.standardFrameVersion` |
+| `protocol.registryVersion` | legacy/current projection of `registrySchema.version` |
+| `version.yaml spec.version` | legacy mirror of `protocolSemantics.version`，不是 release version |
+| `version.yaml registry_version` | legacy mirror of `registrySchema.version` |
+| `version.yaml schema_version` | legacy mirror of `registrySchema.version` |
+| `version.yaml wire_version` | legacy mirror of `wire.standardFrameVersion` |
+| release `spec_version` / manifest `axtp_spec.version` | `release.version` |
+
+`protocol.specVersion` 不能因为字段名里出现 `spec` 就解释为 `spec/vX.Y.Z`。历史 freeze authority 已将它与 Core wire/header generation 绑定；当前 normative parser boundary 仍是 `specs/20-core.md` 的 Standard Frame Header `Version`。
+
+### Physical rename policy
+
+G2 不改名已有 machine fields，因为它们可能已被 Protocol IR/generated/runtime/automation consumer 解析。
+
+- 新 metadata MUST 使用 `releaseVersion`、`protocolSemanticsVersion`、`standardFrameVersion` 等能够说明 owner 的名字。
+- 不得新引入语义不明的裸 `version`、`specVersion`、`protocolVersion`。
+- 已有字段作为 compatibility alias 保留；未来删除/重命名必须单独做 schema/tooling migration 和 downstream verification。
+- 文档中的 canonical name 是**语义规范化**，不是对现有 wire/schema 的 silent rename。
+
+## Release Versioning
+
+AXTP 使用 tag 发布不可变 release snapshot：
 
 ```text
 spec/vMAJOR.MINOR.PATCH
 ```
 
-Runtime package version 与 AXTP Spec version 分离。Runtime 仓库 MUST 绑定 spec tag、精确 commit 或 release artifact；release build MUST NOT 依赖浮动的 `main`。
+Release SemVer 只管理 repository release identity；它不替代 protocol semantic、wire、registry schema 或 generator version。
 
 版本语义：
 
@@ -97,7 +146,21 @@ Runtime package version 与 AXTP Spec version 分离。Runtime 仓库 MUST 绑�
 | MINOR | 向后兼容的 capability、registry、profile、generated fact 或 artifact-layout addition。 |
 | PATCH | 非破坏性修正或说明澄清。 |
 
-Patch release MUST NOT 改变 wire compatibility。Minor release MAY 扩展 generated registry 和 machine-readable facts，而不破坏上一 minor 的功能。Major release 是显式 compatibility boundary。
+Patch release MUST NOT 改变既有 wire compatibility。Minor release MAY 扩展 generated registry 和 machine-readable facts，而不破坏上一 minor 的功能。Major release 是显式 compatibility boundary。
+
+Runtime package version 与 AXTP release version 分离。Runtime 仓库 MUST 绑定 spec tag、精确 commit 或 release artifact；release build MUST NOT 依赖浮动 `main`。
+
+## Compatibility admission
+
+版本字段不能取代真正的 compatibility authority：
+
+- Standard Frame Header `Version` 是 frame parser boundary；
+- transport/profile/capability/registry facts 决定 feature availability；
+- `Hello.axtpVersion` 仅用于 diagnostics；
+- release SemVer 仅用于 snapshot binding 和 release compatibility history；
+- runtime `vX.Y.Z.R` 仅用于 consumer implementation release identity。
+
+因此 runtime MUST NOT 把 release number、Protocol IR `protocol.version` 或 Hello diagnostic string 简化成通用 feature gate。
 
 ## 发布包
 
