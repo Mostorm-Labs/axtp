@@ -2,6 +2,8 @@ id: session.hello_identify_identified
 title: HELLO / IDENTIFY / IDENTIFIED session setup
 since: spec/v0.0.2
 level: websocket-jsonrpc
+authorityRules:
+  - RPC.SESSION.001
 semantic:
   kind: baseline_handshake
 profiles:
