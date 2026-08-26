@@ -1,28 +1,76 @@
 # Protocol Proposal Conventions
 
-本页集中维护 `workspace/protocol/**` proposal 的公共写法。这里的所有文件都是 proposal / review context，**无论 lifecycle 是 reviewing 还是 accepted，都不是 runtime implementation contract**。
+本页集中维护 `workspace/protocol/**` proposal 的公共写法。这里的所有文件都是 proposal / review context，**无论 lifecycle 是 captured、reviewing 还是 accepted，无论 protocol stability 是 draft 还是 stable，都不是 runtime implementation contract**。
 
 正式实现必须从 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml`、`contract/generated/**`、适用的 `specs/**`、`conformance/**` 以及明确的 spec release identity 读取。
 
 ## Authority metadata
 
-新建或迁移后的 proposal 使用：
+新建 proposal 默认使用：
 
 ```yaml
 ---
 authorityClass: proposal
-lifecycle: captured | reviewing | accepted | superseded | archived
-protocolStability: draft | experimental | stable | deprecated | reserved
+lifecycle: captured
+protocolStability: draft
 domain: <domain>
 feature: <domain.feature>
-adoptedBy: <canonical source path when accepted>
+adoptedBy:
 lastReviewed: YYYY-MM-DD
 ---
 ```
 
-`lifecycle` 与 `protocolStability` 不能互相替代。`accepted` 仅表示 proposal 已被 canonical authority 采纳；runtime 仍不得从本文实现。
+允许值：
 
-对于已采纳 proposal，正文前部必须明确指出 canonical adoption target，并把“是否可直接实现”表达为否：实现读取 canonical / generated authority，本文只保留 rationale、review context 和 amendment input。
+```text
+lifecycle = captured | reviewing | accepted | superseded | archived
+protocolStability = draft | experimental | stable | deprecated | reserved
+```
+
+`lifecycle` 与 `protocolStability` 是两个正交维度，不能互相替代。
+
+`accepted` 仅表示 proposal 已被 canonical authority 采纳；runtime 仍不得从本文实现。
+
+### adoptedBy
+
+`lifecycle: accepted` 时必须填写：
+
+```yaml
+adoptedBy: contract/registry/<primary canonical owner>.yaml
+```
+
+规则：
+
+- `adoptedBy` 是单个 scalar repository-relative path；
+- 通常指向 `contract/registry/domains/<domain>/domain.yaml`；
+- 如果同一次 adoption/amendment 还修改 error/profile/shared schema/spec 等其他 canonical 文件，在正文 adoption/amendment note 中列出；
+- 不把 `adoptedBy` 写成 YAML list；
+- 不把 generated artifact、workspace 文档或 release tag 写成 `adoptedBy` primary canonical owner。
+
+### Legacy metadata prohibition
+
+已迁移到 Authority Metadata v2 后，frontmatter 不得再出现：
+
+```yaml
+status:
+contract:
+generated:
+registry:
+```
+
+这些字段把 proposal lifecycle、protocol stability、derivation state 和 implementation authority 混在一起，会重新制造 shadow authority。
+
+## Current-state wording
+
+所有 proposal 的当前状态摘要都必须保持以下边界：
+
+```text
+是否可直接实现：否。实现读取 canonical / generated / conformance authority。
+```
+
+accepted proposal 可以说明“canonical facts 已存在”，但不能写成“本文已经 generated，因此本文可直接实现”。
+
+历史 adoption 记录可以保留旧时间点描述，但当前状态表、顶部提示和 frontmatter 必须反映现在的 authority model。
 
 ## JSON 示例约定
 
@@ -58,6 +106,8 @@ Method/Event proposal 应重点说明：
 - canonical schema link（accepted 后）。
 
 不要在每篇 proposal 重复公共 requestId、sid、error envelope、unknown method/event 等 Core 规则。
+
+Method/Event 表中的“状态”如果需要表达协议成熟度，应使用 `draft / experimental / stable / deprecated / reserved`，不要用 `generated` 充当协议状态。
 
 ## Schema 展开
 
@@ -126,19 +176,25 @@ proposal 只记录 feature-specific verification requirements，不复制通用�
 - conformance gap；
 - compatibility classification。
 
-不要保留“采纳前还需确认哪些 schema、事件和测试？”这类模板问题。
+不要保留纯模板问题。
 
 ## Accepted proposal rule
 
 Proposal accepted 后：
 
 1. 保留 why / rationale / historical review；
-2. metadata 改为 `lifecycle: accepted`；
+2. metadata 使用 `authorityClass: proposal` + `lifecycle: accepted`；
 3. `protocolStability` 独立记录对应 canonical fact 的成熟度；
-4. `adoptedBy` 指向 canonical source；
-5. 删除任何把 proposal 自己描述成“可直接实现合同”的措辞；
+4. `adoptedBy` 指向单个 primary canonical Registry owner；
+5. 删除任何把 proposal 自己描述成“可直接实现合同”的当前状态措辞；
 6. 后续语义修订必须同步修改 canonical authority，并重新生成/验证；
 7. proposal 不重新成为第二份 source of truth。
+
+## Amendment rule
+
+未决 amendment 可以暂时使用 `lifecycle: reviewing`，但 `authorityClass` 始终保持 `proposal`。canonical amendment 完成并验证后恢复 `lifecycle: accepted`。
+
+Stage 50 generation 不读取、不修改 proposal metadata。
 
 ## Supersession
 
