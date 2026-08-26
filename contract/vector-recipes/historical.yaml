@@ -1,0 +1,78 @@
+schemaVersion: 1
+historical:
+  - id: pre_g4_control_open
+    classification: historical-stale
+    reason: Pre-G4 pseudo-golden intended as current CONTROL OPEN but missing the Standard Frame CRC footer and current required OPEN TLVs.
+    originalHexFile: control_open.hex
+    outputPath: historical/pre-g4/control_open.hex
+    historicalHex: 4158010100050110000100010100010000
+    payloadType: CONTROL
+    encoding: tlv
+    expectDecode:
+      opcode: OPEN
+
+  - id: pre_g4_rpc_audio_get_algorithm_config_request
+    classification: historical-stale
+    reason: Pre-G4 pseudo-golden uses an obsolete short RPC binary envelope and omits the Standard Frame CRC footer.
+    originalHexFile: rpc_audio_get_algorithm_config.hex
+    outputPath: historical/pre-g4/rpc_audio_get_algorithm_config.hex
+    historicalHex: 41580102000B0110000200010207000000010901000000
+    payloadType: RPC
+    encoding: tlv
+    expectDecode:
+      method: audio.getAlgorithmConfig
+
+  - id: pre_g4_rpc_audio_set_algorithm_config_request
+    classification: historical-stale
+    reason: Pre-G4 pseudo-golden uses an obsolete short RPC binary envelope, stale schema projection and no Standard Frame CRC footer.
+    originalHexFile: rpc_audio_set_algorithm_config.hex
+    outputPath: historical/pre-g4/rpc_audio_set_algorithm_config.hex
+    historicalHex: 41580102000E0110000300010207000000010902000001010103
+    payloadType: RPC
+    encoding: tlv
+    expectDecode:
+      method: audio.setAlgorithmConfig
+      field: noiseSuppression.level
+
+  - id: pre_g4_event_audio_algorithm_config_changed
+    classification: historical-stale
+    reason: Pre-G4 pseudo-golden uses an obsolete RPC envelope/body projection and omits the Standard Frame CRC footer.
+    originalHexFile: event_audio_algorithm_config_changed.hex
+    outputPath: historical/pre-g4/event_audio_algorithm_config_changed.hex
+    historicalHex: 41580102000E0110000400010206000000000901000001010101
+    payloadType: RPC
+    encoding: tlv
+    expectDecode:
+      event: audio.algorithmConfigChanged
+      field: noiseSuppression.level
+
+  - id: pre_g4_stream_object_chunk
+    classification: historical-stale
+    reason: Pre-G4 pseudo-golden carries the current 16-byte STREAM payload shape but omits the Standard Frame CRC footer.
+    originalHexFile: stream_object_chunk.hex
+    outputPath: historical/pre-g4/stream_object_chunk.hex
+    historicalHex: 41580103001401100005000100000009000000010000000000000001AABBCCDD
+    payloadType: STREAM
+    encoding: binary
+    expectDecode:
+      streamId: 9
+
+  - id: compact_crc8_error
+    classification: historical-compatibility
+    reason: Compact framing is a low-bandwidth compatibility/degradation fixture and is not AXTP v1 Core authority.
+    originalHexFile: compact_crc8_error.hex
+    outputPath: historical/compact/compact_crc8_error.hex
+    historicalHex: 121101020701000000020500000101015000
+    payloadType: RPC
+    encoding: tlv
+    expectError: FRAME_CRC_ERROR
+
+  - id: compact_message_id_overflow
+    classification: historical-compatibility
+    reason: Compact framing is a low-bandwidth compatibility/degradation fixture and is not AXTP v1 Core authority.
+    originalHexFile: compact_message_id_overflow.hex
+    outputPath: historical/compact/compact_message_id_overflow.hex
+    historicalHex: 1211FF01020701000000020500000101015000
+    payloadType: RPC
+    encoding: tlv
+    expectError: COMPACT_MESSAGE_ID_OVERFLOW
