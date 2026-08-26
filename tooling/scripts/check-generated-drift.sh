@@ -46,9 +46,8 @@ do
   diff -u "$root/contract/mcp/$file" "$tmp/generated/json/$file"
 done
 
-for file in "$root"/contract/test-vectors/*; do
-  base="$(basename "$file")"
-  diff -u "$file" "$tmp/generated/test_vectors/$base"
-done
+# Test vectors now contain nested historical provenance. Compare the complete
+# generated tree instead of assuming every vector is a top-level flat file.
+diff -ru "$root/contract/test-vectors" "$tmp/generated/test_vectors"
 
-echo "[OK] generated artifacts match contract/registry/domain YAML sources"
+echo "[OK] generated artifacts match canonical registry and vector recipe sources"
