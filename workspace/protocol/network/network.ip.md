@@ -1,11 +1,11 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: draft
 domain: network
 feature: network.ip
-registry: ../../../../contract/registry/domains/network/domain.yaml
-lastReviewed: 2026-06-15
+adoptedBy: contract/registry/domains/network/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # network.ip
@@ -15,8 +15,8 @@ lastReviewed: 2026-06-15
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 按设备返回的 `interfaceId` 查询或设置 IPv4/IPv6 DHCP/static 地址、网关、DNS，并报告有效地址变化。 |
-| 当前状态 | generated；已写入 `../../../../contract/registry/domains/network/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 open review markers 不属于已生成合同。 |
+| 当前状态 | accepted proposal；canonical facts 已写入 `contract/registry/domains/network/domain.yaml` 并生成；对应 protocol stability 仍为 draft。 |
+| 是否可直接实现 | 否。本文保留设计说明和 review context；runtime 必须读取 canonical / generated / conformance authority。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
 | Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
@@ -29,7 +29,7 @@ lastReviewed: 2026-06-15
 
 本 feature 不表达 Wi-Fi 认证/关联、不表达 AP running，也不表达接口基础链路变化；这些分别由 `network.wifi`、`network.ap` 和 `network.interface` 负责。NA20 AP 本端 IP 可以通过 AP 接口的 `interfaceId` 查询；AP DHCP Server 地址池是否也放在 `network.ap` 仍待确认。
 
-`network.ip` 的 P0 / confirmed subset 已进入 generated 合同；正式 methodId、eventId、errorCode、fieldId 以 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**` 为准。本文保留的 review 标记仅用于后续修订。
+`network.ip` 的 P0 / confirmed subset 已进入 generated authority；正式 methodId、eventId、errorCode、fieldId 以 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**` 为准。本文保留的 review 标记仅用于后续修订。
 
 ## 2. 能力边界
 
