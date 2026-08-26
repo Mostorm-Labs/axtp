@@ -124,8 +124,6 @@ rules:
     since: spec/v0.0.2
     verification:
       disposition: covered
-      evidence:
-        - tooling/generators/src/protocolValidator.ts
 
   - id: RPC.RELAY.001
     status: stable
