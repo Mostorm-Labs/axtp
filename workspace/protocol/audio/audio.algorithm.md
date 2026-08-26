@@ -1,11 +1,12 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: stable
 domain: audio
 feature: audio.algorithm
-registry: ../../../../contract/registry/domains/audio/domain.yaml
-lastReviewed: 2026-06-10
+adoptedBy:
+  - contract/registry/domains/audio/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # audio.algorithm
@@ -15,8 +16,8 @@ lastReviewed: 2026-06-10
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 管理运行时音频算法的能力发现、配置查询、配置更新、默认值恢复和配置变化通知。 |
-| 当前状态 | generated |
-| 是否可直接实现 | 是，但实现合同以 registry / generated 为准；本文是可读说明和修订输入。 |
+| 当前状态 | accepted proposal；对应协议事实已进入 canonical registry / generated authority。 |
+| 是否可直接实现 | 否。本文保留设计说明、修订依据和 review context；runtime 必须读取 adopted canonical / generated authority。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
 | Registry readiness | ready |
@@ -27,7 +28,7 @@ lastReviewed: 2026-06-10
 
 `audio.algorithm` 用于管理设备运行时音频算法的能力发现、配置查询、配置更新、默认值恢复和配置变化通知。
 
-本文是已采纳 feature 的可读说明。runtime 实现合同以 [contract/registry/domains/audio/domain.yaml](../../../contract/registry/domains/audio/domain.yaml)、[method registry](../../../contract/generated/method_registry.generated.md)、[event registry](../../../contract/generated/event_registry.generated.md) 和 [capability registry](../../../contract/generated/capability_registry.generated.md) 为准；本文不重新分配 methodId、eventId、capabilityId 或 fieldId。
+本文是已采纳 feature 的 proposal/readable rationale，不是 runtime implementation contract。runtime 实现必须以 [contract/registry/domains/audio/domain.yaml](../../../contract/registry/domains/audio/domain.yaml)、[method registry](../../../contract/generated/method_registry.generated.md)、[event registry](../../../contract/generated/event_registry.generated.md) 和 [capability registry](../../../contract/generated/capability_registry.generated.md) 为准；本文不重新分配 methodId、eventId、capabilityId 或 fieldId。
 
 ## 2. 能力边界
 
