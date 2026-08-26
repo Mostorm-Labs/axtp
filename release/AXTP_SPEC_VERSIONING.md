@@ -1,104 +1,247 @@
 # AXTP Spec Versioning
 
-AXTP uses Git tags and GitHub Releases to publish immutable protocol standard versions. The AXTP repository is the single source of truth for the spec: text specs, registry YAML, Protocol IR, generated protocol references, conformance material, product guides, release docs, and the artifact manifest.
+AXTP uses Git tags and GitHub Releases to publish immutable protocol-authority snapshots. The AXTP repository is the source of truth for normative specs, registry YAML, Protocol IR, generated references, conformance material, product guidance, release documentation, and artifact manifests.
 
-Runtime repositories implement AXTP Spec versions. They must not redefine protocol facts, and they must not depend on the `main` branch for reproducible builds.
+Runtime repositories implement an explicit AXTP release snapshot. They must not redefine protocol facts and must not depend on floating `main` for reproducible builds.
 
-## Version Kinds
+## 1. Core rule: identify what is being versioned
 
-AXTP separates the protocol standard version from language runtime package versions.
+AXTP has several legitimate version dimensions. Equal-looking values do not imply equal meaning, and different values do not by themselves imply incompatibility.
 
-```text
-AXTP Spec Version:       spec/v0.3.0
-Runtime Package Version: axtp-cpp-runtime v0.3.x
-Runtime Package Version: @mostorm/axtp-ts-runtime 0.3.x
-Runtime Package Version: axtp_flutter_runtime 0.3.x
+G2 uses these canonical names:
+
+```yaml
+specIdentity:
+  release:
+    version: 0.15.0
+    tag: spec/v0.15.0
+    commit: <exact-sha>
+
+  protocolSemantics:
+    generation: 1
+    version: 1.0.0
+
+  wire:
+    standardFrameVersion: 1
+
+  registrySchema:
+    version: 1.0.0
+
+  authoritySchema:
+    version: 1
+
+  generator:
+    version: 1.0.0
 ```
 
-Runtime versions may align their major/minor numbers with the compatible spec range, but they are still separate package versions. For example, runtime `0.3.x` means the runtime is intended to implement or remain compatible with AXTP `spec/v0.3.x`.
+`runtimeImplementation.version` and `Hello.d.axtpVersion` are separate consumer/wire-projection dimensions, not aliases for release identity.
 
-Runtime GitHub Release tags use a four-part coordination version when they are
-derived from a fixed AXTP Spec tag:
+## 2. Identity Matrix
+
+| Canonical name | Current example | Current authority / projection | On wire | Runtime admission authority |
+|---|---|---|---:|---:|
+| `release.version` | `0.15.0` | `spec/v0.15.0`, release manifest, exact commit | No | No; reproducible binding only |
+| `protocolSemantics.generation` | `1` | AXTP v1 Core semantic family; governance name with no dedicated machine field yet | No | No |
+| `protocolSemantics.version` | `1.0.0` | `contract/registry/core/protocol_meta.yaml -> protocol.version` | No | No |
+| `wire.standardFrameVersion` | `1` / `0x01` | Standard Frame Header `Version` in `specs/20-core.md` | **Yes** | **Yes, as a frame-parser boundary** |
+| `registrySchema.version` | `1.0.0` | Current registry/schema model metadata; see compatibility aliases | No | No |
+| `authoritySchema.version` | `1` | Repository Governance v1 authority-metadata generation | No | No |
+| `generator.version` | `1.0.0` | generator config/package metadata | No | No |
+| `runtimeImplementation.version` | `v0.15.0.0`, `v0.15.0.1` | consumer runtime/tool GitHub Release | No | No |
+| `advisoryHelloVersion` | `Hello.d.axtpVersion="1.0.0"` | optional RPC Hello diagnostic field | **Yes** | **Never** |
+
+A valid snapshot can therefore simultaneously have:
 
 ```text
-Runtime Release Version: vSPEC_MAJOR.SPEC_MINOR.SPEC_PATCH.RUNTIME_REVISION
+release.version               = 0.15.0
+protocolSemantics.version     = 1.0.0
+wire.standardFrameVersion     = 1
+registrySchema.version        = 1.0.0
+generator.version             = 1.0.0
+runtimeImplementation.version = 0.15.0.R
 ```
 
-The first runtime release for `spec/vX.Y.Z` uses `vX.Y.Z.0`. Runtime-only
-fixes, SDK fixes, tooling fixes, platform packaging changes, and similar
-implementation updates that keep the same `AXTP_SPEC.lock.yaml` increment only
-the fourth field, for example `vX.Y.Z.1`.
+These values are not required to match.
 
-Language package versions may need an ecosystem-specific projection if the
-package manager does not accept four numeric fields. The GitHub Release tag and
-generated manifest remain the canonical runtime release identity.
+## 3. Release Identity
 
-## Tag Format
-
-AXTP Spec tags use this format:
+AXTP release tags use:
 
 ```text
 spec/vMAJOR.MINOR.PATCH
 ```
 
-Examples:
+For the governance-protected baseline:
 
 ```text
-spec/v0.1.0
-spec/v0.2.0
-spec/v0.3.0
+release.version = 0.15.0
+release.tag     = spec/v0.15.0
+release.commit  = 1bf9e89ede12470e20733d4cea4e50edad989528
 ```
 
-Tags should be annotated:
+Release identity names the **entire repository authority snapshot**. Runtime `AXTP_SPEC.lock.yaml`, release artifact manifests, and runtime-update fields such as `spec_tag`, `spec_version`, and `spec_commit` use this release namespace.
 
-```bash
-git tag -a spec/v0.3.0 -m "AXTP Spec v0.3.0"
-git push origin spec/v0.3.0
-```
+Release SemVer defines repository-release compatibility promises:
 
-GitHub Release names should use:
-
-```text
-AXTP Spec v0.3.0
-```
-
-## Version Semantics
-
-| Part | Meaning | Examples | Runtime impact |
+| Part | Meaning | Example | Runtime impact |
 |---|---|---|---|
-| MAJOR | Incompatible protocol change. | Frame/header/session/RPC semantics change in a breaking way. | Runtimes must explicitly adapt; they must not assume compatibility. |
-| MINOR | Backward-compatible capability addition. | New optional field, capability, method, event, schema, or transport profile. | Runtimes may add support for new facts; existing capabilities should remain compatible. |
-| PATCH | Non-breaking correction. | Documentation fix, schema description correction, non-breaking registry metadata correction. | Runtimes are not required to upgrade unless they need the correction. |
+| MAJOR | Incompatible protocol change. | Breaking frame/header/session/RPC semantics. | Runtime must explicitly adapt. |
+| MINOR | Backward-compatible capability addition. | New optional field/capability/method/event/schema/profile. | Runtime may add support. |
+| PATCH | Non-breaking correction. | Documentation, description, or compatible metadata correction. | Usually no runtime behavior migration. |
 
-Patch releases must not change wire compatibility. Minor releases may expand the generated registry and machine-readable facts without invalidating previous minor functionality. Major releases are explicit compatibility boundaries.
+A patch release must not change existing wire compatibility. Conversely, a release SemVer number must not be used directly as a session-admission decision.
 
-Runtime revision `R` in `vX.Y.Z.R` is not an AXTP Spec version field. It is a
-runtime repository release counter scoped to the locked Spec version `X.Y.Z`.
+## 4. Protocol Semantics Identity
 
-## Release Content
+The current Protocol IR contains:
 
-Each GitHub Release should summarize:
+```yaml
+protocol:
+  version: 1.0.0
+```
 
-- Protocol changes
-- Registry changes
-- Schema changes
-- Conformance changes
-- Migration changes
-- Compatibility notes
-- Runtime impact
+It is derived from:
 
-Release notes should link to `release/CHANGELOG.md` and mention the exact tag and commit.
+```text
+contract/registry/core/protocol_meta.yaml
+  -> Protocol IR
+  -> generated references
+```
 
-## Compatibility With Existing AXTP Version Fields
+G2 defines its canonical meaning as:
 
-The release tag identifies the whole AXTP Spec snapshot. It does not replace wire-level or registry-level fields already defined in the spec, such as `specVersion`, `registryVersion`, `wire_version`, or generated protocol metadata.
+```text
+protocolSemantics.version = 1.0.0
+```
 
-Use `spec/vMAJOR.MINOR.PATCH` for repository release identity. Use protocol metadata and generated registry facts for runtime negotiation, validation, and code generation.
+It identifies the semantic lineage represented by Protocol IR. It is neither an alias for `spec/v0.15.0` nor the Standard Frame Header Version.
 
-## Rules
+`protocolSemantics.generation=1` names the AXTP v1 Core semantic family. G2 does not add a new machine field merely to materialize that name; a future tooling/schema migration may do so explicitly.
 
-- Do not use runtime package versions as AXTP Spec versions.
-- Do not publish runtime builds that implicitly track AXTP `main`.
-- Do not require every runtime to use Git submodules; package ecosystems may use metadata, lock files, or spec packages.
-- Do not put large runtime implementations into the AXTP spec repository just to support versioning.
-- Do not hand-edit generated outputs to prepare a release; update the source facts and regenerate first.
+## 5. Wire Version
+
+The real Standard Frame parser boundary is the Header byte defined by `specs/20-core.md`:
+
+```text
+Offset 2
+Field: Version
+Current value: 0x01
+```
+
+Canonical name:
+
+```text
+wire.standardFrameVersion = 1
+```
+
+A receiver that cannot safely parse the layout rejects the frame with `FRAME_VERSION_UNSUPPORTED`.
+
+Historical `protocol.specVersion: 1` was introduced for the Core wire/header generation. G2 therefore freezes it as a **legacy compatibility alias** for `wire.standardFrameVersion`, not as the repository release version.
+
+## 6. Registry / Schema Model Version
+
+The repository currently retains:
+
+```text
+protocol.registryVersion: 1.0.0
+contract/registry/version.yaml -> registry_version: 1.0.0
+contract/registry/version.yaml -> schema_version: 1.0.0
+```
+
+G2 does not delete or physically rename those machine fields. They remain historical authoring/tooling compatibility metadata under the conceptual identity:
+
+```text
+registrySchema.version = 1.0.0
+```
+
+`contract/registry/core/protocol_meta.yaml` currently drives Protocol IR metadata. `contract/registry/version.yaml` is still loaded by tooling and shipped in the release artifact, but its fields must not be interpreted as release identity, wire admission authority, or capability-negotiation authority.
+
+A future split into distinct registry/schema machine generations requires an explicit tooling/schema migration rather than another ambiguous bare `version` field.
+
+## 7. Hello `axtpVersion`
+
+`Hello.d.axtpVersion` is optional advisory diagnostic metadata.
+
+Whether it is absent, malformed, or differs by major/minor/patch, a receiver must not reject or delay `Hello -> Identify -> Identified` because of it and must not use it as a capability/profile/codec feature gate.
+
+Conformance case `session.axtp_version_advisory` covers these behaviors.
+
+Canonical description:
+
+```text
+advisoryHelloVersion = peer-reported diagnostic string
+```
+
+It is not release identity, protocol-semantic authority, or the frame-parser version.
+
+Historical `protocolVersion`, `rpcVersion`, and `negotiatedRpcVersion` are deprecated compatibility inputs. New senders should omit them; receivers may read them but must not promote them into session-admission authority.
+
+## 8. Generator Identity
+
+Generator identity comes from operational tooling, for example:
+
+```yaml
+generator:
+  name: axtp-generator
+  version: 1.0.0
+```
+
+It identifies the generation tool, not AXTP runtime or wire compatibility. For strict reproducibility, an exact AXTP source commit is stronger provenance than comparing generator SemVer alone.
+
+## 9. Runtime Implementation Identity
+
+Runtime/tool GitHub Releases derived from a bound AXTP release use:
+
+```text
+vSPEC_MAJOR.SPEC_MINOR.SPEC_PATCH.RUNTIME_REVISION
+```
+
+For example:
+
+```text
+spec/v0.15.0 -> runtime v0.15.0.0
+spec/v0.15.0 -> runtime v0.15.0.1
+```
+
+The first three fields coordinate with the bound AXTP **release version**. `R` is the consumer implementation's own release revision. It is not `protocolSemantics.version` and is not the wire version.
+
+Package managers that cannot represent four numeric components may use ecosystem-specific projections while keeping the GitHub Release tag, generated runtime manifest, and `AXTP_SPEC.lock.yaml` traceable.
+
+## 10. Existing Field Compatibility Map
+
+| Existing field / label | G2 canonical meaning | Disposition |
+|---|---|---|
+| `spec/vX.Y.Z` | `release.tag` / `release.version` | canonical release identity |
+| release manifest `axtp_spec.version` | `release.version` | canonical release projection |
+| dispatch `spec_version` | `release.version` | compatibility/API field; meaning frozen |
+| `protocol.version` | `protocolSemantics.version` | current machine projection; preserve |
+| `protocol.specVersion` | `wire.standardFrameVersion` | legacy ambiguous name; preserve, do not introduce anew |
+| Standard Frame Header `Version` | `wire.standardFrameVersion` | normative wire authority |
+| `protocol.registryVersion` | `registrySchema.version` | current/legacy projection; preserve |
+| `version.yaml spec.version` | mirror of `protocolSemantics.version` | legacy metadata mirror, not release version |
+| `version.yaml registry_version` | mirror of `registrySchema.version` | legacy metadata mirror |
+| `version.yaml schema_version` | mirror of `registrySchema.version` | legacy metadata mirror |
+| `version.yaml wire_version` | mirror of `wire.standardFrameVersion` | legacy metadata mirror |
+| `generator.version` | `generator.version` | operational tooling identity |
+| runtime `vX.Y.Z.R` | `runtimeImplementation.version` | consumer identity |
+| `Hello.d.axtpVersion` | `advisoryHelloVersion` | diagnostics only |
+
+## 11. Physical Rename Policy
+
+G2 **does not physically rename** historical fields already present in Protocol IR, generated output, release artifacts, runtime parsers, or dispatch payloads. A field name can itself be part of a consumer API/schema.
+
+Rules:
+
+1. New canonical metadata must identify what is versioned; do not introduce new bare `version`, `specVersion`, or `protocolVersion` fields.
+2. Existing ambiguous fields remain compatibility aliases with meanings frozen by this document.
+3. Future machine-field deletion/renaming requires a separate tooling/schema migration with downstream consumer validation.
+4. G2 documentation governance must not change wire values, stable IDs, runtime parser behavior, or Hello compatibility behavior.
+
+## 12. Rules
+
+- Do not describe `protocol.version=1.0.0` as “the current release is spec/v1.0.0”.
+- Do not equate Standard Frame `Version=1` with the repository release major version.
+- Do not use runtime package/release versions as AXTP protocol-semantic versions.
+- Do not use `Hello.axtpVersion` for feature negotiation or session admission.
+- Runtime builds must bind `spec/vX.Y.Z`, an exact commit, or a verifiable release artifact; never floating `main`.
+- Do not hand-edit generated outputs for versioning; change canonical source/tooling and regenerate.
