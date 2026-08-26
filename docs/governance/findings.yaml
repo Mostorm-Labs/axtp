@@ -72,7 +72,7 @@ findings:
     gate: G3
     class: VERIFICATION-GAP
     title: Normative requirements lack stable Rule IDs and explicit rule-to-conformance coverage
-    status: ready-for-full-verification
+    status: closed
     evidence:
       - docs/governance/reviews/G3-rule-verification.md
       - contract/rules/rules.yaml
@@ -87,11 +87,13 @@ findings:
       - Seeded 11 stable current-core Rule IDs covering frame identity, CONTROL, RPC session/compatibility/method/event behavior, codec forward compatibility, STREAM header shape and Endpoint Relay addressing.
       - Existing specs remain semantic authority; the Rule registry provides stable verification metadata and source pointers without redefining protocol behavior.
       - Case authorityRules is the single authored Rule-to-Case edge; reverse Rule-to-Case coverage is derived by tooling rather than duplicated in the Rule registry.
-      - Ten seeded rules use executable covered disposition; CORE.FRAME.001 explicitly uses structural-only evidence because current conformance DSL does not inject invalid raw Standard Frame versions.
+      - Ten seeded rules use executable covered disposition; CORE.FRAME.001 explicitly uses structural-only evidence because the current conformance DSL does not inject invalid raw Standard Frame versions.
       - Coverage validation rejects unknown Rule references, covered rules without cases, malformed evidence/dispositions, and any seeded stable MUST rule left uncovered.
       - Existing selected conformance cases retain their original executable steps/assertions; only authorityRules metadata was added.
       - Pure coverage helper completed an isolated RED-to-GREEN node:test cycle with 3/3 passing tests.
-      - Static preflight passed node --check for validate-rule-coverage.mjs and YAML parse for the Rule registry shape; full repository validation remains the Gate blocker.
+      - Full Validate AXTP Spec run 32957936731 passed on G3 functional head acdb83555e2a5758d762978d971dbf688eecafb9.
+      - The full run reported 11 normative rules, covered=10, structural-only=1, uncovered=0; 39 conformance cases; 45 generator tests; generated drift, docs/status and release artifact dry run all PASS.
+      - Exact-head closure evidence is retained in Draft PR #12 Checks after the closure-record commits.
     expectedDisposition: Seed stable Rule IDs and bidirectional Rule-to-Evidence traceability.
 
   - id: AXTP-GOV-005
