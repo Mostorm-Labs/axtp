@@ -153,14 +153,21 @@ Any new wire/runtime semantic requirement must enter a separate protocol amendme
 
 Target: **CLOSE BY IMPLEMENTATION**.
 
-`tooling/generators/src/emitters/protocolMarkdown.ts` currently includes human-readable protocol facts that are independently authored in the emitter, including literal Standard Frame layout wording and explicit JSON RPC op numbers.
+`tooling/generators/src/emitters/protocolMarkdown.ts` currently includes human-readable numeric/layout facts that are independently authored in the emitter, including the Standard Frame header byte count and explicit JSON RPC op numbers.
 
-Repair rule:
+G5 uses a narrower repair than extending Protocol IR. The renderer receives repository-only **projection facts** derived at generation time from existing authority:
 
-- numeric/layout protocol facts must come from `ProtocolModel` or be omitted from explanatory prose;
-- transport CONTROL/STREAM behavior must project `model.transports`;
-- CONTROL/STREAM/compatibility statements should project model-owned rule arrays;
-- generated Markdown may contain formatting/explanatory connective text, but that text must not become an independent source of protocol IDs or layouts.
+- RPC op values come from canonical `contract/registry/core/rpc_op.yaml`;
+- Standard Frame header byte count is computed from the normative field table in `specs/20-core.md` by taking the maximum numeric `offset + field width` inside the Standard Frame header section;
+- the projection facts are a generator dependency only and are not serialized into `contract/protocol/axtp.protocol.yaml` or `contract/generated/protocol.json`.
+
+Repair rules:
+
+- `protocolMarkdown.ts` must not own those numeric/layout values as literals;
+- current authority values should render the same human-readable Markdown bytes where possible;
+- a test must prove that mutating the derived projection facts changes the rendered number, demonstrating that the emitter is not the source of truth;
+- transport/control/stream explanatory connective prose may remain human-readable template text only where it does not independently define IDs/layouts or override model-owned protocol facts;
+- no new canonical protocol source or Protocol IR field is introduced solely for prose convenience.
 
 The repair must not change canonical source semantics.
 
@@ -203,13 +210,14 @@ The validator must fail closed if `adoptionStatus: pass` lacks any required evid
 
 The G5 repair must make these tests true:
 
-1. generated Markdown contains no literal hard-coded JSON RPC `op=<number>` comparison table facts;
-2. generated Markdown does not independently assert a literal `12-byte Standard Frame header` layout fact;
-3. protocol framework details still expose transport/profile behavior from `ProtocolModel`;
-4. model-owned CONTROL, STREAM and compatibility rule text is projected rather than duplicated in emitter constants;
-5. existing generated snapshot is regenerated normally and generated drift passes.
+1. the renderer receives derived projection facts instead of embedding the Standard Frame header byte count or selected RPC op numbers as its own literals;
+2. `loadProtocolProjectionFacts()` resolves required RPC op names from canonical `rpc_op.yaml` and derives Standard Frame header size from the normative frame table in `specs/20-core.md`;
+3. missing required source facts fail closed rather than falling back to embedded defaults;
+4. mutating projection facts in a test changes the rendered number;
+5. current authority values preserve the current generated Markdown and snapshot byte-for-byte if their displayed values are already correct;
+6. generator build/tests/generated drift prove that no independent generated artifact was manually edited.
 
-No new ProtocolModel semantic source is introduced solely for prose convenience.
+The projection sidecar is operational generation input, not Protocol IR or a new semantic authority.
 
 ## 8. Evidence Gate
 
@@ -230,9 +238,9 @@ G5 can PASS only if:
 
 G5 closure must explicitly review:
 
-1. **Authority drift** — no new shadow authority, especially no second retrieval authority.
+1. **Authority drift** — no new shadow authority, especially no second retrieval authority or projection sidecar promoted into semantic authority.
 2. **Semantic duplication** — generated Markdown and consumer evidence do not redefine protocol semantics.
-3. **Derivation drift** — generated human facts remain model-derived.
+3. **Derivation drift** — generated human numeric/layout facts are derived from existing canonical/normative authority.
 4. **Verification drift** — consumer PASS cannot exist without exact external evidence.
 5. **Release / consumer drift** — mutable adoption evidence stays repository governance evidence and does not rewrite immutable Spec release identity.
 
