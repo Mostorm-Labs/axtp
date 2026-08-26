@@ -1,11 +1,11 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: draft
 domain: network
 feature: network.ap
-registry: ../../../../contract/registry/domains/network/domain.yaml
-lastReviewed: 2026-06-15
+adoptedBy: contract/registry/domains/network/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # network.ap
@@ -15,8 +15,8 @@ lastReviewed: 2026-06-15
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 管理设备自身 AP/SoftAP 的能力、SSID/安全配置、一次性凭据导出、运行状态和可选客户端列表。 |
-| 当前状态 | generated；已写入 `../../../../contract/registry/domains/network/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 open review markers 不属于已生成合同。 |
+| 当前状态 | accepted proposal；canonical facts 已写入 `contract/registry/domains/network/domain.yaml` 并生成；对应 protocol stability 仍为 draft。 |
+| 是否可直接实现 | 否。本文保留设计说明和 review context；runtime 必须读取 canonical / generated / conformance authority。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
 | Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
@@ -29,7 +29,7 @@ lastReviewed: 2026-06-15
 
 已确认的 flow 决策包括：NA20 AP 默认始终开启；AP SSID/密码由上位机可配置；AP 凭据允许通过 AXTP 一次性导出；`startAp` / `stopAp` 可作为低优先级 optional 能力，但配对主路径不依赖启动 AP。
 
-`network.ap` 的 P0 / confirmed subset 已进入 generated 合同；正式 methodId、eventId、errorCode、fieldId 以 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**` 为准。本文保留的 review 标记仅用于后续修订。
+`network.ap` 的 P0 / confirmed subset 已进入 generated authority；正式 methodId、eventId、errorCode、fieldId 以 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**` 为准。本文保留的 review 标记仅用于后续修订。
 
 ## 2. 能力边界
 
