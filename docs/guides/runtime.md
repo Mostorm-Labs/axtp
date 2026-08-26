@@ -49,20 +49,45 @@ axtp_spec:
   updated_at: "YYYY-MM-DD"
 ```
 
-这里的 release identity 用于可重现构建；session runtime feature availability 仍由 transport/profile/capability 等协议事实决定，不要把 release SemVer 简化成 feature gate。
+这里的 `axtp_spec.version` 明确表示 **`release.version`**，也就是 tag `spec/v0.15.0` 的 `0.15.0`，不是 Protocol IR 的 `protocol.version`，也不是 Standard Frame Header Version。
+
+Release identity 用于可重现构建；session runtime feature availability 仍由 transport/profile/capability 等协议事实决定，不要把 release SemVer 简化成 feature gate。
+
+### 2.1 不要把不同 version namespace 混在一起
+
+| 你看到的值 | G2 canonical meaning | Runtime 应怎么用 |
+|---|---|---|
+| `spec/v0.15.0` / lock `version: 0.15.0` | `release.version` | 锁定整个 AXTP authority snapshot。 |
+| Protocol IR `protocol.version: 1.0.0` | `protocolSemantics.version` | 识别 Protocol IR semantic lineage；不是 session admission gate。 |
+| Protocol IR `protocol.specVersion: 1` | legacy alias of `wire.standardFrameVersion` | 不把名字里的 `spec` 当作 release version。 |
+| Standard Frame Header `Version=0x01` | `wire.standardFrameVersion` | **parser compatibility boundary**；无法安全解析时拒绝 frame。 |
+| `protocol.registryVersion` / legacy `registry_version` | `registrySchema.version` | authoring/tooling model metadata；不做 feature gate。 |
+| `Hello.d.axtpVersion` | `advisoryHelloVersion` | diagnostics/telemetry only；缺失、malformed、major/minor/patch 不同都不得阻断 session。 |
+| runtime/tool `v0.15.0.R` | `runtimeImplementation.version` | consumer 自身 release identity；前三位与绑定 release 协调，`R` 是实现修订。 |
+
+一个 runtime 可以合法地同时记录：
+
+```text
+AXTP release lock             = spec/v0.15.0
+Protocol semantic version     = 1.0.0
+Standard Frame wire version   = 1
+Runtime implementation version= v0.15.0.3
+```
+
+这不是版本漂移。
 
 ## 3. 实现输入
 
 | 输入 | 路径 | 作用 |
 |---|---|---|
-| Spec lock | runtime repo `AXTP_SPEC.lock.yaml` | 记录绑定基线。 |
+| Spec lock | runtime repo `AXTP_SPEC.lock.yaml` | 记录 release binding baseline。 |
 | Protocol IR | [../../contract/protocol/axtp.protocol.yaml](../../contract/protocol/axtp.protocol.yaml) | 聚合机器协议模型。 |
 | Generated JSON | [../../contract/generated/protocol.json](../../contract/generated/protocol.json) | SDK、mock、automation 消费。 |
-| Generated Markdown | [../../contract/generated/protocol.md](../../contract/generated/protocol.md) | 人工联调/字段核对。 |
+| Generated Markdown | [../../contract/generated/protocol.md](../../contract/generated/protocol.md) | 人工联调/字段核对；历史版本标签按 G2 compatibility map 解释。 |
 | Canonical registry | `../../contract/registry/**` | canonical machine facts。 |
 | Specs | [../../specs/README.md](../../specs/README.md) | wire/session/registry/codec normative context。 |
 | Conformance | [../../conformance/README.md](../../conformance/README.md) | runtime behavior acceptance。 |
-| Release docs | [../../release/README.md](../../release/README.md) | tag/artifact/update flow。 |
+| Release docs | [../../release/README.md](../../release/README.md) | release identity、artifact/update flow。 |
 
 通常 runtime 实现优先消费 Protocol IR / generated JSON，而不是直接解析 proposal 或手写 YAML 镜像。
 
@@ -78,7 +103,7 @@ axtp_spec:
 
 ## 5. 最短实现步骤
 
-1. 锁定 AXTP spec tag/commit/artifact。
+1. 锁定 AXTP release tag/commit/artifact。
 2. 选择 runtime 声明支持的 transport/profile。
 3. 加载 Protocol IR 或 generated registry。
 4. 实现对应 link/session gate：Standard Framed 包含 CONTROL OPEN/ACCEPT；WS JSON 直接进入 RPC session。
@@ -87,7 +112,7 @@ axtp_spec:
 7. Standard Framed runtime 实现 Frame/CRC/CONTROL/STREAM。
 8. 根据 generated capability/profile facts 暴露或降级 optional feature。
 9. 运行所声明 conformance scope。
-10. 记录 spec lock、runtime version 与 conformance evidence。
+10. 记录 release lock、runtime implementation version 与 conformance evidence。
 
 ## 6. Session 与 capability 边界
 
@@ -148,17 +173,17 @@ WebSocket open
 
 ## 9. 验收定义
 
-Runtime 宣称支持某个 AXTP spec/profile 前至少提供：
+Runtime 宣称支持某个 AXTP release/profile 前至少提供：
 
 | Evidence | 标准 |
 |---|---|
-| Spec lock | tag/commit/artifact 可重现。 |
-| Generated binding | 能消费匹配 spec 的 Protocol IR/generated facts。 |
+| Spec lock | release tag/commit/artifact 可重现。 |
+| Generated binding | 能消费匹配 release snapshot 的 Protocol IR/generated facts。 |
 | Session | 对声明 profile 完成正确 session lifecycle。 |
 | RPC | Request/Response/Error/Event 行为符合 authority。 |
 | Capability degradation | optional unsupported operation 不破坏无关 session。 |
 | Conformance | 通过声明 profile/level 的 required cases。 |
-| Release trace | runtime version 能追溯到 AXTP spec identity。 |
+| Release trace | runtime implementation version 能追溯到 AXTP release identity。 |
 
 未来 repository governance 会把这些 downstream 结果回流成 consumer evidence ledger；在存在真实验证结果之前，不得凭版本号或 upgrade PR 自动声称 consumer PASS。
 
@@ -179,3 +204,5 @@ consumer implementation/tests
 ```
 
 只有在调查设计原因、legacy mapping、开放问题或 protocol amendment 时才进入 `workspace/**`。这既是人类阅读规则，也是 ChatGPT/Codex 等 agent 的 retrieval boundary。
+
+版本身份的完整 canonical mapping 见 [AXTP Spec 版本管理](../../release/AXTP_SPEC_VERSIONING.zh-CN.md)。
