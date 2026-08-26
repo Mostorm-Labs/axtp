@@ -29,7 +29,7 @@ findings:
     gate: G2
     class: GOV-AMBIGUITY
     title: Release, protocol, registry, schema and wire version dimensions use overloaded names
-    status: ready-for-full-verification
+    status: closed
     evidence:
       - docs/governance/reviews/G2-spec-identity.md
       - contract/registry/version.yaml
@@ -39,6 +39,8 @@ findings:
       - release/README.md
       - release/AXTP_SPEC_VERSIONING.zh-CN.md
       - release/AXTP_SPEC_VERSIONING.md
+      - release/AXTP_RUNTIME_SPEC_LOCK.zh-CN.md
+      - release/AXTP_RUNTIME_SPEC_LOCK.md
       - release/AXTP_RUNTIME_UPDATE_FLOW.md
       - docs/guides/runtime.md
       - conformance/cases/session/axtp_version_advisory.yaml
@@ -48,8 +50,10 @@ findings:
       - protocol.version is classified as protocolSemantics.version; it is not release identity or a generic session gate.
       - Historical protocol.specVersion is classified as a legacy alias of Standard Frame wire generation, consistent with the v1 Core freeze history and Header Version authority.
       - contract/registry/version.yaml version fields are preserved as legacy metadata mirrors rather than promoted into a second compatibility authority.
+      - Runtime package-local specVersion fields, where already used, are classified as consumer aliases of release.version and are not the same namespace as Protocol IR protocol.specVersion.
       - Hello.d.axtpVersion remains diagnostic/advisory only, backed by existing conformance coverage.
       - Existing machine fields are not physically renamed in G2; any future rename requires an explicit tooling/schema migration with downstream verification.
+      - Full Validate AXTP Spec run 32954862246 passed on G2 functional head a28b7aeba3be8066c500a9c0b2707ee5957aa856; exact-head closure evidence is retained in Draft PR #12 Checks.
     expectedDisposition: Establish explicit SpecIdentity semantics while preserving compatibility aliases where required.
 
   - id: AXTP-GOV-003
