@@ -286,7 +286,17 @@ G3 can close when fresh full repository validation proves the completed branch s
 - release artifact dry run remains valid;
 - no protocol semantic or runtime behavior change is introduced.
 
-## 14. Current decision
+## 14. Functional-head freeze
+
+Completed G3 functional head before full CI:
+
+```text
+6df5e3fe0e685321eee5ed94e2723be8436bf3f3
+```
+
+No further G3 implementation edits are expected before the full validation run. Any failure will be classified before repair rather than patched opportunistically.
+
+## 15. Current decision
 
 **READY FOR FULL VERIFICATION**
 
