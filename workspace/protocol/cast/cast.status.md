@@ -1,11 +1,11 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: draft
 domain: cast
 feature: cast.status
-registry: ../../../../contract/registry/domains/cast/domain.yaml
-lastReviewed: 2026-06-25
+adoptedBy: contract/registry/domains/cast/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # cast.status
@@ -14,8 +14,8 @@ lastReviewed: 2026-06-25
 
 | 项目 | 内容 |
 |---|---|
-| 当前状态 | generated；已写入 `../../../../contract/registry/domains/cast/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准。 |
+| 当前状态 | accepted proposal；对应事实已写入 `contract/registry/domains/cast/domain.yaml` 并投影到 generated authority。 |
+| 是否可直接实现 | 否。实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 及 canonical registry 为准；本文保存 rationale 和 review context。 |
 | 本次采纳 | `cast.getStatus` 快照查询、receiver/session/PIN/audio/window/backend/flowControl 摘要字段外形。 |
 | 未采纳 | `cast.statusChanged` 持续聚合事件；后续若需要多 method 一次性读取，应优先走通用 RPC batch，而不是恢复 cast 专属状态事件。 |
 
