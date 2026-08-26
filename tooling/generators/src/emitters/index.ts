@@ -10,10 +10,10 @@ import { emitProtocolMarkdown } from "./protocolMarkdown.js";
 import { emitTestVectors } from "./testVectors.js";
 import { emitTestVectorFiles } from "./testVectors.js";
 import { emitTs } from "./ts.js";
-import type { SpecModel } from "../models.js";
 import type { ProtocolModel } from "../protocolModel.js";
+import type { ProtocolSourceModel } from "../sourceModel.js";
 
-export async function emitAll(spec: SpecModel, outDir: string): Promise<void> {
+export async function emitAll(spec: ProtocolSourceModel, outDir: string): Promise<void> {
   await Promise.all([
     emitCpp(spec, outDir),
     emitDart(spec, outDir),
@@ -33,14 +33,14 @@ export async function emitProtocolDocs(model: ProtocolModel, outDir: string): Pr
   ]);
 }
 
-export async function emitRepositoryArtifacts(spec: SpecModel, model: ProtocolModel, repoRoot: string): Promise<void> {
+export async function emitRepositoryArtifacts(spec: ProtocolSourceModel, model: ProtocolModel, repoRoot: string): Promise<void> {
   await Promise.all([
     emitProtocolDocs(model, path.join(repoRoot, "contract", "generated")),
     emitRepositoryRegistryArtifacts(spec, repoRoot)
   ]);
 }
 
-export async function emitRepositoryRegistryArtifacts(spec: SpecModel, repoRoot: string): Promise<void> {
+export async function emitRepositoryRegistryArtifacts(spec: ProtocolSourceModel, repoRoot: string): Promise<void> {
   await Promise.all([
     emitMarkdownFiles(spec, path.join(repoRoot, "contract", "generated")),
     emitJsonFiles(spec, path.join(repoRoot, "contract", "mcp")),
