@@ -284,11 +284,32 @@ Still deferred outside the program:
 
 `main.protected=false` is therefore a real operational governance debt, but it is not being misrepresented as completed and does not retroactively invalidate the internal authority/evidence closure.
 
-## 11. Pre-final decision
+## 11. Task 7 functional-head freeze
+
+Task 7 changes after the G5 exact-head `6443460b230a634872c484d82da0b235c4160f3d` are limited to governance/navigation/closure records:
+
+```text
+docs/README.md
+docs/governance/AXTP_GOVERNANCE_V1_G5_SCOPE_AMENDMENT.md
+docs/governance/README.md
+docs/governance/findings.yaml
+docs/governance/reviews/G0-G5-final-closure.md
+docs/governance/reviews/G5-closure.md
+```
+
+No Task 7 change touches `specs/**`, `contract/**`, `conformance/**`, `tooling/**`, release behavior, or CI workflows.
+
+Frozen Task 7 functional-closure head:
+
+```text
+2271f631836c261de151c3685b3b6d8bdc29e047
+```
+
+## 12. Pre-final decision
 
 All substantive Task 7 reviews are complete. `AXTP-GOV-013` has been repaired at the governance authority layer and all G0-G5 prerequisites are PASS.
 
-However, this Task 7 review and its governance-only navigation/supersession updates create a new branch head. Under the same evidence discipline used for G1-G5, final program PASS requires one fresh full `Validate AXTP Spec` run whose immutable `head_sha` equals the frozen Task 7 functional-closure head.
+Under the same evidence discipline used for G1-G5, final program PASS requires one fresh full `Validate AXTP Spec` run whose immutable `head_sha` equals the frozen Task 7 functional-closure head above.
 
 Until that run succeeds:
 
