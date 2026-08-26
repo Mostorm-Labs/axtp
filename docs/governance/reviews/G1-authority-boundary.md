@@ -1,6 +1,6 @@
 # AXTP G1 — Authority Boundary Closure
 
-Status: **READY FOR FULL VERIFICATION**  
+Status: **PASS**  
 Prerequisite: G0 PASS  
 Primary findings: `AXTP-GOV-001`, `AXTP-GOV-011`
 
@@ -105,7 +105,7 @@ Original baseline:
 active workspace/protocol proposals with contract:true = 21
 ```
 
-Current branch:
+Current G1 closure state:
 
 ```text
 active accepted/generated proposals still using contract:true = 0
@@ -126,9 +126,9 @@ Canonical review confirmed that the last 11 migrated accepted proposals remain `
 
 The final five large historical files were migrated mechanically with a guarded one-shot workflow. Before commit it asserted that, after masking the approved current-status rows, the document body remained byte-for-byte unchanged. The resulting migration commit was `2882548c753b65176a4e129cd287a9acd6f208ac`. The temporary migration workflow was removed immediately afterward.
 
-## 7. Targeted preflight evidence
+## 7. Verification evidence
 
-A one-shot G1 authority preflight was run before reopening the main migration PR.
+### 7.1 Targeted authority preflight
 
 Successful run:
 
@@ -137,7 +137,7 @@ GitHub Actions run: 32951426806
 Result: PASS
 ```
 
-The run verified:
+The targeted preflight verified:
 
 - JavaScript syntax for `check-protocol-status.mjs` and `report-protocol-draft-health.mjs`;
 - local Markdown links;
@@ -150,17 +150,62 @@ The run verified:
 - generated protocol proposal-health report freshness;
 - `git diff --check`.
 
-The report generator refreshed `docs/product/protocol-draft-health.md` in commit `7349be2b9a1fd1d6e02b215e9cbc963f18513180`. The temporary preflight workflow was then removed.
+### 7.2 Full repository validation — first attempt
 
-This targeted preflight is not a substitute for the repository's existing full `Validate AXTP Spec` workflow; that is the remaining G1 exit evidence.
+```text
+GitHub Actions run: 32952724583
+Head: 5c95baee9d5a7b1b87355fd0786f8decf1892fe2
+Result: FAIL
+```
+
+The failure was isolated to release artifact link validation. Generator/generated artifacts, conformance, and repository docs/status validation all passed.
+
+Root cause:
+
+```text
+docs/README.md
+  -> local Markdown link to docs/governance/AXTP_AUTHORITY_ARCHITECTURE_AND_REPOSITORY_GOVERNANCE_V1.md
+release artifact
+  -> intentionally packages docs/README.md
+  -> intentionally does not package repository-governance documents
+```
+
+This was classified as **DOC-DRIFT / release packaging boundary drift**, not protocol-semantic drift.
+
+The minimal fix in commit `f7f5c05f7c04c01b3819f24727ed14982552bdb5` kept the existing Spec artifact boundary unchanged and changed the repository-governance navigation entry into an explicit repository-only path. No artifact contract, generator, Registry, Protocol IR, conformance case or protocol fact was changed.
+
+### 7.3 Full repository validation — corrected functional state
+
+```text
+GitHub Actions run: 32952949759
+Head: f7f5c05f7c04c01b3819f24727ed14982552bdb5
+Result: PASS
+```
+
+The successful full run confirmed together:
+
+- generator build/lint/tests;
+- source validation;
+- Protocol IR validation;
+- generated artifact drift check;
+- conformance validation;
+- documentation/link/protocol-status validation;
+- release artifact dry run and artifact-local link integrity.
+
+### 7.4 Exact-head closure evidence rule
+
+This Markdown record cannot embed the run ID that validates its own final commit without creating a new self-invalidating commit. Therefore the repository record cites the last successful functional-state run above, while **the exact-head revalidation of this G1 closure record is stored externally in Draft PR #12 Checks**.
+
+G2 MUST NOT begin unless the existing `Validate AXTP Spec` workflow is green on the exact commit containing this PASS record and the corresponding closed findings.
 
 ## 8. Defect classification
 
-| Finding | Class | Current disposition |
+| Finding | Class | Final G1 disposition |
 |---|---|---|
-| AXTP-GOV-001 | GOV-AMBIGUITY | READY-FOR-FULL-VERIFICATION |
-| AXTP-GOV-011 | GOV-AMBIGUITY | READY-FOR-FULL-VERIFICATION |
-| legacy authoring source recreates shadow authority | GOV-AMBIGUITY / GOV-TOOLING | FIXED-IN-G1 |
+| AXTP-GOV-001 | GOV-AMBIGUITY | CLOSED |
+| AXTP-GOV-011 | GOV-AMBIGUITY | CLOSED |
+| legacy authoring source recreates shadow authority | GOV-AMBIGUITY / GOV-TOOLING | CLOSED |
+| repository-only governance linked as artifact-local content | DOC-DRIFT | CLOSED; artifact boundary preserved |
 | duplicated proposal payload/reference material | GOV-STRUCTURE | DEFER-WITH-OWNER: G5 |
 | any future canonical-vs-proposal semantic mismatch | DOC-DRIFT or PROTOCOL-SEMANTIC | must not be silently resolved in G1 |
 
@@ -170,23 +215,23 @@ No G1 finding requires a protocol-semantic amendment.
 
 ### Authority drift
 
-**PASS, PENDING FULL-CI CONFIRMATION.** Source creation rules and all 21 active accepted/generated shadow-authority proposals are migrated. `workspace/protocol/**` no longer has a runtime-contract exception.
+**PASS.** Source creation rules and all 21 active accepted/generated shadow-authority proposals are migrated. `workspace/protocol/**` has no runtime-contract exception.
 
 ### Semantic duplication
 
-**DEFER-WITH-OWNER: G5.** G1 closes authority ambiguity but intentionally does not shrink the full 110-proposal corpus.
+**DEFER-WITH-OWNER: G5.** G1 closes authority ambiguity but intentionally does not shrink the full proposal corpus.
 
 ### Derivation drift
 
-**PASS, PENDING FULL-CI CONFIRMATION.** G1 does not modify canonical Registry protocol facts or Protocol IR semantics. Stage 50 is explicitly one-way from Registry to generated authority.
+**PASS.** Canonical Registry facts, Protocol IR semantics and generated protocol facts remained valid under the full repository validation.
 
 ### Verification drift
 
-**PASS, PENDING FULL-CI CONFIRMATION.** The targeted authority preflight passed. The existing full generator/conformance/release workflow remains the final exit evidence.
+**PASS.** Targeted authority preflight passed, and the corrected functional state passed the existing full generator/conformance/docs/release validation workflow.
 
 ### Release / consumer drift
 
-**PASS, PENDING FULL-CI CONFIRMATION.** No release tag, release artifact or runtime spec lock has been changed.
+**PASS.** `spec/v0.15.0`, release tags, artifact contract and runtime spec locks were not changed. The release dry-run issue was fixed by preserving the pre-existing artifact packaging boundary rather than expanding the artifact with repository-governance content.
 
 ## 10. Semantic impact check
 
@@ -196,16 +241,28 @@ spec/v0.15.0 mutation = NONE
 Runtime behavior change = NONE
 Stable identifier change = NONE
 Canonical Registry semantic change = NONE
+Release artifact contract change = NONE
 ```
 
-## 11. Remaining exit blocker
+## 11. Exit criteria
 
-All content-level G1 exit blockers are closed. The only remaining blocker is fresh full repository verification on the completed branch using the existing `Validate AXTP Spec` workflow.
-
-G1 MUST remain non-PASS until that full workflow confirms generator/tests, source validation, Protocol IR/generated drift, conformance, docs/status and release dry-run remain valid together.
+| Exit criterion | Result |
+|---|---|
+| maintained workspace proposals no longer claim runtime contract authority | PASS |
+| accepted proposal wording does not claim direct implementation authority | PASS |
+| lifecycle and protocol stability are distinct | PASS |
+| accepted proposals link to canonical adoption targets | PASS |
+| runtime/AI retrieval excludes backstage surfaces from implementation authority | PASS |
+| generator/generated artifacts remain valid | PASS |
+| conformance remains valid | PASS |
+| docs/protocol-status validation remains valid | PASS |
+| release artifact dry run remains valid without expanding artifact scope | PASS |
+| wire/released/runtime semantics unchanged | PASS |
 
 ## 12. Current decision
 
-**READY FOR FULL VERIFICATION**
+**PASS**
 
-The G1 content state is frozen at this record. The next mutation must be the PR state transition that triggers full repository validation, not another content edit.
+G1 Authority Boundary Closure is complete. The only non-embedded closure evidence is the exact-head `Validate AXTP Spec` result stored in Draft PR #12 Checks, by design to avoid a self-referential verification commit loop.
+
+After that exact-head check is green, the next Gate is **G2 — Spec Identity & Version Closure**.
