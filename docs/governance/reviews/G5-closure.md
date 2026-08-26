@@ -1,18 +1,24 @@
 # AXTP G5 — Closure Record
 
-Status: **FUNCTIONAL PASS — FINAL EXACT-HEAD VERIFICATION PENDING**  
+Status: **PASS**  
 Gate: G5 Repository Governance & Consumer Closure  
 Prerequisite: G4 PASS  
 Functional evidence: GitHub Actions run `33020869297`  
-Functional head: `04559cd4df33dfbaa25f7c87f5b90baabf776e10`
+Functional head: `04559cd4df33dfbaa25f7c87f5b90baabf776e10`  
+Final exact-head evidence: GitHub Actions run `33022180940`  
+Final G5 closure head: `6443460b230a634872c484d82da0b235c4160f3d`
 
 ## Authority relationship
 
-This record is the current G5 Gate-status and closure-evidence record. It supersedes only the pre-CI status / verification-pending statements in `G5-information-architecture-consumer.md` and `G5-ci-attempts.md`.
+This record is the current G5 Gate-status and closure-evidence record. It supersedes the pre-CI status / verification-pending statements in `G5-information-architecture-consumer.md` and `G5-ci-attempts.md`.
 
-It does **not** supersede the approved G5 scope, design rationale, authority boundaries, implementation description, or explicit deferred-work contracts in those records.
+The approved G5 scope/design rationale remains preserved in `G5-information-architecture-consumer.md`. The current governance interpretation of that narrowed scope is formalized by:
 
-The G0-G4 authority architecture remains unchanged.
+```text
+docs/governance/AXTP_GOVERNANCE_V1_G5_SCOPE_AMENDMENT.md
+```
+
+The amendment supersedes only Governance v1 Section 18 G5 `Required work` / `Exit criteria`; it does not supersede the G0–G4 authority architecture or any AXTP protocol authority.
 
 ## Functional Gate evidence
 
@@ -22,7 +28,7 @@ The G0-G4 authority architecture remains unchanged.
 04559cd4df33dfbaa25f7c87f5b90baabf776e10
 ```
 
-The run executed the full repository validation path and produced the following evidence:
+The run executed the full repository validation path and produced:
 
 ```text
 generator TypeScript build/lint        PASS
@@ -44,15 +50,15 @@ proposal/status checks                  PASS
 release artifact dry run                PASS
 ```
 
-The consumer evidence validator emitted AJV `strictTypes` advisory warnings for a conditional schema branch while still validating the current ledger successfully. The warnings did not invalidate JSON Schema validation, semantic PASS gating, the six-consumer ledger, or any G5 exit criterion. They are tooling hygiene, not protocol authority or Gate-failure evidence.
+The consumer evidence validator emitted AJV `strictTypes` advisory warnings for a conditional schema branch while the current ledger validated successfully. The warnings did not invalidate JSON Schema validation, semantic PASS gating, the six-consumer ledger, or any G5 exit criterion. They remain non-blocking tooling hygiene rather than protocol/Gate-failure evidence.
 
 ## Finding dispositions
 
 ### Closed from evidence
 
 - `AXTP-GOV-005` — existing frontstage/backstage retrieval boundary is sufficient; no second retrieval authority was introduced.
-- `AXTP-GOV-006` — downstream consumer-adoption evidence now has a repository-only ledger, schema, semantic validator and conformance-entry integration; run `33020869297` proves the integration while the initial ledger keeps all six consumers `unverified` and claims zero fabricated PASS results.
-- `AXTP-GOV-012` — human Markdown numeric/layout protocol facts are derived fail-closed from existing canonical/normative authority; fixed explanatory prose is explicitly non-authoritative; 56/56 generator tests and generated drift passed in run `33020869297`.
+- `AXTP-GOV-006` — downstream consumer-adoption evidence now has a repository-only ledger, schema, semantic validator and conformance-entry integration; the initial ledger keeps all six consumers `unverified` and claims zero fabricated PASS results.
+- `AXTP-GOV-012` — human Markdown numeric/layout protocol facts are derived fail-closed from existing canonical/normative authority; fixed explanatory prose is explicitly non-authoritative.
 
 ### Explicitly deferred, not hidden as closed
 
@@ -61,7 +67,7 @@ The consumer evidence validator emitted AJV `strictTypes` advisory warnings for 
 - `AXTP-GOV-009` — proposal corpus compaction: future maintenance/retrieval-cost migration.
 - `AXTP-GOV-010` — protocol security threat-model authority: future security-authority program and separate protocol amendment if semantics change.
 
-These deferred items do not invalidate the narrowed G5 exit criteria.
+These deferred items do not invalidate the amended/narrowed G5 exit criteria and remain tracked with future work and exit evidence.
 
 ## Five drift closure review
 
@@ -83,7 +89,7 @@ Consumer `adoptionStatus: pass` requires exact Spec lock, consumer implementatio
 
 ### 5. Release / consumer drift — PASS
 
-Consumer evidence stays under `docs/governance/**` and does not enter the immutable Spec artifact contract. Release dry-run passed. `spec/v0.15.0` remains unchanged.
+Consumer evidence stays under `docs/governance/**` and does not enter immutable Spec artifact authority. Release dry-run passed. `spec/v0.15.0` remains unchanged.
 
 ## Protected invariant check
 
@@ -98,25 +104,31 @@ spec/v0.15.0 mutation            = NONE
 Generated Markdown semantic text = NONE; derivation ownership repaired
 ```
 
-## Final exact-head submission
+## Final exact-head evidence
 
-The first reopen after writing closure records created run `33022074284`, but that run's immutable `head_sha` remained the older functional head `04559cd4df33dfbaa25f7c87f5b90baabf776e10` even though its PR association showed the newer closure head. It is therefore classified as stale-head CI metadata and is **not** valid final G5 evidence.
+The first reopen after writing G5 closure records created run `33022074284`, but that run's immutable `head_sha` remained the older functional head `04559cd4df33dfbaa25f7c87f5b90baabf776e10` even though its PR association moved to a newer branch head. It was correctly rejected as stale-head evidence.
 
-This closure-evidence update is intentionally made while PR #12 is open to create a standard `pull_request synchronize` event against the actual branch head. It changes no protocol, Registry, generated contract, conformance behavior, consumer-evidence behavior, or validation logic.
-
-Only a fresh `Validate AXTP Spec` run whose immutable `head_sha` equals the resulting branch head may satisfy final G5 exact-head verification.
-
-## Final Gate protocol
-
-Functional closure is complete, but G5 is not yet final PASS because the closure records themselves require exact-head verification.
-
-The established G1-G4 discipline therefore requires:
+A later clean PR reopen created:
 
 ```text
-closure records frozen
-  -> full Validate AXTP Spec on exact closure head
-  -> if success: close PR #12 and declare G5 PASS
-  -> if failure: classify defect before repair
+Validate AXTP Spec run = 33022180940
+immutable head_sha     = 6443460b230a634872c484d82da0b235c4160f3d
+PR #12 head            = 6443460b230a634872c484d82da0b235c4160f3d
+result                 = SUCCESS
 ```
 
-No further implementation or protocol change is authorized before the final exact-head run unless that run exposes a real defect.
+Every `validate-spec` step completed successfully:
+
+- checkout / Node / pnpm / dependency installation;
+- generator build, lint, tests, source/protocol validation and generated drift;
+- conformance validation;
+- docs / path / protocol-status validation;
+- release artifact dry run.
+
+Therefore the G5 exact-head Gate requirement is satisfied.
+
+## Decision
+
+**PASS**
+
+G5 closed the remaining repository-governance correctness seams without redesigning the protocol or forcing deferred structural programs into the Gate. Task 7 may now consume G5 as a completed prerequisite and perform the program-level G0–G5 final closure review.
