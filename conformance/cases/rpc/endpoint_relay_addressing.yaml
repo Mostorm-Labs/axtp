@@ -2,6 +2,8 @@ id: rpc.endpoint_relay_addressing
 title: Object RPC relays one logical destination endpoint
 since: spec/v0.0.2
 level: endpoint-relay
+authorityRules:
+  - RPC.RELAY.001
 profiles:
   - endpoint-relay
   - websocket-jsonrpc
