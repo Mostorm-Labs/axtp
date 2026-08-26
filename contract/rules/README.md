@@ -8,7 +8,7 @@
 - `contract/rules/rules.yaml` is verification-authority metadata: stable ID, source pointer, normative level, lifecycle/status, and verification disposition.
 - `conformance/cases/**` remains executable acceptance authority.
 - A conformance case links to the rule(s) it proves through `authorityRules`.
-- Rule -> Case backlinks are derived by tooling; they are not independently authored in the rule registry.
+- Rule -> Case backlinks are derived by repository validation; they are not independently authored in the rule registry.
 - A Rule ID does not create or amend runtime behavior. Any semantic change still requires the normal protocol amendment/release process.
 
 ## Rule ID format
@@ -39,33 +39,32 @@ Every seeded stable rule has exactly one disposition:
 | `structural-only` | The requirement is proven by deterministic structure/source validation rather than a runtime behavior case. |
 | `manual-evidence` | The requirement needs explicit non-automated evidence; evidence paths/notes must be recorded. |
 | `not-applicable` | The requirement is deliberately outside the selected verification scope and must carry a reason. |
-| `uncovered` | No acceptable evidence exists. A stable `must` rule in this state blocks G3/release readiness. |
+| `uncovered` | No acceptable evidence exists. A stable `must` rule in this state blocks release readiness. |
 
 `covered` does not mean every assertion in a case belongs to one rule. It means the case contains executable evidence for that rule. One case may reference multiple Rule IDs, and one Rule ID may be proven by multiple cases.
 
-## Coverage commands
+## Coverage relationship
 
-Repository validation runs the Rule coverage checker through `tooling/scripts/validate-conformance.sh`.
+The release artifact contains everything required to inspect the traceability chain:
 
-Human-readable projection:
+```text
+contract/rules/rules.yaml
+        ↓ source pointer
+specs/**
 
-```bash
-node tooling/scripts/validate-rule-coverage.mjs . --markdown
+conformance/cases/**
+        ↓ authorityRules
+contract/rules/rules.yaml
 ```
 
-Machine-readable projection:
+A consumer can therefore answer both questions from release content alone:
 
-```bash
-node tooling/scripts/validate-rule-coverage.mjs . --json
-```
+- Which normative rule authorizes this conformance case?
+- Which conformance cases provide executable evidence for this Rule ID?
 
-The checker fails when:
+The reverse Rule -> Case view is a derived projection over `conformance/cases/**`; it is not stored as a second handwritten list.
 
-- a case references an unknown Rule ID;
-- a `covered` rule has no case backlink;
-- a seeded stable `must` rule is `uncovered`;
-- rule metadata/disposition is malformed;
-- required structural/manual evidence metadata is missing.
+Repository CI additionally validates that Rule references, dispositions and evidence paths remain consistent before a release artifact is accepted.
 
 ## G3 seed scope
 
