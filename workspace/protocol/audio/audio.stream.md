@@ -1,11 +1,11 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: draft
 domain: audio
 feature: audio.stream
-registry: ../../../../contract/registry/domains/audio/domain.yaml
-lastReviewed: 2026-06-15
+adoptedBy: contract/registry/domains/audio/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # audio.stream
@@ -15,8 +15,8 @@ lastReviewed: 2026-06-15
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 通过 `audio.openStream` / `audio.closeStream` 建立和关闭 AXTP 实时音频业务流，并用 STREAM 数据面承载音频 chunk。 |
-| 当前状态 | generated；已写入 `../../../../contract/registry/domains/audio/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 open review markers 不属于已生成合同。 |
+| 当前状态 | accepted proposal；canonical facts 已写入 `contract/registry/domains/audio/domain.yaml` 并投影到 Protocol IR / generated authority；对应 protocol stability 仍为 draft。 |
+| 是否可直接实现 | 否。本文保留设计说明和 review context；runtime 必须读取 canonical / generated / conformance authority。 |
 | 主要交互 | RPC + EVENT + STREAM |
 | 是否使用 STREAM | 是。RPC 负责建流、关流和状态；音频数据走 `PayloadType=STREAM`。 |
 | Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
