@@ -2,6 +2,8 @@ id: capability.unknown_optional_field_ignored
 title: Unknown valid optional field is ignored and session remains usable
 since: spec/v0.0.2
 level: capability
+authorityRules:
+  - CODEC.COMPAT.001
 profiles:
   - capability
   - core
