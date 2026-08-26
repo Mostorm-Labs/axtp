@@ -12,6 +12,8 @@ describe("protocol Markdown authority boundary", () => {
     const facts = await loadProtocolProjectionFacts(repoRoot);
     const markdown = renderProtocolMarkdown(model, facts);
 
+    expect(markdown).toContain("Fixed explanatory prose is non-authoritative reading guidance");
+    expect(markdown).toContain("`specs/**`, `contract/registry/**`, or `contract/protocol/axtp.protocol.yaml`");
     expect(markdown).toContain(`${facts.standardFrameHeaderBytes}-byte Standard Frame header`);
     expect(markdown).toContain(`Hello (op=${facts.rpcOps.HELLO})`);
     expect(markdown).toContain(`Identify (op=${facts.rpcOps.IDENTIFY})`);
