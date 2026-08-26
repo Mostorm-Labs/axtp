@@ -32,7 +32,7 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | REVIEW-DRAFT | 139 |
 | REVIEW-FIX | 1 |
 | REVIEW-BLOCKER | 0 |
-| 采纳后占位残留 | 27 |
+| 采纳后占位残留 | 26 |
 
 ## 领域健康矩阵
 
