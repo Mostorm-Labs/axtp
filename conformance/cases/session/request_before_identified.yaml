@@ -2,6 +2,8 @@ id: session.request_before_identified
 title: Request before IDENTIFIED is rejected
 since: spec/v0.0.2
 level: websocket-jsonrpc
+authorityRules:
+  - RPC.SESSION.002
 profiles:
   - websocket-jsonrpc
 
