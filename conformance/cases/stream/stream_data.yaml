@@ -2,6 +2,8 @@ id: stream.stream_data
 title: Media STREAM data header carries streamId, seqId, and cursor
 since: spec/v0.0.2
 level: stream
+authorityRules:
+  - STREAM.FRAME.001
 profiles:
   - stream
   - framed-binary
