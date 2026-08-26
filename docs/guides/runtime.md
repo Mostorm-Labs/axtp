@@ -1,130 +1,181 @@
-# Runtime / SDK 指南
+# Runtime / SDK / Firmware 指南
 
-Runtime / SDK 的目标不是重新定义 AXTP，而是消费主仓库已经发布的协议合同，声明自己支持的 profile，并通过 conformance。
+Runtime / SDK / Firmware 的职责是实现和消费 AXTP 已发布 authority，而不是在 consumer 仓库里重新定义协议。
 
-核心规则：
+## 1. 先记住 Authority Boundary
 
 ```text
-runtime 只能从 release artifact、Protocol IR、generated reference、specs 和 conformance 实现。
-runtime 不得从 draft-only workspace/protocol/** 实现正式能力。
+实现输入：
+release identity
+  + canonical registry/specs
+  + Protocol IR / generated reference
+  + conformance
+
+非实现输入：
+workspace/**
+  + docs/superpowers/**
+  + tooling/skills/**
+  + archive/history
 ```
 
-## 先选接入路径
+**任何 `workspace/**` 都不是 runtime implementation authority。** 这一规则与 proposal lifecycle 无关：即使 `workspace/protocol/**` 中一篇 proposal 已经 `lifecycle: accepted`，它仍然只保存 rationale / review / amendment context；真正实现读取 `adoptedBy` 指向的 canonical source 及其 generated projection。
 
-| 路径 | 什么时候用 | 最短顺序 |
-|---|---|---|
-| AXTP-TCP Standard Framed | 跨 runtime / mock-server 一致性验证，或设备端需要二进制 Frame / STREAM。 | transport connect -> CONTROL OPEN / ACCEPT -> Hello / Identify / Identified -> generated business RPC |
-| AXTP-WS-JSON | App、Web、Node、Python、云端控制面或 WS-only mock server。 | WebSocket open -> Hello / Identify / Identified -> Request / Response / Event |
-| AXTP-USB-HID | USB HID 设备、固件或大 report 传输。 | HID connect -> CONTROL OPEN / ACCEPT -> RPC / STREAM |
+因此 runtime agent 不得：
 
-当前跨 runtime 推荐联调基准是 **AXTP-TCP Standard Framed + Node mock-server**。WebSocket JSON 是轻量 RPC-only 控制面路径，不承载 CONTROL、Frame Header、CRC16 或 STREAM data packet。
+- 从 accepted proposal 的 prose 复制字段并跳过 registry/generated；
+- 从 legacy evidence 推断正式 ID 或 wire layout；
+- 从 design plan / agent skill 推断 protocol behavior；
+- 用 consumer repo 本地手写表覆盖 AXTP generated registry。
 
-没有真实设备时，先连接 [axtp-mock-server](https://github.com/Mostorm-Labs/axtp-mock-server)。Standard Framed runtime 优先用 Node TCP mock-server 做互操作基准；RPC-only runtime 才声明并验证 `websocket-jsonrpc` profile。
+## 2. Spec binding
 
-## 实现输入
+Release build 必须绑定：
 
-| 输入 | 路径 | 用途 |
-|---|---|---|
-| Spec lock | runtime 仓库 `AXTP_SPEC.lock.yaml` | 记录绑定的 spec tag、commit 或 release artifact。 |
-| Protocol IR | [../../contract/protocol/axtp.protocol.yaml](../../contract/protocol/axtp.protocol.yaml) | 机器可读协议模型。 |
-| Generated JSON | [../../contract/generated/protocol.json](../../contract/generated/protocol.json) | SDK、mock server、自动化测试读取。 |
-| Generated Markdown | [../../contract/generated/protocol.md](../../contract/generated/protocol.md) | 人工联调和字段核对。 |
-| Specs | [../specs/README.md](../../specs/README.md) | wire、session、registry、codec、tooling 规则。 |
-| Conformance | [../../conformance/README.md](../../conformance/README.md) | runtime 行为验收输入。 |
+- `spec/vMAJOR.MINOR.PATCH`；或
+- 精确 AXTP commit；或
+- 可验证的 AXTP release artifact。
 
-发布期不能依赖浮动 `main`。开发期可以指向本地 checkout；release 必须锁定 spec tag、明确 commit 或 release artifact。
+不得把浮动 `main` 当作可重现 release dependency。
+
+Runtime 仓库使用 `AXTP_SPEC.lock.yaml` 记录绑定，例如：
 
 ```yaml
 axtp_spec:
   repository: https://github.com/Mostorm-Labs/axtp
-  tag: spec/v0.0.3
-  version: 0.0.3
+  tag: spec/v0.15.0
+  version: 0.15.0
   commit: "<resolved-commit-sha>"
-  compatibility: ">=0.0.3 <0.1.0"
+  compatibility: "<runtime-declared-policy>"
   updated_at: "YYYY-MM-DD"
 ```
 
-## 最短实现步骤
+这里的 release identity 用于可重现构建；session runtime feature availability 仍由 transport/profile/capability 等协议事实决定，不要把 release SemVer 简化成 feature gate。
 
-1. 选择 transport profile：`framed-binary` 或 `websocket-jsonrpc`。
-2. 加载 Protocol IR 或 generated JSON，不写死未采纳草案。
-3. 实现 Hello / Identify / Identified 和 app-ready gate。
-4. 实现 Request / RequestResponse / Event、标准错误形状和 `requestId` 匹配。
-5. Standard Framed runtime 再实现 Frame Header、CRC16、CONTROL 和 STREAM dispatch。
-6. 声明 conformance level，并运行对应 case。
-7. 在 runtime 仓库记录 spec lock 和 conformance 声明。
+## 3. 实现输入
 
-## TCP Standard Framed 基准
+| 输入 | 路径 | 作用 |
+|---|---|---|
+| Spec lock | runtime repo `AXTP_SPEC.lock.yaml` | 记录绑定基线。 |
+| Protocol IR | [../../contract/protocol/axtp.protocol.yaml](../../contract/protocol/axtp.protocol.yaml) | 聚合机器协议模型。 |
+| Generated JSON | [../../contract/generated/protocol.json](../../contract/generated/protocol.json) | SDK、mock、automation 消费。 |
+| Generated Markdown | [../../contract/generated/protocol.md](../../contract/generated/protocol.md) | 人工联调/字段核对。 |
+| Canonical registry | `../../contract/registry/**` | canonical machine facts。 |
+| Specs | [../../specs/README.md](../../specs/README.md) | wire/session/registry/codec normative context。 |
+| Conformance | [../../conformance/README.md](../../conformance/README.md) | runtime behavior acceptance。 |
+| Release docs | [../../release/README.md](../../release/README.md) | tag/artifact/update flow。 |
 
-```mermaid
-sequenceDiagram
-    participant C as Client / SDK
-    participant S as Node TCP Mock Server
-    participant G as Generated Protocol
-    participant T as Conformance
+通常 runtime 实现优先消费 Protocol IR / generated JSON，而不是直接解析 proposal 或手写 YAML 镜像。
 
-    C->>G: 读取 contract/generated/protocol.json
-    C->>S: TCP connect
-    C->>S: CONTROL OPEN
-    S-->>C: CONTROL ACCEPT
-    S-->>C: RPC Hello
-    C->>S: RPC Identify(randomSeed)
-    S-->>C: RPC Identified(sid="12345678")
-    C->>G: 确认 method 已 generated
-    C->>S: RPC Request audio.getAlgorithmConfig
-    S-->>C: RPC RequestResponse status.ok=true
-    C->>T: 跑 framed-binary conformance
-```
+## 4. Transport 接入路径
 
-这条链路验证 TCP byte stream 上的 Standard Frame 拆包、CONTROL gate、RPC session gate、`sid` 复用和 generated business RPC。
+| 路径 | 用途 | 最短启动顺序 |
+|---|---|---|
+| AXTP-TCP Standard Framed | 二进制 Frame / STREAM、跨 runtime 互操作基准 | connect -> CONTROL OPEN/ACCEPT -> Hello/Identify/Identified -> generated RPC/STREAM |
+| AXTP-USB-HID | USB HID 高速设备/固件路径 | HID connect -> CONTROL OPEN/ACCEPT -> RPC/STREAM |
+| AXTP-WS-JSON | App/Web/Cloud 的 RPC-only 控制面 | WebSocket open -> Hello/Identify/Identified -> Request/Response/Event |
 
-## WebSocket JSON 快速路径
+当前跨 runtime 推荐基准仍是 **AXTP-TCP Standard Framed + Node mock server**。WebSocket JSON 不承载 Standard Frame、CONTROL、CRC16 或 STREAM。
+
+## 5. 最短实现步骤
+
+1. 锁定 AXTP spec tag/commit/artifact。
+2. 选择 runtime 声明支持的 transport/profile。
+3. 加载 Protocol IR 或 generated registry。
+4. 实现对应 link/session gate：Standard Framed 包含 CONTROL OPEN/ACCEPT；WS JSON 直接进入 RPC session。
+5. 完成 Hello / Identify / Identified。
+6. 实现 Request / RequestResponse / Event 和标准 error behavior。
+7. Standard Framed runtime 实现 Frame/CRC/CONTROL/STREAM。
+8. 根据 generated capability/profile facts 暴露或降级 optional feature。
+9. 运行所声明 conformance scope。
+10. 记录 spec lock、runtime version 与 conformance evidence。
+
+## 6. Session 与 capability 边界
+
+完成 `Hello -> Identify -> Identified` 只建立 common RPC baseline，不表示 peer 支持 registry 中全部 optional feature。
+
+Caller 应使用 generated capability/profile facts 判断 optional operation；Receiver 即使 caller 跳过 discovery，也必须执行自己的 support policy：
+
+| 情况 | 行为 |
+|---|---|
+| method 未注册 | `RPC_METHOD_NOT_FOUND` |
+| method 已注册但当前 runtime/device/profile/capability 不提供 | `NOT_SUPPORTED` |
+| method 支持但参数非法 | 对应 validation error |
+| unknown optional field | 按 spec compatibility 规则容忍/忽略 |
+| unsupported/unsubscribed event | 不主动发送 |
+| unknown event | 忽略或 diagnostics，不破坏 session |
+
+`Hello.axtpVersion` 是 advisory/diagnostic metadata，不是通用 session admission 或 feature-negotiation gate。Frame Header wire version 则仍是 parser compatibility boundary。
+
+## 7. Standard Framed 基准
 
 ```text
-WebSocket open
-  -> Server Hello op=0, sid=""
-  -> Client Identify op=2, sid="", randomSeed:uint32
-  -> Server Identified op=3, sid="<session string>"
-  -> Client Request op=7, d.id=<request id>, method=<generated method>
-  -> Server RequestResponse op=8, d.id matches request
+Transport connected
+  -> CONTROL OPEN
+  -> CONTROL ACCEPT
+  -> RPC Hello
+  -> RPC Identify
+  -> RPC Identified
+  -> APP_READY
+  -> generated Request / Response / Event
+  -> optional STREAM according to profile
 ```
 
-关键约束：
+最小要求：
 
 | 项 | 要求 |
 |---|---|
-| Hello | Logical Server 先发，客户端收到 Hello 后才能 Identify。 |
-| `sid` | 新 session 使用 `sid=""`；AXTP-native server 生成固定 8 位 hex string；JSON 接收端兼容并精确回显 Identified 返回的非空 session string。 |
-| `requestId` | `d.id` 从 1 开始，同一 session 内未完成请求不得复用。 |
-| method/event | 必须来自 generated protocol。 |
-| error | 失败返回 `status.ok=false` 和稳定错误码，不携带成功 `result`。 |
+| Frame parser | 校验 magic/version/PayloadType/length/fragment facts。 |
+| CRC | 使用 canonical Core/Codec authority 定义的覆盖范围和字节序。 |
+| CONTROL | OPEN/ACCEPT、HEARTBEAT、CLOSE 等按 Core authority。 |
+| RPC session | Identified 前不得发送业务 Request。 |
+| Registry lookup | method/event/schema/capability 来自 generated authority。 |
+| STREAM | 仅 Standard Framed profile 按已采纳业务 profile 使用。 |
 
-## Standard Framed MVP
+具体 wire/session 字段不要从本指南复制实现，读取 [Core Spec](../../specs/20-core.md) 和 generated protocol。
 
-| 检查项 | 通过标准 |
+## 8. WebSocket JSON 快速路径
+
+```text
+WebSocket open
+  -> Logical Server: Hello
+  -> Logical Client: Identify
+  -> Logical Server: Identified
+  -> APP_READY
+  -> generated Request / Response / Event
+```
+
+该 profile 是 RPC-only，不实现 Standard Frame Header、CONTROL、CRC16 或 STREAM。
+
+## 9. 验收定义
+
+Runtime 宣称支持某个 AXTP spec/profile 前至少提供：
+
+| Evidence | 标准 |
 |---|---|
-| Header parser | 校验 `AX` magic、version、PayloadType、payloadLength、fragment 字段。 |
-| CRC16 | CRC 覆盖 Header + Payload，不覆盖 CRC 自身；多字节整数使用 Big-Endian。 |
-| Payload dispatch | `CONTROL` 进 ControlParser，`RPC` 进 RpcParser，`STREAM` 进 StreamParser。 |
-| CONTROL OPEN / ACCEPT | OPEN 只在 `LINK_CONNECTED` 发送；ACCEPT 的 `controlId` 匹配后进入 `FRAMING_READY`。 |
-| HEARTBEAT / CLOSE | ACK 使用相同 `controlId`；连续心跳超时或 CLOSE 完成后清理上下文。 |
-| RPC session | CONTROL 成功后再执行 Hello / Identify / Identified。 |
-| STREAM | 通过业务 RPC 建立 Stream Context，解析 16B STREAM Header 并按 `streamId` 投递数据。 |
+| Spec lock | tag/commit/artifact 可重现。 |
+| Generated binding | 能消费匹配 spec 的 Protocol IR/generated facts。 |
+| Session | 对声明 profile 完成正确 session lifecycle。 |
+| RPC | Request/Response/Error/Event 行为符合 authority。 |
+| Capability degradation | optional unsupported operation 不破坏无关 session。 |
+| Conformance | 通过声明 profile/level 的 required cases。 |
+| Release trace | runtime version 能追溯到 AXTP spec identity。 |
 
-Frame、CONTROL、RPC、STREAM 的完整规则分别见 [核心协议](../../specs/20-core.md) 和 [核心协议流程指南](core-protocol-flow.md)。
+未来 repository governance 会把这些 downstream 结果回流成 consumer evidence ledger；在存在真实验证结果之前，不得凭版本号或 upgrade PR 自动声称 consumer PASS。
 
-## 验收定义
+## 10. 深入实现参考
 
-一个 Phase 1 runtime 至少应满足：
+实现型任务推荐顺序：
 
-| 项 | 标准 |
-|---|---|
-| Spec lock | 有明确 spec tag、commit 或 release artifact。 |
-| Protocol loading | 能读取 Protocol IR 或 generated JSON。 |
-| Session | 能完成 Hello / Identify / Identified。 |
-| RPC | 能完成至少一次 generated method 的 Request / Response。 |
-| Error | 能返回标准错误形状。 |
-| Event | 支持事件或明确声明不支持 event level。 |
-| Conformance | 通过已声明 level 的 required cases。 |
+```text
+AXTP_SPEC.lock
+   ↓
+contract/protocol + contract/generated
+   ↓
+specs (needed normative context)
+   ↓
+conformance cases
+   ↓
+consumer implementation/tests
+```
 
-Standard Framed runtime 还应完成 OPEN / ACCEPT、HEARTBEAT、CLOSE、Frame/CRC、STREAM open/data/close，并至少声明 `core + framed-binary`。
+只有在调查设计原因、legacy mapping、开放问题或 protocol amendment 时才进入 `workspace/**`。这既是人类阅读规则，也是 ChatGPT/Codex 等 agent 的 retrieval boundary。
