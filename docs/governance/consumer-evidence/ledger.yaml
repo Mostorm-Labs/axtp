@@ -1,0 +1,20 @@
+schemaVersion: 1
+consumers:
+  - repository: Mostorm-Labs/axtp-c-runtime
+    kind: runtime
+    adoptionStatus: unverified
+  - repository: Mostorm-Labs/axtp-cpp-runtime
+    kind: runtime
+    adoptionStatus: unverified
+  - repository: Mostorm-Labs/axtp-flutter-runtime
+    kind: runtime
+    adoptionStatus: unverified
+  - repository: Mostorm-Labs/axtp-ts-runtime
+    kind: runtime
+    adoptionStatus: unverified
+  - repository: Mostorm-Labs/axtp-python-runtime
+    kind: runtime
+    adoptionStatus: unverified
+  - repository: Mostorm-Labs/axtp-mock-server
+    kind: mock
+    adoptionStatus: unverified
