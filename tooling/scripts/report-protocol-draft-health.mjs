@@ -131,9 +131,7 @@ function productPriorities() {
   if (!fs.existsSync(domainStatusPath)) return priorities;
   const text = fs.readFileSync(domainStatusPath, "utf8");
   const rows = text.matchAll(/^\|\s*([a-z][a-z0-9]*)\s*\|\s*\d+\s*\|\s*[^|]*\|\s*\d+\s*\|\s*([^|]+?)\s*\|/gm);
-  for (const match of rows) {
-    priorities.set(match[1], match[2].trim());
-  }
+  for (const match of rows) priorities.set(match[1], match[2].trim());
   return priorities;
 }
 
@@ -152,8 +150,8 @@ function emptyDomainStats(domain) {
     domain,
     priority: "",
     priorityRank: 99,
-    drafts: 0,
-    generatedDrafts: 0,
+    proposals: 0,
+    acceptedProposals: 0,
     generatedFacts: 0,
     methods: 0,
     compactExamples: 0,
@@ -199,14 +197,15 @@ function analyze() {
     const methods = countMatches(text, /^### 3\.\d+ `/gm);
     const compactExamples = countMatches(text, /^#### 3\.\d+\.\d+ d block 示例$/gm);
     const jsonExamples = countJsonFences(text);
+    const accepted = data.lifecycle === "accepted" || boolValue(data.generated);
     const fileStats = {
       file: relative,
       domain,
       priority: priorities.get(domain) ?? "",
       priorityRank: priorityRank(priorities.get(domain) ?? ""),
       feature: data.feature ?? "",
-      status: data.lifecycle ?? data.status ?? "",
-      generated: data.lifecycle === "accepted" || boolValue(data.generated),
+      lifecycle: data.lifecycle ?? data.status ?? "",
+      accepted,
       authorityClass: data.authorityClass ?? "legacy-proposal-metadata",
       methods,
       compactExamples,
@@ -224,8 +223,8 @@ function analyze() {
       lines: text.split(/\r?\n/).length,
     };
 
-    stats.drafts += 1;
-    stats.generatedDrafts += fileStats.generated ? 1 : 0;
+    stats.proposals += 1;
+    stats.acceptedProposals += fileStats.accepted ? 1 : 0;
     stats.methods += fileStats.methods;
     stats.compactExamples += fileStats.compactExamples;
     stats.exampleGaps += fileStats.exampleGaps;
@@ -261,7 +260,7 @@ function focus(stats) {
   if (stats.reviewAsk > 0 && stats.genericExampleHints > 0) return "确认 REVIEW-ASK + 调真实业务示例";
   if (stats.reviewAsk > 0) return "确认 REVIEW-ASK";
   if (stats.genericExampleHints > 0) return "调真实业务示例";
-  if (stats.generatedFacts > 0) return "维护 generated 合同";
+  if (stats.generatedFacts > 0) return "维护 canonical/generated authority";
   return "可排采纳评审";
 }
 
@@ -272,8 +271,8 @@ function renderMarkdown(report) {
       return acc;
     },
     {
-      drafts: 0,
-      generatedDrafts: 0,
+      proposals: 0,
+      acceptedProposals: 0,
       generatedFacts: 0,
       methods: 0,
       compactExamples: 0,
@@ -292,9 +291,11 @@ function renderMarkdown(report) {
     },
   );
 
-  return `# AXTP 协议草案健康度
+  return `# AXTP Protocol Proposal 健康度
 
-本页是产品和协议维护者查看草案健康度、示例质量和待确认问题密度的报告。它不是 runtime 实现合同；可实现事实仍以 \`contract/**\`、\`specs/**\` 和 \`conformance/**\` 为准。
+本页用于查看 proposal 健康度、示例质量、accepted proposal 数量和待确认问题密度。它不是 runtime 实现合同；可实现事实仍以 \`contract/**\`、适用的 \`specs/**\`、\`conformance/**\` 和 spec release identity 为准。
+
+特别注意：**accepted proposal 与 generated fact 是两种不同 authority class**。本页分别统计，不再使用“已生成草案”这一混合概念。
 
 本页是 release artifact-safe 摘要：只展示 domain 级计数和治理状态，不列后台 \`workspace/\` 文件路径。维护者需要文件级队列时，可运行脚本的 \`--json\` 模式在本地分析。
 
@@ -309,9 +310,9 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 
 | 指标 | 数量 |
 |---|---:|
-| 草案文件 | ${total.drafts} |
-| 已生成草案文件 | ${total.generatedDrafts} |
-| 已生成 method/event 事实 | ${total.generatedFacts} |
+| Proposal 文件 | ${total.proposals} |
+| Accepted proposal | ${total.acceptedProposals} |
+| Generated method/event facts | ${total.generatedFacts} |
 | Method 小节 | ${total.methods} |
 | 紧凑 method 示例 | ${total.compactExamples} |
 | Method 示例缺口 | ${total.exampleGaps} |
@@ -328,10 +329,10 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 
 ## 领域健康矩阵
 
-| 领域 | 优先级 | 草案 | 已生成草案 | 已生成事实 | Method 数 | 示例覆盖 | Review 标记 | 模板示例 | 模板问题 | 建议动作 |
+| 领域 | 优先级 | Proposal | Accepted proposal | Generated facts | Method 数 | 示例覆盖 | Review 标记 | 模板示例 | 模板问题 | 建议动作 |
 |---|---|---:|---:|---:|---:|---:|---|---:|---:|---|
 ${report.domains
-  .map((domain) => `| ${domain.domain} | ${domain.priority || "未排期"} | ${domain.drafts} | ${domain.generatedDrafts} | ${domain.generatedFacts} | ${domain.methods} | ${domain.compactExamples}/${domain.methods} | ${reviewSummary(domain)} | ${domain.genericExampleHints} | ${domain.genericOpenQuestions} | ${focus(domain)} |`)
+  .map((domain) => `| ${domain.domain} | ${domain.priority || "未排期"} | ${domain.proposals} | ${domain.acceptedProposals} | ${domain.generatedFacts} | ${domain.methods} | ${domain.compactExamples}/${domain.methods} | ${reviewSummary(domain)} | ${domain.genericExampleHints} | ${domain.genericOpenQuestions} | ${focus(domain)} |`)
   .join("\n")}
 `;
 }
