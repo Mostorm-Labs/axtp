@@ -43,12 +43,54 @@ repository defect evidence = NONE
 
 ## PR trigger behavior
 
-Reopening Draft PR #12 on commit `d7b9d7f896b7630fd919117a04738f2b00d5eb38` did not create a new `Validate AXTP Spec` workflow run. The workflow therefore cannot be treated as validating on `reopened` events.
+Reopening Draft PR #12 on commit `d7b9d7f896b7630fd919117a04738f2b00d5eb38` did not create a new `Validate AXTP Spec` workflow run.
 
-This record is updated while the PR is open to create a normal `pull_request synchronize` event. This is a governance-evidence change only; no G5 implementation, protocol source, generated artifact, consumer-evidence behavior, or validation logic is modified.
+A normal governance-evidence commit on open PR #12 created head `382df731412916b7de1f27dbad4837e00f0d46c0`, but no fresh workflow run was indexed for that head.
 
-## Next valid evidence
+A separate temporary Draft validation PR #13 was then opened on exact head `5d8107e60e8a0600785804d5f5dacaa45a1a1095` to obtain a clean `pull_request/opened` check suite without changing repository contents. GitHub still did not create a new workflow run. Instead, the old run `32985381803` remained queued with immutable `head_sha=56f8e5b3aff986fe1269b4476f636a2dc407f7c8` while its `pull_requests[]` association was temporarily rebound to PR #13/current head. After PR #13 was closed, the old run remained queued and its PR association became empty.
 
-G5 remains `READY FOR FULL VERIFICATION` until a fresh `Validate AXTP Spec` run executes on the resulting exact head.
+This proves the queued run is not valid exact-head evidence for later G5 commits.
 
-Only an executable exact-head run with completed repository validation steps may close `AXTP-GOV-006` and `AXTP-GOV-012`.
+GitHub's public service status reported Actions operational during this investigation, so no repository-wide or public platform outage can be claimed from the available evidence. The observed condition is classified only as a repository/check-suite execution environment defect.
+
+## Static self-review while CI was unavailable
+
+The G4 closure head to current G5 candidate compare shows no G5 changes under:
+
+```text
+specs/**
+contract/registry/**
+contract/protocol/**
+contract/rules/**
+conformance/cases/** semantic expectations
+```
+
+G5 changes remain limited to consumer-adoption evidence/governance, protocol Markdown projection repair, tests/validation integration, and G5 review/spec/plan records.
+
+The consumer ledger contains six known downstream repositories and zero PASS claims; all remain `unverified`. The semantic validator requires exact Spec lock, consumer implementation identity, declared profiles, conformance PASS, exact GitHub Actions run identity/commit, and verification time before `adoptionStatus: pass` is valid.
+
+For `AXTP-GOV-012`, numeric/layout facts suitable for deterministic projection are resolved from current authority through `ProtocolProjectionFacts`. Remaining fixed explanatory prose in generated human Markdown is explicitly classified as non-authoritative reading guidance by `contract/generated/README.md`; it cannot override specs, canonical registry, Protocol IR, Rule, or conformance authority.
+
+These observations are review evidence only. They do not replace executable repository validation.
+
+## Current Gate status
+
+```text
+G5 = BLOCKED_ENVIRONMENT
+blocking layer = exact-head GitHub Actions execution
+repository defect evidence = NONE
+protocol semantic impact evidence = NONE
+```
+
+`AXTP-GOV-006` and `AXTP-GOV-012` remain open until executable full repository CI proves the new AJV/semantic validator, Vitest projection test, generated drift, conformance integration, docs/status checks, and release dry-run on an exact current head.
+
+## Recovery condition
+
+The blocker clears when a fresh `Validate AXTP Spec` run is created for the current migration-branch head and completes all repository validation steps. At that point:
+
+1. classify any real test/build failure before repair;
+2. if green, close `AXTP-GOV-006` and `AXTP-GOV-012` from evidence;
+3. record G5 PASS;
+4. perform one final exact-head closure run using the established G1-G4 discipline.
+
+No further repository implementation change is justified solely to work around the stuck check suite.
