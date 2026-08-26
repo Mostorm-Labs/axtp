@@ -208,4 +208,4 @@ G1 MUST remain non-PASS until that full workflow confirms generator/tests, sourc
 
 **READY FOR FULL VERIFICATION**
 
-The source mechanism and historical accepted-proposal corpus are closed. The existing Draft PR is the sole full-validation surface; reopen it once, do not add more intermediate commits, and promote G1 to PASS only if that full repository validation is green.
+The source mechanism and historical accepted-proposal corpus are frozen for G1 verification. The existing Draft PR is the sole full-validation surface; no additional branch commit should be introduced before the resulting full repository validation is inspected.
