@@ -270,7 +270,17 @@ G4 may close only after a fresh full repository run proves:
 - no protocol semantic source changed;
 - `AXTP-GOV-003` can be closed from evidence, not intent.
 
-## 18. Current decision
+## 18. Functional-head freeze
+
+Completed G4 functional head before full CI:
+
+```text
+2f9d367f3acff56a427dc09813ff962c80c83227
+```
+
+No further G4 implementation edits are planned before the full validation run. Any failure will be classified before repair rather than patched opportunistically.
+
+## 19. Current decision
 
 **READY FOR FULL VERIFICATION**
 
