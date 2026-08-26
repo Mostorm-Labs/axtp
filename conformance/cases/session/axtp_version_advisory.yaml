@@ -2,6 +2,8 @@ id: session.axtp_version_advisory
 title: Hello axtpVersion differences are advisory
 since: spec/v0.0.2
 level: websocket-jsonrpc
+authorityRules:
+  - RPC.COMPAT.001
 semantic:
   kind: advisory_version_handshake
   requiredRows:
