@@ -1,6 +1,6 @@
 # AXTP Protocol Proposal Workspace
 
-> `workspace/protocol/**` is maintainer-only proposal and review material. It is **never** a runtime, SDK, firmware or mock implementation contract, regardless of proposal lifecycle.
+> `workspace/protocol/**` is maintainer-only proposal and review material. It is **never** a runtime, SDK, firmware or mock implementation contract, regardless of proposal lifecycle or protocol stability.
 
 `workspace/protocol/` 用于保存业务协议提案、评审依据、legacy 证据映射、开放问题和已采纳决策的可读 rationale。它回答“为什么提出/采纳这项协议设计”，不回答“当前实现合同到底是什么”。
 
@@ -39,30 +39,38 @@ lifecycle: captured | reviewing | accepted | superseded | archived
 protocolStability: draft | experimental | stable | deprecated | reserved
 domain: <domain>
 feature: <domain.feature>
-adoptedBy: <canonical registry/source path when accepted>
+adoptedBy: <single primary canonical registry path when accepted>
 lastReviewed: YYYY-MM-DD
 ---
+```
+
+新建 proposal 的默认值是：
+
+```yaml
+authorityClass: proposal
+lifecycle: captured
+protocolStability: draft
+adoptedBy:
 ```
 
 规则：
 
 1. `authorityClass` 在本目录始终为 `proposal`。
 2. `lifecycle` 描述这份 proposal 自身走到了哪里。
-3. `protocolStability` 描述 proposal 所讨论的协议事实成熟度；它不提升 proposal 的 authority class。
-4. `lifecycle: accepted` 必须通过 `adoptedBy` 指向 canonical adoption target。
-5. 旧的 `status` / `contract` / `generated` / `registry` frontmatter 不再用于已采纳 proposal；其中 `contract` boolean 尤其不得被用来声明 workspace implementation authority。
-6. `lastReviewed` 只表示最近一次人工确认 proposal 状态，不代表 release 时间。
+3. `protocolStability` 描述 proposal 所讨论的 canonical protocol fact 成熟度；它不提升 proposal 的 authority class。
+4. `lifecycle: accepted` 必须通过 `adoptedBy` 指向 primary canonical adoption target。
+5. `adoptedBy` 是一个**单个 scalar repository-relative path**，通常为 `contract/registry/domains/<domain>/domain.yaml`。若一次采纳同时修改 error/profile/shared schema/spec 等其他 canonical 文件，在正文 Adoption/Amendment note 中列出，不把 frontmatter 扩展成 list。
+6. 旧的 `status` / `contract` / `generated` / `registry` frontmatter 不得出现在已迁移的 v2 proposal 中；其中 `contract` boolean 尤其不得用于声明 workspace implementation authority。
+7. `lastReviewed` 只表示最近一次人工确认 proposal 状态，不代表 release 时间。
 
 ### Lifecycle 与 protocol stability 是两个正交维度
-
-例如：
 
 ```yaml
 lifecycle: accepted
 protocolStability: draft
 ```
 
-表示“这份设计已经进入 canonical registry，但当前协议事实仍处于 draft stability”。
+表示“proposal 已被 canonical authority 采纳，但对应协议事实仍处于 draft stability”。
 
 ```yaml
 lifecycle: accepted
@@ -86,11 +94,16 @@ protocolStability: stable
 
 不要把 proposal 变成第二份 registry，也不要让 runtime 根据 proposal 示例反推正式 ID、字段或错误码。
 
-已采纳 proposal 的推荐开头应明确：
+所有 proposal 的“是否可直接实现”结论都应为：
 
 ```text
-当前状态：accepted proposal；canonical facts 已在 adopted authority 中维护。
-是否可直接实现：否；runtime/SDK/firmware 必须读取 canonical/generated authority。
+否。runtime / SDK / firmware 必须读取 canonical / generated / conformance authority。
+```
+
+accepted proposal 的当前状态可以写成：
+
+```text
+当前状态：accepted proposal；canonical facts 由 adoptedBy 指向的 Registry authority 维护。
 ```
 
 ## 3. Canonical adoption path
@@ -104,8 +117,6 @@ workspace/flows/<scenario>.md
         ↓
 workspace/protocol/<domain>/<domain.feature>.md
         ↓ review
-canonical registry/spec source
-        ↓
 contract/registry/**
         ↓ generator
 contract/protocol/axtp.protocol.yaml
@@ -133,7 +144,7 @@ Proposal 采纳发生在“proposal -> canonical source”这条边上。进入 
 | 50 generation | canonical source 已更新 | Protocol IR / generated artifacts | derived authority |
 | 60 release | validation / conformance 已闭合 | immutable spec identity/artifact | release authority |
 
-对应 agent workflow 仍可参考 `tooling/skills/`，但 skill 本身是流程操作说明，不是 protocol knowledge authority。
+Stage 50 只读取 canonical Registry，不读取、修改或升级 proposal authority metadata。
 
 ## 5. Adoption rules
 
@@ -153,7 +164,7 @@ Proposal 采纳发生在“proposal -> canonical source”这条边上。进入 
 authorityClass: proposal
 lifecycle: accepted
 protocolStability: <canonical fact stability>
-adoptedBy: contract/registry/...
+adoptedBy: contract/registry/<primary owner>.yaml
 ```
 
 而不是把 proposal 本身标成 runtime contract。
@@ -162,12 +173,14 @@ adoptedBy: contract/registry/...
 
 已采纳协议发生语义修订时：
 
-1. 在 proposal/amendment context 中记录为什么要改；
-2. 判断 compatibility / release impact；
-3. 修改 canonical specs / registry source；
-4. 重新生成 derived authority；
-5. 更新或新增 conformance evidence；
-6. 按 release policy 发布新的 spec identity。
+1. proposal lifecycle 可在未决评审期间暂时变为 `reviewing`；
+2. 在 proposal/amendment context 中记录为什么要改；
+3. 判断 compatibility / release impact；
+4. 修改 canonical specs / registry source；
+5. 重新生成 derived authority；
+6. 更新或新增 conformance evidence；
+7. amendment 被接受后恢复 `lifecycle: accepted`，并保持原 primary `adoptedBy` 或更新为新的 primary owner；
+8. 按 release policy 发布新的 spec identity。
 
 不得直接手改 `contract/protocol/**`、`contract/generated/**`、`contract/mcp/**` 或生成型 test vectors 来制造新事实。
 
