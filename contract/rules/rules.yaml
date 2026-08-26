@@ -29,7 +29,7 @@ rules:
   - id: CONTROL.SESSION.001
     status: stable
     level: must
-    statement: Standard Framed startup MUST establish CONTROL OPEN / ACCEPT before RPC session setup, and ACCEPT for OPEN MUST echo the request controlId.
+    statement: Standard Framed link setup uses CONTROL OPEN followed by CONTROL ACCEPT, and the ACCEPT response to OPEN MUST echo the request controlId.
     source:
       path: specs/20-core.md
       section: CONTROL
@@ -117,7 +117,7 @@ rules:
   - id: STREAM.FRAME.001
     status: stable
     level: must
-    statement: STREAM payloads MUST use the 16-byte Big-Endian header streamId:uint32, seqId:uint32, cursor:uint64, with Frame.payloadLength equal to 16 + dataLength.
+    statement: STREAM payloads MUST use the 16-byte Big-Endian header streamId:uint32, seqId:uint32, cursor:uint64.
     source:
       path: specs/20-core.md
       section: STREAM
