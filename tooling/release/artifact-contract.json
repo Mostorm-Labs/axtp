@@ -16,6 +16,8 @@
     "contract/generated/protocol.md",
     "contract/generated/protocol.json",
     "contract/registry/version.yaml",
+    "contract/vector-recipes/current-core.yaml",
+    "contract/vector-recipes/historical.yaml",
     "specs/README.md",
     "specs/00-glossary.md",
     "specs/10-contract.md",
