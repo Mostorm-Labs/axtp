@@ -2,27 +2,49 @@
   "vectors": [
     {
       "name": "control_open",
+      "classification": "current-core",
+      "authorityRules": [
+        "CORE.FRAME.001",
+        "CONTROL.SESSION.001"
+      ],
+      "recipe": "contract/vector-recipes/current-core.yaml#control_open",
+      "derivation": "authority-resolved",
       "payloadType": "CONTROL",
       "encoding": "tlv",
       "hexFile": "control_open.hex",
+      "wireDigest": "sha256:ed2512d78616b2d2e47ab4f7a2097a7ca3187bc2ebdbae5981e394a9de5d884d",
       "expectDecode": {
         "opcode": "OPEN"
       }
     },
     {
       "name": "rpc_audio_get_algorithm_config_request",
+      "classification": "current-core",
+      "authorityRules": [
+        "CORE.FRAME.001"
+      ],
+      "recipe": "contract/vector-recipes/current-core.yaml#rpc_audio_get_algorithm_config_request",
+      "derivation": "authority-resolved",
       "payloadType": "RPC",
-      "encoding": "tlv",
+      "encoding": "json-binary",
       "hexFile": "rpc_audio_get_algorithm_config.hex",
+      "wireDigest": "sha256:4dc675bff4c4deba44e63bdab05b9558e28b691e0187d6dfd18ac3d0d1faf194",
       "expectDecode": {
         "method": "audio.getAlgorithmConfig"
       }
     },
     {
       "name": "rpc_audio_set_algorithm_config_request",
+      "classification": "current-core",
+      "authorityRules": [
+        "CORE.FRAME.001"
+      ],
+      "recipe": "contract/vector-recipes/current-core.yaml#rpc_audio_set_algorithm_config_request",
+      "derivation": "authority-resolved",
       "payloadType": "RPC",
-      "encoding": "tlv",
+      "encoding": "json-binary",
       "hexFile": "rpc_audio_set_algorithm_config.hex",
+      "wireDigest": "sha256:b8deb115dacc809f56cf5605eae0a01030fa5f7d8deb9d651557b3993bf4f359",
       "expectDecode": {
         "method": "audio.setAlgorithmConfig",
         "field": "noiseSuppression.level"
@@ -30,9 +52,16 @@
     },
     {
       "name": "event_audio_algorithm_config_changed",
+      "classification": "current-core",
+      "authorityRules": [
+        "CORE.FRAME.001"
+      ],
+      "recipe": "contract/vector-recipes/current-core.yaml#event_audio_algorithm_config_changed",
+      "derivation": "authority-resolved",
       "payloadType": "RPC",
-      "encoding": "tlv",
+      "encoding": "json",
       "hexFile": "event_audio_algorithm_config_changed.hex",
+      "wireDigest": "sha256:f4420346d3677fc3546dde49da60294e30999f8d702708b5edfdc40e24983d12",
       "expectDecode": {
         "event": "audio.algorithmConfigChanged",
         "field": "noiseSuppression.level"
@@ -40,25 +69,117 @@
     },
     {
       "name": "stream_object_chunk",
+      "classification": "current-core",
+      "authorityRules": [
+        "CORE.FRAME.001",
+        "STREAM.FRAME.001"
+      ],
+      "recipe": "contract/vector-recipes/current-core.yaml#stream_object_chunk",
+      "derivation": "authority-resolved",
       "payloadType": "STREAM",
       "encoding": "binary",
       "hexFile": "stream_object_chunk.hex",
+      "wireDigest": "sha256:c7ae1065c388168427d38b667d787fae0e781bb3d7f375211b47172f7718a70e",
+      "expectDecode": {
+        "streamId": 9
+      }
+    }
+  ],
+  "historicalFixtures": [
+    {
+      "name": "pre_g4_control_open",
+      "classification": "historical-stale",
+      "reason": "Pre-G4 pseudo-golden intended as current CONTROL OPEN but missing the Standard Frame CRC footer and current required OPEN TLVs.",
+      "recipe": "contract/vector-recipes/historical.yaml#pre_g4_control_open",
+      "derivation": "preserved-historical",
+      "originalHexFile": "control_open.hex",
+      "hexFile": "historical/pre-g4/control_open.hex",
+      "payloadType": "CONTROL",
+      "encoding": "tlv",
+      "expectDecode": {
+        "opcode": "OPEN"
+      }
+    },
+    {
+      "name": "pre_g4_rpc_audio_get_algorithm_config_request",
+      "classification": "historical-stale",
+      "reason": "Pre-G4 pseudo-golden uses an obsolete short RPC binary envelope and omits the Standard Frame CRC footer.",
+      "recipe": "contract/vector-recipes/historical.yaml#pre_g4_rpc_audio_get_algorithm_config_request",
+      "derivation": "preserved-historical",
+      "originalHexFile": "rpc_audio_get_algorithm_config.hex",
+      "hexFile": "historical/pre-g4/rpc_audio_get_algorithm_config.hex",
+      "payloadType": "RPC",
+      "encoding": "tlv",
+      "expectDecode": {
+        "method": "audio.getAlgorithmConfig"
+      }
+    },
+    {
+      "name": "pre_g4_rpc_audio_set_algorithm_config_request",
+      "classification": "historical-stale",
+      "reason": "Pre-G4 pseudo-golden uses an obsolete short RPC binary envelope, stale schema projection and no Standard Frame CRC footer.",
+      "recipe": "contract/vector-recipes/historical.yaml#pre_g4_rpc_audio_set_algorithm_config_request",
+      "derivation": "preserved-historical",
+      "originalHexFile": "rpc_audio_set_algorithm_config.hex",
+      "hexFile": "historical/pre-g4/rpc_audio_set_algorithm_config.hex",
+      "payloadType": "RPC",
+      "encoding": "tlv",
+      "expectDecode": {
+        "method": "audio.setAlgorithmConfig",
+        "field": "noiseSuppression.level"
+      }
+    },
+    {
+      "name": "pre_g4_event_audio_algorithm_config_changed",
+      "classification": "historical-stale",
+      "reason": "Pre-G4 pseudo-golden uses an obsolete RPC envelope/body projection and omits the Standard Frame CRC footer.",
+      "recipe": "contract/vector-recipes/historical.yaml#pre_g4_event_audio_algorithm_config_changed",
+      "derivation": "preserved-historical",
+      "originalHexFile": "event_audio_algorithm_config_changed.hex",
+      "hexFile": "historical/pre-g4/event_audio_algorithm_config_changed.hex",
+      "payloadType": "RPC",
+      "encoding": "tlv",
+      "expectDecode": {
+        "event": "audio.algorithmConfigChanged",
+        "field": "noiseSuppression.level"
+      }
+    },
+    {
+      "name": "pre_g4_stream_object_chunk",
+      "classification": "historical-stale",
+      "reason": "Pre-G4 pseudo-golden carries the current 16-byte STREAM payload shape but omits the Standard Frame CRC footer.",
+      "recipe": "contract/vector-recipes/historical.yaml#pre_g4_stream_object_chunk",
+      "derivation": "preserved-historical",
+      "originalHexFile": "stream_object_chunk.hex",
+      "hexFile": "historical/pre-g4/stream_object_chunk.hex",
+      "payloadType": "STREAM",
+      "encoding": "binary",
       "expectDecode": {
         "streamId": 9
       }
     },
     {
       "name": "compact_crc8_error",
+      "classification": "historical-compatibility",
+      "reason": "Compact framing is a low-bandwidth compatibility/degradation fixture and is not AXTP v1 Core authority.",
+      "recipe": "contract/vector-recipes/historical.yaml#compact_crc8_error",
+      "derivation": "preserved-historical",
+      "originalHexFile": "compact_crc8_error.hex",
+      "hexFile": "historical/compact/compact_crc8_error.hex",
       "payloadType": "RPC",
       "encoding": "tlv",
-      "hexFile": "compact_crc8_error.hex",
       "expectError": "FRAME_CRC_ERROR"
     },
     {
       "name": "compact_message_id_overflow",
+      "classification": "historical-compatibility",
+      "reason": "Compact framing is a low-bandwidth compatibility/degradation fixture and is not AXTP v1 Core authority.",
+      "recipe": "contract/vector-recipes/historical.yaml#compact_message_id_overflow",
+      "derivation": "preserved-historical",
+      "originalHexFile": "compact_message_id_overflow.hex",
+      "hexFile": "historical/compact/compact_message_id_overflow.hex",
       "payloadType": "RPC",
       "encoding": "tlv",
-      "hexFile": "compact_message_id_overflow.hex",
       "expectError": "COMPACT_MESSAGE_ID_OVERFLOW"
     }
   ]
