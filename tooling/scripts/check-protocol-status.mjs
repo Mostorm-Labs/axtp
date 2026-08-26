@@ -6,6 +6,14 @@ const root = path.resolve(process.argv[2] ?? process.cwd());
 const generatedPath = path.join(root, "contract", "generated", "protocol.json");
 const domainStatusPath = path.join(root, "docs", "product", "domain-status.md");
 const protocolDraftRoot = path.join(root, "workspace", "protocol");
+const proposalTemplatePath = path.join(
+  root,
+  "tooling",
+  "skills",
+  "20-draft-business-protocol",
+  "references",
+  "protocol-draft-template.md",
+);
 const errors = [];
 
 function fail(message) {
@@ -24,26 +32,81 @@ function walkProtocolDrafts(dir) {
   return out.sort();
 }
 
+function parseFlatFrontmatterBlock(block) {
+  const data = {};
+  for (const line of block.trim().split(/\r?\n/)) {
+    const match = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line);
+    if (match) data[match[1]] = match[2].trim();
+  }
+  return data;
+}
+
 function readFrontmatter(file) {
   const text = fs.readFileSync(file, "utf8");
   if (!text.startsWith("---\n")) return { text, data: {} };
   const end = text.indexOf("\n---", 4);
   if (end < 0) return { text, data: {} };
-  const block = text.slice(4, end).trim().split(/\r?\n/);
-  const data = {};
-  for (const line of block) {
-    const match = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line);
-    if (match) data[match[1]] = match[2].trim();
-  }
-  return { text, data };
+  return { text, data: parseFlatFrontmatterBlock(text.slice(4, end)) };
 }
 
 function boolValue(value) {
   return value === "true" ? true : value === "false" ? false : undefined;
 }
 
+function validateProposalTemplate() {
+  const relative = path.relative(root, proposalTemplatePath).replaceAll(path.sep, "/");
+  const text = fs.readFileSync(proposalTemplatePath, "utf8");
+  const match = /````markdown\s*\n---\n([\s\S]*?)\n---/.exec(text);
+  if (!match) {
+    fail(`${relative}: cannot find template proposal frontmatter`);
+    return;
+  }
+
+  const data = parseFlatFrontmatterBlock(match[1]);
+  const expected = {
+    authorityClass: "proposal",
+    lifecycle: "captured",
+    protocolStability: "draft",
+  };
+
+  for (const [key, value] of Object.entries(expected)) {
+    if (data[key] !== value) fail(`${relative}: template ${key} must be ${value}`);
+  }
+  if (!data.domain || !data.feature || data.lastReviewed !== "YYYY-MM-DD") {
+    fail(`${relative}: template must include domain, feature, and lastReviewed placeholders`);
+  }
+  if (data.adoptedBy === undefined) {
+    fail(`${relative}: template must include empty adoptedBy for pre-adoption proposals`);
+  }
+  for (const legacyKey of ["status", "contract", "generated", "registry"]) {
+    if (data[legacyKey] !== undefined) {
+      fail(`${relative}: template must not emit legacy proposal metadata field ${legacyKey}`);
+    }
+  }
+}
+
+function isCanonicalRegistryPath(value) {
+  return /^contract\/registry\/.+\.ya?ml$/.test(value);
+}
+
+function validateAdoptedBy(relative, data) {
+  if (!data.adoptedBy) {
+    fail(`${relative}: accepted proposal must declare adoptedBy primary canonical authority`);
+    return;
+  }
+  if (!isCanonicalRegistryPath(data.adoptedBy)) {
+    fail(`${relative}: adoptedBy must be one scalar contract/registry/**/*.yaml path`);
+    return;
+  }
+  if (!fs.existsSync(path.join(root, data.adoptedBy))) {
+    fail(`${relative}: adoptedBy target does not exist: ${data.adoptedBy}`);
+  }
+}
+
 const allowedLifecycles = new Set(["captured", "reviewing", "accepted", "superseded", "archived"]);
 const allowedProtocolStability = new Set(["draft", "experimental", "stable", "deprecated", "reserved"]);
+
+validateProposalTemplate();
 
 const generated = JSON.parse(fs.readFileSync(generatedPath, "utf8"));
 const generatedFeatures = new Set();
@@ -64,16 +127,20 @@ for (const event of generated.events ?? []) {
 }
 
 for (const file of walkProtocolDrafts(protocolDraftRoot)) {
-  const relative = path.relative(root, file);
+  const relative = path.relative(root, file).replaceAll(path.sep, "/");
   const { text, data } = readFrontmatter(file);
   const domain = data.domain || path.relative(protocolDraftRoot, file).split(path.sep)[0];
   draftCounts.set(domain, (draftCounts.get(domain) ?? 0) + 1);
 
-  const isV2 = data.authorityClass !== undefined || data.lifecycle !== undefined || data.protocolStability !== undefined || data.adoptedBy !== undefined;
+  const isV2 =
+    data.authorityClass !== undefined ||
+    data.lifecycle !== undefined ||
+    data.protocolStability !== undefined ||
+    data.adoptedBy !== undefined;
   const isGenerated = generatedFeatures.has(data.feature);
 
   if (isV2) {
-    if (!data.authorityClass || !data.lifecycle || !data.protocolStability || !data.feature) {
+    if (!data.authorityClass || !data.lifecycle || !data.protocolStability || !data.domain || !data.feature || !data.lastReviewed) {
       fail(`${relative}: incomplete proposal authority metadata v2`);
       continue;
     }
@@ -86,16 +153,23 @@ for (const file of walkProtocolDrafts(protocolDraftRoot)) {
     if (!allowedProtocolStability.has(data.protocolStability)) {
       fail(`${relative}: invalid protocolStability ${data.protocolStability}`);
     }
-    if (data.contract !== undefined || data.generated !== undefined || data.status !== undefined || data.registry !== undefined) {
-      fail(`${relative}: proposal authority metadata v2 must not mix legacy status/contract/generated/registry fields`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data.lastReviewed)) {
+      fail(`${relative}: lastReviewed must use YYYY-MM-DD`);
     }
+    for (const legacyKey of ["status", "contract", "generated", "registry"]) {
+      if (data[legacyKey] !== undefined) {
+        fail(`${relative}: proposal authority metadata v2 must not mix legacy ${legacyKey} field`);
+      }
+    }
+
+    if (data.lifecycle === "accepted") validateAdoptedBy(relative, data);
 
     if (isGenerated) {
       if (data.lifecycle !== "accepted") {
         fail(`${relative}: generated feature ${data.feature} must use lifecycle accepted`);
       }
-      if (!data.adoptedBy) {
-        fail(`${relative}: accepted feature ${data.feature} must declare adoptedBy canonical authority`);
+      if (/是否可直接实现\s*\|\s*是/.test(text)) {
+        fail(`${relative}: accepted proposal must not claim it is directly implementable`);
       }
       if (/当前 generated 协议没有 adopted/.test(text)) {
         fail(`${relative}: accepted proposal still says the feature is not adopted`);
@@ -106,8 +180,9 @@ for (const file of walkProtocolDrafts(protocolDraftRoot)) {
     continue;
   }
 
-  // Legacy proposal metadata remains temporarily readable for non-adopted drafts
-  // during the G1 migration, but it may never claim runtime authority.
+  // Transitional G1 compatibility: non-adopted legacy proposal metadata remains readable
+  // until the historical proposal corpus is migrated. Legacy metadata may never claim
+  // runtime authority and any generated/adopted feature must migrate to v2 immediately.
   if (!data.status || data.contract === undefined || data.generated === undefined || !data.feature) {
     fail(`${relative}: missing required protocol frontmatter`);
     continue;
@@ -160,4 +235,4 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log("[OK] protocol proposal authority metadata and product domain matrix match workspace and generated protocol");
+console.log("[OK] proposal authoring source, authority metadata, and product domain matrix are consistent");
