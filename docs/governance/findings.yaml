@@ -125,11 +125,18 @@ findings:
     gate: G5
     class: GOV-STRUCTURE
     title: Backstage proposal, legacy and workflow material creates AI retrieval ambiguity
-    status: open
+    status: closed
     evidence:
-      - workspace/
-      - docs/superpowers/
-      - tooling/skills/
+      - docs/governance/AXTP_AUTHORITY_ARCHITECTURE_AND_REPOSITORY_GOVERNANCE_V1.md
+      - docs/README.md
+      - docs/guides/runtime.md
+      - workspace/protocol/README.md
+      - docs/governance/reviews/G5-information-architecture-consumer.md
+    resolution:
+      - Governance v1 already defines the valid frontstage implementation chain and permanently classifies workspace as non-contract.
+      - docs/README.md, the runtime guide and the proposal workspace guide all exclude workspace, superpowers plans and tooling skills from default runtime implementation authority.
+      - G5 found no maintained entry point that allows backstage proposal/history/workflow material to override release, canonical/generated, normative or verification authority.
+      - No second implementation-retrieval registry was introduced because it would duplicate the current governance authority and recreate shadow-authority risk.
     expectedDisposition: Define a compact frontstage retrieval set and machine-readable backstage boundaries.
 
   - id: AXTP-GOV-006
@@ -140,6 +147,18 @@ findings:
     status: open
     evidence:
       - release/AXTP_RUNTIME_UPDATE_FLOW.md
+      - docs/governance/consumer-evidence/README.md
+      - docs/governance/consumer-evidence/schema.json
+      - docs/governance/consumer-evidence/ledger.yaml
+      - tooling/scripts/validate-consumer-evidence.mjs
+      - tooling/scripts/consumer-evidence.test.mjs
+      - tooling/scripts/validate-conformance.sh
+    observed:
+      initialConsumers: 6
+      initialPassClaims: 0
+      initialState: all-unverified
+    verificationPending:
+      - full repository CI must validate schema, semantic PASS gating and integration with the conformance validation entry point
     expectedDisposition: Define evidence-backed consumer adoption status without fabricating downstream PASS results.
 
   - id: AXTP-GOV-007
@@ -147,13 +166,22 @@ findings:
     gate: G5
     class: GOV-STRUCTURE
     title: Repository review ownership is coarse and main currently has no branch protection
-    status: open
+    status: deferred
     evidence:
       - .github/CODEOWNERS
       - github://Mostorm-Labs/axtp/branches/main
+      - github://Mostorm-Labs/axtp/rulesets
     observed:
       mainProtected: false
       repositoryRulesets: []
+    deferredReason: Branch protection and organization review-team provisioning are external repository settings; G5 must not invent teams or claim settings that do not exist.
+    futureWork: Configure protected main authority branch and concrete review ownership after organization team identities are provisioned.
+    exitEvidence:
+      - main reports protected:true or an active repository ruleset protects main
+      - pull-request review is required for authority changes
+      - Validate AXTP Spec or its successor is a required status check
+      - direct unreviewed pushes to protected authority branches are prevented
+      - CODEOWNERS maps logical core/domain/verification/security/release ownership to concrete existing teams
     expectedDisposition: Separate ownership for core, domains, verification, security and release/tooling; define required protected-branch policy outside protocol semantics.
 
   - id: AXTP-GOV-008
@@ -161,9 +189,18 @@ findings:
     gate: G5
     class: GOV-STRUCTURE
     title: Large domain-level registry authoring units reduce review and AI isolation
-    status: open
+    status: deferred
     evidence:
       - contract/registry/domains/
+      - docs/superpowers/specs/2026-08-26-g5-repository-consumer-closure-design.md
+    deferredReason: Current domain-level files remain valid canonical source; physically changing canonical authoring topology is a separate migration, not a G5 correctness requirement.
+    futureWork: Registry Feature-Level Source Decomposition migration.
+    exitEvidence:
+      - stable identifiers are unchanged
+      - schema semantics are unchanged
+      - Protocol IR is semantically equivalent
+      - generated artifacts are equivalent
+      - conformance behavior is unchanged
     expectedDisposition: Plan feature-level canonical source units with deterministic domain aggregation and zero identifier/semantic change.
 
   - id: AXTP-GOV-009
@@ -171,16 +208,23 @@ findings:
     gate: G5
     class: GOV-STRUCTURE
     title: Proposal corpus remains larger and more duplicative than necessary for delta-oriented review
-    status: open
+    status: deferred
     evidence:
       - workspace/protocol/
       - docs/product/protocol-draft-health.md
+      - workspace/protocol/README.md
     observed:
       draftFiles: 110
       methodSections: 442
       jsonExamples: 1200
       reviewAsk: 132
       reviewDraft: 139
+    deferredReason: G1 already removed proposal authority from runtime retrieval; bulk compaction is now a maintenance/retrieval-cost improvement rather than a current authority blocker.
+    futureWork: Accepted Proposal Corpus Compaction migration preserving rationale, decisions, compatibility evidence and open questions while replacing canonical mirrors with links/projections.
+    exitEvidence:
+      - accepted proposals retain rationale and supersession/adoption traceability
+      - duplicated current method/schema/error/ID mirrors are reduced where generated links are sufficient
+      - no proposal regains runtime contract authority
     expectedDisposition: Retain proposal rationale/delta/open questions while projecting canonical facts from registry/generated authority.
 
   - id: AXTP-GOV-010
@@ -188,10 +232,18 @@ findings:
     gate: G5
     class: VERIFICATION-GAP
     title: Protocol security has repository reporting policy but no complete normative threat-model authority
-    status: open
+    status: deferred
     evidence:
       - SECURITY.md
       - specs/
+    deferredReason: Threat modeling and authentication/authorization/replay/downgrade/relay/OTA trust decisions are a separate security-authority project and may require protocol-semantic amendments.
+    futureWork: AXTP Protocol Security Authority Program with its own authority review, threat model and release gate.
+    exitEvidence:
+      - current threat model authority exists
+      - authentication and authorization boundaries are explicit
+      - replay and downgrade policy is explicit
+      - relay, credential lifecycle and OTA trust boundaries are explicit
+      - any semantic wire/runtime changes are released through a separate protocol amendment rather than hidden in governance
     expectedDisposition: Define a future security-authority project and release gate without introducing new wire semantics inside G0-G5.
 
   - id: AXTP-GOV-011
@@ -224,8 +276,15 @@ findings:
     status: open
     evidence:
       - tooling/generators/src/emitters/protocolMarkdown.ts
+      - tooling/generators/src/protocolProjectionFacts.ts
+      - tooling/generators/src/protocolMarkdown.test.ts
+      - contract/registry/core/rpc_op.yaml
+      - specs/20-core.md
       - contract/generated/protocol.md
     observed:
-      - Protocol Markdown rendering includes hard-coded framework/layout claims and explicit RPC op-number examples that are not all resolved from ProtocolModel at render time.
-      - No independent current-core golden-vector bytes are sourced from this emitter.
+      - Protocol Markdown previously embedded the Standard Frame header byte count and selected JSON RPC op numbers as emitter literals.
+      - G5 now derives those projection facts from canonical rpc_op.yaml and the normative Standard Frame field table without extending Protocol IR.
+      - Current authority values should preserve generated Markdown bytes; full generator tests/generated drift remain the required closure evidence.
+    verificationPending:
+      - full generator build, Vitest and generated-drift validation must prove the projection repair and byte-preserving output
     expectedDisposition: Refactor generated human-readable framework/opcode prose to model-driven projections or explicitly separate non-authoritative explanatory template text from protocol facts.
