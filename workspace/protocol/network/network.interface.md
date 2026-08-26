@@ -1,11 +1,11 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: draft
 domain: network
 feature: network.interface
-registry: ../../../../contract/registry/domains/network/domain.yaml
-lastReviewed: 2026-06-15
+adoptedBy: contract/registry/domains/network/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # network.interface
@@ -15,8 +15,8 @@ lastReviewed: 2026-06-15
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 枚举设备网络接口，并提供 `network.ap`、`network.wifi`、`network.ip` 引用所需的 `interfaceId`、`roles` 和默认接口信息。 |
-| 当前状态 | generated；已写入 `../../../../contract/registry/domains/network/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准；本文保留的 open review markers 不属于已生成合同。 |
+| 当前状态 | accepted proposal；canonical facts 已写入 `contract/registry/domains/network/domain.yaml` 并生成；对应 protocol stability 仍为 draft。 |
+| 是否可直接实现 | 否。本文保留设计说明和 review context；runtime 必须读取 canonical / generated / conformance authority。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
 | Registry readiness | ready；P0 / confirmed subset 已写入 registry source 并生成。 |
@@ -29,7 +29,7 @@ lastReviewed: 2026-06-15
 
 Cast RX/TX 配对 flow 已确认：Host 不硬编码内部网卡名；`network.getInterfaces` 返回的 `roles` 和 `defaults` 足以选择 NA20 的 AP 接口和 NT10 的 STA 接口。本文不定义 Wi-Fi 认证、AP 运行状态或 IP 地址变化，这些分别归 `network.wifi`、`network.ap` 和 `network.ip`。
 
-`network.interface` 的 P0 / confirmed subset 已进入 generated 合同；正式 methodId、eventId、errorCode、fieldId 以 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**` 为准。本文保留的 review 标记仅用于后续修订。
+`network.interface` 的 P0 / confirmed subset 已进入 generated authority；正式 methodId、eventId、errorCode、fieldId 以 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**` 为准。本文保留的 review 标记仅用于后续修订。
 
 ## 2. 能力边界
 
