@@ -11,7 +11,7 @@
 | 测试 / Conformance | [guides/testing.md](guides/testing.md) |
 | 协议维护 | [guides/protocol-maintainer.md](guides/protocol-maintainer.md) |
 | Release owner | [../release/README.md](../release/README.md) |
-| Repository governance | repository-only: `docs/governance/AXTP_AUTHORITY_ARCHITECTURE_AND_REPOSITORY_GOVERNANCE_V1.md`（不进入 Spec release artifact） |
+| Repository governance | repository-only: `docs/governance/README.md`（不进入 Spec release artifact；该入口列出 Current Governance Authority、scope amendment 和 final closure） |
 
 ## Runtime implementation authority
 
