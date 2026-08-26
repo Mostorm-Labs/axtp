@@ -41,8 +41,14 @@ ENVIRONMENT_DEFECT / network resolution limitation
 repository defect evidence = NONE
 ```
 
+## PR trigger behavior
+
+Reopening Draft PR #12 on commit `d7b9d7f896b7630fd919117a04738f2b00d5eb38` did not create a new `Validate AXTP Spec` workflow run. The workflow therefore cannot be treated as validating on `reopened` events.
+
+This record is updated while the PR is open to create a normal `pull_request synchronize` event. This is a governance-evidence change only; no G5 implementation, protocol source, generated artifact, consumer-evidence behavior, or validation logic is modified.
+
 ## Next valid evidence
 
-A new repository commit is created only to preserve this real Gate-attempt classification, not as a no-op CI trigger. G5 remains `READY FOR FULL VERIFICATION` until a fresh `Validate AXTP Spec` run executes on the resulting exact head.
+G5 remains `READY FOR FULL VERIFICATION` until a fresh `Validate AXTP Spec` run executes on the resulting exact head.
 
 Only an executable exact-head run with completed repository validation steps may close `AXTP-GOV-006` and `AXTP-GOV-012`.
