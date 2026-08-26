@@ -212,7 +212,7 @@ function encodeJsonBinaryRequest(source: ProtocolSourceModel, payload: JsonBinar
   const method = byName(source.methods, payload.method, "method", entry);
   const status = byName(source.errors, payload.status ?? "SUCCESS", "error/status", entry).id;
   const bodyEncoding = byName(source.rpcBodyEncodings, payload.bodyEncoding, "RPC body encoding", entry).id;
-  let body = new Uint8Array();
+  let body: Uint8Array = new Uint8Array();
   if (payload.bodyEncoding === "NONE") {
     if (payload.body && Object.keys(payload.body).length > 0) fail("NONE bodyEncoding cannot carry a body", entry, "payload.body");
   } else if (payload.bodyEncoding === "TLV8") {
