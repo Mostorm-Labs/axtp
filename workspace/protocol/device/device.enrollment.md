@@ -1,11 +1,11 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: draft
 domain: device
 feature: device.enrollment
-registry: ../../../../contract/registry/domains/device/domain.yaml
-lastReviewed: 2026-06-16
+adoptedBy: contract/registry/domains/device/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # AXTP device.enrollment 协议草案
@@ -24,7 +24,7 @@ Capability ID：`device.enrollment`（capability `0x0102`）
 
 完整的审核标记（含 `[REVIEW-DRAFT]` / `[REVIEW-RESOLVED]` / `[REVIEW-ASK]` 条目、审核结论与后续动作）见 **附录 A**，本文以附录 A 为唯一权威源。开篇要点：
 
-- 本文已采纳（见下方「采纳记录 (Adoption)」），machine 事实源为 `registry/domains/device/domain.yaml`（DomainId `0x01`）；YAML 与 generated 产物不一致时以 registry YAML 为准。
+- 本文是 accepted proposal（见下方「采纳记录 (Adoption)」）；当前 canonical machine 事实源为 `contract/registry/domains/device/domain.yaml`，并已投影到 generated authority。本文不是 runtime implementation contract。
 - 域命名采用 `device.enrollment`（比 `device.binding` 更准确描述"未入管设备成为后台管理对象"的语义），方法名为 `device.getPairingCode`。
 - Legacy 命令 `GetBindCode` / `GetBindConfig` / `SetBindConfig` / `OnBindState` 的逐字段映射见 **Section 9**；binding → device.enrollment 的 generated legacy 文件更新本次不落地，留待 legacy-migration 专项处理（见 9.6 / 采纳记录 A.5）。
 
@@ -155,7 +155,7 @@ Schema 名加 `Device` 前缀（`EnrollmentInfo` → `DeviceEnrollmentInfo` 等�
 (3) Section 6 Schemas 重组：新增 6.3–6.8 子节，将方法/事件小节内联定义的 `GetPairingCodeParams`、`PairingCodeInfo`、`GetEnrollmentStateParams`、`SetEnrollmentStateParams`、`SetEnrollmentStateResult`、`EnrollmentStateChangedEvent` 提升为 Section 6 独立 schema 定义；方法/事件小节保留内联字段表并增加 Section 6 交叉引用。
 
 **v0.3 变更说明：**
-(1) Section 9 "Legacy 待映射" 从 4 行简表扩展为 9.0-9.6 子节，包含逐命令字段映射表（GetBindCode / GetBindConfig / SetBindConfig / OnBindState）、adapter 转换说明和 generated legacy 文件交叉引用。
+(1) Section 9 "Legacy 待映射" 从 4 行简表扩展为 9.0-9.6 子节，包含逐命令字段映射表（GetBindCode / GetBindConfig / SetBindConfig / OnBindState）、adapter 转换说明和 generated 文件交叉引用。
 (2) `PairingCodeInfo.expiresAt` 字段说明增加 legacy 类型变更注释（Unix timestamp integer → RFC 3339 string）。
 (3) 审核标记表 `legacy 映射` 行从 `[REVIEW-ASK]` 更新为 `[REVIEW-RESOLVED]`。
 
@@ -176,12 +176,12 @@ Schema 名加 `Device` 前缀（`EnrollmentInfo` → `DeviceEnrollmentInfo` 等�
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 让未入管设备通过 pairing code / enrollment state 成为后台可管理对象。 |
-| 当前状态 | draft（已采纳局部 / scoped，见「采纳记录 (Adoption)」） |
-| 是否可直接实现 | 否（草案为提案，未生成）；machine 事实源为 `registry/domains/device/domain.yaml`，generated 产物待 Stage 50 重生成。 |
+| 当前状态 | accepted proposal（scoped adoption）；canonical registry 与 generated authority 已存在，见「采纳记录 (Adoption)」。 |
+| 是否可直接实现 | 否；runtime/SDK/firmware 必须读取 canonical registry / generated authority，本文保留 adoption rationale、review context 和 amendment input。 |
 | 主要交互 | RPC + EVENT |
 | 是否使用 STREAM | 否 |
-| Registry readiness | adopted（scoped）— YAML 已写入 |
-| Conformance | needed（待 Stage 50 generated 后补 conformance cases） |
+| Registry readiness | adopted（scoped）— canonical YAML 已写入并生成。 |
+| Conformance | needed |
 | 主要未决问题 | pairing code 生成方向、endpoint 关联字段、解绑语义和跨域副作用仍需确认。 |
 
 ---
@@ -212,7 +212,7 @@ Schema 名加 `Device` 前缀（`EnrollmentInfo` → `DeviceEnrollmentInfo` 等�
 
 `device.enrollment` 用于设备注册、pairing code 获取、纳管状态查询和变更。它描述"未入管设备成为后台管理对象"的过程，不属于认证会话（`auth.*`），也不属于 room 业务域（`room.*`）。
 
-本文落实 `workspace/flows/signage-device-management.md` 中对 legacy `GetBindCode` / `GetBindConfig` / `SetBindConfig` / `OnBindState` 的最终定域。当前 generated 协议未包含这些方法或事件；本文所有 method、event、schema 均为候选，正式数值为 `TBD after adoption`。
+本文落实 `workspace/flows/signage-device-management.md` 中对 legacy `GetBindCode` / `GetBindConfig` / `SetBindConfig` / `OnBindState` 的最终定域。当前 canonical/generated authority 已包含本 proposal 已采纳的 scoped subset；本文中的 review markers、历史候选表和 legacy notes 继续作为后续 amendment 输入，不覆盖 canonical facts。
 
 **关键证据：** legacy device-sdk 实测中 `GetBindCode` 响应包含 `expiresInSeconds: 1800`（测试 `src/sdk.spec.ts` 中 `createServerSdk register wires command/event handlers` 断言失败暴露）。草案必须保留 `expiresInSeconds` 字段。
 
@@ -1244,10 +1244,10 @@ Legacy Device → Server（**未研发**），事件 data `{ status, code, messa
 
 | 项 | 状态 |
 |---|---|
-| Registry YAML | written（局部采纳 / scoped，见「采纳记录」） |
-| Generated docs | not generated（待 Stage 50 `generate-axtp-protocol` 重生成） |
+| Registry YAML | current canonical adoption exists in `contract/registry/domains/device/domain.yaml`（局部采纳 / scoped） |
+| Generated docs | current generated authority exists; runtime must consume canonical/generated surfaces rather than this proposal |
 | Method / event IDs | 已分配：method `0x0102`/`0x0103`/`0x0104`、event `0x0102`、capability `0x0102` |
-| Conformance | 需覆盖 pairing code TTL、状态查询、状态变更事件、解绑权限、legacy `expiresInSeconds`（待 generated 后补 conformance cases）。 |
+| Conformance | 需覆盖 pairing code TTL、状态查询、状态变更事件、解绑权限、legacy `expiresInSeconds`。 |
 
 > 完整采纳检查清单（12 项，含 `getPairingCode` 命名偏好、`state` 枚举 P0 范围、`workspaceId` / `endpointId` 隐私策略、`binding` → `device.enrollment` generated 文件更新方案等）见 **附录 D**，本文以附录 D 为唯一权威源。
 
@@ -1395,6 +1395,6 @@ events:
 - [~] 09 `displayName` `max_length: 128`（对齐 `device.info`），scoped 待产品确认，见 A.4。
 - [~] 10 `workspaceId` / `endpointId` 作为 `required: false` 摘要字段写入；隐私暴露策略 scoped，见 A.4。
 - [ ] 11 `binding` → `device.enrollment` 的 generated legacy 文件（9.6）更新——本次不落地，留待 legacy-migration 专项（A.5）。
-- [ ] 12 Generator 完整生成 `protocol/axtp.protocol.yaml` 和 `docs/generated/*`——待 Stage 50 重跑（A.5）。
+- [x] 12 Current generator projection exists in `contract/protocol/**` and `contract/generated/**`; future amendments must regenerate from canonical source, not from this proposal.
 
-> `[x]` 已落实；`[~]` scoped 采纳（默认值已写入，确认后走 amend）；`[ ]` 留待后续阶段（Stage 50 / legacy-migration 专项）。
+> `[x]` 已落实；`[~]` scoped 采纳（默认值已写入，确认后走 amend）；`[ ]` 留待 legacy-migration 专项。
