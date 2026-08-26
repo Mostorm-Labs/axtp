@@ -5,20 +5,28 @@ server updates. Runtime repositories must implement a released Spec tag or an
 explicit commit; they must not track the AXTP `main` branch as a reproducible
 build dependency.
 
+In this document, **Spec version means `release.version` derived from the
+`spec/vX.Y.Z` tag**. It does not mean Protocol IR `protocol.version`, Standard
+Frame Header Version, registry/schema model version, or `Hello.axtpVersion`.
+
 ## Release Contract
 
-- AXTP Spec tags use `spec/vMAJOR.MINOR.PATCH`, for example `spec/v0.3.0`.
+- AXTP Spec tags use `spec/vMAJOR.MINOR.PATCH`, for example `spec/v0.15.0`.
 - The main AXTP repository publishes release artifacts with `contract/`,
   `specs/`, `conformance/`, role/product docs, release docs, a changelog, and
   a manifest.
-- Runtime repositories record their binding in `AXTP_SPEC.lock.yaml`.
+- Runtime repositories record their release binding in `AXTP_SPEC.lock.yaml`.
 - Runtime repositories expose runtime-local upgrade and lock-check scripts
   named `upgrade-axtp-spec.sh spec/vX.Y.Z` and `check-axtp-spec-lock.sh`.
-- Runtime/tool GitHub release tags extend the AXTP Spec version with an
-  implementation revision: `spec/vX.Y.Z` maps to `vX.Y.Z.0` for the first
-  runtime/tool release, and later runtime-only fixes use `vX.Y.Z.R`.
+- Runtime/tool GitHub release tags extend the bound AXTP **release version**
+  with an implementation revision: `spec/vX.Y.Z` maps to `vX.Y.Z.0` for the
+  first runtime/tool release, and later runtime-only fixes use `vX.Y.Z.R`.
 - Runtime upgrades create pull requests, auto-merge after checks pass, create
   runtime/tool tags, and then create GitHub Releases.
+
+The update automation does not infer feature compatibility from release version
+numbers. Runtime support remains governed by the bound Protocol IR/specs,
+transport/profile/capability facts, wire parser rules, and conformance evidence.
 
 ## Mode A: Spec Tag Automation
 
@@ -53,10 +61,13 @@ configured in the `axtp` repository and must be able to send
 
 The dispatch payload includes:
 
-- `spec_tag`
-- `spec_version`
-- `spec_repository`
-- `spec_commit`
+- `spec_tag` = canonical `release.tag`, for example `spec/v0.15.0`;
+- `spec_version` = canonical `release.version`, for example `0.15.0`;
+- `spec_repository` = source repository identity;
+- `spec_commit` = exact release commit.
+
+`spec_version` is a historical public field name and is preserved for
+compatibility. G2 freezes its meaning as **release version only**.
 
 ## Verification
 
@@ -65,28 +76,31 @@ For an end-to-end test release such as `spec/v0.0.2`, verify:
 - The `axtp` release workflow uploads `dist/axtp-spec-v0.0.2.zip`.
 - Each runtime/tool repository opens or updates
   `automation/upgrade-axtp-spec-v0.0.2`.
-- Each generated manifest records AXTP Spec `0.0.2` and runtime/tool version
+- Each generated manifest records AXTP release `0.0.2` and runtime/tool version
   `0.0.2.0`.
 - Each automation PR auto-merges only after checks pass.
 - Each runtime/tool repository creates `v0.0.2.0` and a GitHub Release.
 
 ## Version Contract
 
-Runtime repositories keep three version records. The AXTP Spec version remains
-three-part SemVer, while the runtime/tool GitHub release tag appends a fourth
-runtime revision:
+Runtime repositories keep three release/implementation records:
 
-- AXTP Spec Version from the main repository tag, for example `spec/v0.3.0`.
-- Runtime/tool GitHub Release Version from the runtime/tool repository, for
-  example `v0.3.0.0` or `v0.3.0.1`.
-- Runtime Generated Artifact Version from the runtime repository generated
-  manifest or release metadata.
+- AXTP `release.version` from the main repository tag, for example
+  `spec/v0.15.0` / `0.15.0`.
+- `runtimeImplementation.version` from the runtime/tool repository, for example
+  `v0.15.0.0` or `v0.15.0.1`.
+- Runtime generated artifact version/provenance from the runtime repository
+  generated manifest or release metadata.
+
+These records must not be confused with AXTP Protocol IR
+`protocolSemantics.version`, Standard Frame `wire.standardFrameVersion`, or
+optional `Hello.d.axtpVersion` diagnostics.
 
 Runtime repositories use runtime tags `vX.Y.Z.R`; they must not tag runtime
 releases as `spec/vX.Y.Z`.
 
 The first runtime/tool release for a Spec tag uses revision `0`. Later fixes
-that do not change the AXTP Spec lock increment only the fourth field:
+that do not change the AXTP release lock increment only the fourth field:
 
 ```text
 spec/v0.8.4 -> runtime/tool v0.8.4.0
@@ -96,8 +110,8 @@ spec/v0.8.5 -> runtime/tool v0.8.5.0
 
 Package-manager versions may need ecosystem-specific projections when a
 four-part version is not legal. In that case, the GitHub release tag and
-generated manifest remain canonical, and the package metadata must keep the
-AXTP Spec lock visible.
+generated manifest remain canonical consumer release identity, and the package
+metadata must keep the AXTP Spec lock visible.
 
 AXTP Spec releases do not publish npm, pub, PyPI, Docker, or other package
 registries. Runtime/tool GitHub Releases are created only from runtime/tool
@@ -122,6 +136,8 @@ The real runtime and mock repositories are:
 - Do not make runtime repositories depend on AXTP `main`.
 - Do not redefine specs, registry facts, schemas, or conformance material in
   runtime repositories.
+- Do not use release `spec_version` as a generic session admission or feature
+  negotiation gate.
 
 ## Required Repository Settings
 
