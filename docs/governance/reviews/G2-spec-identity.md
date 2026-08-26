@@ -60,10 +60,10 @@ The collision was semantic, not numeric: the repository used the word `spec` for
 | Git tag `spec/vX.Y.Z` | `spec/v0.15.0` | release process | immutable repository authority snapshot | none | canonical `release.tag/version` |
 | release manifest `axtp_spec.version` | `0.15.0` | release tooling | release version projection | none | canonical release projection |
 | dispatch `spec_version` | `0.15.0` | runtime update workflow | release version API field | none | compatibility field; meaning frozen |
-| `protocol.version` | `1.0.0` | `core/protocol_meta.yaml` -> Protocol IR | protocol semantic lineage | none | canonical semantic projection |
-| `protocol.specVersion` | `1` | `core/protocol_meta.yaml` -> Protocol IR | historical Core wire/header generation | indirect; mirrors wire generation | legacy alias of `wire.standardFrameVersion` |
+| `protocol.version` | `1.0.0` | `contract/registry/core/protocol_meta.yaml` -> Protocol IR | protocol semantic lineage | none | canonical semantic projection |
+| `protocol.specVersion` | `1` | `contract/registry/core/protocol_meta.yaml` -> Protocol IR | historical Core wire/header generation | indirect; mirrors wire generation | legacy alias of `wire.standardFrameVersion` |
 | Standard Frame Header `Version` | `0x01` | `specs/20-core.md` | hard parser compatibility boundary | **yes** | normative `wire.standardFrameVersion` |
-| `protocol.registryVersion` | `1.0.0` | `core/protocol_meta.yaml` | registry/schema model metadata | none | legacy/current projection |
+| `protocol.registryVersion` | `1.0.0` | `contract/registry/core/protocol_meta.yaml` | registry/schema model metadata | none | legacy/current projection |
 | `version.yaml spec.version` | `1.0.0` | legacy registry metadata | protocol semantic metadata mirror | none | legacy mirror; **not release version** |
 | `version.yaml registry_version` | `1.0.0` | legacy registry metadata | registry model metadata | none | legacy mirror |
 | `version.yaml schema_version` | `1.0.0` | legacy registry metadata | schema/model metadata | none | legacy mirror |
@@ -102,7 +102,7 @@ source.protocolMeta
   -> contract/protocol/axtp.protocol.yaml
 ```
 
-Therefore current Protocol IR top-level `protocol.version/specVersion/registryVersion` comes from `protocol_meta.yaml`, not from the similarly named fields in `contract/registry/version.yaml`.
+Therefore current Protocol IR top-level `protocol.version/specVersion/registryVersion` comes from `contract/registry/core/protocol_meta.yaml`, not from the similarly named fields in `contract/registry/version.yaml`.
 
 ### 5.3 `contract/registry/version.yaml`
 
@@ -238,6 +238,8 @@ G2 updates the maintained frontstage explanation surfaces:
 - `release/README.md`
 - `release/AXTP_SPEC_VERSIONING.zh-CN.md`
 - `release/AXTP_SPEC_VERSIONING.md`
+- `release/AXTP_RUNTIME_SPEC_LOCK.zh-CN.md`
+- `release/AXTP_RUNTIME_SPEC_LOCK.md`
 - `release/AXTP_RUNTIME_UPDATE_FLOW.md`
 - `specs/50-tooling.md`
 - `docs/guides/runtime.md`
@@ -253,7 +255,7 @@ No canonical Registry or Protocol IR value was changed to achieve this closure.
 | `AXTP-GOV-002` | GOV-AMBIGUITY | FIXED-IN-G2; pending full verification |
 | `spec/vX.Y.Z` vs `protocol.version` collision | GOV-AMBIGUITY | FIXED-IN-G2 naming model |
 | `protocol.specVersion` ambiguous label | GOV-AMBIGUITY | compatibility alias semantics frozen; physical rename deferred |
-| duplicate `version.yaml` / `protocol_meta.yaml` metadata surfaces | GOV-AMBIGUITY / GOV-STRUCTURE | authority clarified; physical consolidation deferred to explicit tooling/schema migration |
+| duplicate `contract/registry/version.yaml` / `contract/registry/core/protocol_meta.yaml` metadata surfaces | GOV-AMBIGUITY / GOV-STRUCTURE | authority clarified; physical consolidation deferred to explicit tooling/schema migration |
 | generated Markdown legacy labels | DOC-DRIFT risk | semantics documented; emitter rename deferred |
 | Hello version used as possible admission gate | VERIFICATION-GAP risk | existing core spec + conformance already prove advisory behavior |
 
@@ -267,7 +269,7 @@ No G2 defect requires a `PROTOCOL-SEMANTIC` amendment.
 
 ### Semantic duplication
 
-**DEFER-WITH-OWNER.** `contract/registry/version.yaml` and `core/protocol_meta.yaml` still physically duplicate some values. G2 proves which surface drives Protocol IR and freezes mirror semantics; physical consolidation is intentionally not performed without a tooling/schema migration.
+**DEFER-WITH-OWNER.** `contract/registry/version.yaml` and `contract/registry/core/protocol_meta.yaml` still physically duplicate some values. G2 proves which surface drives Protocol IR and freezes mirror semantics; physical consolidation is intentionally not performed without a tooling/schema migration.
 
 ### Derivation drift
 
