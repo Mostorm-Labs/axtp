@@ -2,17 +2,44 @@ import { mkdtemp, rm, writeFile, mkdir, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { emitAll } from "./emitters/index.js";
+import { emitAll, emitTestVectorFiles } from "./emitters/index.js";
 import { loadSpec } from "./loader.js";
-import type { SpecModel } from "./models.js";
+import type { ProtocolSourceModel } from "./sourceModel.js";
 import { normalizeId } from "./util.js";
 import { validateSpec } from "./validator.js";
 
-function baseSpec(): SpecModel {
+function baseSpec(): ProtocolSourceModel {
   return {
     specRoot: "/tmp/spec",
     config: {},
     version: {},
+    protocolMeta: {
+      protocol: { name: "AXTP", version: "1.0.0", specVersion: 1, registryVersion: "1.0.0" },
+      wire: { byteOrder: "big-endian", crcByteOrder: "big-endian" },
+      frameProfiles: [{ name: "STANDARD_FRAME", magic: "AX", l1: "STANDARD_L1", l2: "STANDARD_L2" }]
+    },
+    sourceFiles: [],
+    profiles: [],
+    vectorRecipes: {
+      schemaVersion: 1,
+      currentCore: [{
+        id: "control_open",
+        classification: "current-core",
+        authorityRules: ["CONTROL.SESSION.001"],
+        hexFile: "control_open.hex",
+        profile: "standard-framed",
+        frame: { payloadType: "CONTROL", sourceId: 1, destinationId: 16, messageId: 1, frameIndex: 0, frameCount: 1 },
+        payload: {
+          kind: "control",
+          opcode: "OPEN",
+          controlId: 1,
+          status: "SUCCESS",
+          body: { schema: "ControlOpenBody", values: {} }
+        },
+        expectDecode: { opcode: "OPEN" }
+      }],
+      historical: []
+    },
     payloadTypes: [{ id: 1, value: 1, name: "CONTROL", domain: "protocol", status: "mvp" }],
     controlOpcodes: [{ id: 1, value: 1, name: "OPEN", domain: "control", status: "mvp" }],
     rpcEncodings: [{ id: 4, value: 4, name: "JSON_BINARY", domain: "rpc", status: "mvp" }],
@@ -58,6 +85,7 @@ function baseSpec(): SpecModel {
       statusMapping: { "0x00": "SUCCESS" }
     }],
     schemas: [
+      { name: "ControlOpenBody", type: "object", fields: [] },
       { name: "AudioAlgorithmCapability", type: "object", fields: [] },
       {
         name: "AudioSetAlgorithmConfigRequest",
@@ -184,10 +212,24 @@ describe("emitters", () => {
       await expect(await readFile(path.join(dir, "docs", "method_registry.generated.md"), "utf8")).toMatchFileSnapshot("./__snapshots__/method_registry.generated.md");
       await expect(await readFile(path.join(dir, "json", "method_registry.generated.json"), "utf8")).toMatchFileSnapshot("./__snapshots__/method_registry.generated.json");
       await expect(await readFile(path.join(dir, "test_vectors", "manifest.json"), "utf8")).toMatchFileSnapshot("./__snapshots__/manifest.json");
-      expect(await readFile(path.join(dir, "test_vectors", "control_open.hex"), "utf8")).toContain("415801010005");
-      expect(await readFile(path.join(dir, "test_vectors", "rpc_audio_set_algorithm_config.hex"), "utf8")).toContain("0902");
-      expect(await readFile(path.join(dir, "test_vectors", "stream_object_chunk.hex"), "utf8")).toContain("00000009000000010000000000000001");
+      expect((await readFile(path.join(dir, "test_vectors", "control_open.hex"), "utf8")).trim()).toBe("4158010100050110000100010100010000195C");
       await expect(await readFile(path.join(dir, "ts", "axtp_ids_generated.ts"), "utf8")).toMatchFileSnapshot("./__snapshots__/axtp_ids_generated.ts");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("changes emitted bytes when the active source opcode changes", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "axtp-gen-vector-authority-"));
+    try {
+      const spec = baseSpec();
+      await emitTestVectorFiles(spec, dir);
+      const first = (await readFile(path.join(dir, "control_open.hex"), "utf8")).trim();
+      spec.controlOpcodes[0].id = 0x0c;
+      await emitTestVectorFiles(spec, dir);
+      const second = (await readFile(path.join(dir, "control_open.hex"), "utf8")).trim();
+      expect(second).not.toBe(first);
+      expect(Buffer.from(second, "hex")[12]).toBe(0x0c);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
