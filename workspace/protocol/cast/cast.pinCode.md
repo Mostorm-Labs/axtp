@@ -1,11 +1,11 @@
 ---
-status: generated
-contract: true
-generated: true
+authorityClass: proposal
+lifecycle: accepted
+protocolStability: draft
 domain: cast
 feature: cast.pinCode
-registry: ../../../../contract/registry/domains/cast/domain.yaml
-lastReviewed: 2026-06-22
+adoptedBy: contract/registry/domains/cast/domain.yaml
+lastReviewed: 2026-08-26
 ---
 
 # cast.pinCode
@@ -14,8 +14,8 @@ lastReviewed: 2026-06-22
 
 | 项目 | 内容 |
 |---|---|
-| 当前状态 | generated；已写入 `../../../../contract/registry/domains/cast/domain.yaml`，并已刷新到 `contract/protocol/axtp.protocol.yaml` 与 `contract/generated/**`。 |
-| 是否可直接实现 | 是，但实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准。 |
+| 当前状态 | accepted proposal；对应事实已写入 `contract/registry/domains/cast/domain.yaml` 并投影到 generated authority。 |
+| 是否可直接实现 | 否。实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 及 canonical registry 为准；本文保存 rationale 和 review context。 |
 | 本次采纳 | PIN 配置、设置、required/auth failed 事件、明文可见性和脱敏字段外形。 |
 | 未采纳 | PIN 格式、长度、进行中鉴权影响等 Review Items 不属于已生成合同；后续语义变更走 `amend-adopted-protocol`。 |
 
