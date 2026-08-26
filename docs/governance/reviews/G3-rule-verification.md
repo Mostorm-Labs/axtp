@@ -256,7 +256,7 @@ No finding discovered by G3 requires a `PROTOCOL-SEMANTIC` amendment.
 
 ### Release / consumer drift
 
-**PASS, pending full-CI confirmation.** `contract/rules/**` is release-consumable metadata; its source/evidence paths remain inside release-consumable `specs/**` / `contract/**`. Runtime behavior and result schema remain unchanged.
+**PASS, pending full-CI confirmation.** `contract/rules/**` is release-consumable metadata; its source/evidence paths remain inside release-consumable `specs/**` / `contract/**`. Runtime behavior and result schema remain unchanged. `contract/rules/README.md` is release-artifact self-contained and does not require maintainer-only tooling paths to interpret the Rule-to-Evidence chain.
 
 ## 12. Semantic impact check
 
@@ -288,16 +288,16 @@ G3 can close when fresh full repository validation proves the completed branch s
 
 ## 14. Functional-head freeze
 
-Completed G3 functional head before full CI:
+The last G3 implementation/content commit before full CI is:
 
 ```text
-6df5e3fe0e685321eee5ed94e2723be8436bf3f3
+024d5bf7329491519f43644c04c59c174e23c9d7
 ```
 
-No further G3 implementation edits are expected before the full validation run. Any failure will be classified before repair rather than patched opportunistically.
+The commit only made the release-consumable Rule README self-contained after the Rule/case/tooling model was already complete. This review-record update is governance evidence, not a further implementation change. Any subsequent functional failure will be classified before repair rather than patched opportunistically.
 
 ## 15. Current decision
 
 **READY FOR FULL VERIFICATION**
 
-The G3 authority/coverage model is implemented on the feature branch. Gate PASS is withheld until one fresh full `Validate AXTP Spec` run succeeds on the completed G3 functional head, followed by exact-head closure evidence.
+The G3 authority/coverage model is implemented on the feature branch. Gate PASS is withheld until one fresh full `Validate AXTP Spec` run succeeds on the completed G3 branch state, followed by exact-head closure evidence.
