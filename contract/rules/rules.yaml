@@ -1,0 +1,139 @@
+ruleRegistry:
+  version: 1
+  authorityClass: verification-authority
+  semanticsOwner: specs
+  relationshipOwner: conformance-case.authorityRules
+  dispositions:
+    - covered
+    - structural-only
+    - manual-evidence
+    - not-applicable
+    - uncovered
+
+rules:
+  - id: CORE.FRAME.001
+    status: stable
+    level: must
+    statement: Standard Frame parsers MUST treat the Header Version as a parser compatibility boundary; the current Standard Frame Version is 0x01.
+    source:
+      path: specs/20-core.md
+      section: Standard Frame 标准帧
+    since: spec/v0.0.2
+    verification:
+      disposition: structural-only
+      evidence:
+        - contract/registry/core/protocol_meta.yaml
+        - contract/protocol/axtp.protocol.yaml
+      note: Current conformance DSL does not inject an invalid raw Standard Frame version; G3 records the parser generation structurally and does not claim runtime negative-case coverage.
+
+  - id: CONTROL.SESSION.001
+    status: stable
+    level: must
+    statement: Standard Framed startup MUST establish CONTROL OPEN / ACCEPT before RPC session setup, and ACCEPT for OPEN MUST echo the request controlId.
+    source:
+      path: specs/20-core.md
+      section: CONTROL
+    since: spec/v0.0.2
+    verification:
+      disposition: covered
+
+  - id: RPC.SESSION.001
+    status: stable
+    level: must
+    statement: RPC session setup MUST follow Hello -> Identify -> Identified, with a non-empty sid assigned before the session reaches APP_READY.
+    source:
+      path: specs/20-core.md
+      section: Transport Profile 传输配置
+    since: spec/v0.0.2
+    verification:
+      disposition: covered
+
+  - id: RPC.SESSION.002
+    status: stable
+    level: must
+    statement: A business Request received before Identified MUST be rejected or close the session according to profile policy and MUST NOT be processed as business traffic.
+    source:
+      path: specs/20-core.md
+      section: Transport Profile 传输配置
+    since: spec/v0.0.2
+    verification:
+      disposition: covered
+
+  - id: RPC.COMPAT.001
+    status: stable
+    level: must
+    statement: Hello.axtpVersion is optional advisory diagnostics metadata and MUST NOT gate Hello -> Identify -> Identified, retry/reconnect policy, or unrelated RPC availability.
+    source:
+      path: specs/20-core.md
+      section: RPC
+    since: spec/v0.0.2
+    verification:
+      disposition: covered
+
+  - id: RPC.METHOD.001
+    status: stable
+    level: must
+    statement: An unknown method name or methodId MUST return RPC_METHOD_NOT_FOUND.
+    source:
+      path: specs/30-registry.md
+      section: 方法 Methods
+    since: spec/v0.0.2
+    verification:
+      disposition: covered
+
+  - id: RPC.METHOD.002
+    status: stable
+    level: must
+    statement: A registered but currently unavailable method MUST return canonical NOT_SUPPORTED, and that operation-level degradation MUST NOT invalidate the session or block later supported requests.
+    source:
+      path: specs/30-registry.md
+      section: 方法 Methods
+    since: spec/v0.0.2
+    verification:
+      disposition: covered
+
+  - id: CODEC.COMPAT.001
+    status: stable
+    level: must
+    statement: Structurally valid unknown optional fields MUST be skipped, ignored, or preserved according to codec policy and MUST NOT invalidate the message/session or prevent later supported RPC.
+    source:
+      path: specs/40-codec.md
+      section: Schema 模型 / Unknown-field policy
+    since: spec/v0.0.2
+    verification:
+      disposition: covered
+
+  - id: RPC.EVENT.001
+    status: stable
+    level: must
+    statement: An unknown event MUST be ignored or treated as diagnostics only and MUST NOT invalidate the session or unrelated RPC.
+    source:
+      path: specs/30-registry.md
+      section: 事件 Events
+    since: spec/v0.0.2
+    verification:
+      disposition: covered
+
+  - id: STREAM.FRAME.001
+    status: stable
+    level: must
+    statement: STREAM payloads MUST use the 16-byte Big-Endian header streamId:uint32, seqId:uint32, cursor:uint64, with Frame.payloadLength equal to 16 + dataLength.
+    source:
+      path: specs/20-core.md
+      section: STREAM
+    since: spec/v0.0.2
+    verification:
+      disposition: covered
+      evidence:
+        - tooling/generators/src/protocolValidator.ts
+
+  - id: RPC.RELAY.001
+    status: stable
+    level: must
+    statement: Object-RPC m.dst, when present, MUST be one non-empty logical Endpoint string and MUST NOT be an array or an encoded route path/next-hop list.
+    source:
+      path: specs/20-core.md
+      section: Endpoint Relay
+    since: spec/v0.0.2
+    verification:
+      disposition: covered
