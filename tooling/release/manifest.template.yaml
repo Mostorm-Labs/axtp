@@ -18,6 +18,7 @@ contents:
     - specs/
     - conformance/
     - contract/mcp/
+    - contract/vector-recipes/
     - contract/test-vectors/
   compatibility_paths: []
   supplemental_paths:
