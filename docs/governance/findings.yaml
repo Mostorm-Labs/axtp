@@ -90,7 +90,8 @@ findings:
       - Ten seeded rules use executable covered disposition; CORE.FRAME.001 explicitly uses structural-only evidence because current conformance DSL does not inject invalid raw Standard Frame versions.
       - Coverage validation rejects unknown Rule references, covered rules without cases, malformed evidence/dispositions, and any seeded stable MUST rule left uncovered.
       - Existing selected conformance cases retain their original executable steps/assertions; only authorityRules metadata was added.
-      - Pure coverage helper completed an isolated RED-to-GREEN node:test cycle with 3/3 passing tests; full repository validation remains the Gate blocker.
+      - Pure coverage helper completed an isolated RED-to-GREEN node:test cycle with 3/3 passing tests.
+      - Static preflight passed node --check for validate-rule-coverage.mjs and YAML parse for the Rule registry shape; full repository validation remains the Gate blocker.
     expectedDisposition: Seed stable Rule IDs and bidirectional Rule-to-Evidence traceability.
 
   - id: AXTP-GOV-005
