@@ -98,17 +98,22 @@ spec/v0.15.0 mutation            = NONE
 Generated Markdown semantic text = NONE; derivation ownership repaired
 ```
 
+## Final exact-head submission
+
+The first reopen after writing closure records created run `33022074284`, but that run's immutable `head_sha` remained the older functional head `04559cd4df33dfbaa25f7c87f5b90baabf776e10` even though its PR association showed the newer closure head. It is therefore classified as stale-head CI metadata and is **not** valid final G5 evidence.
+
+This closure-evidence update is intentionally made while PR #12 is open to create a standard `pull_request synchronize` event against the actual branch head. It changes no protocol, Registry, generated contract, conformance behavior, consumer-evidence behavior, or validation logic.
+
+Only a fresh `Validate AXTP Spec` run whose immutable `head_sha` equals the resulting branch head may satisfy final G5 exact-head verification.
+
 ## Final Gate protocol
 
-Functional closure is complete, but G5 is not yet final PASS because this closure record and finding-status commit create a new repository head.
+Functional closure is complete, but G5 is not yet final PASS because the closure records themselves require exact-head verification.
 
 The established G1-G4 discipline therefore requires:
 
 ```text
-close PR #12
-  -> write closure-only records
-  -> freeze closure head
-  -> reopen PR #12 once
+closure records frozen
   -> full Validate AXTP Spec on exact closure head
   -> if success: close PR #12 and declare G5 PASS
   -> if failure: classify defect before repair
