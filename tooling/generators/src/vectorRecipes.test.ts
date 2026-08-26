@@ -10,6 +10,10 @@ describe("vector recipe authority boundary", () => {
         classification: "current-core",
         authorityRules: ["CORE.FRAME.001"],
         hexFile: "bad.hex",
+        profile: "standard-framed",
+        frame: { payloadType: "STREAM", sourceId: 1, destinationId: 16, messageId: 1, frameIndex: 0, frameCount: 1 },
+        payload: { kind: "stream", streamId: 9, seqId: 1, cursor: 1, dataHex: "AA" },
+        expectDecode: { streamId: 9 },
         hex: "4158"
       }],
       historical: []
