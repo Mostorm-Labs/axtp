@@ -208,4 +208,4 @@ G1 MUST remain non-PASS until that full workflow confirms generator/tests, sourc
 
 **READY FOR FULL VERIFICATION**
 
-The source mechanism and historical accepted-proposal corpus are frozen for G1 verification. No more G1 content changes are permitted before the full repository validation result is inspected.
+The G1 content state is frozen at this record. The next mutation must be the PR state transition that triggers full repository validation, not another content edit.
