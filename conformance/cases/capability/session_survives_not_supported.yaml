@@ -2,6 +2,8 @@ id: capability.session_survives_not_supported
 title: Session remains usable after NOT_SUPPORTED
 since: spec/v0.0.2
 level: capability
+authorityRules:
+  - RPC.METHOD.002
 profiles:
   - capability
   - core
