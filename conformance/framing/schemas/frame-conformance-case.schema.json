@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axtp.dev/schemas/frame-conformance-case.schema.json",
+  "$defs": {
+    "hex": { "type": "string", "pattern": "^(?:[0-9a-fA-F]{2})*$" },
+    "decision": { "type": "string", "pattern": "^A1-D(0[1-9]|10)$" },
+    "params": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxFrameSize": { "type": "integer", "minimum": 14, "maximum": 65535 },
+        "heartbeatIntervalMs": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "expect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "effective_params": { "$ref": "#/$defs/params" },
+        "no_dispatch": { "type": "boolean" },
+        "dispatch": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["payloadType", "payloadHex"],
+          "properties": {
+            "payloadType": { "enum": ["CONTROL", "RPC", "STREAM"] },
+            "payloadHex": { "$ref": "#/$defs/hex" }
+          }
+        },
+        "control_emission": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["opcode", "controlId", "statusCode"],
+          "properties": {
+            "opcode": { "type": "string", "minLength": 1 },
+            "controlId": { "type": "integer", "minimum": 0, "maximum": 65535 },
+            "statusCode": { "type": "string", "minLength": 1 }
+          }
+        },
+        "context_outcome": { "enum": ["partial", "completed", "invalidated", "abandoned_missing", "expired", "resource_exhausted", "cleared"] },
+        "diagnostic_if_supported": { "type": "string", "minLength": 1 },
+        "local_reject": { "type": "string", "minLength": 1 },
+        "fragmenter": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "frameCount": { "type": "integer", "minimum": 1, "maximum": 255 },
+            "indices": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 254 } },
+            "contiguous": { "type": "boolean" },
+            "invariantFields": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+          }
+        },
+        "policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "finite"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "finite": { "type": "boolean" }
+          }
+        }
+      },
+      "minProperties": 1
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op"],
+      "properties": {
+        "op": { "enum": ["negotiate_link", "feed_raw", "fragment_message", "advance_time", "probe_policy", "induce_policy_boundary", "send_control", "reset", "expect"] },
+        "when_capability": { "type": "string", "minLength": 1 },
+        "open": { "$ref": "#/$defs/params" },
+        "accept": { "$ref": "#/$defs/params" },
+        "corpus": { "type": "string", "pattern": "^[a-z0-9_.-]+$" },
+        "payloadType": { "enum": ["CONTROL", "RPC", "STREAM"] },
+        "payloadHex": { "$ref": "#/$defs/hex" },
+        "sourceId": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "destinationId": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "messageId": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "effectiveMaxFrameSize": { "type": "integer", "minimum": 14, "maximum": 65535 },
+        "requiredFrameCount": { "type": "integer", "minimum": 1 },
+        "to_policy_deadline": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "byMs": { "type": "integer", "minimum": 0 },
+        "policy": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "control": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["opcode", "controlId"],
+          "properties": {
+            "opcode": { "type": "string", "minLength": 1 },
+            "controlId": { "type": "integer", "minimum": 0, "maximum": 65535 }
+          }
+        },
+        "expect": { "$ref": "#/$defs/expect" }
+      },
+      "allOf": [
+        { "if": { "properties": { "op": { "const": "negotiate_link" } } }, "then": { "required": ["open", "accept"] } },
+        { "if": { "properties": { "op": { "const": "feed_raw" } } }, "then": { "required": ["corpus"] } },
+        { "if": { "properties": { "op": { "const": "fragment_message" } } }, "then": { "required": ["payloadType", "payloadHex", "sourceId", "destinationId", "messageId", "effectiveMaxFrameSize"] } },
+        { "if": { "properties": { "op": { "const": "advance_time" } } }, "then": { "anyOf": [{ "required": ["to_policy_deadline"] }, { "required": ["byMs"] }] } },
+        { "if": { "properties": { "op": { "const": "probe_policy" } } }, "then": { "required": ["policy"] } },
+        { "if": { "properties": { "op": { "const": "induce_policy_boundary" } } }, "then": { "required": ["policy"] } },
+        { "if": { "properties": { "op": { "const": "send_control" } } }, "then": { "required": ["control"] } },
+        { "if": { "properties": { "op": { "const": "expect" } } }, "then": { "required": ["expect"] } }
+      ]
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "authority_decisions", "evidence_class", "profile", "requires", "steps", "assertions"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^frame\\.[a-z0-9_.-]+$" },
+    "title": { "type": "string", "minLength": 1 },
+    "authority_decisions": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/decision" } },
+    "evidence_class": { "enum": ["deterministic_golden", "state_oracle", "virtual_time", "audit_probe"] },
+    "profile": { "const": "framed-binary" },
+    "requires": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "applicability": {
+      "oneOf": [
+        { "const": "required" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["when_capability"],
+          "properties": { "when_capability": { "type": "string", "minLength": 1 } }
+        }
+      ]
+    },
+    "given": { "type": "object", "additionalProperties": true },
+    "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/step" } },
+    "assertions": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+  }
+}
