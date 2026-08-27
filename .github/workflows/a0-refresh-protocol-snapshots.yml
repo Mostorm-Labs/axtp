@@ -1,0 +1,58 @@
+name: A0 Refresh Protocol Snapshots
+
+on:
+  push:
+    branches:
+      - aegis/a0-contract-authority-reconciliation
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout A0 branch
+        uses: actions/checkout@v4
+        with:
+          ref: aegis/a0-contract-authority-reconciliation
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+
+      - name: Install generator dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/generators install --frozen-lockfile
+
+      - name: Refresh protocol validator snapshots only
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/generators exec vitest run src/protocolValidator.test.ts -u
+          git diff -- tooling/generators/src/__snapshots__/protocol.generated.json tooling/generators/src/__snapshots__/protocol.generated.md
+
+      - name: Commit refreshed snapshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- tooling/generators/src/__snapshots__/protocol.generated.json tooling/generators/src/__snapshots__/protocol.generated.md; then
+            echo "No snapshot changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tooling/generators/src/__snapshots__/protocol.generated.json tooling/generators/src/__snapshots__/protocol.generated.md
+          git commit -m "test: refresh A0 protocol golden snapshots"
+          git push origin HEAD:aegis/a0-contract-authority-reconciliation
