@@ -12,24 +12,8 @@
 - [Capability Discovery](#capability-discovery)
 - [Methods](#methods)
   - [audio Methods](#audio-methods)
-  - [cast Methods](#cast-methods)
-  - [device Methods](#device-methods)
-  - [firmware Methods](#firmware-methods)
-  - [network Methods](#network-methods)
-  - [signage Methods](#signage-methods)
-  - [software Methods](#software-methods)
-  - [stream Methods](#stream-methods)
-  - [video Methods](#video-methods)
 - [Events](#events)
   - [audio Events](#audio-events)
-  - [cast Events](#cast-events)
-  - [device Events](#device-events)
-  - [firmware Events](#firmware-events)
-  - [network Events](#network-events)
-  - [signage Events](#signage-events)
-  - [software Events](#software-events)
-  - [stream Events](#stream-events)
-  - [video Events](#video-events)
 - [Additional Types](#additional-types)
 - [Errors Reference](#errors-reference)
 - [Profiles Reference](#profiles-reference)
@@ -38,15 +22,7 @@
 
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
-| audio | 9 | 4 |
-| cast | 20 | 12 |
-| device | 4 | 1 |
-| firmware | 4 | 2 |
-| network | 18 | 8 |
-| signage | 5 | 1 |
-| software | 6 | 2 |
-| stream | 8 | 4 |
-| video | 6 | 3 |
+| audio | 4 | 1 |
 
 ## Overview
 
@@ -98,7 +74,7 @@ Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP
 | Step | From | To | Status | Description |
 | ---- | ---- | ---- | ---- | ---- |
 | OPEN | Client | Server | - | Open an AXTP logical session and declare runtime limits. |
-| ACCEPT | Server | Client | - | Accept the session and return final runtime parameters. |
+| ACCEPT | Server | Client | - | Accept or reject the framed link and optionally return parameter overrides relevant to this profile or implementation. |
 | Hello | Server | Client | - | Announce RPC session rules, AXTP version and authentication requirements. |
 | Identify | Client | Server | - | Submit client identity, randomSeed uint32 and optional authentication data. |
 | Identified | Server | Client | - | Confirm that the RPC session is ready. |
@@ -190,28 +166,7 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x0001 | protocol.payload.control | protocol | stable | bool | - | Device supports CONTROL payload. |
 | 0x0002 | protocol.payload.rpc | protocol | stable | bool | - | Device supports RPC payload. |
 | 0x0003 | protocol.payload.stream | protocol | stable | bool | - | Device supports STREAM data-plane payloads. |
-| 0x0009 | protocol.reservedRequestIdWidth | protocol | reserved | reserved | - | Historical requestId width negotiation bit; AXTP v1 fixes requestId as uint32. |
-| 0x0101 | device.info | device | draft | object | DeviceInfoCapability | Device supports read-only device information discovery. |
-| 0x0102 | device.enrollment | device | draft | object | DeviceEnrollmentCapability | Device supports pairing-code-based enrollment into backend management, enrollment state query and change, and enrollment state change notifications. |
-| 0x0401 | firmware.update | firmware | draft | object | FirmwareUpdateCapabilities | Device supports P0 STREAM-based firmware update sessions. |
-| 0x0501 | stream.flowControl | stream | draft | object | StreamFlowControlCapabilities | Device supports common STREAM runtime flow control, statistics, abort, and clock-report diagnostics. |
-| 0x0801 | video.stream | video | draft | object | VideoStreamCapabilities | Device supports real-time video STREAM setup, close, state, source state, key frame requests, and stats events. |
 | 0x0901 | audio.algorithm | audio | stable | object | AudioAlgorithmCapability | Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification. |
-| 0x0902 | audio.stream | audio | draft | object | AudioStreamCapabilities | Device supports real-time audio STREAM setup, close, state, source state, and stats events. |
-| 0x0D01 | signage.playlist | signage | draft | object | SignagePlaylistCapability | Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, and playlist config change notification. |
-| 0x0E01 | network.interface | network | draft | object | NetworkInterfaceCapability | Device supports network interface enumeration and state observation. |
-| 0x0E02 | network.ip | network | draft | object | NetworkIpCapability | Device supports IP configuration query, update, and change notification. |
-| 0x0E03 | network.wifi | network | draft | object | NetworkWifiCapabilities | Device supports Wi-Fi station profile, scan, connection, and state operations. |
-| 0x0E04 | network.ap | network | draft | object | NetworkApCapabilities | Device supports Wi-Fi AP configuration, runtime state, and client observation. |
-| 0x1601 | cast.session | cast | draft | object | CastSessionCapability | Device supports cast receiver session phase, AirPlay name, and session stop control. |
-| 0x1602 | cast.audio | cast | draft | object | CastAudioCapability | Device supports local cast audio playback and mute control. |
-| 0x1603 | cast.pinCode | cast | draft | object | CastPinCodeCapability | Device supports cast PIN protection, PIN state, and authentication events. |
-| 0x1604 | cast.window | cast | draft | object | CastWindowCapability | Device supports cast window state query and mode control. |
-| 0x1605 | cast.backend | cast | draft | object | CastBackendCapability | Device supports cast backend status query and restart control. |
-| 0x1606 | cast.flowControl | cast | draft | object | CastFlowControlCapability | Device supports receiver-local cast render fps, queue, drop, overlay, and diagnostics control. |
-| 0x1607 | cast.status | cast | draft | object | CastStatusCapability | Device supports current cast receiver status snapshot query. |
-| 0x1701 | software.config | software | draft | object | SoftwareConfigCapability | Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications. |
-| 0x1702 | software.updatePolicy | software | draft | object | SoftwareUpdatePolicyCapability | Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications. |
 
 ## Generated Method Index
 
@@ -219,15 +174,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 
 | Domain | Methods |
 | ---- | ---- |
-| audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
-| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams |
-| device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
-| firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
-| network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
-| signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl |
-| software | 0: software.getConfig<br>1: software.setConfig<br>2: software.resetConfig<br>3: software.getUpdatePolicy<br>4: software.setUpdatePolicy<br>5: software.resetUpdatePolicy |
-| stream | 0: stream.getCapabilities<br>1: stream.getState<br>2: stream.getStats<br>3: stream.ack<br>4: stream.windowUpdate<br>5: stream.pause<br>6: stream.resume<br>7: stream.abort |
-| video | 1: video.openStream<br>2: video.closeStream<br>3: video.getStreamState<br>0: video.getStreamCapabilities<br>4: video.getStreamSourceState<br>5: video.requestKeyFrame |
+| audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig |
 
 # Methods
 
@@ -239,11 +186,6 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 - [audio.setAlgorithmConfig](#audiosetalgorithmconfig)
 - [audio.getAlgorithmCapabilities](#audiogetalgorithmcapabilities)
 - [audio.resetAlgorithmConfig](#audioresetalgorithmconfig)
-- [audio.getStreamCapabilities](#audiogetstreamcapabilities)
-- [audio.openStream](#audioopenstream)
-- [audio.closeStream](#audioclosestream)
-- [audio.getStreamState](#audiogetstreamstate)
-- [audio.getStreamSourceState](#audiogetstreamsourcestate)
 
 ---
 
@@ -388,3058 +330,6 @@ Type: `AudioSetAlgorithmConfigResponse`
 
 ---
 
-### audio.getStreamCapabilities
-
-Return real-time audio stream sources, codecs, stream profiles, and open-mode support.
-
-- Method ID: `0x090F`
-- Domain: `audio`
-- bitOffset: `4`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `audio.stream`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `AudioGetStreamCapabilitiesParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?source | String | 0x01 | Optional audio source identifier; omit to query all visible sources. | maxLength=128 | Omit if not used. |
-| ?includeRuntimeState | Boolean | 0x02 | Whether to include current source runtime state. | None | Default: false |
-
-#### Response Fields
-
-Type: `AudioStreamCapabilities`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| capability | String | 0x01 | Fixed capability name audio.stream. | maxLength=32 | N/A |
-| sources | Array<AudioStreamSource> | 0x02 | Audio stream source objects. | schema=AudioStreamSource, array.itemType=AudioStreamSource, array.itemSchema=AudioStreamSource | N/A |
-| streamProfiles | Array<String> | 0x03 | Supported stream profiles, normally media.audio. | array.itemType=string | N/A |
-| openModes | Array<String> | 0x04 | Supported open modes, such as producer_open and receiver_pull. | array.itemType=string | N/A |
-| peerRoles | Array<String> | 0x05 | Peer roles, such as receiver and transmitter. | array.itemType=string | N/A |
-| supportsSourceStateEvent | Boolean | 0x06 | Whether audio.streamSourceStateChanged is supported. | None | N/A |
-| supportsSyncGroup | Boolean | 0x07 | Whether audio streams can share a synchronization group with video streams. | None | N/A |
-| flowControlManagedByRuntime | Boolean | 0x08 | Whether normal applications can rely on runtime-managed STREAM flow control. | None | N/A |
-| ?aacTransportFormats | Array<String> | 0x09 | Optional AAC transport format strings; exact supported set remains product-confirmed. | array.itemType=string | Omit if not used. |
-| ?supportedAudioPtsModes | Array<String> | 0x0A | Optional audio PTS modes such as derivedFromSeq and explicit. | array.itemType=string | Omit if not used. |
-| ?supportedPacketizationModes | Array<String> | 0x0B | Optional audio packetization modes such as fixedSamplesPerPacket. | array.itemType=string | Omit if not used. |
-| ?supportsSourceCaptureTimestampCursor | Boolean | 0x0C | Whether STREAM cursorUnit sourceCaptureTimestampUs is supported. | None | Omit if not used. |
-
----
-
-### audio.openStream
-
-Open a real-time audio STREAM and return the negotiated streamId and media metadata.
-
-- Method ID: `0x0910`
-- Domain: `audio`
-- bitOffset: `5`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `audio.stream`
-- Possible Events: `audio.streamStateChanged`, `audio.streamSourceStateChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `BUSY`, `RESOURCE_EXHAUSTED`, `MEDIA_SOURCE_NOT_FOUND`, `MEDIA_SOURCE_UNAVAILABLE`, `MEDIA_CODEC_UNSUPPORTED`, `MEDIA_STREAM_START_FAILED`
-
-#### Request Fields
-
-Type: `AudioOpenStreamParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
-| peerRole | Enum | 0x02 | Requested peer media role; values include receiver and transmitter. | None | N/A |
-| codec | Enum | 0x03 | Requested audio codec, such as aac, opus, or pcm. | None | N/A |
-| ?transportFormat | Enum | 0x04 | Optional codec transport format, such as adts, latm, or raw_aac. | None | Omit if not used. |
-| ?sampleRate | UInt32 | 0x05 | Requested sample rate in Hz. | None | Omit if not used. |
-| ?channels | UInt8 | 0x06 | Requested channel count. | None | Omit if not used. |
-| ?sampleFormat | Enum | 0x07 | Requested sample format. | None | Omit if not used. |
-| ?chunkDurationMs | UInt32 | 0x08 | Preferred chunk duration in milliseconds. | None | Omit if not used. |
-| ?streamProfile | String | 0x09 | STREAM profile name. | maxLength=64 | Default: "media.audio" |
-| ?cursorUnit | Enum | 0x0A | STREAM cursor unit, such as timestampUs or sampleIndex. | None | Omit if not used. |
-| ?syncGroupId | String | 0x0B | Optional synchronization group identifier. | maxLength=128 | Omit if not used. |
-| ?castSessionId | String | 0x0C | Optional cast session identifier. | maxLength=128 | Omit if not used. |
-| ?clockDomain | String | 0x0D | Source media clock domain. | maxLength=128 | Omit if not used. |
-| ?receiverClockDomain | String | 0x0E | Receiver clock domain. | maxLength=128 | Omit if not used. |
-| ?maxDataSize | UInt32 | 0x0F | Preferred maximum STREAM payload data size. | None | Omit if not used. |
-| ?audioPtsMode | Enum | 0x10 | Audio PTS mode; NA20/NT10 MVP uses derivedFromSeq. | None | Default: "derivedFromSeq" |
-| ?timebase | UInt32 | 0x11 | Audio PTS timebase in ticks per second. | None | Default: 48000 |
-| ?samplesPerPacket | UInt32 | 0x12 | Fixed samples consumed by each STREAM packet when packetizationMode is fixedSamplesPerPacket. | None | Default: 1024 |
-| ?firstMediaSeqId | UInt32 | 0x13 | First STREAM seqId used as the base for derived audio PTS. | None | Default: 0 |
-| ?audioPtsBase | UInt64 | 0x14 | Audio PTS value corresponding to firstMediaSeqId. | None | Default: 0 |
-| ?packetizationMode | Enum | 0x15 | Audio packetization mode; NA20/NT10 MVP uses fixedSamplesPerPacket. | None | Default: "fixedSamplesPerPacket" |
-
-#### Response Fields
-
-Type: `AudioOpenStreamResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-| state | Enum | 0x02 | Initial state, normally opening or streaming. | None | N/A |
-| source | String | 0x03 | Bound source identifier. | maxLength=128 | N/A |
-| peerRole | Enum | 0x04 | Confirmed peer media role. | None | N/A |
-| codec | Enum | 0x05 | Negotiated codec. | None | N/A |
-| ?transportFormat | Enum | 0x06 | Negotiated transport format. | None | Omit if not used. |
-| sampleRate | UInt32 | 0x07 | Negotiated sample rate in Hz. | None | N/A |
-| channels | UInt8 | 0x08 | Negotiated channel count. | None | N/A |
-| ?sampleFormat | Enum | 0x09 | Negotiated sample format. | None | Omit if not used. |
-| streamProfile | String | 0x0A | Normalized stream profile. | maxLength=64 | N/A |
-| cursorUnit | Enum | 0x0B | STREAM cursor unit. | None | N/A |
-| ?syncGroupId | String | 0x0C | Synchronization group identifier. | maxLength=128 | Omit if not used. |
-| ?castSessionId | String | 0x0D | Cast session identifier. | maxLength=128 | Omit if not used. |
-| ?clockDomain | String | 0x0E | Source media clock domain. | maxLength=128 | Omit if not used. |
-| ?receiverClockDomain | String | 0x0F | Receiver clock domain. | maxLength=128 | Omit if not used. |
-| ?maxDataSize | UInt32 | 0x10 | Negotiated maximum STREAM payload data size. | None | Omit if not used. |
-| ?audioPtsMode | Enum | 0x11 | Negotiated audio PTS mode. | None | Omit if not used. |
-| ?timebase | UInt32 | 0x12 | Negotiated audio PTS timebase in ticks per second. | None | Omit if not used. |
-| ?samplesPerPacket | UInt32 | 0x13 | Fixed samples consumed by each STREAM packet when packetizationMode is fixedSamplesPerPacket. | None | Omit if not used. |
-| ?firstMediaSeqId | UInt32 | 0x14 | First STREAM seqId used as the base for derived audio PTS. | None | Omit if not used. |
-| ?audioPtsBase | UInt64 | 0x15 | Audio PTS value corresponding to firstMediaSeqId. | None | Omit if not used. |
-| ?packetizationMode | Enum | 0x16 | Negotiated audio packetization mode. | None | Omit if not used. |
-
----
-
-### audio.closeStream
-
-Close a previously opened audio STREAM.
-
-- Method ID: `0x0911`
-- Domain: `audio`
-- bitOffset: `6`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `audio.stream`
-- Possible Events: `audio.streamStateChanged`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `STREAM_CLOSED`, `INVALID_STATE`, `MEDIA_STREAM_STOP_FAILED`
-
-#### Request Fields
-
-Type: `AudioCloseStreamParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-| ?peerRole | Enum | 0x02 | Peer role in this stream. | None | Omit if not used. |
-| ?reason | Enum | 0x03 | Close reason. | None | Omit if not used. |
-| ?finalCursor | UInt64 | 0x04 | Last processed cursor value. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `AudioCloseStreamResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | Closed stream identifier. | None | N/A |
-| state | Enum | 0x02 | Close state, such as closing, closed, or failed. | None | N/A |
-| ?reason | Enum | 0x03 | Final close reason. | None | Omit if not used. |
-| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already terminal before this request. | None | Default: false |
-
----
-
-### audio.getStreamState
-
-Return runtime state for an opened audio stream.
-
-- Method ID: `0x0912`
-- Domain: `audio`
-- bitOffset: `7`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `audio.stream`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `AudioGetStreamStateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-
-#### Response Fields
-
-Type: `AudioStreamState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-| state | Enum | 0x02 | Stream state, such as opening, streaming, closing, closed, or failed. | None | N/A |
-| source | String | 0x03 | Bound audio source. | maxLength=128 | N/A |
-| ?peerRole | Enum | 0x04 | Peer media role. | None | Omit if not used. |
-| ?codec | Enum | 0x05 | Negotiated audio codec. | None | Omit if not used. |
-| ?streamProfile | String | 0x06 | Stream profile. | maxLength=64 | Omit if not used. |
-| ?syncGroupId | String | 0x07 | Synchronization group identifier. | maxLength=128 | Omit if not used. |
-| ?cursorUnit | Enum | 0x08 | STREAM cursor unit. | None | Omit if not used. |
-| ?lastCursor | UInt64 | 0x09 | Last known cursor value. | None | Omit if not used. |
-| ?failureReason | Enum | 0x0A | Failure reason when state is failed. | None | Omit if not used. |
-
----
-
-### audio.getStreamSourceState
-
-Return availability and receiving state for an audio stream source.
-
-- Method ID: `0x0913`
-- Domain: `audio`
-- bitOffset: `8`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `audio.stream`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `MEDIA_SOURCE_NOT_FOUND`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `AudioGetStreamSourceStateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
-
-#### Response Fields
-
-Type: `AudioStreamSourceState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
-| ?mediaKind | Enum | 0x02 | Media kind, normally audio. | None | Omit if not used. |
-| state | Enum | 0x03 | Source state, such as unavailable, available, receiving, stopped, or failed. | None | N/A |
-| ?available | Boolean | 0x04 | Whether the source is available for openStream. | None | Omit if not used. |
-| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
-| ?lastOpenRejectedReason | Enum | 0x06 | Last open rejection reason. | None | Omit if not used. |
-
----
-
-## cast Methods
-
-### Methods in this domain
-
-- [cast.getSession](#castgetsession)
-- [cast.stopSession](#caststopsession)
-- [cast.getAirPlayName](#castgetairplayname)
-- [cast.setAirPlayName](#castsetairplayname)
-- [cast.getAudio](#castgetaudio)
-- [cast.setAudio](#castsetaudio)
-- [cast.setMuted](#castsetmuted)
-- [cast.getPinCodeConfig](#castgetpincodeconfig)
-- [cast.setPinCodeConfig](#castsetpincodeconfig)
-- [cast.setPinCode](#castsetpincode)
-- [cast.getWindowState](#castgetwindowstate)
-- [cast.setWindowState](#castsetwindowstate)
-- [cast.getBackendStatus](#castgetbackendstatus)
-- [cast.restartBackend](#castrestartbackend)
-- [cast.getFlowControlState](#castgetflowcontrolstate)
-- [cast.setRenderFps](#castsetrenderfps)
-- [cast.setFlowPolicy](#castsetflowpolicy)
-- [cast.getStatus](#castgetstatus)
-- [cast.setAudioDelay](#castsetaudiodelay)
-- [cast.setVideoStreamParams](#castsetvideostreamparams)
-
----
-
-### cast.getSession
-
-Return the current cast receiver phase and active session summary.
-
-- Method ID: `0x1601`
-- Domain: `cast`
-- bitOffset: `0`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.session`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastGetSessionParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?include | Array<String> | 0x01 | Optional summary sections, such as source, media, or airPlayName. | array.itemType=string | Omit if not used. |
-| ?sessionId | String | 0x02 | Optional receiver-local session id to query. | maxLength=128 | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastSessionState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| receiverState | Enum | 0x01 | Receiver service availability state. | enum=disabled/starting/ready/busy/failed | N/A |
-| ?sessionId | String | 0x02 | Receiver-local active session id. | maxLength=128 | Omit if not used. |
-| receiverPhase | Enum | 0x03 | Protocol-neutral receiver phase used by UI and reconnection calibration. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | N/A |
-| ?sessionState | Enum | 0x04 | AirPlay or backend-specific session state detail. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
-| ?protocol | Enum | 0x05 | Cast protocol path currently represented by this state. | enum=airplay/hid/unknown | Omit if not used. |
-| ?airPlayName | String | 0x06 | Current published AirPlay receiver display name. | maxLength=128 | Omit if not used. |
-| ?source | CastSourceSummary | 0x07 | Source device summary. | None | Omit if not used. |
-| ?media | CastMediaSummary | 0x08 | Low-frequency media summary. | None | Omit if not used. |
-| ?backendState | Enum | 0x09 | Current backend state summary. | enum=starting/ready/restarting/exited/failed/disabled | Omit if not used. |
-| ?reason | Enum | 0x0A | Last state transition reason. | enum=sessionStarted/mediaFlowStarted/externalRequest/sourceClosed/backendRestart/backendExited/authFailed/error/unknown | Omit if not used. |
-| ?authRequired | Boolean | 0x0B | Whether this session path currently requires authentication. | None | Omit if not used. |
-| ?updatedAt | String | 0x0C | Timestamp for this state snapshot. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.stopSession
-
-Stop the current cast session when one is active.
-
-- Method ID: `0x1602`
-- Domain: `cast`
-- bitOffset: `1`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.session`
-- Possible Events: `cast.sessionStateChanged`, `cast.sessionStopped`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastStopSessionParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?sessionId | String | 0x01 | Optional receiver-local session id; omitted means current active session. | maxLength=128 | Omit if not used. |
-| ?reason | Enum | 0x02 | Caller-visible reason for stopping the session. | enum=externalRequest/localUi/backendRestart/shutdown/unknown | Omit if not used. |
-| ?force | Boolean | 0x03 | Whether the receiver may force backend/session cleanup. | None | Default: false |
-
-#### Response Fields
-
-Type: `CastStopSessionResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the receiver accepted the stop request. | None | N/A |
-| ?sessionId | String | 0x02 | Session affected by the request. | maxLength=128 | Omit if not used. |
-| ?previousReceiverPhase | Enum | 0x03 | Receiver phase before the stop transition. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Omit if not used. |
-| receiverPhase | Enum | 0x04 | Receiver phase after accepting the stop request. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | N/A |
-| ?previousState | Enum | 0x05 | Backend-specific state before the stop transition. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
-| ?sessionState | Enum | 0x06 | Backend-specific state after accepting the stop request. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
-| ?reason | Enum | 0x07 | Applied stop reason. | enum=externalRequest/sourceClosed/backendRestart/backendExited/shutdown/unknown | Omit if not used. |
-| ?noActiveSession | Boolean | 0x08 | Whether no active session existed when the request was processed. | None | Omit if not used. |
-| ?updatedAt | String | 0x09 | Timestamp for the result. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.getAirPlayName
-
-Return the AirPlay receiver display name and publish state.
-
-- Method ID: `0x1603`
-- Domain: `cast`
-- bitOffset: `2`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.session`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `Empty`
-
-No fields.
-
-#### Response Fields
-
-Type: `CastAirPlayNameState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| displayName | String | 0x01 | Current AirPlay display name. | maxLength=128 | N/A |
-| ?previousDisplayName | String | 0x02 | Previous display name when a change was applied. | maxLength=128 | Omit if not used. |
-| ?source | Enum | 0x03 | Source of the current display name. | enum=configured/default/backend/unknown | Omit if not used. |
-| ?apply | Enum | 0x04 | Apply timing used for the latest update. | enum=immediate/onNextBackendStart | Omit if not used. |
-| publishState | Enum | 0x05 | Bonjour or backend service publish state. | enum=published/republishing/pending/failed/unpublished | N/A |
-| ?backendType | Enum | 0x06 | Backend that owns the published name. | enum=uxplay/unknown | Omit if not used. |
-| ?updatedAt | String | 0x07 | Timestamp for this name state. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.setAirPlayName
-
-Set the AirPlay receiver display name and request service rediscovery.
-
-- Method ID: `0x1604`
-- Domain: `cast`
-- bitOffset: `3`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.session`
-- Possible Events: `cast.sessionStateChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastSetAirPlayNameParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| displayName | String | 0x01 | Target AirPlay display name. | maxLength=128 | N/A |
-| ?apply | Enum | 0x02 | Requested backend apply timing. | enum=immediate/onNextBackendStart | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastAirPlayNameState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| displayName | String | 0x01 | Current AirPlay display name. | maxLength=128 | N/A |
-| ?previousDisplayName | String | 0x02 | Previous display name when a change was applied. | maxLength=128 | Omit if not used. |
-| ?source | Enum | 0x03 | Source of the current display name. | enum=configured/default/backend/unknown | Omit if not used. |
-| ?apply | Enum | 0x04 | Apply timing used for the latest update. | enum=immediate/onNextBackendStart | Omit if not used. |
-| publishState | Enum | 0x05 | Bonjour or backend service publish state. | enum=published/republishing/pending/failed/unpublished | N/A |
-| ?backendType | Enum | 0x06 | Backend that owns the published name. | enum=uxplay/unknown | Omit if not used. |
-| ?updatedAt | String | 0x07 | Timestamp for this name state. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.getAudio
-
-Return local cast audio playback and mute state.
-
-- Method ID: `0x1605`
-- Domain: `cast`
-- bitOffset: `4`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.audio`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastGetAudioParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?includeEffective | Boolean | 0x01 | Whether to include effective local playback state. | None | Default: true |
-| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastAudioState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | Default: false |
-| muted | Boolean | 0x02 | Whether local receiver output is muted. | None | Default: false |
-| effectivePlayback | Boolean | 0x03 | Whether audio is effectively playing locally after state and session conditions are applied. | None | N/A |
-| ?scope | Enum | 0x04 | State target hint represented by this snapshot. | enum=currentSession/default | Omit if not used. |
-| ?sessionId | String | 0x05 | Receiver-local session id for session-specific state. | maxLength=128 | Omit if not used. |
-| ?source | Enum | 0x06 | Source of the latest state value. | enum=defaultConfig/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
-| ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
-| ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
-| ?audioDelayMs | UInt32 | 0x0A | Configured receiver-local audio playback delay in milliseconds; zero disables compensation. | min=0, max=1000 | Default: 250 |
-
----
-
-### cast.setAudio
-
-Enable or disable local playback of received cast audio.
-
-- Method ID: `0x1606`
-- Domain: `cast`
-- bitOffset: `5`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.audio`
-- Possible Events: `cast.audioChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastSetAudioParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | N/A |
-| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
-| ?scope | Enum | 0x03 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastAudioState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | Default: false |
-| muted | Boolean | 0x02 | Whether local receiver output is muted. | None | Default: false |
-| effectivePlayback | Boolean | 0x03 | Whether audio is effectively playing locally after state and session conditions are applied. | None | N/A |
-| ?scope | Enum | 0x04 | State target hint represented by this snapshot. | enum=currentSession/default | Omit if not used. |
-| ?sessionId | String | 0x05 | Receiver-local session id for session-specific state. | maxLength=128 | Omit if not used. |
-| ?source | Enum | 0x06 | Source of the latest state value. | enum=defaultConfig/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
-| ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
-| ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
-| ?audioDelayMs | UInt32 | 0x0A | Configured receiver-local audio playback delay in milliseconds; zero disables compensation. | min=0, max=1000 | Default: 250 |
-
----
-
-### cast.setMuted
-
-Mute or unmute local cast audio output.
-
-- Method ID: `0x1607`
-- Domain: `cast`
-- bitOffset: `6`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.audio`
-- Possible Events: `cast.audioChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastSetMutedParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| muted | Boolean | 0x01 | Whether local receiver output is muted. | None | N/A |
-| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
-| ?scope | Enum | 0x03 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastAudioState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | Default: false |
-| muted | Boolean | 0x02 | Whether local receiver output is muted. | None | Default: false |
-| effectivePlayback | Boolean | 0x03 | Whether audio is effectively playing locally after state and session conditions are applied. | None | N/A |
-| ?scope | Enum | 0x04 | State target hint represented by this snapshot. | enum=currentSession/default | Omit if not used. |
-| ?sessionId | String | 0x05 | Receiver-local session id for session-specific state. | maxLength=128 | Omit if not used. |
-| ?source | Enum | 0x06 | Source of the latest state value. | enum=defaultConfig/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
-| ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
-| ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
-| ?audioDelayMs | UInt32 | 0x0A | Configured receiver-local audio playback delay in milliseconds; zero disables compensation. | min=0, max=1000 | Default: 250 |
-
----
-
-### cast.getPinCodeConfig
-
-Return cast PIN protection state, visibility, and optional secret material.
-
-- Method ID: `0x1608`
-- Domain: `cast`
-- bitOffset: `7`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.pinCode`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastGetPinCodeConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?includeSecret | Boolean | 0x01 | Whether authorized clients request plaintext PIN material. | None | Default: false |
-
-#### Response Fields
-
-Type: `CastPinCodeConfig`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| enabled | Boolean | 0x01 | Whether PIN protection is enabled. | None | Default: true |
-| hasPinCode | Boolean | 0x02 | Whether a current PIN exists. | None | N/A |
-| ?pinCode | String | 0x03 | Plaintext PIN value when visible to the caller. | None | Omit if not used. |
-| ?pinDisplay | Enum | 0x04 | Where the current PIN may be displayed. | enum=hidden/authorizedClients/localUi/both | Omit if not used. |
-| ?generatedBy | Enum | 0x05 | Component or actor that generated the current PIN. | enum=nearcast/uxplay/external/unknown | Omit if not used. |
-| ?visibility | Enum | 0x06 | Visibility policy for the PIN value. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
-| ?expiresAt | String | 0x07 | Expiration timestamp when applicable. | maxLength=64 | Omit if not used. |
-| ?redactionRequired | Boolean | 0x08 | Whether logs, diagnostics, and error summaries must redact the PIN. | None | Default: true |
-| ?changedFields | Array<String> | 0x09 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?updatedAt | String | 0x0A | Timestamp for this PIN state. | maxLength=64 | Omit if not used. |
-| ?redacted | Boolean | 0x0B | Whether sensitive fields were withheld in this snapshot. | None | Omit if not used. |
-
----
-
-### cast.setPinCodeConfig
-
-Enable or disable cast PIN protection and update display policy.
-
-- Method ID: `0x1609`
-- Domain: `cast`
-- bitOffset: `8`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.pinCode`
-- Possible Events: `cast.pinCodeChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastSetPinCodeConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?enabled | Boolean | 0x01 | Whether PIN protection is enabled. | None | Omit if not used. |
-| ?pinDisplay | Enum | 0x02 | Where the current PIN may be displayed. | enum=hidden/authorizedClients/localUi/both | Omit if not used. |
-| ?rotatePin | Boolean | 0x03 | Whether the receiver should rotate or regenerate the PIN. | None | Default: false |
-| ?visibility | Enum | 0x04 | Visibility policy for responses and events. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastPinCodeConfig`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| enabled | Boolean | 0x01 | Whether PIN protection is enabled. | None | Default: true |
-| hasPinCode | Boolean | 0x02 | Whether a current PIN exists. | None | N/A |
-| ?pinCode | String | 0x03 | Plaintext PIN value when visible to the caller. | None | Omit if not used. |
-| ?pinDisplay | Enum | 0x04 | Where the current PIN may be displayed. | enum=hidden/authorizedClients/localUi/both | Omit if not used. |
-| ?generatedBy | Enum | 0x05 | Component or actor that generated the current PIN. | enum=nearcast/uxplay/external/unknown | Omit if not used. |
-| ?visibility | Enum | 0x06 | Visibility policy for the PIN value. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
-| ?expiresAt | String | 0x07 | Expiration timestamp when applicable. | maxLength=64 | Omit if not used. |
-| ?redactionRequired | Boolean | 0x08 | Whether logs, diagnostics, and error summaries must redact the PIN. | None | Default: true |
-| ?changedFields | Array<String> | 0x09 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?updatedAt | String | 0x0A | Timestamp for this PIN state. | maxLength=64 | Omit if not used. |
-| ?redacted | Boolean | 0x0B | Whether sensitive fields were withheld in this snapshot. | None | Omit if not used. |
-
----
-
-### cast.setPinCode
-
-Set the current cast PIN value according to receiver policy.
-
-- Method ID: `0x160A`
-- Domain: `cast`
-- bitOffset: `9`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.pinCode`
-- Possible Events: `cast.pinCodeChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastSetPinCodeParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| pinCode | String | 0x01 | Opaque PIN value; concrete format is backend or product policy. | None | N/A |
-| ?expirePrevious | Boolean | 0x02 | Whether prior PIN material should stop being accepted. | None | Default: true |
-| ?visibility | Enum | 0x03 | Visibility policy for the new PIN. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastPinCodeConfig`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| enabled | Boolean | 0x01 | Whether PIN protection is enabled. | None | Default: true |
-| hasPinCode | Boolean | 0x02 | Whether a current PIN exists. | None | N/A |
-| ?pinCode | String | 0x03 | Plaintext PIN value when visible to the caller. | None | Omit if not used. |
-| ?pinDisplay | Enum | 0x04 | Where the current PIN may be displayed. | enum=hidden/authorizedClients/localUi/both | Omit if not used. |
-| ?generatedBy | Enum | 0x05 | Component or actor that generated the current PIN. | enum=nearcast/uxplay/external/unknown | Omit if not used. |
-| ?visibility | Enum | 0x06 | Visibility policy for the PIN value. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
-| ?expiresAt | String | 0x07 | Expiration timestamp when applicable. | maxLength=64 | Omit if not used. |
-| ?redactionRequired | Boolean | 0x08 | Whether logs, diagnostics, and error summaries must redact the PIN. | None | Default: true |
-| ?changedFields | Array<String> | 0x09 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?updatedAt | String | 0x0A | Timestamp for this PIN state. | maxLength=64 | Omit if not used. |
-| ?redacted | Boolean | 0x0B | Whether sensitive fields were withheld in this snapshot. | None | Omit if not used. |
-
----
-
-### cast.getWindowState
-
-Return cast window visibility, mode, and bounds summary.
-
-- Method ID: `0x160B`
-- Domain: `cast`
-- bitOffset: `10`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.window`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `Empty`
-
-No fields.
-
-#### Response Fields
-
-Type: `CastWindowState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| hasWindow | Boolean | 0x01 | Whether a cast window currently exists. | None | N/A |
-| visible | Boolean | 0x02 | Whether the cast window is visible. | None | N/A |
-| mode | Enum | 0x03 | Current cast window mode. | enum=normal/fullscreen | N/A |
-| fullscreen | Boolean | 0x04 | Whether the cast window is fullscreen. | None | N/A |
-| alwaysOnTop | Boolean | 0x05 | Whether the cast window is topmost. | None | N/A |
-| ?sessionId | String | 0x06 | Receiver-local session id associated with the window. | maxLength=128 | Omit if not used. |
-| ?bounds | CastRect | 0x07 | Current window bounds when available. | None | Omit if not used. |
-| ?changedFields | Array<String> | 0x0A | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?updatedAt | String | 0x0B | Timestamp for this window state. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.setWindowState
-
-Set cast window mode, fullscreen state, or always-on-top state.
-
-- Method ID: `0x160C`
-- Domain: `cast`
-- bitOffset: `11`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.window`
-- Possible Events: `cast.windowChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastSetWindowStateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?mode | Enum | 0x01 | Target cast window mode. | enum=normal/fullscreen | Omit if not used. |
-| ?fullscreen | Boolean | 0x02 | Whether the cast window should be fullscreen. | None | Omit if not used. |
-| ?alwaysOnTop | Boolean | 0x03 | Whether the cast window should stay above normal windows. | None | Omit if not used. |
-| ?bounds | CastRect | 0x04 | Optional target normal-mode window bounds. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastWindowState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| hasWindow | Boolean | 0x01 | Whether a cast window currently exists. | None | N/A |
-| visible | Boolean | 0x02 | Whether the cast window is visible. | None | N/A |
-| mode | Enum | 0x03 | Current cast window mode. | enum=normal/fullscreen | N/A |
-| fullscreen | Boolean | 0x04 | Whether the cast window is fullscreen. | None | N/A |
-| alwaysOnTop | Boolean | 0x05 | Whether the cast window is topmost. | None | N/A |
-| ?sessionId | String | 0x06 | Receiver-local session id associated with the window. | maxLength=128 | Omit if not used. |
-| ?bounds | CastRect | 0x07 | Current window bounds when available. | None | Omit if not used. |
-| ?changedFields | Array<String> | 0x0A | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?updatedAt | String | 0x0B | Timestamp for this window state. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.getBackendStatus
-
-Return cast backend process, discoverability, and last-error state.
-
-- Method ID: `0x160D`
-- Domain: `cast`
-- bitOffset: `12`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.backend`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastGetBackendStatusParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?includeLastError | Boolean | 0x01 | Whether to include the last backend error summary. | None | Default: false |
-
-#### Response Fields
-
-Type: `CastBackendStatus`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| backendType | Enum | 0x01 | Backend implementation type. | enum=uxplay/unknown | N/A |
-| state | Enum | 0x02 | Backend runtime state. | enum=starting/ready/restarting/exited/failed/disabled | N/A |
-| discoverable | Boolean | 0x03 | Whether the cast service is discoverable by sources. | None | N/A |
-| ?pid | UInt32 | 0x04 | Backend process id when available. | None | Omit if not used. |
-| ?version | String | 0x05 | Backend version or build identifier. | maxLength=128 | Omit if not used. |
-| ?activeSessionId | String | 0x06 | Active cast session id currently owned by the backend. | maxLength=128 | Omit if not used. |
-| restartInProgress | Boolean | 0x07 | Whether a backend restart is currently in progress. | None | Default: false |
-| ?lastError | CastLastError | 0x08 | Last backend error summary when requested and available. | None | Omit if not used. |
-| ?updatedAt | String | 0x09 | Timestamp for this backend status. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.restartBackend
-
-Restart the cast backend without restarting the receiver application or device.
-
-- Method ID: `0x160E`
-- Domain: `cast`
-- bitOffset: `13`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.backend`
-- Possible Events: `cast.backendChanged`, `cast.sessionStopped`
-- Possible Errors: `SUCCESS`, `BUSY`, `INVALID_STATE`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastRestartBackendParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?reason | Enum | 0x01 | Caller-visible restart reason. | enum=manualRecovery/configChanged/backendUnhealthy/unknown | Omit if not used. |
-| ?force | Boolean | 0x02 | Whether the backend adapter may force cleanup before restart. | None | Default: false |
-
-#### Response Fields
-
-Type: `CastRestartBackendResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the receiver accepted the restart request. | None | N/A |
-| backendType | Enum | 0x02 | Backend implementation affected by the restart. | enum=uxplay/unknown | N/A |
-| state | Enum | 0x03 | Backend state after accepting the restart request. | enum=starting/ready/restarting/exited/failed/disabled | N/A |
-| ?restartId | String | 0x04 | Receiver-local restart operation id. | maxLength=128 | Omit if not used. |
-| activeSessionEnded | Boolean | 0x05 | Whether an active cast session was ended by the restart. | None | N/A |
-| ?endedSessionId | String | 0x06 | Session ended by the restart. | maxLength=128 | Omit if not used. |
-| ?sessionStopReason | Enum | 0x07 | Session stop reason reported for the ended session. | enum=backendRestart/backendExited/error/unknown | Omit if not used. |
-| ?estimatedReadyInMs | UInt32 | 0x08 | Estimated backend recovery time in milliseconds. | None | Omit if not used. |
-| ?updatedAt | String | 0x09 | Timestamp for this restart result. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.getFlowControlState
-
-Return local cast render fps, queue policy, and low-frequency diagnostics.
-
-- Method ID: `0x160F`
-- Domain: `cast`
-- bitOffset: `14`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.flowControl`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastGetFlowControlStateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?includeStats | Boolean | 0x01 | Whether to include low-frequency diagnostic counters. | None | Default: true |
-| ?includePolicy | Boolean | 0x02 | Whether to include current flow policy fields. | None | Default: true |
-| ?sessionId | String | 0x03 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastFlowControlState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| targetRenderFps | Number | 0x01 | Configured target render fps; zero means uncapped. | min=0 | N/A |
-| ?inputFps | Number | 0x02 | Estimated incoming media frame rate. | min=0 | Omit if not used. |
-| ?renderFps | Number | 0x03 | Estimated local render frame rate. | min=0 | Omit if not used. |
-| dropMode | Enum | 0x04 | Local frame drop policy. | enum=drop-late/drop-oldest/render-latest | N/A |
-| videoQueueFrames | UInt32 | 0x05 | Maximum queued video frames. | min=1 | N/A |
-| ?videoQueueDepth | UInt32 | 0x06 | Current queued video frame depth. | None | Omit if not used. |
-| ?audioQueueDepth | UInt32 | 0x07 | Current queued audio frame depth when known. | None | Omit if not used. |
-| lateFrameThresholdMs | UInt32 | 0x08 | Late-frame threshold in milliseconds. | None | N/A |
-| overlayEnabled | Boolean | 0x09 | Whether diagnostics overlay is enabled. | None | N/A |
-| ?droppedFrames | UInt64 | 0x0A | Low-frequency dropped-frame counter. | None | Omit if not used. |
-| ?lateFrames | UInt64 | 0x0B | Low-frequency late-frame counter. | None | Omit if not used. |
-| ?keyframeRequestCount | UInt32 | 0x0C | Internal keyframe requests triggered by receiver policy. | None | Omit if not used. |
-| ?keyFrameOnDropBurst | Boolean | 0x0D | Whether the receiver may internally request a keyframe after a drop burst. | None | Omit if not used. |
-| ?changedFields | Array<String> | 0x0E | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?sampledAt | String | 0x0F | Timestamp for this flow sample. | maxLength=64 | Omit if not used. |
-| ?sourceVideo | CastVideoStreamParamsState | 0x10 | Effective source video stream parameters and reconfiguration state. | None | Omit if not used. |
-
----
-
-### cast.setRenderFps
-
-Set the receiver-local target render fps for cast media.
-
-- Method ID: `0x1610`
-- Domain: `cast`
-- bitOffset: `15`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.flowControl`
-- Possible Events: `cast.flowControlChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastSetRenderFpsParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| fps | Number | 0x01 | Target local render fps; zero means uncapped. | min=0 | N/A |
-| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
-| ?scope | Enum | 0x03 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastFlowControlState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| targetRenderFps | Number | 0x01 | Configured target render fps; zero means uncapped. | min=0 | N/A |
-| ?inputFps | Number | 0x02 | Estimated incoming media frame rate. | min=0 | Omit if not used. |
-| ?renderFps | Number | 0x03 | Estimated local render frame rate. | min=0 | Omit if not used. |
-| dropMode | Enum | 0x04 | Local frame drop policy. | enum=drop-late/drop-oldest/render-latest | N/A |
-| videoQueueFrames | UInt32 | 0x05 | Maximum queued video frames. | min=1 | N/A |
-| ?videoQueueDepth | UInt32 | 0x06 | Current queued video frame depth. | None | Omit if not used. |
-| ?audioQueueDepth | UInt32 | 0x07 | Current queued audio frame depth when known. | None | Omit if not used. |
-| lateFrameThresholdMs | UInt32 | 0x08 | Late-frame threshold in milliseconds. | None | N/A |
-| overlayEnabled | Boolean | 0x09 | Whether diagnostics overlay is enabled. | None | N/A |
-| ?droppedFrames | UInt64 | 0x0A | Low-frequency dropped-frame counter. | None | Omit if not used. |
-| ?lateFrames | UInt64 | 0x0B | Low-frequency late-frame counter. | None | Omit if not used. |
-| ?keyframeRequestCount | UInt32 | 0x0C | Internal keyframe requests triggered by receiver policy. | None | Omit if not used. |
-| ?keyFrameOnDropBurst | Boolean | 0x0D | Whether the receiver may internally request a keyframe after a drop burst. | None | Omit if not used. |
-| ?changedFields | Array<String> | 0x0E | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?sampledAt | String | 0x0F | Timestamp for this flow sample. | maxLength=64 | Omit if not used. |
-| ?sourceVideo | CastVideoStreamParamsState | 0x10 | Effective source video stream parameters and reconfiguration state. | None | Omit if not used. |
-
----
-
-### cast.setFlowPolicy
-
-Set receiver-local cast queue, late-frame, drop, and overlay policy.
-
-- Method ID: `0x1611`
-- Domain: `cast`
-- bitOffset: `16`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.flowControl`
-- Possible Events: `cast.flowControlChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastSetFlowPolicyParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?videoQueueFrames | UInt32 | 0x01 | Maximum queued video frames. | min=1 | Omit if not used. |
-| ?lateFrameThresholdMs | UInt32 | 0x02 | Late-frame threshold in milliseconds. | None | Omit if not used. |
-| ?dropMode | Enum | 0x03 | Local frame drop policy. | enum=drop-late/drop-oldest/render-latest | Omit if not used. |
-| ?overlayEnabled | Boolean | 0x04 | Whether receiver diagnostics overlay is enabled. | None | Omit if not used. |
-| ?sessionId | String | 0x05 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
-| ?scope | Enum | 0x06 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastFlowControlState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| targetRenderFps | Number | 0x01 | Configured target render fps; zero means uncapped. | min=0 | N/A |
-| ?inputFps | Number | 0x02 | Estimated incoming media frame rate. | min=0 | Omit if not used. |
-| ?renderFps | Number | 0x03 | Estimated local render frame rate. | min=0 | Omit if not used. |
-| dropMode | Enum | 0x04 | Local frame drop policy. | enum=drop-late/drop-oldest/render-latest | N/A |
-| videoQueueFrames | UInt32 | 0x05 | Maximum queued video frames. | min=1 | N/A |
-| ?videoQueueDepth | UInt32 | 0x06 | Current queued video frame depth. | None | Omit if not used. |
-| ?audioQueueDepth | UInt32 | 0x07 | Current queued audio frame depth when known. | None | Omit if not used. |
-| lateFrameThresholdMs | UInt32 | 0x08 | Late-frame threshold in milliseconds. | None | N/A |
-| overlayEnabled | Boolean | 0x09 | Whether diagnostics overlay is enabled. | None | N/A |
-| ?droppedFrames | UInt64 | 0x0A | Low-frequency dropped-frame counter. | None | Omit if not used. |
-| ?lateFrames | UInt64 | 0x0B | Low-frequency late-frame counter. | None | Omit if not used. |
-| ?keyframeRequestCount | UInt32 | 0x0C | Internal keyframe requests triggered by receiver policy. | None | Omit if not used. |
-| ?keyFrameOnDropBurst | Boolean | 0x0D | Whether the receiver may internally request a keyframe after a drop burst. | None | Omit if not used. |
-| ?changedFields | Array<String> | 0x0E | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?sampledAt | String | 0x0F | Timestamp for this flow sample. | maxLength=64 | Omit if not used. |
-| ?sourceVideo | CastVideoStreamParamsState | 0x10 | Effective source video stream parameters and reconfiguration state. | None | Omit if not used. |
-
----
-
-### cast.getStatus
-
-Return a current cast receiver snapshot for UI reload, reconnect, or event-loss recovery.
-
-- Method ID: `0x1612`
-- Domain: `cast`
-- bitOffset: `17`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.status`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastGetStatusParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?include | Array<String> | 0x01 | Optional status sections to include. | array.itemType=string | Omit if not used. |
-| ?includeSensitive | Boolean | 0x02 | Whether authorized callers request sensitive summary fields. | None | Default: false |
-
-#### Response Fields
-
-Type: `CastStatus`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| receiver | CastReceiverSummary | 0x01 | Receiver role and phase summary. | None | N/A |
-| ?session | CastSessionStatusSummary | 0x02 | Active session summary. | None | Omit if not used. |
-| ?pinCode | CastPinCodeStatusSummary | 0x03 | PIN protection summary. | None | Omit if not used. |
-| ?audio | CastAudioState | 0x04 | Local audio summary. | None | Omit if not used. |
-| ?window | CastWindowState | 0x05 | Cast window summary. | None | Omit if not used. |
-| ?backend | CastBackendStatus | 0x06 | Backend summary. | None | Omit if not used. |
-| ?flowControl | CastFlowControlState | 0x07 | Flow control summary. | None | Omit if not used. |
-| sampledAt | String | 0x08 | Timestamp for this status snapshot. | maxLength=64 | N/A |
-| ?redacted | Boolean | 0x09 | Whether any sensitive snapshot fields were withheld. | None | Omit if not used. |
-
----
-
-### cast.setAudioDelay
-
-Set receiver-local audio playback delay compensation for cast audio.
-
-- Method ID: `0x1613`
-- Domain: `cast`
-- bitOffset: `18`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.audio`
-- Possible Events: `cast.audioChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastSetAudioDelayParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| audioDelayMs | UInt32 | 0x01 | Target local audio playback delay in milliseconds; zero disables delay compensation. | min=0, max=1000 | N/A |
-| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
-| ?scope | Enum | 0x03 | State target hint; default persists the receiver delay for future sessions. | enum=currentSession/default | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastAudioState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | Default: false |
-| muted | Boolean | 0x02 | Whether local receiver output is muted. | None | Default: false |
-| effectivePlayback | Boolean | 0x03 | Whether audio is effectively playing locally after state and session conditions are applied. | None | N/A |
-| ?scope | Enum | 0x04 | State target hint represented by this snapshot. | enum=currentSession/default | Omit if not used. |
-| ?sessionId | String | 0x05 | Receiver-local session id for session-specific state. | maxLength=128 | Omit if not used. |
-| ?source | Enum | 0x06 | Source of the latest state value. | enum=defaultConfig/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
-| ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
-| ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
-| ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
-| ?audioDelayMs | UInt32 | 0x0A | Configured receiver-local audio playback delay in milliseconds; zero disables compensation. | min=0, max=1000 | Default: 250 |
-
----
-
-### cast.setVideoStreamParams
-
-Request cast video stream parameter reconfiguration; an active stream is coordinated through close then open, while a source without an active stream is opened directly.
-
-- Method ID: `0x1614`
-- Domain: `cast`
-- bitOffset: `19`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `cast.flowControl`
-- Possible Events: `cast.flowControlChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `OUT_OF_RANGE`, `NOT_SUPPORTED`, `BUSY`, `MEDIA_SOURCE_UNAVAILABLE`, `MEDIA_FRAMERATE_UNSUPPORTED`, `MEDIA_BITRATE_UNSUPPORTED`, `MEDIA_STREAM_START_FAILED`, `MEDIA_STREAM_STOP_FAILED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `CastSetVideoStreamParamsParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?sessionId | String | 0x01 | Optional receiver-local cast session id. | maxLength=128 | Omit if not used. |
-| ?frameRate | UInt32 | 0x02 | Optional target encoded video frame rate; zero is invalid, omission leaves the current session value unchanged or unset if never configured, and only resetFields clears it and restores the source/profile default. | min=1 | Omit if not used. |
-| ?bitrateKbps | UInt32 | 0x03 | Optional target encoded video bitrate in kbps; zero is invalid, omission leaves the current session value unchanged or unset if never configured, and only resetFields clears it and restores the source/profile default. | min=1 | Omit if not used. |
-| ?resetFields | Array<String> | 0x04 | Optional video parameter field names to reset to the source or profile default. | array.itemType=string | Omit if not used. |
-
-#### Response Fields
-
-Type: `CastSetVideoStreamParamsResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the receiver accepted the requested video parameter change. | None | N/A |
-| state | Enum | 0x02 | Reconfiguration lifecycle state. | enum=pending/applied/failed/rolledBack/unchanged | N/A |
-| ?sessionId | String | 0x03 | Receiver-local cast session id associated with the result. | maxLength=128 | Omit if not used. |
-| ?reconfigureId | String | 0x04 | Identifier for this video stream reconfiguration operation. | maxLength=128 | Omit if not used. |
-| ?previousStreamId | UInt32 | 0x05 | Previously active video stream id when the operation replaced a stream. | None | Omit if not used. |
-| ?activeStreamId | UInt32 | 0x06 | Currently active video stream id after the operation. | None | Omit if not used. |
-| sourceVideo | CastVideoStreamParamsState | 0x07 | Effective source video stream parameter state after the request. | None | N/A |
-
----
-
-## device Methods
-
-### Methods in this domain
-
-- [device.getInfo](#devicegetinfo)
-- [device.getPairingCode](#devicegetpairingcode)
-- [device.getEnrollmentState](#devicegetenrollmentstate)
-- [device.setEnrollmentState](#devicesetenrollmentstate)
-
----
-
-### device.getInfo
-
-Return the current endpoint main device identity, product, hardware, OS, software, AXTP runtime, and optional capability summary.
-
-- Method ID: `0x0101`
-- Domain: `device`
-- bitOffset: `0`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `device.info`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `INTERNAL_ERROR`
-
-#### Request Fields
-
-Type: `GetDeviceInfoParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?includeCapabilitySummary | Boolean | 0x01 | Whether to include the lightweight DeviceCapabilitySummary block. | None | Default: true |
-
-#### Response Fields
-
-Type: `DeviceInfo`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| identity | DeviceIdentity | 0x01 | Stable device identity fields. | None | N/A |
-| product | DeviceProduct | 0x02 | Brand, product type, model, and display information. | None | N/A |
-| ?hardware | DeviceHardware | 0x03 | Hardware summary. | None | Omit if not used. |
-| ?os | DeviceOs | 0x04 | Operating system summary. | None | Omit if not used. |
-| ?software | DeviceSoftware | 0x05 | Installed or hosted software component summary. | None | Omit if not used. |
-| ?runtime | DeviceAxtpRuntime | 0x06 | AXTP runtime summary. | None | Omit if not used. |
-| ?capability | DeviceCapabilitySummary | 0x07 | Lightweight modeling summary; not a complete capability registry. | None | Omit if not used. |
-
----
-
-### device.getPairingCode
-
-Return a pairing code for on-site or backend-claimed device enrollment. With refresh=false (default) the current valid code is returned; with refresh=true the server generates a new code and invalidates the previous one.
-
-- Method ID: `0x0102`
-- Domain: `device`
-- bitOffset: `1`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `device.enrollment`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INTERNAL_ERROR`
-
-#### Request Fields
-
-Type: `DeviceGetPairingCodeParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?refresh | Boolean | 0x01 | Whether to force a fresh pairing code. false (default) returns the current valid code; true generates a new code and invalidates the previous one. | None | Default: false |
-| ?purpose | Enum | 0x02 | Pairing code usage scenario; candidate values include initial_enrollment (first-time enrollment of a new device, default), re_enrollment (re-enrollment such as workspace migration), and service_repair (service/repair pairing, may have a different TTL or permission). Unsupported purpose returns NOT_SUPPORTED. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `DevicePairingCodeInfo`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| code | String | 0x01 | Displayable pairing code, 6-8 uppercase alphanumeric characters excluding confusable characters (0/O, 1/I/L); MUST match the regex ^[A-HJ-NP-Z2-9]{6,8}$. | maxLength=8 | N/A |
-| ?expiresAt | String | 0x02 | Absolute expiry time as an RFC 3339 timestamp. Authoritative when present. Legacy GetBindCode returned a Unix timestamp integer here; the adapter MUST convert integer to RFC 3339 string. | None | Omit if not used. |
-| ?expiresInSeconds | UInt32 | 0x03 | Relative expiry in seconds, retained for legacy device-sdk compatibility (observed value 1800). MUST be greater than 0 when present. | min=1 | Omit if not used. |
-| ?state | Enum | 0x04 | Pairing code lifecycle state; candidate values include available (default), expired (TTL reached), used (consumed by the cloud), and disabled (revoked by the server). | None | Omit if not used. |
-
----
-
-### device.getEnrollmentState
-
-Query whether the device is enrolled and return the associated backend object summary when enrolled.
-
-- Method ID: `0x0103`
-- Domain: `device`
-- bitOffset: `2`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `device.enrollment`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`
-
-#### Request Fields
-
-Type: `DeviceGetEnrollmentStateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?includeEndpoint | Boolean | 0x01 | Whether to include the post-enrollment endpoint summary. Defaults to true since the most common caller (the cloud management backend) needs endpoint info; set to false for lightweight polling or when the endpoint is already cached. | None | Default: true |
-
-#### Response Fields
-
-Type: `DeviceEnrollmentInfo`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| state | Enum | 0x01 | Current enrollment state; candidate values include unmanaged, pairing_available, pending, enrolled, failed, and unenrolling. Valid transitions follow the enrollment state machine; invalid transitions return INVALID_STATE. | None | N/A |
-| ?deviceId | String | 0x02 | Server-assigned device identifier, stable across sessions. | maxLength=128 | Omit if not used. |
-| ?workspaceId | String | 0x03 | Enrolled workspace identifier. Populated only when state is enrolled or unenrolling. Privacy-sensitive; exposure policy to be confirmed. [REVIEW-ADOPTED-SCOPED] 待确认后走 amend | maxLength=128 | Omit if not used. |
-| ?endpoint | DeviceEnrollmentEndpointSummary | 0x04 | Post-enrollment backend endpoint. Populated only when state is enrolled or unenrolling and subject to includeEndpoint. | None | Omit if not used. |
-| ?enrolledAt | String | 0x05 | RFC 3339 timestamp of when the state became enrolled. Present only when state is enrolled or unenrolling. [REVIEW-ADOPTED-SCOPED] | None | Omit if not used. |
-| ?updatedAt | String | 0x06 | RFC 3339 timestamp of the most recent state update. | None | Omit if not used. |
-| ?message | String | 0x07 | Human-readable detail, populated when state is failed or pending, optional when unenrolling. | maxLength=512 | Omit if not used. |
-
----
-
-### device.setEnrollmentState
-
-Set the enrollment state (bind success, unbind, clear failure, or sync server claim). State transitions must follow the enrollment state machine; an invalid transition returns INVALID_STATE. Emitted after the state actually changes by the device.enrollmentStateChanged event.
-
-- Method ID: `0x0104`
-- Domain: `device`
-- bitOffset: `3`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `device.enrollment`
-- Possible Events: `device.enrollmentStateChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `PERMISSION_DENIED`
-
-#### Request Fields
-
-Type: `DeviceSetEnrollmentStateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| desiredState | Enum | 0x01 | Target state; candidate values include enrolled, unmanaged, failed, and pending. | None | N/A |
-| ?reason | Enum | 0x02 | Change reason; candidate values include pairing_code_used, server_claimed, user_unenrolled, admin_reset, and unknown (default). | None | Omit if not used. |
-| ?endpoint | DeviceEnrollmentEndpointSummary | 0x03 | Endpoint summary associated with a successful enrollment. Required when desiredState is enrolled. | None | Omit if not used. |
-| ?message | String | 0x04 | Failure, unbind, or repair detail. Required when desiredState is failed. | maxLength=512 | Omit if not used. |
-
-#### Response Fields
-
-Type: `DeviceSetEnrollmentStateResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| state | DeviceEnrollmentInfo | 0x01 | Enrollment state after the operation. | None | N/A |
-| ?disconnectExpected | Boolean | 0x02 | Whether the unbind or reset is expected to cause a connection change. true only when desiredState is unmanaged and the device needs to close the management session; false for all other transitions. | None | Default: false |
-
----
-
-## firmware Methods
-
-### Methods in this domain
-
-- [firmware.getUpdateCapabilities](#firmwaregetupdatecapabilities)
-- [firmware.beginUpdate](#firmwarebeginupdate)
-- [firmware.getUpdateState](#firmwaregetupdatestate)
-- [firmware.finishUpdate](#firmwarefinishupdate)
-
----
-
-### firmware.getUpdateCapabilities
-
-Return P0 firmware update capability and upload constraints.
-
-- Method ID: `0x0401`
-- Domain: `firmware`
-- bitOffset: `0`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `firmware.update`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_STATE`, `FW_DEVICE_NOT_READY`
-
-#### Request Fields
-
-Type: `Empty`
-
-No fields.
-
-#### Response Fields
-
-Type: `FirmwareUpdateCapabilities`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| supported | Boolean | 0x01 | Whether firmware.update P0 is supported. | None | N/A |
-| supportsMultiFile | Boolean | 0x02 | Whether manifest may contain multiple files. | None | N/A |
-| streamLayout | Enum | 0x03 | P0 stream layout, currently file. | None | N/A |
-| hashAlgorithm | Enum | 0x04 | P0 hash algorithm, currently md5. | None | N/A |
-| autoReboot | Boolean | 0x05 | Whether the device automatically reboots after installation. | None | N/A |
-| ?maxChunkSize | UInt32 | 0x06 | Maximum STREAM data chunk size supported by the device. | None | Omit if not used. |
-| ?devicePolicyVersion | String | 0x07 | Optional device policy version used by host tooling. | maxLength=64 | Omit if not used. |
-
----
-
-### firmware.beginUpdate
-
-Create a firmware update session, accept the manifest, and bind file IDs to STREAM streamIds.
-
-- Method ID: `0x0402`
-- Domain: `firmware`
-- bitOffset: `1`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `firmware.update`
-- Possible Events: `firmware.updateStateChanged`, `firmware.updateProgressReported`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `BUSY`, `FW_VERSION_UNSUPPORTED`, `FW_STORAGE_NOT_ENOUGH`, `FW_DEVICE_NOT_READY`
-
-#### Request Fields
-
-Type: `BeginUpdateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| manifest | FirmwareUpdateManifest | 0x01 | Minimal firmware update manifest. | None | N/A |
-
-#### Response Fields
-
-Type: `BeginUpdateResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
-| state | Enum | 0x02 | State after begin, normally receiving. | None | N/A |
-| streams | Array<FirmwareUpdateStreamBinding> | 0x03 | Firmware update stream bindings. | schema=FirmwareUpdateStreamBinding, array.itemType=FirmwareUpdateStreamBinding, array.itemSchema=FirmwareUpdateStreamBinding | N/A |
-| ?chunkSize | UInt32 | 0x04 | Recommended STREAM chunk size. | None | Omit if not used. |
-
----
-
-### firmware.getUpdateState
-
-Return current firmware update state for UI refresh, reconnect, or event-loss recovery.
-
-- Method ID: `0x0408`
-- Domain: `firmware`
-- bitOffset: `3`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `firmware.update`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_FOUND`, `FW_TRANSFER_NOT_STARTED`
-
-#### Request Fields
-
-Type: `GetUpdateStateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
-
-#### Response Fields
-
-Type: `FirmwareUpdateState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
-| state | Enum | 0x02 | State, such as idle, receiving, verifying, installing, rebooting, confirmed, or failed. | None | N/A |
-| ?progress | UInt8 | 0x03 | Overall progress percentage. | min=0, max=100 | Omit if not used. |
-| ?currentFileId | String | 0x04 | Current file identifier, if file-level progress is available. | maxLength=128 | Omit if not used. |
-| ?error | FirmwareUpdateErrorInfo | 0x05 | Error details when state is failed. | None | Omit if not used. |
-
----
-
-### firmware.finishUpdate
-
-Tell the device that upload is complete and hand off verification, install, and reboot to the device.
-
-- Method ID: `0x040B`
-- Domain: `firmware`
-- bitOffset: `2`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `firmware.update`
-- Possible Events: `firmware.updateStateChanged`, `firmware.updateProgressReported`
-- Possible Errors: `SUCCESS`, `INVALID_STATE`, `STREAM_CHUNK_MISSING`, `FW_SIZE_MISMATCH`, `FW_DEVICE_NOT_READY`, `BUSY`
-
-#### Request Fields
-
-Type: `FinishUpdateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
-
-#### Response Fields
-
-Type: `FinishUpdateResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
-| accepted | Boolean | 0x02 | Whether the device accepted the finish handoff. | None | N/A |
-| state | Enum | 0x03 | State after finish, normally verifying or failed. | None | N/A |
-
----
-
-## network Methods
-
-### Methods in this domain
-
-- [network.getIpConfig](#networkgetipconfig)
-- [network.setIpConfig](#networksetipconfig)
-- [network.getWifiConfig](#networkgetwificonfig)
-- [network.setWifiConfig](#networksetwificonfig)
-- [network.scanWifi](#networkscanwifi)
-- [network.connectWifi](#networkconnectwifi)
-- [network.disconnectWifi](#networkdisconnectwifi)
-- [network.getWifiState](#networkgetwifistate)
-- [network.getApConfig](#networkgetapconfig)
-- [network.setApConfig](#networksetapconfig)
-- [network.startAp](#networkstartap)
-- [network.stopAp](#networkstopap)
-- [network.getApState](#networkgetapstate)
-- [network.getInterfaces](#networkgetinterfaces)
-- [network.getInterfaceInfo](#networkgetinterfaceinfo)
-- [network.getWifiCapabilities](#networkgetwificapabilities)
-- [network.getApCapabilities](#networkgetapcapabilities)
-- [network.getApClients](#networkgetapclients)
-
----
-
-### network.getIpConfig
-
-Return IP configuration for a network interface.
-
-- Method ID: `0x0E02`
-- Domain: `network`
-- bitOffset: `2`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.ip`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `NetworkGetIpConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Interface identifier; omitted means default primary interface. | maxLength=64 | Default: "defaults.primary" |
-| ?family | Enum | 0x02 | IP family; candidate values include ipv4 and ipv6. | None | Default: "ipv4" |
-
-#### Response Fields
-
-Type: `NetworkIpConfig`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
-| ?family | Enum | 0x02 | IP family; candidate values include ipv4 and ipv6. | None | Default: "ipv4" |
-| mode | Enum | 0x03 | IP mode; candidate values include dhcp, static, disabled, link_local, and unknown. | None | N/A |
-| ?address | String | 0x04 | IP address. | maxLength=64 | Omit if not used. |
-| ?prefixLength | UInt8 | 0x05 | Network prefix length. | min=0, max=128 | Omit if not used. |
-| ?gateway | String | 0x06 | Default gateway. | maxLength=64 | Omit if not used. |
-| ?dns | Array<String> | 0x07 | DNS server addresses. | array.itemType=string | Omit if not used. |
-
----
-
-### network.setIpConfig
-
-Set DHCP/static/disabled IP configuration for a network interface.
-
-- Method ID: `0x0E03`
-- Domain: `network`
-- bitOffset: `3`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.ip`
-- Possible Events: `network.ipConfigChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
-
-#### Request Fields
-
-Type: `NetworkSetIpConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | Default: "defaults.primary" |
-| ?family | Enum | 0x02 | IP family. | None | Default: "ipv4" |
-| config | NetworkIpConfig | 0x03 | Target IP configuration. | None | N/A |
-| ?applyPolicy | Enum | 0x04 | Apply policy; candidate values include immediate and pending_restart. | None | Default: "immediate" |
-
-#### Response Fields
-
-Type: `NetworkSetIpConfigResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| config | NetworkIpConfig | 0x01 | Applied or pending IP configuration. | None | N/A |
-| applyState | Enum | 0x02 | Apply state; candidate values include applied, pending_restart, and failed. | None | N/A |
-
----
-
-### network.getWifiConfig
-
-Return saved Wi-Fi profile summaries without plaintext credentials.
-
-- Method ID: `0x0E04`
-- Domain: `network`
-- bitOffset: `5`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.wifi`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `NetworkGetWifiConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
-| ?includeProfiles | Boolean | 0x02 | Whether to include saved profile summaries. | None | Default: true |
-
-#### Response Fields
-
-Type: `NetworkWifiConfig`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
-| ?profiles | Array<NetworkWifiProfile> | 0x02 | NetworkWifiProfile summaries. Plaintext credentials must not be returned. | schema=NetworkWifiProfile, array.itemType=NetworkWifiProfile, array.itemSchema=NetworkWifiProfile | Omit if not used. |
-| ?defaultProfileId | String | 0x03 | Default profile identifier. | maxLength=128 | Omit if not used. |
-
----
-
-### network.setWifiConfig
-
-Create or update a Wi-Fi station profile.
-
-- Method ID: `0x0E05`
-- Domain: `network`
-- bitOffset: `6`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.wifi`
-- Possible Events: `network.wifiConfigChanged`, `network.wifiStateChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
-
-#### Request Fields
-
-Type: `NetworkSetWifiConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
-| profile | NetworkWifiProfile | 0x02 | Profile to create or update. | None | N/A |
-| ?replaceExisting | Boolean | 0x03 | Whether an existing matching profile may be replaced. | None | Default: false |
-| ?makeDefault | Boolean | 0x04 | Whether to make this the default profile. | None | Default: false |
-| ?connectAfterSave | Boolean | 0x05 | Whether to start connection after saving. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `NetworkSetWifiConfigResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| profileId | String | 0x01 | Accepted or assigned profile identifier. | maxLength=128 | N/A |
-| ?config | NetworkWifiConfig | 0x02 | Updated profile summary. | None | Omit if not used. |
-| ?connectStarted | Boolean | 0x03 | Whether connection was started after saving. | None | Omit if not used. |
-
----
-
-### network.scanWifi
-
-Scan visible Wi-Fi access points.
-
-- Method ID: `0x0E06`
-- Domain: `network`
-- bitOffset: `7`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.wifi`
-- Possible Events: `network.wifiScanResultReported`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `BUSY`, `TIMEOUT`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `NetworkScanWifiParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
-| ?ssidFilter | String | 0x02 | Optional SSID filter. | maxLength=64 | Omit if not used. |
-| ?timeoutMs | UInt32 | 0x03 | Scan timeout in milliseconds. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `NetworkScanWifiResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?scanId | String | 0x01 | Asynchronous scan identifier. | maxLength=128 | Omit if not used. |
-| ?results | Array<NetworkWifiScanResult> | 0x02 | NetworkWifiScanResult objects. | schema=NetworkWifiScanResult, array.itemType=NetworkWifiScanResult, array.itemSchema=NetworkWifiScanResult | Omit if not used. |
-| ?complete | Boolean | 0x03 | Whether returned results are complete. | None | Omit if not used. |
-
----
-
-### network.connectWifi
-
-Connect to a saved Wi-Fi profile or an inline profile.
-
-- Method ID: `0x0E07`
-- Domain: `network`
-- bitOffset: `8`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.wifi`
-- Possible Events: `network.wifiStateChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `INVALID_STATE`, `BUSY`, `TIMEOUT`, `PERMISSION_DENIED`
-
-#### Request Fields
-
-Type: `NetworkConnectWifiParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
-| ?profileId | String | 0x02 | Saved profile identifier. | maxLength=128 | Omit if not used. |
-| ?profile | NetworkWifiProfile | 0x03 | Inline profile to connect with. | None | Omit if not used. |
-| ?timeoutMs | UInt32 | 0x04 | Connection timeout in milliseconds. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `NetworkWifiActionResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
-| state | NetworkWifiState | 0x02 | Current or target Wi-Fi state after accepting the action. | None | N/A |
-
----
-
-### network.disconnectWifi
-
-Disconnect the current Wi-Fi station connection.
-
-- Method ID: `0x0E08`
-- Domain: `network`
-- bitOffset: `9`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.wifi`
-- Possible Events: `network.wifiStateChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
-
-#### Request Fields
-
-Type: `NetworkDisconnectWifiParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
-| ?reason | Enum | 0x02 | Disconnect reason; candidate values include user_request, profile_changed, shutdown, and unknown. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `NetworkWifiActionResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
-| state | NetworkWifiState | 0x02 | Current or target Wi-Fi state after accepting the action. | None | N/A |
-
----
-
-### network.getWifiState
-
-Return current Wi-Fi station association, authentication, and connection state.
-
-- Method ID: `0x0E09`
-- Domain: `network`
-- bitOffset: `10`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.wifi`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `NetworkGetWifiStateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
-
-#### Response Fields
-
-Type: `NetworkWifiState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
-| state | Enum | 0x02 | State; candidate values include disabled, disconnected, scanning, authenticating, associating, connected, failed, and unknown. | None | N/A |
-| ?profileId | String | 0x03 | Active profile identifier. | maxLength=128 | Omit if not used. |
-| ?ssid | String | 0x04 | Active SSID. | maxLength=64 | Omit if not used. |
-| ?rssi | Int32 | 0x05 | Received signal strength indicator in dBm. | None | Omit if not used. |
-| ?ipReady | Boolean | 0x06 | Whether IP configuration is ready. | None | Omit if not used. |
-| ?failureReason | Enum | 0x07 | Failure reason, if state is failed. | None | Omit if not used. |
-
----
-
-### network.getApConfig
-
-Return Wi-Fi AP configuration without exposing plaintext credentials unless explicitly allowed by policy.
-
-- Method ID: `0x0E0A`
-- Domain: `network`
-- bitOffset: `12`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.ap`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `NetworkGetApConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
-
-#### Response Fields
-
-Type: `NetworkApConfig`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
-| ?enabled | Boolean | 0x02 | Whether AP should be enabled by configuration. | None | Omit if not used. |
-| ssid | String | 0x03 | AP SSID. | maxLength=64 | N/A |
-| ?hidden | Boolean | 0x04 | Whether SSID broadcast is hidden. | None | Default: false |
-| ?band | Enum | 0x05 | AP band. | None | Omit if not used. |
-| ?channel | UInt16 | 0x06 | AP channel. | None | Omit if not used. |
-| securityType | Enum | 0x07 | AP security type. | None | N/A |
-| ?credential | NetworkCredential | 0x08 | Credential descriptor; plaintext must not be returned unless policy explicitly allows it. | None | Omit if not used. |
-| ?maxClients | UInt16 | 0x09 | Maximum client count. | None | Omit if not used. |
-
----
-
-### network.setApConfig
-
-Partially update Wi-Fi AP configuration.
-
-- Method ID: `0x0E0B`
-- Domain: `network`
-- bitOffset: `13`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.ap`
-- Possible Events: `network.apConfigChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
-
-#### Request Fields
-
-Type: `NetworkSetApConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
-| config | NetworkApConfig | 0x02 | AP configuration patch or target configuration. | None | N/A |
-
-#### Response Fields
-
-Type: `NetworkSetApConfigResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| config | NetworkApConfig | 0x01 | Applied or pending AP configuration. | None | N/A |
-| applyState | Enum | 0x02 | Apply state; candidate values include applied, pending_restart, and failed. | None | N/A |
-
----
-
-### network.startAp
-
-Start the Wi-Fi AP role.
-
-- Method ID: `0x0E0C`
-- Domain: `network`
-- bitOffset: `15`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.ap`
-- Possible Events: `network.apStateChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
-
-#### Request Fields
-
-Type: `NetworkApActionParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
-| ?reason | Enum | 0x02 | Action reason. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `NetworkApActionResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
-| state | NetworkApState | 0x02 | Current or target AP state. | None | N/A |
-
----
-
-### network.stopAp
-
-Stop the Wi-Fi AP role.
-
-- Method ID: `0x0E0D`
-- Domain: `network`
-- bitOffset: `16`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.ap`
-- Possible Events: `network.apStateChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
-
-#### Request Fields
-
-Type: `NetworkApActionParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
-| ?reason | Enum | 0x02 | Action reason. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `NetworkApActionResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
-| state | NetworkApState | 0x02 | Current or target AP state. | None | N/A |
-
----
-
-### network.getApState
-
-Return runtime state for the device Wi-Fi AP role.
-
-- Method ID: `0x0E0E`
-- Domain: `network`
-- bitOffset: `14`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.ap`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `NetworkGetApConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
-
-#### Response Fields
-
-Type: `NetworkApState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
-| enabled | Boolean | 0x02 | Whether AP is currently enabled. | None | N/A |
-| state | Enum | 0x03 | AP state; candidate values include disabled, starting, enabled, stopping, failed, and unknown. | None | N/A |
-| ?ssid | String | 0x04 | Active AP SSID. | maxLength=64 | Omit if not used. |
-| ?clientCount | UInt16 | 0x05 | Current associated client count. | None | Omit if not used. |
-| ?failureReason | Enum | 0x06 | Failure reason when state is failed. | None | Omit if not used. |
-
----
-
-### network.getInterfaces
-
-Return visible network interfaces and default interface identifiers.
-
-- Method ID: `0x0E10`
-- Domain: `network`
-- bitOffset: `0`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.interface`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `NetworkGetInterfacesParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?includeDisabled | Boolean | 0x01 | Whether disabled interfaces should be included. | None | Default: false |
-
-#### Response Fields
-
-Type: `NetworkInterfaces`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| interfaces | Array<NetworkInterfaceSummary> | 0x01 | Network interface summary objects. | schema=NetworkInterfaceSummary, array.itemType=NetworkInterfaceSummary, array.itemSchema=NetworkInterfaceSummary | N/A |
-| ?defaults | NetworkDefaultInterfaceIds | 0x02 | Default interface identifiers for common roles. | None | Omit if not used. |
-
----
-
-### network.getInterfaceInfo
-
-Return detailed information for one network interface.
-
-- Method ID: `0x0E11`
-- Domain: `network`
-- bitOffset: `1`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.interface`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `NetworkGetInterfaceInfoParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
-
-#### Response Fields
-
-Type: `NetworkInterfaceInfo`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
-| type | Enum | 0x02 | Interface type. | None | N/A |
-| ?macAddress | String | 0x03 | Interface MAC address, if available and permitted. | maxLength=32 | Omit if not used. |
-| ?state | NetworkInterfaceState | 0x04 | Current interface state. | None | Omit if not used. |
-| ?supportsIpConfig | Boolean | 0x05 | Whether this interface can be used with network.ip. | None | Omit if not used. |
-
----
-
-### network.getWifiCapabilities
-
-Return Wi-Fi station capability, including security types, bands, scanning, and credential import modes.
-
-- Method ID: `0x0E12`
-- Domain: `network`
-- bitOffset: `4`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.wifi`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `NetworkGetWifiCapabilitiesParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
-
-#### Response Fields
-
-Type: `NetworkWifiCapabilities`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| capability | String | 0x01 | Fixed capability name network.wifi. | maxLength=32 | N/A |
-| securityTypes | Array<String> | 0x02 | Supported security type strings. | array.itemType=string | N/A |
-| ?bands | Array<String> | 0x03 | Supported Wi-Fi bands. | array.itemType=string | Omit if not used. |
-| credentialImportModes | Array<String> | 0x04 | Supported credential import modes such as passphrase, pairing_token, and opaque_ref. | array.itemType=string | N/A |
-| savedProfilesSupported | Boolean | 0x05 | Whether saved profiles are supported. | None | N/A |
-| scanSupported | Boolean | 0x06 | Whether Wi-Fi scanning is supported. | None | N/A |
-| ?autoConnectSupported | Boolean | 0x07 | Whether profiles can auto-connect. | None | Omit if not used. |
-
----
-
-### network.getApCapabilities
-
-Return Wi-Fi AP capability, including supported bands, security types, channel ranges, and credential export policy.
-
-- Method ID: `0x0E13`
-- Domain: `network`
-- bitOffset: `11`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.ap`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `NetworkGetApCapabilitiesParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
-
-#### Response Fields
-
-Type: `NetworkApCapabilities`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| capability | String | 0x01 | Fixed capability name network.ap. | maxLength=32 | N/A |
-| securityTypes | Array<String> | 0x02 | Supported security types. | array.itemType=string | N/A |
-| ?bands | Array<String> | 0x03 | Supported bands. | array.itemType=string | Omit if not used. |
-| ?credentialExportModes | Array<String> | 0x04 | Credential export modes. | array.itemType=string | Omit if not used. |
-| ?clientsSupported | Boolean | 0x05 | Whether client list query and client change events are supported. | None | Omit if not used. |
-
----
-
-### network.getApClients
-
-Return clients currently associated with the Wi-Fi AP.
-
-- Method ID: `0x0E14`
-- Domain: `network`
-- bitOffset: `17`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `network.ap`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `NetworkGetApConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
-
-#### Response Fields
-
-Type: `NetworkApClients`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| clients | Array<NetworkApClientInfo> | 0x01 | NetworkApClientInfo objects. | schema=NetworkApClientInfo, array.itemType=NetworkApClientInfo, array.itemSchema=NetworkApClientInfo | N/A |
-
----
-
-## signage Methods
-
-### Methods in this domain
-
-- [signage.getPlaylistCapabilities](#signagegetplaylistcapabilities)
-- [signage.getPlaylistConfig](#signagegetplaylistconfig)
-- [signage.setPlaylistConfig](#signagesetplaylistconfig)
-- [signage.resetPlaylistConfig](#signageresetplaylistconfig)
-- [signage.getPlaylistItemUrl](#signagegetplaylistitemurl)
-
----
-
-### signage.getPlaylistCapabilities
-
-Return the signage.playlist capability scope, including supported playlist item types, quantity limits, and feature toggles.
-
-- Method ID: `0x0D01`
-- Domain: `signage`
-- bitOffset: `0`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `signage.playlist`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR`
-
-#### Request Fields
-
-Type: `Empty`
-
-No fields.
-
-#### Response Fields
-
-Type: `SignagePlaylistCapabilitiesResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| supportedItemTypes | Array<String> | 0x01 | Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash. | array.itemType=string | N/A |
-| ?maxPlaylists | UInt32 | 0x02 | Maximum number of playlists; product-defined. | None | Omit if not used. |
-| ?maxItemsPerPlaylist | UInt32 | 0x03 | Maximum number of playlist items per playlist; product-defined. | None | Omit if not used. |
-| supportsScheduledPlaylist | Boolean | 0x04 | Whether scheduled playlists are supported. | None | N/A |
-| supportsUrlRefresh | Boolean | 0x05 | Whether playlist item URL refresh (getPlaylistItemUrl) is supported. | None | N/A |
-| supportsReset | Boolean | 0x06 | Whether resetting the playlist to default (resetPlaylistConfig) is supported. | None | N/A |
-
----
-
-### signage.getPlaylistConfig
-
-Return the current playlist configuration held by the device as the complete playlists array.
-
-- Method ID: `0x0D02`
-- Domain: `signage`
-- bitOffset: `1`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `signage.playlist`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR`
-
-#### Request Fields
-
-Type: `Empty`
-
-No fields.
-
-#### Response Fields
-
-Type: `SignagePlaylistConfigResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| playlists | Array<SignagePlaylist> | 0x01 | Playlist objects. An empty array means no playlist is configured and is not an error. | schema=SignagePlaylist, array.itemType=SignagePlaylist, array.itemSchema=SignagePlaylist | N/A |
-
----
-
-### signage.setPlaylistConfig
-
-Fully replace the playlist configuration. The server is the single source of truth; a second full sync removes playlist items absent from the new payload.
-
-- Method ID: `0x0D03`
-- Domain: `signage`
-- bitOffset: `2`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `signage.playlist`
-- Possible Events: `signage.playlistConfigChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `PERMISSION_DENIED`
-
-#### Request Fields
-
-Type: `SignageSetPlaylistConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| playlists | Array<SignagePlaylist> | 0x01 | Playlist objects. MUST be non-empty; an empty array returns INVALID_ARGUMENT. | schema=SignagePlaylist, array.itemType=SignagePlaylist, array.itemSchema=SignagePlaylist | N/A |
-
-#### Response Fields
-
-Type: `Empty`
-
-No fields.
-
----
-
-### signage.resetPlaylistConfig
-
-Restore the playlist configuration to the factory default state.
-
-- Method ID: `0x0D04`
-- Domain: `signage`
-- bitOffset: `3`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `signage.playlist`
-- Possible Events: `signage.playlistConfigChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INTERNAL_ERROR`
-
-#### Request Fields
-
-Type: `Empty`
-
-No fields.
-
-#### Response Fields
-
-Type: `SignagePlaylistConfigResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| playlists | Array<SignagePlaylist> | 0x01 | Playlist objects. An empty array means no playlist is configured and is not an error. | schema=SignagePlaylist, array.itemType=SignagePlaylist, array.itemSchema=SignagePlaylist | N/A |
-
----
-
-### signage.getPlaylistItemUrl
-
-Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and return NOT_SUPPORTED.
-
-- Method ID: `0x0D05`
-- Domain: `signage`
-- bitOffset: `4`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `signage.playlist`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `NOT_FOUND`, `INTERNAL_ERROR`
-
-#### Request Fields
-
-Type: `SignageGetPlaylistItemUrlParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| itemId | String | 0x01 | Playlist item unique identifier (UUID). | maxLength=64 | N/A |
-
-#### Response Fields
-
-Type: `SignageGetPlaylistItemUrlResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| type | Enum | 0x01 | Playlist item type used to discriminate the settings structure; candidate values include image, video, website, and unsplash. Clock is excluded from URL refresh. | None | N/A |
-| settings | SignagePlaylistItemSettings | 0x02 | Refreshed complete settings; the device may replace the locally cached settings with this value. | None | N/A |
-
----
-
-## software Methods
-
-### Methods in this domain
-
-- [software.getConfig](#softwaregetconfig)
-- [software.setConfig](#softwaresetconfig)
-- [software.resetConfig](#softwareresetconfig)
-- [software.getUpdatePolicy](#softwaregetupdatepolicy)
-- [software.setUpdatePolicy](#softwaresetupdatepolicy)
-- [software.resetUpdatePolicy](#softwareresetupdatepolicy)
-
----
-
-### software.getConfig
-
-Read the current runtime configuration of a software object identified by target.
-
-- Method ID: `0x1701`
-- Domain: `software`
-- bitOffset: `0`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `software.config`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`
-
-#### Request Fields
-
-Type: `SoftwareGetConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object to read. Currently defined value is launcher; other values such as signagePlayer and agent are reserved for future adoption and their config fields are not defined in this version. | maxLength=64 | N/A |
-
-#### Response Fields
-
-Type: `SoftwareConfig`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object this configuration belongs to. Currently defined value is launcher. | maxLength=64 | N/A |
-| config | LauncherConfig | 0x02 | Target-specific configuration fragment. For the launcher target this is the LauncherConfig structure (displayName plus appearance); see the LauncherConfig and LauncherAppearance schemas. | None | N/A |
-
----
-
-### software.setConfig
-
-Set a configuration fragment of a software object using partial update semantics; fields absent from the payload are left unchanged.
-
-- Method ID: `0x1702`
-- Domain: `software`
-- bitOffset: `1`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `software.config`
-- Possible Events: `software.configChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `INVALID_STATE`
-
-#### Request Fields
-
-Type: `SoftwareSetConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object to configure. | maxLength=64 | N/A |
-| config | LauncherConfig | 0x02 | Target-specific configuration fragment to apply (partial update). For the launcher target this is the LauncherConfig structure; see SoftwareConfig.config and LauncherAppearance. | None | N/A |
-
-#### Response Fields
-
-Type: `Empty`
-
-No fields.
-
----
-
-### software.resetConfig
-
-Restore the runtime configuration of a software object to the current-version defaults for the given target. Only resets the specified software object; system-level factory reset is handled by system.restoreFactorySettings and does not trigger a device reboot.
-
-- Method ID: `0x1703`
-- Domain: `software`
-- bitOffset: `2`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `software.config`
-- Possible Events: `software.configChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INVALID_STATE`
-
-#### Request Fields
-
-Type: `SoftwareResetConfigParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object to reset. | maxLength=64 | N/A |
-
-#### Response Fields
-
-Type: `SoftwareConfig`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object this configuration belongs to. Currently defined value is launcher. | maxLength=64 | N/A |
-| config | LauncherConfig | 0x02 | Target-specific configuration fragment. For the launcher target this is the LauncherConfig structure (displayName plus appearance); see the LauncherConfig and LauncherAppearance schemas. | None | N/A |
-
----
-
-### software.getUpdatePolicy
-
-Read the current automatic update policy of a software object identified by target.
-
-- Method ID: `0x1704`
-- Domain: `software`
-- bitOffset: `3`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `software.updatePolicy`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`
-
-#### Request Fields
-
-Type: `SoftwareGetUpdatePolicyParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object to read the update policy of. Currently defined value is launcher; other values such as signagePlayer and agent are reserved for future adoption and their policy fields are not defined in this version. | maxLength=64 | N/A |
-
-#### Response Fields
-
-Type: `SoftwareUpdatePolicy`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object this update policy belongs to. | maxLength=64 | N/A |
-| policy | LauncherUpdatePolicy | 0x02 | Target-specific update policy fragment. For the launcher target this is the LauncherUpdatePolicy structure (updateMode plus schedule, channel, conditions); see the LauncherUpdatePolicy, UpdateSchedule, and UpdateConditions schemas. | None | N/A |
-
----
-
-### software.setUpdatePolicy
-
-Set an update policy fragment of a software object using partial update semantics; fields absent from the payload are left unchanged.
-
-- Method ID: `0x1705`
-- Domain: `software`
-- bitOffset: `4`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `software.updatePolicy`
-- Possible Events: `software.updatePolicyChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `INVALID_STATE`
-
-#### Request Fields
-
-Type: `SoftwareSetUpdatePolicyParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object to configure the update policy of. | maxLength=64 | N/A |
-| policy | LauncherUpdatePolicy | 0x02 | Target-specific update policy fragment to apply (partial update). For the launcher target this is the LauncherUpdatePolicy structure; see SoftwareUpdatePolicy.policy. Within the fragment, schedule null or conditions null explicitly clears those sub-objects while omitted keeps them unchanged. | None | N/A |
-
-#### Response Fields
-
-Type: `Empty`
-
-No fields.
-
----
-
-### software.resetUpdatePolicy
-
-Restore the update policy of a software object to the current-version defaults for the given target. Only resets the update policy; it does not trigger a software or device reboot. System-level factory reset is handled by system.restoreFactorySettings.
-
-- Method ID: `0x1706`
-- Domain: `software`
-- bitOffset: `5`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `software.updatePolicy`
-- Possible Events: `software.updatePolicyChanged`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INVALID_STATE`
-
-#### Request Fields
-
-Type: `SoftwareResetUpdatePolicyParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object to reset the update policy of. | maxLength=64 | N/A |
-
-#### Response Fields
-
-Type: `SoftwareUpdatePolicy`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object this update policy belongs to. | maxLength=64 | N/A |
-| policy | LauncherUpdatePolicy | 0x02 | Target-specific update policy fragment. For the launcher target this is the LauncherUpdatePolicy structure (updateMode plus schedule, channel, conditions); see the LauncherUpdatePolicy, UpdateSchedule, and UpdateConditions schemas. | None | N/A |
-
----
-
-## stream Methods
-
-### Methods in this domain
-
-- [stream.getCapabilities](#streamgetcapabilities)
-- [stream.getState](#streamgetstate)
-- [stream.getStats](#streamgetstats)
-- [stream.ack](#streamack)
-- [stream.windowUpdate](#streamwindowupdate)
-- [stream.pause](#streampause)
-- [stream.resume](#streamresume)
-- [stream.abort](#streamabort)
-
----
-
-### stream.getCapabilities
-
-Return common STREAM runtime flow-control, statistics, and clock-report capabilities.
-
-- Method ID: `0x0501`
-- Domain: `stream`
-- bitOffset: `0`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `stream.flowControl`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `Empty`
-
-No fields.
-
-#### Response Fields
-
-Type: `StreamFlowControlCapabilities`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| capability | String | 0x01 | Fixed capability name stream.flowControl. | maxLength=32 | N/A |
-| supportsAck | Boolean | 0x02 | Whether stream.ack is supported. | None | N/A |
-| supportsWindowUpdate | Boolean | 0x03 | Whether stream.windowUpdate is supported. | None | N/A |
-| supportsPauseResume | Boolean | 0x04 | Whether stream.pause and stream.resume are supported. | None | N/A |
-| supportsAbort | Boolean | 0x05 | Whether stream.abort is supported. | None | N/A |
-| supportsStats | Boolean | 0x06 | Whether stream.getState, stream.getStats, and stats events are supported. | None | N/A |
-| supportsClockReport | Boolean | 0x07 | Whether stream.clockReport timing samples are supported. | None | N/A |
-| ?defaultWindowBytes | UInt32 | 0x08 | Default receive window in bytes, if advertised. | None | Omit if not used. |
-| ?clockReportIntervalMs | UInt32 | 0x09 | Suggested clock-report interval in milliseconds. | None | Omit if not used. |
-
----
-
-### stream.getState
-
-Return runtime state for one STREAM context, or aggregate runtime state when streamId is omitted.
-
-- Method ID: `0x0502`
-- Domain: `stream`
-- bitOffset: `1`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `stream.flowControl`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `StreamSelector`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `StreamState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?streamId | UInt32 | 0x01 | STREAM data-plane stream identifier, omitted for aggregate state. | None | Omit if not used. |
-| state | Enum | 0x02 | Common STREAM runtime state. | enum=opening/streaming/paused/draining/closing/closed/aborted/failed/aggregate | N/A |
-| ?paused | Boolean | 0x03 | Whether data-plane sending is currently paused. | None | Omit if not used. |
-| ?windowBytes | UInt32 | 0x04 | Current advertised receive window or sender credit in bytes. | None | Omit if not used. |
-| ?ackedSeqId | UInt32 | 0x05 | Highest contiguous STREAM seqId acknowledged by the receiver. | None | Omit if not used. |
-| ?lastSeqId | UInt32 | 0x06 | Last observed or sent STREAM seqId. | None | Omit if not used. |
-| ?lastCursor | UInt64 | 0x07 | Last observed STREAM cursor value. | None | Omit if not used. |
-| ?reason | Enum | 0x08 | Reason associated with the current state or last state change. | enum=ack/windowUpdate/pause/resume/abort/timeout/peerClosed/transportLost/diagnosticSample/unknown | Omit if not used. |
-
----
-
-### stream.getStats
-
-Return bounded transport-level statistics for one STREAM context, or aggregate statistics when streamId is omitted.
-
-- Method ID: `0x0503`
-- Domain: `stream`
-- bitOffset: `2`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `stream.flowControl`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `StreamSelector`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `StreamStats`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?streamId | UInt32 | 0x01 | STREAM data-plane stream identifier, omitted for aggregate stats. | None | Omit if not used. |
-| ?packets | UInt64 | 0x02 | Number of STREAM packets observed. | None | Omit if not used. |
-| ?bytes | UInt64 | 0x03 | Number of STREAM payload bytes observed. | None | Omit if not used. |
-| ?droppedPackets | UInt64 | 0x04 | Number of dropped STREAM packets. | None | Omit if not used. |
-| ?seqGaps | UInt64 | 0x05 | Number of detected seqId gaps. | None | Omit if not used. |
-| ?jitterMs | UInt32 | 0x06 | Estimated transport jitter in milliseconds. | None | Omit if not used. |
-| ?lastSeqId | UInt32 | 0x07 | Last observed STREAM seqId. | None | Omit if not used. |
-| ?lastCursor | UInt64 | 0x08 | Last observed STREAM cursor value. | None | Omit if not used. |
-| ?latestClockReportAgeMs | UInt32 | 0x09 | Age of the latest clock report sample known to the receiver. | None | Omit if not used. |
-
----
-
-### stream.ack
-
-Acknowledge received STREAM packet ranges so the sender can release flow-control window.
-
-- Method ID: `0x0504`
-- Domain: `stream`
-- bitOffset: `3`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `stream.flowControl`
-- Possible Events: `stream.flowControlChanged`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `STREAM_CLOSED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`
-
-#### Request Fields
-
-Type: `StreamAckParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
-| ackedSeqId | UInt32 | 0x02 | Highest contiguous STREAM seqId received. | None | N/A |
-| ?ackedCursor | UInt64 | 0x03 | Optional cursor value associated with ackedSeqId. | None | Omit if not used. |
-| ?missingSeqIds | Array<UInt32> | 0x04 | Optional sparse list of missing seqId values for diagnostics. | array.itemType=uint32 | Omit if not used. |
-
-#### Response Fields
-
-Type: `StreamAckResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the ACK update was accepted. | None | N/A |
-| ?state | StreamState | 0x02 | Updated STREAM runtime state, when returned. | None | Omit if not used. |
-
----
-
-### stream.windowUpdate
-
-Update receive window or sender credit for an existing STREAM context.
-
-- Method ID: `0x0505`
-- Domain: `stream`
-- bitOffset: `4`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `stream.flowControl`
-- Possible Events: `stream.flowControlChanged`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `STREAM_CLOSED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`
-
-#### Request Fields
-
-Type: `StreamWindowUpdateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
-| windowBytes | UInt32 | 0x02 | Advertised receive window or sender credit in bytes. | None | N/A |
-| ?reason | Enum | 0x03 | Reason for the window update. | enum=bufferAvailable/bufferPressure/manualFlowControl/diagnosticSample/unknown | Omit if not used. |
-
-#### Response Fields
-
-Type: `StreamWindowUpdateResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the window update was accepted. | None | N/A |
-| ?state | StreamState | 0x02 | Updated STREAM runtime state, when returned. | None | Omit if not used. |
-
----
-
-### stream.pause
-
-Pause data-plane sending for an existing STREAM context without closing the owning media or transfer profile.
-
-- Method ID: `0x0506`
-- Domain: `stream`
-- bitOffset: `5`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `stream.flowControl`
-- Possible Events: `stream.flowControlChanged`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `STREAM_CLOSED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`
-
-#### Request Fields
-
-Type: `StreamPauseParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
-| ?reason | Enum | 0x02 | Pause reason. | enum=bufferPressure/userRequest/diagnostic/unknown | Omit if not used. |
-
-#### Response Fields
-
-Type: `StreamActionResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
-| ?state | StreamState | 0x02 | Updated STREAM runtime state, when returned. | None | Omit if not used. |
-
----
-
-### stream.resume
-
-Resume data-plane sending for a paused STREAM context.
-
-- Method ID: `0x0507`
-- Domain: `stream`
-- bitOffset: `6`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `stream.flowControl`
-- Possible Events: `stream.flowControlChanged`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `STREAM_CLOSED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`
-
-#### Request Fields
-
-Type: `StreamResumeParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
-| ?reason | Enum | 0x02 | Resume reason. | enum=bufferAvailable/userRequest/diagnostic/unknown | Omit if not used. |
-
-#### Response Fields
-
-Type: `StreamActionResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
-| ?state | StreamState | 0x02 | Updated STREAM runtime state, when returned. | None | Omit if not used. |
-
----
-
-### stream.abort
-
-Abort an existing STREAM runtime context on an exceptional path; normal business close remains profile-specific.
-
-- Method ID: `0x0508`
-- Domain: `stream`
-- bitOffset: `7`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `stream.flowControl`
-- Possible Events: `stream.stateChanged`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `STREAM_CLOSED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`
-
-#### Request Fields
-
-Type: `StreamAbortParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
-| ?reason | Enum | 0x02 | Abort reason. | enum=timeout/peerClosed/transportLost/userRequest/profileFailure/unknown | Omit if not used. |
-| ?message | String | 0x03 | Optional diagnostic message. | maxLength=256 | Omit if not used. |
-
-#### Response Fields
-
-Type: `StreamActionResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
-| ?state | StreamState | 0x02 | Updated STREAM runtime state, when returned. | None | Omit if not used. |
-
----
-
-## video Methods
-
-### Methods in this domain
-
-- [video.openStream](#videoopenstream)
-- [video.closeStream](#videoclosestream)
-- [video.getStreamState](#videogetstreamstate)
-- [video.getStreamCapabilities](#videogetstreamcapabilities)
-- [video.getStreamSourceState](#videogetstreamsourcestate)
-- [video.requestKeyFrame](#videorequestkeyframe)
-
----
-
-### video.openStream
-
-Open a real-time video STREAM and return the negotiated streamId and media metadata; an active stream must be closed before opening a replacement, while a source without an active stream may be opened directly.
-
-- Method ID: `0x080B`
-- Domain: `video`
-- bitOffset: `1`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `video.stream`
-- Possible Events: `video.streamStateChanged`, `video.streamSourceStateChanged`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `BUSY`, `RESOURCE_EXHAUSTED`, `MEDIA_SOURCE_NOT_FOUND`, `MEDIA_SOURCE_UNAVAILABLE`, `MEDIA_CODEC_UNSUPPORTED`, `MEDIA_RESOLUTION_UNSUPPORTED`, `MEDIA_FRAMERATE_UNSUPPORTED`, `MEDIA_BITRATE_UNSUPPORTED`, `MEDIA_STREAM_START_FAILED`
-
-#### Request Fields
-
-Type: `VideoOpenStreamParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
-| peerRole | Enum | 0x02 | Requested peer media role; values include receiver and transmitter. | None | N/A |
-| codec | Enum | 0x03 | Requested video codec, such as h264, h265, mjpeg, or raw. | None | N/A |
-| ?width | UInt32 | 0x04 | Requested frame width in pixels. | None | Omit if not used. |
-| ?height | UInt32 | 0x05 | Requested frame height in pixels. | None | Omit if not used. |
-| ?frameRate | UInt32 | 0x06 | Requested frame rate for the selected video encoder target; zero is invalid and omission uses the source/session default. | min=1 | Omit if not used. |
-| ?bitrateKbps | UInt32 | 0x07 | Requested bitrate in kbps for the selected video encoder target; zero is invalid and omission uses the source/session default. | min=1 | Omit if not used. |
-| ?streamProfile | String | 0x08 | STREAM profile name. | maxLength=64 | Default: "media.video" |
-| ?cursorUnit | Enum | 0x09 | STREAM cursor unit, such as timestampUs or frameIndex. | None | Omit if not used. |
-| ?syncGroupId | String | 0x0A | Optional synchronization group identifier. | maxLength=128 | Omit if not used. |
-| ?castSessionId | String | 0x0B | Optional cast session identifier. | maxLength=128 | Omit if not used. |
-| ?clockDomain | String | 0x0C | Source media clock domain. | maxLength=128 | Omit if not used. |
-| ?maxDataSize | UInt32 | 0x0D | Preferred maximum STREAM payload data size. | None | Omit if not used. |
-| ?videoPtsMode | Enum | 0x0E | Video PTS mode; NA20/NT10 MVP uses sameAsCursor. | None | Default: "sameAsCursor" |
-| ?timebase | UInt32 | 0x0F | Video PTS timebase in ticks per second. | None | Default: 1000000 |
-| ?packetizationMode | Enum | 0x10 | Video packetization mode; NA20/NT10 MVP uses completeFrame. | None | Default: "completeFrame" |
-
-#### Response Fields
-
-Type: `VideoOpenStreamResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-| state | Enum | 0x02 | Initial state, normally opening or streaming. | None | N/A |
-| source | String | 0x03 | Bound source identifier. | maxLength=128 | N/A |
-| peerRole | Enum | 0x04 | Confirmed peer media role. | None | N/A |
-| codec | Enum | 0x05 | Negotiated codec. | None | N/A |
-| ?width | UInt32 | 0x06 | Negotiated frame width. | None | Omit if not used. |
-| ?height | UInt32 | 0x07 | Negotiated frame height. | None | Omit if not used. |
-| ?frameRate | UInt32 | 0x08 | Negotiated frame rate; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
-| ?bitrateKbps | UInt32 | 0x09 | Negotiated bitrate in kbps; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
-| streamProfile | String | 0x0A | Normalized stream profile. | maxLength=64 | N/A |
-| cursorUnit | Enum | 0x0B | STREAM cursor unit. | None | N/A |
-| ?syncGroupId | String | 0x0C | Synchronization group identifier. | maxLength=128 | Omit if not used. |
-| ?maxDataSize | UInt32 | 0x0D | Negotiated maximum STREAM payload data size. | None | Omit if not used. |
-| ?videoPtsMode | Enum | 0x0E | Negotiated video PTS mode. | None | Omit if not used. |
-| ?timebase | UInt32 | 0x0F | Negotiated video PTS timebase in ticks per second. | None | Omit if not used. |
-| ?packetizationMode | Enum | 0x10 | Negotiated video packetization mode. | None | Omit if not used. |
-
----
-
-### video.closeStream
-
-Close a previously opened video STREAM.
-
-- Method ID: `0x080C`
-- Domain: `video`
-- bitOffset: `2`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `video.stream`
-- Possible Events: `video.streamStateChanged`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `STREAM_CLOSED`, `INVALID_STATE`, `MEDIA_STREAM_STOP_FAILED`
-
-#### Request Fields
-
-Type: `VideoCloseStreamParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-| ?peerRole | Enum | 0x02 | Peer role in this stream. | None | Omit if not used. |
-| ?reason | Enum | 0x03 | Close reason. | enum=receiver_closed/user_stop/not_needed/source_disconnected/producer_stopped/session_lost/receiver_timeout/encodingReconfigure/error | Omit if not used. |
-| ?finalCursor | UInt64 | 0x04 | Last processed cursor value. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `VideoCloseStreamResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | Closed stream identifier. | None | N/A |
-| state | Enum | 0x02 | Close state, such as closing, closed, or failed. | None | N/A |
-| ?reason | Enum | 0x03 | Final close reason. | enum=receiver_closed/user_stop/not_needed/source_disconnected/producer_stopped/session_lost/receiver_timeout/encodingReconfigure/error | Omit if not used. |
-| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already terminal before this request. | None | Default: false |
-
----
-
-### video.getStreamState
-
-Return runtime state for an opened video stream.
-
-- Method ID: `0x080D`
-- Domain: `video`
-- bitOffset: `3`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `video.stream`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `VideoGetStreamStateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-
-#### Response Fields
-
-Type: `VideoStreamState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-| state | Enum | 0x02 | Stream state, such as opening, streaming, closing, closed, or failed. | None | N/A |
-| source | String | 0x03 | Bound video source. | maxLength=128 | N/A |
-| ?peerRole | Enum | 0x04 | Peer media role. | None | Omit if not used. |
-| ?codec | Enum | 0x05 | Negotiated video codec. | None | Omit if not used. |
-| ?streamProfile | String | 0x06 | Stream profile. | maxLength=64 | Omit if not used. |
-| ?syncGroupId | String | 0x07 | Synchronization group identifier. | maxLength=128 | Omit if not used. |
-| ?cursorUnit | Enum | 0x08 | STREAM cursor unit. | None | Omit if not used. |
-| ?lastCursor | UInt64 | 0x09 | Last known cursor value. | None | Omit if not used. |
-| ?keyFrameRequested | Boolean | 0x0A | Whether a key frame has been requested and is pending. | None | Omit if not used. |
-| ?failureReason | Enum | 0x0B | Failure reason when state is failed. | None | Omit if not used. |
-| ?frameRate | UInt32 | 0x0C | Effective negotiated video frame rate; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
-| ?bitrateKbps | UInt32 | 0x0D | Effective negotiated video bitrate in kbps; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
-
----
-
-### video.getStreamCapabilities
-
-Return video stream sources, codecs, profiles, and open-mode support.
-
-- Method ID: `0x0812`
-- Domain: `video`
-- bitOffset: `0`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `video.stream`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `VideoGetStreamCapabilitiesParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?source | String | 0x01 | Optional video source identifier; omit to query all visible sources. | maxLength=128 | Omit if not used. |
-| ?includeRuntimeState | Boolean | 0x02 | Whether to include current source runtime state. | None | Default: false |
-
-#### Response Fields
-
-Type: `VideoStreamCapabilities`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| capability | String | 0x01 | Fixed capability name video.stream. | maxLength=32 | N/A |
-| sources | Array<VideoStreamSource> | 0x02 | Video stream source objects. | schema=VideoStreamSource, array.itemType=VideoStreamSource, array.itemSchema=VideoStreamSource | N/A |
-| streamProfiles | Array<String> | 0x03 | Supported stream profiles, normally media.video. | array.itemType=string | N/A |
-| openModes | Array<String> | 0x04 | Supported open modes, such as producer_open and receiver_pull. | array.itemType=string | N/A |
-| peerRoles | Array<String> | 0x05 | Peer roles, such as receiver and transmitter. | array.itemType=string | N/A |
-| supportsSourceStateEvent | Boolean | 0x06 | Whether video.streamSourceStateChanged is supported. | None | N/A |
-| supportsSyncGroup | Boolean | 0x07 | Whether video streams can share a synchronization group with audio streams. | None | N/A |
-| flowControlManagedByRuntime | Boolean | 0x08 | Whether normal applications can rely on runtime-managed STREAM flow control. | None | N/A |
-| ?supportedVideoPtsModes | Array<String> | 0x09 | Optional video PTS modes such as sameAsCursor and explicit. | array.itemType=string | Omit if not used. |
-| ?supportedPacketizationModes | Array<String> | 0x0A | Optional video packetization modes such as completeFrame. | array.itemType=string | Omit if not used. |
-| ?supportsSourceCaptureTimestampCursor | Boolean | 0x0B | Whether STREAM cursorUnit sourceCaptureTimestampUs is supported. | None | Omit if not used. |
-
----
-
-### video.getStreamSourceState
-
-Return availability and receiving state for a video stream source.
-
-- Method ID: `0x0813`
-- Domain: `video`
-- bitOffset: `4`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `video.stream`
-- Possible Events: `None`
-- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `MEDIA_SOURCE_NOT_FOUND`, `UNAVAILABLE`
-
-#### Request Fields
-
-Type: `VideoGetStreamSourceStateParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
-
-#### Response Fields
-
-Type: `VideoStreamSourceState`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
-| ?mediaKind | Enum | 0x02 | Media kind, normally video. | None | Omit if not used. |
-| state | Enum | 0x03 | Source state, such as unavailable, available, receiving, stopped, or failed. | None | N/A |
-| ?available | Boolean | 0x04 | Whether the source is available for openStream. | None | Omit if not used. |
-| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
-
----
-
-### video.requestKeyFrame
-
-Request an encoder key frame for an active video stream.
-
-- Method ID: `0x0814`
-- Domain: `video`
-- bitOffset: `5`
-- Status: `draft`
-- Added in v1.0.0
-- Encodings: `json`, `tlv`
-- Required Capabilities: `video.stream`
-- Possible Events: `video.streamStateChanged`
-- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `INVALID_STATE`, `MEDIA_STREAM_START_FAILED`, `PERMISSION_DENIED`
-
-#### Request Fields
-
-Type: `VideoRequestKeyFrameParams`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-| ?reason | Enum | 0x02 | Request reason. | None | Omit if not used. |
-
-#### Response Fields
-
-Type: `VideoRequestKeyFrameResult`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| accepted | Boolean | 0x01 | Whether the request was accepted. | None | N/A |
-| ?state | VideoStreamState | 0x02 | Current or updated stream state. | None | Omit if not used. |
-
----
-
 # Events
 
 ## audio Events
@@ -3447,9 +337,6 @@ Type: `VideoRequestKeyFrameResult`
 ### Events in this domain
 
 - [audio.algorithmConfigChanged](#audioalgorithmconfigchanged)
-- [audio.streamStateChanged](#audiostreamstatechanged)
-- [audio.streamSourceStateChanged](#audiostreamsourcestatechanged)
-- [audio.streamStatsReported](#audiostreamstatsreported)
 
 ---
 
@@ -3477,1058 +364,6 @@ Type: `AudioAlgorithmConfigChangedEvent`
 | requiresAudioRestart | Boolean | 0x03 | Whether the change requires restarting the audio link or rebuilding the audio pipeline. | None | N/A |
 | config | AudioAlgorithmConfig | 0x04 | Changed or affected algorithm configuration values. | None | N/A |
 | ?changedFields | Array<String> | 0x05 | Optional changed field paths such as noiseSuppression.level. | array.itemType=string | Omit if not used. |
-
----
-
-### audio.streamStateChanged
-
-Emitted when an audio stream enters opening, streaming, closed, or failed state.
-
-- Event ID: `0x0902`
-- Domain: `audio`
-- bitOffset: `1`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `audio.openStream`, `audio.closeStream`, `source disconnected`, `stream failure`
-- Required Capabilities: `audio.stream`
-
-#### Payload Fields
-
-Type: `AudioStreamStateChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-| state | Enum | 0x02 | New stream state. | None | N/A |
-| source | String | 0x03 | Bound audio source. | maxLength=128 | N/A |
-| ?reason | Enum | 0x04 | State change reason. | None | Omit if not used. |
-| ?stats | AudioStreamStats | 0x05 | Optional bounded stream statistics. | None | Omit if not used. |
-
----
-
-### audio.streamSourceStateChanged
-
-Emitted when an audio stream source availability or receiving state changes.
-
-- Event ID: `0x0903`
-- Domain: `audio`
-- bitOffset: `2`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `upstream source available`, `upstream source receiving`, `upstream source stopped`
-- Required Capabilities: `audio.stream`
-
-#### Payload Fields
-
-Type: `AudioStreamSourceStateChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
-| ?mediaKind | Enum | 0x02 | Media kind, normally audio. | None | Omit if not used. |
-| state | Enum | 0x03 | New source state. | None | N/A |
-| ?reason | Enum | 0x04 | Source state change reason. | None | Omit if not used. |
-| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
-
----
-
-### audio.streamStatsReported
-
-Emitted with bounded runtime statistics for an audio stream.
-
-- Event ID: `0x0904`
-- Domain: `audio`
-- bitOffset: `3`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `stream statistics interval`, `diagnostic sampling`
-- Required Capabilities: `audio.stream`
-
-#### Payload Fields
-
-Type: `AudioStreamStatsReportedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-| stats | AudioStreamStats | 0x02 | Bounded stream statistics. | None | N/A |
-
----
-
-## cast Events
-
-### Events in this domain
-
-- [cast.sessionIncoming](#castsessionincoming)
-- [cast.sessionStateChanged](#castsessionstatechanged)
-- [cast.sessionStarted](#castsessionstarted)
-- [cast.sessionStopped](#castsessionstopped)
-- [cast.sessionFailed](#castsessionfailed)
-- [cast.audioChanged](#castaudiochanged)
-- [cast.pinCodeChanged](#castpincodechanged)
-- [cast.pinCodeRequired](#castpincoderequired)
-- [cast.pinCodeAuthFailed](#castpincodeauthfailed)
-- [cast.windowChanged](#castwindowchanged)
-- [cast.backendChanged](#castbackendchanged)
-- [cast.flowControlChanged](#castflowcontrolchanged)
-
----
-
-### cast.sessionIncoming
-
-Emitted when a cast source initiates a receiver session.
-
-- Event ID: `0x1601`
-- Domain: `cast`
-- bitOffset: `0`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `source connected`, `backend incoming session`
-- Required Capabilities: `cast.session`
-
-#### Payload Fields
-
-Type: `CastSessionIncomingEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?sessionId | String | 0x01 | Receiver-local session id assigned to the incoming session. | maxLength=128 | Omit if not used. |
-| receiverPhase | Enum | 0x02 | Receiver phase entered for the incoming session. | enum=incoming/authenticating | N/A |
-| ?protocol | Enum | 0x03 | Protocol path used by the incoming session. | enum=airplay/hid/unknown | Omit if not used. |
-| ?source | CastSourceSummary | 0x04 | Source summary when available. | None | Omit if not used. |
-| ?authRequired | Boolean | 0x05 | Whether this incoming session requires authentication. | None | Omit if not used. |
-| ?incomingAt | String | 0x06 | Timestamp when the incoming session was observed. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.sessionStateChanged
-
-Emitted when receiver phase, protocol state, or low-frequency session media state changes.
-
-- Event ID: `0x1602`
-- Domain: `cast`
-- bitOffset: `1`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `incoming session`, `authentication`, `stream starting`, `media flow started`, `interruption`, `stopping`
-- Required Capabilities: `cast.session`
-
-#### Payload Fields
-
-Type: `CastSessionStateChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?sessionId | String | 0x01 | Receiver-local session id. | maxLength=128 | Omit if not used. |
-| ?previousReceiverPhase | Enum | 0x02 | Previous receiver phase. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Omit if not used. |
-| receiverPhase | Enum | 0x03 | New receiver phase. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | N/A |
-| ?previousState | Enum | 0x04 | Previous backend-specific session state. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
-| ?sessionState | Enum | 0x05 | New backend-specific session state. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
-| ?protocol | Enum | 0x06 | Protocol path represented by this event. | enum=airplay/hid/unknown | Omit if not used. |
-| ?authRequired | Boolean | 0x07 | Whether the current session phase requires authentication. | None | Omit if not used. |
-| ?media | CastMediaSummary | 0x08 | Low-frequency media summary at the time of transition. | None | Omit if not used. |
-| ?reason | Enum | 0x09 | Transition reason. | enum=sessionStarted/mediaFlowStarted/externalRequest/sourceClosed/backendRestart/backendExited/authFailed/error/unknown | Omit if not used. |
-| ?updatedAt | String | 0x0A | Timestamp for the transition. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.sessionStarted
-
-Emitted when a cast session becomes user-visible after first frame or local playback starts.
-
-- Event ID: `0x1603`
-- Domain: `cast`
-- bitOffset: `2`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `first frame rendered`, `local playback started`
-- Required Capabilities: `cast.session`
-
-#### Payload Fields
-
-Type: `CastSessionStartedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| sessionId | String | 0x01 | Receiver-local started session id. | maxLength=128 | N/A |
-| receiverPhase | Enum | 0x02 | Receiver phase after first visible frame or local playback starts. | enum=rendering | N/A |
-| ?sessionState | Enum | 0x03 | Backend-specific state after session start. | enum=casting | Omit if not used. |
-| ?protocol | Enum | 0x04 | Protocol path represented by the started session. | enum=airplay/hid/unknown | Omit if not used. |
-| ?source | CastSourceSummary | 0x05 | Source summary when available. | None | Omit if not used. |
-| ?media | CastMediaSummary | 0x06 | Media summary at session start. | None | Omit if not used. |
-| ?startedAt | String | 0x07 | Timestamp when the session became user-visible. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.sessionStopped
-
-Emitted when a cast session ends normally or is forced to stop.
-
-- Event ID: `0x1604`
-- Domain: `cast`
-- bitOffset: `3`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `cast.stopSession`, `source closed`, `backend restart`, `backend exited`
-- Required Capabilities: `cast.session`
-
-#### Payload Fields
-
-Type: `CastSessionStoppedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?sessionId | String | 0x01 | Receiver-local stopped session id. | maxLength=128 | Omit if not used. |
-| ?previousReceiverPhase | Enum | 0x02 | Receiver phase before stop completion. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Omit if not used. |
-| receiverPhase | Enum | 0x03 | Receiver phase after stop completion. | enum=ended/failed/idle | N/A |
-| ?previousState | Enum | 0x04 | Backend-specific state before stop completion. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
-| ?sessionState | Enum | 0x05 | Backend-specific state after stop completion. | enum=ended/failed/idle | Omit if not used. |
-| ?reason | Enum | 0x06 | Stop reason. | enum=externalRequest/sourceClosed/backendRestart/backendExited/shutdown/error/unknown | Omit if not used. |
-| ?backendType | Enum | 0x07 | Backend type associated with the stopped session. | enum=uxplay/unknown | Omit if not used. |
-| ?stoppedAt | String | 0x08 | Timestamp when the stop was observed. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.sessionFailed
-
-Emitted when cast connection, authentication, negotiation, or backend handling fails.
-
-- Event ID: `0x1605`
-- Domain: `cast`
-- bitOffset: `4`
-- Status: `draft`
-- Severity: `error`
-- Added in v1.0.0
-- Trigger: `connection failed`, `authentication failed`, `media negotiation failed`, `backend failed`
-- Required Capabilities: `cast.session`
-
-#### Payload Fields
-
-Type: `CastSessionFailedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?sessionId | String | 0x01 | Receiver-local failed session id when assigned. | maxLength=128 | Omit if not used. |
-| receiverPhase | Enum | 0x02 | Receiver phase after failure. | enum=failed | N/A |
-| ?sessionState | Enum | 0x03 | Backend-specific failed state. | enum=failed | Omit if not used. |
-| ?protocol | Enum | 0x04 | Protocol path represented by the failed session. | enum=airplay/hid/unknown | Omit if not used. |
-| ?source | CastSourceSummary | 0x05 | Source summary when available. | None | Omit if not used. |
-| ?reason | Enum | 0x06 | Failure reason. | enum=connectionFailed/authFailed/negotiationFailed/backendFailed/mediaFailed/unknown | Omit if not used. |
-| ?error | CastLastError | 0x07 | Redactable error summary. | None | Omit if not used. |
-| ?failedAt | String | 0x08 | Timestamp when the failure was observed. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.audioChanged
-
-Emitted when local cast audio playback, mute, or delay compensation state changes.
-
-- Event ID: `0x1606`
-- Domain: `cast`
-- bitOffset: `5`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `cast.setAudio`, `cast.setMuted`, `cast.setAudioDelay`, `local UI`, `session started`, `session stopped`
-- Required Capabilities: `cast.audio`
-
-#### Payload Fields
-
-Type: `CastAudioChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
-| state | CastAudioState | 0x02 | State after the change. | None | N/A |
-| ?reason | Enum | 0x03 | Change reason. | enum=externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
-| ?updatedAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.pinCodeChanged
-
-Emitted when cast PIN protection configuration or current PIN state changes.
-
-- Event ID: `0x1607`
-- Domain: `cast`
-- bitOffset: `6`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `cast.setPinCodeConfig`, `cast.setPinCode`, `generated PIN changed`
-- Required Capabilities: `cast.pinCode`
-
-#### Payload Fields
-
-Type: `CastPinCodeChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
-| config | CastPinCodeConfig | 0x02 | PIN state after the change. | None | N/A |
-| ?reason | Enum | 0x03 | Change reason. | enum=externalSet/localUi/generated/backendChanged/unknown | Omit if not used. |
-| ?updatedAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.pinCodeRequired
-
-Emitted when a cast source is waiting for PIN authentication.
-
-- Event ID: `0x1608`
-- Domain: `cast`
-- bitOffset: `7`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `incoming session requires PIN`
-- Required Capabilities: `cast.pinCode`
-
-#### Payload Fields
-
-Type: `CastPinCodeRequiredEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?sessionId | String | 0x01 | Receiver-local session id. | maxLength=128 | Omit if not used. |
-| ?source | CastSourceSummary | 0x02 | Source waiting for authentication. | None | Omit if not used. |
-| ?pinCode | String | 0x03 | Plaintext PIN value when visible to the event subscriber. | None | Omit if not used. |
-| ?visibility | Enum | 0x04 | Visibility policy for this event payload. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
-| ?redactionRequired | Boolean | 0x05 | Whether logs and diagnostics must redact this PIN value. | None | Default: true |
-| ?requestedAt | String | 0x06 | Timestamp when PIN input was requested. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.pinCodeAuthFailed
-
-Emitted when PIN authentication fails, times out, or is cancelled.
-
-- Event ID: `0x1609`
-- Domain: `cast`
-- bitOffset: `8`
-- Status: `draft`
-- Severity: `warning`
-- Added in v1.0.0
-- Trigger: `wrong PIN`, `authentication timeout`, `authentication cancelled`, `too many attempts`
-- Required Capabilities: `cast.pinCode`
-
-#### Payload Fields
-
-Type: `CastPinCodeAuthFailedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?sessionId | String | 0x01 | Receiver-local session id. | maxLength=128 | Omit if not used. |
-| ?source | CastSourceSummary | 0x02 | Source that failed authentication. | None | Omit if not used. |
-| ?authFailureReason | Enum | 0x03 | Authentication failure reason. | enum=wrongPin/timeout/cancelled/tooManyAttempts/unknown | Omit if not used. |
-| ?attemptCount | UInt16 | 0x04 | Attempt count visible to the receiver. | None | Omit if not used. |
-| ?failedAt | String | 0x05 | Timestamp when authentication failed. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.windowChanged
-
-Emitted when cast window visibility, mode, topmost state, or bounds changes.
-
-- Event ID: `0x160A`
-- Domain: `cast`
-- bitOffset: `9`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `cast.setWindowState`, `local UI`, `session started`, `session stopped`
-- Required Capabilities: `cast.window`
-
-#### Payload Fields
-
-Type: `CastWindowChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
-| state | CastWindowState | 0x02 | Window state after the change. | None | N/A |
-| ?reason | Enum | 0x03 | Change reason. | enum=externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
-| ?updatedAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.backendChanged
-
-Emitted when cast backend ready, restart, exit, failed, or discoverable state changes.
-
-- Event ID: `0x160B`
-- Domain: `cast`
-- bitOffset: `10`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `backend started`, `backend restarting`, `backend exited`, `backend failed`, `discovery changed`
-- Required Capabilities: `cast.backend`
-
-#### Payload Fields
-
-Type: `CastBackendChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
-| state | CastBackendStatus | 0x02 | Backend status after the change. | None | N/A |
-| ?reason | Enum | 0x03 | Change reason. | enum=manualRecovery/configChanged/backendUnhealthy/backendExited/unknown | Omit if not used. |
-| ?restartId | String | 0x04 | Restart operation id when this event is restart-related. | maxLength=128 | Omit if not used. |
-| ?activeSessionEnded | Boolean | 0x05 | Whether this backend change ended an active session. | None | Omit if not used. |
-| ?endedSessionId | String | 0x06 | Session ended by this backend change. | maxLength=128 | Omit if not used. |
-| ?updatedAt | String | 0x07 | Timestamp for this event. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.flowControlChanged
-
-Emitted when receiver-local cast flow policy, video stream parameters, or low-frequency flow statistics change.
-
-- Event ID: `0x160C`
-- Domain: `cast`
-- bitOffset: `11`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `cast.setRenderFps`, `cast.setFlowPolicy`, `cast.setVideoStreamParams`, `diagnostics sample`
-- Required Capabilities: `cast.flowControl`
-
-#### Payload Fields
-
-Type: `CastFlowControlChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| changedFields | Array<String> | 0x01 | Field names changed or sampled by this event. | array.itemType=string | N/A |
-| state | CastFlowControlState | 0x02 | Flow control state after the change or sample. | None | N/A |
-| ?reason | Enum | 0x03 | Change or sampling reason. | enum=manualFlowControl/videoStreamParams/videoStreamReconfigure/diagnosticsSample/sessionStarted/sessionStopped/unknown | Omit if not used. |
-| ?sampledAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
-| ?sourceVideo | CastVideoStreamParamsState | 0x05 | Effective source video stream parameter state associated with this event. | None | Omit if not used. |
-| ?reconfigureId | String | 0x06 | Video stream reconfiguration operation id associated with this event. | maxLength=128 | Omit if not used. |
-
----
-
-## device Events
-
-### Events in this domain
-
-- [device.enrollmentStateChanged](#deviceenrollmentstatechanged)
-
----
-
-### device.enrollmentStateChanged
-
-Emitted after device.setEnrollmentState actually changes the enrollment state, or after a device-internal policy modifies it (e.g. pairing code expiry fallback, server-side revoke).
-
-- Event ID: `0x0102`
-- Domain: `device`
-- bitOffset: `0`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `device.setEnrollmentState`
-- Required Capabilities: `device.enrollment`
-
-#### Payload Fields
-
-Type: `DeviceEnrollmentStateChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| state | DeviceEnrollmentInfo | 0x01 | Enrollment state after the change. | None | N/A |
-| ?previousState | Enum | 0x02 | State enum value (not a full object) before the change; candidate values are the same DeviceEnrollmentInfo.state set. | None | Omit if not used. |
-| ?reason | Enum | 0x03 | Change reason; candidate values include pairing_code_used, server_claimed, user_unenrolled, admin_reset, and unknown (default). | None | Omit if not used. |
-| ?triggerMethod | Enum | 0x04 | Operation type that triggered the change; candidate values include setEnrollmentState (explicit call), getPairingCode (indirect, for code-expiry fallback), and server_sync (device-internal such as code-expiry rollback or server-side revoke). triggerId MUST be omitted when triggerMethod is server_sync. [REVIEW-ADOPTED-SCOPED] | None | Omit if not used. |
-| ?triggerId | String | 0x05 | RPC request id of the triggering operation. Omitted when triggerMethod is server_sync. [REVIEW-ADOPTED-SCOPED] | maxLength=64 | Omit if not used. |
-
----
-
-## firmware Events
-
-### Events in this domain
-
-- [firmware.updateProgressReported](#firmwareupdateprogressreported)
-- [firmware.updateStateChanged](#firmwareupdatestatechanged)
-
----
-
-### firmware.updateProgressReported
-
-Emitted when firmware receiving, verification, or install progress changes.
-
-- Event ID: `0x0402`
-- Domain: `firmware`
-- bitOffset: `0`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `STREAM upload progress`, `firmware.finishUpdate`, `internal verify`, `internal install`
-- Required Capabilities: `firmware.update`
-
-#### Payload Fields
-
-Type: `FirmwareUpdateProgressEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
-| state | Enum | 0x02 | Current firmware update state. | None | N/A |
-| ?progress | UInt8 | 0x03 | Overall progress percentage. | min=0, max=100 | Omit if not used. |
-| ?fileId | String | 0x04 | Current file identifier. | maxLength=128 | Omit if not used. |
-
----
-
-### firmware.updateStateChanged
-
-Emitted when firmware update state changes or fails.
-
-- Event ID: `0x0403`
-- Domain: `firmware`
-- bitOffset: `1`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `firmware.beginUpdate`, `firmware.finishUpdate`, `verify complete`, `install complete`, `rebooting`, `failure`
-- Required Capabilities: `firmware.update`
-
-#### Payload Fields
-
-Type: `FirmwareUpdateStateChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
-| state | Enum | 0x02 | New firmware update state. | None | N/A |
-| ?error | FirmwareUpdateErrorInfo | 0x03 | Error details when state is failed. | None | Omit if not used. |
-
----
-
-## network Events
-
-### Events in this domain
-
-- [network.interfaceStateChanged](#networkinterfacestatechanged)
-- [network.ipConfigChanged](#networkipconfigchanged)
-- [network.wifiConfigChanged](#networkwificonfigchanged)
-- [network.wifiStateChanged](#networkwifistatechanged)
-- [network.wifiScanResultReported](#networkwifiscanresultreported)
-- [network.apConfigChanged](#networkapconfigchanged)
-- [network.apStateChanged](#networkapstatechanged)
-- [network.apClientChanged](#networkapclientchanged)
-
----
-
-### network.interfaceStateChanged
-
-Emitted when network interface administrative or link state changes.
-
-- Event ID: `0x0E01`
-- Domain: `network`
-- bitOffset: `0`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `link state change`, `admin state change`, `interface availability change`
-- Required Capabilities: `network.interface`
-
-#### Payload Fields
-
-Type: `NetworkInterfaceStateChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
-| state | NetworkInterfaceState | 0x02 | New interface state. | None | N/A |
-| ?previousState | NetworkInterfaceState | 0x03 | Previous interface state. | None | Omit if not used. |
-| ?reason | Enum | 0x04 | Change reason. | None | Omit if not used. |
-
----
-
-### network.ipConfigChanged
-
-Emitted when IP configuration changes for an interface.
-
-- Event ID: `0x0E02`
-- Domain: `network`
-- bitOffset: `1`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `network.setIpConfig`, `DHCP renew`, `device policy`
-- Required Capabilities: `network.ip`
-
-#### Payload Fields
-
-Type: `NetworkIpConfigChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
-| ?family | Enum | 0x02 | IP family. | None | Omit if not used. |
-| config | NetworkIpConfig | 0x03 | New IP configuration. | None | N/A |
-| ?previousConfig | NetworkIpConfig | 0x04 | Previous IP configuration. | None | Omit if not used. |
-| ?reason | Enum | 0x05 | Change reason. | None | Omit if not used. |
-
----
-
-### network.wifiConfigChanged
-
-Emitted when saved Wi-Fi profile configuration changes.
-
-- Event ID: `0x0E03`
-- Domain: `network`
-- bitOffset: `2`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `network.setWifiConfig`, `device policy`
-- Required Capabilities: `network.wifi`
-
-#### Payload Fields
-
-Type: `NetworkWifiConfigChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
-| config | NetworkWifiConfig | 0x02 | New Wi-Fi configuration summary. | None | N/A |
-| ?changedFields | Array<String> | 0x03 | Changed field paths. | array.itemType=string | Omit if not used. |
-| ?reason | Enum | 0x04 | Change reason. | None | Omit if not used. |
-
----
-
-### network.wifiStateChanged
-
-Emitted when Wi-Fi station association, authentication, connection, or failure state changes.
-
-- Event ID: `0x0E04`
-- Domain: `network`
-- bitOffset: `3`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `network.setWifiConfig`, `network.connectWifi`, `network.disconnectWifi`, `local Wi-Fi state change`
-- Required Capabilities: `network.wifi`
-
-#### Payload Fields
-
-Type: `NetworkWifiStateChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| state | NetworkWifiState | 0x01 | New Wi-Fi station state. | None | N/A |
-| ?previousState | NetworkWifiState | 0x02 | Previous state. | None | Omit if not used. |
-| ?reason | Enum | 0x03 | Change reason. | None | Omit if not used. |
-
----
-
-### network.wifiScanResultReported
-
-Emitted for asynchronous Wi-Fi scan results or scan completion.
-
-- Event ID: `0x0E05`
-- Domain: `network`
-- bitOffset: `4`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `network.scanWifi`
-- Required Capabilities: `network.wifi`
-
-#### Payload Fields
-
-Type: `NetworkWifiScanResultReportedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?scanId | String | 0x01 | Scan identifier. | maxLength=128 | Omit if not used. |
-| ?results | Array<NetworkWifiScanResult> | 0x02 | NetworkWifiScanResult objects. | schema=NetworkWifiScanResult, array.itemType=NetworkWifiScanResult, array.itemSchema=NetworkWifiScanResult | Omit if not used. |
-| complete | Boolean | 0x03 | Whether this event completes the scan. | None | N/A |
-
----
-
-### network.apConfigChanged
-
-Emitted when Wi-Fi AP configuration changes.
-
-- Event ID: `0x0E06`
-- Domain: `network`
-- bitOffset: `5`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `network.setApConfig`, `device policy`
-- Required Capabilities: `network.ap`
-
-#### Payload Fields
-
-Type: `NetworkApConfigChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
-| config | NetworkApConfig | 0x02 | New AP configuration. | None | N/A |
-| ?changedFields | Array<String> | 0x03 | Changed field paths. | array.itemType=string | Omit if not used. |
-| ?reason | Enum | 0x04 | Change reason. | None | Omit if not used. |
-
----
-
-### network.apStateChanged
-
-Emitted when Wi-Fi AP runtime state changes.
-
-- Event ID: `0x0E07`
-- Domain: `network`
-- bitOffset: `6`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `network.startAp`, `network.stopAp`, `local AP state change`
-- Required Capabilities: `network.ap`
-
-#### Payload Fields
-
-Type: `NetworkApStateChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| state | NetworkApState | 0x01 | New AP state. | None | N/A |
-| ?previousState | NetworkApState | 0x02 | Previous AP state. | None | Omit if not used. |
-| ?reason | Enum | 0x03 | Change reason. | None | Omit if not used. |
-
----
-
-### network.apClientChanged
-
-Emitted when a client joins or leaves the Wi-Fi AP.
-
-- Event ID: `0x0E08`
-- Domain: `network`
-- bitOffset: `7`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `AP client join`, `AP client leave`
-- Required Capabilities: `network.ap`
-
-#### Payload Fields
-
-Type: `NetworkApClientChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| change | Enum | 0x01 | Client change type; candidate values include joined, left, and updated. | None | N/A |
-| client | NetworkApClientInfo | 0x02 | Client summary. | None | N/A |
-| ?reason | Enum | 0x03 | Change reason. | None | Omit if not used. |
-
----
-
-## signage Events
-
-### Events in this domain
-
-- [signage.playlistConfigChanged](#signageplaylistconfigchanged)
-
----
-
-### signage.playlistConfigChanged
-
-Emitted after setPlaylistConfig or resetPlaylistConfig successfully changes the playlist configuration.
-
-- Event ID: `0x0D01`
-- Domain: `signage`
-- bitOffset: `0`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `signage.setPlaylistConfig`, `signage.resetPlaylistConfig`
-- Required Capabilities: `signage.playlist`
-
-#### Payload Fields
-
-Type: `SignagePlaylistConfigChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| reason | Enum | 0x01 | Change reason; candidate values include set_config (triggered by setPlaylistConfig) and reset_config (triggered by resetPlaylistConfig). | None | N/A |
-| ?playlists | Array<SignagePlaylist> | 0x02 | Optional playlist objects representing the full post-change configuration. The device MAY omit it to shrink the payload; when omitted the client MUST call signage.getPlaylistConfig to reconcile. | schema=SignagePlaylist, array.itemType=SignagePlaylist, array.itemSchema=SignagePlaylist | Omit if not used. |
-
----
-
-## software Events
-
-### Events in this domain
-
-- [software.configChanged](#softwareconfigchanged)
-- [software.updatePolicyChanged](#softwareupdatepolicychanged)
-
----
-
-### software.configChanged
-
-Emitted after software.setConfig or software.resetConfig successfully changes a software object configuration, or after a device-internal policy modifies it.
-
-- Event ID: `0x1701`
-- Domain: `software`
-- bitOffset: `0`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `software.setConfig`, `software.resetConfig`
-- Required Capabilities: `software.config`
-
-#### Payload Fields
-
-Type: `SoftwareConfigChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object whose configuration changed. | maxLength=64 | N/A |
-| config | LauncherConfig | 0x02 | Full post-change configuration fragment (not a patch). For the launcher target this is the LauncherConfig structure; see SoftwareConfig.config. | None | N/A |
-| ?changedFields | Array<String> | 0x03 | Optional changed field paths using dot notation for nested levels, e.g. appearance.panelLayout. Omitted when the device cannot compute the diff. | array.itemType=string | Omit if not used. |
-| ?reason | Enum | 0x04 | Change reason; candidate values include user_request (triggered by setConfig), restore_default (triggered by resetConfig), device_policy (triggered by device-internal policy), and unknown (default when the reason is not reported). | None | Omit if not used. |
-
----
-
-### software.updatePolicyChanged
-
-Emitted after software.setUpdatePolicy or software.resetUpdatePolicy successfully changes a software object update policy, or after a device-internal policy modifies it.
-
-- Event ID: `0x1702`
-- Domain: `software`
-- bitOffset: `1`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `software.setUpdatePolicy`, `software.resetUpdatePolicy`
-- Required Capabilities: `software.updatePolicy`
-
-#### Payload Fields
-
-Type: `SoftwareUpdatePolicyChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| target | String | 0x01 | Software object whose update policy changed. | maxLength=64 | N/A |
-| policy | LauncherUpdatePolicy | 0x02 | Full post-change update policy fragment (not a patch). For the launcher target this is the LauncherUpdatePolicy structure; see SoftwareUpdatePolicy.policy. | None | N/A |
-| ?changedFields | Array<String> | 0x03 | Optional changed field paths using dot notation for nested levels, e.g. schedule.start. Omitted when the device cannot compute the diff. | array.itemType=string | Omit if not used. |
-| ?reason | Enum | 0x04 | Change reason; candidate values include user_request (triggered by setUpdatePolicy), restore_default (triggered by resetUpdatePolicy), device_policy (triggered by device-internal policy), and unknown (default when the reason is not reported). | None | Omit if not used. |
-
----
-
-## stream Events
-
-### Events in this domain
-
-- [stream.stateChanged](#streamstatechanged)
-- [stream.statsReported](#streamstatsreported)
-- [stream.flowControlChanged](#streamflowcontrolchanged)
-- [stream.clockReport](#streamclockreport)
-
----
-
-### stream.stateChanged
-
-Emitted when common STREAM runtime state changes or an abort converges.
-
-- Event ID: `0x0501`
-- Domain: `stream`
-- bitOffset: `0`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `stream.abort`, `runtime state change`
-- Required Capabilities: `stream.flowControl`
-
-#### Payload Fields
-
-Type: `StreamStateChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?streamId | UInt32 | 0x01 | STREAM data-plane stream identifier, omitted for aggregate state changes. | None | Omit if not used. |
-| state | StreamState | 0x02 | New STREAM runtime state. | None | N/A |
-
----
-
-### stream.statsReported
-
-Emitted with bounded STREAM runtime statistics for diagnostics.
-
-- Event ID: `0x0502`
-- Domain: `stream`
-- bitOffset: `1`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `stream statistics interval`, `diagnostic sampling`
-- Required Capabilities: `stream.flowControl`
-
-#### Payload Fields
-
-Type: `StreamStatsReportedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?streamId | UInt32 | 0x01 | STREAM data-plane stream identifier, omitted for aggregate stats. | None | Omit if not used. |
-| stats | StreamStats | 0x02 | Bounded STREAM transport-level statistics. | None | N/A |
-
----
-
-### stream.flowControlChanged
-
-Emitted when ACK, window, pause, or resume changes STREAM sending conditions.
-
-- Event ID: `0x0503`
-- Domain: `stream`
-- bitOffset: `2`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `stream.ack`, `stream.windowUpdate`, `stream.pause`, `stream.resume`
-- Required Capabilities: `stream.flowControl`
-
-#### Payload Fields
-
-Type: `StreamFlowControlChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
-| ?reason | Enum | 0x02 | Flow-control change reason. | enum=ack/windowUpdate/pause/resume/bufferPressure/bufferAvailable/diagnosticSample/unknown | Omit if not used. |
-| ?state | StreamState | 0x03 | Updated STREAM runtime state, when returned. | None | Omit if not used. |
-
----
-
-### stream.clockReport
-
-Emitted as a latest-wins timing sample that anchors source media PTS to source and relay monotonic clocks.
-
-- Event ID: `0x0504`
-- Domain: `stream`
-- bitOffset: `3`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `source clock report`, `relay diagnostic sampling`
-- Required Capabilities: `stream.flowControl`
-
-#### Payload Fields
-
-Type: `StreamClockReportEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| reportSeq | UInt32 | 0x01 | Source or relay report sequence number. | None | N/A |
-| ?syncGroupId | String | 0x02 | Synchronization group that links related audio and video streams. | maxLength=128 | Omit if not used. |
-| ?sourceDeviceId | String | 0x03 | Source device identifier, such as NT10. | maxLength=128 | Omit if not used. |
-| ?sourceClockDomain | String | 0x04 | Source monotonic clock domain for this report. | maxLength=128 | Omit if not used. |
-| nt10ReportMonotonicUs | UInt64 | 0x05 | NT10 source monotonic timestamp sampled when the report was produced. | None | N/A |
-| ?sentAtNt10MonotonicUs | UInt64 | 0x06 | NT10 source monotonic timestamp sampled when the report was sent to NA20. | None | Omit if not used. |
-| ?na20ReceivedAtUs | UInt64 | 0x07 | NA20 monotonic timestamp sampled when the source report or associated media anchor was received. | None | Omit if not used. |
-| ?na20SentAtUs | UInt64 | 0x08 | NA20 monotonic timestamp sampled when the AXTP event was sent to MediaHost. | None | Omit if not used. |
-| ?audio | StreamClockMediaAnchor | 0x09 | Optional audio media timeline anchor. | None | Omit if not used. |
-| ?video | StreamClockMediaAnchor | 0x0A | Optional video media timeline anchor. | None | Omit if not used. |
-| ?discontinuity | Boolean | 0x0B | Whether this report follows a media or source clock discontinuity. | None | Default: false |
-| ?reason | Enum | 0x0C | Report reason. | enum=periodic/streamOpened/streamResumed/discontinuity/sourceReset/diagnosticSample/unknown | Omit if not used. |
-
----
-
-## video Events
-
-### Events in this domain
-
-- [video.streamStateChanged](#videostreamstatechanged)
-- [video.streamSourceStateChanged](#videostreamsourcestatechanged)
-- [video.streamStatsReported](#videostreamstatsreported)
-
----
-
-### video.streamStateChanged
-
-Emitted when a video stream enters opening, streaming, closed, failed, or keyframe-related state.
-
-- Event ID: `0x0806`
-- Domain: `video`
-- bitOffset: `0`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `video.openStream`, `video.closeStream`, `video.requestKeyFrame`, `source disconnected`, `stream failure`
-- Required Capabilities: `video.stream`
-
-#### Payload Fields
-
-Type: `VideoStreamStateChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-| state | Enum | 0x02 | New stream state. | None | N/A |
-| source | String | 0x03 | Bound video source. | maxLength=128 | N/A |
-| ?reason | Enum | 0x04 | State change reason. | None | Omit if not used. |
-| ?stats | VideoStreamStats | 0x05 | Optional bounded stream statistics. | None | Omit if not used. |
-| ?frameRate | UInt32 | 0x06 | Effective video frame rate at the time of this event; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
-| ?bitrateKbps | UInt32 | 0x07 | Effective video bitrate in kbps at the time of this event; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
-
----
-
-### video.streamSourceStateChanged
-
-Emitted when a video stream source availability or receiving state changes.
-
-- Event ID: `0x0807`
-- Domain: `video`
-- bitOffset: `1`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `source available`, `source receiving`, `source stopped`
-- Required Capabilities: `video.stream`
-
-#### Payload Fields
-
-Type: `VideoStreamSourceStateChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
-| ?mediaKind | Enum | 0x02 | Media kind, normally video. | None | Omit if not used. |
-| state | Enum | 0x03 | New source state. | None | N/A |
-| ?reason | Enum | 0x04 | Source state change reason. | None | Omit if not used. |
-| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
-
----
-
-### video.streamStatsReported
-
-Emitted with bounded runtime statistics for a video stream.
-
-- Event ID: `0x0808`
-- Domain: `video`
-- bitOffset: `2`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `stream statistics interval`, `diagnostic sampling`
-- Required Capabilities: `video.stream`
-
-#### Payload Fields
-
-Type: `VideoStreamStatsReportedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
-| stats | VideoStreamStats | 0x02 | Bounded stream statistics. | None | N/A |
 
 ---
 
@@ -4638,6 +473,32 @@ Beamforming configuration object.
 
 ---
 
+## AudioCloseStreamParams
+
+Request to close an audio stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| ?peerRole | Enum | 0x02 | Peer role in this stream. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Close reason. | None | Omit if not used. |
+| ?finalCursor | UInt64 | 0x04 | Last processed cursor value. | None | Omit if not used. |
+
+---
+
+## AudioCloseStreamResult
+
+Result of closing an audio stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | Closed stream identifier. | None | N/A |
+| state | Enum | 0x02 | Close state, such as closing, closed, or failed. | None | N/A |
+| ?reason | Enum | 0x03 | Final close reason. | None | Omit if not used. |
+| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already terminal before this request. | None | Default: false |
+
+---
+
 ## AudioDereverberationCapabilities
 
 Dereverberation supported fields.
@@ -4716,6 +577,37 @@ Echo cancellation configuration object.
 
 ---
 
+## AudioGetStreamCapabilitiesParams
+
+Selector for real-time audio stream capability.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?source | String | 0x01 | Optional audio source identifier; omit to query all visible sources. | maxLength=128 | Omit if not used. |
+| ?includeRuntimeState | Boolean | 0x02 | Whether to include current source runtime state. | None | Default: false |
+
+---
+
+## AudioGetStreamSourceStateParams
+
+Selector for audio source runtime state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
+
+---
+
+## AudioGetStreamStateParams
+
+Selector for an audio stream state query.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+
+---
+
 ## AudioHowlingSuppressionCapabilities
 
 Howling suppression supported fields.
@@ -4764,6 +656,150 @@ Noise suppression configuration object.
 
 ---
 
+## AudioOpenStreamParams
+
+Request to open a real-time audio stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
+| peerRole | Enum | 0x02 | Requested peer media role; values include receiver and transmitter. | None | N/A |
+| codec | Enum | 0x03 | Requested audio codec, such as aac, opus, or pcm. | None | N/A |
+| ?transportFormat | Enum | 0x04 | Optional codec transport format, such as adts, latm, or raw_aac. | None | Omit if not used. |
+| ?sampleRate | UInt32 | 0x05 | Requested sample rate in Hz. | None | Omit if not used. |
+| ?channels | UInt8 | 0x06 | Requested channel count. | None | Omit if not used. |
+| ?sampleFormat | Enum | 0x07 | Requested sample format. | None | Omit if not used. |
+| ?chunkDurationMs | UInt32 | 0x08 | Preferred chunk duration in milliseconds. | None | Omit if not used. |
+| ?streamProfile | String | 0x09 | STREAM profile name. | maxLength=64 | Default: "media.audio" |
+| ?cursorUnit | Enum | 0x0A | STREAM cursor unit, such as timestampUs or sampleIndex. | None | Omit if not used. |
+| ?syncGroupId | String | 0x0B | Optional synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?castSessionId | String | 0x0C | Optional cast session identifier. | maxLength=128 | Omit if not used. |
+| ?clockDomain | String | 0x0D | Source media clock domain. | maxLength=128 | Omit if not used. |
+| ?receiverClockDomain | String | 0x0E | Receiver clock domain. | maxLength=128 | Omit if not used. |
+| ?maxDataSize | UInt32 | 0x0F | Preferred maximum STREAM payload data size. | None | Omit if not used. |
+| ?audioPtsMode | Enum | 0x10 | Audio PTS mode; NA20/NT10 MVP uses derivedFromSeq. | None | Default: "derivedFromSeq" |
+| ?timebase | UInt32 | 0x11 | Audio PTS timebase in ticks per second. | None | Default: 48000 |
+| ?samplesPerPacket | UInt32 | 0x12 | Fixed samples consumed by each STREAM packet when packetizationMode is fixedSamplesPerPacket. | None | Default: 1024 |
+| ?firstMediaSeqId | UInt32 | 0x13 | First STREAM seqId used as the base for derived audio PTS. | None | Default: 0 |
+| ?audioPtsBase | UInt64 | 0x14 | Audio PTS value corresponding to firstMediaSeqId. | None | Default: 0 |
+| ?packetizationMode | Enum | 0x15 | Audio packetization mode; NA20/NT10 MVP uses fixedSamplesPerPacket. | None | Default: "fixedSamplesPerPacket" |
+
+---
+
+## AudioOpenStreamResult
+
+Result of opening a real-time audio stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | Initial state, normally opening or streaming. | None | N/A |
+| source | String | 0x03 | Bound source identifier. | maxLength=128 | N/A |
+| peerRole | Enum | 0x04 | Confirmed peer media role. | None | N/A |
+| codec | Enum | 0x05 | Negotiated codec. | None | N/A |
+| ?transportFormat | Enum | 0x06 | Negotiated transport format. | None | Omit if not used. |
+| sampleRate | UInt32 | 0x07 | Negotiated sample rate in Hz. | None | N/A |
+| channels | UInt8 | 0x08 | Negotiated channel count. | None | N/A |
+| ?sampleFormat | Enum | 0x09 | Negotiated sample format. | None | Omit if not used. |
+| streamProfile | String | 0x0A | Normalized stream profile. | maxLength=64 | N/A |
+| cursorUnit | Enum | 0x0B | STREAM cursor unit. | None | N/A |
+| ?syncGroupId | String | 0x0C | Synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?castSessionId | String | 0x0D | Cast session identifier. | maxLength=128 | Omit if not used. |
+| ?clockDomain | String | 0x0E | Source media clock domain. | maxLength=128 | Omit if not used. |
+| ?receiverClockDomain | String | 0x0F | Receiver clock domain. | maxLength=128 | Omit if not used. |
+| ?maxDataSize | UInt32 | 0x10 | Negotiated maximum STREAM payload data size. | None | Omit if not used. |
+| ?audioPtsMode | Enum | 0x11 | Negotiated audio PTS mode. | None | Omit if not used. |
+| ?timebase | UInt32 | 0x12 | Negotiated audio PTS timebase in ticks per second. | None | Omit if not used. |
+| ?samplesPerPacket | UInt32 | 0x13 | Fixed samples consumed by each STREAM packet when packetizationMode is fixedSamplesPerPacket. | None | Omit if not used. |
+| ?firstMediaSeqId | UInt32 | 0x14 | First STREAM seqId used as the base for derived audio PTS. | None | Omit if not used. |
+| ?audioPtsBase | UInt64 | 0x15 | Audio PTS value corresponding to firstMediaSeqId. | None | Omit if not used. |
+| ?packetizationMode | Enum | 0x16 | Negotiated audio packetization mode. | None | Omit if not used. |
+
+---
+
+## AudioStreamCapabilities
+
+Device-level audio.stream capability summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | String | 0x01 | Fixed capability name audio.stream. | maxLength=32 | N/A |
+| sources | Array<AudioStreamSource> | 0x02 | Audio stream source objects. | schema=AudioStreamSource, array.itemType=AudioStreamSource, array.itemSchema=AudioStreamSource | N/A |
+| streamProfiles | Array<String> | 0x03 | Supported stream profiles, normally media.audio. | array.itemType=string | N/A |
+| openModes | Array<String> | 0x04 | Supported open modes, such as producer_open and receiver_pull. | array.itemType=string | N/A |
+| peerRoles | Array<String> | 0x05 | Peer roles, such as receiver and transmitter. | array.itemType=string | N/A |
+| supportsSourceStateEvent | Boolean | 0x06 | Whether audio.streamSourceStateChanged is supported. | None | N/A |
+| supportsSyncGroup | Boolean | 0x07 | Whether audio streams can share a synchronization group with video streams. | None | N/A |
+| flowControlManagedByRuntime | Boolean | 0x08 | Whether normal applications can rely on runtime-managed STREAM flow control. | None | N/A |
+| ?aacTransportFormats | Array<String> | 0x09 | Optional AAC transport format strings; exact supported set remains product-confirmed. | array.itemType=string | Omit if not used. |
+| ?supportedAudioPtsModes | Array<String> | 0x0A | Optional audio PTS modes such as derivedFromSeq and explicit. | array.itemType=string | Omit if not used. |
+| ?supportedPacketizationModes | Array<String> | 0x0B | Optional audio packetization modes such as fixedSamplesPerPacket. | array.itemType=string | Omit if not used. |
+| ?supportsSourceCaptureTimestampCursor | Boolean | 0x0C | Whether STREAM cursorUnit sourceCaptureTimestampUs is supported. | None | Omit if not used. |
+
+---
+
+## AudioStreamSourceState
+
+Runtime state of an audio stream source.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
+| ?mediaKind | Enum | 0x02 | Media kind, normally audio. | None | Omit if not used. |
+| state | Enum | 0x03 | Source state, such as unavailable, available, receiving, stopped, or failed. | None | N/A |
+| ?available | Boolean | 0x04 | Whether the source is available for openStream. | None | Omit if not used. |
+| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
+| ?lastOpenRejectedReason | Enum | 0x06 | Last open rejection reason. | None | Omit if not used. |
+
+---
+
+## AudioStreamSourceStateChangedEvent
+
+Event payload for audio stream source state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
+| ?mediaKind | Enum | 0x02 | Media kind, normally audio. | None | Omit if not used. |
+| state | Enum | 0x03 | New source state. | None | N/A |
+| ?reason | Enum | 0x04 | Source state change reason. | None | Omit if not used. |
+| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
+
+---
+
+## AudioStreamState
+
+Runtime state of one audio stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | Stream state, such as opening, streaming, closing, closed, or failed. | None | N/A |
+| source | String | 0x03 | Bound audio source. | maxLength=128 | N/A |
+| ?peerRole | Enum | 0x04 | Peer media role. | None | Omit if not used. |
+| ?codec | Enum | 0x05 | Negotiated audio codec. | None | Omit if not used. |
+| ?streamProfile | String | 0x06 | Stream profile. | maxLength=64 | Omit if not used. |
+| ?syncGroupId | String | 0x07 | Synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?cursorUnit | Enum | 0x08 | STREAM cursor unit. | None | Omit if not used. |
+| ?lastCursor | UInt64 | 0x09 | Last known cursor value. | None | Omit if not used. |
+| ?failureReason | Enum | 0x0A | Failure reason when state is failed. | None | Omit if not used. |
+
+---
+
+## AudioStreamStateChangedEvent
+
+Event payload for audio stream state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | New stream state. | None | N/A |
+| source | String | 0x03 | Bound audio source. | maxLength=128 | N/A |
+| ?reason | Enum | 0x04 | State change reason. | None | Omit if not used. |
+| ?stats | AudioStreamStats | 0x05 | Optional bounded stream statistics. | None | Omit if not used. |
+
+---
+
 ## AudioStreamStats
 
 Bounded runtime statistics for an audio stream.
@@ -4774,6 +810,17 @@ Bounded runtime statistics for an audio stream.
 | ?bytes | UInt64 | 0x02 | Number of STREAM payload bytes observed. | None | Omit if not used. |
 | ?droppedPackets | UInt64 | 0x03 | Number of dropped packets. | None | Omit if not used. |
 | ?jitterMs | UInt32 | 0x04 | Estimated jitter in milliseconds. | None | Omit if not used. |
+
+---
+
+## AudioStreamStatsReportedEvent
+
+Event payload for audio stream statistics reports.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| stats | AudioStreamStats | 0x02 | Bounded stream statistics. | None | N/A |
 
 ---
 
@@ -4803,6 +850,263 @@ Voice activity detection configuration object.
 
 ---
 
+## BeginUpdateParams
+
+Request to begin a firmware update session.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| manifest | FirmwareUpdateManifest | 0x01 | Minimal firmware update manifest. | None | N/A |
+
+---
+
+## BeginUpdateResult
+
+Result of creating a firmware update session.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+| state | Enum | 0x02 | State after begin, normally receiving. | None | N/A |
+| streams | Array<FirmwareUpdateStreamBinding> | 0x03 | Firmware update stream bindings. | schema=FirmwareUpdateStreamBinding, array.itemType=FirmwareUpdateStreamBinding, array.itemSchema=FirmwareUpdateStreamBinding | N/A |
+| ?chunkSize | UInt32 | 0x04 | Recommended STREAM chunk size. | None | Omit if not used. |
+
+---
+
+## CastAirPlayNameState
+
+AirPlay display name and backend publish state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| displayName | String | 0x01 | Current AirPlay display name. | maxLength=128 | N/A |
+| ?previousDisplayName | String | 0x02 | Previous display name when a change was applied. | maxLength=128 | Omit if not used. |
+| ?source | Enum | 0x03 | Source of the current display name. | enum=configured/default/backend/unknown | Omit if not used. |
+| ?apply | Enum | 0x04 | Apply timing used for the latest update. | enum=immediate/onNextBackendStart | Omit if not used. |
+| publishState | Enum | 0x05 | Bonjour or backend service publish state. | enum=published/republishing/pending/failed/unpublished | N/A |
+| ?backendType | Enum | 0x06 | Backend that owns the published name. | enum=uxplay/unknown | Omit if not used. |
+| ?updatedAt | String | 0x07 | Timestamp for this name state. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastAudioCapability
+
+Capability descriptor for cast.audio.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?defaultEnabled | Boolean | 0x01 | Default local playback enablement for received cast audio. | None | Default: false |
+| ?supportsMute | Boolean | 0x02 | Whether local mute state can be controlled separately. | None | Default: true |
+| ?reportsEffectivePlayback | Boolean | 0x03 | Whether the receiver reports effective local playback state. | None | Default: true |
+| ?supportsAudioDelay | Boolean | 0x04 | Whether receiver-local audio playback delay compensation can be configured. | None | Default: true |
+| ?defaultAudioDelayMs | UInt32 | 0x05 | Default receiver-local audio playback delay in milliseconds. | min=0, max=1000 | Default: 250 |
+| ?maxAudioDelayMs | UInt32 | 0x06 | Maximum supported receiver-local audio playback delay in milliseconds. | min=0 | Default: 1000 |
+
+---
+
+## CastAudioChangedEvent
+
+Event payload for local cast audio state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
+| state | CastAudioState | 0x02 | State after the change. | None | N/A |
+| ?reason | Enum | 0x03 | Change reason. | enum=externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?updatedAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastAudioState
+
+Local cast audio playback and mute state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | Default: false |
+| muted | Boolean | 0x02 | Whether local receiver output is muted. | None | Default: false |
+| effectivePlayback | Boolean | 0x03 | Whether audio is effectively playing locally after state and session conditions are applied. | None | N/A |
+| ?scope | Enum | 0x04 | State target hint represented by this snapshot. | enum=currentSession/default | Omit if not used. |
+| ?sessionId | String | 0x05 | Receiver-local session id for session-specific state. | maxLength=128 | Omit if not used. |
+| ?source | Enum | 0x06 | Source of the latest state value. | enum=defaultConfig/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
+| ?audioDelayMs | UInt32 | 0x0A | Configured receiver-local audio playback delay in milliseconds; zero disables compensation. | min=0, max=1000 | Default: 250 |
+
+---
+
+## CastBackendCapability
+
+Capability descriptor for cast.backend.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| backendTypes | Array<String> | 0x01 | Backend implementations controlled by the receiver. | array.itemType=string | N/A |
+| ?supportsRestart | Boolean | 0x02 | Whether cast.restartBackend is supported. | None | Default: true |
+| ?reportsProcess | Boolean | 0x03 | Whether backend process metadata such as pid may be reported. | None | Default: true |
+| ?supportsLastError | Boolean | 0x04 | Whether last backend error summaries are available. | None | Default: true |
+
+---
+
+## CastBackendChangedEvent
+
+Event payload for cast backend state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
+| state | CastBackendStatus | 0x02 | Backend status after the change. | None | N/A |
+| ?reason | Enum | 0x03 | Change reason. | enum=manualRecovery/configChanged/backendUnhealthy/backendExited/unknown | Omit if not used. |
+| ?restartId | String | 0x04 | Restart operation id when this event is restart-related. | maxLength=128 | Omit if not used. |
+| ?activeSessionEnded | Boolean | 0x05 | Whether this backend change ended an active session. | None | Omit if not used. |
+| ?endedSessionId | String | 0x06 | Session ended by this backend change. | maxLength=128 | Omit if not used. |
+| ?updatedAt | String | 0x07 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastBackendStatus
+
+Cast backend state, process summary, discoverability, and last error.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| backendType | Enum | 0x01 | Backend implementation type. | enum=uxplay/unknown | N/A |
+| state | Enum | 0x02 | Backend runtime state. | enum=starting/ready/restarting/exited/failed/disabled | N/A |
+| discoverable | Boolean | 0x03 | Whether the cast service is discoverable by sources. | None | N/A |
+| ?pid | UInt32 | 0x04 | Backend process id when available. | None | Omit if not used. |
+| ?version | String | 0x05 | Backend version or build identifier. | maxLength=128 | Omit if not used. |
+| ?activeSessionId | String | 0x06 | Active cast session id currently owned by the backend. | maxLength=128 | Omit if not used. |
+| restartInProgress | Boolean | 0x07 | Whether a backend restart is currently in progress. | None | Default: false |
+| ?lastError | CastLastError | 0x08 | Last backend error summary when requested and available. | None | Omit if not used. |
+| ?updatedAt | String | 0x09 | Timestamp for this backend status. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastFlowControlCapability
+
+Capability descriptor for cast.flowControl.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?supportsRenderFps | Boolean | 0x01 | Whether receiver-local target render fps can be controlled. | None | Default: true |
+| ?supportsQueuePolicy | Boolean | 0x02 | Whether queue and late-frame policy can be controlled. | None | Default: true |
+| ?supportsOverlay | Boolean | 0x03 | Whether diagnostics overlay can be controlled. | None | Default: true |
+| ?supportsStats | Boolean | 0x04 | Whether low-frequency flow diagnostics are reported. | None | Default: true |
+| ?exposesExternalKeyframeRequest | Boolean | 0x05 | Whether a public keyframe request method is exposed; current draft keeps this false. | None | Default: false |
+| ?supportsVideoStreamParams | Boolean | 0x06 | Whether cast.setVideoStreamParams can update source video frame rate or bitrate. | None | Default: false |
+| ?supportsActiveVideoReconfigure | Boolean | 0x07 | Whether active video stream parameter changes may reconfigure or replace the current stream. | None | Default: false |
+| ?supportedVideoStreamProfiles | Array<String> | 0x08 | Video STREAM profiles supported by cast.setVideoStreamParams; each profile may declare source-specific support and frame-rate/bitrate ranges. | array.itemType=string | Omit if not used. |
+| ?supportedVideoEncoders | Array<String> | 0x09 | Encoder or encoder profile identifiers exposed for source video reconfiguration. | array.itemType=string | Omit if not used. |
+| ?supportsSourceSpecificVideoParams | Boolean | 0x0A | Whether video parameter support and ranges may vary by source and are described by the selected video profile. | None | Default: true |
+
+---
+
+## CastFlowControlChangedEvent
+
+Event payload for cast flow control changes or low-frequency diagnostic samples.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| changedFields | Array<String> | 0x01 | Field names changed or sampled by this event. | array.itemType=string | N/A |
+| state | CastFlowControlState | 0x02 | Flow control state after the change or sample. | None | N/A |
+| ?reason | Enum | 0x03 | Change or sampling reason. | enum=manualFlowControl/videoStreamParams/videoStreamReconfigure/diagnosticsSample/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?sampledAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+| ?sourceVideo | CastVideoStreamParamsState | 0x05 | Effective source video stream parameter state associated with this event. | None | Omit if not used. |
+| ?reconfigureId | String | 0x06 | Video stream reconfiguration operation id associated with this event. | maxLength=128 | Omit if not used. |
+
+---
+
+## CastFlowControlState
+
+Receiver-local cast flow control policy and low-frequency statistics.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| targetRenderFps | Number | 0x01 | Configured target render fps; zero means uncapped. | min=0 | N/A |
+| ?inputFps | Number | 0x02 | Estimated incoming media frame rate. | min=0 | Omit if not used. |
+| ?renderFps | Number | 0x03 | Estimated local render frame rate. | min=0 | Omit if not used. |
+| dropMode | Enum | 0x04 | Local frame drop policy. | enum=drop-late/drop-oldest/render-latest | N/A |
+| videoQueueFrames | UInt32 | 0x05 | Maximum queued video frames. | min=1 | N/A |
+| ?videoQueueDepth | UInt32 | 0x06 | Current queued video frame depth. | None | Omit if not used. |
+| ?audioQueueDepth | UInt32 | 0x07 | Current queued audio frame depth when known. | None | Omit if not used. |
+| lateFrameThresholdMs | UInt32 | 0x08 | Late-frame threshold in milliseconds. | None | N/A |
+| overlayEnabled | Boolean | 0x09 | Whether diagnostics overlay is enabled. | None | N/A |
+| ?droppedFrames | UInt64 | 0x0A | Low-frequency dropped-frame counter. | None | Omit if not used. |
+| ?lateFrames | UInt64 | 0x0B | Low-frequency late-frame counter. | None | Omit if not used. |
+| ?keyframeRequestCount | UInt32 | 0x0C | Internal keyframe requests triggered by receiver policy. | None | Omit if not used. |
+| ?keyFrameOnDropBurst | Boolean | 0x0D | Whether the receiver may internally request a keyframe after a drop burst. | None | Omit if not used. |
+| ?changedFields | Array<String> | 0x0E | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?sampledAt | String | 0x0F | Timestamp for this flow sample. | maxLength=64 | Omit if not used. |
+| ?sourceVideo | CastVideoStreamParamsState | 0x10 | Effective source video stream parameters and reconfiguration state. | None | Omit if not used. |
+
+---
+
+## CastGetAudioParams
+
+Selector for local cast audio state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeEffective | Boolean | 0x01 | Whether to include effective local playback state. | None | Default: true |
+| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+
+---
+
+## CastGetBackendStatusParams
+
+Selector for cast backend status.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeLastError | Boolean | 0x01 | Whether to include the last backend error summary. | None | Default: false |
+
+---
+
+## CastGetFlowControlStateParams
+
+Selector for cast receiver flow control state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeStats | Boolean | 0x01 | Whether to include low-frequency diagnostic counters. | None | Default: true |
+| ?includePolicy | Boolean | 0x02 | Whether to include current flow policy fields. | None | Default: true |
+| ?sessionId | String | 0x03 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+
+---
+
+## CastGetPinCodeConfigParams
+
+Selector for cast PIN protection configuration.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeSecret | Boolean | 0x01 | Whether authorized clients request plaintext PIN material. | None | Default: false |
+
+---
+
+## CastGetSessionParams
+
+Selector for cast receiver and active session summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?include | Array<String> | 0x01 | Optional summary sections, such as source, media, or airPlayName. | array.itemType=string | Omit if not used. |
+| ?sessionId | String | 0x02 | Optional receiver-local session id to query. | maxLength=128 | Omit if not used. |
+
+---
+
+## CastGetStatusParams
+
+Selector for current cast receiver snapshot.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?include | Array<String> | 0x01 | Optional status sections to include. | array.itemType=string | Omit if not used. |
+| ?includeSensitive | Boolean | 0x02 | Whether authorized callers request sensitive summary fields. | None | Default: false |
+
+---
+
 ## CastLastError
 
 Redactable backend or receiver error summary.
@@ -4829,6 +1133,82 @@ Low-frequency media summary for a cast session.
 | ?inputFps | Number | 0x05 | Estimated incoming media frame rate. | min=0 | Omit if not used. |
 | ?renderFps | Number | 0x06 | Estimated local render frame rate. | min=0 | Omit if not used. |
 | ?audioActive | Boolean | 0x07 | Whether local receiver audio output is active. | None | Omit if not used. |
+
+---
+
+## CastPinCodeAuthFailedEvent
+
+Event payload for failed PIN authentication.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?source | CastSourceSummary | 0x02 | Source that failed authentication. | None | Omit if not used. |
+| ?authFailureReason | Enum | 0x03 | Authentication failure reason. | enum=wrongPin/timeout/cancelled/tooManyAttempts/unknown | Omit if not used. |
+| ?attemptCount | UInt16 | 0x04 | Attempt count visible to the receiver. | None | Omit if not used. |
+| ?failedAt | String | 0x05 | Timestamp when authentication failed. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastPinCodeCapability
+
+Capability descriptor for cast.pinCode.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?defaultEnabled | Boolean | 0x01 | Whether PIN protection is enabled by default. | None | Default: true |
+| ?supportsPlaintextResponse | Boolean | 0x02 | Whether authorized responses or events may carry plaintext PIN values. | None | Default: true |
+| ?supportedPinDisplays | Array<String> | 0x03 | PIN display policies supported by the receiver. | array.itemType=string | Omit if not used. |
+| ?supportsGeneratedPin | Boolean | 0x04 | Whether the receiver can generate a default PIN. | None | Default: true |
+| ?redactionRequired | Boolean | 0x05 | Whether logs, diagnostics, and error summaries must redact PIN values. | None | Default: true |
+
+---
+
+## CastPinCodeChangedEvent
+
+Event payload for PIN configuration or PIN state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
+| config | CastPinCodeConfig | 0x02 | PIN state after the change. | None | N/A |
+| ?reason | Enum | 0x03 | Change reason. | enum=externalSet/localUi/generated/backendChanged/unknown | Omit if not used. |
+| ?updatedAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastPinCodeConfig
+
+Cast PIN protection state and optional plaintext PIN value.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether PIN protection is enabled. | None | Default: true |
+| hasPinCode | Boolean | 0x02 | Whether a current PIN exists. | None | N/A |
+| ?pinCode | String | 0x03 | Plaintext PIN value when visible to the caller. | None | Omit if not used. |
+| ?pinDisplay | Enum | 0x04 | Where the current PIN may be displayed. | enum=hidden/authorizedClients/localUi/both | Omit if not used. |
+| ?generatedBy | Enum | 0x05 | Component or actor that generated the current PIN. | enum=nearcast/uxplay/external/unknown | Omit if not used. |
+| ?visibility | Enum | 0x06 | Visibility policy for the PIN value. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+| ?expiresAt | String | 0x07 | Expiration timestamp when applicable. | maxLength=64 | Omit if not used. |
+| ?redactionRequired | Boolean | 0x08 | Whether logs, diagnostics, and error summaries must redact the PIN. | None | Default: true |
+| ?changedFields | Array<String> | 0x09 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x0A | Timestamp for this PIN state. | maxLength=64 | Omit if not used. |
+| ?redacted | Boolean | 0x0B | Whether sensitive fields were withheld in this snapshot. | None | Omit if not used. |
+
+---
+
+## CastPinCodeRequiredEvent
+
+Event payload for a session waiting for PIN authentication.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?source | CastSourceSummary | 0x02 | Source waiting for authentication. | None | Omit if not used. |
+| ?pinCode | String | 0x03 | Plaintext PIN value when visible to the event subscriber. | None | Omit if not used. |
+| ?visibility | Enum | 0x04 | Visibility policy for this event payload. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+| ?redactionRequired | Boolean | 0x05 | Whether logs and diagnostics must redact this PIN value. | None | Default: true |
+| ?requestedAt | String | 0x06 | Timestamp when PIN input was requested. | maxLength=64 | Omit if not used. |
 
 ---
 
@@ -4873,6 +1253,137 @@ Cast window rectangle in screen coordinates.
 
 ---
 
+## CastRestartBackendParams
+
+Request to restart the cast backend.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?reason | Enum | 0x01 | Caller-visible restart reason. | enum=manualRecovery/configChanged/backendUnhealthy/unknown | Omit if not used. |
+| ?force | Boolean | 0x02 | Whether the backend adapter may force cleanup before restart. | None | Default: false |
+
+---
+
+## CastRestartBackendResult
+
+Result of requesting a cast backend restart.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the receiver accepted the restart request. | None | N/A |
+| backendType | Enum | 0x02 | Backend implementation affected by the restart. | enum=uxplay/unknown | N/A |
+| state | Enum | 0x03 | Backend state after accepting the restart request. | enum=starting/ready/restarting/exited/failed/disabled | N/A |
+| ?restartId | String | 0x04 | Receiver-local restart operation id. | maxLength=128 | Omit if not used. |
+| activeSessionEnded | Boolean | 0x05 | Whether an active cast session was ended by the restart. | None | N/A |
+| ?endedSessionId | String | 0x06 | Session ended by the restart. | maxLength=128 | Omit if not used. |
+| ?sessionStopReason | Enum | 0x07 | Session stop reason reported for the ended session. | enum=backendRestart/backendExited/error/unknown | Omit if not used. |
+| ?estimatedReadyInMs | UInt32 | 0x08 | Estimated backend recovery time in milliseconds. | None | Omit if not used. |
+| ?updatedAt | String | 0x09 | Timestamp for this restart result. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastSessionCapability
+
+Capability descriptor for cast.session.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| protocols | Array<String> | 0x01 | Cast protocol paths represented by the receiver. | array.itemType=string | N/A |
+| receiverPhases | Array<String> | 0x02 | Supported protocol-neutral receiver phases. | array.itemType=string | N/A |
+| ?supportsAirPlayName | Boolean | 0x03 | Whether AirPlay display name query and update are supported. | None | Default: true |
+| ?supportsStopSession | Boolean | 0x04 | Whether active cast sessions can be stopped through cast.stopSession. | None | Default: true |
+| ?backendTypes | Array<String> | 0x05 | Backend implementations represented by this receiver. | array.itemType=string | Omit if not used. |
+
+---
+
+## CastSessionFailedEvent
+
+Event payload for cast session failure.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local failed session id when assigned. | maxLength=128 | Omit if not used. |
+| receiverPhase | Enum | 0x02 | Receiver phase after failure. | enum=failed | N/A |
+| ?sessionState | Enum | 0x03 | Backend-specific failed state. | enum=failed | Omit if not used. |
+| ?protocol | Enum | 0x04 | Protocol path represented by the failed session. | enum=airplay/hid/unknown | Omit if not used. |
+| ?source | CastSourceSummary | 0x05 | Source summary when available. | None | Omit if not used. |
+| ?reason | Enum | 0x06 | Failure reason. | enum=connectionFailed/authFailed/negotiationFailed/backendFailed/mediaFailed/unknown | Omit if not used. |
+| ?error | CastLastError | 0x07 | Redactable error summary. | None | Omit if not used. |
+| ?failedAt | String | 0x08 | Timestamp when the failure was observed. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastSessionIncomingEvent
+
+Event payload for a new incoming cast session.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local session id assigned to the incoming session. | maxLength=128 | Omit if not used. |
+| receiverPhase | Enum | 0x02 | Receiver phase entered for the incoming session. | enum=incoming/authenticating | N/A |
+| ?protocol | Enum | 0x03 | Protocol path used by the incoming session. | enum=airplay/hid/unknown | Omit if not used. |
+| ?source | CastSourceSummary | 0x04 | Source summary when available. | None | Omit if not used. |
+| ?authRequired | Boolean | 0x05 | Whether this incoming session requires authentication. | None | Omit if not used. |
+| ?incomingAt | String | 0x06 | Timestamp when the incoming session was observed. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastSessionStartedEvent
+
+Event payload for a user-visible cast session start.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sessionId | String | 0x01 | Receiver-local started session id. | maxLength=128 | N/A |
+| receiverPhase | Enum | 0x02 | Receiver phase after first visible frame or local playback starts. | enum=rendering | N/A |
+| ?sessionState | Enum | 0x03 | Backend-specific state after session start. | enum=casting | Omit if not used. |
+| ?protocol | Enum | 0x04 | Protocol path represented by the started session. | enum=airplay/hid/unknown | Omit if not used. |
+| ?source | CastSourceSummary | 0x05 | Source summary when available. | None | Omit if not used. |
+| ?media | CastMediaSummary | 0x06 | Media summary at session start. | None | Omit if not used. |
+| ?startedAt | String | 0x07 | Timestamp when the session became user-visible. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastSessionState
+
+Current receiver phase and active session state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| receiverState | Enum | 0x01 | Receiver service availability state. | enum=disabled/starting/ready/busy/failed | N/A |
+| ?sessionId | String | 0x02 | Receiver-local active session id. | maxLength=128 | Omit if not used. |
+| receiverPhase | Enum | 0x03 | Protocol-neutral receiver phase used by UI and reconnection calibration. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | N/A |
+| ?sessionState | Enum | 0x04 | AirPlay or backend-specific session state detail. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?protocol | Enum | 0x05 | Cast protocol path currently represented by this state. | enum=airplay/hid/unknown | Omit if not used. |
+| ?airPlayName | String | 0x06 | Current published AirPlay receiver display name. | maxLength=128 | Omit if not used. |
+| ?source | CastSourceSummary | 0x07 | Source device summary. | None | Omit if not used. |
+| ?media | CastMediaSummary | 0x08 | Low-frequency media summary. | None | Omit if not used. |
+| ?backendState | Enum | 0x09 | Current backend state summary. | enum=starting/ready/restarting/exited/failed/disabled | Omit if not used. |
+| ?reason | Enum | 0x0A | Last state transition reason. | enum=sessionStarted/mediaFlowStarted/externalRequest/sourceClosed/backendRestart/backendExited/authFailed/error/unknown | Omit if not used. |
+| ?authRequired | Boolean | 0x0B | Whether this session path currently requires authentication. | None | Omit if not used. |
+| ?updatedAt | String | 0x0C | Timestamp for this state snapshot. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastSessionStateChangedEvent
+
+Event payload for receiver phase or backend session state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?previousReceiverPhase | Enum | 0x02 | Previous receiver phase. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Omit if not used. |
+| receiverPhase | Enum | 0x03 | New receiver phase. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | N/A |
+| ?previousState | Enum | 0x04 | Previous backend-specific session state. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?sessionState | Enum | 0x05 | New backend-specific session state. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?protocol | Enum | 0x06 | Protocol path represented by this event. | enum=airplay/hid/unknown | Omit if not used. |
+| ?authRequired | Boolean | 0x07 | Whether the current session phase requires authentication. | None | Omit if not used. |
+| ?media | CastMediaSummary | 0x08 | Low-frequency media summary at the time of transition. | None | Omit if not used. |
+| ?reason | Enum | 0x09 | Transition reason. | enum=sessionStarted/mediaFlowStarted/externalRequest/sourceClosed/backendRestart/backendExited/authFailed/error/unknown | Omit if not used. |
+| ?updatedAt | String | 0x0A | Timestamp for the transition. | maxLength=64 | Omit if not used. |
+
+---
+
 ## CastSessionStatusSummary
 
 Snapshot active session summary for status views.
@@ -4887,6 +1398,164 @@ Snapshot active session summary for status views.
 
 ---
 
+## CastSessionStoppedEvent
+
+Event payload for a stopped cast session.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local stopped session id. | maxLength=128 | Omit if not used. |
+| ?previousReceiverPhase | Enum | 0x02 | Receiver phase before stop completion. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Omit if not used. |
+| receiverPhase | Enum | 0x03 | Receiver phase after stop completion. | enum=ended/failed/idle | N/A |
+| ?previousState | Enum | 0x04 | Backend-specific state before stop completion. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?sessionState | Enum | 0x05 | Backend-specific state after stop completion. | enum=ended/failed/idle | Omit if not used. |
+| ?reason | Enum | 0x06 | Stop reason. | enum=externalRequest/sourceClosed/backendRestart/backendExited/shutdown/error/unknown | Omit if not used. |
+| ?backendType | Enum | 0x07 | Backend type associated with the stopped session. | enum=uxplay/unknown | Omit if not used. |
+| ?stoppedAt | String | 0x08 | Timestamp when the stop was observed. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastSetAirPlayNameParams
+
+Request to set the AirPlay receiver display name.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| displayName | String | 0x01 | Target AirPlay display name. | maxLength=128 | N/A |
+| ?apply | Enum | 0x02 | Requested backend apply timing. | enum=immediate/onNextBackendStart | Omit if not used. |
+
+---
+
+## CastSetAudioDelayParams
+
+Request to set receiver-local audio playback delay compensation.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| audioDelayMs | UInt32 | 0x01 | Target local audio playback delay in milliseconds; zero disables delay compensation. | min=0, max=1000 | N/A |
+| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?scope | Enum | 0x03 | State target hint; default persists the receiver delay for future sessions. | enum=currentSession/default | Omit if not used. |
+
+---
+
+## CastSetAudioParams
+
+Request to enable or disable local cast audio playback.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | N/A |
+| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?scope | Enum | 0x03 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
+
+---
+
+## CastSetFlowPolicyParams
+
+Request to update receiver-local queue, late-frame, drop, and overlay policy.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?videoQueueFrames | UInt32 | 0x01 | Maximum queued video frames. | min=1 | Omit if not used. |
+| ?lateFrameThresholdMs | UInt32 | 0x02 | Late-frame threshold in milliseconds. | None | Omit if not used. |
+| ?dropMode | Enum | 0x03 | Local frame drop policy. | enum=drop-late/drop-oldest/render-latest | Omit if not used. |
+| ?overlayEnabled | Boolean | 0x04 | Whether receiver diagnostics overlay is enabled. | None | Omit if not used. |
+| ?sessionId | String | 0x05 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?scope | Enum | 0x06 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
+
+---
+
+## CastSetMutedParams
+
+Request to mute or unmute local cast audio output.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| muted | Boolean | 0x01 | Whether local receiver output is muted. | None | N/A |
+| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?scope | Enum | 0x03 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
+
+---
+
+## CastSetPinCodeConfigParams
+
+Request to update cast PIN protection configuration.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?enabled | Boolean | 0x01 | Whether PIN protection is enabled. | None | Omit if not used. |
+| ?pinDisplay | Enum | 0x02 | Where the current PIN may be displayed. | enum=hidden/authorizedClients/localUi/both | Omit if not used. |
+| ?rotatePin | Boolean | 0x03 | Whether the receiver should rotate or regenerate the PIN. | None | Default: false |
+| ?visibility | Enum | 0x04 | Visibility policy for responses and events. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+
+---
+
+## CastSetPinCodeParams
+
+Request to set the active cast PIN value.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| pinCode | String | 0x01 | Opaque PIN value; concrete format is backend or product policy. | None | N/A |
+| ?expirePrevious | Boolean | 0x02 | Whether prior PIN material should stop being accepted. | None | Default: true |
+| ?visibility | Enum | 0x03 | Visibility policy for the new PIN. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+
+---
+
+## CastSetRenderFpsParams
+
+Request to set receiver-local target render fps.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| fps | Number | 0x01 | Target local render fps; zero means uncapped. | min=0 | N/A |
+| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?scope | Enum | 0x03 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
+
+---
+
+## CastSetVideoStreamParamsParams
+
+Request to update the active cast video stream frame rate or bitrate, optionally resetting selected fields.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Optional receiver-local cast session id. | maxLength=128 | Omit if not used. |
+| ?frameRate | UInt32 | 0x02 | Optional target encoded video frame rate; zero is invalid, omission leaves the current session value unchanged or unset if never configured, and only resetFields clears it and restores the source/profile default. | min=1 | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x03 | Optional target encoded video bitrate in kbps; zero is invalid, omission leaves the current session value unchanged or unset if never configured, and only resetFields clears it and restores the source/profile default. | min=1 | Omit if not used. |
+| ?resetFields | Array<String> | 0x04 | Optional video parameter field names to reset to the source or profile default. | array.itemType=string | Omit if not used. |
+
+---
+
+## CastSetVideoStreamParamsResult
+
+Result and reconfiguration status for cast video stream parameter changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the receiver accepted the requested video parameter change. | None | N/A |
+| state | Enum | 0x02 | Reconfiguration lifecycle state. | enum=pending/applied/failed/rolledBack/unchanged | N/A |
+| ?sessionId | String | 0x03 | Receiver-local cast session id associated with the result. | maxLength=128 | Omit if not used. |
+| ?reconfigureId | String | 0x04 | Identifier for this video stream reconfiguration operation. | maxLength=128 | Omit if not used. |
+| ?previousStreamId | UInt32 | 0x05 | Previously active video stream id when the operation replaced a stream. | None | Omit if not used. |
+| ?activeStreamId | UInt32 | 0x06 | Currently active video stream id after the operation. | None | Omit if not used. |
+| sourceVideo | CastVideoStreamParamsState | 0x07 | Effective source video stream parameter state after the request. | None | N/A |
+
+---
+
+## CastSetWindowStateParams
+
+Request to update cast window state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?mode | Enum | 0x01 | Target cast window mode. | enum=normal/fullscreen | Omit if not used. |
+| ?fullscreen | Boolean | 0x02 | Whether the cast window should be fullscreen. | None | Omit if not used. |
+| ?alwaysOnTop | Boolean | 0x03 | Whether the cast window should stay above normal windows. | None | Omit if not used. |
+| ?bounds | CastRect | 0x04 | Optional target normal-mode window bounds. | None | Omit if not used. |
+
+---
+
 ## CastSourceSummary
 
 Summary of a cast source device or local AXTP sender.
@@ -4898,6 +1567,65 @@ Summary of a cast source device or local AXTP sender.
 | ?address | String | 0x03 | Network or transport address summary when safe to expose. | maxLength=128 | Omit if not used. |
 | ?sourceId | String | 0x04 | Receiver-local source identifier. | maxLength=128 | Omit if not used. |
 | ?protocol | Enum | 0x05 | Protocol path that produced the source summary. | enum=airplay/hid/unknown | Omit if not used. |
+
+---
+
+## CastStatus
+
+Current cast receiver snapshot for reconnect and event-loss recovery.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| receiver | CastReceiverSummary | 0x01 | Receiver role and phase summary. | None | N/A |
+| ?session | CastSessionStatusSummary | 0x02 | Active session summary. | None | Omit if not used. |
+| ?pinCode | CastPinCodeStatusSummary | 0x03 | PIN protection summary. | None | Omit if not used. |
+| ?audio | CastAudioState | 0x04 | Local audio summary. | None | Omit if not used. |
+| ?window | CastWindowState | 0x05 | Cast window summary. | None | Omit if not used. |
+| ?backend | CastBackendStatus | 0x06 | Backend summary. | None | Omit if not used. |
+| ?flowControl | CastFlowControlState | 0x07 | Flow control summary. | None | Omit if not used. |
+| sampledAt | String | 0x08 | Timestamp for this status snapshot. | maxLength=64 | N/A |
+| ?redacted | Boolean | 0x09 | Whether any sensitive snapshot fields were withheld. | None | Omit if not used. |
+
+---
+
+## CastStatusCapability
+
+Capability descriptor for cast.status snapshot query.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sections | Array<String> | 0x01 | Status snapshot sections the receiver can report. | array.itemType=string | N/A |
+| ?supportsSensitiveRedaction | Boolean | 0x02 | Whether sensitive status fields can be withheld and marked redacted. | None | Default: true |
+
+---
+
+## CastStopSessionParams
+
+Request to stop an active cast session.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Optional receiver-local session id; omitted means current active session. | maxLength=128 | Omit if not used. |
+| ?reason | Enum | 0x02 | Caller-visible reason for stopping the session. | enum=externalRequest/localUi/backendRestart/shutdown/unknown | Omit if not used. |
+| ?force | Boolean | 0x03 | Whether the receiver may force backend/session cleanup. | None | Default: false |
+
+---
+
+## CastStopSessionResult
+
+Result of a cast session stop request.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the receiver accepted the stop request. | None | N/A |
+| ?sessionId | String | 0x02 | Session affected by the request. | maxLength=128 | Omit if not used. |
+| ?previousReceiverPhase | Enum | 0x03 | Receiver phase before the stop transition. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Omit if not used. |
+| receiverPhase | Enum | 0x04 | Receiver phase after accepting the stop request. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | N/A |
+| ?previousState | Enum | 0x05 | Backend-specific state before the stop transition. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?sessionState | Enum | 0x06 | Backend-specific state after accepting the stop request. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?reason | Enum | 0x07 | Applied stop reason. | enum=externalRequest/sourceClosed/backendRestart/backendExited/shutdown/unknown | Omit if not used. |
+| ?noActiveSession | Boolean | 0x08 | Whether no active session existed when the request was processed. | None | Omit if not used. |
+| ?updatedAt | String | 0x09 | Timestamp for the result. | maxLength=64 | Omit if not used. |
 
 ---
 
@@ -4926,21 +1654,65 @@ Desired and effective cast source video stream parameters and reconfiguration st
 
 ---
 
+## CastWindowCapability
+
+Capability descriptor for cast.window.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?supportsFullscreen | Boolean | 0x01 | Whether fullscreen window mode is supported. | None | Default: true |
+| ?supportsAlwaysOnTop | Boolean | 0x02 | Whether topmost window state is supported. | None | Default: true |
+| ?supportsNormalRestore | Boolean | 0x03 | Whether normal mode can restore remembered normal-mode bounds. | None | Default: true |
+| ?noWindowPolicy | Enum | 0x04 | Receiver policy when a window command is received without an active cast window. | enum=reject/remember/runtimeDefault | Omit if not used. |
+
+---
+
+## CastWindowChangedEvent
+
+Event payload for cast window state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
+| state | CastWindowState | 0x02 | Window state after the change. | None | N/A |
+| ?reason | Enum | 0x03 | Change reason. | enum=externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?updatedAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastWindowState
+
+Cast window visibility, mode, and bounds state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| hasWindow | Boolean | 0x01 | Whether a cast window currently exists. | None | N/A |
+| visible | Boolean | 0x02 | Whether the cast window is visible. | None | N/A |
+| mode | Enum | 0x03 | Current cast window mode. | enum=normal/fullscreen | N/A |
+| fullscreen | Boolean | 0x04 | Whether the cast window is fullscreen. | None | N/A |
+| alwaysOnTop | Boolean | 0x05 | Whether the cast window is topmost. | None | N/A |
+| ?sessionId | String | 0x06 | Receiver-local session id associated with the window. | maxLength=128 | Omit if not used. |
+| ?bounds | CastRect | 0x07 | Current window bounds when available. | None | Omit if not used. |
+| ?changedFields | Array<String> | 0x0A | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x0B | Timestamp for this window state. | maxLength=64 | Omit if not used. |
+
+---
+
 ## ControlAcceptBody
 
 Kind: `object`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| sessionId | UInt32 | 0x01 | - | None | N/A |
+| ?sessionId | UInt32 | 0x01 | - | None | Omit if not used. |
 | ?protocolVersion | UInt8 | 0x02 | - | min=1, max=15, deprecated | Omit if not used. |
 | ?reservedHeaderProfile | UInt8 | 0x03 | - | min=1, max=2, deprecated | Omit if not used. |
-| maxFrameSize | UInt16 | 0x04 | - | min=19, max=65535 | N/A |
+| ?maxFrameSize | UInt16 | 0x04 | - | min=19, max=65535 | Omit if not used. |
 | ?mtu | UInt16 | 0x06 | - | min=1, max=65535 | Omit if not used. |
-| supportedPayloadTypes | Bitmap | 0x07 | - | None | N/A |
-| heartbeatIntervalMs | UInt32 | 0x0A | - | min=500, max=60000 | N/A |
-| ackMode | UInt8 | 0x0B | - | min=0, max=4 | N/A |
-| selectedRpcEncoding | UInt8 | 0x1E | - | min=1, max=4 | N/A |
+| ?supportedPayloadTypes | Bitmap | 0x07 | - | None | Omit if not used. |
+| ?heartbeatIntervalMs | UInt32 | 0x0A | - | min=500, max=60000 | Omit if not used. |
+| ?ackMode | UInt8 | 0x0B | - | min=0, max=4 | Omit if not used. |
+| ?selectedRpcEncoding | UInt8 | 0x1E | - | min=1, max=4 | Omit if not used. |
 
 ---
 
@@ -4985,6 +1757,22 @@ Lightweight capability modeling summary returned by device.getInfo.
 
 ---
 
+## DeviceEnrollmentCapability
+
+Capability descriptor for device.enrollment.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?supportsPairingCode | Boolean | 0x01 | Whether pairing code is supported. | None | Omit if not used. |
+| ?pairingCodeTtlSeconds | UInt32 | 0x02 | Default code TTL in seconds; MUST be greater than 0. | None | Omit if not used. |
+| ?supportsUnenroll | Boolean | 0x03 | Whether remote unbind or enrollment state clear is supported. | None | Omit if not used. |
+| ?endpointTypes | Array<String> | 0x04 | Endpoint type strings that enrollment may produce; candidate values include room, device, and asset. P0 only requires room. [REVIEW-ADOPTED-SCOPED] | array.itemType=string | Omit if not used. |
+| ?supportedPurposes | Array<String> | 0x05 | Supported pairing code purpose strings; candidate values include initial_enrollment, re_enrollment, and service_repair. Omission means only initial_enrollment is supported. [REVIEW-ADOPTED-SCOPED] | array.itemType=string | Omit if not used. |
+| ?maxActivePairingCodes | UInt32 | 0x06 | Maximum number of simultaneously valid pairing codes. Default 1. [REVIEW-ADOPTED-SCOPED] | None | Default: 1 |
+| ?pairingCodeLength | UInt32 | 0x07 | Pairing code character length. Default 6. [REVIEW-ADOPTED-SCOPED] | min=6, max=8 | Default: 6 |
+
+---
+
 ## DeviceEnrollmentEndpointSummary
 
 Backend endpoint summary associated with enrollment. Nested in DeviceEnrollmentInfo and DeviceSetEnrollmentStateParams. When type is room, profileId is required.
@@ -4996,6 +1784,57 @@ Backend endpoint summary associated with enrollment. Nested in DeviceEnrollmentI
 | ?displayName | String | 0x03 | Endpoint display name, non-empty and trimmed. Max length aligned with device.info product.displayName (128) as a scoped default. [REVIEW-ADOPTED-SCOPED] 待产品确认后走 amend | maxLength=128 | Omit if not used. |
 | ?profileId | String | 0x04 | Room profile or business profile identifier. MUST be present when type is room; other types allow omission. | maxLength=128 | Omit if not used. |
 | ?workspaceId | String | 0x05 | Endpoint workspace identifier. Takes precedence over the parent DeviceEnrollmentInfo.workspaceId when both are present. [REVIEW-ADOPTED-SCOPED] | maxLength=128 | Omit if not used. |
+
+---
+
+## DeviceEnrollmentInfo
+
+Enrollment state snapshot. Shared by the device.getEnrollmentState result, DeviceSetEnrollmentStateResult.state, and DeviceEnrollmentStateChangedEvent.state. workspaceId, endpoint, and enrolledAt are populated only when state is enrolled or unenrolling.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | Enum | 0x01 | Current enrollment state; candidate values include unmanaged, pairing_available, pending, enrolled, failed, and unenrolling. Valid transitions follow the enrollment state machine; invalid transitions return INVALID_STATE. | None | N/A |
+| ?deviceId | String | 0x02 | Server-assigned device identifier, stable across sessions. | maxLength=128 | Omit if not used. |
+| ?workspaceId | String | 0x03 | Enrolled workspace identifier. Populated only when state is enrolled or unenrolling. Privacy-sensitive; exposure policy to be confirmed. [REVIEW-ADOPTED-SCOPED] 待确认后走 amend | maxLength=128 | Omit if not used. |
+| ?endpoint | DeviceEnrollmentEndpointSummary | 0x04 | Post-enrollment backend endpoint. Populated only when state is enrolled or unenrolling and subject to includeEndpoint. | None | Omit if not used. |
+| ?enrolledAt | String | 0x05 | RFC 3339 timestamp of when the state became enrolled. Present only when state is enrolled or unenrolling. [REVIEW-ADOPTED-SCOPED] | None | Omit if not used. |
+| ?updatedAt | String | 0x06 | RFC 3339 timestamp of the most recent state update. | None | Omit if not used. |
+| ?message | String | 0x07 | Human-readable detail, populated when state is failed or pending, optional when unenrolling. | maxLength=512 | Omit if not used. |
+
+---
+
+## DeviceEnrollmentStateChangedEvent
+
+Event payload emitted when the enrollment state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | DeviceEnrollmentInfo | 0x01 | Enrollment state after the change. | None | N/A |
+| ?previousState | Enum | 0x02 | State enum value (not a full object) before the change; candidate values are the same DeviceEnrollmentInfo.state set. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Change reason; candidate values include pairing_code_used, server_claimed, user_unenrolled, admin_reset, and unknown (default). | None | Omit if not used. |
+| ?triggerMethod | Enum | 0x04 | Operation type that triggered the change; candidate values include setEnrollmentState (explicit call), getPairingCode (indirect, for code-expiry fallback), and server_sync (device-internal such as code-expiry rollback or server-side revoke). triggerId MUST be omitted when triggerMethod is server_sync. [REVIEW-ADOPTED-SCOPED] | None | Omit if not used. |
+| ?triggerId | String | 0x05 | RPC request id of the triggering operation. Omitted when triggerMethod is server_sync. [REVIEW-ADOPTED-SCOPED] | maxLength=64 | Omit if not used. |
+
+---
+
+## DeviceGetEnrollmentStateParams
+
+Request for device.getEnrollmentState; controls whether the post-enrollment endpoint summary is returned.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeEndpoint | Boolean | 0x01 | Whether to include the post-enrollment endpoint summary. Defaults to true since the most common caller (the cloud management backend) needs endpoint info; set to false for lightweight polling or when the endpoint is already cached. | None | Default: true |
+
+---
+
+## DeviceGetPairingCodeParams
+
+Request for device.getPairingCode; selects refresh behavior and the pairing code purpose.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?refresh | Boolean | 0x01 | Whether to force a fresh pairing code. false (default) returns the current valid code; true generates a new code and invalidates the previous one. | None | Default: false |
+| ?purpose | Enum | 0x02 | Pairing code usage scenario; candidate values include initial_enrollment (first-time enrollment of a new device, default), re_enrollment (re-enrollment such as workspace migration), and service_repair (service/repair pairing, may have a different TTL or permission). Unsupported purpose returns NOT_SUPPORTED. | None | Omit if not used. |
 
 ---
 
@@ -5024,6 +1863,34 @@ Stable identity fields for the current main device.
 
 ---
 
+## DeviceInfo
+
+Read-only information snapshot for the current AXTP endpoint main device.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| identity | DeviceIdentity | 0x01 | Stable device identity fields. | None | N/A |
+| product | DeviceProduct | 0x02 | Brand, product type, model, and display information. | None | N/A |
+| ?hardware | DeviceHardware | 0x03 | Hardware summary. | None | Omit if not used. |
+| ?os | DeviceOs | 0x04 | Operating system summary. | None | Omit if not used. |
+| ?software | DeviceSoftware | 0x05 | Installed or hosted software component summary. | None | Omit if not used. |
+| ?runtime | DeviceAxtpRuntime | 0x06 | AXTP runtime summary. | None | Omit if not used. |
+| ?capability | DeviceCapabilitySummary | 0x07 | Lightweight modeling summary; not a complete capability registry. | None | Omit if not used. |
+
+---
+
+## DeviceInfoCapability
+
+Capability descriptor for device.info.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| readOnly | Boolean | 0x01 | device.info currently exposes only read-only information. | None | Default: true |
+| ?supportsCapabilitySummary | Boolean | 0x02 | Whether device.getInfo can include DeviceCapabilitySummary. | None | Default: true |
+| ?identityMerged | Boolean | 0x03 | Whether device.identity has been merged into device.info. | None | Default: true |
+
+---
+
 ## DeviceOs
 
 Operating system summary.
@@ -5034,6 +1901,19 @@ Operating system summary.
 | ?name | String | 0x02 | OS display name. | maxLength=128 | Omit if not used. |
 | ?version | String | 0x03 | OS version string. | maxLength=64 | Omit if not used. |
 | ?arch | Enum | 0x04 | OS architecture; candidate values include x86_64, arm64, armv7, riscv64, and unknown. | None | Omit if not used. |
+
+---
+
+## DevicePairingCodeInfo
+
+Pairing code snapshot returned by device.getPairingCode. The code field carries a displayable or inputtable code; expiresAt is the authoritative absolute expiry while expiresInSeconds is retained for legacy device-sdk compatibility.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| code | String | 0x01 | Displayable pairing code, 6-8 uppercase alphanumeric characters excluding confusable characters (0/O, 1/I/L); MUST match the regex ^[A-HJ-NP-Z2-9]{6,8}$. | maxLength=8 | N/A |
+| ?expiresAt | String | 0x02 | Absolute expiry time as an RFC 3339 timestamp. Authoritative when present. Legacy GetBindCode returned a Unix timestamp integer here; the adapter MUST convert integer to RFC 3339 string. | None | Omit if not used. |
+| ?expiresInSeconds | UInt32 | 0x03 | Relative expiry in seconds, retained for legacy device-sdk compatibility (observed value 1800). MUST be greater than 0 when present. | min=1 | Omit if not used. |
+| ?state | Enum | 0x04 | Pairing code lifecycle state; candidate values include available (default), expired (TTL reached), used (consumed by the cloud), and disabled (revoked by the server). | None | Omit if not used. |
 
 ---
 
@@ -5050,6 +1930,30 @@ Product and user-visible model information.
 
 ---
 
+## DeviceSetEnrollmentStateParams
+
+Request for device.setEnrollmentState. Validation rules follow the enrollment state machine. For desiredState enrolled, only reachable from pending, endpoint and reason required, and endpoint.profileId required when endpoint.type is room. For desiredState unmanaged, reachable from enrolled/failed/pairing_available, reason recommended. For desiredState failed, only reachable from pending, message required. For desiredState pending, reachable from failed (retry) or pairing_available (code submitted). Transitions must follow the state machine; violations return INVALID_STATE.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| desiredState | Enum | 0x01 | Target state; candidate values include enrolled, unmanaged, failed, and pending. | None | N/A |
+| ?reason | Enum | 0x02 | Change reason; candidate values include pairing_code_used, server_claimed, user_unenrolled, admin_reset, and unknown (default). | None | Omit if not used. |
+| ?endpoint | DeviceEnrollmentEndpointSummary | 0x03 | Endpoint summary associated with a successful enrollment. Required when desiredState is enrolled. | None | Omit if not used. |
+| ?message | String | 0x04 | Failure, unbind, or repair detail. Required when desiredState is failed. | maxLength=512 | Omit if not used. |
+
+---
+
+## DeviceSetEnrollmentStateResult
+
+Result of device.setEnrollmentState; carries the post-operation enrollment snapshot.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | DeviceEnrollmentInfo | 0x01 | Enrollment state after the operation. | None | N/A |
+| ?disconnectExpected | Boolean | 0x02 | Whether the unbind or reset is expected to cause a connection change. true only when desiredState is unmanaged and the device needs to close the management session; false for all other transitions. | None | Default: false |
+
+---
+
 ## DeviceSoftware
 
 Software component summary.
@@ -5057,6 +1961,52 @@ Software component summary.
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?components | Array<SoftwareComponent> | 0x01 | Software component objects. | schema=SoftwareComponent, array.itemType=SoftwareComponent, array.itemSchema=SoftwareComponent | Omit if not used. |
+
+---
+
+## Empty
+
+Kind: `object`
+
+No fields.
+
+---
+
+## FinishUpdateParams
+
+Request to finish firmware upload and hand off processing to the device.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+
+---
+
+## FinishUpdateResult
+
+Result of finishUpdate.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+| accepted | Boolean | 0x02 | Whether the device accepted the finish handoff. | None | N/A |
+| state | Enum | 0x03 | State after finish, normally verifying or failed. | None | N/A |
+
+---
+
+## FirmwareUpdateCapabilities
+
+P0 firmware update capability and upload constraints.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supported | Boolean | 0x01 | Whether firmware.update P0 is supported. | None | N/A |
+| supportsMultiFile | Boolean | 0x02 | Whether manifest may contain multiple files. | None | N/A |
+| streamLayout | Enum | 0x03 | P0 stream layout, currently file. | None | N/A |
+| hashAlgorithm | Enum | 0x04 | P0 hash algorithm, currently md5. | None | N/A |
+| autoReboot | Boolean | 0x05 | Whether the device automatically reboots after installation. | None | N/A |
+| ?maxChunkSize | UInt32 | 0x06 | Maximum STREAM data chunk size supported by the device. | None | Omit if not used. |
+| ?devicePolicyVersion | String | 0x07 | Optional device policy version used by host tooling. | maxLength=64 | Omit if not used. |
 
 ---
 
@@ -5082,6 +2032,65 @@ Minimal firmware update manifest.
 | ?version | String | 0x02 | Target firmware version string. | maxLength=64 | Omit if not used. |
 | files | Array<FirmwareUpdateFile> | 0x03 | Firmware update files. | schema=FirmwareUpdateFile, array.itemType=FirmwareUpdateFile, array.itemSchema=FirmwareUpdateFile | N/A |
 | ?devicePolicyVersion | String | 0x04 | Optional policy version used to interpret the package. | maxLength=64 | Omit if not used. |
+
+---
+
+## FirmwareUpdateProgressEvent
+
+Event payload for firmware update progress.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+| state | Enum | 0x02 | Current firmware update state. | None | N/A |
+| ?progress | UInt8 | 0x03 | Overall progress percentage. | min=0, max=100 | Omit if not used. |
+| ?fileId | String | 0x04 | Current file identifier. | maxLength=128 | Omit if not used. |
+
+---
+
+## FirmwareUpdateState
+
+Current firmware update state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+| state | Enum | 0x02 | State, such as idle, receiving, verifying, installing, rebooting, confirmed, or failed. | None | N/A |
+| ?progress | UInt8 | 0x03 | Overall progress percentage. | min=0, max=100 | Omit if not used. |
+| ?currentFileId | String | 0x04 | Current file identifier, if file-level progress is available. | maxLength=128 | Omit if not used. |
+| ?error | FirmwareUpdateErrorInfo | 0x05 | Error details when state is failed. | None | Omit if not used. |
+
+---
+
+## FirmwareUpdateStateChangedEvent
+
+Event payload for firmware update state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+| state | Enum | 0x02 | New firmware update state. | None | N/A |
+| ?error | FirmwareUpdateErrorInfo | 0x03 | Error details when state is failed. | None | Omit if not used. |
+
+---
+
+## GetDeviceInfoParams
+
+Optional selector for the read-only device information snapshot.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeCapabilitySummary | Boolean | 0x01 | Whether to include the lightweight DeviceCapabilitySummary block. | None | Default: true |
+
+---
+
+## GetUpdateStateParams
+
+Selector for firmware update state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
 
 ---
 
@@ -5121,6 +2130,135 @@ Update policy fragment for target launcher. Referenced by SoftwareUpdatePolicy.p
 
 ---
 
+## NetworkApActionParams
+
+Start or stop AP request.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
+| ?reason | Enum | 0x02 | Action reason. | None | Omit if not used. |
+
+---
+
+## NetworkApActionResult
+
+Result of starting or stopping AP.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
+| state | NetworkApState | 0x02 | Current or target AP state. | None | N/A |
+
+---
+
+## NetworkApCapabilities
+
+Wi-Fi AP capability descriptor.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | String | 0x01 | Fixed capability name network.ap. | maxLength=32 | N/A |
+| securityTypes | Array<String> | 0x02 | Supported security types. | array.itemType=string | N/A |
+| ?bands | Array<String> | 0x03 | Supported bands. | array.itemType=string | Omit if not used. |
+| ?credentialExportModes | Array<String> | 0x04 | Credential export modes. | array.itemType=string | Omit if not used. |
+| ?clientsSupported | Boolean | 0x05 | Whether client list query and client change events are supported. | None | Omit if not used. |
+
+---
+
+## NetworkApClientChangedEvent
+
+Event payload for Wi-Fi AP client changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| change | Enum | 0x01 | Client change type; candidate values include joined, left, and updated. | None | N/A |
+| client | NetworkApClientInfo | 0x02 | Client summary. | None | N/A |
+| ?reason | Enum | 0x03 | Change reason. | None | Omit if not used. |
+
+---
+
+## NetworkApClients
+
+AP client list result.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| clients | Array<NetworkApClientInfo> | 0x01 | NetworkApClientInfo objects. | schema=NetworkApClientInfo, array.itemType=NetworkApClientInfo, array.itemSchema=NetworkApClientInfo | N/A |
+
+---
+
+## NetworkApConfig
+
+Wi-Fi AP configuration.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| ?enabled | Boolean | 0x02 | Whether AP should be enabled by configuration. | None | Omit if not used. |
+| ssid | String | 0x03 | AP SSID. | maxLength=64 | N/A |
+| ?hidden | Boolean | 0x04 | Whether SSID broadcast is hidden. | None | Default: false |
+| ?band | Enum | 0x05 | AP band. | None | Omit if not used. |
+| ?channel | UInt16 | 0x06 | AP channel. | None | Omit if not used. |
+| securityType | Enum | 0x07 | AP security type. | None | N/A |
+| ?credential | NetworkCredential | 0x08 | Credential descriptor; plaintext must not be returned unless policy explicitly allows it. | None | Omit if not used. |
+| ?maxClients | UInt16 | 0x09 | Maximum client count. | None | Omit if not used. |
+
+---
+
+## NetworkApConfigChangedEvent
+
+Event payload for Wi-Fi AP configuration changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| config | NetworkApConfig | 0x02 | New AP configuration. | None | N/A |
+| ?changedFields | Array<String> | 0x03 | Changed field paths. | array.itemType=string | Omit if not used. |
+| ?reason | Enum | 0x04 | Change reason. | None | Omit if not used. |
+
+---
+
+## NetworkApState
+
+Wi-Fi AP runtime state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| enabled | Boolean | 0x02 | Whether AP is currently enabled. | None | N/A |
+| state | Enum | 0x03 | AP state; candidate values include disabled, starting, enabled, stopping, failed, and unknown. | None | N/A |
+| ?ssid | String | 0x04 | Active AP SSID. | maxLength=64 | Omit if not used. |
+| ?clientCount | UInt16 | 0x05 | Current associated client count. | None | Omit if not used. |
+| ?failureReason | Enum | 0x06 | Failure reason when state is failed. | None | Omit if not used. |
+
+---
+
+## NetworkApStateChangedEvent
+
+Event payload for Wi-Fi AP state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | NetworkApState | 0x01 | New AP state. | None | N/A |
+| ?previousState | NetworkApState | 0x02 | Previous AP state. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Change reason. | None | Omit if not used. |
+
+---
+
+## NetworkConnectWifiParams
+
+Wi-Fi station connect request.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
+| ?profileId | String | 0x02 | Saved profile identifier. | maxLength=128 | Omit if not used. |
+| ?profile | NetworkWifiProfile | 0x03 | Inline profile to connect with. | None | Omit if not used. |
+| ?timeoutMs | UInt32 | 0x04 | Connection timeout in milliseconds. | None | Omit if not used. |
+
+---
+
 ## NetworkCredential
 
 Credential descriptor or secret reference.
@@ -5145,6 +2283,135 @@ Default network interface identifiers by role.
 
 ---
 
+## NetworkDisconnectWifiParams
+
+Wi-Fi station disconnect request.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
+| ?reason | Enum | 0x02 | Disconnect reason; candidate values include user_request, profile_changed, shutdown, and unknown. | None | Omit if not used. |
+
+---
+
+## NetworkGetApCapabilitiesParams
+
+Selector for Wi-Fi AP capability.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
+
+---
+
+## NetworkGetApConfigParams
+
+Selector for Wi-Fi AP configuration, state, or client list.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
+
+---
+
+## NetworkGetInterfaceInfoParams
+
+Selector for one network interface.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
+
+---
+
+## NetworkGetInterfacesParams
+
+Selector for network interface enumeration.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeDisabled | Boolean | 0x01 | Whether disabled interfaces should be included. | None | Default: false |
+
+---
+
+## NetworkGetIpConfigParams
+
+Selector for IP configuration.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Interface identifier; omitted means default primary interface. | maxLength=64 | Default: "defaults.primary" |
+| ?family | Enum | 0x02 | IP family; candidate values include ipv4 and ipv6. | None | Default: "ipv4" |
+
+---
+
+## NetworkGetWifiCapabilitiesParams
+
+Selector for Wi-Fi station capability.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
+
+---
+
+## NetworkGetWifiConfigParams
+
+Selector for saved Wi-Fi configuration.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
+| ?includeProfiles | Boolean | 0x02 | Whether to include saved profile summaries. | None | Default: true |
+
+---
+
+## NetworkGetWifiStateParams
+
+Selector for Wi-Fi station runtime state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
+
+---
+
+## NetworkInterfaceCapability
+
+Capability descriptor for network.interface.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceTypes | Array<String> | 0x01 | Supported interface type strings. | array.itemType=string | Omit if not used. |
+| ?supportsStateEvent | Boolean | 0x02 | Whether network.interfaceStateChanged is supported. | None | Omit if not used. |
+
+---
+
+## NetworkInterfaceInfo
+
+Detailed information for one network interface.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
+| type | Enum | 0x02 | Interface type. | None | N/A |
+| ?macAddress | String | 0x03 | Interface MAC address, if available and permitted. | maxLength=32 | Omit if not used. |
+| ?state | NetworkInterfaceState | 0x04 | Current interface state. | None | Omit if not used. |
+| ?supportsIpConfig | Boolean | 0x05 | Whether this interface can be used with network.ip. | None | Omit if not used. |
+
+---
+
+## NetworkInterfaces
+
+Network interface enumeration result.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaces | Array<NetworkInterfaceSummary> | 0x01 | Network interface summary objects. | schema=NetworkInterfaceSummary, array.itemType=NetworkInterfaceSummary, array.itemSchema=NetworkInterfaceSummary | N/A |
+| ?defaults | NetworkDefaultInterfaceIds | 0x02 | Default interface identifiers for common roles. | None | Omit if not used. |
+
+---
+
 ## NetworkInterfaceState
 
 Network interface administrative and link state.
@@ -5154,6 +2421,321 @@ Network interface administrative and link state.
 | ?admin | Enum | 0x01 | Administrative state; candidate values include up, down, disabled, and unknown. | None | Omit if not used. |
 | ?link | Enum | 0x02 | Link state; candidate values include up, down, dormant, unknown. | None | Omit if not used. |
 | ?speedMbps | UInt32 | 0x03 | Link speed in Mbps. | None | Omit if not used. |
+
+---
+
+## NetworkInterfaceStateChangedEvent
+
+Event payload for network interface state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
+| state | NetworkInterfaceState | 0x02 | New interface state. | None | N/A |
+| ?previousState | NetworkInterfaceState | 0x03 | Previous interface state. | None | Omit if not used. |
+| ?reason | Enum | 0x04 | Change reason. | None | Omit if not used. |
+
+---
+
+## NetworkIpCapability
+
+Capability descriptor for network.ip.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?families | Array<String> | 0x01 | Supported IP families. | array.itemType=string | Omit if not used. |
+| ?modes | Array<String> | 0x02 | Supported IP modes. | array.itemType=string | Omit if not used. |
+| ?applyPolicies | Array<String> | 0x03 | Supported apply policies. | array.itemType=string | Omit if not used. |
+
+---
+
+## NetworkIpConfig
+
+IP configuration for one interface and address family.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
+| ?family | Enum | 0x02 | IP family; candidate values include ipv4 and ipv6. | None | Default: "ipv4" |
+| mode | Enum | 0x03 | IP mode; candidate values include dhcp, static, disabled, link_local, and unknown. | None | N/A |
+| ?address | String | 0x04 | IP address. | maxLength=64 | Omit if not used. |
+| ?prefixLength | UInt8 | 0x05 | Network prefix length. | min=0, max=128 | Omit if not used. |
+| ?gateway | String | 0x06 | Default gateway. | maxLength=64 | Omit if not used. |
+| ?dns | Array<String> | 0x07 | DNS server addresses. | array.itemType=string | Omit if not used. |
+
+---
+
+## NetworkIpConfigChangedEvent
+
+Event payload for IP configuration changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
+| ?family | Enum | 0x02 | IP family. | None | Omit if not used. |
+| config | NetworkIpConfig | 0x03 | New IP configuration. | None | N/A |
+| ?previousConfig | NetworkIpConfig | 0x04 | Previous IP configuration. | None | Omit if not used. |
+| ?reason | Enum | 0x05 | Change reason. | None | Omit if not used. |
+
+---
+
+## NetworkScanWifiParams
+
+Wi-Fi scan request.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
+| ?ssidFilter | String | 0x02 | Optional SSID filter. | maxLength=64 | Omit if not used. |
+| ?timeoutMs | UInt32 | 0x03 | Scan timeout in milliseconds. | None | Omit if not used. |
+
+---
+
+## NetworkScanWifiResult
+
+Wi-Fi scan result.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?scanId | String | 0x01 | Asynchronous scan identifier. | maxLength=128 | Omit if not used. |
+| ?results | Array<NetworkWifiScanResult> | 0x02 | NetworkWifiScanResult objects. | schema=NetworkWifiScanResult, array.itemType=NetworkWifiScanResult, array.itemSchema=NetworkWifiScanResult | Omit if not used. |
+| ?complete | Boolean | 0x03 | Whether returned results are complete. | None | Omit if not used. |
+
+---
+
+## NetworkSetApConfigParams
+
+Wi-Fi AP configuration update request.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
+| config | NetworkApConfig | 0x02 | AP configuration patch or target configuration. | None | N/A |
+
+---
+
+## NetworkSetApConfigResult
+
+Result of setting Wi-Fi AP configuration.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| config | NetworkApConfig | 0x01 | Applied or pending AP configuration. | None | N/A |
+| applyState | Enum | 0x02 | Apply state; candidate values include applied, pending_restart, and failed. | None | N/A |
+
+---
+
+## NetworkSetIpConfigParams
+
+IP configuration update request.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | Default: "defaults.primary" |
+| ?family | Enum | 0x02 | IP family. | None | Default: "ipv4" |
+| config | NetworkIpConfig | 0x03 | Target IP configuration. | None | N/A |
+| ?applyPolicy | Enum | 0x04 | Apply policy; candidate values include immediate and pending_restart. | None | Default: "immediate" |
+
+---
+
+## NetworkSetIpConfigResult
+
+Result of setting IP configuration.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| config | NetworkIpConfig | 0x01 | Applied or pending IP configuration. | None | N/A |
+| applyState | Enum | 0x02 | Apply state; candidate values include applied, pending_restart, and failed. | None | N/A |
+
+---
+
+## NetworkSetWifiConfigParams
+
+Wi-Fi profile create or update request.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
+| profile | NetworkWifiProfile | 0x02 | Profile to create or update. | None | N/A |
+| ?replaceExisting | Boolean | 0x03 | Whether an existing matching profile may be replaced. | None | Default: false |
+| ?makeDefault | Boolean | 0x04 | Whether to make this the default profile. | None | Default: false |
+| ?connectAfterSave | Boolean | 0x05 | Whether to start connection after saving. | None | Omit if not used. |
+
+---
+
+## NetworkSetWifiConfigResult
+
+Result of setting Wi-Fi profile configuration.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| profileId | String | 0x01 | Accepted or assigned profile identifier. | maxLength=128 | N/A |
+| ?config | NetworkWifiConfig | 0x02 | Updated profile summary. | None | Omit if not used. |
+| ?connectStarted | Boolean | 0x03 | Whether connection was started after saving. | None | Omit if not used. |
+
+---
+
+## NetworkWifiActionResult
+
+Result of a Wi-Fi connect or disconnect action.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
+| state | NetworkWifiState | 0x02 | Current or target Wi-Fi state after accepting the action. | None | N/A |
+
+---
+
+## NetworkWifiCapabilities
+
+Wi-Fi station capability descriptor.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | String | 0x01 | Fixed capability name network.wifi. | maxLength=32 | N/A |
+| securityTypes | Array<String> | 0x02 | Supported security type strings. | array.itemType=string | N/A |
+| ?bands | Array<String> | 0x03 | Supported Wi-Fi bands. | array.itemType=string | Omit if not used. |
+| credentialImportModes | Array<String> | 0x04 | Supported credential import modes such as passphrase, pairing_token, and opaque_ref. | array.itemType=string | N/A |
+| savedProfilesSupported | Boolean | 0x05 | Whether saved profiles are supported. | None | N/A |
+| scanSupported | Boolean | 0x06 | Whether Wi-Fi scanning is supported. | None | N/A |
+| ?autoConnectSupported | Boolean | 0x07 | Whether profiles can auto-connect. | None | Omit if not used. |
+
+---
+
+## NetworkWifiConfig
+
+Saved Wi-Fi profile summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?profiles | Array<NetworkWifiProfile> | 0x02 | NetworkWifiProfile summaries. Plaintext credentials must not be returned. | schema=NetworkWifiProfile, array.itemType=NetworkWifiProfile, array.itemSchema=NetworkWifiProfile | Omit if not used. |
+| ?defaultProfileId | String | 0x03 | Default profile identifier. | maxLength=128 | Omit if not used. |
+
+---
+
+## NetworkWifiConfigChangedEvent
+
+Event payload for Wi-Fi profile configuration changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| config | NetworkWifiConfig | 0x02 | New Wi-Fi configuration summary. | None | N/A |
+| ?changedFields | Array<String> | 0x03 | Changed field paths. | array.itemType=string | Omit if not used. |
+| ?reason | Enum | 0x04 | Change reason. | None | Omit if not used. |
+
+---
+
+## NetworkWifiScanResultReportedEvent
+
+Event payload for asynchronous Wi-Fi scan results.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?scanId | String | 0x01 | Scan identifier. | maxLength=128 | Omit if not used. |
+| ?results | Array<NetworkWifiScanResult> | 0x02 | NetworkWifiScanResult objects. | schema=NetworkWifiScanResult, array.itemType=NetworkWifiScanResult, array.itemSchema=NetworkWifiScanResult | Omit if not used. |
+| complete | Boolean | 0x03 | Whether this event completes the scan. | None | N/A |
+
+---
+
+## NetworkWifiState
+
+Wi-Fi station runtime state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| state | Enum | 0x02 | State; candidate values include disabled, disconnected, scanning, authenticating, associating, connected, failed, and unknown. | None | N/A |
+| ?profileId | String | 0x03 | Active profile identifier. | maxLength=128 | Omit if not used. |
+| ?ssid | String | 0x04 | Active SSID. | maxLength=64 | Omit if not used. |
+| ?rssi | Int32 | 0x05 | Received signal strength indicator in dBm. | None | Omit if not used. |
+| ?ipReady | Boolean | 0x06 | Whether IP configuration is ready. | None | Omit if not used. |
+| ?failureReason | Enum | 0x07 | Failure reason, if state is failed. | None | Omit if not used. |
+
+---
+
+## NetworkWifiStateChangedEvent
+
+Event payload for Wi-Fi station state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | NetworkWifiState | 0x01 | New Wi-Fi station state. | None | N/A |
+| ?previousState | NetworkWifiState | 0x02 | Previous state. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Change reason. | None | Omit if not used. |
+
+---
+
+## SignageGetPlaylistItemUrlParams
+
+Request to refresh a playlist item URL by itemId.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| itemId | String | 0x01 | Playlist item unique identifier (UUID). | maxLength=64 | N/A |
+
+---
+
+## SignageGetPlaylistItemUrlResult
+
+Refreshed playlist item URL result. The internal structure of settings depends on type.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| type | Enum | 0x01 | Playlist item type used to discriminate the settings structure; candidate values include image, video, website, and unsplash. Clock is excluded from URL refresh. | None | N/A |
+| settings | SignagePlaylistItemSettings | 0x02 | Refreshed complete settings; the device may replace the locally cached settings with this value. | None | N/A |
+
+---
+
+## SignagePlaylistCapabilitiesResult
+
+Capability scope for signage.playlist.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supportedItemTypes | Array<String> | 0x01 | Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash. | array.itemType=string | N/A |
+| ?maxPlaylists | UInt32 | 0x02 | Maximum number of playlists; product-defined. | None | Omit if not used. |
+| ?maxItemsPerPlaylist | UInt32 | 0x03 | Maximum number of playlist items per playlist; product-defined. | None | Omit if not used. |
+| supportsScheduledPlaylist | Boolean | 0x04 | Whether scheduled playlists are supported. | None | N/A |
+| supportsUrlRefresh | Boolean | 0x05 | Whether playlist item URL refresh (getPlaylistItemUrl) is supported. | None | N/A |
+| supportsReset | Boolean | 0x06 | Whether resetting the playlist to default (resetPlaylistConfig) is supported. | None | N/A |
+
+---
+
+## SignagePlaylistCapability
+
+Capability descriptor for signage.playlist.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supportedItemTypes | Array<String> | 0x01 | Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash. | array.itemType=string | N/A |
+| ?maxPlaylists | UInt32 | 0x02 | Maximum number of playlists; product-defined. | None | Omit if not used. |
+| ?maxItemsPerPlaylist | UInt32 | 0x03 | Maximum number of playlist items per playlist; product-defined. | None | Omit if not used. |
+| supportsScheduledPlaylist | Boolean | 0x04 | Whether scheduled playlists are supported. | None | N/A |
+| supportsUrlRefresh | Boolean | 0x05 | Whether playlist item URL refresh is supported. | None | N/A |
+| supportsReset | Boolean | 0x06 | Whether resetting the playlist to default is supported. | None | N/A |
+
+---
+
+## SignagePlaylistConfigChangedEvent
+
+Event payload emitted when the playlist configuration changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| reason | Enum | 0x01 | Change reason; candidate values include set_config (triggered by setPlaylistConfig) and reset_config (triggered by resetPlaylistConfig). | None | N/A |
+| ?playlists | Array<SignagePlaylist> | 0x02 | Optional playlist objects representing the full post-change configuration. The device MAY omit it to shrink the payload; when omitted the client MUST call signage.getPlaylistConfig to reconcile. | schema=SignagePlaylist, array.itemType=SignagePlaylist, array.itemSchema=SignagePlaylist | Omit if not used. |
+
+---
+
+## SignagePlaylistConfigResult
+
+Current playlist configuration snapshot.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| playlists | Array<SignagePlaylist> | 0x01 | Playlist objects. An empty array means no playlist is configured and is not an error. | schema=SignagePlaylist, array.itemType=SignagePlaylist, array.itemSchema=SignagePlaylist | N/A |
 
 ---
 
@@ -5175,6 +2757,198 @@ Aggregated playlist item settings spanning all item types. Only the subset match
 
 ---
 
+## SignageSetPlaylistConfigParams
+
+Full replacement payload for signage.setPlaylistConfig.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| playlists | Array<SignagePlaylist> | 0x01 | Playlist objects. MUST be non-empty; an empty array returns INVALID_ARGUMENT. | schema=SignagePlaylist, array.itemType=SignagePlaylist, array.itemSchema=SignagePlaylist | N/A |
+
+---
+
+## SoftwareConfig
+
+Runtime configuration snapshot of a software object. For the launcher target, config carries the LauncherConfig structure (displayName and appearance).
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object this configuration belongs to. Currently defined value is launcher. | maxLength=64 | N/A |
+| config | LauncherConfig | 0x02 | Target-specific configuration fragment. For the launcher target this is the LauncherConfig structure (displayName plus appearance); see the LauncherConfig and LauncherAppearance schemas. | None | N/A |
+
+---
+
+## SoftwareConfigCapability
+
+Capability descriptor for software.config.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supportedTargets | Array<String> | 0x01 | Supported software object target strings; candidate values include launcher, signagePlayer, and agent. | array.itemType=string | N/A |
+| ?supportsReset | Boolean | 0x02 | Whether restoring defaults via resetConfig is supported. | None | Omit if not used. |
+| ?resetMayRestartSoftware | Boolean | 0x03 | Whether reset may restart the software object (not the device). System-level factory reset is handled by system.restoreFactorySettings. | None | Omit if not used. |
+
+---
+
+## SoftwareConfigChangedEvent
+
+Event payload emitted when a software object configuration changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object whose configuration changed. | maxLength=64 | N/A |
+| config | LauncherConfig | 0x02 | Full post-change configuration fragment (not a patch). For the launcher target this is the LauncherConfig structure; see SoftwareConfig.config. | None | N/A |
+| ?changedFields | Array<String> | 0x03 | Optional changed field paths using dot notation for nested levels, e.g. appearance.panelLayout. Omitted when the device cannot compute the diff. | array.itemType=string | Omit if not used. |
+| ?reason | Enum | 0x04 | Change reason; candidate values include user_request (triggered by setConfig), restore_default (triggered by resetConfig), device_policy (triggered by device-internal policy), and unknown (default when the reason is not reported). | None | Omit if not used. |
+
+---
+
+## SoftwareGetConfigParams
+
+Request for software.getConfig; selects the software object to read by target.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to read. Currently defined value is launcher; other values such as signagePlayer and agent are reserved for future adoption and their config fields are not defined in this version. | maxLength=64 | N/A |
+
+---
+
+## SoftwareGetUpdatePolicyParams
+
+Request for software.getUpdatePolicy; selects the software object to read by target.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to read the update policy of. Currently defined value is launcher; other values such as signagePlayer and agent are reserved for future adoption and their policy fields are not defined in this version. | maxLength=64 | N/A |
+
+---
+
+## SoftwareResetConfigParams
+
+Request for software.resetConfig; restores the specified software object to its current-version defaults.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to reset. | maxLength=64 | N/A |
+
+---
+
+## SoftwareResetUpdatePolicyParams
+
+Request for software.resetUpdatePolicy; restores the specified software object update policy to its current-version defaults.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to reset the update policy of. | maxLength=64 | N/A |
+
+---
+
+## SoftwareSetConfigParams
+
+Request for software.setConfig; applies a partial update to the target software object. Fields absent from config are left unchanged; config itself must be a valid object and does not accept null.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to configure. | maxLength=64 | N/A |
+| config | LauncherConfig | 0x02 | Target-specific configuration fragment to apply (partial update). For the launcher target this is the LauncherConfig structure; see SoftwareConfig.config and LauncherAppearance. | None | N/A |
+
+---
+
+## SoftwareSetUpdatePolicyParams
+
+Request for software.setUpdatePolicy; applies a partial update to the target software object. Fields absent from policy are left unchanged; policy itself must be a valid object and does not accept null. Within the launcher policy fragment, schedule null explicitly clears the time window and conditions null explicitly clears all prerequisites; omitted means keep current value.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object to configure the update policy of. | maxLength=64 | N/A |
+| policy | LauncherUpdatePolicy | 0x02 | Target-specific update policy fragment to apply (partial update). For the launcher target this is the LauncherUpdatePolicy structure; see SoftwareUpdatePolicy.policy. Within the fragment, schedule null or conditions null explicitly clears those sub-objects while omitted keeps them unchanged. | None | N/A |
+
+---
+
+## SoftwareUpdatePolicy
+
+Update policy snapshot of a software object. For the launcher target, policy carries the LauncherUpdatePolicy structure (updateMode, schedule, channel, conditions). When target is launcher, schedule and conditions may be null to explicitly clear the time window or prerequisites; null is distinct from omitted.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object this update policy belongs to. | maxLength=64 | N/A |
+| policy | LauncherUpdatePolicy | 0x02 | Target-specific update policy fragment. For the launcher target this is the LauncherUpdatePolicy structure (updateMode plus schedule, channel, conditions); see the LauncherUpdatePolicy, UpdateSchedule, and UpdateConditions schemas. | None | N/A |
+
+---
+
+## SoftwareUpdatePolicyCapability
+
+Capability descriptor for software.updatePolicy.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supportedTargets | Array<String> | 0x01 | Supported software object target strings; candidate values include launcher, signagePlayer, and agent. | array.itemType=string | N/A |
+| ?supportedChannels | Array<String> | 0x02 | Optional supported update channel strings; candidate values include release, beta, and alpha. | array.itemType=string | Omit if not used. |
+| ?supportsSchedule | Boolean | 0x03 | Whether configuring an update time window via schedule is supported. | None | Omit if not used. |
+| ?supportsReset | Boolean | 0x04 | Whether restoring defaults via resetUpdatePolicy is supported. | None | Omit if not used. |
+
+---
+
+## SoftwareUpdatePolicyChangedEvent
+
+Event payload emitted when a software object update policy changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | String | 0x01 | Software object whose update policy changed. | maxLength=64 | N/A |
+| policy | LauncherUpdatePolicy | 0x02 | Full post-change update policy fragment (not a patch). For the launcher target this is the LauncherUpdatePolicy structure; see SoftwareUpdatePolicy.policy. | None | N/A |
+| ?changedFields | Array<String> | 0x03 | Optional changed field paths using dot notation for nested levels, e.g. schedule.start. Omitted when the device cannot compute the diff. | array.itemType=string | Omit if not used. |
+| ?reason | Enum | 0x04 | Change reason; candidate values include user_request (triggered by setUpdatePolicy), restore_default (triggered by resetUpdatePolicy), device_policy (triggered by device-internal policy), and unknown (default when the reason is not reported). | None | Omit if not used. |
+
+---
+
+## StreamAbortParams
+
+Request payload for aborting a STREAM runtime context.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
+| ?reason | Enum | 0x02 | Abort reason. | enum=timeout/peerClosed/transportLost/userRequest/profileFailure/unknown | Omit if not used. |
+| ?message | String | 0x03 | Optional diagnostic message. | maxLength=256 | Omit if not used. |
+
+---
+
+## StreamAckParams
+
+Request payload for acknowledging received STREAM packet ranges.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
+| ackedSeqId | UInt32 | 0x02 | Highest contiguous STREAM seqId received. | None | N/A |
+| ?ackedCursor | UInt64 | 0x03 | Optional cursor value associated with ackedSeqId. | None | Omit if not used. |
+| ?missingSeqIds | Array<UInt32> | 0x04 | Optional sparse list of missing seqId values for diagnostics. | array.itemType=uint32 | Omit if not used. |
+
+---
+
+## StreamAckResult
+
+Result of a STREAM ACK update.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the ACK update was accepted. | None | N/A |
+| ?state | StreamState | 0x02 | Updated STREAM runtime state, when returned. | None | Omit if not used. |
+
+---
+
+## StreamActionResult
+
+Result of a pause, resume, or abort action.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
+| ?state | StreamState | 0x02 | Updated STREAM runtime state, when returned. | None | Omit if not used. |
+
+---
+
 ## StreamClockMediaAnchor
 
 One media timeline anchor carried by stream.clockReport.
@@ -5187,6 +2961,169 @@ One media timeline anchor carried by stream.clockReport.
 | anchorNt10MonotonicUs | UInt64 | 0x04 | NT10 source monotonic timestamp corresponding to mediaPts. | None | N/A |
 | ?seqId | UInt32 | 0x05 | Optional STREAM seqId associated with the media anchor. | None | Omit if not used. |
 | ?cursor | UInt64 | 0x06 | Optional STREAM cursor associated with the media anchor. | None | Omit if not used. |
+
+---
+
+## StreamClockReportEvent
+
+Latest-wins timing sample linking NT10 media anchors, NT10 source clock, NA20 relay clock, and receiver arrival time.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| reportSeq | UInt32 | 0x01 | Source or relay report sequence number. | None | N/A |
+| ?syncGroupId | String | 0x02 | Synchronization group that links related audio and video streams. | maxLength=128 | Omit if not used. |
+| ?sourceDeviceId | String | 0x03 | Source device identifier, such as NT10. | maxLength=128 | Omit if not used. |
+| ?sourceClockDomain | String | 0x04 | Source monotonic clock domain for this report. | maxLength=128 | Omit if not used. |
+| nt10ReportMonotonicUs | UInt64 | 0x05 | NT10 source monotonic timestamp sampled when the report was produced. | None | N/A |
+| ?sentAtNt10MonotonicUs | UInt64 | 0x06 | NT10 source monotonic timestamp sampled when the report was sent to NA20. | None | Omit if not used. |
+| ?na20ReceivedAtUs | UInt64 | 0x07 | NA20 monotonic timestamp sampled when the source report or associated media anchor was received. | None | Omit if not used. |
+| ?na20SentAtUs | UInt64 | 0x08 | NA20 monotonic timestamp sampled when the AXTP event was sent to MediaHost. | None | Omit if not used. |
+| ?audio | StreamClockMediaAnchor | 0x09 | Optional audio media timeline anchor. | None | Omit if not used. |
+| ?video | StreamClockMediaAnchor | 0x0A | Optional video media timeline anchor. | None | Omit if not used. |
+| ?discontinuity | Boolean | 0x0B | Whether this report follows a media or source clock discontinuity. | None | Default: false |
+| ?reason | Enum | 0x0C | Report reason. | enum=periodic/streamOpened/streamResumed/discontinuity/sourceReset/diagnosticSample/unknown | Omit if not used. |
+
+---
+
+## StreamFlowControlCapabilities
+
+Common STREAM runtime flow-control and diagnostics capability summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | String | 0x01 | Fixed capability name stream.flowControl. | maxLength=32 | N/A |
+| supportsAck | Boolean | 0x02 | Whether stream.ack is supported. | None | N/A |
+| supportsWindowUpdate | Boolean | 0x03 | Whether stream.windowUpdate is supported. | None | N/A |
+| supportsPauseResume | Boolean | 0x04 | Whether stream.pause and stream.resume are supported. | None | N/A |
+| supportsAbort | Boolean | 0x05 | Whether stream.abort is supported. | None | N/A |
+| supportsStats | Boolean | 0x06 | Whether stream.getState, stream.getStats, and stats events are supported. | None | N/A |
+| supportsClockReport | Boolean | 0x07 | Whether stream.clockReport timing samples are supported. | None | N/A |
+| ?defaultWindowBytes | UInt32 | 0x08 | Default receive window in bytes, if advertised. | None | Omit if not used. |
+| ?clockReportIntervalMs | UInt32 | 0x09 | Suggested clock-report interval in milliseconds. | None | Omit if not used. |
+
+---
+
+## StreamFlowControlChangedEvent
+
+Event payload for ACK, window, pause, or resume changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
+| ?reason | Enum | 0x02 | Flow-control change reason. | enum=ack/windowUpdate/pause/resume/bufferPressure/bufferAvailable/diagnosticSample/unknown | Omit if not used. |
+| ?state | StreamState | 0x03 | Updated STREAM runtime state, when returned. | None | Omit if not used. |
+
+---
+
+## StreamPauseParams
+
+Request payload for pausing a STREAM runtime context.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
+| ?reason | Enum | 0x02 | Pause reason. | enum=bufferPressure/userRequest/diagnostic/unknown | Omit if not used. |
+
+---
+
+## StreamResumeParams
+
+Request payload for resuming a STREAM runtime context.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
+| ?reason | Enum | 0x02 | Resume reason. | enum=bufferAvailable/userRequest/diagnostic/unknown | Omit if not used. |
+
+---
+
+## StreamSelector
+
+Selector for a STREAM runtime context; omit streamId for aggregate state when the method allows it.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | Omit if not used. |
+
+---
+
+## StreamState
+
+Common runtime state for a STREAM context or aggregate stream runtime.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?streamId | UInt32 | 0x01 | STREAM data-plane stream identifier, omitted for aggregate state. | None | Omit if not used. |
+| state | Enum | 0x02 | Common STREAM runtime state. | enum=opening/streaming/paused/draining/closing/closed/aborted/failed/aggregate | N/A |
+| ?paused | Boolean | 0x03 | Whether data-plane sending is currently paused. | None | Omit if not used. |
+| ?windowBytes | UInt32 | 0x04 | Current advertised receive window or sender credit in bytes. | None | Omit if not used. |
+| ?ackedSeqId | UInt32 | 0x05 | Highest contiguous STREAM seqId acknowledged by the receiver. | None | Omit if not used. |
+| ?lastSeqId | UInt32 | 0x06 | Last observed or sent STREAM seqId. | None | Omit if not used. |
+| ?lastCursor | UInt64 | 0x07 | Last observed STREAM cursor value. | None | Omit if not used. |
+| ?reason | Enum | 0x08 | Reason associated with the current state or last state change. | enum=ack/windowUpdate/pause/resume/abort/timeout/peerClosed/transportLost/diagnosticSample/unknown | Omit if not used. |
+
+---
+
+## StreamStateChangedEvent
+
+Event payload for common STREAM runtime state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?streamId | UInt32 | 0x01 | STREAM data-plane stream identifier, omitted for aggregate state changes. | None | Omit if not used. |
+| state | StreamState | 0x02 | New STREAM runtime state. | None | N/A |
+
+---
+
+## StreamStats
+
+Bounded STREAM transport-level runtime statistics.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?streamId | UInt32 | 0x01 | STREAM data-plane stream identifier, omitted for aggregate stats. | None | Omit if not used. |
+| ?packets | UInt64 | 0x02 | Number of STREAM packets observed. | None | Omit if not used. |
+| ?bytes | UInt64 | 0x03 | Number of STREAM payload bytes observed. | None | Omit if not used. |
+| ?droppedPackets | UInt64 | 0x04 | Number of dropped STREAM packets. | None | Omit if not used. |
+| ?seqGaps | UInt64 | 0x05 | Number of detected seqId gaps. | None | Omit if not used. |
+| ?jitterMs | UInt32 | 0x06 | Estimated transport jitter in milliseconds. | None | Omit if not used. |
+| ?lastSeqId | UInt32 | 0x07 | Last observed STREAM seqId. | None | Omit if not used. |
+| ?lastCursor | UInt64 | 0x08 | Last observed STREAM cursor value. | None | Omit if not used. |
+| ?latestClockReportAgeMs | UInt32 | 0x09 | Age of the latest clock report sample known to the receiver. | None | Omit if not used. |
+
+---
+
+## StreamStatsReportedEvent
+
+Event payload for common STREAM statistics reports.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?streamId | UInt32 | 0x01 | STREAM data-plane stream identifier, omitted for aggregate stats. | None | Omit if not used. |
+| stats | StreamStats | 0x02 | Bounded STREAM transport-level statistics. | None | N/A |
+
+---
+
+## StreamWindowUpdateParams
+
+Request payload for updating receive window or sender credit.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data-plane stream identifier. | None | N/A |
+| windowBytes | UInt32 | 0x02 | Advertised receive window or sender credit in bytes. | None | N/A |
+| ?reason | Enum | 0x03 | Reason for the window update. | enum=bufferAvailable/bufferPressure/manualFlowControl/diagnosticSample/unknown | Omit if not used. |
+
+---
+
+## StreamWindowUpdateResult
+
+Result of a STREAM window update.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the window update was accepted. | None | N/A |
+| ?state | StreamState | 0x02 | Updated STREAM runtime state, when returned. | None | Omit if not used. |
 
 ---
 
@@ -5213,6 +3150,221 @@ Automatic update time window, nested under LauncherUpdatePolicy.schedule.
 
 ---
 
+## VideoCloseStreamParams
+
+Request to close a video stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| ?peerRole | Enum | 0x02 | Peer role in this stream. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Close reason. | enum=receiver_closed/user_stop/not_needed/source_disconnected/producer_stopped/session_lost/receiver_timeout/encodingReconfigure/error | Omit if not used. |
+| ?finalCursor | UInt64 | 0x04 | Last processed cursor value. | None | Omit if not used. |
+
+---
+
+## VideoCloseStreamResult
+
+Result of closing a video stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | Closed stream identifier. | None | N/A |
+| state | Enum | 0x02 | Close state, such as closing, closed, or failed. | None | N/A |
+| ?reason | Enum | 0x03 | Final close reason. | enum=receiver_closed/user_stop/not_needed/source_disconnected/producer_stopped/session_lost/receiver_timeout/encodingReconfigure/error | Omit if not used. |
+| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already terminal before this request. | None | Default: false |
+
+---
+
+## VideoGetStreamCapabilitiesParams
+
+Selector for video stream capability.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?source | String | 0x01 | Optional video source identifier; omit to query all visible sources. | maxLength=128 | Omit if not used. |
+| ?includeRuntimeState | Boolean | 0x02 | Whether to include current source runtime state. | None | Default: false |
+
+---
+
+## VideoGetStreamSourceStateParams
+
+Selector for video source runtime state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
+
+---
+
+## VideoGetStreamStateParams
+
+Selector for a video stream state query.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+
+---
+
+## VideoOpenStreamParams
+
+Request to open a real-time video stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
+| peerRole | Enum | 0x02 | Requested peer media role; values include receiver and transmitter. | None | N/A |
+| codec | Enum | 0x03 | Requested video codec, such as h264, h265, mjpeg, or raw. | None | N/A |
+| ?width | UInt32 | 0x04 | Requested frame width in pixels. | None | Omit if not used. |
+| ?height | UInt32 | 0x05 | Requested frame height in pixels. | None | Omit if not used. |
+| ?frameRate | UInt32 | 0x06 | Requested frame rate for the selected video encoder target; zero is invalid and omission uses the source/session default. | min=1 | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x07 | Requested bitrate in kbps for the selected video encoder target; zero is invalid and omission uses the source/session default. | min=1 | Omit if not used. |
+| ?streamProfile | String | 0x08 | STREAM profile name. | maxLength=64 | Default: "media.video" |
+| ?cursorUnit | Enum | 0x09 | STREAM cursor unit, such as timestampUs or frameIndex. | None | Omit if not used. |
+| ?syncGroupId | String | 0x0A | Optional synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?castSessionId | String | 0x0B | Optional cast session identifier. | maxLength=128 | Omit if not used. |
+| ?clockDomain | String | 0x0C | Source media clock domain. | maxLength=128 | Omit if not used. |
+| ?maxDataSize | UInt32 | 0x0D | Preferred maximum STREAM payload data size. | None | Omit if not used. |
+| ?videoPtsMode | Enum | 0x0E | Video PTS mode; NA20/NT10 MVP uses sameAsCursor. | None | Default: "sameAsCursor" |
+| ?timebase | UInt32 | 0x0F | Video PTS timebase in ticks per second. | None | Default: 1000000 |
+| ?packetizationMode | Enum | 0x10 | Video packetization mode; NA20/NT10 MVP uses completeFrame. | None | Default: "completeFrame" |
+
+---
+
+## VideoOpenStreamResult
+
+Result of opening a real-time video stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | Initial state, normally opening or streaming. | None | N/A |
+| source | String | 0x03 | Bound source identifier. | maxLength=128 | N/A |
+| peerRole | Enum | 0x04 | Confirmed peer media role. | None | N/A |
+| codec | Enum | 0x05 | Negotiated codec. | None | N/A |
+| ?width | UInt32 | 0x06 | Negotiated frame width. | None | Omit if not used. |
+| ?height | UInt32 | 0x07 | Negotiated frame height. | None | Omit if not used. |
+| ?frameRate | UInt32 | 0x08 | Negotiated frame rate; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x09 | Negotiated bitrate in kbps; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
+| streamProfile | String | 0x0A | Normalized stream profile. | maxLength=64 | N/A |
+| cursorUnit | Enum | 0x0B | STREAM cursor unit. | None | N/A |
+| ?syncGroupId | String | 0x0C | Synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?maxDataSize | UInt32 | 0x0D | Negotiated maximum STREAM payload data size. | None | Omit if not used. |
+| ?videoPtsMode | Enum | 0x0E | Negotiated video PTS mode. | None | Omit if not used. |
+| ?timebase | UInt32 | 0x0F | Negotiated video PTS timebase in ticks per second. | None | Omit if not used. |
+| ?packetizationMode | Enum | 0x10 | Negotiated video packetization mode. | None | Omit if not used. |
+
+---
+
+## VideoRequestKeyFrameParams
+
+Request a key frame for an active video stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| ?reason | Enum | 0x02 | Request reason. | None | Omit if not used. |
+
+---
+
+## VideoRequestKeyFrameResult
+
+Result of a key frame request.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the request was accepted. | None | N/A |
+| ?state | VideoStreamState | 0x02 | Current or updated stream state. | None | Omit if not used. |
+
+---
+
+## VideoStreamCapabilities
+
+Device-level video.stream capability summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | String | 0x01 | Fixed capability name video.stream. | maxLength=32 | N/A |
+| sources | Array<VideoStreamSource> | 0x02 | Video stream source objects. | schema=VideoStreamSource, array.itemType=VideoStreamSource, array.itemSchema=VideoStreamSource | N/A |
+| streamProfiles | Array<String> | 0x03 | Supported stream profiles, normally media.video. | array.itemType=string | N/A |
+| openModes | Array<String> | 0x04 | Supported open modes, such as producer_open and receiver_pull. | array.itemType=string | N/A |
+| peerRoles | Array<String> | 0x05 | Peer roles, such as receiver and transmitter. | array.itemType=string | N/A |
+| supportsSourceStateEvent | Boolean | 0x06 | Whether video.streamSourceStateChanged is supported. | None | N/A |
+| supportsSyncGroup | Boolean | 0x07 | Whether video streams can share a synchronization group with audio streams. | None | N/A |
+| flowControlManagedByRuntime | Boolean | 0x08 | Whether normal applications can rely on runtime-managed STREAM flow control. | None | N/A |
+| ?supportedVideoPtsModes | Array<String> | 0x09 | Optional video PTS modes such as sameAsCursor and explicit. | array.itemType=string | Omit if not used. |
+| ?supportedPacketizationModes | Array<String> | 0x0A | Optional video packetization modes such as completeFrame. | array.itemType=string | Omit if not used. |
+| ?supportsSourceCaptureTimestampCursor | Boolean | 0x0B | Whether STREAM cursorUnit sourceCaptureTimestampUs is supported. | None | Omit if not used. |
+
+---
+
+## VideoStreamSourceState
+
+Runtime state of a video stream source.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
+| ?mediaKind | Enum | 0x02 | Media kind, normally video. | None | Omit if not used. |
+| state | Enum | 0x03 | Source state, such as unavailable, available, receiving, stopped, or failed. | None | N/A |
+| ?available | Boolean | 0x04 | Whether the source is available for openStream. | None | Omit if not used. |
+| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
+
+---
+
+## VideoStreamSourceStateChangedEvent
+
+Event payload for video stream source state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
+| ?mediaKind | Enum | 0x02 | Media kind, normally video. | None | Omit if not used. |
+| state | Enum | 0x03 | New source state. | None | N/A |
+| ?reason | Enum | 0x04 | Source state change reason. | None | Omit if not used. |
+| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
+
+---
+
+## VideoStreamState
+
+Runtime state of one video stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | Stream state, such as opening, streaming, closing, closed, or failed. | None | N/A |
+| source | String | 0x03 | Bound video source. | maxLength=128 | N/A |
+| ?peerRole | Enum | 0x04 | Peer media role. | None | Omit if not used. |
+| ?codec | Enum | 0x05 | Negotiated video codec. | None | Omit if not used. |
+| ?streamProfile | String | 0x06 | Stream profile. | maxLength=64 | Omit if not used. |
+| ?syncGroupId | String | 0x07 | Synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?cursorUnit | Enum | 0x08 | STREAM cursor unit. | None | Omit if not used. |
+| ?lastCursor | UInt64 | 0x09 | Last known cursor value. | None | Omit if not used. |
+| ?keyFrameRequested | Boolean | 0x0A | Whether a key frame has been requested and is pending. | None | Omit if not used. |
+| ?failureReason | Enum | 0x0B | Failure reason when state is failed. | None | Omit if not used. |
+| ?frameRate | UInt32 | 0x0C | Effective negotiated video frame rate; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x0D | Effective negotiated video bitrate in kbps; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
+
+---
+
+## VideoStreamStateChangedEvent
+
+Event payload for video stream state changes.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | New stream state. | None | N/A |
+| source | String | 0x03 | Bound video source. | maxLength=128 | N/A |
+| ?reason | Enum | 0x04 | State change reason. | None | Omit if not used. |
+| ?stats | VideoStreamStats | 0x05 | Optional bounded stream statistics. | None | Omit if not used. |
+| ?frameRate | UInt32 | 0x06 | Effective video frame rate at the time of this event; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x07 | Effective video bitrate in kbps at the time of this event; zero is invalid and omission means the source/session default was used. | min=1 | Omit if not used. |
+
+---
+
 ## VideoStreamStats
 
 Bounded runtime statistics for a video stream.
@@ -5223,6 +3375,17 @@ Bounded runtime statistics for a video stream.
 | ?bytes | UInt64 | 0x02 | Number of STREAM payload bytes observed. | None | Omit if not used. |
 | ?droppedFrames | UInt64 | 0x03 | Number of dropped frames. | None | Omit if not used. |
 | ?bitrateKbps | UInt32 | 0x04 | Estimated bitrate in kbps. | None | Omit if not used. |
+
+---
+
+## VideoStreamStatsReportedEvent
+
+Event payload for video stream statistics reports.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| stats | VideoStreamStats | 0x02 | Bounded stream statistics. | None | N/A |
 
 ---
 
@@ -5243,9 +3406,7 @@ Bounded runtime statistics for a video stream.
 | 0x000A | INVALID_ARGUMENT | common | error | No | stable | Argument is invalid. |
 | 0x000B | OUT_OF_RANGE | common | error | No | stable | Argument is out of range. |
 | 0x000C | NOT_FOUND | common | error | No | stable | Resource was not found. |
-| 0x000D | ALREADY_EXISTS | common | error | No | draft | Resource already exists. |
 | 0x000E | INTERNAL_ERROR | common | error | No | stable | Internal error. |
-| 0x000F | UNAVAILABLE | common | warning | Yes | draft | Service is temporarily unavailable. |
 | 0x0011 | FRAME_MAGIC_INVALID | frame | error | No | stable | Frame magic is invalid. |
 | 0x0012 | FRAME_VERSION_UNSUPPORTED | frame | error | No | stable | Frame version is not supported. |
 | 0x0013 | FRAME_HEADER_INVALID | frame | error | No | stable | Frame header is invalid. |
@@ -5257,15 +3418,11 @@ Bounded runtime statistics for a video stream.
 | 0x0019 | FRAME_REASSEMBLY_TIMEOUT | frame | warning | Yes | stable | Frame reassembly timed out. |
 | 0x001A | FRAME_TOO_LARGE | frame | error | No | stable | Frame exceeds the negotiated maximum size. |
 | 0x001B | TRANSPORT_MTU_EXCEEDED | frame | error | No | stable | Transport MTU was exceeded. |
-| 0x001C | TRANSPORT_WRITE_FAILED | frame | warning | Yes | draft | Transport write failed. |
-| 0x001D | TRANSPORT_READ_FAILED | frame | warning | Yes | draft | Transport read failed. |
 | 0x001E | TRANSPORT_DISCONNECTED | frame | warning | Yes | stable | Transport disconnected. |
 | 0x0021 | CONTROL_OPCODE_INVALID | control | error | No | stable | Control opcode is invalid. |
 | 0x0022 | CONTROL_PAYLOAD_INVALID | control | error | No | stable | Control payload is invalid. |
-| 0x0023 | RESERVED_CONTROL_BODY_ENCODING_UNSUPPORTED | control | error | No | reserved | Historical control body encoding negotiation error. AXTP v1 implementations must not emit it. |
 | 0x0024 | CONTROL_OPEN_REQUIRED | control | error | No | stable | Session has not completed CONTROL OPEN. |
 | 0x0025 | CONTROL_OPEN_REJECTED | control | error | No | stable | Control OPEN was rejected. |
-| 0x0026 | RESERVED_CONTROL_PROFILE_UNSUPPORTED | control | error | No | reserved | Historical header profile negotiation error. AXTP v1 implementations must not emit it. |
 | 0x0027 | CONTROL_NEGOTIATION_FAILED | control | error | No | stable | Control negotiation failed. |
 | 0x0028 | CONTROL_SESSION_INVALID | control | error | No | stable | SessionId is invalid. |
 | 0x0029 | CONTROL_SESSION_EXPIRED | control | error | No | stable | Session has expired. |
@@ -5280,26 +3437,16 @@ Bounded runtime statistics for a video stream.
 | 0x0035 | RPC_BODY_DECODE_FAILED | rpc | error | No | stable | RPC body decoding failed. |
 | 0x0036 | RPC_METHOD_NOT_FOUND | rpc | error | No | stable | MethodId or method name is not registered; do not use for a registered but currently unavailable method. |
 | 0x0037 | RPC_METHOD_NOT_SUPPORTED | rpc | error | No | stable | Compatibility error for a registered but unsupported method. Receivers must continue to decode it; new senders use common NOT_SUPPORTED. |
-| 0x0038 | RPC_METHOD_DISABLED | rpc | error | No | draft | Method is disabled. |
 | 0x0039 | RPC_REQUEST_ID_INVALID | rpc | error | No | stable | RPC requestId is invalid. |
 | 0x003A | RPC_PARAM_MISSING | rpc | error | No | stable | Required RPC parameter is missing. |
 | 0x003B | RPC_PARAM_INVALID | rpc | error | No | stable | RPC parameters are invalid. |
 | 0x003C | RPC_PARAM_OUT_OF_RANGE | rpc | error | No | stable | RPC parameter is out of range. |
 | 0x003D | RPC_EXECUTION_FAILED | rpc | error | No | stable | RPC method execution failed. |
 | 0x003E | RPC_RESPONSE_TIMEOUT | rpc | warning | Yes | stable | RPC response timed out. |
-| 0x003F | RPC_BATCH_UNSUPPORTED | rpc | error | No | draft | RPC batch is not supported. |
-| 0x0040 | RPC_BATCH_PARTIAL_FAILED | rpc | error | No | draft | One or more RPC batch items failed. |
 | 0x0101 | DEVICE_INFO_UNAVAILABLE | device | warning | Yes | stable | Device information is unavailable. |
-| 0x0102 | DEVICE_REBOOT_FAILED | device | error | No | draft | Device reboot failed. |
-| 0x0103 | DEVICE_FACTORY_RESET_FAILED | device | error | No | draft | Device factory reset failed. |
-| 0x0104 | DEVICE_LOW_POWER | device | warning | Yes | draft | Device power is low. |
-| 0x0105 | DEVICE_OVER_TEMPERATURE | device | warning | Yes | draft | Device temperature is too high. |
 | 0x0106 | DEVICE_STORAGE_FULL | device | error | No | stable | Device storage is full. |
 | 0x0107 | DEVICE_MODE_CONFLICT | device | error | No | stable | Device mode conflicts with the requested operation. |
 | 0x0108 | DEVICE_RESOURCE_BUSY | device | warning | Yes | stable | Device resource is busy. |
-| 0x0109 | DEVICE_HARDWARE_FAILURE | device | error | No | draft | Device hardware failure. |
-| 0x010A | ENROLLMENT_CODE_EXPIRED | device | warning | Yes | draft | Pairing code has expired. |
-| 0x010B | ENROLLMENT_CODE_ALREADY_USED | device | error | No | draft | Pairing code has already been used. |
 | 0x0201 | CAPABILITY_NOT_FOUND | capability | error | No | stable | Capability does not exist. |
 | 0x0202 | CAPABILITY_DOMAIN_NOT_FOUND | capability | error | No | stable | Capability domain does not exist. |
 | 0x0203 | CAPABILITY_METHOD_UNSUPPORTED | capability | error | No | stable | Compatibility error for an unsupported method capability. Receivers must continue to decode it; new senders use common NOT_SUPPORTED. |
@@ -5311,32 +3458,25 @@ Bounded runtime statistics for a video stream.
 | 0x0401 | FW_IMAGE_INVALID | firmware | error | No | stable | Firmware image is invalid. |
 | 0x0402 | FW_IMAGE_TYPE_UNSUPPORTED | firmware | error | No | stable | Firmware image type is not supported. |
 | 0x0403 | FW_VERSION_UNSUPPORTED | firmware | error | No | stable | Firmware version is not supported. |
-| 0x0404 | FW_VERSION_TOO_OLD | firmware | error | No | draft | Firmware version is too old. |
 | 0x0405 | FW_TRANSFER_NOT_STARTED | firmware | error | No | stable | Firmware transfer has not started. |
-| 0x0406 | FW_TRANSFER_ALREADY_STARTED | firmware | error | No | draft | Firmware transfer has already started. |
 | 0x0407 | FW_CHUNK_INVALID | firmware | error | No | stable | Firmware chunk is invalid. |
 | 0x0408 | FW_CHUNK_CRC_ERROR | firmware | warning | Yes | stable | Firmware chunk CRC failed. |
 | 0x0409 | FW_SIZE_MISMATCH | firmware | error | No | stable | Firmware size does not match the declared size. |
 | 0x040A | FW_HASH_MISMATCH | firmware | error | No | stable | Firmware hash does not match the declared verification value. |
 | 0x040B | FW_VERIFY_FAILED | firmware | error | No | stable | Firmware verification failed. |
 | 0x040C | FW_APPLY_FAILED | firmware | error | No | stable | Firmware apply failed. |
-| 0x040D | FW_ROLLBACK_FAILED | firmware | error | No | draft | Firmware rollback failed. |
 | 0x040E | FW_STORAGE_NOT_ENOUGH | firmware | error | No | stable | Not enough storage for firmware update. |
 | 0x040F | FW_DEVICE_NOT_READY | firmware | warning | Yes | stable | Device is not ready for firmware update. |
-| 0x0410 | FW_REBOOT_REQUIRED | firmware | error | No | draft | Reboot is required before continuing. |
 | 0x0501 | STREAM_NOT_FOUND | stream | error | No | stable | Stream context does not exist. |
 | 0x0502 | STREAM_TIMEOUT | stream | warning | Yes | stable | Stream timed out. |
 | 0x0503 | STREAM_CRC_ERROR | stream | warning | Yes | stable | Stream chunk CRC check failed. |
 | 0x0504 | STREAM_PAYLOAD_INVALID | stream | error | No | stable | Stream payload is invalid. |
 | 0x0505 | STREAM_ID_INVALID | stream | error | No | stable | StreamId is invalid. |
 | 0x0506 | STREAM_NOT_OPEN | stream | error | No | stable | Stream is not open. |
-| 0x0507 | STREAM_ALREADY_OPEN | stream | error | No | draft | Stream is already open. |
 | 0x0508 | STREAM_SEQ_INVALID | stream | error | No | stable | Stream seqId is invalid. |
-| 0x0509 | STREAM_SEQ_DUPLICATED | stream | error | No | draft | Stream seqId is duplicated. |
 | 0x050A | STREAM_CHUNK_MISSING | stream | warning | Yes | stable | Stream chunk is missing. |
 | 0x050B | STREAM_OFFSET_INVALID | stream | error | No | stable | Stream cursor or offset is invalid. |
 | 0x050C | STREAM_WINDOW_FULL | stream | warning | Yes | stable | Stream receive window is full. |
-| 0x050D | STREAM_BACKPRESSURE | stream | warning | Yes | draft | Stream receiver reported backpressure. |
 | 0x050E | STREAM_RESUME_UNSUPPORTED | stream | error | No | stable | Stream resume is not supported. |
 | 0x050F | STREAM_RESUME_FAILED | stream | error | No | stable | Stream resume failed. |
 | 0x0510 | STREAM_CLOSED | stream | error | No | stable | Stream is closed. |
@@ -5348,36 +3488,16 @@ Bounded runtime statistics for a video stream.
 | 0x0805 | MEDIA_FRAMERATE_UNSUPPORTED | video | error | No | stable | Requested video frame rate is unsupported. |
 | 0x0806 | MEDIA_BITRATE_UNSUPPORTED | video | error | No | stable | Requested media bitrate is unsupported. |
 | 0x0807 | MEDIA_STREAM_START_FAILED | video | warning | Yes | stable | Device failed to start the requested media stream. |
-| 0x0808 | MEDIA_STREAM_STOP_FAILED | video | warning | Yes | draft | Device failed to stop the media stream. |
-| 0x0809 | MEDIA_FRAME_DROPPED | video | warning | Yes | draft | Media frame was dropped. |
-| 0x080B | MEDIA_VIDEO_SIGNAL_LOST | video | warning | Yes | draft | Video signal was lost. |
-| 0x090A | MEDIA_AUDIO_DEVICE_NOT_FOUND | audio | error | No | draft | Audio device was not found. |
 | 0x1001 | FILE_NOT_FOUND | file | error | No | stable | File does not exist. |
-| 0x1002 | FILE_ALREADY_EXISTS | file | error | No | draft | File already exists. |
 | 0x1003 | FILE_PERMISSION_DENIED | file | error | No | stable | File permission denied. |
 | 0x1004 | FILE_PATH_INVALID | file | error | No | stable | File path is invalid. |
 | 0x1005 | FILE_TYPE_UNSUPPORTED | file | error | No | stable | File type is not supported. |
 | 0x1006 | FILE_TOO_LARGE | file | error | No | stable | File is too large. |
 | 0x1007 | FILE_READ_FAILED | file | warning | Yes | stable | File read failed. |
 | 0x1008 | FILE_WRITE_FAILED | file | warning | Yes | stable | File write failed. |
-| 0x1009 | FILE_DELETE_FAILED | file | error | No | draft | File delete failed. |
 | 0x100A | FILE_TRANSFER_FAILED | file | warning | Yes | stable | File transfer failed. |
 | 0x100B | FILE_VERIFY_FAILED | file | error | No | stable | File verification failed. |
 | 0x100C | FILE_STORAGE_FULL | file | error | No | stable | File storage is full. |
-| 0x1201 | DIAG_TEST_NOT_FOUND | diagnostic | error | No | draft | Diagnostic test was not found. |
-| 0x1202 | DIAG_TEST_UNSUPPORTED | diagnostic | error | No | draft | Diagnostic test is not supported. |
-| 0x1203 | DIAG_TEST_RUNNING | diagnostic | error | No | draft | Diagnostic test is already running. |
-| 0x1204 | DIAG_TEST_FAILED | diagnostic | error | No | draft | Diagnostic test failed. |
-| 0x1205 | DIAG_METRIC_UNAVAILABLE | diagnostic | warning | Yes | draft | Diagnostic metric is unavailable. |
-| 0x1206 | DIAG_LOOPBACK_FAILED | diagnostic | error | No | draft | Diagnostic loopback failed. |
-| 0x1401 | SEC_AUTH_REQUIRED | auth | error | No | draft | Authentication is required. |
-| 0x1402 | SEC_AUTH_FAILED | auth | error | No | draft | Authentication failed. |
-| 0x1403 | SEC_PERMISSION_DENIED | auth | error | No | draft | Security permission denied. |
-| 0x1404 | SEC_ENCRYPTION_REQUIRED | auth | error | No | draft | Encryption is required. |
-| 0x1405 | SEC_DECRYPT_FAILED | auth | error | No | draft | Decryption failed. |
-| 0x1406 | SEC_SIGNATURE_INVALID | auth | error | No | draft | Signature is invalid. |
-| 0x1407 | SEC_CERT_INVALID | auth | error | No | draft | Certificate is invalid. |
-| 0x1408 | SEC_TOKEN_EXPIRED | auth | error | No | draft | Security token expired. |
 | 0x7F01 | LEGACY_CMD_UNMAPPED | legacy | error | No | stable | Legacy CmdValue is not mapped to an AXTP method. |
 | 0x7F02 | LEGACY_STATUS_UNMAPPED | legacy | error | No | stable | Legacy status is not mapped to an AXTP ErrorCode. |
 | 0x7F03 | LEGACY_PAYLOAD_INVALID | legacy | error | No | stable | Legacy payload is invalid. |
