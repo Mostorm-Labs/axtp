@@ -41,6 +41,23 @@ function walkYaml(dir) {
   return out.sort();
 }
 
+function collectRegistryCatalogNames(dir) {
+  const refs = {
+    methodNames: new Set(),
+    eventNames: new Set(),
+    errorNames: new Set(),
+    capabilityNames: new Set()
+  };
+  for (const file of walkYaml(dir)) {
+    const value = readYaml(file);
+    for (const item of value.methods ?? []) if (item?.name) refs.methodNames.add(String(item.name));
+    for (const item of value.events ?? []) if (item?.name) refs.eventNames.add(String(item.name));
+    for (const item of value.errors ?? []) if (item?.name) refs.errorNames.add(String(item.name));
+    for (const item of value.capabilities ?? []) if (item?.name) refs.capabilityNames.add(String(item.name));
+  }
+  return refs;
+}
+
 function caseIdFromPath(file) {
   const relative = path.relative(path.join(conformanceDir, "cases"), file);
   return relative.replace(/\.yaml$/, "").split(path.sep).join(".");
@@ -283,11 +300,11 @@ function validateSemanticContract(value, label, report = fail) {
 const executionFixturePath = path.join(conformanceDir, "validator-fixtures", "execution_metadata.yaml");
 const semanticFixturePath = path.join(conformanceDir, "validator-fixtures", "semantic_contracts.yaml");
 
-function validateCaseReferences(label, value, refs) {
+function validateCaseReferences(label, value, refs, countProfileCoverage = true) {
   if (!refs.levelNames.has(value.level)) fail(`${label}.level references unknown manifest level: ${value.level}`);
 
   for (const profile of value.profiles ?? []) {
-    profileCounts.set(profile, (profileCounts.get(profile) ?? 0) + 1);
+    if (countProfileCoverage) profileCounts.set(profile, (profileCounts.get(profile) ?? 0) + 1);
     if (!refs.profileLabels.has(profile)) fail(`${label}.profiles references unknown profile/level: ${profile}`);
   }
 
@@ -373,11 +390,18 @@ expectString(manifest.conformance?.version, "manifest.conformance.version");
 expectString(manifest.conformance?.spec_min, "manifest.conformance.spec_min");
 
 const generated = readJson(generatedProtocolPath);
-const refs = {
+const runtimeContractRefs = {
   methodNames: new Set((generated.methods ?? []).map((item) => item.name)),
   eventNames: new Set((generated.events ?? []).map((item) => item.name)),
   errorNames: new Set((generated.errors ?? []).map((item) => item.name)),
-  capabilityNames: new Set((generated.capabilities ?? []).map((item) => item.name)),
+  capabilityNames: new Set((generated.capabilities ?? []).map((item) => item.name))
+};
+const catalogRefs = collectRegistryCatalogNames(path.join(root, "contract", "registry"));
+const refs = {
+  methodNames: new Set([...runtimeContractRefs.methodNames, ...catalogRefs.methodNames]),
+  eventNames: new Set([...runtimeContractRefs.eventNames, ...catalogRefs.eventNames]),
+  errorNames: new Set([...runtimeContractRefs.errorNames, ...catalogRefs.errorNames]),
+  capabilityNames: new Set([...runtimeContractRefs.capabilityNames, ...catalogRefs.capabilityNames]),
   levelNames: new Set(Object.keys(manifest.levels ?? {})),
   profileLabels: new Set(Object.keys(manifest.levels ?? {})),
   fixtureNames: new Set(),
@@ -428,6 +452,13 @@ for (const file of caseFiles) {
   }
 }
 
+const runtimeRequiredRefs = {
+  ...refs,
+  methodNames: runtimeContractRefs.methodNames,
+  eventNames: runtimeContractRefs.eventNames,
+  errorNames: runtimeContractRefs.errorNames,
+  capabilityNames: runtimeContractRefs.capabilityNames
+};
 for (const [level, value] of Object.entries(manifest.levels ?? {})) {
   if (!expectObject(value, `manifest.levels.${level}`)) continue;
   const requiredCases = value.required_cases;
@@ -436,7 +467,12 @@ for (const [level, value] of Object.entries(manifest.levels ?? {})) {
     continue;
   }
   for (const id of requiredCases) {
-    if (!casesById.has(id)) fail(`manifest level ${level} references missing case: ${id}`);
+    const caseEntry = casesById.get(id);
+    if (!caseEntry) {
+      fail(`manifest level ${level} references missing case: ${id}`);
+      continue;
+    }
+    validateCaseReferences(`manifest required case ${level}/${id}`, caseEntry.value, runtimeRequiredRefs, false);
   }
 }
 
