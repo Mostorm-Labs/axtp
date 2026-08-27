@@ -74,7 +74,7 @@ Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP
 | Step | From | To | Status | Description |
 | ---- | ---- | ---- | ---- | ---- |
 | OPEN | Client | Server | - | Open an AXTP logical session and declare runtime limits. |
-| ACCEPT | Server | Client | - | Accept the session and return final runtime parameters. |
+| ACCEPT | Server | Client | - | Accept or reject the framed link and optionally return parameter overrides relevant to this profile or implementation. |
 | Hello | Server | Client | - | Announce RPC session rules, AXTP version and authentication requirements. |
 | Identify | Client | Server | - | Submit client identity, randomSeed uint32 and optional authentication data. |
 | Identified | Server | Client | - | Confirm that the RPC session is ready. |

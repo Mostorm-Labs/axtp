@@ -57,7 +57,7 @@
         "step": "ACCEPT",
         "from": "Server",
         "to": "Client",
-        "description": "Accept the session and return final runtime parameters."
+        "description": "Accept or reject the framed link and optionally return parameter overrides relevant to this profile or implementation."
       },
       {
         "step": "Hello",
