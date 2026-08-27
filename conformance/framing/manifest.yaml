@@ -1,0 +1,39 @@
+version: 0.1.0
+status: verification-design
+authority: AXTP-Core-Framing-Authority-v0.1
+release_required: false
+
+required_decisions:
+  - A1-D01
+  - A1-D02
+  - A1-D03
+  - A1-D04
+  - A1-D05
+  - A1-D06
+  - A1-D07
+  - A1-D08
+  - A1-D09
+  - A1-D10
+
+required_cases:
+  - frame.effective_parameters
+  - frame.fragmentation_sender
+  - frame.reassembly_and_duplicates
+  - frame.missing_and_timeout
+  - frame.resource_bounds
+  - frame.parser_integrity_and_recovery
+  - frame.heartbeat_wire
+
+adapter_capabilities:
+  core_required:
+    - frame_decode
+    - frame_encode
+    - reassembly
+    - control_semantics
+    - effective_params
+  optional:
+    - fragment_sender
+    - frame_diagnostics
+    - parser_recovery
+    - reassembly_timeout_policy
+    - resource_probe
