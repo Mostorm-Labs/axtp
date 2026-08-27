@@ -1,0 +1,97 @@
+name: A0 Materialize Authority
+
+on:
+  push:
+    branches:
+      - aegis/a0-contract-authority-reconciliation
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout A0 branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Synchronize core normative wording
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('specs/20-core.md')
+          text = path.read_text()
+
+          replacements = [
+              (
+                  '| Standard Framed | `AXTP-TCP`、`AXTP-USB-HID` | `Standard Frame Header(12B) + Payload(N) + CRC16(2B)` | CONTROL / RPC / STREAM |',
+                  '| Standard Framed | `AXTP-TCP`、`AXTP-USB-HID` | `Standard Frame Header(12B) + Payload(N) + CRC16(2B)` | CONTROL / RPC；STREAM 由显式 `stream` scope / L2 profile 要求 |'
+              ),
+              (
+                  'opcode:uint8 + controlId:uint16 + statusCode:uint16 + TLV body',
+                  'opcode:uint8 + controlId:uint16 + statusCode:uint16 + optional TLV body'
+              ),
+              (
+                  '对 OPEN、HEARTBEAT 和 CLOSE 的 response MUST 回显 request `controlId`。如果接收方无法解析 CONTROL payload length、TLV length、opcode 或必需协商字段，在还能 framing 出合法 response 时，SHOULD 返回最接近的 CONTROL error；否则 MAY 关闭 transport。\n\n必需 OPEN / ACCEPT TLV：\n\n| TLV | 名称 | 规则 |\n|---:|---|---|\n| `0x04` | `maxFrameSize` | 必需；总 frame size，包含 12B header 和 2B CRC。 |\n| `0x07` | `supportedPayloadTypes` | 必需 bitmap。 |\n| `0x08` | `supportedRpcEncodings` | OPEN 中必需。 |\n| `0x0A` | `heartbeatIntervalMs` | 必需。 |\n| `0x0B` | `ackMode` | 必需；Phase 1 默认值为 `NONE`。 |\n| `0x1E` | `selectedRpcEncoding` | 成功 ACCEPT 中必需。 |\n\n`sessionId(0x01)` MAY 为 trace 或未来 resume 而解析，但 MUST NOT 路由 RPC 或 STREAM 业务状态。',
+                  '''对 OPEN、HEARTBEAT 和 CLOSE 的 response MUST 回显 request `controlId`。如果接收方无法解析 CONTROL payload length、TLV length、opcode、OPEN 必需字段，或一个已经出现的 TLV 的字段编码/取值，在还能 framing 出合法 response 时，SHOULD 返回最接近的 CONTROL error；否则 MAY 关闭 transport。\n\nOPEN 必需 TLV：\n\n| TLV | 名称 | 规则 |\n|---:|---|---|\n| `0x04` | `maxFrameSize` | OPEN 中必需；总 frame size，包含 12B header 和 2B CRC。 |\n| `0x07` | `supportedPayloadTypes` | OPEN 中必需 bitmap。 |\n| `0x08` | `supportedRpcEncodings` | OPEN 中必需。 |\n| `0x0A` | `heartbeatIntervalMs` | OPEN 中必需。 |\n| `0x0B` | `ackMode` | OPEN 中必需；Phase 1 默认值为 `NONE`。 |\n\nACCEPT 的 TLV body 在 AXTP v1 Core 中整体 optional。`sessionId(0x01)`、`protocolVersion(0x02)`、`reservedHeaderProfile(0x03)`、`maxFrameSize(0x04)`、`mtu(0x06)`、`supportedPayloadTypes(0x07)`、`heartbeatIntervalMs(0x0A)`、`ackMode(0x0B)`、`selectedRpcEncoding(0x1E)` 全部 MAY 省略。\n\nACCEPT 字段 presence 规则：\n\n1. TLV 出现时，receiver MUST 按该字段定义校验并消费；\n2. TLV 缺席时，receiver MUST NOT 仅因为缺席而返回协议错误；\n3. 缺席表示该 ACCEPT 没有为此参数提供 override；runtime 继续使用 transport/profile/local 已适用的默认值；\n4. profile 或产品 contract MAY 为自身场景提高字段要求，但该要求不属于 AXTP v1 Core ACCEPT parser；\n5. `statusCode != SUCCESS` 的 ACCEPT MAY 完全没有 TLV body。\n\n`sessionId(0x01)` 即使出现，也只 MAY 用于 trace 或未来 resume；它 MUST NOT 路由 RPC 或 STREAM 业务状态。'''
+              ),
+              (
+                  '''最小 CONTROL 示例，按 payload level 展示：\n\n```text\nOPEN:\n01 00 01 00 00\n04 02 10 00        # maxFrameSize = 4096\n07 01 07           # CONTROL + RPC + STREAM\n08 01 09           # JSON + JSON_BINARY supported\n0a 02 03 e8        # heartbeatIntervalMs = 1000\n0b 01 00           # ackMode = NONE\n\nACCEPT:\n02 00 01 00 00\n04 02 10 00        # maxFrameSize = 4096\n07 01 07           # CONTROL + RPC + STREAM\n1e 01 01           # selectedRpcEncoding = JSON\n0a 02 03 e8        # heartbeatIntervalMs = 1000\n0b 01 00           # ackMode = NONE\n```''',
+                  '''最小 CONTROL 示例，按 payload level 展示：\n\n```text\nOPEN:\n01 00 01 00 00\n04 02 10 00        # maxFrameSize = 4096\n07 01 07           # CONTROL + RPC + STREAM\n08 01 09           # JSON + JSON_BINARY supported\n0a 02 03 e8        # heartbeatIntervalMs = 1000\n0b 01 00           # ackMode = NONE\n\nACCEPT（不覆盖任何协商参数）：\n02 00 01 00 00\n\nACCEPT（示例：只覆盖一个字段也合法）：\n02 00 01 00 00\n1e 01 01           # selectedRpcEncoding = JSON\n```'''
+              ),
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'A0 exact replacement expected once, found {count}: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+
+      - name: Build generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/generators install --frozen-lockfile
+          pnpm --dir tooling/generators build
+
+      - name: Generate repository artifacts from authority sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tooling/generators/dist/cli.js generate --spec .
+          tooling/scripts/check-generated-drift.sh
+
+      - name: Commit exact materialized outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add specs/20-core.md contract/protocol contract/generated contract/mcp contract/test-vectors
+          if git diff --cached --quiet; then
+            echo 'No materialization changes.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore: materialize A0 protocol authority'
+          git push origin HEAD:${GITHUB_REF_NAME}
