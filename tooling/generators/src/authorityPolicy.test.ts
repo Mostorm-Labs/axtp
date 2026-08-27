@@ -43,7 +43,7 @@ describe("A0 contract authority policy", () => {
     const sources = await loadProtocolSources(repoRoot);
     const method = sources.methods[0];
     const original = method.status;
-    method.status = "ga";
+    method.status = "ga" as any;
 
     try {
       expect(() => buildProtocolDefinitionRaw(sources)).toThrow(/unknown registry status/i);
