@@ -61,7 +61,7 @@ schemas:
       - id: 0x01
         name: sessionId
         type: uint32
-        required: true
+        required: false
         deprecated: false
       - id: 0x02
         name: protocolVersion
@@ -80,7 +80,7 @@ schemas:
       - id: 0x04
         name: maxFrameSize
         type: uint16
-        required: true
+        required: false
         min: 19
         max: 65535
         deprecated: false
@@ -94,26 +94,26 @@ schemas:
       - id: 0x07
         name: supportedPayloadTypes
         type: bitmap
-        required: true
+        required: false
         deprecated: false
       - id: 0x0A
         name: heartbeatIntervalMs
         type: uint32
-        required: true
+        required: false
         min: 500
         max: 60000
         deprecated: false
       - id: 0x0B
         name: ackMode
         type: uint8
-        required: true
+        required: false
         min: 0
         max: 4
         deprecated: false
       - id: 0x1E
         name: selectedRpcEncoding
         type: uint8
-        required: true
+        required: false
         min: 1
         max: 4
         deprecated: false
