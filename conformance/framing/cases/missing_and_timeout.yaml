@@ -1,0 +1,41 @@
+id: frame.missing_and_timeout
+title: Missing-fragment abandonment and local timeout are distinct lifecycle outcomes
+authority_decisions: [A1-D06]
+evidence_class: virtual_time
+profile: framed-binary
+requires: [frame_decode, reassembly]
+applicability: required
+steps:
+  - op: feed_raw
+    corpus: rpc.fragment.0
+  - op: expect
+    expect:
+      no_dispatch: true
+      context_outcome: partial
+  - op: feed_raw
+    corpus: rpc.new_message.single
+  - op: expect
+    expect:
+      dispatch:
+        payloadType: RPC
+        payloadHex: "aabbccdd"
+      context_outcome: abandoned_missing
+      diagnostic_if_supported: FRAME_FRAGMENT_MISSING
+  - op: reset
+  - op: feed_raw
+    corpus: rpc.fragment.0
+    when_capability: reassembly_timeout_policy
+  - op: advance_time
+    to_policy_deadline: reassembly_timeout
+    when_capability: reassembly_timeout_policy
+  - op: expect
+    when_capability: reassembly_timeout_policy
+    expect:
+      no_dispatch: true
+      context_outcome: expired
+      diagnostic_if_supported: FRAME_REASSEMBLY_TIMEOUT
+assertions:
+  - A different MessageId on the same direction proves an incomplete contiguous fragmented message will not complete and abandons it as missing.
+  - A timeout outcome is tested only when the adapter advertises a local/profile reassembly timeout policy.
+  - The timeout duration is resolved by the adapter and is never compared numerically across runtimes.
+  - Neither classification requires a peer-facing CONTROL or RPC error packet.
