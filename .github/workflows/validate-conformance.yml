@@ -34,17 +34,33 @@ jobs:
           set -euo pipefail
           pnpm --dir tooling/generators install --frozen-lockfile
 
-      - name: Validate generator and generated artifacts
+      - name: Build generator
         shell: bash
-        run: |
-          set -euo pipefail
-          pnpm --dir tooling/generators build
-          pnpm --dir tooling/generators lint
-          pnpm --dir tooling/generators test
-          pnpm --dir tooling/generators validate
-          pnpm --dir tooling/generators validate:sources
-          pnpm --dir tooling/generators validate:protocol
-          tooling/scripts/check-generated-drift.sh
+        run: pnpm --dir tooling/generators build
+
+      - name: Lint generator
+        shell: bash
+        run: pnpm --dir tooling/generators lint
+
+      - name: Test generator
+        shell: bash
+        run: pnpm --dir tooling/generators test
+
+      - name: Validate generator
+        shell: bash
+        run: pnpm --dir tooling/generators validate
+
+      - name: Validate generator sources
+        shell: bash
+        run: pnpm --dir tooling/generators validate:sources
+
+      - name: Validate generated protocol
+        shell: bash
+        run: pnpm --dir tooling/generators validate:protocol
+
+      - name: Check generated drift
+        shell: bash
+        run: tooling/scripts/check-generated-drift.sh
 
       - name: Validate conformance cases
         shell: bash
