@@ -1,0 +1,143 @@
+version: 0.1.0
+
+frames:
+  - id: rpc.single.valid
+    purpose: Canonical valid unfragmented RPC frame with MessageId 42.
+    hex: "4158010200040102002a0001010203043ee8"
+    total_bytes: 18
+    length_relation: exact
+    expected_crc: valid
+
+  - id: rpc.fragment.0
+    purpose: First fragment of MessageId 48, payload DEADBEEF.
+    hex: "415801020004010200300002deadbeefdd5b"
+    total_bytes: 18
+    length_relation: exact
+    expected_crc: valid
+
+  - id: rpc.fragment.1
+    purpose: Second fragment of MessageId 48, payload CAFEBABE.
+    hex: "415801020004010200300102cafebabec823"
+    total_bytes: 18
+    length_relation: exact
+    expected_crc: valid
+
+  - id: rpc.fragment.0.conflict
+    purpose: Same reassembly key/index as rpc.fragment.0 but conflicting payload.
+    hex: "415801020004010200300002deadbeeecd7a"
+    total_bytes: 18
+    length_relation: exact
+    expected_crc: valid
+    expected_error: FRAME_FRAGMENT_INVALID
+
+  - id: rpc.new_message.single
+    purpose: Valid MessageId 49 frame on the same source/destination direction, used to prove abandonment of an incomplete prior message.
+    hex: "415801020004010200310001aabbccdd8a85"
+    total_bytes: 18
+    length_relation: exact
+    expected_crc: valid
+
+  - id: frame.bad_version
+    purpose: Header Version 2 with otherwise self-consistent bytes and valid CRC.
+    hex: "4158020200040102002a000101020304b34b"
+    total_bytes: 18
+    length_relation: exact
+    expected_crc: valid
+    expected_error: FRAME_VERSION_UNSUPPORTED
+
+  - id: frame.bad_payload_type
+    purpose: Unknown PayloadType 0x7F with valid CRC.
+    hex: "4158017f00040102002a0001010203041470"
+    total_bytes: 18
+    length_relation: exact
+    expected_crc: valid
+    expected_error: FRAME_PAYLOAD_TYPE_INVALID
+
+  - id: frame.bad_crc
+    purpose: Canonical RPC frame with one-bit CRC corruption.
+    hex: "4158010200040102002a0001010203043ee9"
+    total_bytes: 18
+    length_relation: exact
+    expected_crc: invalid
+    expected_error: FRAME_CRC_ERROR
+
+  - id: frame.length_mismatch.packet
+    purpose: Packet-boundary frame declares five payload bytes but carries only the four-byte canonical payload plus the old CRC bytes.
+    hex: "4158010200050102002a0001010203043ee8"
+    total_bytes: 18
+    length_relation: mismatch
+    expected_crc: unchecked
+    expected_error: FRAME_LENGTH_INVALID
+
+  - id: frame.over_effective_max
+    purpose: Structurally valid 20-byte frame used with effectiveMaxFrameSize 19.
+    hex: "4158010200060102002a00010102030405064f49"
+    total_bytes: 20
+    length_relation: exact
+    expected_crc: valid
+    expected_error: FRAME_TOO_LARGE
+
+  - id: frame.fragment_index_out_of_range
+    purpose: FrameIndex equals FrameCount (2), violating FrameIndex < FrameCount.
+    hex: "4158010200020102004402020102f40e"
+    total_bytes: 16
+    length_relation: exact
+    expected_crc: valid
+    expected_error: FRAME_FRAGMENT_INVALID
+
+  - id: frame.fragment_count_zero
+    purpose: FrameCount zero with valid CRC.
+    hex: "4158010200020102004500000102dd57"
+    total_bytes: 16
+    length_relation: exact
+    expected_crc: valid
+    expected_error: FRAME_FRAGMENT_INVALID
+
+  - id: frame.message_id_zero.valid
+    purpose: Valid unfragmented frame proving MessageId zero is not reserved by AXTP Core.
+    hex: "415801020002010200000001abcd024e"
+    total_bytes: 16
+    length_relation: exact
+    expected_crc: valid
+
+  - id: frame.message_id_zero.reuse
+    purpose: Second valid unfragmented frame reusing MessageId zero after the first frame is complete.
+    hex: "415801020002010200000001ef01db86"
+    total_bytes: 16
+    length_relation: exact
+    expected_crc: valid
+
+  - id: frame.magic_inside_payload.valid
+    purpose: Valid frame whose payload contains bytes 0x41 0x58; a byte-stream parser must not resynchronize inside an incomplete declared candidate.
+    hex: "4158010200080102004000011122415833445566703f"
+    total_bytes: 22
+    length_relation: exact
+    expected_crc: valid
+
+  - id: control.heartbeat.valid
+    purpose: Valid CONTROL HEARTBEAT payload with controlId 2; frame MessageId 80 is fixture data, not an allocator requirement.
+    hex: "4158010100050102005000010400020000a5f0"
+    total_bytes: 19
+    length_relation: exact
+    expected_crc: valid
+
+  - id: control.heartbeat_ack.example
+    purpose: Example HEARTBEAT_ACK with controlId 2; used only as a fixed-frame codec vector, not as the required runtime emission bytes.
+    hex: "41580101000502010051000105000200008147"
+    total_bytes: 19
+    length_relation: exact
+    expected_crc: valid
+
+streams:
+  - id: tcp.magic_inside_incomplete_candidate
+    purpose: Deliver a valid frame in two chunks after the payload already contains AX magic bytes.
+    chunks:
+      - "41580102000801020040000111224158"
+      - "33445566703f"
+    notes: No dispatch or resynchronization is allowed after the first chunk; the second chunk completes the original declared candidate.
+
+  - id: tcp.bad_crc_then_valid
+    purpose: Corrupt candidate immediately followed by a valid frame, for adapters that advertise parser_recovery.
+    chunks:
+      - "4158010200040102002a0001010203043ee94158010200040102002a0001010203043ee8"
+    notes: The corrupt candidate never dispatches; a recovering byte-stream parser may find and dispatch the later valid frame.
