@@ -19,10 +19,10 @@ contract/protocol/axtp.protocol.yaml = generated Protocol IR
 
 | 路径 | 角色 | 能否作为实现合同 |
 |---|---|---|
-| `workspace/protocol/<domain>/<domain.feature>.md` | 业务草案、评审记录、采纳/修订依据 | 否，除非已采纳且 generated 已刷新 |
-| `contract/registry/**/*.yaml`、`contract/registry/domains/**/*.yaml` | 已采纳机器事实源 | 是，Generator 输入 |
-| `contract/protocol/axtp.protocol.yaml` | 聚合后的 Protocol IR | 是，但只读，不手写 |
-| `contract/generated/protocol.md` / `.json` | 研发、测试、工具消费的当前协议参考 | 是，Generator 输出 |
+| `workspace/protocol/<domain>/<domain.feature>.md` | 业务草案、评审记录、采纳/修订依据 | 否；即使标记 `generated` 也只是维护输入 |
+| `contract/registry/**/*.yaml`、`contract/registry/domains/**/*.yaml` | source-of-generation；可同时保存 draft / experimental / stable / deprecated / reserved catalog facts | 否，不能仅凭“存在于 registry”判断 runtime eligibility |
+| `contract/protocol/axtp.protocol.yaml` | 默认 runtime Protocol IR projection | 是；只包含默认 runtime contract facts，且只读不手写 |
+| `contract/generated/protocol.md` / `.json` | 默认 runtime contract 的可消费视图 | 是，Generator 输出 |
 
 ## 草案 Frontmatter
 
@@ -45,14 +45,14 @@ lastReviewed: YYYY-MM-DD
 | 字段 | 含义 |
 |---|---|
 | `status` | 草案当前生命周期状态；`generated` 只在 registry 存在且 generated 已通过时使用。 |
-| `contract` | 是否可作为 runtime 实现合同；draft/review-ok 通常为 `false`。 |
-| `generated` | 当前内容是否已进入 generated 输出。 |
+| `contract` | 该草案是否已被采纳进 source-of-generation registry；它不授予 workspace 文档 runtime authority。 |
+| `generated` | 该 feature 是否已进入 generated registry catalog；默认 runtime eligibility 仍由 contract lifecycle + Protocol IR 决定。 |
 | `domain` | 所属 domain。 |
 | `feature` | 所属 `domain.feature`。 |
 | `registry` | 已采纳时指向对应 registry YAML；未采纳可为空字符串。 |
 | `lastReviewed` | 最近一次人工确认状态的日期。 |
 
-判断 `generated` 时不要猜：以 `contract/registry/domains/<domain>/domain.yaml`、相关 registry YAML 和 `contract/generated/protocol.md` 为准。无法确认时使用 `status: draft`、`contract: false`、`generated: false`。
+判断 `generated` 时不要猜：以 `contract/registry/domains/<domain>/domain.yaml`、相关 registry YAML 和 status-bearing generated catalog 为准。判断“runtime 可实现”时则必须另看 normalized lifecycle 和 `contract/generated/protocol.json`；无法确认采纳状态时使用 `status: draft`、`contract: false`、`generated: false`。
 
 ## 生成路径
 
@@ -125,7 +125,7 @@ refreshed contract/protocol/axtp.protocol.yaml + generated artifacts
 - `workspace/protocol/<domain>/<domain.feature>.md` 中的 method/event wire name 可以作为评审输入；采纳前不得视为当前协议合同。
 - 未进入 migration approved 状态的旧协议材料，应先在本目录或交互式 skill 中完成 domain-feature 分类和待确认问题整理。
 - 不得从本目录直接生成 `contract/protocol/axtp.protocol.yaml`；必须经过评审确认、Registry/Capability Types/Profiles specs 反向确认、registry YAML，再由 `generate-axtp-protocol` 生成。
-- 研发只根据采纳后的 generated 产物开发和上架 feature，不依赖未采纳草案。
+- 研发默认只根据通过 Gate 的 release artifact 或 `contract/generated/protocol.*` runtime projection 开发；status-bearing catalog 与 `workspace/**` 不能单独证明 feature 已成为默认 runtime 合同。
 - 已采纳协议如果要删除字段、收窄枚举/范围、改名、废弃或新增字段，必须先判断当前事实是 `draft/experimental` 还是 `mvp/stable`；draft 可按确认事实修正，stable/MVP 默认走 deprecate 或版本化替代。
 
 ## 采纳检查
@@ -159,7 +159,7 @@ refreshed contract/protocol/axtp.protocol.yaml + generated artifacts
 | `flow-planned` | 已有 `workspace/flows/**` 场景流程，识别了已有覆盖和协议缺口。 | 否 |
 | `draft` | 已有 `workspace/protocol/<domain>/<domain.feature>.md` 草案，但还有 DRAFT/ASK/FIX 项。 | 否 |
 | `review-ok` | 草案关键事实已通过人工 review，可进入采纳流程。 | 否，需先写入 YAML 并生成 |
-| `generated` | `contract/registry/domains/<domain>/domain.yaml` 或相关 registry YAML 已存在，并且 Generator / validation 通过。 | 是 |
+| `generated` | `contract/registry/domains/<domain>/domain.yaml` 或相关 registry YAML 已存在，并且 catalog generation / validation 通过。 | 不直接决定；只有 runtime projection 中的 `stable` / `deprecated` facts 才是默认 runtime 合同 |
 | `deprecated` | 已采纳事实被标记废弃，保留兼容但不建议新实现使用。 | 只按 deprecation 规则使用 |
 
 草案版本、review 状态和 spec tag 不是同一个概念。草案可以多次修订但不形成 runtime 可绑定版本；runtime 只能绑定 `spec/vMAJOR.MINOR.PATCH` tag、明确 commit 或 release artifact。

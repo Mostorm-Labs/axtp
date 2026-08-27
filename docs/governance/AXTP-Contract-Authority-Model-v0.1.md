@@ -144,6 +144,8 @@ Therefore a framed implementation equivalent to L1 may satisfy `core + framed-bi
 
 A conformance scope MUST NOT list test cases owned by another optional scope merely to make the test suite convenient.
 
+`conformance/cases/**` is an evidence catalog and MAY retain cases for known draft/future registry facts. Case existence, directory placement, or a case-level `level` label does not make that case release-required. `conformance/manifest.yaml` `required_cases` is the runtime/release requirement set: every method, event, error, and capability referenced by a required case MUST resolve in the default runtime Protocol IR. Draft/reserved/catalog-only facts MUST NOT become required merely because a test already exists for them.
+
 ## 8. Authority validation rules
 
 A0 adds executable validation for at least these invariants:
@@ -154,7 +156,8 @@ A0 adds executable validation for at least these invariants:
 4. `experimental` facts require explicit opt-in and are not default runtime facts;
 5. ACCEPT schema marks all TLV fields optional;
 6. WebSocket pre-identify conformance does not use CONTROL-layer readiness errors;
-7. `framed-binary` required cases do not require `stream.*` cases.
+7. `framed-binary` required cases do not require `stream.*` cases;
+8. catalog-only conformance cases may reference known registry facts, while every `manifest.required_cases` reference must exist in the default runtime Protocol IR.
 
 ## 9. Supersession / downstream synchronization
 

@@ -10,7 +10,7 @@ Conformance level 是测试入口，不是协议功能清单的替代品。具�
 |---|---|---|---|
 | L0 | WebSocket JSON RPC only | RPC Hello / Identify / Request / Response / Event。 | Web、Node、Python、WS-only mock server、云控制面。 |
 | L1 | Standard Framed CONTROL + RPC | Frame Header、CRC16、CONTROL OPEN / ACCEPT / HEARTBEAT / CLOSE、RPC。 | C / C++ 设备端、TCP runtime、USB HID runtime、Node TCP mock-server。 |
-| L2 | Standard Framed + STREAM | L1 + `PayloadType=STREAM` 16B header、stream open/data/close 验收。 | 音视频设备、需要连续数据面的 runtime。 |
+| L2 | Standard Framed + STREAM | L1 + `PayloadType=STREAM` 16B header / data-plane 验收；业务 open/close lifecycle 只有 backing facts 进入 runtime contract 后才成为 required。 | 音视频设备、需要连续数据面的 runtime。 |
 | L3 | Low-bandwidth / HID / BLE profile | 低带宽、短包、分片、降级 profile。 | MCU、BLE、UART、HID-64 等受限链路。 |
 | L4 | Business domain conformance | 已 generated 业务 domain 的 method/event/schema 行为。 | 交付设备、业务 SDK、客户 release runtime。 |
 
@@ -46,11 +46,11 @@ L1 必须完成 `CONTROL OPEN / ACCEPT` 后才允许进入 RPC Hello / Identify 
 |---|---|
 | 适用 runtime | 音视频设备、需要 `PayloadType=STREAM` 的 runtime、媒体 mock server。 |
 | 必须 profile | `framed-binary` + `stream`。 |
-| 必须 case 分类 | L1 required cases + `stream/**` P0 cases。 |
+| 必须 case 分类 | L1 required cases + `manifest.yaml` 当前 `stream.required_cases`；A0 baseline 为 `stream.stream_data`。 |
 | 可选 case | 业务 domain STREAM profile，例如未来 firmware/file/log stream。 |
 | 可声明不支持 | 低带宽 profile、未采纳业务 stream profile。 |
 
-Phase 1 的 L2 STREAM P0 重点是 audio/video 媒体流。严格 ACK/NACK 重传、RESUME 和非媒体 STREAM profile 是 deferred 范围。
+Phase 1 的 L2 STREAM P0 先证明稳定的 STREAM data-plane。Audio/video open/close 与 active reconfigure 等 business lifecycle cases 可以保留在 catalog，但只有相关 method/event lifecycle 进入默认 runtime contract 后才进入 L2 required set。严格 ACK/NACK 重传、RESUME 和非媒体 STREAM profile 是 deferred 范围。
 
 ## L3: Low-Bandwidth / HID / BLE Profile
 
