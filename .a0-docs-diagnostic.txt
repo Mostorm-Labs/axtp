@@ -16,37 +16,8 @@ exit_status=0
 exit_status=0
 
 === check-protocol-status ===
-[FAIL] protocol status consistency check failed
-- workspace/protocol/audio/audio.stream.md: frontmatter says generated but audio.stream is not present in contract/generated/protocol.json
-- workspace/protocol/cast/cast.audio.md: frontmatter says generated but cast.audio is not present in contract/generated/protocol.json
-- workspace/protocol/cast/cast.backend.md: frontmatter says generated but cast.backend is not present in contract/generated/protocol.json
-- workspace/protocol/cast/cast.flowControl.md: frontmatter says generated but cast.flowControl is not present in contract/generated/protocol.json
-- workspace/protocol/cast/cast.pinCode.md: frontmatter says generated but cast.pinCode is not present in contract/generated/protocol.json
-- workspace/protocol/cast/cast.session.md: frontmatter says generated but cast.session is not present in contract/generated/protocol.json
-- workspace/protocol/cast/cast.status.md: frontmatter says generated but cast.status is not present in contract/generated/protocol.json
-- workspace/protocol/cast/cast.window.md: frontmatter says generated but cast.window is not present in contract/generated/protocol.json
-- workspace/protocol/device/device.enrollment.md: frontmatter says generated but device.enrollment is not present in contract/generated/protocol.json
-- workspace/protocol/device/device.info.md: frontmatter says generated but device.info is not present in contract/generated/protocol.json
-- workspace/protocol/firmware/firmware.update.md: frontmatter says generated but firmware.update is not present in contract/generated/protocol.json
-- workspace/protocol/network/network.ap.md: frontmatter says generated but network.ap is not present in contract/generated/protocol.json
-- workspace/protocol/network/network.interface.md: frontmatter says generated but network.interface is not present in contract/generated/protocol.json
-- workspace/protocol/network/network.ip.md: frontmatter says generated but network.ip is not present in contract/generated/protocol.json
-- workspace/protocol/network/network.wifi.md: frontmatter says generated but network.wifi is not present in contract/generated/protocol.json
-- workspace/protocol/signage/signage.playlist.md: frontmatter says generated but signage.playlist is not present in contract/generated/protocol.json
-- workspace/protocol/software/software.config.md: frontmatter says generated but software.config is not present in contract/generated/protocol.json
-- workspace/protocol/software/software.updatePolicy.md: frontmatter says generated but software.updatePolicy is not present in contract/generated/protocol.json
-- workspace/protocol/stream/stream.flowControl.md: frontmatter says generated but stream.flowControl is not present in contract/generated/protocol.json
-- workspace/protocol/video/video.stream.md: frontmatter says generated but video.stream is not present in contract/generated/protocol.json
-- docs/product/domain-status.md: Domain matrix generated count for audio is 13, expected 5
-- docs/product/domain-status.md: Domain matrix generated count for cast is 32, expected 0
-- docs/product/domain-status.md: Domain matrix generated count for device is 5, expected 0
-- docs/product/domain-status.md: Domain matrix generated count for firmware is 6, expected 0
-- docs/product/domain-status.md: Domain matrix generated count for network is 26, expected 0
-- docs/product/domain-status.md: Domain matrix generated count for signage is 6, expected 0
-- docs/product/domain-status.md: Domain matrix generated count for software is 8, expected 0
-- docs/product/domain-status.md: Domain matrix generated count for stream is 12, expected 0
-- docs/product/domain-status.md: Domain matrix generated count for video is 9, expected 0
-exit_status=1
+[OK] protocol draft frontmatter and product domain matrix match the generated registry catalog
+exit_status=0
 
 === report-protocol-draft-health ===
 [FAIL] docs/product/protocol-draft-health.md is out of date
