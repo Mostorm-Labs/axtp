@@ -28,8 +28,8 @@ steps:
           id: 700
           status:
             ok: false
-            code: CONTROL_OPEN_REQUIRED
+            code: INVALID_STATE
 
 assertions:
   - response.d.id == request.d.id
-  - response.d.status.code == CONTROL_OPEN_REQUIRED
+  - response.d.status.code == INVALID_STATE
