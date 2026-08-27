@@ -42,9 +42,25 @@ jobs:
         shell: bash
         run: pnpm --dir tooling/generators lint
 
-      - name: Test generator
+      - name: Test authority policy
         shell: bash
-        run: pnpm --dir tooling/generators test
+        run: pnpm --dir tooling/generators exec vitest run src/authorityPolicy.test.ts
+
+      - name: Test authority surfaces
+        shell: bash
+        run: pnpm --dir tooling/generators exec vitest run src/authoritySurface.test.ts
+
+      - name: Test protocol validator
+        shell: bash
+        run: pnpm --dir tooling/generators exec vitest run src/protocolValidator.test.ts
+
+      - name: Test release scripts
+        shell: bash
+        run: pnpm --dir tooling/generators exec vitest run src/releaseScripts.test.ts
+
+      - name: Test source validator
+        shell: bash
+        run: pnpm --dir tooling/generators exec vitest run src/validator.test.ts
 
       - name: Validate generator
         shell: bash
