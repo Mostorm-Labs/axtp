@@ -8,7 +8,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
 const validator = path.join(here, "validate-frame-conformance-design.mjs");
 
-test("A1 frame verification design is internally consistent", () => {
+test("A1 frame verification design is internally consistent and aligned to Protocol IR", () => {
   const result = spawnSync(process.execPath, [validator, root], {
     cwd: root,
     encoding: "utf8"
@@ -20,4 +20,5 @@ test("A1 frame verification design is internally consistent", () => {
     `frame verification validator failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
   );
   assert.match(result.stdout, /\[OK\] A1 frame verification design:/);
+  assert.match(result.stdout, /\[OK\] A1 frame machine contract alignment:/);
 });
