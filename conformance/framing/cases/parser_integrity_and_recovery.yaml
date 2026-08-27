@@ -1,0 +1,81 @@
+id: frame.parser_integrity_and_recovery
+title: Invalid frame candidates never dispatch and byte-stream recovery is bounded by candidate semantics
+authority_decisions: [A1-D08, A1-D09]
+evidence_class: deterministic_golden
+profile: framed-binary
+requires: [frame_decode]
+applicability: required
+given:
+  effectiveMaxFrameSize: 19
+steps:
+  - op: feed_raw
+    corpus: frame.bad_version
+  - op: expect
+    expect:
+      no_dispatch: true
+      diagnostic_if_supported: FRAME_VERSION_UNSUPPORTED
+  - op: reset
+  - op: feed_raw
+    corpus: frame.bad_payload_type
+  - op: expect
+    expect:
+      no_dispatch: true
+      diagnostic_if_supported: FRAME_PAYLOAD_TYPE_INVALID
+  - op: reset
+  - op: feed_raw
+    corpus: frame.bad_crc
+  - op: expect
+    expect:
+      no_dispatch: true
+      diagnostic_if_supported: FRAME_CRC_ERROR
+  - op: reset
+  - op: feed_raw
+    corpus: frame.length_mismatch.packet
+  - op: expect
+    expect:
+      no_dispatch: true
+      diagnostic_if_supported: FRAME_LENGTH_INVALID
+  - op: reset
+  - op: feed_raw
+    corpus: frame.over_effective_max
+  - op: expect
+    expect:
+      no_dispatch: true
+      diagnostic_if_supported: FRAME_TOO_LARGE
+  - op: reset
+  - op: feed_raw
+    corpus: frame.fragment_index_out_of_range
+  - op: expect
+    expect:
+      no_dispatch: true
+      diagnostic_if_supported: FRAME_FRAGMENT_INVALID
+  - op: reset
+  - op: feed_raw
+    corpus: frame.fragment_count_zero
+  - op: expect
+    expect:
+      no_dispatch: true
+      diagnostic_if_supported: FRAME_FRAGMENT_INVALID
+  - op: reset
+  - op: feed_raw
+    corpus: tcp.magic_inside_incomplete_candidate
+  - op: expect
+    expect:
+      dispatch:
+        payloadType: RPC
+        payloadHex: "1122415833445566"
+  - op: reset
+  - op: feed_raw
+    corpus: tcp.bad_crc_then_valid
+    when_capability: parser_recovery
+  - op: expect
+    when_capability: parser_recovery
+    expect:
+      dispatch:
+        payloadType: RPC
+        payloadHex: "01020304"
+assertions:
+  - Magic, Version, PayloadType, length/max-size, fragment-range, completeness, and CRC failures never reach CONTROL/RPC/STREAM parsers.
+  - AX bytes inside the declared payload of a plausible incomplete candidate do not trigger premature byte-stream resynchronization.
+  - A recovery-capable byte-stream adapter may recover to the later valid frame, but Core does not standardize a corrupt-frame retry count or close threshold.
+  - Frame errors remain local framing outcomes; no synthetic business RPC/CONTROL error response is expected.
