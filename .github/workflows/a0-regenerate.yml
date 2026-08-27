@@ -1,0 +1,54 @@
+name: A0 Regenerate Protocol Artifacts
+
+on:
+  push:
+    branches:
+      - aegis/a0-contract-authority-reconciliation
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout A0 branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+
+      - name: Generate exact repository artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/generators install --frozen-lockfile
+          pnpm --dir tooling/generators build
+          node tooling/generators/dist/cli.js generate --spec .
+          tooling/scripts/check-generated-drift.sh
+
+      - name: Commit generated outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add contract/protocol contract/generated contract/mcp contract/test-vectors
+          if git diff --cached --quiet; then
+            echo 'Generated artifacts already current.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore: regenerate A0 protocol artifacts'
+          git push origin HEAD:${GITHUB_REF_NAME}
