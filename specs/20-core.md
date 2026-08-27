@@ -8,7 +8,7 @@ AXTP 用两条生产路径暴露同一套业务注册表：
 
 | 路径 | Transport 示例 | Wire 形态 | 必需能力 |
 |---|---|---|---|
-| Standard Framed | `AXTP-TCP`、`AXTP-USB-HID` | `Standard Frame Header(12B) + Payload(N) + CRC16(2B)` | CONTROL / RPC / STREAM |
+| Standard Framed | `AXTP-TCP`、`AXTP-USB-HID` | `Standard Frame Header(12B) + Payload(N) + CRC16(2B)` | CONTROL / RPC；STREAM 由显式 `stream` scope / L2 profile 要求 |
 | WebSocket Unframed JSON | `AXTP-WS-JSON`、`AXTP-WS-CLOUD-REVERSE` | WebSocket message payload 是 JSON `{ sid, op, m?, d }` | 仅 RPC |
 
 PayloadType 只选择解析器：
@@ -104,7 +104,7 @@ CONTROL 只存在于 Standard Framed profile。WebSocket Unframed JSON MUST NOT 
 CONTROL payload 为：
 
 ```text
-opcode:uint8 + controlId:uint16 + statusCode:uint16 + TLV body
+opcode:uint8 + controlId:uint16 + statusCode:uint16 + optional TLV body
 ```
 
 `controlId` 和 `statusCode` 使用 Big-Endian / network byte order。`statusCode=0x0000` 表示 SUCCESS；非零值使用 ErrorCode registry。
@@ -122,20 +122,29 @@ opcode:uint8 + controlId:uint16 + statusCode:uint16 + TLV body
 
 不存在 `REJECT` opcode。被拒绝的 OPEN 是一个带非零 `statusCode` 的 `ACCEPT`。
 
-对 OPEN、HEARTBEAT 和 CLOSE 的 response MUST 回显 request `controlId`。如果接收方无法解析 CONTROL payload length、TLV length、opcode 或必需协商字段，在还能 framing 出合法 response 时，SHOULD 返回最接近的 CONTROL error；否则 MAY 关闭 transport。
+对 OPEN、HEARTBEAT 和 CLOSE 的 response MUST 回显 request `controlId`。如果接收方无法解析 CONTROL payload length、TLV length、opcode、OPEN 必需字段，或一个已经出现的 TLV 的字段编码/取值，在还能 framing 出合法 response 时，SHOULD 返回最接近的 CONTROL error；否则 MAY 关闭 transport。
 
-必需 OPEN / ACCEPT TLV：
+OPEN 必需 TLV：
 
 | TLV | 名称 | 规则 |
 |---:|---|---|
-| `0x04` | `maxFrameSize` | 必需；总 frame size，包含 12B header 和 2B CRC。 |
-| `0x07` | `supportedPayloadTypes` | 必需 bitmap。 |
+| `0x04` | `maxFrameSize` | OPEN 中必需；总 frame size，包含 12B header 和 2B CRC。 |
+| `0x07` | `supportedPayloadTypes` | OPEN 中必需 bitmap。 |
 | `0x08` | `supportedRpcEncodings` | OPEN 中必需。 |
-| `0x0A` | `heartbeatIntervalMs` | 必需。 |
-| `0x0B` | `ackMode` | 必需；Phase 1 默认值为 `NONE`。 |
-| `0x1E` | `selectedRpcEncoding` | 成功 ACCEPT 中必需。 |
+| `0x0A` | `heartbeatIntervalMs` | OPEN 中必需。 |
+| `0x0B` | `ackMode` | OPEN 中必需；Phase 1 默认值为 `NONE`。 |
 
-`sessionId(0x01)` MAY 为 trace 或未来 resume 而解析，但 MUST NOT 路由 RPC 或 STREAM 业务状态。
+ACCEPT 的 TLV body 在 AXTP v1 Core 中整体 optional。`sessionId(0x01)`、`protocolVersion(0x02)`、`reservedHeaderProfile(0x03)`、`maxFrameSize(0x04)`、`mtu(0x06)`、`supportedPayloadTypes(0x07)`、`heartbeatIntervalMs(0x0A)`、`ackMode(0x0B)`、`selectedRpcEncoding(0x1E)` 全部 MAY 省略。
+
+ACCEPT 字段 presence 规则：
+
+1. TLV 出现时，receiver MUST 按该字段定义校验并消费；
+2. TLV 缺席时，receiver MUST NOT 仅因为缺席而返回协议错误；
+3. 缺席表示该 ACCEPT 没有为此参数提供 override；runtime 继续使用 transport/profile/local 已适用的默认值；
+4. profile 或产品 contract MAY 为自身场景提高字段要求，但该要求不属于 AXTP v1 Core ACCEPT parser；
+5. `statusCode != SUCCESS` 的 ACCEPT MAY 完全没有 TLV body。
+
+`sessionId(0x01)` 即使出现，也只 MAY 用于 trace 或未来 resume；它 MUST NOT 路由 RPC 或 STREAM 业务状态。
 
 新实现 SHOULD 省略 deprecated CONTROL `protocolVersion(0x02)`，且 MUST NOT 因为一个有效 v1 handshake 缺少它而拒绝握手。`maxPayloadSize(0x05)` 已 deprecated/reserved；使用 `maxFrameSize`。
 
@@ -154,13 +163,12 @@ OPEN:
 0a 02 03 e8        # heartbeatIntervalMs = 1000
 0b 01 00           # ackMode = NONE
 
-ACCEPT:
+ACCEPT（不覆盖任何协商参数）：
 02 00 01 00 00
-04 02 10 00        # maxFrameSize = 4096
-07 01 07           # CONTROL + RPC + STREAM
+
+ACCEPT（示例：只覆盖一个字段也合法）：
+02 00 01 00 00
 1e 01 01           # selectedRpcEncoding = JSON
-0a 02 03 e8        # heartbeatIntervalMs = 1000
-0b 01 00           # ackMode = NONE
 ```
 
 Standard Frame Header、payload length 和 CRC 会包裹这个 CONTROL payload。启动流程摘要见 `docs/guides/core-protocol-flow.md`。
