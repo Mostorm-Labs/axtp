@@ -21,11 +21,49 @@ async function loadCurrentProtocol(): Promise<ProtocolModel> {
   return loadProtocolDefinition(repoRoot);
 }
 
+function standardFrameContract(model: ProtocolModel): any {
+  return (model.frameProfiles.find((profile) => profile.name === "STANDARD_FRAME") as any)?.contract;
+}
+
 describe("protocol definition loader", () => {
   it("loads and validates the current protocol definition", async () => {
     const model = await loadCurrentProtocol();
     expect(model.protocol.name).toBe("AXTP");
     expect(validateProtocolDefinition(model)).toContain(`[OK] contract/protocol/axtp.protocol.yaml: ${model.methods.length} methods checked`);
+  });
+
+  it("loads the P23 Standard Frame machine contract", async () => {
+    const contract = standardFrameContract(await loadCurrentProtocol());
+    expect(contract).toBeDefined();
+    expect(contract?.header?.size).toBe(12);
+    expect(contract?.footer?.size).toBe(2);
+    expect(contract?.overheadBytes).toBe(14);
+    expect(contract?.header?.fields?.map((field: any) => [field.name, field.offset, field.bytes])).toEqual([
+      ["magic", 0, 2],
+      ["version", 2, 1],
+      ["payloadType", 3, 1],
+      ["payloadLength", 4, 2],
+      ["sourceId", 6, 1],
+      ["destinationId", 7, 1],
+      ["messageId", 8, 2],
+      ["frameIndex", 10, 1],
+      ["frameCount", 11, 1]
+    ]);
+    expect(contract?.crc).toMatchObject({
+      algorithm: "CRC16-CCITT-FALSE",
+      coverage: "header+payload",
+      byteOrder: "big-endian"
+    });
+    expect(contract?.effectiveParameters?.maxFrameSize).toMatchObject({
+      openField: "maxFrameSize",
+      acceptOverrideField: "maxFrameSize",
+      formula: "PayloadLength + 14 <= effectiveMaxFrameSize"
+    });
+    expect(contract?.fragmentation?.reassemblyKey).toEqual(["framedLinkContext", "sourceId", "destinationId", "messageId"]);
+    expect(contract?.fragmentation?.messageId?.zeroReserved).toBe(false);
+    expect(contract?.parser?.invalidDispatch).toBe(false);
+    expect(contract?.heartbeat?.ack?.controlId).toBe("echo-request");
+    expect(contract?.heartbeat?.ack?.statusCode).toBe("SUCCESS");
   });
 });
 
@@ -102,6 +140,60 @@ describe("protocol definition validator", () => {
     const model = cloneModel(await loadCurrentProtocol());
     model.wire.byteOrder = "little-endian";
     expect(() => validateProtocolDefinition(model)).toThrow(/byte order must be big-endian/);
+  });
+
+  it("rejects Standard Frame header-size drift", async () => {
+    const model = cloneModel(await loadCurrentProtocol());
+    const contract = standardFrameContract(model);
+    expect(contract).toBeDefined();
+    if (!contract) return;
+    contract.header.size = 11;
+    expect(() => validateProtocolDefinition(model)).toThrow(/Standard Frame header size must be 12 bytes/);
+  });
+
+  it("rejects reserving MessageId zero", async () => {
+    const model = cloneModel(await loadCurrentProtocol());
+    const contract = standardFrameContract(model);
+    expect(contract).toBeDefined();
+    if (!contract) return;
+    contract.fragmentation.messageId.zeroReserved = true;
+    expect(() => validateProtocolDefinition(model)).toThrow(/MessageId zero must not be reserved/);
+  });
+
+  it("rejects Standard Frame reassembly-key drift", async () => {
+    const model = cloneModel(await loadCurrentProtocol());
+    const contract = standardFrameContract(model);
+    expect(contract).toBeDefined();
+    if (!contract) return;
+    contract.fragmentation.reassemblyKey = ["messageId"];
+    expect(() => validateProtocolDefinition(model)).toThrow(/reassembly key/);
+  });
+
+  it("rejects Standard Frame CRC coverage drift", async () => {
+    const model = cloneModel(await loadCurrentProtocol());
+    const contract = standardFrameContract(model);
+    expect(contract).toBeDefined();
+    if (!contract) return;
+    contract.crc.coverage = "payload-only";
+    expect(() => validateProtocolDefinition(model)).toThrow(/CRC coverage must be header\+payload/);
+  });
+
+  it("rejects effective max-frame formula drift", async () => {
+    const model = cloneModel(await loadCurrentProtocol());
+    const contract = standardFrameContract(model);
+    expect(contract).toBeDefined();
+    if (!contract) return;
+    contract.effectiveParameters.maxFrameSize.formula = "PayloadLength <= effectiveMaxFrameSize";
+    expect(() => validateProtocolDefinition(model)).toThrow(/PayloadLength \+ 14 <= effectiveMaxFrameSize/);
+  });
+
+  it("rejects heartbeat ACK controlId drift", async () => {
+    const model = cloneModel(await loadCurrentProtocol());
+    const contract = standardFrameContract(model);
+    expect(contract).toBeDefined();
+    if (!contract) return;
+    contract.heartbeat.ack.controlId = "new-id";
+    expect(() => validateProtocolDefinition(model)).toThrow(/HEARTBEAT_ACK must echo/);
   });
 
   it("rejects old capability method mask derivation names", async () => {
@@ -245,6 +337,13 @@ describe("protocol docs consistency validator", () => {
     expect(() => validateProtocolDocsConsistency(model, docs)).toThrow(/Big-Endian/);
   });
 
+  it("rejects missing A1 framing facts in docs", async () => {
+    const model = await loadCurrentProtocol();
+    const docs = await loadProtocolDocs(repoRoot);
+    docs.coreSpec = docs.coreSpec.replace("PayloadLength + 14 <= effectiveMaxFrameSize", "PayloadLength <= maxFrameSize");
+    expect(() => validateProtocolDocsConsistency(model, docs)).toThrow(/effectiveMaxFrameSize|PayloadLength \+ 14/);
+  });
+
   it("rejects yaml that disagrees with docs facts", async () => {
     const model = cloneModel(await loadCurrentProtocol());
     const docs = await loadProtocolDocs(repoRoot);
@@ -265,8 +364,13 @@ describe("protocol definition emitters", () => {
       expect(json).toContain("\"byteOrderAlias\": \"network\"");
       expect(json).toContain("\"supportsStream\": false");
       expect(json).toContain("\"supportsControl\": false");
+      expect(json).toContain("\"algorithm\": \"CRC16-CCITT-FALSE\"");
+      expect(json).toContain("\"formula\": \"PayloadLength + 14 <= effectiveMaxFrameSize\"");
       expect(markdown).toContain("## Main Table of Contents");
       expect(markdown).toContain("## Protocol Framework");
+      expect(markdown).toContain("## Standard Frame Contract");
+      expect(markdown).toContain("CRC16-CCITT-FALSE");
+      expect(markdown).toContain("PayloadLength + 14 <= effectiveMaxFrameSize");
       expect(markdown).toContain("Wire Byte Order");
       expect(markdown).toContain("big-endian / network");
       expect(markdown).toContain("## Supported Connection Profiles");
