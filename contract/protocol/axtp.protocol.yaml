@@ -47,7 +47,8 @@ architecture:
     - step: ACCEPT
       from: Server
       to: Client
-      description: Accept the session and return final runtime parameters.
+      description: Accept or reject the framed link and optionally return parameter overrides relevant to this profile or
+        implementation.
     - step: Hello
       from: Server
       to: Client
@@ -283,7 +284,7 @@ schemas:
       - fieldId: 1
         name: sessionId
         type: uint32
-        required: true
+        required: false
       - fieldId: 2
         name: protocolVersion
         type: uint8
@@ -301,7 +302,7 @@ schemas:
       - fieldId: 4
         name: maxFrameSize
         type: uint16
-        required: true
+        required: false
         min: 19
         max: 65535
       - fieldId: 6
@@ -313,23 +314,23 @@ schemas:
       - fieldId: 7
         name: supportedPayloadTypes
         type: bitmap
-        required: true
+        required: false
       - fieldId: 10
         name: heartbeatIntervalMs
         type: uint32
-        required: true
+        required: false
         min: 500
         max: 60000
       - fieldId: 11
         name: ackMode
         type: uint8
-        required: true
+        required: false
         min: 0
         max: 4
       - fieldId: 30
         name: selectedRpcEncoding
         type: uint8
-        required: true
+        required: false
         min: 1
         max: 4
   AudioAlgorithmCapability:
@@ -8122,1799 +8123,6 @@ methods:
       - BUSY
       - PERMISSION_DENIED
       - INTERNAL_ERROR
-  - name: audio.getStreamCapabilities
-    description: Return real-time audio stream sources, codecs, stream profiles, and open-mode support.
-    methodId: 2319
-    bitOffset: 4
-    domain: audio
-    since: 1.0.0
-    status: draft
-    request:
-      type: AudioGetStreamCapabilitiesParams
-    response:
-      type: AudioStreamCapabilities
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - audio.stream
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: audio.openStream
-    description: Open a real-time audio STREAM and return the negotiated streamId and media metadata.
-    methodId: 2320
-    bitOffset: 5
-    domain: audio
-    since: 1.0.0
-    status: draft
-    request:
-      type: AudioOpenStreamParams
-    response:
-      type: AudioOpenStreamResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - audio.stream
-    events:
-      - audio.streamStateChanged
-      - audio.streamSourceStateChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - BUSY
-      - RESOURCE_EXHAUSTED
-      - MEDIA_SOURCE_NOT_FOUND
-      - MEDIA_SOURCE_UNAVAILABLE
-      - MEDIA_CODEC_UNSUPPORTED
-      - MEDIA_STREAM_START_FAILED
-  - name: audio.closeStream
-    description: Close a previously opened audio STREAM.
-    methodId: 2321
-    bitOffset: 6
-    domain: audio
-    since: 1.0.0
-    status: draft
-    request:
-      type: AudioCloseStreamParams
-    response:
-      type: AudioCloseStreamResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - audio.stream
-    events:
-      - audio.streamStateChanged
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - STREAM_CLOSED
-      - INVALID_STATE
-      - MEDIA_STREAM_STOP_FAILED
-  - name: audio.getStreamState
-    description: Return runtime state for an opened audio stream.
-    methodId: 2322
-    bitOffset: 7
-    domain: audio
-    since: 1.0.0
-    status: draft
-    request:
-      type: AudioGetStreamStateParams
-    response:
-      type: AudioStreamState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - audio.stream
-    events: []
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: audio.getStreamSourceState
-    description: Return availability and receiving state for an audio stream source.
-    methodId: 2323
-    bitOffset: 8
-    domain: audio
-    since: 1.0.0
-    status: draft
-    request:
-      type: AudioGetStreamSourceStateParams
-    response:
-      type: AudioStreamSourceState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - audio.stream
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - MEDIA_SOURCE_NOT_FOUND
-      - UNAVAILABLE
-  - name: cast.getSession
-    description: Return the current cast receiver phase and active session summary.
-    methodId: 5633
-    bitOffset: 0
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastGetSessionParams
-    response:
-      type: CastSessionState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.session
-    events: []
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - UNAVAILABLE
-  - name: cast.stopSession
-    description: Stop the current cast session when one is active.
-    methodId: 5634
-    bitOffset: 1
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastStopSessionParams
-    response:
-      type: CastStopSessionResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.session
-    events:
-      - cast.sessionStateChanged
-      - cast.sessionStopped
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - UNAVAILABLE
-  - name: cast.getAirPlayName
-    description: Return the AirPlay receiver display name and publish state.
-    methodId: 5635
-    bitOffset: 2
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: Empty
-    response:
-      type: CastAirPlayNameState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.session
-    events: []
-    errors:
-      - SUCCESS
-      - UNAVAILABLE
-  - name: cast.setAirPlayName
-    description: Set the AirPlay receiver display name and request service rediscovery.
-    methodId: 5636
-    bitOffset: 3
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastSetAirPlayNameParams
-    response:
-      type: CastAirPlayNameState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.session
-    events:
-      - cast.sessionStateChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - UNAVAILABLE
-  - name: cast.getAudio
-    description: Return local cast audio playback and mute state.
-    methodId: 5637
-    bitOffset: 4
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastGetAudioParams
-    response:
-      type: CastAudioState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.audio
-    events: []
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - UNAVAILABLE
-  - name: cast.setAudio
-    description: Enable or disable local playback of received cast audio.
-    methodId: 5638
-    bitOffset: 5
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastSetAudioParams
-    response:
-      type: CastAudioState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.audio
-    events:
-      - cast.audioChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - UNAVAILABLE
-  - name: cast.setMuted
-    description: Mute or unmute local cast audio output.
-    methodId: 5639
-    bitOffset: 6
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastSetMutedParams
-    response:
-      type: CastAudioState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.audio
-    events:
-      - cast.audioChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - UNAVAILABLE
-  - name: cast.setAudioDelay
-    description: Set receiver-local audio playback delay compensation for cast audio.
-    methodId: 5651
-    bitOffset: 18
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastSetAudioDelayParams
-    response:
-      type: CastAudioState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.audio
-    events:
-      - cast.audioChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - OUT_OF_RANGE
-      - UNAVAILABLE
-  - name: cast.getPinCodeConfig
-    description: Return cast PIN protection state, visibility, and optional secret material.
-    methodId: 5640
-    bitOffset: 7
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastGetPinCodeConfigParams
-    response:
-      type: CastPinCodeConfig
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.pinCode
-    events: []
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - UNAVAILABLE
-  - name: cast.setPinCodeConfig
-    description: Enable or disable cast PIN protection and update display policy.
-    methodId: 5641
-    bitOffset: 8
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastSetPinCodeConfigParams
-    response:
-      type: CastPinCodeConfig
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.pinCode
-    events:
-      - cast.pinCodeChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - UNAVAILABLE
-  - name: cast.setPinCode
-    description: Set the current cast PIN value according to receiver policy.
-    methodId: 5642
-    bitOffset: 9
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastSetPinCodeParams
-    response:
-      type: CastPinCodeConfig
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.pinCode
-    events:
-      - cast.pinCodeChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - UNAVAILABLE
-  - name: cast.getWindowState
-    description: Return cast window visibility, mode, and bounds summary.
-    methodId: 5643
-    bitOffset: 10
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: Empty
-    response:
-      type: CastWindowState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.window
-    events: []
-    errors:
-      - SUCCESS
-      - UNAVAILABLE
-  - name: cast.setWindowState
-    description: Set cast window mode, fullscreen state, or always-on-top state.
-    methodId: 5644
-    bitOffset: 11
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastSetWindowStateParams
-    response:
-      type: CastWindowState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.window
-    events:
-      - cast.windowChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - UNAVAILABLE
-  - name: cast.getBackendStatus
-    description: Return cast backend process, discoverability, and last-error state.
-    methodId: 5645
-    bitOffset: 12
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastGetBackendStatusParams
-    response:
-      type: CastBackendStatus
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.backend
-    events: []
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - UNAVAILABLE
-  - name: cast.restartBackend
-    description: Restart the cast backend without restarting the receiver application or device.
-    methodId: 5646
-    bitOffset: 13
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastRestartBackendParams
-    response:
-      type: CastRestartBackendResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.backend
-    events:
-      - cast.backendChanged
-      - cast.sessionStopped
-    errors:
-      - SUCCESS
-      - BUSY
-      - INVALID_STATE
-      - UNAVAILABLE
-  - name: cast.getFlowControlState
-    description: Return local cast render fps, queue policy, and low-frequency diagnostics.
-    methodId: 5647
-    bitOffset: 14
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastGetFlowControlStateParams
-    response:
-      type: CastFlowControlState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.flowControl
-    events: []
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - UNAVAILABLE
-  - name: cast.setRenderFps
-    description: Set the receiver-local target render fps for cast media.
-    methodId: 5648
-    bitOffset: 15
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastSetRenderFpsParams
-    response:
-      type: CastFlowControlState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.flowControl
-    events:
-      - cast.flowControlChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - OUT_OF_RANGE
-      - UNAVAILABLE
-  - name: cast.setFlowPolicy
-    description: Set receiver-local cast queue, late-frame, drop, and overlay policy.
-    methodId: 5649
-    bitOffset: 16
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastSetFlowPolicyParams
-    response:
-      type: CastFlowControlState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.flowControl
-    events:
-      - cast.flowControlChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - OUT_OF_RANGE
-      - UNAVAILABLE
-  - name: cast.getStatus
-    description: Return a current cast receiver snapshot for UI reload, reconnect, or event-loss recovery.
-    methodId: 5650
-    bitOffset: 17
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastGetStatusParams
-    response:
-      type: CastStatus
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.status
-    events: []
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - UNAVAILABLE
-  - name: cast.setVideoStreamParams
-    description: Request cast video stream parameter reconfiguration; an active stream is coordinated through close then
-      open, while a source without an active stream is opened directly.
-    methodId: 5652
-    bitOffset: 19
-    domain: cast
-    since: 1.0.0
-    status: draft
-    request:
-      type: CastSetVideoStreamParamsParams
-    response:
-      type: CastSetVideoStreamParamsResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - cast.flowControl
-    events:
-      - cast.flowControlChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - OUT_OF_RANGE
-      - NOT_SUPPORTED
-      - BUSY
-      - MEDIA_SOURCE_UNAVAILABLE
-      - MEDIA_FRAMERATE_UNSUPPORTED
-      - MEDIA_BITRATE_UNSUPPORTED
-      - MEDIA_STREAM_START_FAILED
-      - MEDIA_STREAM_STOP_FAILED
-      - UNAVAILABLE
-  - name: device.getInfo
-    description: Return the current endpoint main device identity, product, hardware, OS, software, AXTP runtime, and
-      optional capability summary.
-    methodId: 257
-    bitOffset: 0
-    domain: device
-    since: 1.0.0
-    status: draft
-    request:
-      type: GetDeviceInfoParams
-    response:
-      type: DeviceInfo
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - device.info
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - PERMISSION_DENIED
-      - INTERNAL_ERROR
-  - name: device.getPairingCode
-    description: Return a pairing code for on-site or backend-claimed device enrollment. With refresh=false (default) the
-      current valid code is returned; with refresh=true the server generates a new code and invalidates the previous
-      one.
-    methodId: 258
-    bitOffset: 1
-    domain: device
-    since: 1.0.0
-    status: draft
-    request:
-      type: DeviceGetPairingCodeParams
-    response:
-      type: DevicePairingCodeInfo
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - device.enrollment
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - PERMISSION_DENIED
-      - INTERNAL_ERROR
-  - name: device.getEnrollmentState
-    description: Query whether the device is enrolled and return the associated backend object summary when enrolled.
-    methodId: 259
-    bitOffset: 2
-    domain: device
-    since: 1.0.0
-    status: draft
-    request:
-      type: DeviceGetEnrollmentStateParams
-    response:
-      type: DeviceEnrollmentInfo
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - device.enrollment
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-  - name: device.setEnrollmentState
-    description: Set the enrollment state (bind success, unbind, clear failure, or sync server claim). State transitions
-      must follow the enrollment state machine; an invalid transition returns INVALID_STATE. Emitted after the state
-      actually changes by the device.enrollmentStateChanged event.
-    methodId: 260
-    bitOffset: 3
-    domain: device
-    since: 1.0.0
-    status: draft
-    request:
-      type: DeviceSetEnrollmentStateParams
-    response:
-      type: DeviceSetEnrollmentStateResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - device.enrollment
-    events:
-      - device.enrollmentStateChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - PERMISSION_DENIED
-  - name: firmware.getUpdateCapabilities
-    description: Return P0 firmware update capability and upload constraints.
-    methodId: 1025
-    bitOffset: 0
-    domain: firmware
-    since: 1.0.0
-    status: draft
-    request:
-      type: Empty
-    response:
-      type: FirmwareUpdateCapabilities
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - firmware.update
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_STATE
-      - FW_DEVICE_NOT_READY
-  - name: firmware.beginUpdate
-    description: Create a firmware update session, accept the manifest, and bind file IDs to STREAM streamIds.
-    methodId: 1026
-    bitOffset: 1
-    domain: firmware
-    since: 1.0.0
-    status: draft
-    request:
-      type: BeginUpdateParams
-    response:
-      type: BeginUpdateResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - firmware.update
-    events:
-      - firmware.updateStateChanged
-      - firmware.updateProgressReported
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - BUSY
-      - FW_VERSION_UNSUPPORTED
-      - FW_STORAGE_NOT_ENOUGH
-      - FW_DEVICE_NOT_READY
-  - name: firmware.finishUpdate
-    description: Tell the device that upload is complete and hand off verification, install, and reboot to the device.
-    methodId: 1035
-    bitOffset: 2
-    domain: firmware
-    since: 1.0.0
-    status: draft
-    request:
-      type: FinishUpdateParams
-    response:
-      type: FinishUpdateResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - firmware.update
-    events:
-      - firmware.updateStateChanged
-      - firmware.updateProgressReported
-    errors:
-      - SUCCESS
-      - INVALID_STATE
-      - STREAM_CHUNK_MISSING
-      - FW_SIZE_MISMATCH
-      - FW_DEVICE_NOT_READY
-      - BUSY
-  - name: firmware.getUpdateState
-    description: Return current firmware update state for UI refresh, reconnect, or event-loss recovery.
-    methodId: 1032
-    bitOffset: 3
-    domain: firmware
-    since: 1.0.0
-    status: draft
-    request:
-      type: GetUpdateStateParams
-    response:
-      type: FirmwareUpdateState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - firmware.update
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_FOUND
-      - FW_TRANSFER_NOT_STARTED
-  - name: network.getInterfaces
-    description: Return visible network interfaces and default interface identifiers.
-    methodId: 3600
-    bitOffset: 0
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkGetInterfacesParams
-    response:
-      type: NetworkInterfaces
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.interface
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: network.getInterfaceInfo
-    description: Return detailed information for one network interface.
-    methodId: 3601
-    bitOffset: 1
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkGetInterfaceInfoParams
-    response:
-      type: NetworkInterfaceInfo
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.interface
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - NOT_FOUND
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: network.getIpConfig
-    description: Return IP configuration for a network interface.
-    methodId: 3586
-    bitOffset: 2
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkGetIpConfigParams
-    response:
-      type: NetworkIpConfig
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.ip
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - NOT_FOUND
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: network.setIpConfig
-    description: Set DHCP/static/disabled IP configuration for a network interface.
-    methodId: 3587
-    bitOffset: 3
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkSetIpConfigParams
-    response:
-      type: NetworkSetIpConfigResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.ip
-    events:
-      - network.ipConfigChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - OUT_OF_RANGE
-      - INVALID_STATE
-      - BUSY
-      - PERMISSION_DENIED
-  - name: network.getWifiCapabilities
-    description: Return Wi-Fi station capability, including security types, bands, scanning, and credential import modes.
-    methodId: 3602
-    bitOffset: 4
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkGetWifiCapabilitiesParams
-    response:
-      type: NetworkWifiCapabilities
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.wifi
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - NOT_FOUND
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: network.getWifiConfig
-    description: Return saved Wi-Fi profile summaries without plaintext credentials.
-    methodId: 3588
-    bitOffset: 5
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkGetWifiConfigParams
-    response:
-      type: NetworkWifiConfig
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.wifi
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - NOT_FOUND
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: network.setWifiConfig
-    description: Create or update a Wi-Fi station profile.
-    methodId: 3589
-    bitOffset: 6
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkSetWifiConfigParams
-    response:
-      type: NetworkSetWifiConfigResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.wifi
-    events:
-      - network.wifiConfigChanged
-      - network.wifiStateChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - OUT_OF_RANGE
-      - INVALID_STATE
-      - BUSY
-      - PERMISSION_DENIED
-  - name: network.scanWifi
-    description: Scan visible Wi-Fi access points.
-    methodId: 3590
-    bitOffset: 7
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkScanWifiParams
-    response:
-      type: NetworkScanWifiResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.wifi
-    events:
-      - network.wifiScanResultReported
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - BUSY
-      - TIMEOUT
-      - UNAVAILABLE
-  - name: network.connectWifi
-    description: Connect to a saved Wi-Fi profile or an inline profile.
-    methodId: 3591
-    bitOffset: 8
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkConnectWifiParams
-    response:
-      type: NetworkWifiActionResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.wifi
-    events:
-      - network.wifiStateChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - NOT_FOUND
-      - INVALID_STATE
-      - BUSY
-      - TIMEOUT
-      - PERMISSION_DENIED
-  - name: network.disconnectWifi
-    description: Disconnect the current Wi-Fi station connection.
-    methodId: 3592
-    bitOffset: 9
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkDisconnectWifiParams
-    response:
-      type: NetworkWifiActionResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.wifi
-    events:
-      - network.wifiStateChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - BUSY
-      - PERMISSION_DENIED
-  - name: network.getWifiState
-    description: Return current Wi-Fi station association, authentication, and connection state.
-    methodId: 3593
-    bitOffset: 10
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkGetWifiStateParams
-    response:
-      type: NetworkWifiState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.wifi
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - NOT_FOUND
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: network.getApCapabilities
-    description: Return Wi-Fi AP capability, including supported bands, security types, channel ranges, and credential
-      export policy.
-    methodId: 3603
-    bitOffset: 11
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkGetApCapabilitiesParams
-    response:
-      type: NetworkApCapabilities
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.ap
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: network.getApConfig
-    description: Return Wi-Fi AP configuration without exposing plaintext credentials unless explicitly allowed by policy.
-    methodId: 3594
-    bitOffset: 12
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkGetApConfigParams
-    response:
-      type: NetworkApConfig
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.ap
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: network.setApConfig
-    description: Partially update Wi-Fi AP configuration.
-    methodId: 3595
-    bitOffset: 13
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkSetApConfigParams
-    response:
-      type: NetworkSetApConfigResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.ap
-    events:
-      - network.apConfigChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - OUT_OF_RANGE
-      - INVALID_STATE
-      - BUSY
-      - PERMISSION_DENIED
-  - name: network.getApState
-    description: Return runtime state for the device Wi-Fi AP role.
-    methodId: 3598
-    bitOffset: 14
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkGetApConfigParams
-    response:
-      type: NetworkApState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.ap
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: network.startAp
-    description: Start the Wi-Fi AP role.
-    methodId: 3596
-    bitOffset: 15
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkApActionParams
-    response:
-      type: NetworkApActionResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.ap
-    events:
-      - network.apStateChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - BUSY
-      - PERMISSION_DENIED
-  - name: network.stopAp
-    description: Stop the Wi-Fi AP role.
-    methodId: 3597
-    bitOffset: 16
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkApActionParams
-    response:
-      type: NetworkApActionResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.ap
-    events:
-      - network.apStateChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - BUSY
-      - PERMISSION_DENIED
-  - name: network.getApClients
-    description: Return clients currently associated with the Wi-Fi AP.
-    methodId: 3604
-    bitOffset: 17
-    domain: network
-    since: 1.0.0
-    status: draft
-    request:
-      type: NetworkGetApConfigParams
-    response:
-      type: NetworkApClients
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - network.ap
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: signage.getPlaylistCapabilities
-    description: Return the signage.playlist capability scope, including supported playlist item types, quantity limits, and
-      feature toggles.
-    methodId: 3329
-    bitOffset: 0
-    domain: signage
-    since: 1.0.0
-    status: draft
-    request:
-      type: Empty
-    response:
-      type: SignagePlaylistCapabilitiesResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - signage.playlist
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INTERNAL_ERROR
-  - name: signage.getPlaylistConfig
-    description: Return the current playlist configuration held by the device as the complete playlists array.
-    methodId: 3330
-    bitOffset: 1
-    domain: signage
-    since: 1.0.0
-    status: draft
-    request:
-      type: Empty
-    response:
-      type: SignagePlaylistConfigResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - signage.playlist
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INTERNAL_ERROR
-  - name: signage.setPlaylistConfig
-    description: Fully replace the playlist configuration. The server is the single source of truth; a second full sync
-      removes playlist items absent from the new payload.
-    methodId: 3331
-    bitOffset: 2
-    domain: signage
-    since: 1.0.0
-    status: draft
-    request:
-      type: SignageSetPlaylistConfigParams
-    response:
-      type: Empty
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - signage.playlist
-    events:
-      - signage.playlistConfigChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - NOT_SUPPORTED
-      - PERMISSION_DENIED
-  - name: signage.resetPlaylistConfig
-    description: Restore the playlist configuration to the factory default state.
-    methodId: 3332
-    bitOffset: 3
-    domain: signage
-    since: 1.0.0
-    status: draft
-    request:
-      type: Empty
-    response:
-      type: SignagePlaylistConfigResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - signage.playlist
-    events:
-      - signage.playlistConfigChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INTERNAL_ERROR
-  - name: signage.getPlaylistItemUrl
-    description: Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this
-      proactively when an item URL is about to expire. Clock items have no URL resource and return NOT_SUPPORTED.
-    methodId: 3333
-    bitOffset: 4
-    domain: signage
-    since: 1.0.0
-    status: draft
-    request:
-      type: SignageGetPlaylistItemUrlParams
-    response:
-      type: SignageGetPlaylistItemUrlResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - signage.playlist
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - NOT_FOUND
-      - INTERNAL_ERROR
-  - name: software.getConfig
-    description: Read the current runtime configuration of a software object identified by target.
-    methodId: 5889
-    bitOffset: 0
-    domain: software
-    since: 1.0.0
-    status: draft
-    request:
-      type: SoftwareGetConfigParams
-    response:
-      type: SoftwareConfig
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - software.config
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-  - name: software.setConfig
-    description: Set a configuration fragment of a software object using partial update semantics; fields absent from the
-      payload are left unchanged.
-    methodId: 5890
-    bitOffset: 1
-    domain: software
-    since: 1.0.0
-    status: draft
-    request:
-      type: SoftwareSetConfigParams
-    response:
-      type: Empty
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - software.config
-    events:
-      - software.configChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - PERMISSION_DENIED
-      - INVALID_STATE
-  - name: software.resetConfig
-    description: Restore the runtime configuration of a software object to the current-version defaults for the given
-      target. Only resets the specified software object; system-level factory reset is handled by
-      system.restoreFactorySettings and does not trigger a device reboot.
-    methodId: 5891
-    bitOffset: 2
-    domain: software
-    since: 1.0.0
-    status: draft
-    request:
-      type: SoftwareResetConfigParams
-    response:
-      type: SoftwareConfig
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - software.config
-    events:
-      - software.configChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - PERMISSION_DENIED
-      - INVALID_STATE
-  - name: software.getUpdatePolicy
-    description: Read the current automatic update policy of a software object identified by target.
-    methodId: 5892
-    bitOffset: 3
-    domain: software
-    since: 1.0.0
-    status: draft
-    request:
-      type: SoftwareGetUpdatePolicyParams
-    response:
-      type: SoftwareUpdatePolicy
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - software.updatePolicy
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-  - name: software.setUpdatePolicy
-    description: Set an update policy fragment of a software object using partial update semantics; fields absent from the
-      payload are left unchanged.
-    methodId: 5893
-    bitOffset: 4
-    domain: software
-    since: 1.0.0
-    status: draft
-    request:
-      type: SoftwareSetUpdatePolicyParams
-    response:
-      type: Empty
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - software.updatePolicy
-    events:
-      - software.updatePolicyChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - PERMISSION_DENIED
-      - INVALID_STATE
-  - name: software.resetUpdatePolicy
-    description: Restore the update policy of a software object to the current-version defaults for the given target. Only
-      resets the update policy; it does not trigger a software or device reboot. System-level factory reset is handled
-      by system.restoreFactorySettings.
-    methodId: 5894
-    bitOffset: 5
-    domain: software
-    since: 1.0.0
-    status: draft
-    request:
-      type: SoftwareResetUpdatePolicyParams
-    response:
-      type: SoftwareUpdatePolicy
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - software.updatePolicy
-    events:
-      - software.updatePolicyChanged
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - PERMISSION_DENIED
-      - INVALID_STATE
-  - name: stream.getCapabilities
-    description: Return common STREAM runtime flow-control, statistics, and clock-report capabilities.
-    methodId: 1281
-    bitOffset: 0
-    domain: stream
-    since: 1.0.0
-    status: draft
-    request:
-      type: Empty
-    response:
-      type: StreamFlowControlCapabilities
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - stream.flowControl
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: stream.getState
-    description: Return runtime state for one STREAM context, or aggregate runtime state when streamId is omitted.
-    methodId: 1282
-    bitOffset: 1
-    domain: stream
-    since: 1.0.0
-    status: draft
-    request:
-      type: StreamSelector
-    response:
-      type: StreamState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - stream.flowControl
-    events: []
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: stream.getStats
-    description: Return bounded transport-level statistics for one STREAM context, or aggregate statistics when streamId is omitted.
-    methodId: 1283
-    bitOffset: 2
-    domain: stream
-    since: 1.0.0
-    status: draft
-    request:
-      type: StreamSelector
-    response:
-      type: StreamStats
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - stream.flowControl
-    events: []
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: stream.ack
-    description: Acknowledge received STREAM packet ranges so the sender can release flow-control window.
-    methodId: 1284
-    bitOffset: 3
-    domain: stream
-    since: 1.0.0
-    status: draft
-    request:
-      type: StreamAckParams
-    response:
-      type: StreamAckResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - stream.flowControl
-    events:
-      - stream.flowControlChanged
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - STREAM_CLOSED
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - BUSY
-  - name: stream.windowUpdate
-    description: Update receive window or sender credit for an existing STREAM context.
-    methodId: 1285
-    bitOffset: 4
-    domain: stream
-    since: 1.0.0
-    status: draft
-    request:
-      type: StreamWindowUpdateParams
-    response:
-      type: StreamWindowUpdateResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - stream.flowControl
-    events:
-      - stream.flowControlChanged
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - STREAM_CLOSED
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - BUSY
-  - name: stream.pause
-    description: Pause data-plane sending for an existing STREAM context without closing the owning media or transfer profile.
-    methodId: 1286
-    bitOffset: 5
-    domain: stream
-    since: 1.0.0
-    status: draft
-    request:
-      type: StreamPauseParams
-    response:
-      type: StreamActionResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - stream.flowControl
-    events:
-      - stream.flowControlChanged
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - STREAM_CLOSED
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - BUSY
-  - name: stream.resume
-    description: Resume data-plane sending for a paused STREAM context.
-    methodId: 1287
-    bitOffset: 6
-    domain: stream
-    since: 1.0.0
-    status: draft
-    request:
-      type: StreamResumeParams
-    response:
-      type: StreamActionResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - stream.flowControl
-    events:
-      - stream.flowControlChanged
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - STREAM_CLOSED
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - BUSY
-  - name: stream.abort
-    description: Abort an existing STREAM runtime context on an exceptional path; normal business close remains profile-specific.
-    methodId: 1288
-    bitOffset: 7
-    domain: stream
-    since: 1.0.0
-    status: draft
-    request:
-      type: StreamAbortParams
-    response:
-      type: StreamActionResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - stream.flowControl
-    events:
-      - stream.stateChanged
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - STREAM_CLOSED
-      - INVALID_ARGUMENT
-      - INVALID_STATE
-      - BUSY
-  - name: video.getStreamCapabilities
-    description: Return video stream sources, codecs, profiles, and open-mode support.
-    methodId: 2066
-    bitOffset: 0
-    domain: video
-    since: 1.0.0
-    status: draft
-    request:
-      type: VideoGetStreamCapabilitiesParams
-    response:
-      type: VideoStreamCapabilities
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - video.stream
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: video.openStream
-    description: Open a real-time video STREAM and return the negotiated streamId and media metadata; an active stream must
-      be closed before opening a replacement, while a source without an active stream may be opened directly.
-    methodId: 2059
-    bitOffset: 1
-    domain: video
-    since: 1.0.0
-    status: draft
-    request:
-      type: VideoOpenStreamParams
-    response:
-      type: VideoOpenStreamResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - video.stream
-    events:
-      - video.streamStateChanged
-      - video.streamSourceStateChanged
-    errors:
-      - SUCCESS
-      - INVALID_ARGUMENT
-      - BUSY
-      - RESOURCE_EXHAUSTED
-      - MEDIA_SOURCE_NOT_FOUND
-      - MEDIA_SOURCE_UNAVAILABLE
-      - MEDIA_CODEC_UNSUPPORTED
-      - MEDIA_RESOLUTION_UNSUPPORTED
-      - MEDIA_FRAMERATE_UNSUPPORTED
-      - MEDIA_BITRATE_UNSUPPORTED
-      - MEDIA_STREAM_START_FAILED
-  - name: video.closeStream
-    description: Close a previously opened video STREAM.
-    methodId: 2060
-    bitOffset: 2
-    domain: video
-    since: 1.0.0
-    status: draft
-    request:
-      type: VideoCloseStreamParams
-    response:
-      type: VideoCloseStreamResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - video.stream
-    events:
-      - video.streamStateChanged
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - STREAM_CLOSED
-      - INVALID_STATE
-      - MEDIA_STREAM_STOP_FAILED
-  - name: video.getStreamState
-    description: Return runtime state for an opened video stream.
-    methodId: 2061
-    bitOffset: 3
-    domain: video
-    since: 1.0.0
-    status: draft
-    request:
-      type: VideoGetStreamStateParams
-    response:
-      type: VideoStreamState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - video.stream
-    events: []
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - PERMISSION_DENIED
-      - UNAVAILABLE
-  - name: video.getStreamSourceState
-    description: Return availability and receiving state for a video stream source.
-    methodId: 2067
-    bitOffset: 4
-    domain: video
-    since: 1.0.0
-    status: draft
-    request:
-      type: VideoGetStreamSourceStateParams
-    response:
-      type: VideoStreamSourceState
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - video.stream
-    events: []
-    errors:
-      - SUCCESS
-      - NOT_SUPPORTED
-      - INVALID_ARGUMENT
-      - MEDIA_SOURCE_NOT_FOUND
-      - UNAVAILABLE
-  - name: video.requestKeyFrame
-    description: Request an encoder key frame for an active video stream.
-    methodId: 2068
-    bitOffset: 5
-    domain: video
-    since: 1.0.0
-    status: draft
-    request:
-      type: VideoRequestKeyFrameParams
-    response:
-      type: VideoRequestKeyFrameResult
-    encodings:
-      - json
-      - tlv
-    capabilities:
-      - video.stream
-    events:
-      - video.streamStateChanged
-    errors:
-      - SUCCESS
-      - STREAM_NOT_FOUND
-      - INVALID_STATE
-      - MEDIA_STREAM_START_FAILED
-      - PERMISSION_DENIED
 events:
   - name: audio.algorithmConfigChanged
     description: Emitted when audio algorithm configuration changes after set, reset, profile, restore, factory reset, or
@@ -9936,594 +8144,13 @@ events:
       - device policy
     capabilities:
       - audio.algorithm
-  - name: audio.streamStateChanged
-    description: Emitted when an audio stream enters opening, streaming, closed, or failed state.
-    eventId: 2306
-    bitOffset: 1
-    domain: audio
-    since: 1.0.0
-    status: draft
-    payload:
-      type: AudioStreamStateChangedEvent
-    severity: info
-    trigger:
-      - audio.openStream
-      - audio.closeStream
-      - source disconnected
-      - stream failure
-    capabilities:
-      - audio.stream
-  - name: audio.streamSourceStateChanged
-    description: Emitted when an audio stream source availability or receiving state changes.
-    eventId: 2307
-    bitOffset: 2
-    domain: audio
-    since: 1.0.0
-    status: draft
-    payload:
-      type: AudioStreamSourceStateChangedEvent
-    severity: info
-    trigger:
-      - upstream source available
-      - upstream source receiving
-      - upstream source stopped
-    capabilities:
-      - audio.stream
-  - name: audio.streamStatsReported
-    description: Emitted with bounded runtime statistics for an audio stream.
-    eventId: 2308
-    bitOffset: 3
-    domain: audio
-    since: 1.0.0
-    status: draft
-    payload:
-      type: AudioStreamStatsReportedEvent
-    severity: info
-    trigger:
-      - stream statistics interval
-      - diagnostic sampling
-    capabilities:
-      - audio.stream
-  - name: cast.sessionIncoming
-    description: Emitted when a cast source initiates a receiver session.
-    eventId: 5633
-    bitOffset: 0
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastSessionIncomingEvent
-    severity: info
-    trigger:
-      - source connected
-      - backend incoming session
-    capabilities:
-      - cast.session
-  - name: cast.sessionStateChanged
-    description: Emitted when receiver phase, protocol state, or low-frequency session media state changes.
-    eventId: 5634
-    bitOffset: 1
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastSessionStateChangedEvent
-    severity: info
-    trigger:
-      - incoming session
-      - authentication
-      - stream starting
-      - media flow started
-      - interruption
-      - stopping
-    capabilities:
-      - cast.session
-  - name: cast.sessionStarted
-    description: Emitted when a cast session becomes user-visible after first frame or local playback starts.
-    eventId: 5635
-    bitOffset: 2
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastSessionStartedEvent
-    severity: info
-    trigger:
-      - first frame rendered
-      - local playback started
-    capabilities:
-      - cast.session
-  - name: cast.sessionStopped
-    description: Emitted when a cast session ends normally or is forced to stop.
-    eventId: 5636
-    bitOffset: 3
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastSessionStoppedEvent
-    severity: info
-    trigger:
-      - cast.stopSession
-      - source closed
-      - backend restart
-      - backend exited
-    capabilities:
-      - cast.session
-  - name: cast.sessionFailed
-    description: Emitted when cast connection, authentication, negotiation, or backend handling fails.
-    eventId: 5637
-    bitOffset: 4
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastSessionFailedEvent
-    severity: error
-    trigger:
-      - connection failed
-      - authentication failed
-      - media negotiation failed
-      - backend failed
-    capabilities:
-      - cast.session
-  - name: cast.audioChanged
-    description: Emitted when local cast audio playback, mute, or delay compensation state changes.
-    eventId: 5638
-    bitOffset: 5
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastAudioChangedEvent
-    severity: info
-    trigger:
-      - cast.setAudio
-      - cast.setMuted
-      - cast.setAudioDelay
-      - local UI
-      - session started
-      - session stopped
-    capabilities:
-      - cast.audio
-  - name: cast.pinCodeChanged
-    description: Emitted when cast PIN protection configuration or current PIN state changes.
-    eventId: 5639
-    bitOffset: 6
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastPinCodeChangedEvent
-    severity: info
-    trigger:
-      - cast.setPinCodeConfig
-      - cast.setPinCode
-      - generated PIN changed
-    capabilities:
-      - cast.pinCode
-  - name: cast.pinCodeRequired
-    description: Emitted when a cast source is waiting for PIN authentication.
-    eventId: 5640
-    bitOffset: 7
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastPinCodeRequiredEvent
-    severity: info
-    trigger:
-      - incoming session requires PIN
-    capabilities:
-      - cast.pinCode
-  - name: cast.pinCodeAuthFailed
-    description: Emitted when PIN authentication fails, times out, or is cancelled.
-    eventId: 5641
-    bitOffset: 8
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastPinCodeAuthFailedEvent
-    severity: warning
-    trigger:
-      - wrong PIN
-      - authentication timeout
-      - authentication cancelled
-      - too many attempts
-    capabilities:
-      - cast.pinCode
-  - name: cast.windowChanged
-    description: Emitted when cast window visibility, mode, topmost state, or bounds changes.
-    eventId: 5642
-    bitOffset: 9
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastWindowChangedEvent
-    severity: info
-    trigger:
-      - cast.setWindowState
-      - local UI
-      - session started
-      - session stopped
-    capabilities:
-      - cast.window
-  - name: cast.backendChanged
-    description: Emitted when cast backend ready, restart, exit, failed, or discoverable state changes.
-    eventId: 5643
-    bitOffset: 10
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastBackendChangedEvent
-    severity: info
-    trigger:
-      - backend started
-      - backend restarting
-      - backend exited
-      - backend failed
-      - discovery changed
-    capabilities:
-      - cast.backend
-  - name: cast.flowControlChanged
-    description: Emitted when receiver-local cast flow policy, video stream parameters, or low-frequency flow statistics change.
-    eventId: 5644
-    bitOffset: 11
-    domain: cast
-    since: 1.0.0
-    status: draft
-    payload:
-      type: CastFlowControlChangedEvent
-    severity: info
-    trigger:
-      - cast.setRenderFps
-      - cast.setFlowPolicy
-      - cast.setVideoStreamParams
-      - diagnostics sample
-    capabilities:
-      - cast.flowControl
-  - name: device.enrollmentStateChanged
-    description: Emitted after device.setEnrollmentState actually changes the enrollment state, or after a device-internal
-      policy modifies it (e.g. pairing code expiry fallback, server-side revoke).
-    eventId: 258
-    bitOffset: 0
-    domain: device
-    since: 1.0.0
-    status: draft
-    payload:
-      type: DeviceEnrollmentStateChangedEvent
-    severity: info
-    trigger:
-      - device.setEnrollmentState
-    capabilities:
-      - device.enrollment
-  - name: firmware.updateProgressReported
-    description: Emitted when firmware receiving, verification, or install progress changes.
-    eventId: 1026
-    bitOffset: 0
-    domain: firmware
-    since: 1.0.0
-    status: draft
-    payload:
-      type: FirmwareUpdateProgressEvent
-    severity: info
-    trigger:
-      - STREAM upload progress
-      - firmware.finishUpdate
-      - internal verify
-      - internal install
-    capabilities:
-      - firmware.update
-  - name: firmware.updateStateChanged
-    description: Emitted when firmware update state changes or fails.
-    eventId: 1027
-    bitOffset: 1
-    domain: firmware
-    since: 1.0.0
-    status: draft
-    payload:
-      type: FirmwareUpdateStateChangedEvent
-    severity: info
-    trigger:
-      - firmware.beginUpdate
-      - firmware.finishUpdate
-      - verify complete
-      - install complete
-      - rebooting
-      - failure
-    capabilities:
-      - firmware.update
-  - name: network.interfaceStateChanged
-    description: Emitted when network interface administrative or link state changes.
-    eventId: 3585
-    bitOffset: 0
-    domain: network
-    since: 1.0.0
-    status: draft
-    payload:
-      type: NetworkInterfaceStateChangedEvent
-    severity: info
-    trigger:
-      - link state change
-      - admin state change
-      - interface availability change
-    capabilities:
-      - network.interface
-  - name: network.ipConfigChanged
-    description: Emitted when IP configuration changes for an interface.
-    eventId: 3586
-    bitOffset: 1
-    domain: network
-    since: 1.0.0
-    status: draft
-    payload:
-      type: NetworkIpConfigChangedEvent
-    severity: info
-    trigger:
-      - network.setIpConfig
-      - DHCP renew
-      - device policy
-    capabilities:
-      - network.ip
-  - name: network.wifiConfigChanged
-    description: Emitted when saved Wi-Fi profile configuration changes.
-    eventId: 3587
-    bitOffset: 2
-    domain: network
-    since: 1.0.0
-    status: draft
-    payload:
-      type: NetworkWifiConfigChangedEvent
-    severity: info
-    trigger:
-      - network.setWifiConfig
-      - device policy
-    capabilities:
-      - network.wifi
-  - name: network.wifiStateChanged
-    description: Emitted when Wi-Fi station association, authentication, connection, or failure state changes.
-    eventId: 3588
-    bitOffset: 3
-    domain: network
-    since: 1.0.0
-    status: draft
-    payload:
-      type: NetworkWifiStateChangedEvent
-    severity: info
-    trigger:
-      - network.setWifiConfig
-      - network.connectWifi
-      - network.disconnectWifi
-      - local Wi-Fi state change
-    capabilities:
-      - network.wifi
-  - name: network.wifiScanResultReported
-    description: Emitted for asynchronous Wi-Fi scan results or scan completion.
-    eventId: 3589
-    bitOffset: 4
-    domain: network
-    since: 1.0.0
-    status: draft
-    payload:
-      type: NetworkWifiScanResultReportedEvent
-    severity: info
-    trigger:
-      - network.scanWifi
-    capabilities:
-      - network.wifi
-  - name: network.apConfigChanged
-    description: Emitted when Wi-Fi AP configuration changes.
-    eventId: 3590
-    bitOffset: 5
-    domain: network
-    since: 1.0.0
-    status: draft
-    payload:
-      type: NetworkApConfigChangedEvent
-    severity: info
-    trigger:
-      - network.setApConfig
-      - device policy
-    capabilities:
-      - network.ap
-  - name: network.apStateChanged
-    description: Emitted when Wi-Fi AP runtime state changes.
-    eventId: 3591
-    bitOffset: 6
-    domain: network
-    since: 1.0.0
-    status: draft
-    payload:
-      type: NetworkApStateChangedEvent
-    severity: info
-    trigger:
-      - network.startAp
-      - network.stopAp
-      - local AP state change
-    capabilities:
-      - network.ap
-  - name: network.apClientChanged
-    description: Emitted when a client joins or leaves the Wi-Fi AP.
-    eventId: 3592
-    bitOffset: 7
-    domain: network
-    since: 1.0.0
-    status: draft
-    payload:
-      type: NetworkApClientChangedEvent
-    severity: info
-    trigger:
-      - AP client join
-      - AP client leave
-    capabilities:
-      - network.ap
-  - name: signage.playlistConfigChanged
-    description: Emitted after setPlaylistConfig or resetPlaylistConfig successfully changes the playlist configuration.
-    eventId: 3329
-    bitOffset: 0
-    domain: signage
-    since: 1.0.0
-    status: draft
-    payload:
-      type: SignagePlaylistConfigChangedEvent
-    severity: info
-    trigger:
-      - signage.setPlaylistConfig
-      - signage.resetPlaylistConfig
-    capabilities:
-      - signage.playlist
-  - name: software.configChanged
-    description: Emitted after software.setConfig or software.resetConfig successfully changes a software object
-      configuration, or after a device-internal policy modifies it.
-    eventId: 5889
-    bitOffset: 0
-    domain: software
-    since: 1.0.0
-    status: draft
-    payload:
-      type: SoftwareConfigChangedEvent
-    severity: info
-    trigger:
-      - software.setConfig
-      - software.resetConfig
-    capabilities:
-      - software.config
-  - name: software.updatePolicyChanged
-    description: Emitted after software.setUpdatePolicy or software.resetUpdatePolicy successfully changes a software object
-      update policy, or after a device-internal policy modifies it.
-    eventId: 5890
-    bitOffset: 1
-    domain: software
-    since: 1.0.0
-    status: draft
-    payload:
-      type: SoftwareUpdatePolicyChangedEvent
-    severity: info
-    trigger:
-      - software.setUpdatePolicy
-      - software.resetUpdatePolicy
-    capabilities:
-      - software.updatePolicy
-  - name: stream.stateChanged
-    description: Emitted when common STREAM runtime state changes or an abort converges.
-    eventId: 1281
-    bitOffset: 0
-    domain: stream
-    since: 1.0.0
-    status: draft
-    payload:
-      type: StreamStateChangedEvent
-    severity: info
-    trigger:
-      - stream.abort
-      - runtime state change
-    capabilities:
-      - stream.flowControl
-  - name: stream.statsReported
-    description: Emitted with bounded STREAM runtime statistics for diagnostics.
-    eventId: 1282
-    bitOffset: 1
-    domain: stream
-    since: 1.0.0
-    status: draft
-    payload:
-      type: StreamStatsReportedEvent
-    severity: info
-    trigger:
-      - stream statistics interval
-      - diagnostic sampling
-    capabilities:
-      - stream.flowControl
-  - name: stream.flowControlChanged
-    description: Emitted when ACK, window, pause, or resume changes STREAM sending conditions.
-    eventId: 1283
-    bitOffset: 2
-    domain: stream
-    since: 1.0.0
-    status: draft
-    payload:
-      type: StreamFlowControlChangedEvent
-    severity: info
-    trigger:
-      - stream.ack
-      - stream.windowUpdate
-      - stream.pause
-      - stream.resume
-    capabilities:
-      - stream.flowControl
-  - name: stream.clockReport
-    description: Emitted as a latest-wins timing sample that anchors source media PTS to source and relay monotonic clocks.
-    eventId: 1284
-    bitOffset: 3
-    domain: stream
-    since: 1.0.0
-    status: draft
-    payload:
-      type: StreamClockReportEvent
-    severity: info
-    trigger:
-      - source clock report
-      - relay diagnostic sampling
-    capabilities:
-      - stream.flowControl
-  - name: video.streamStateChanged
-    description: Emitted when a video stream enters opening, streaming, closed, failed, or keyframe-related state.
-    eventId: 2054
-    bitOffset: 0
-    domain: video
-    since: 1.0.0
-    status: draft
-    payload:
-      type: VideoStreamStateChangedEvent
-    severity: info
-    trigger:
-      - video.openStream
-      - video.closeStream
-      - video.requestKeyFrame
-      - source disconnected
-      - stream failure
-    capabilities:
-      - video.stream
-  - name: video.streamSourceStateChanged
-    description: Emitted when a video stream source availability or receiving state changes.
-    eventId: 2055
-    bitOffset: 1
-    domain: video
-    since: 1.0.0
-    status: draft
-    payload:
-      type: VideoStreamSourceStateChangedEvent
-    severity: info
-    trigger:
-      - source available
-      - source receiving
-      - source stopped
-    capabilities:
-      - video.stream
-  - name: video.streamStatsReported
-    description: Emitted with bounded runtime statistics for a video stream.
-    eventId: 2056
-    bitOffset: 2
-    domain: video
-    since: 1.0.0
-    status: draft
-    payload:
-      type: VideoStreamStatsReportedEvent
-    severity: info
-    trigger:
-      - stream statistics interval
-      - diagnostic sampling
-    capabilities:
-      - video.stream
 errors:
   - name: SUCCESS
     code: 0
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: info
     retryable: false
     message: Operation completed successfully.
@@ -10532,6 +8159,7 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Unknown error.
@@ -10540,6 +8168,7 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Feature is not implemented.
@@ -10548,6 +8177,7 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Canonical error new senders use when a registered operation is unavailable under the current runtime, device,
@@ -10557,6 +8187,7 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Operation is not allowed in the current state.
@@ -10565,6 +8196,7 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Device or resource is busy.
@@ -10573,6 +8205,7 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Operation timed out.
@@ -10581,6 +8214,7 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Operation was canceled.
@@ -10589,6 +8223,7 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Resource is exhausted.
@@ -10597,6 +8232,7 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Permission denied.
@@ -10605,6 +8241,7 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Argument is invalid.
@@ -10613,6 +8250,7 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Argument is out of range.
@@ -10621,38 +8259,25 @@ errors:
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Resource was not found.
-  - name: ALREADY_EXISTS
-    code: 13
-    category: common
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Resource already exists.
   - name: INTERNAL_ERROR
     code: 14
     category: common
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Internal error.
-  - name: UNAVAILABLE
-    code: 15
-    category: common
-    since: 1.0.0
-    status: draft
-    severity: warning
-    retryable: true
-    message: Service is temporarily unavailable.
   - name: FRAME_MAGIC_INVALID
     code: 17
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Frame magic is invalid.
@@ -10661,6 +8286,7 @@ errors:
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Frame version is not supported.
@@ -10669,6 +8295,7 @@ errors:
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Frame header is invalid.
@@ -10677,6 +8304,7 @@ errors:
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Frame payload length or total length is invalid.
@@ -10685,6 +8313,7 @@ errors:
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Frame payload type is invalid.
@@ -10693,6 +8322,7 @@ errors:
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Frame CRC check failed.
@@ -10701,6 +8331,7 @@ errors:
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Frame fragment metadata is invalid.
@@ -10709,6 +8340,7 @@ errors:
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: One or more frame fragments are missing.
@@ -10717,6 +8349,7 @@ errors:
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Frame reassembly timed out.
@@ -10725,6 +8358,7 @@ errors:
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Frame exceeds the negotiated maximum size.
@@ -10733,30 +8367,16 @@ errors:
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Transport MTU was exceeded.
-  - name: TRANSPORT_WRITE_FAILED
-    code: 28
-    category: frame
-    since: 1.0.0
-    status: draft
-    severity: warning
-    retryable: true
-    message: Transport write failed.
-  - name: TRANSPORT_READ_FAILED
-    code: 29
-    category: frame
-    since: 1.0.0
-    status: draft
-    severity: warning
-    retryable: true
-    message: Transport read failed.
   - name: TRANSPORT_DISCONNECTED
     code: 30
     category: frame
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Transport disconnected.
@@ -10765,6 +8385,7 @@ errors:
     category: control
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Control opcode is invalid.
@@ -10773,22 +8394,16 @@ errors:
     category: control
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Control payload is invalid.
-  - name: RESERVED_CONTROL_BODY_ENCODING_UNSUPPORTED
-    code: 35
-    category: control
-    since: 1.0.0
-    status: reserved
-    severity: error
-    retryable: false
-    message: Historical control body encoding negotiation error. AXTP v1 implementations must not emit it.
   - name: CONTROL_OPEN_REQUIRED
     code: 36
     category: control
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Session has not completed CONTROL OPEN.
@@ -10797,22 +8412,16 @@ errors:
     category: control
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Control OPEN was rejected.
-  - name: RESERVED_CONTROL_PROFILE_UNSUPPORTED
-    code: 38
-    category: control
-    since: 1.0.0
-    status: reserved
-    severity: error
-    retryable: false
-    message: Historical header profile negotiation error. AXTP v1 implementations must not emit it.
   - name: CONTROL_NEGOTIATION_FAILED
     code: 39
     category: control
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Control negotiation failed.
@@ -10821,6 +8430,7 @@ errors:
     category: control
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: SessionId is invalid.
@@ -10829,6 +8439,7 @@ errors:
     category: control
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Session has expired.
@@ -10837,6 +8448,7 @@ errors:
     category: control
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Session resume failed.
@@ -10845,6 +8457,7 @@ errors:
     category: control
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: ACK/NACK target type is invalid.
@@ -10853,6 +8466,7 @@ errors:
     category: control
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Flow-control window was exceeded.
@@ -10861,6 +8475,7 @@ errors:
     category: control
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Control heartbeat timed out.
@@ -10869,6 +8484,7 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: RPC encoding is not supported.
@@ -10877,6 +8493,7 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: RPC operation is invalid.
@@ -10885,6 +8502,7 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: RPC payload is invalid.
@@ -10893,6 +8511,7 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: RPC body encoding is not supported.
@@ -10901,6 +8520,7 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: RPC body decoding failed.
@@ -10909,6 +8529,7 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: MethodId or method name is not registered; do not use for a registered but currently unavailable method.
@@ -10917,23 +8538,17 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Compatibility error for a registered but unsupported method. Receivers must continue to decode it; new senders
       use common NOT_SUPPORTED.
-  - name: RPC_METHOD_DISABLED
-    code: 56
-    category: rpc
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Method is disabled.
   - name: RPC_REQUEST_ID_INVALID
     code: 57
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: RPC requestId is invalid.
@@ -10942,6 +8557,7 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Required RPC parameter is missing.
@@ -10950,6 +8566,7 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: RPC parameters are invalid.
@@ -10958,6 +8575,7 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: RPC parameter is out of range.
@@ -10966,6 +8584,7 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: RPC method execution failed.
@@ -10974,70 +8593,25 @@ errors:
     category: rpc
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: RPC response timed out.
-  - name: RPC_BATCH_UNSUPPORTED
-    code: 63
-    category: rpc
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: RPC batch is not supported.
-  - name: RPC_BATCH_PARTIAL_FAILED
-    code: 64
-    category: rpc
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: One or more RPC batch items failed.
   - name: DEVICE_INFO_UNAVAILABLE
     code: 257
     category: device
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Device information is unavailable.
-  - name: DEVICE_REBOOT_FAILED
-    code: 258
-    category: device
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Device reboot failed.
-  - name: DEVICE_FACTORY_RESET_FAILED
-    code: 259
-    category: device
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Device factory reset failed.
-  - name: DEVICE_LOW_POWER
-    code: 260
-    category: device
-    since: 1.0.0
-    status: draft
-    severity: warning
-    retryable: true
-    message: Device power is low.
-  - name: DEVICE_OVER_TEMPERATURE
-    code: 261
-    category: device
-    since: 1.0.0
-    status: draft
-    severity: warning
-    retryable: true
-    message: Device temperature is too high.
   - name: DEVICE_STORAGE_FULL
     code: 262
     category: device
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Device storage is full.
@@ -11046,6 +8620,7 @@ errors:
     category: device
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Device mode conflicts with the requested operation.
@@ -11054,38 +8629,16 @@ errors:
     category: device
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Device resource is busy.
-  - name: DEVICE_HARDWARE_FAILURE
-    code: 265
-    category: device
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Device hardware failure.
-  - name: ENROLLMENT_CODE_EXPIRED
-    code: 266
-    category: device
-    since: 1.0.0
-    status: draft
-    severity: warning
-    retryable: true
-    message: Pairing code has expired.
-  - name: ENROLLMENT_CODE_ALREADY_USED
-    code: 267
-    category: device
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Pairing code has already been used.
   - name: CAPABILITY_NOT_FOUND
     code: 513
     category: capability
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Capability does not exist.
@@ -11094,6 +8647,7 @@ errors:
     category: capability
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Capability domain does not exist.
@@ -11102,6 +8656,7 @@ errors:
     category: capability
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Compatibility error for an unsupported method capability. Receivers must continue to decode it; new senders use
@@ -11111,6 +8666,7 @@ errors:
     category: capability
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Event capability is not supported.
@@ -11119,6 +8675,7 @@ errors:
     category: capability
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Stream capability is not supported.
@@ -11127,6 +8684,7 @@ errors:
     category: capability
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Encoding capability is not supported.
@@ -11135,6 +8693,7 @@ errors:
     category: capability
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Business capability negotiation failed.
@@ -11143,6 +8702,7 @@ errors:
     category: capability
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Capability limit was exceeded.
@@ -11151,6 +8711,7 @@ errors:
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Firmware image is invalid.
@@ -11159,6 +8720,7 @@ errors:
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Firmware image type is not supported.
@@ -11167,38 +8729,25 @@ errors:
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Firmware version is not supported.
-  - name: FW_VERSION_TOO_OLD
-    code: 1028
-    category: firmware
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Firmware version is too old.
   - name: FW_TRANSFER_NOT_STARTED
     code: 1029
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Firmware transfer has not started.
-  - name: FW_TRANSFER_ALREADY_STARTED
-    code: 1030
-    category: firmware
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Firmware transfer has already started.
   - name: FW_CHUNK_INVALID
     code: 1031
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Firmware chunk is invalid.
@@ -11207,6 +8756,7 @@ errors:
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Firmware chunk CRC failed.
@@ -11215,6 +8765,7 @@ errors:
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Firmware size does not match the declared size.
@@ -11223,6 +8774,7 @@ errors:
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Firmware hash does not match the declared verification value.
@@ -11231,6 +8783,7 @@ errors:
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Firmware verification failed.
@@ -11239,22 +8792,16 @@ errors:
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Firmware apply failed.
-  - name: FW_ROLLBACK_FAILED
-    code: 1037
-    category: firmware
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Firmware rollback failed.
   - name: FW_STORAGE_NOT_ENOUGH
     code: 1038
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Not enough storage for firmware update.
@@ -11263,22 +8810,16 @@ errors:
     category: firmware
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Device is not ready for firmware update.
-  - name: FW_REBOOT_REQUIRED
-    code: 1040
-    category: firmware
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Reboot is required before continuing.
   - name: STREAM_NOT_FOUND
     code: 1281
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Stream context does not exist.
@@ -11287,6 +8828,7 @@ errors:
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Stream timed out.
@@ -11295,6 +8837,7 @@ errors:
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Stream chunk CRC check failed.
@@ -11303,6 +8846,7 @@ errors:
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Stream payload is invalid.
@@ -11311,6 +8855,7 @@ errors:
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: StreamId is invalid.
@@ -11319,38 +8864,25 @@ errors:
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Stream is not open.
-  - name: STREAM_ALREADY_OPEN
-    code: 1287
-    category: stream
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Stream is already open.
   - name: STREAM_SEQ_INVALID
     code: 1288
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Stream seqId is invalid.
-  - name: STREAM_SEQ_DUPLICATED
-    code: 1289
-    category: stream
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Stream seqId is duplicated.
   - name: STREAM_CHUNK_MISSING
     code: 1290
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Stream chunk is missing.
@@ -11359,6 +8891,7 @@ errors:
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Stream cursor or offset is invalid.
@@ -11367,22 +8900,16 @@ errors:
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Stream receive window is full.
-  - name: STREAM_BACKPRESSURE
-    code: 1293
-    category: stream
-    since: 1.0.0
-    status: draft
-    severity: warning
-    retryable: true
-    message: Stream receiver reported backpressure.
   - name: STREAM_RESUME_UNSUPPORTED
     code: 1294
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Stream resume is not supported.
@@ -11391,6 +8918,7 @@ errors:
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Stream resume failed.
@@ -11399,6 +8927,7 @@ errors:
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Stream is closed.
@@ -11407,6 +8936,7 @@ errors:
     category: stream
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Stream transfer was aborted.
@@ -11415,6 +8945,7 @@ errors:
     category: video
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Requested media source does not exist.
@@ -11423,6 +8954,7 @@ errors:
     category: video
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Requested media source is currently unavailable.
@@ -11431,6 +8963,7 @@ errors:
     category: video
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Requested media codec or sample format is unsupported.
@@ -11439,6 +8972,7 @@ errors:
     category: video
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Requested video resolution is unsupported.
@@ -11447,6 +8981,7 @@ errors:
     category: video
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Requested video frame rate is unsupported.
@@ -11455,6 +8990,7 @@ errors:
     category: video
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Requested media bitrate is unsupported.
@@ -11463,62 +8999,25 @@ errors:
     category: video
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Device failed to start the requested media stream.
-  - name: MEDIA_STREAM_STOP_FAILED
-    code: 2056
-    category: video
-    since: 1.0.0
-    status: draft
-    severity: warning
-    retryable: true
-    message: Device failed to stop the media stream.
-  - name: MEDIA_FRAME_DROPPED
-    code: 2057
-    category: video
-    since: 1.0.0
-    status: draft
-    severity: warning
-    retryable: true
-    message: Media frame was dropped.
-  - name: MEDIA_VIDEO_SIGNAL_LOST
-    code: 2059
-    category: video
-    since: 1.0.0
-    status: draft
-    severity: warning
-    retryable: true
-    message: Video signal was lost.
-  - name: MEDIA_AUDIO_DEVICE_NOT_FOUND
-    code: 2314
-    category: audio
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Audio device was not found.
   - name: FILE_NOT_FOUND
     code: 4097
     category: file
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: File does not exist.
-  - name: FILE_ALREADY_EXISTS
-    code: 4098
-    category: file
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: File already exists.
   - name: FILE_PERMISSION_DENIED
     code: 4099
     category: file
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: File permission denied.
@@ -11527,6 +9026,7 @@ errors:
     category: file
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: File path is invalid.
@@ -11535,6 +9035,7 @@ errors:
     category: file
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: File type is not supported.
@@ -11543,6 +9044,7 @@ errors:
     category: file
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: File is too large.
@@ -11551,6 +9053,7 @@ errors:
     category: file
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: File read failed.
@@ -11559,22 +9062,16 @@ errors:
     category: file
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: File write failed.
-  - name: FILE_DELETE_FAILED
-    code: 4105
-    category: file
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: File delete failed.
   - name: FILE_TRANSFER_FAILED
     code: 4106
     category: file
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: File transfer failed.
@@ -11583,6 +9080,7 @@ errors:
     category: file
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: File verification failed.
@@ -11591,126 +9089,16 @@ errors:
     category: file
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: File storage is full.
-  - name: DIAG_TEST_NOT_FOUND
-    code: 4609
-    category: diagnostic
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Diagnostic test was not found.
-  - name: DIAG_TEST_UNSUPPORTED
-    code: 4610
-    category: diagnostic
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Diagnostic test is not supported.
-  - name: DIAG_TEST_RUNNING
-    code: 4611
-    category: diagnostic
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Diagnostic test is already running.
-  - name: DIAG_TEST_FAILED
-    code: 4612
-    category: diagnostic
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Diagnostic test failed.
-  - name: DIAG_METRIC_UNAVAILABLE
-    code: 4613
-    category: diagnostic
-    since: 1.0.0
-    status: draft
-    severity: warning
-    retryable: true
-    message: Diagnostic metric is unavailable.
-  - name: DIAG_LOOPBACK_FAILED
-    code: 4614
-    category: diagnostic
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Diagnostic loopback failed.
-  - name: SEC_AUTH_REQUIRED
-    code: 5121
-    category: auth
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Authentication is required.
-  - name: SEC_AUTH_FAILED
-    code: 5122
-    category: auth
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Authentication failed.
-  - name: SEC_PERMISSION_DENIED
-    code: 5123
-    category: auth
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Security permission denied.
-  - name: SEC_ENCRYPTION_REQUIRED
-    code: 5124
-    category: auth
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Encryption is required.
-  - name: SEC_DECRYPT_FAILED
-    code: 5125
-    category: auth
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Decryption failed.
-  - name: SEC_SIGNATURE_INVALID
-    code: 5126
-    category: auth
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Signature is invalid.
-  - name: SEC_CERT_INVALID
-    code: 5127
-    category: auth
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Certificate is invalid.
-  - name: SEC_TOKEN_EXPIRED
-    code: 5128
-    category: auth
-    since: 1.0.0
-    status: draft
-    severity: error
-    retryable: false
-    message: Security token expired.
   - name: LEGACY_CMD_UNMAPPED
     code: 32513
     category: legacy
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Legacy CmdValue is not mapped to an AXTP method.
@@ -11719,6 +9107,7 @@ errors:
     category: legacy
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Legacy status is not mapped to an AXTP ErrorCode.
@@ -11727,6 +9116,7 @@ errors:
     category: legacy
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Legacy payload is invalid.
@@ -11735,6 +9125,7 @@ errors:
     category: legacy
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Legacy payload is too short.
@@ -11743,6 +9134,7 @@ errors:
     category: legacy
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Legacy payload is too long.
@@ -11751,6 +9143,7 @@ errors:
     category: legacy
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Legacy field cannot be adapted.
@@ -11759,6 +9152,7 @@ errors:
     category: legacy
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: error
     retryable: false
     message: Legacy capability conflicts with AXTP capability.
@@ -11767,6 +9161,7 @@ errors:
     category: legacy
     since: 1.0.0
     status: stable
+    maturity: mvp
     severity: warning
     retryable: true
     message: Legacy response timed out.
@@ -11777,6 +9172,7 @@ capabilities:
     domain: protocol
     since: 1.0.0
     status: stable
+    maturity: mvp
     type: bool
   - name: protocol.payload.rpc
     description: Device supports RPC payload.
@@ -11784,6 +9180,7 @@ capabilities:
     domain: protocol
     since: 1.0.0
     status: stable
+    maturity: mvp
     type: bool
   - name: protocol.payload.stream
     description: Device supports STREAM data-plane payloads.
@@ -11791,14 +9188,8 @@ capabilities:
     domain: protocol
     since: 1.0.0
     status: stable
+    maturity: mvp
     type: bool
-  - name: protocol.reservedRequestIdWidth
-    description: Historical requestId width negotiation bit; AXTP v1 fixes requestId as uint32.
-    capabilityId: 9
-    domain: protocol
-    since: 1.0.0
-    status: reserved
-    type: reserved
   - name: audio.algorithm
     description: Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification.
     capabilityId: 2305
@@ -11807,170 +9198,6 @@ capabilities:
     status: stable
     type: object
     schema: AudioAlgorithmCapability
-  - name: audio.stream
-    description: Device supports real-time audio STREAM setup, close, state, source state, and stats events.
-    capabilityId: 2306
-    domain: audio
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: AudioStreamCapabilities
-  - name: cast.session
-    description: Device supports cast receiver session phase, AirPlay name, and session stop control.
-    capabilityId: 5633
-    domain: cast
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: CastSessionCapability
-  - name: cast.audio
-    description: Device supports local cast audio playback and mute control.
-    capabilityId: 5634
-    domain: cast
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: CastAudioCapability
-  - name: cast.pinCode
-    description: Device supports cast PIN protection, PIN state, and authentication events.
-    capabilityId: 5635
-    domain: cast
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: CastPinCodeCapability
-  - name: cast.window
-    description: Device supports cast window state query and mode control.
-    capabilityId: 5636
-    domain: cast
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: CastWindowCapability
-  - name: cast.backend
-    description: Device supports cast backend status query and restart control.
-    capabilityId: 5637
-    domain: cast
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: CastBackendCapability
-  - name: cast.flowControl
-    description: Device supports receiver-local cast render fps, queue, drop, overlay, and diagnostics control.
-    capabilityId: 5638
-    domain: cast
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: CastFlowControlCapability
-  - name: cast.status
-    description: Device supports current cast receiver status snapshot query.
-    capabilityId: 5639
-    domain: cast
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: CastStatusCapability
-  - name: device.info
-    description: Device supports read-only device information discovery.
-    capabilityId: 257
-    domain: device
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: DeviceInfoCapability
-  - name: device.enrollment
-    description: Device supports pairing-code-based enrollment into backend management, enrollment state query and change,
-      and enrollment state change notifications.
-    capabilityId: 258
-    domain: device
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: DeviceEnrollmentCapability
-  - name: firmware.update
-    description: Device supports P0 STREAM-based firmware update sessions.
-    capabilityId: 1025
-    domain: firmware
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: FirmwareUpdateCapabilities
-  - name: network.interface
-    description: Device supports network interface enumeration and state observation.
-    capabilityId: 3585
-    domain: network
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: NetworkInterfaceCapability
-  - name: network.ip
-    description: Device supports IP configuration query, update, and change notification.
-    capabilityId: 3586
-    domain: network
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: NetworkIpCapability
-  - name: network.wifi
-    description: Device supports Wi-Fi station profile, scan, connection, and state operations.
-    capabilityId: 3587
-    domain: network
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: NetworkWifiCapabilities
-  - name: network.ap
-    description: Device supports Wi-Fi AP configuration, runtime state, and client observation.
-    capabilityId: 3588
-    domain: network
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: NetworkApCapabilities
-  - name: signage.playlist
-    description: Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, and playlist
-      config change notification.
-    capabilityId: 3329
-    domain: signage
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: SignagePlaylistCapability
-  - name: software.config
-    description: Device supports reading, setting, and resetting the runtime configuration of software objects (such as the
-      Launcher) and emitting configuration change notifications.
-    capabilityId: 5889
-    domain: software
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: SoftwareConfigCapability
-  - name: software.updatePolicy
-    description: Device supports reading, setting, and resetting the automatic update policy of software objects (such as
-      the Launcher) and emitting update policy change notifications.
-    capabilityId: 5890
-    domain: software
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: SoftwareUpdatePolicyCapability
-  - name: stream.flowControl
-    description: Device supports common STREAM runtime flow control, statistics, abort, and clock-report diagnostics.
-    capabilityId: 1281
-    domain: stream
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: StreamFlowControlCapabilities
-  - name: video.stream
-    description: Device supports real-time video STREAM setup, close, state, source state, key frame requests, and stats events.
-    capabilityId: 2049
-    domain: video
-    since: 1.0.0
-    status: draft
-    type: object
-    schema: VideoStreamCapabilities
 profiles:
   - name: AXTP-MVP
     since: 1.0.0

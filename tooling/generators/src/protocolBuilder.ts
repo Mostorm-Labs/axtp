@@ -1,14 +1,23 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import YAML from "yaml";
+import { isDefaultRuntimeContract, normalizeRegistryStatus } from "./authorityPolicy.js";
 import { buildSourceDomainByHighByte, type DomainByHighByte } from "./domainRegistry.js";
-import type { Capability, ErrorCode, Event, Field, Method, Schema } from "./models.js";
+import type { Capability, ErrorCode, Event, Field, Method, RegistryItem, Schema } from "./models.js";
 import type { ProtocolModel, TypeDefinition, TypeField } from "./protocolModel.js";
 import { loadProtocolDefinitionFromRaw } from "./protocolLoader.js";
 import type { ProtocolSourceModel } from "./sourceModel.js";
 
-function protocolStatus(status: string): string {
-  return status === "mvp" ? "stable" : status;
+function protocolStatusFields(status: string): Record<string, string> {
+  const normalized = normalizeRegistryStatus(status);
+  return {
+    status: normalized.contractStatus,
+    ...(normalized.maturity ? { maturity: normalized.maturity } : {})
+  };
+}
+
+function isDefaultRuntimeItem(item: RegistryItem): boolean {
+  return isDefaultRuntimeContract(normalizeRegistryStatus(item.status).contractStatus);
 }
 
 function emptySchemaNames(schemas: Schema[]): Set<string> {
@@ -76,7 +85,7 @@ function methodToProtocol(method: Method, emptyNames: Set<string>): Record<strin
     bitOffset: method.bitOffset,
     domain: method.domain,
     since: method.since ?? "1.0.0",
-    status: protocolStatus(method.status),
+    ...protocolStatusFields(method.status),
     request: { type: schemaRef(method.requestSchema, emptyNames) },
     response: { type: schemaRef(method.responseSchema, emptyNames) },
     encodings: method.recommendedEncoding,
@@ -95,7 +104,7 @@ function eventToProtocol(event: Event, emptyNames: Set<string>): Record<string, 
     bitOffset: event.bitOffset,
     domain: event.domain,
     since: event.since ?? "1.0.0",
-    status: protocolStatus(event.status),
+    ...protocolStatusFields(event.status),
     payload: { type: schemaRef(event.eventSchema, emptyNames) },
     severity: event.severity,
     trigger: event.trigger,
@@ -124,7 +133,7 @@ function errorToProtocol(error: ErrorCode, domainByHighByte: DomainByHighByte): 
     code: error.id,
     category: error.category ?? error.domain ?? errorCategory(error.id, domainByHighByte),
     since: error.since ?? "1.0.0",
-    status: protocolStatus(error.status),
+    ...protocolStatusFields(error.status),
     severity: error.severity ?? errorSeverity(error),
     retryable: error.retryable,
     message: error.message ?? error.description ?? error.name
@@ -138,7 +147,7 @@ function capabilityToProtocol(capability: Capability): Record<string, unknown> {
     capabilityId: capability.id,
     domain: capability.domain,
     since: capability.since ?? "1.0.0",
-    status: protocolStatus(capability.status),
+    ...protocolStatusFields(capability.status),
     type: capability.type,
     schema: capability.schema
   };
@@ -179,10 +188,10 @@ export function buildProtocolDefinitionRaw(source: ProtocolSourceModel): Record<
   return {
     ...source.protocolMeta,
     schemas: buildSchemas(source.schemas),
-    methods: source.methods.map((method) => methodToProtocol(method, emptyNames)),
-    events: source.events.map((event) => eventToProtocol(event, emptyNames)),
-    errors: source.errors.map((error) => errorToProtocol(error, domainByHighByte)),
-    capabilities: source.capabilities.map(capabilityToProtocol),
+    methods: source.methods.filter(isDefaultRuntimeItem).map((method) => methodToProtocol(method, emptyNames)),
+    events: source.events.filter(isDefaultRuntimeItem).map((event) => eventToProtocol(event, emptyNames)),
+    errors: source.errors.filter(isDefaultRuntimeItem).map((error) => errorToProtocol(error, domainByHighByte)),
+    capabilities: source.capabilities.filter(isDefaultRuntimeItem).map(capabilityToProtocol),
     profiles: [...defaultProfiles(source), ...source.profiles]
   };
 }

@@ -1,4 +1,12 @@
-export type Status = "draft" | "mvp" | "stable" | "deprecated" | "reserved" | string;
+export type Status =
+  | "draft"
+  | "experimental"
+  | "mvp"
+  | "p1"
+  | "p2"
+  | "stable"
+  | "deprecated"
+  | "reserved";
 
 export interface RegistryItem {
   id: number;

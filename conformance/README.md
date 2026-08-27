@@ -28,7 +28,7 @@ AXTP conformance 用例维护在根目录 `conformance/` 下，是 runtime、SDK
 | CONTROL OPEN / ACCEPT | 否 | 是 |
 | CONTROL HEARTBEAT / HEARTBEAT_ACK | 否 | 是 |
 | CONTROL CLOSE / CLOSE_ACK | 否 | 是 |
-| STREAM open / data / close | 否 | 是，P0 用于 audio/video 媒体流 |
+| STREAM data plane | 否 | 由独立 `stream` scope 验收；当前 release-required baseline 为 `stream.stream_data`，业务 open/close 生命周期只有在其 backing methods 进入 runtime contract 后才可成为 required case |
 
 Hello / Identify / Identified 字段规则不在 conformance 文档中重复定义；完整规范见 [RPC Session Spec](../specs/20-core.md)。
 
@@ -90,9 +90,8 @@ WebSocket JSON 不承载 CONTROL、Frame Header、CRC16 或 STREAM data packet�
 | CONTROL HEARTBEAT / HEARTBEAT_ACK | `handshake.heartbeat` |
 | CONTROL CLOSE / CLOSE_ACK | `handshake.close` |
 | RPC `requestId` 匹配 | `rpc.request_id_match` |
-| STREAM open / data / close | `stream.stream_open`、`stream.stream_data`、`stream.stream_close` |
 
-Standard Framed runtime 同时需要通过 `core` level 的 RPC 和错误形状 case。
+Standard Framed runtime 同时需要通过 `core` level 的 RPC 和错误形状 case。STREAM 不属于 `framed-binary` 的最低要求；声明 L2 / `stream` 时只执行 `manifest.yaml` 当前列出的 runtime-required stream cases。
 
 ## Compatibility degradation 必测项
 
@@ -110,9 +109,9 @@ Case-level `semantic.kind` 和 step `role`（如 `trigger`、`degraded`、`obser
 
 `cast.setVideoStreamParams` 的 conformance 覆盖 Nearcast 通过 WS 控制面配置 NT10 source encoder 的目标帧率和码率。该配置只属于当前 cast session；一次 `video.openStream` 中显式提供的 `frameRate` / `bitrateKbps` 优先级更高，且不会写回 session 默认值。`cast.setRenderFps` 仍然只控制本地 renderer，不属于本组 case。
 
-声明 `capability` level 的 runtime 至少执行 `capability.video_stream_params_not_supported`：当 `supportsVideoStreamParams` 或选定 source 的 encoder capability 缺失时，必须精确返回 `NOT_SUPPORTED`，不能关闭 AXTP session，随后受支持 RPC 必须成功。
+`capability.video_stream_params_not_supported` 继续保留在 case catalog 中，用于 `cast.setVideoStreamParams` 后续采纳时的行为证据；但该 backing method 当前不是默认 runtime contract，因此此 case 不在 `manifest.yaml` 的 release-required capability 集合中。
 
-声明 `stream` level 的 runtime 还必须覆盖以下生命周期约束：
+以下 AV lifecycle cases 继续保留在 `stream` case catalog 中；在 `video.openStream` / `audio.openStream` / `cast.setVideoStreamParams` 等 backing methods 进入默认 runtime contract 前，它们不是 release-required cases：
 
 | Required case | 必测行为 |
 |---|---|
@@ -130,12 +129,12 @@ Phase 1 STREAM conformance 验收的是 audio/video 媒体流数据面：
 
 | 内容 | Phase 1 期望 |
 |---|---|
-| 建流 / 关流 | 通过已采纳或测试 profile 中的业务 RPC 创建 / 关闭 Stream Context。 |
+| 建流 / 关流 | 业务 lifecycle case 可保留为 catalog evidence；只有 backing RPC 进入默认 runtime contract 后才能加入 release-required manifest。 |
 | STREAM Header | 使用 16B header：`streamId:uint32`、`seqId:uint32`、`cursor:uint64`。 |
 | STREAM data | Standard Framed `PayloadType=STREAM`，不走 WebSocket JSON。 |
 | ACK/NACK | 不作为 Phase 1 strict retransmission 前置要求。 |
 
-`stream.stream_open` / `stream.stream_close` 验收的是 P0 媒体流业务域建流，不是要求存在通用 `stream.open` / `stream.close` 业务 method。
+当前 `stream` scope 的 release-required baseline 是 `stream.stream_data`。`stream.stream_open` / `stream.stream_close` 以及 video encoder lifecycle cases 仍可作为 catalog evidence 保存，但不会因为存在于 `cases/**` 就自动成为 runtime 要求。
 
 ## Deferred 范围
 
@@ -176,7 +175,7 @@ $AXTP_SPEC_PATH/conformance
 |---|---|---|
 | runtime bug | case 与 spec/generated 一致，runtime 行为不符合 | 修 runtime。 |
 | spec-case mismatch | case 与 `specs/**` 或 `contract/protocol/axtp.protocol.yaml` 冲突 | 先修主库 conformance case 或 spec。 |
-| generated mismatch | case 依赖 method/event/schema，但 generated 中不存在 | 回到 registry / Generator，不手写 generated。 |
+| runtime-required mismatch | `manifest.required_cases` 中的 case 依赖 method/event/error/capability，但默认 runtime Protocol IR 中不存在 | 先修 manifest / lifecycle / authority；不得为了让测试变绿而把 draft 偷偷升级。Catalog-only case 只需引用 registry 中已知事实。 |
 | profile declaration error | runtime 未实现某 level 却声明支持 | 调整 runtime support level 或补实现。 |
 | test environment | 设备画像、transport、mock 配置或 spec path 错误 | 修 runner 配置和 fixtures。 |
 

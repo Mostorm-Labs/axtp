@@ -2,16 +2,16 @@
 
 本页是产品 / 架构负责人查看 AXTP 业务能力覆盖、采纳优先级和下一步动作的入口。
 
-这里展示的是产品状态看板，不是 runtime 实现合同。runtime 能直接依赖的合同仍然是 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml`、`contract/generated/**`、`specs/**` 和 `conformance/**`。
+这里展示的是产品状态看板，不是 runtime 实现合同。A0 之后，`contract/registry/**` 与 status-bearing generated catalog 属于 source-of-generation / adopted namespace；默认 runtime 只能依赖通过 Gate 的 release artifact，或维护期的 `contract/protocol/axtp.protocol.yaml` / `contract/generated/protocol.*` runtime projection。
 
 ## 领域状态矩阵
 
 > 更新规则：新增、删除、采纳、废弃 domain 草案或 registry domain 后，必须同步本矩阵的评审状态、优先级和下一步。
-> 计数规则：草案数和已生成数量由 `tooling/scripts/check-protocol-status.mjs` 校验。
-> 验证方式：只有 `contract/registry/domains/<domain>/domain.yaml` 存在，并且 `pnpm --dir tooling/generators validate:sources` / `validate:protocol` 通过，才算 generated/adopted；其余为草案状态。
+> 计数规则：草案数和已生成数量由 `tooling/scripts/check-protocol-status.mjs` 校验；“已生成”统计 registry catalog 中已采纳的 method/event namespace，不代表这些事实已经进入默认 runtime contract。
+> 验证方式：只有 `contract/registry/domains/<domain>/domain.yaml` 存在，并且 catalog 生成与 source validation 通过，才算 generated/adopted；runtime eligibility 另由 normalized contract lifecycle 决定，并以 `contract/generated/protocol.json` 为准。
 > 草案健康和示例质量：见 [协议草案健康度](protocol-draft-health.md)，由 `tooling/scripts/report-protocol-draft-health.mjs` 生成并校验。
 
-本表用于让产品、架构、研发和测试快速判断每个 domain 当前走到哪里。`已生成` 统计当前 generated protocol 中已经落地的方法和事件数量；`video` / `audio` 的 P0 stream 优先级表示要同时采纳 RPC 建流/关流控制面和 STREAM 数据面字段约束。
+本表用于让产品、架构、研发和测试快速判断每个 domain 当前走到哪里。`已生成` 统计 generated registry catalog 中已经落地的方法和事件数量；它表示“已采纳进机器 namespace”，不等于“默认 runtime 必须实现”。`video` / `audio` 的 P0 stream 优先级仍是产品路线信息，只有 lifecycle 进入 `stable` / `deprecated` 并出现在 runtime projection 后才成为默认实现合同。
 
 | 领域 | 草案数 | 评审 | 已生成 | 优先级 | 下一步 |
 |---|---:|---|---:|---|---|

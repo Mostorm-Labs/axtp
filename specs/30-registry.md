@@ -1,6 +1,6 @@
 # AXTP 注册表
 
-本文定义注册表的分类、条目模型、ID 稳定性、兼容性和校验规则。当前注册事实位于 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**`。
+本文定义注册表的分类、条目模型、ID 稳定性、兼容性和校验规则。当前 source registry 事实位于 `contract/registry/**`；默认 runtime contract projection 位于 `contract/protocol/axtp.protocol.yaml` 和 runtime-oriented `contract/generated/protocol.*`。状态表类 generated registry 文件可以作为完整 catalog/reference 展示非 runtime facts；事实是否可实现 MUST 由 contract lifecycle 与 profile 决定，不能由“是否出现在某个 generated 文件里”决定。
 机器可读的 domain high-byte 分配位于 `contract/registry/core/domain_registry.yaml`；runtime/tool generator MUST 使用该文件、source registry 或 Protocol IR 推导 domain 分配，MUST NOT 维护第二套手写 domain 表。
 
 ## 领域与功能分类
@@ -28,17 +28,44 @@
 
 更长的分类示例和 legacy intake 表位于 `workspace/registry-planning/**`；它们不是 release/runtime 合同。
 
-## 状态与 ID 分配
+## Contract lifecycle、maturity 与 ID 分配
 
-方法、事件、错误、schema、capability 和 profile 使用同一套状态词：
+### Contract lifecycle
 
-| 状态 | 含义 | Runtime 合同 |
+方法、事件、错误、schema、capability 和 profile 的 runtime eligibility 使用以下 lifecycle：
+
+| Contract status | 含义 | Default Runtime 合同 |
 |---|---|---:|
-| `draft` | 正在 review，或尚未生成。 | 否 |
-| `experimental` | 已为有限互操作生成，在 stable release 前仍可能变化。 | Profile-specific |
-| `stable` | 已采纳，并作为当前实现合同生成。 | 是 |
+| `draft` | 正在 review；语义仍可变化。 | 否 |
+| `experimental` | 只在显式 experimental/profile contract 中互操作，在 stable 前仍可变化。 | Profile-specific |
+| `stable` | 已采纳，并作为当前默认实现合同生成。 | 是 |
 | `deprecated` | 为兼容性继续生成，但不建议新使用。 | 是，受 deprecation 规则约束 |
-| `reserved` | 为未来或兼容性保留；无 runtime 行为。 | 否 |
+| `reserved` | 为未来或兼容性保留 identifier/name；无 runtime 行为。 | 否 |
+
+默认 runtime Protocol IR MUST 只投影 `stable` 与 `deprecated` registry facts。`experimental` MUST 通过显式 profile opt-in；`draft` 与 `reserved` MAY 出现在 catalog/reference 输出中，但 MUST NOT 因为出现在 generated catalog 就成为默认 runtime requirement。
+
+### Roadmap / release maturity
+
+`mvp`、`p1`、`p2`、`rc1` 等标签描述 roadmap 或 release maturity，不是 contract lifecycle。Runtime MUST NOT 使用这些标签判断一个 method/event/error/capability 是否属于实现合同。
+
+A0 迁移期间，既有 source `status` 复合值按以下固定映射解释：
+
+| Legacy source `status` | Contract lifecycle | Maturity |
+|---|---|---|
+| `mvp` | `stable` | `mvp` |
+| `p1` | `draft` | `p1` |
+| `p2` | `draft` | `p2` |
+| `draft` | `draft` | unset |
+| `experimental` | `experimental` | unset |
+| `stable` | `stable` | unset |
+| `deprecated` | `deprecated` | unset |
+| `reserved` | `reserved` | unset |
+
+Generator MUST fail closed on unknown source status；它 MUST NOT 通过 `string` fallback 把未知状态静默带入 runtime contract。新的 source schema SHOULD 迁移为显式 `contractStatus` + `maturity` 两个字段；在迁移完成前，legacy `status` 只允许使用上表值，不能继续发明新的 composite status。
+
+Protocol-level `rc1` 等值属于 release maturity metadata，不得被解释为 registry fact lifecycle。
+
+### ID 稳定性
 
 除非生成事实另有说明，数字 ID 都是 `uint16`。新的 domain-scoped method/event/error/capability id SHOULD 使用稳定的高字节 domain 分配和低字节本地 ID。一旦在 stable release 中生成，数字 ID、名称、`bitOffset` 和 schema field id MUST NOT 被复用于不同含义。
 
@@ -77,15 +104,15 @@ methods:
       - INVALID_ARGUMENT
 ```
 
-Runtime MUST 使用生成的 registry 或 Protocol IR 做 method lookup，MUST NOT 维护第二套手写 method table。
+Runtime MUST 使用生成的 default runtime registry 或 Protocol IR 做 method lookup，MUST NOT 维护第二套手写 method table。Catalog 中的 `draft` / `reserved` method 不构成 runtime lookup requirement。
 
 Session 建立只保证 common RPC baseline，不表示当前 runtime、device、profile、mode 或 capability set 提供全部 registered methods。Caller SHOULD 在调用 optional method 前查询相关 generated capability；capability 缺失表示该 optional feature 不可用。Receiver 即使面对未先 discovery 的 caller，也 MUST 执行自己的 capability/profile policy：
 
-- method name 或 methodId 不在 registry 中，MUST 返回 `RPC_METHOD_NOT_FOUND`；
-- method 已注册但在当前 runtime、device、profile、mode 或 capability set 中不可用，新的发送方 MUST 返回 common `NOT_SUPPORTED`；
+- method name 或 methodId 不在当前 runtime contract registry 中，MUST 返回 `RPC_METHOD_NOT_FOUND`；
+- method 已属于当前 runtime contract，但在当前 runtime、device、profile、mode 或 capability set 中不可用，新的发送方 MUST 返回 common `NOT_SUPPORTED`；
 - method 可用但参数 malformed、越界或违反 schema，MUST 返回 `INVALID_ARGUMENT`、`RPC_PARAM_INVALID` 或该 method 注册的 validation error。
 
-上述失败只降级当前 operation，MUST NOT 使 session 失效，也 MUST NOT 阻止后续无关且受支持的 request。接收方 MAY 继续接受 legacy `RPC_METHOD_NOT_SUPPORTED`、`CAPABILITY_METHOD_UNSUPPORTED` 等细粒度 unsupported errors，但新发送方 MUST 使用 canonical `NOT_SUPPORTED` 表示 registered-but-unavailable。
+上述失败只降级当前 operation，MUST NOT 使 session 失效，也 MUST NOT 阻止后续无关且受支持的 request。接收方 MAY 继续接受 legacy `RPC_METHOD_NOT_SUPPORTED`、`CAPABILITY_METHOD_UNSUPPORTED` 等细粒度 unsupported errors，但新发送方 MUST 使用 canonical `NOT_SUPPORTED` 表示 contract-registered-but-unavailable。
 
 ## 事件 Events
 
@@ -138,14 +165,14 @@ Profile 是具名实现要求集合。它可以引用 methods、events、types�
 
 Profile 规则：
 
-1. Profile MUST 引用已定义事实。
+1. Profile MUST 引用已定义且对该 profile contract-eligible 的事实。
 2. Profile MUST NOT 改变 methodId、eventId、errorCode、PayloadType、Standard Frame Header、RPC envelope 或 STREAM Header 语义。
 3. Standard Framed profiles MAY 要求 CONTROL、RPC 和 STREAM。
 4. WebSocket Unframed JSON profiles MUST NOT 要求 CONTROL 或 STREAM。
 5. 支持某个 profile 意味着满足 required facts，并通过对应 conformance scope。
 6. 向 stable profile 添加 required facts 可能是 breaking change；添加 optional capability 通常兼容。
 
-Profile 或 capability 不匹配 MUST 只降级受影响的 operation。已注册但因 profile/capability 不可用的 operation MUST 返回 `NOT_SUPPORTED`；它不能触发 session rejection、retry/reconnect，或关闭不相关功能。
+Profile 或 capability 不匹配 MUST 只降级受影响的 operation。已属于当前 contract 但因 profile/capability 不可用的 operation MUST 返回 `NOT_SUPPORTED`；它不能触发 session rejection、retry/reconnect，或关闭不相关功能。
 
 Runtime 仓库 MUST 声明自己支持的 profile，并绑定精确 spec tag、commit 或 release artifact metadata。
 
@@ -159,6 +186,9 @@ Runtime 仓库 MUST 声明自己支持的 profile，并绑定精确 spec tag、c
 - schema、error、event、capability、transport 和 profile 引用存在；
 - stable/deprecated/reserved ids 未被复用；
 - core registry 和 domain YAML 没有重复定义同一事实；
-- Protocol IR 和 generated docs 与 source YAML 匹配。
+- unknown source status fail closed；
+- default runtime Protocol IR 不包含 `draft`、`reserved`，且不隐式包含未 opt-in 的 `experimental` facts；
+- Protocol IR 和 generated runtime docs 与 source YAML 的 contract-eligible projection 匹配；
+- catalog/reference generated outputs 即使展示非 runtime facts，也必须保留其 lifecycle/maturity，不能暗示默认可实现性。
 
 `workspace/registry-planning/**` 下的 candidate planning tables 不是 validation input，除非它们被显式采纳进 `contract/registry/**`。

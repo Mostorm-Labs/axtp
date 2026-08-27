@@ -13,7 +13,7 @@ levels:
       - error.standard_error_shape
 
   capability:
-    description: Generated registry and capability metadata behavior available in spec/v0.0.2.
+    description: Default-runtime registry and capability behavior. Catalog-only draft cases are not release-required.
     required_cases:
       - capability.get_all
       - capability.method_binding
@@ -22,8 +22,6 @@ levels:
       - capability.session_survives_not_supported
       - capability.unknown_optional_field_ignored
       - capability.known_optional_feature_not_supported
-      - capability.profile_mismatch_not_supported
-      - capability.video_stream_params_not_supported
 
   event:
     description: RPC event decode/encode behavior.
@@ -42,16 +40,9 @@ levels:
       - event.endpoint_fanout_addressing
 
   stream:
-    description: Phase 1 Standard Framed STREAM payload behavior.
+    description: Standard Framed STREAM data-plane behavior backed by the default runtime contract. Draft business lifecycle cases remain catalog-only until adopted.
     required_cases:
-      - stream.stream_open
       - stream.stream_data
-      - stream.stream_close
-      - stream.video_stream_params_idle_open
-      - stream.video_stream_params_active_reconfigure
-      - stream.video_stream_params_precedence
-      - stream.video_stream_params_rollback
-      - stream.video_stream_params_validation
 
   websocket-jsonrpc:
     description: WebSocket unframed JSON RPC behavior.
@@ -64,12 +55,9 @@ levels:
       - rpc.request_id_match
 
   framed-binary:
-    description: Standard framed CONTROL, RPC and STREAM behavior.
+    description: Standard framed CONTROL and RPC behavior. STREAM is validated by the separate stream scope.
     required_cases:
       - handshake.open_accept
       - handshake.close
       - handshake.heartbeat
       - rpc.request_id_match
-      - stream.stream_open
-      - stream.stream_data
-      - stream.stream_close

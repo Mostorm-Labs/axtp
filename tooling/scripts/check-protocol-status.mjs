@@ -3,7 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(process.argv[2] ?? process.cwd());
-const generatedPath = path.join(root, "contract", "generated", "protocol.json");
+const methodCatalogPath = path.join(root, "contract", "mcp", "method_registry.generated.json");
+const eventCatalogPath = path.join(root, "contract", "mcp", "event_registry.generated.json");
+const capabilityCatalogPath = path.join(root, "contract", "mcp", "capability_registry.generated.json");
 const domainStatusPath = path.join(root, "docs", "product", "domain-status.md");
 const protocolDraftRoot = path.join(root, "workspace", "protocol");
 const errors = [];
@@ -42,23 +44,23 @@ function boolValue(value) {
   return value === "true" ? true : value === "false" ? false : undefined;
 }
 
-const generated = JSON.parse(fs.readFileSync(generatedPath, "utf8"));
-const generatedFeatures = new Set();
-const generatedCounts = new Map();
+function readJson(file) {
+  return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
+const methodCatalog = readJson(methodCatalogPath).methods ?? [];
+const eventCatalog = readJson(eventCatalogPath).events ?? [];
+const capabilityCatalog = readJson(capabilityCatalogPath).capabilities ?? [];
+const catalogFeatures = new Set(capabilityCatalog.map((item) => item.name));
+const catalogCounts = new Map();
 const draftCounts = new Map();
 
 function addDomainCount(domain) {
-  generatedCounts.set(domain, (generatedCounts.get(domain) ?? 0) + 1);
+  catalogCounts.set(domain, (catalogCounts.get(domain) ?? 0) + 1);
 }
 
-for (const method of generated.methods ?? []) {
-  addDomainCount(method.domain);
-  for (const capability of method.capabilities ?? []) generatedFeatures.add(capability);
-}
-for (const event of generated.events ?? []) {
-  addDomainCount(event.domain);
-  for (const capability of event.capabilities ?? []) generatedFeatures.add(capability);
-}
+for (const method of methodCatalog) addDomainCount(method.domain);
+for (const event of eventCatalog) addDomainCount(event.domain);
 
 for (const file of walkProtocolDrafts(protocolDraftRoot)) {
   const relative = path.relative(root, file);
@@ -70,16 +72,16 @@ for (const file of walkProtocolDrafts(protocolDraftRoot)) {
     continue;
   }
 
-  const isGenerated = generatedFeatures.has(data.feature);
-  if (isGenerated) {
+  const isCatalogGenerated = catalogFeatures.has(data.feature);
+  if (isCatalogGenerated) {
     if (data.status !== "generated" || boolValue(data.contract) !== true || boolValue(data.generated) !== true) {
-      fail(`${relative}: generated feature ${data.feature} must use status/generated/contract true frontmatter`);
+      fail(`${relative}: catalog-generated feature ${data.feature} must use status/generated/contract true frontmatter`);
     }
     if (/当前 generated 协议没有 adopted/.test(text)) {
-      fail(`${relative}: generated draft still says the feature is not adopted`);
+      fail(`${relative}: catalog-generated draft still says the feature is not adopted`);
     }
   } else if (boolValue(data.generated) === true || boolValue(data.contract) === true || data.status === "generated") {
-    fail(`${relative}: frontmatter says generated but ${data.feature} is not present in contract/generated/protocol.json`);
+    fail(`${relative}: frontmatter says generated but ${data.feature} is not present in the generated registry catalog`);
   }
 }
 
@@ -102,16 +104,16 @@ for (const match of matrixRows) {
   const documentedDrafts = Number(match[2]);
   const documentedGenerated = Number(match[3]);
   const actualDrafts = draftCounts.get(domain) ?? 0;
-  const actualGenerated = generatedCounts.get(domain) ?? 0;
+  const actualGenerated = catalogCounts.get(domain) ?? 0;
   if (documentedDrafts !== actualDrafts) {
     fail(`docs/product/domain-status.md: Domain matrix draft count for ${domain} is ${documentedDrafts}, expected ${actualDrafts}`);
   }
   if (documentedGenerated !== actualGenerated) {
-    fail(`docs/product/domain-status.md: Domain matrix generated count for ${domain} is ${documentedGenerated}, expected ${actualGenerated}`);
+    fail(`docs/product/domain-status.md: Domain matrix catalog-generated count for ${domain} is ${documentedGenerated}, expected ${actualGenerated}`);
   }
 }
 
-for (const domain of new Set([...draftCounts.keys(), ...generatedCounts.keys()])) {
+for (const domain of new Set([...draftCounts.keys(), ...catalogCounts.keys()])) {
   if (!matrixDomains.has(domain)) {
     fail(`docs/product/domain-status.md: Domain matrix is missing ${domain}`);
   }
@@ -123,4 +125,4 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log("[OK] protocol draft frontmatter and product domain matrix counts match workspace and generated protocol");
+console.log("[OK] protocol draft frontmatter and product domain matrix match the generated registry catalog");
