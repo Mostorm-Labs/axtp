@@ -1,0 +1,43 @@
+id: frame.heartbeat_wire
+title: HEARTBEAT wire semantics are stable while scheduler policy remains local
+authority_decisions: [A1-D10]
+evidence_class: state_oracle
+profile: framed-binary
+requires: [frame_decode, frame_encode, control_semantics, effective_params]
+applicability: required
+steps:
+  - op: negotiate_link
+    open:
+      maxFrameSize: 4096
+      heartbeatIntervalMs: 1000
+    accept: {}
+  - op: expect
+    expect:
+      effective_params:
+        maxFrameSize: 4096
+        heartbeatIntervalMs: 1000
+  - op: feed_raw
+    corpus: control.heartbeat.valid
+  - op: expect
+    expect:
+      control_emission:
+        opcode: HEARTBEAT_ACK
+        controlId: 2
+        statusCode: SUCCESS
+  - op: reset
+  - op: send_control
+    control:
+      opcode: HEARTBEAT
+      controlId: 7
+  - op: send_control
+    control:
+      opcode: HEARTBEAT
+      controlId: 7
+  - op: expect
+    expect:
+      local_reject: heartbeat_control_id_active
+assertions:
+  - Either peer may send HEARTBEAT after FRAMING_READY and the receiver replies HEARTBEAT_ACK with the same controlId and SUCCESS.
+  - The emitted frame's MessageId is not compared because allocator strategy is runtime-owned.
+  - A sender does not reuse a still-outstanding heartbeat controlId.
+  - effectiveHeartbeatIntervalMs is cadence input only; missed-count, timeout formula, ordinary-traffic refresh, and reconnect policy are not cross-language equality targets.
