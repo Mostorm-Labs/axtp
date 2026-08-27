@@ -42,10 +42,7 @@ No A1 Core Framing replacement contract exists yet. P21 deliberately does not cr
 
 ### 2.3 Superseded / Historical
 
-The following sources contain useful historical design intent but are not Current Authority:
-
-- `docs/archive/specs/legacy-structured-specs/1-core/03-Frame-and-Payload.md`
-- `docs/archive/specs/legacy-structured-specs/1-core/05-Control-Session.md`
+The archived legacy 1-core documents named `03-Frame-and-Payload.md` and `05-Control-Session.md` contain useful historical design intent but are not Current Authority.
 
 They may be used as design evidence in P22/P23, but their rules MUST NOT be silently restored. In particular, historical CONTROL ACCEPT required-field wording has already been superseded by A0.
 
@@ -91,8 +88,6 @@ P21 does not:
 
 ## 5. Trusted facts that A1 may preserve
 
-The following active facts are sufficiently explicit and do not need to be reopened merely to close A1:
-
 | Scope | Trusted fact |
 |---|---|
 | Envelope | Standard Frame is `12B Header + Payload + 2B CRC16` on Standard Framed transports. |
@@ -118,64 +113,32 @@ The following active facts are sufficiently explicit and do not need to be reope
 Classification: **MISSING_CONTRACT**  
 Severity for A1: **P0**
 
-Current `specs/20-core.md` defines fragment fields and the two range checks, but does not normatively define:
+Current `specs/20-core.md` defines fragment fields and two basic range checks, but does not normatively define the reassembly key, invariant header fields, ordering/interleaving, duplicate/conflict behavior, active MessageId collision behavior, timeout lifecycle, CLOSE/transport-loss cleanup, aggregate size, concurrent context limits, or whether upper layers can observe partial fragments.
 
-- the reassembly key;
-- whether `PayloadType`, `SourceId`, `DestinationId`, `FrameCount`, and Header Version must remain identical across all fragments;
-- whether fragments may arrive out of order;
-- whether multiple fragmented messages may interleave;
-- duplicate-fragment behavior;
-- conflicting duplicate behavior;
-- inconsistent `FrameCount` behavior;
-- same `MessageId` reused before previous completion;
-- MessageId allocation/reuse/wrap rules;
-- timeout start/reset semantics;
-- cleanup on CLOSE or transport loss;
-- maximum assembled logical-message size;
-- maximum concurrent reassembly contexts;
-- whether upper layers see only a complete reassembled payload or may observe partial fragments.
+The error registry already treats `FRAME_FRAGMENT_INVALID`, `FRAME_FRAGMENT_MISSING`, and `FRAME_REASSEMBLY_TIMEOUT` as stable/MVP facts, so leaving their triggering conditions implementation-defined is an authority defect.
 
-The error registry already treats `FRAME_FRAGMENT_INVALID`, `FRAME_FRAGMENT_MISSING`, and `FRAME_REASSEMBLY_TIMEOUT` as stable/MVP facts, so leaving the conditions implementation-defined is an interoperability defect in the authority layer.
-
-Historical evidence contains a candidate “same MessageId, complete reassembly, then dispatch” model, but because it is archived it cannot be adopted implicitly.
+Historical evidence contains a candidate “same MessageId, complete reassembly, then dispatch” model, but archived semantics cannot be adopted implicitly.
 
 ### P21-F02 — `FRAME_FRAGMENT_MISSING` vs `FRAME_REASSEMBLY_TIMEOUT` has no normative distinction
 
 Classification: **MISSING_CONTRACT**  
 Severity: **P0**
 
-Without ACK/NACK or an explicit end-of-message signal beyond `FrameCount`, a receiver usually knows a fragment is missing only after another protocol event or timeout. Current authority does not define when `FRAME_FRAGMENT_MISSING` is emitted/recorded versus when the same incomplete context becomes `FRAME_REASSEMBLY_TIMEOUT`.
-
-The two stable error codes therefore name states that are not yet normatively distinguishable.
+Without ACK/NACK or a separate end marker, a receiver generally recognizes an incomplete message through timeout or another lifecycle boundary. Current authority does not define when an incomplete context becomes `FRAME_FRAGMENT_MISSING` versus `FRAME_REASSEMBLY_TIMEOUT`.
 
 ### P21-F03 — MessageId lifecycle and uniqueness scope are missing
 
 Classification: **MISSING_CONTRACT**  
 Severity: **P0**
 
-Current authority says MessageId is for fragment/message association and must not replace RPC requestId or STREAM seqId, but it does not define:
-
-- sender allocation policy;
-- uniqueness scope (per direction/link/source/destination/payload type);
-- whether unfragmented frames also consume MessageId uniqueness;
-- reuse window after complete delivery;
-- wrap behavior at `0xFFFF -> 0x0000`;
-- collision handling with an active reassembly context.
-
-Independent implementations cannot safely choose compatible reassembly keys until this is fixed.
+Current authority does not define sender allocation, uniqueness scope, whether unfragmented messages consume MessageId uniqueness, reuse after completion, `0xFFFF -> 0x0000` wrap, or collision behavior with an active reassembly context.
 
 ### P21-F04 — Effective `maxFrameSize` semantics are incomplete after A0
 
 Classification: **MISSING_CONTRACT**  
 Severity: **P0**
 
-OPEN requires `maxFrameSize`; ACCEPT may omit it under A0. Current authority correctly states that omission is not an error, but it does not fully define the directional/effective send ceiling after ACCEPT:
-
-- whether OPEN is a proposal for a symmetric link maximum or a declaration of the sender's receive maximum;
-- when ACCEPT omits `maxFrameSize`, whether the OPEN value is implicitly accepted for both directions or only for the server-to-client direction;
-- which exact value a sender uses in `PayloadLength + 14 <= effectiveMaxFrameSize`;
-- how profile/local defaults participate when no ACCEPT override exists;
-- whether an implementation may locally choose a smaller transmit frame size without advertising it.
+OPEN requires `maxFrameSize`; ACCEPT may omit it under A0. The current contract does not fully define whether OPEN is a symmetric proposal or a receive-limit declaration, what an omitted ACCEPT means for the peer's transmit ceiling, which exact value is used by `PayloadLength + 14 <= effectiveMaxFrameSize`, or how profile/local defaults participate.
 
 A1 must preserve ACCEPT optionality while making effective frame-limit semantics deterministic.
 
@@ -184,113 +147,53 @@ A1 must preserve ACCEPT optionality while making effective frame-limit semantics
 Classification: **MISSING_CONTRACT**  
 Severity: **P0**
 
-Current authority requires HEARTBEAT/HEARTBEAT_ACK and requires `heartbeatIntervalMs` in OPEN, but does not normatively define:
+Current authority requires HEARTBEAT/HEARTBEAT_ACK and requires `heartbeatIntervalMs` in OPEN, but does not normatively define initiator, timer start, final interval, whether ordinary traffic refreshes liveness, ACK deadline, missed count/timeout formula, simultaneous heartbeat behavior, heartbeat controlId lifecycle, timeout state transition, graceful CLOSE vs immediate teardown, pending work cleanup, or reconnect/re-OPEN behavior.
 
-- initiator: client, server, or both;
-- when the liveness timer starts;
-- final interval when ACCEPT omits or supplies an override;
-- whether ordinary valid frame/RPC/STREAM traffic refreshes liveness;
-- response deadline for HEARTBEAT_ACK;
-- number of missed acknowledgements or timeout formula;
-- simultaneous bidirectional heartbeat behavior;
-- controlId allocation/reuse for heartbeats;
-- state transition on timeout;
-- whether timeout attempts graceful CLOSE or immediately tears down transport;
-- pending RPC, STREAM, and reassembly cleanup behavior;
-- reconnect/re-OPEN expectations.
-
-`workspace/runtime/core-protocol-flow.md` suggests bidirectional heartbeats and three missed ACKs, but that is explicitly non-authoritative reference material.
+`workspace/runtime/core-protocol-flow.md` suggests bidirectional heartbeats and three missed ACKs, but that is non-authoritative guidance.
 
 ### P21-F06 — Parser recovery / resynchronization is underspecified
 
 Classification: **MISSING_CONTRACT**  
 Severity: **P0** for TCP interoperability/resilience
 
-`specs/20-core.md` says AXTP-TCP receivers SHOULD scan for magic before parsing a header, but does not define recovery after:
-
-- invalid magic;
-- unsupported version;
-- invalid PayloadType;
-- impossible/oversized PayloadLength;
-- CRC mismatch;
-- truncated frame followed by later bytes;
-- magic-like bytes appearing inside corrupt payload data.
-
-Missing rules include discard length, bounded rescan policy, when a candidate magic is committed, whether a failed candidate resumes at byte `candidate+1`, and when repeated failures force transport close. Packet-oriented transports also need an explicit statement about whether recovery is packet-local or link-level.
+`specs/20-core.md` says TCP receivers SHOULD scan for magic, but does not define recovery after invalid magic/version/type/length/CRC, truncated frames, or magic-like bytes inside corrupt input. Discard length, bounded rescan policy, candidate commitment, repeated-failure policy, and packet-transport behavior remain unspecified.
 
 ### P21-F07 — Frame error disposition/carrier is missing
 
 Classification: **MISSING_CONTRACT**  
 Severity: **P0**
 
-Stable frame errors exist (`FRAME_MAGIC_INVALID`, `FRAME_VERSION_UNSUPPORTED`, `FRAME_HEADER_INVALID`, `FRAME_LENGTH_INVALID`, `FRAME_PAYLOAD_TYPE_INVALID`, `FRAME_CRC_ERROR`, fragment errors, `FRAME_TOO_LARGE`), but current authority does not define which are:
-
-- local diagnostic-only conditions;
-- allowed to produce a CONTROL/RPC status response when enough structure survives;
-- reasons to discard only one frame;
-- reasons to invalidate one reassembly context;
-- reasons to close the whole transport.
-
-For errors such as bad magic or CRC there may be no trustworthy request/control context to carry a response. The registry's `retryable` metadata is not a substitute for an on-wire error-delivery contract, especially because v1 does not require ACK/NACK.
+Stable frame errors exist, but current authority does not say which conditions are local diagnostics, which may produce a CONTROL/RPC error when enough context survives, which discard one frame, which invalidate one reassembly context, and which close the transport. Registry `retryable` metadata does not define an on-wire carrier, especially while ACK/NACK is not required.
 
 ### P21-F08 — Resource/budget limits are not contractually bounded
 
 Classification: **MISSING_CONTRACT**  
 Severity: **P1**
 
-FrameCount is uint8 and each frame PayloadLength is uint16, so naive implementations can allocate large aggregate buffers or many concurrent reassembly contexts. Current active authority requires checking `maxFrameSize`, but does not define a normative assembled-message limit or minimum required anti-exhaustion behavior.
-
-A1 must distinguish interoperable protocol limits from implementation-local resource caps, and define how a local cap fails without creating divergent upper-layer semantics.
+FrameCount is uint8 and frame PayloadLength is uint16. Current authority does not define a normative assembled-message limit or the minimum anti-exhaustion behavior for multiple in-flight reassembly contexts. A1 must separate interoperability limits from implementation-local caps and define failure semantics for local caps.
 
 ### P21-F09 — Machine-readable frame contract is incomplete
 
 Classification: **MISSING_CONTRACT / EVIDENCE_GAP**  
 Severity: **P1**
 
-`protocol_meta.yaml` names `STANDARD_FRAME` and current transports, but `ProtocolModel.FrameProfile` only models fields such as `name`, `magic`, `l1`, `l2`, and `supportsMixing`. It does not machine-model:
+`protocol_meta.yaml` names `STANDARD_FRAME`, but `ProtocolModel.FrameProfile` only models high-level profile fields. It does not machine-model the 12B header layout, field widths/offsets, Header Version, CRC algorithm/coverage, PayloadLength semantics, fragmentation invariants, recovery policy, or effective frame-size rules.
 
-- fixed 12B header layout and field widths/offsets;
-- Header Version value;
-- CRC algorithm/coverage;
-- PayloadLength semantics;
-- fragment invariants;
-- reassembly policy;
-- parser recovery policy;
-- effective frame-size rules.
-
-`protocolValidator.ts` validates byte order, STREAM header, CONTROL opcode sets, and transport/profile relationships, but does not assert the Standard Frame header or fragmentation contract. A generated runtime projection can therefore drift in framing semantics without the generator gate detecting it.
+`protocolValidator.ts` validates byte order, STREAM header, CONTROL opcodes, and transport/profile relationships, but not the Standard Frame structure itself.
 
 ### P21-F10 — Current framed conformance does not prove framing
 
 Classification: **EVIDENCE_GAP**  
 Severity: **P0 gate gap**
 
-`conformance/manifest.yaml` requires only:
+`framed-binary` currently requires only `handshake.open_accept`, `handshake.close`, `handshake.heartbeat`, and `rpc.request_id_match`. There is no `conformance/cases/frame/**` suite. Existing handshake cases operate on CONTROL objects rather than raw Standard Frame bytes, so the gate does not prove magic, header version, payload length, max-frame enforcement, CRC, fragmentation, reassembly, timeout, recovery, or frame error disposition.
 
-- `handshake.open_accept`
-- `handshake.close`
-- `handshake.heartbeat`
-- `rpc.request_id_match`
-
-for `framed-binary`.
-
-There is no `conformance/cases/frame/**` suite. Existing handshake cases describe CONTROL objects rather than raw Standard Frame bytes. `handshake.heartbeat` proves only one matching controlId response; `handshake.open_accept` does not even express the OPEN required TLVs.
-
-The current conformance gate therefore does not prove magic, header version, payload length, max frame enforcement, CRC, fragmentation, reassembly, timeout, parser recovery, or error disposition.
-
-### P21-F11 — Conformance DSL cannot currently express the required frame oracle
+### P21-F11 — Conformance DSL cannot express the required frame oracle
 
 Classification: **EVIDENCE_GAP**  
 Severity: **P1 enabling gap**
 
-`conformance-case.schema.json` models RPC, JSON RPC, CONTROL, STREAM, events, errors, registry lookups, and generic expected wire metadata, but has no typed raw-frame input/expectation model for:
-
-- exact frame bytes/header fields;
-- corrupt CRC/magic/length injection;
-- byte-stream chunks and split boundaries;
-- fragmented message sequences;
-- time advancement / reassembly timeout;
-- parser recovery/resynchronization outcome.
+`conformance-case.schema.json` has typed RPC/JSON-RPC/CONTROL/STREAM/event/error steps but no typed raw-frame input model for exact frame bytes, corrupt header/CRC injection, byte-stream chunk boundaries, fragmented sequences, time advancement, reassembly timeout, or resynchronization outcomes.
 
 A1 P20 must define a frame-level fixture/oracle representation before release-required frame conformance can be credible.
 
@@ -299,21 +202,19 @@ A1 P20 must define a frame-level fixture/oracle representation before release-re
 Classification: **TEST_DEFECT / EVIDENCE_GAP**  
 Severity: **P1**
 
-`tooling/generators/src/emitters/testVectors.ts` ignores its `_spec` input and hardcodes vector bytes. The emitted `control_open.hex` contains a Standard Frame-like header plus a 5-byte OPEN payload but no CRC footer and no required OPEN TLVs. The same vector set also includes deferred Compact cases and `COMPACT_MESSAGE_ID_OVERFLOW`, which is not part of current v1 Core runtime authority.
+`tooling/generators/src/emitters/testVectors.ts` ignores its `_spec` input and hardcodes vector bytes. `control_open.hex` contains a Standard Frame-like header plus a 5-byte OPEN payload but no CRC footer and no required OPEN TLVs. The set also includes deferred Compact cases and `COMPACT_MESSAGE_ID_OVERFLOW`, which is not current v1 Core runtime authority.
 
-These vectors may remain useful historical fixtures, but A1 MUST NOT use them as the golden Standard Frame oracle without replacement or explicit repair.
+These fixtures must not be used as the A1 golden frame oracle without explicit repair/replacement.
 
 ## 7. Authority conflict assessment
 
-P21 did **not** find evidence that the trusted 12B header layout, payload type IDs, big-endian rule, or CRC algorithm currently have two competing Current Authorities.
+P21 did **not** find two competing Current Authorities for the trusted 12B header layout, PayloadType IDs, Big-Endian rule, or CRC algorithm. The dominant failure mode is **missing contract**, not active-document disagreement.
 
-The primary failure mode is **missing contract**, not two active specifications disagreeing.
-
-The most important ambiguity created by cross-layer evolution is `maxFrameSize`: A0 correctly relaxed ACCEPT field presence, while the older framing/control model assumed more explicit negotiation. This is not a reason to undo A0. It is a requirement for A1 to define deterministic effective-limit semantics compatible with optional ACCEPT TLVs.
+The most important ambiguity created by cross-layer evolution is `maxFrameSize`: A0 correctly relaxed ACCEPT field presence while the older framing/control model assumed more explicit negotiation. A1 must resolve the effective-limit semantics without undoing A0.
 
 ## 8. Required output of the next trusted authority
 
-Before A1 may become implementation authority, a new/updated Core Framing contract must freeze at least:
+Before A1 may become implementation authority, the Core Framing contract must freeze at least:
 
 1. Standard Frame machine-readable header contract.
 2. Effective frame-size model and directionality.
@@ -335,7 +236,7 @@ P21 exit criteria:
 - source hierarchy classified;
 - Current Authority separated from archive/workspace/evidence;
 - stable existing facts separated from missing contract;
-- all interoperability-critical framing gaps identified at the correct authority layer;
+- interoperability-critical framing gaps identified at the correct authority layer;
 - no new wire behavior silently invented;
 - downstream implementation remains blocked until authority closure.
 
@@ -345,6 +246,6 @@ Result: **P21 REVIEW COMPLETE; A1 remains BLOCKED_AUTHORITY.**
 
 Next stage: **A1 / P22 — Core Framing Five-Axis Drift Review**.
 
-P22 may rely on the trusted facts in section 5 and the source classification in section 2. It must determine where current generated artifacts, conformance, maintainer guidance, historical semantics, and any runtime-facing assumptions have drifted across Product / Semantic / Architecture / Implementation / Verification axes.
+P22 may rely on the trusted facts in section 5 and the source classification in section 2. It must determine where current generated artifacts, conformance, maintainer guidance, historical semantics, and runtime-facing assumptions have drifted across Product / Semantic / Architecture / Implementation / Verification axes.
 
 After P22, A1 should enter Verification Design / Authority Supersession in the order justified by the findings. No runtime implementation, tag, release, or framing behavior change is authorized by this P21 record alone.
