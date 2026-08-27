@@ -21,17 +21,22 @@ describe("A0 contract authority policy", () => {
 
   it("normalizes legacy mvp and p1 lifecycle values", async () => {
     const sources = await loadProtocolSources(repoRoot);
-    const mvp = sources.methods.find((method) => method.status === "mvp");
-    const p1 = sources.methods.find((method) => method.status === "p1");
-    expect(mvp).toBeDefined();
-    expect(p1).toBeDefined();
+    const method = sources.methods[0];
+    const original = method.status;
 
-    const raw = buildProtocolDefinitionRaw(sources);
-    const runtimeMvp = rawMethods(raw).find((method) => method.name === mvp!.name);
-    expect(runtimeMvp?.status).toBe("stable");
-    expect(runtimeMvp?.maturity).toBe("mvp");
+    try {
+      method.status = "mvp";
+      const mvpRaw = buildProtocolDefinitionRaw(sources);
+      const runtimeMvp = rawMethods(mvpRaw).find((item) => item.name === method.name);
+      expect(runtimeMvp?.status).toBe("stable");
+      expect(runtimeMvp?.maturity).toBe("mvp");
 
-    expect(rawMethods(raw).some((method) => method.name === p1!.name)).toBe(false);
+      method.status = "p1";
+      const p1Raw = buildProtocolDefinitionRaw(sources);
+      expect(rawMethods(p1Raw).some((item) => item.name === method.name)).toBe(false);
+    } finally {
+      method.status = original;
+    }
   });
 
   it("fails closed for an unknown registry status", async () => {
