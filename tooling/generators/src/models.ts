@@ -97,17 +97,31 @@ export interface Schema {
   fields: Field[];
 }
 
-export interface Capability extends RegistryItem {
-  type: string;
-  schema?: string;
+export interface CommonRegistryItem extends RegistryItem {
+  value?: number;
 }
 
-export interface Profile extends RegistryItem {
-  methods: string[];
-  events: string[];
-  errors: string[];
-  capabilities: string[];
-  transports: string[];
-  frameProfiles: string[];
-  extends?: string;
+export interface SpecModel {
+  specRoot: string;
+  version: Record<string, unknown>;
+  config: Record<string, any>;
+  payloadTypes: CommonRegistryItem[];
+  controlOpcodes: CommonRegistryItem[];
+  rpcEncodings: CommonRegistryItem[];
+  rpcBodyEncodings: CommonRegistryItem[];
+  rpcOps: CommonRegistryItem[];
+  streamProfiles: CommonRegistryItem[];
+  domainRegistry: DomainRange[];
+  methods: Method[];
+  events: Event[];
+  errors: ErrorCode[];
+  capabilities: Capability[];
+  legacyMappings: LegacyMapping[];
+  schemas: Schema[];
+  mvpProfile: {
+    methods: string[];
+    events: string[];
+    errors: string[];
+    capabilities: string[];
+  };
 }
