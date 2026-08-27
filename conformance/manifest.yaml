@@ -64,12 +64,9 @@ levels:
       - rpc.request_id_match
 
   framed-binary:
-    description: Standard framed CONTROL, RPC and STREAM behavior.
+    description: Standard framed CONTROL and RPC behavior. STREAM is validated by the separate stream scope.
     required_cases:
       - handshake.open_accept
       - handshake.close
       - handshake.heartbeat
       - rpc.request_id_match
-      - stream.stream_open
-      - stream.stream_data
-      - stream.stream_close
