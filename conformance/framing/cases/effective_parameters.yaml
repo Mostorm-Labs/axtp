@@ -1,0 +1,46 @@
+id: frame.effective_parameters
+title: OPEN baseline and ACCEPT override resolve deterministically
+authority_decisions: [A1-D01]
+evidence_class: state_oracle
+profile: framed-binary
+requires: [effective_params, control_semantics]
+applicability: required
+steps:
+  - op: negotiate_link
+    open:
+      maxFrameSize: 4096
+      heartbeatIntervalMs: 1000
+    accept: {}
+  - op: expect
+    expect:
+      effective_params:
+        maxFrameSize: 4096
+        heartbeatIntervalMs: 1000
+  - op: reset
+  - op: negotiate_link
+    open:
+      maxFrameSize: 4096
+      heartbeatIntervalMs: 1000
+    accept:
+      maxFrameSize: 2048
+  - op: expect
+    expect:
+      effective_params:
+        maxFrameSize: 2048
+        heartbeatIntervalMs: 1000
+  - op: reset
+  - op: negotiate_link
+    open:
+      maxFrameSize: 4096
+      heartbeatIntervalMs: 1000
+    accept:
+      heartbeatIntervalMs: 2500
+  - op: expect
+    expect:
+      effective_params:
+        maxFrameSize: 4096
+        heartbeatIntervalMs: 2500
+assertions:
+  - Empty successful ACCEPT preserves every OPEN baseline value not explicitly overridden.
+  - One ACCEPT field overrides only that field; it does not erase or synthesize unrelated values.
+  - Cross-language comparison is on resolved values, not on runtime storage layout.
