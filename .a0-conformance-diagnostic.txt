@@ -1,47 +1,11 @@
-[FAIL] conformance validation failed
-- conformance/cases/capability/profile_mismatch_not_supported.yaml.given.method references unknown method: stream.getCapabilities
-- conformance/cases/capability/profile_mismatch_not_supported.yaml.steps[0].rpc.method references unknown method: stream.getCapabilities
-- conformance/cases/capability/video_stream_params_not_supported.yaml.given.method references unknown method: cast.setVideoStreamParams
-- conformance/cases/capability/video_stream_params_not_supported.yaml.steps[0].rpc.method references unknown method: cast.setVideoStreamParams
-- conformance/cases/error/unauthorized.yaml.steps[1].expect.rpc.statusCode references unknown status/error: SEC_AUTH_REQUIRED
-- conformance/cases/error/unauthorized.yaml.steps[1].expect.rpc.statusCode references unknown status/error: SEC_PERMISSION_DENIED
-- conformance/cases/stream/stream_close.yaml.steps[0].rpc.method references unknown method: video.closeStream
-- conformance/cases/stream/stream_open.yaml.steps[0].rpc.method references unknown method: video.openStream
-- conformance/cases/stream/video_stream_params_active_reconfigure.yaml.steps[0].rpc.method references unknown method: cast.setVideoStreamParams
-- conformance/cases/stream/video_stream_params_active_reconfigure.yaml.steps[2].rpc.method references unknown method: video.closeStream
-- conformance/cases/stream/video_stream_params_active_reconfigure.yaml.steps[4].rpc.method references unknown method: audio.closeStream
-- conformance/cases/stream/video_stream_params_active_reconfigure.yaml.steps[6].rpc.method references unknown method: video.openStream
-- conformance/cases/stream/video_stream_params_active_reconfigure.yaml.steps[8].rpc.method references unknown method: audio.openStream
-- conformance/cases/stream/video_stream_params_active_reconfigure.yaml.steps[10].expect.event.name references unknown event: cast.flowControlChanged
-- conformance/cases/stream/video_stream_params_idle_open.yaml.steps[0].rpc.method references unknown method: cast.setVideoStreamParams
-- conformance/cases/stream/video_stream_params_idle_open.yaml.steps[2].rpc.method references unknown method: video.openStream
-- conformance/cases/stream/video_stream_params_idle_open.yaml.steps[4].rpc.method references unknown method: audio.openStream
-- conformance/cases/stream/video_stream_params_precedence.yaml.steps[0].rpc.method references unknown method: cast.setVideoStreamParams
-- conformance/cases/stream/video_stream_params_precedence.yaml.steps[2].rpc.method references unknown method: video.openStream
-- conformance/cases/stream/video_stream_params_precedence.yaml.steps[4].rpc.method references unknown method: cast.getFlowControlState
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.reopen_failure_rolls_back.steps[0].rpc.method references unknown method: cast.setVideoStreamParams
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.reopen_failure_rolls_back.steps[2].rpc.method references unknown method: video.closeStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.reopen_failure_rolls_back.steps[4].rpc.method references unknown method: audio.closeStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.reopen_failure_rolls_back.steps[6].rpc.method references unknown method: audio.openStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.reopen_failure_rolls_back.steps[8].rpc.method references unknown method: video.openStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.reopen_failure_rolls_back.steps[10].rpc.method references unknown method: audio.closeStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.reopen_failure_rolls_back.steps[12].rpc.method references unknown method: video.openStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.reopen_failure_rolls_back.steps[14].rpc.method references unknown method: audio.openStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.reopen_failure_rolls_back.steps[16].rpc.method references unknown method: cast.getFlowControlState
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.rollback_failure_leaves_stream_inactive.steps[0].rpc.method references unknown method: cast.setVideoStreamParams
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.rollback_failure_leaves_stream_inactive.steps[2].rpc.method references unknown method: video.closeStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.rollback_failure_leaves_stream_inactive.steps[4].rpc.method references unknown method: audio.closeStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.rollback_failure_leaves_stream_inactive.steps[6].rpc.method references unknown method: video.openStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.rollback_failure_leaves_stream_inactive.steps[8].rpc.method references unknown method: audio.openStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.rollback_failure_leaves_stream_inactive.steps[10].rpc.method references unknown method: video.closeStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.rollback_failure_leaves_stream_inactive.steps[12].rpc.method references unknown method: video.openStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.rollback_failure_leaves_stream_inactive.steps[14].rpc.method references unknown method: audio.openStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.rollback_failure_leaves_stream_inactive.steps[16].rpc.method references unknown method: video.closeStream
-- conformance/cases/stream/video_stream_params_rollback.yaml.scenarios.rollback_failure_leaves_stream_inactive.steps[18].rpc.method references unknown method: cast.getFlowControlState
-- conformance/cases/stream/video_stream_params_validation.yaml.steps[0].rpc.method references unknown method: cast.setVideoStreamParams
-- conformance/cases/stream/video_stream_params_validation.yaml.steps[2].rpc.method references unknown method: cast.setVideoStreamParams
-- conformance/cases/stream/video_stream_params_validation.yaml.steps[4].rpc.method references unknown method: cast.setVideoStreamParams
-- conformance/cases/stream/video_stream_params_validation.yaml.steps[6].rpc.method references unknown method: cast.setVideoStreamParams
-- conformance/cases/stream/video_stream_params_validation.yaml.steps[8].rpc.method references unknown method: cast.setVideoStreamParams
+[OK] conformance manifest: 0.1.0 (spec/v0.0.2)
+[OK] conformance cases: 39
+[OK] profile coverage: capability=9
+[OK] profile coverage: core=16
+[OK] profile coverage: endpoint-relay=3
+[OK] profile coverage: event=6
+[OK] profile coverage: framed-binary=21
+[OK] profile coverage: stream=8
+[OK] profile coverage: websocket-jsonrpc=18
 
-exit_status=1
+exit_status=0
