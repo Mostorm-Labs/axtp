@@ -1,0 +1,159 @@
+name: A0 Sync Authority Docs
+
+on:
+  push:
+    branches:
+      - aegis/a0-contract-authority-reconciliation
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout A0 branch
+        uses: actions/checkout@v4
+        with:
+          ref: aegis/a0-contract-authority-reconciliation
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Synchronize A0 authority wording
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          function replaceOne(file, before, after) {
+            const text = fs.readFileSync(file, 'utf8');
+            const first = text.indexOf(before);
+            if (first < 0) throw new Error(`${file}: expected source text not found`);
+            if (text.indexOf(before, first + before.length) >= 0) throw new Error(`${file}: source text is not unique`);
+            fs.writeFileSync(file, text.slice(0, first) + after + text.slice(first + before.length));
+          }
+
+          replaceOne(
+            'docs/product/domain-status.md',
+            '这里展示的是产品状态看板，不是 runtime 实现合同。runtime 能直接依赖的合同仍然是 `contract/registry/**`、`contract/protocol/axtp.protocol.yaml`、`contract/generated/**`、`specs/**` 和 `conformance/**`。',
+            '这里展示的是产品状态看板，不是 runtime 实现合同。A0 之后，`contract/registry/**` 与 status-bearing generated catalog 属于 source-of-generation / adopted namespace；默认 runtime 只能依赖通过 Gate 的 release artifact，或维护期的 `contract/protocol/axtp.protocol.yaml` / `contract/generated/protocol.*` runtime projection。'
+          );
+          replaceOne(
+            'docs/product/domain-status.md',
+            '> 计数规则：草案数和已生成数量由 `tooling/scripts/check-protocol-status.mjs` 校验。\n> 验证方式：只有 `contract/registry/domains/<domain>/domain.yaml` 存在，并且 `pnpm --dir tooling/generators validate:sources` / `validate:protocol` 通过，才算 generated/adopted；其余为草案状态。',
+            '> 计数规则：草案数和已生成数量由 `tooling/scripts/check-protocol-status.mjs` 校验；“已生成”统计 registry catalog 中已采纳的 method/event namespace，不代表这些事实已经进入默认 runtime contract。\n> 验证方式：只有 `contract/registry/domains/<domain>/domain.yaml` 存在，并且 catalog 生成与 source validation 通过，才算 generated/adopted；runtime eligibility 另由 normalized contract lifecycle 决定，并以 `contract/generated/protocol.json` 为准。'
+          );
+          replaceOne(
+            'docs/product/domain-status.md',
+            '本表用于让产品、架构、研发和测试快速判断每个 domain 当前走到哪里。`已生成` 统计当前 generated protocol 中已经落地的方法和事件数量；`video` / `audio` 的 P0 stream 优先级表示要同时采纳 RPC 建流/关流控制面和 STREAM 数据面字段约束。',
+            '本表用于让产品、架构、研发和测试快速判断每个 domain 当前走到哪里。`已生成` 统计 generated registry catalog 中已经落地的方法和事件数量；它表示“已采纳进机器 namespace”，不等于“默认 runtime 必须实现”。`video` / `audio` 的 P0 stream 优先级仍是产品路线信息，只有 lifecycle 进入 `stable` / `deprecated` 并出现在 runtime projection 后才成为默认实现合同。'
+          );
+
+          replaceOne(
+            'workspace/protocol/README.md',
+            '| `workspace/protocol/<domain>/<domain.feature>.md` | 业务草案、评审记录、采纳/修订依据 | 否，除非已采纳且 generated 已刷新 |\n| `contract/registry/**/*.yaml`、`contract/registry/domains/**/*.yaml` | 已采纳机器事实源 | 是，Generator 输入 |\n| `contract/protocol/axtp.protocol.yaml` | 聚合后的 Protocol IR | 是，但只读，不手写 |\n| `contract/generated/protocol.md` / `.json` | 研发、测试、工具消费的当前协议参考 | 是，Generator 输出 |',
+            '| `workspace/protocol/<domain>/<domain.feature>.md` | 业务草案、评审记录、采纳/修订依据 | 否；即使标记 `generated` 也只是维护输入 |\n| `contract/registry/**/*.yaml`、`contract/registry/domains/**/*.yaml` | source-of-generation；可同时保存 draft / experimental / stable / deprecated / reserved catalog facts | 否，不能仅凭“存在于 registry”判断 runtime eligibility |\n| `contract/protocol/axtp.protocol.yaml` | 默认 runtime Protocol IR projection | 是；只包含默认 runtime contract facts，且只读不手写 |\n| `contract/generated/protocol.md` / `.json` | 默认 runtime contract 的可消费视图 | 是，Generator 输出 |'
+          );
+          replaceOne(
+            'workspace/protocol/README.md',
+            '| `contract` | 是否可作为 runtime 实现合同；draft/review-ok 通常为 `false`。 |\n| `generated` | 当前内容是否已进入 generated 输出。 |',
+            '| `contract` | 该草案是否已被采纳进 source-of-generation registry；它不授予 workspace 文档 runtime authority。 |\n| `generated` | 该 feature 是否已进入 generated registry catalog；默认 runtime eligibility 仍由 contract lifecycle + Protocol IR 决定。 |'
+          );
+          replaceOne(
+            'workspace/protocol/README.md',
+            '判断 `generated` 时不要猜：以 `contract/registry/domains/<domain>/domain.yaml`、相关 registry YAML 和 `contract/generated/protocol.md` 为准。无法确认时使用 `status: draft`、`contract: false`、`generated: false`。',
+            '判断 `generated` 时不要猜：以 `contract/registry/domains/<domain>/domain.yaml`、相关 registry YAML 和 status-bearing generated catalog 为准。判断“runtime 可实现”时则必须另看 normalized lifecycle 和 `contract/generated/protocol.json`；无法确认采纳状态时使用 `status: draft`、`contract: false`、`generated: false`。'
+          );
+          replaceOne(
+            'workspace/protocol/README.md',
+            '| `generated` | `contract/registry/domains/<domain>/domain.yaml` 或相关 registry YAML 已存在，并且 Generator / validation 通过。 | 是 |',
+            '| `generated` | `contract/registry/domains/<domain>/domain.yaml` 或相关 registry YAML 已存在，并且 catalog generation / validation 通过。 | 不直接决定；只有 runtime projection 中的 `stable` / `deprecated` facts 才是默认 runtime 合同 |'
+          );
+          replaceOne(
+            'workspace/protocol/README.md',
+            '- 研发只根据采纳后的 generated 产物开发和上架 feature，不依赖未采纳草案。',
+            '- 研发默认只根据通过 Gate 的 release artifact 或 `contract/generated/protocol.*` runtime projection 开发；status-bearing catalog 与 `workspace/**` 不能单独证明 feature 已成为默认 runtime 合同。'
+          );
+
+          replaceOne(
+            'conformance/README.md',
+            '| STREAM open / data / close | 否 | 是，P0 用于 audio/video 媒体流 |',
+            '| STREAM data plane | 否 | 由独立 `stream` scope 验收；当前 release-required baseline 为 `stream.stream_data`，业务 open/close 生命周期只有在其 backing methods 进入 runtime contract 后才可成为 required case |'
+          );
+          replaceOne(
+            'conformance/README.md',
+            '| RPC `requestId` 匹配 | `rpc.request_id_match` |\n| STREAM open / data / close | `stream.stream_open`、`stream.stream_data`、`stream.stream_close` |\n\nStandard Framed runtime 同时需要通过 `core` level 的 RPC 和错误形状 case。',
+            '| RPC `requestId` 匹配 | `rpc.request_id_match` |\n\nStandard Framed runtime 同时需要通过 `core` level 的 RPC 和错误形状 case。STREAM 不属于 `framed-binary` 的最低要求；声明 L2 / `stream` 时只执行 `manifest.yaml` 当前列出的 runtime-required stream cases。'
+          );
+          replaceOne(
+            'conformance/README.md',
+            '声明 `capability` level 的 runtime 至少执行 `capability.video_stream_params_not_supported`：当 `supportsVideoStreamParams` 或选定 source 的 encoder capability 缺失时，必须精确返回 `NOT_SUPPORTED`，不能关闭 AXTP session，随后受支持 RPC 必须成功。',
+            '`capability.video_stream_params_not_supported` 继续保留在 case catalog 中，用于 `cast.setVideoStreamParams` 后续采纳时的行为证据；但该 backing method 当前不是默认 runtime contract，因此此 case 不在 `manifest.yaml` 的 release-required capability 集合中。'
+          );
+          replaceOne(
+            'conformance/README.md',
+            '声明 `stream` level 的 runtime 还必须覆盖以下生命周期约束：',
+            '以下 AV lifecycle cases 继续保留在 `stream` case catalog 中；在 `video.openStream` / `audio.openStream` / `cast.setVideoStreamParams` 等 backing methods 进入默认 runtime contract 前，它们不是 release-required cases：'
+          );
+          replaceOne(
+            'conformance/README.md',
+            '| 建流 / 关流 | 通过已采纳或测试 profile 中的业务 RPC 创建 / 关闭 Stream Context。 |',
+            '| 建流 / 关流 | 业务 lifecycle case 可保留为 catalog evidence；只有 backing RPC 进入默认 runtime contract 后才能加入 release-required manifest。 |'
+          );
+          replaceOne(
+            'conformance/README.md',
+            '`stream.stream_open` / `stream.stream_close` 验收的是 P0 媒体流业务域建流，不是要求存在通用 `stream.open` / `stream.close` 业务 method。',
+            '当前 `stream` scope 的 release-required baseline 是 `stream.stream_data`。`stream.stream_open` / `stream.stream_close` 以及 video encoder lifecycle cases 仍可作为 catalog evidence 保存，但不会因为存在于 `cases/**` 就自动成为 runtime 要求。'
+          );
+          replaceOne(
+            'conformance/README.md',
+            '| generated mismatch | case 依赖 method/event/schema，但 generated 中不存在 | 回到 registry / Generator，不手写 generated。 |',
+            '| runtime-required mismatch | `manifest.required_cases` 中的 case 依赖 method/event/error/capability，但默认 runtime Protocol IR 中不存在 | 先修 manifest / lifecycle / authority；不得为了让测试变绿而把 draft 偷偷升级。Catalog-only case 只需引用 registry 中已知事实。 |'
+          );
+
+          replaceOne(
+            'conformance/CONFORMANCE_LEVELS.md',
+            '| L2 | Standard Framed + STREAM | L1 + `PayloadType=STREAM` 16B header、stream open/data/close 验收。 | 音视频设备、需要连续数据面的 runtime。 |',
+            '| L2 | Standard Framed + STREAM | L1 + `PayloadType=STREAM` 16B header / data-plane 验收；业务 open/close lifecycle 只有 backing facts 进入 runtime contract 后才成为 required。 | 音视频设备、需要连续数据面的 runtime。 |'
+          );
+          replaceOne(
+            'conformance/CONFORMANCE_LEVELS.md',
+            '| 必须 case 分类 | L1 required cases + `stream/**` P0 cases。 |',
+            '| 必须 case 分类 | L1 required cases + `manifest.yaml` 当前 `stream.required_cases`；A0 baseline 为 `stream.stream_data`。 |'
+          );
+          replaceOne(
+            'conformance/CONFORMANCE_LEVELS.md',
+            'Phase 1 的 L2 STREAM P0 重点是 audio/video 媒体流。严格 ACK/NACK 重传、RESUME 和非媒体 STREAM profile 是 deferred 范围。',
+            'Phase 1 的 L2 STREAM P0 先证明稳定的 STREAM data-plane。Audio/video open/close 与 active reconfigure 等 business lifecycle cases 可以保留在 catalog，但只有相关 method/event lifecycle 进入默认 runtime contract 后才进入 L2 required set。严格 ACK/NACK 重传、RESUME 和非媒体 STREAM profile 是 deferred 范围。'
+          );
+
+          replaceOne(
+            'docs/governance/AXTP-Contract-Authority-Model-v0.1.md',
+            'A conformance scope MUST NOT list test cases owned by another optional scope merely to make the test suite convenient.\n\n## 8. Authority validation rules',
+            'A conformance scope MUST NOT list test cases owned by another optional scope merely to make the test suite convenient.\n\n`conformance/cases/**` is an evidence catalog and MAY retain cases for known draft/future registry facts. Case existence, directory placement, or a case-level `level` label does not make that case release-required. `conformance/manifest.yaml` `required_cases` is the runtime/release requirement set: every method, event, error, and capability referenced by a required case MUST resolve in the default runtime Protocol IR. Draft/reserved/catalog-only facts MUST NOT become required merely because a test already exists for them.\n\n## 8. Authority validation rules'
+          );
+          replaceOne(
+            'docs/governance/AXTP-Contract-Authority-Model-v0.1.md',
+            '7. `framed-binary` required cases do not require `stream.*` cases.',
+            '7. `framed-binary` required cases do not require `stream.*` cases;\n8. catalog-only conformance cases may reference known registry facts, while every `manifest.required_cases` reference must exist in the default runtime Protocol IR.'
+          );
+          NODE
+
+      - name: Refresh protocol draft health
+        shell: bash
+        run: node tooling/scripts/report-protocol-draft-health.mjs --write docs/product/protocol-draft-health.md
+
+      - name: Commit synchronized authority docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/product/domain-status.md docs/product/protocol-draft-health.md workspace/protocol/README.md conformance/README.md conformance/CONFORMANCE_LEVELS.md docs/governance/AXTP-Contract-Authority-Model-v0.1.md
+          git commit -m "docs: synchronize A0 catalog and runtime authority"
+          git push origin HEAD:aegis/a0-contract-authority-reconciliation
