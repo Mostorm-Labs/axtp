@@ -1,0 +1,70 @@
+id: frame.reassembly_and_duplicates
+title: Reassembly is keyed correctly, out-of-order tolerant, and duplicate-safe
+authority_decisions: [A1-D03, A1-D04, A1-D05]
+evidence_class: deterministic_golden
+profile: framed-binary
+requires: [frame_decode, reassembly]
+applicability: required
+steps:
+  - op: feed_raw
+    corpus: rpc.fragment.1
+  - op: expect
+    expect:
+      no_dispatch: true
+      context_outcome: partial
+  - op: feed_raw
+    corpus: rpc.fragment.0
+  - op: expect
+    expect:
+      dispatch:
+        payloadType: RPC
+        payloadHex: "deadbeefcafebabe"
+      context_outcome: completed
+  - op: reset
+  - op: feed_raw
+    corpus: rpc.fragment.0
+  - op: feed_raw
+    corpus: rpc.fragment.0
+  - op: expect
+    expect:
+      no_dispatch: true
+      context_outcome: partial
+  - op: feed_raw
+    corpus: rpc.fragment.1
+  - op: expect
+    expect:
+      dispatch:
+        payloadType: RPC
+        payloadHex: "deadbeefcafebabe"
+      context_outcome: completed
+  - op: reset
+  - op: feed_raw
+    corpus: rpc.fragment.0
+  - op: feed_raw
+    corpus: rpc.fragment.0.conflict
+  - op: expect
+    expect:
+      no_dispatch: true
+      context_outcome: invalidated
+      diagnostic_if_supported: FRAME_FRAGMENT_INVALID
+  - op: reset
+  - op: feed_raw
+    corpus: frame.message_id_zero.valid
+  - op: expect
+    expect:
+      dispatch:
+        payloadType: RPC
+        payloadHex: "abcd"
+  - op: feed_raw
+    corpus: frame.message_id_zero.reuse
+  - op: expect
+    expect:
+      dispatch:
+        payloadType: RPC
+        payloadHex: "ef01"
+assertions:
+  - Out-of-order arrival reassembles by FrameIndex to the same logical payload as in-order arrival.
+  - No partial fragment payload crosses into the RPC parser.
+  - An identical duplicate is idempotent and does not duplicate bytes in the completed payload.
+  - A conflicting duplicate invalidates the active context and cannot silently replace it.
+  - Unfragmented MessageId zero may be reused after the prior frame is complete.
