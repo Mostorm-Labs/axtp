@@ -283,6 +283,7 @@ function renderMainToc(model: ProtocolModel): string[] {
     "",
     "- [Overview](#overview)",
     "- [Protocol Framework](#protocol-framework)",
+    "- [Standard Frame Contract](#standard-frame-contract)",
     "- [Supported Connection Profiles](#supported-connection-profiles)",
     "- [Design Goals / Non-Goals](#design-goals--non-goals)",
     "- [Connection Lifecycle](#connection-lifecycle)",
@@ -377,6 +378,28 @@ function renderProtocolFramework(model: ProtocolModel): string[] {
     ),
     "",
     "Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP v1 Core requirement. See `specs/20-core.md` for that path."
+  ];
+}
+
+function renderStandardFrameContract(model: ProtocolModel): string[] {
+  const contract = model.frameProfiles.find((profile) => profile.name === "STANDARD_FRAME")?.contract;
+  if (!contract) return [];
+  return [
+    "## Standard Frame Contract",
+    "",
+    `Standard Frame uses a ${contract.header.size}-byte header, payload bytes, and a ${contract.footer.size}-byte CRC footer (${contract.overheadBytes} bytes fixed overhead).`,
+    "",
+    ...table(["Field", "Offset", "Bytes", "Type"], contract.header.fields.map((field) => [field.name, String(field.offset), String(field.bytes), field.type]), ["left", "right", "right", "center"]),
+    "",
+    `- Magic: \`${contract.header.magicBytes.map((value) => hex(value, 2)).join(" ")}\``,
+    `- Header Version: \`${hex(contract.header.version, 2)}\``,
+    `- CRC: \`${contract.crc.algorithm}\`, coverage \`${contract.crc.coverage}\`, footer excluded, \`${contract.crc.byteOrder}\` serialization.`,
+    `- Effective max frame: \`${contract.effectiveParameters.maxFrameSize.formula}\`; ACCEPT override falls back to \`${contract.effectiveParameters.maxFrameSize.fallback}\`.`,
+    `- Effective heartbeat interval: ACCEPT override falls back to \`${contract.effectiveParameters.heartbeatIntervalMs.fallback}\`.`,
+    `- Reassembly key: \`(${contract.fragmentation.reassemblyKey.join(", ")})\`; dispatch is \`${contract.fragmentation.dispatch}\`.`,
+    `- MessageId zero reserved: \`${contract.fragmentation.messageId.zeroReserved}\`; allocator owner: \`${contract.fragmentation.messageId.allocationOwner}\`.`,
+    `- Parser invalid dispatch: \`${contract.parser.invalidDispatch}\`; recovery aggressiveness owner: \`${contract.parser.recoveryAggressivenessOwner}\`.`,
+    `- HEARTBEAT_ACK: controlId=\`${contract.heartbeat.ack.controlId}\`, status=\`${contract.heartbeat.ack.statusCode}\`; scheduler/failure/reconnect policy remains \`${contract.heartbeat.schedulerOwner}\`.`
   ];
 }
 
@@ -573,6 +596,8 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
     ),
     "",
     ...renderProtocolFramework(model),
+    "",
+    ...renderStandardFrameContract(model),
     "",
     "## Design Goals / Non-Goals",
     "",

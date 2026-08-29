@@ -47,11 +47,55 @@ Header 布局：
 
 所有 AXTP 多字节 wire integer MUST 使用 Big-Endian / network byte order。
 
-Frame parser MUST 在分发前校验 magic、version、PayloadType、`PayloadLength + 14 <= maxFrameSize`、`FrameCount >= 1`、`FrameIndex < FrameCount`、CRC 和完整 payload 可用性。
+Frame parser MUST 在分发前校验 magic、version、PayloadType、`total frame bytes <= effectiveMaxFrameSize`、`FrameCount >= 1`、`FrameIndex < FrameCount`、CRC 和完整 payload 可用性。
 
 分片属于 Frame layer。Request/Response 匹配使用 RPC request id，不使用 `MessageId`。STREAM 排序使用 `seqId`，不使用 `MessageId`。
 
 Frame `SourceId` / `DestinationId` 只描述当前 Standard Framed link 的逐跳 node address。对象编码 RPC 的 `m.src` / `m.dst` 描述跨 relay 的逻辑 Endpoint address。Relay 转发 RPC 时 MAY 改变 Frame `SourceId` / `DestinationId`，但 MUST 按本文 RPC 规则处理端到端 `m.src` / `m.dst`。
+
+### A1 effective parameters
+
+OPEN 中的 `maxFrameSize` 与 `heartbeatIntervalMs` 是 Standard Framed link 的 baseline。成功 ACCEPT 中对应字段只在存在时覆盖 OPEN：
+
+```text
+effectiveMaxFrameSize =
+  ACCEPT.maxFrameSize if present
+  otherwise OPEN.maxFrameSize
+
+effectiveHeartbeatIntervalMs =
+  ACCEPT.heartbeatIntervalMs if present
+  otherwise OPEN.heartbeatIntervalMs
+```
+
+成功的 empty ACCEPT 表示接受 OPEN baseline。`effectiveMaxFrameSize` 是双向 Standard Frame ceiling；每个发送 frame MUST 满足 `PayloadLength + 14 <= effectiveMaxFrameSize`。实现 MAY 发送更小的 frame，但 MUST NOT 接受 link 后静默采用不同的 peer-visible ceiling。
+
+### A1 fragmentation and reassembly
+
+一个 fragmented logical message MUST 使用同一 `MessageId`；fragmented `FrameCount` MUST 位于 `2..255`，sender 的 `FrameIndex` MUST 恰好覆盖 `0..FrameCount-1` 且按升序发送。`Version`、`PayloadType`、`SourceId`、`DestinationId`、`MessageId`、`FrameCount` 在该 message 的所有 fragments 中 MUST 保持一致。对同一 `(SourceId, DestinationId)` direction，一个 fragmented message 的 fragments MUST contiguous emission；需要超过 255 fragments 的 message MUST 在发送前本地失败。
+
+Receiver reassembly key 固定为：
+
+```text
+(local Framed Link Context, SourceId, DestinationId, MessageId)
+```
+
+`PayloadType`、`FrameCount` 与 Header Version 是 context invariants，不是 key。Receiver MAY 接收 out-of-order fragments，但 MUST 按 `FrameIndex` 升序重建 payload；CONTROL/RPC/STREAM 只能收到完整 unfragmented payload 或 fully reassembled payload，MUST NOT 收到 partial fragments。
+
+同一 active context/index 的 identical duplicate MUST idempotent；payload 或 invariant 冲突 MUST invalidate context，并在 runtime 暴露 frame diagnostics 时归类为 `FRAME_FRAGMENT_INVALID`，且不得 dispatch partial payload。`MessageId` 是 opaque uint16，zero 不保留，也不要求 monotonic allocator；sender 只需保证同一 direction 的 fragmented active context 不复用同一值，context complete/invalidated/abandoned/expired 后 MAY 立即 reuse。
+
+因为 Core v1 禁止同向 fragmented message interleaving，若 prior fragmented context 未完成时出现同 direction 的不同 `MessageId`，prior context MUST 被 abandoned；若暴露 diagnostic，分类为 `FRAME_FRAGMENT_MISSING`。`FRAME_REASSEMBLY_TIMEOUT` 表示 runtime/profile-owned timer 到期；timeout duration 不属于 Core 常量。Runtime MUST 对 incomplete reassembly memory/context 设置 finite bounds，具体 numeric caps 属于 runtime/profile policy；resource exhaustion MUST NOT 导致 partial upper-layer dispatch。
+
+### A1 parser safety and recovery
+
+Standard Frame candidate MUST 在 dispatch 前通过 header、length、fragment-range、payload-completeness 与 CRC checks。对 byte-stream profile，receiver 在 commit candidate 前扫描 magic；structurally plausible 但 bytes 尚不完整的 candidate MUST 等待更多 bytes，不能因为 declared payload 内出现 `0x41 0x58` 就在 payload 内 resynchronize。Rejected candidate MUST NOT dispatch payload；若实现选择 recover 而非 close，下一次 candidate search MUST 从 rejected candidate 的第一个 byte 之后开始；chunk 末尾单独的 `0x41` MAY 保留为下一段 magic prefix。允许连续多少 corrupt candidates、buffer strategy、close aggressiveness 属于 runtime/profile policy。Packet boundary MAY 用于丢弃 bad packet，但不能替代 header/CRC validation。
+
+Frame integrity failures 默认是 local frame-layer diagnostics，不得仅凭 untrusted frame context 伪造 business RPC result 或 CONTROL response。标准 diagnostics 包括 `FRAME_VERSION_UNSUPPORTED`、`FRAME_PAYLOAD_TYPE_INVALID`、`FRAME_LENGTH_INVALID`、`FRAME_TOO_LARGE`、`FRAME_CRC_ERROR`、`FRAME_FRAGMENT_INVALID`、`FRAME_FRAGMENT_MISSING`、`FRAME_REASSEMBLY_TIMEOUT`。
+
+### A1 heartbeat wire semantics
+
+进入 `FRAMING_READY` 后任一 peer MAY 发送 CONTROL HEARTBEAT。收到 valid HEARTBEAT 的 peer MUST 返回 HEARTBEAT_ACK，回显同一 `controlId` 且 `statusCode=SUCCESS`。Sender MUST NOT 同时复用仍 outstanding 的 heartbeat `controlId`；allocator algorithm 属于 runtime policy。
+
+`effectiveHeartbeatIntervalMs` 是自动 liveness probing 启用时的 negotiated/default cadence input，不是 normative failure deadline。Initiator role、scheduler topology、missed-ACK threshold、timeout formula、ordinary-traffic refresh、reconnect/backoff 均属于 runtime/profile policy。WebSocket Unframed JSON 继续使用 WebSocket/native keepalive。
 
 ## Transport Profile 传输配置
 
@@ -140,7 +184,7 @@ ACCEPT 字段 presence 规则：
 
 1. TLV 出现时，receiver MUST 按该字段定义校验并消费；
 2. TLV 缺席时，receiver MUST NOT 仅因为缺席而返回协议错误；
-3. 缺席表示该 ACCEPT 没有为此参数提供 override；runtime 继续使用 transport/profile/local 已适用的默认值；
+3. 对 `maxFrameSize` 与 `heartbeatIntervalMs`，缺席表示 ACCEPT 没有提供 override；effective value MUST 继续使用 OPEN 中的对应 baseline；
 4. profile 或产品 contract MAY 为自身场景提高字段要求，但该要求不属于 AXTP v1 Core ACCEPT parser；
 5. `statusCode != SUCCESS` 的 ACCEPT MAY 完全没有 TLV body。
 

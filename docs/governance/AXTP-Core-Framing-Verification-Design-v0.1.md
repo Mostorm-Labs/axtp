@@ -1,6 +1,6 @@
 # AXTP Core Framing Verification Design v0.1
 
-Status: **A1 / P20 Verification Design — READY for authority materialization, release evidence not yet complete**  
+Status: **A1 / P20 Verification Evidence — MATERIALIZED / RELEASE-REQUIRED; runtime adoption and release remain separate**
 Authority: `AXTP Core Framing Authority v0.1`  
 Scope: evidence design for A1-D01 through A1-D10.  
 Repository boundary: `Mostorm-Labs/axtp` only.
@@ -57,9 +57,6 @@ P20 does **not**:
 - modify any runtime `AXTP_SPEC.lock.yaml`;
 - create runtime migration plans or PRs;
 - require C++ and TS to use the same MessageId allocator, timeout duration, scheduler, memory limit, thread model, or reconnect policy;
-- synchronize `specs/20-core.md` yet;
-- add Standard Frame structure to Protocol IR yet;
-- add these P20 cases to the current release-required `conformance/manifest.yaml` yet;
 - tag, release, or claim A1 is a published runtime contract.
 
 ## 5. Verification architecture

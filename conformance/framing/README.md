@@ -1,6 +1,6 @@
 # A1 Core Framing Verification Package
 
-Status: **P20 verification design — not yet part of the published `framed-binary` required-case set**.
+Status: **P20 materialized — release-required in the current `framed-binary` conformance set**.
 
 Authority: `docs/governance/AXTP-Core-Framing-Authority-v0.1.md`.
 
@@ -46,13 +46,6 @@ Cross-language equality is required only for protocol-owned outcomes. Optional c
 
 ## Promotion boundary
 
-`conformance/framing/manifest.yaml` has `release_required: false` during P20. These cases are therefore **not** silently added to `conformance/manifest.yaml` and do not change the current published `framed-binary` requirement set.
-
-Promotion happens only after:
-
-1. `specs/20-core.md` is synchronized to A1 authority;
-2. the machine-readable Standard Frame contract is materialized;
-3. the P20 package still validates against those authorities;
-4. release-required cases are explicitly selected in the main conformance manifest.
+`conformance/framing/manifest.yaml` is now `release_required: true`. Promotion occurred only after `specs/20-core.md` synchronization, machine-readable Standard Frame materialization, machine-contract alignment validation, and explicit selection of all seven P20 cases in the main `framed-binary` required set. Runtime adoption, merge, tag, and release remain separate actions.
 
 Validation runs through `tooling/scripts/validate-conformance.sh`.

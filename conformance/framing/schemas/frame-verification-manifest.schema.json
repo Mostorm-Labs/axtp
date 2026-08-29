@@ -6,9 +6,9 @@
   "required": ["version", "status", "authority", "release_required", "required_decisions", "required_cases", "adapter_capabilities"],
   "properties": {
     "version": { "type": "string", "minLength": 1 },
-    "status": { "const": "verification-design" },
+    "status": { "const": "release-required" },
     "authority": { "const": "AXTP-Core-Framing-Authority-v0.1" },
-    "release_required": { "const": false },
+    "release_required": { "const": true },
     "required_decisions": {
       "type": "array",
       "minItems": 10,

@@ -75,6 +75,18 @@ function assertYamlCapability(model: ProtocolModel): void {
   }
 }
 
+function assertStandardFrameDocs(model: ProtocolModel, coreSpec: string): void {
+  const contract = model.frameProfiles.find((profile) => profile.name === "STANDARD_FRAME")?.contract;
+  if (!contract) fail("contract/protocol/axtp.protocol.yaml", "STANDARD_FRAME.contract", "machine-readable Standard Frame contract is required");
+  requirePattern(coreSpec, /effectiveMaxFrameSize[\s\S]{0,240}OPEN\.maxFrameSize/, "specs/20-core.md", "effectiveMaxFrameSize", "core spec must define ACCEPT override with OPEN maxFrameSize fallback");
+  requirePattern(coreSpec, /PayloadLength \+ 14 <= effectiveMaxFrameSize/, "specs/20-core.md", "Frame Ceiling", "core spec must define PayloadLength + 14 <= effectiveMaxFrameSize");
+  requirePattern(coreSpec, /local Framed Link Context, SourceId, DestinationId, MessageId/, "specs/20-core.md", "Reassembly Key", "core spec must define the P23 reassembly key");
+  requirePattern(coreSpec, /identical duplicate[\s\S]{0,160}idempotent/i, "specs/20-core.md", "Duplicate Fragment", "core spec must define identical duplicate idempotence");
+  requirePattern(coreSpec, /Rejected candidate MUST NOT dispatch payload/, "specs/20-core.md", "Parser Safety", "core spec must forbid invalid-frame dispatch");
+  requirePattern(coreSpec, /HEARTBEAT_ACK[\s\S]{0,160}controlId[\s\S]{0,100}SUCCESS/, "specs/20-core.md", "Heartbeat ACK", "core spec must require matching HEARTBEAT_ACK controlId and SUCCESS");
+  if (contract.effectiveParameters.maxFrameSize.formula !== "PayloadLength + 14 <= effectiveMaxFrameSize") fail("contract/protocol/axtp.protocol.yaml", "STANDARD_FRAME.contract", "machine contract effective max formula drifted from core spec");
+}
+
 export async function loadProtocolDocs(specRoot: string): Promise<ProtocolDocsText> {
   const docsRoot = path.join(specRoot, "specs");
   const [coreSpec, codecSpec] = await Promise.all([
@@ -106,11 +118,13 @@ export function validateProtocolDocsConsistency(model: ProtocolModel, docs: Prot
   assertYamlStreamHeader(model);
   assertYamlControl(model);
   assertYamlCapability(model);
+  assertStandardFrameDocs(model, docs.coreSpec);
 
   return [
     "[OK] specs: wire byte order facts checked",
     "[OK] specs: STREAM header facts checked",
     "[OK] specs: CONTROL Phase 1 opcode facts checked",
-    "[OK] specs: optional capability discovery facts checked"
+    "[OK] specs: optional capability discovery facts checked",
+    "[OK] specs: P23 Standard Frame contract facts checked"
   ];
 }

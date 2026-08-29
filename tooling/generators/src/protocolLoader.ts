@@ -20,6 +20,7 @@ import type {
   SchemaDefinition,
   SchemaField,
   StreamDefinition,
+  StandardFrameContract,
   TransportProfile,
   WireDefinition,
   WireExample,
@@ -235,13 +236,100 @@ function mapWire(raw: any): WireDefinition {
   };
 }
 
+function mapStandardFrameContract(value: unknown): StandardFrameContract | undefined {
+  if (value === undefined) return undefined;
+  const item = asObject(value, "frameProfiles.STANDARD_FRAME.contract");
+  const header = asObject(item.header, "frameProfiles.STANDARD_FRAME.contract.header");
+  const footer = asObject(item.footer, "frameProfiles.STANDARD_FRAME.contract.footer");
+  const crc = asObject(item.crc, "frameProfiles.STANDARD_FRAME.contract.crc");
+  const effectiveParameters = asObject(item.effectiveParameters, "frameProfiles.STANDARD_FRAME.contract.effectiveParameters");
+  const maxFrameSize = asObject(effectiveParameters.maxFrameSize, "frameProfiles.STANDARD_FRAME.contract.effectiveParameters.maxFrameSize");
+  const heartbeatIntervalMs = asObject(effectiveParameters.heartbeatIntervalMs, "frameProfiles.STANDARD_FRAME.contract.effectiveParameters.heartbeatIntervalMs");
+  const fragmentation = asObject(item.fragmentation, "frameProfiles.STANDARD_FRAME.contract.fragmentation");
+  const sender = asObject(fragmentation.sender, "frameProfiles.STANDARD_FRAME.contract.fragmentation.sender");
+  const duplicate = asObject(fragmentation.duplicate, "frameProfiles.STANDARD_FRAME.contract.fragmentation.duplicate");
+  const messageId = asObject(fragmentation.messageId, "frameProfiles.STANDARD_FRAME.contract.fragmentation.messageId");
+  const missing = asObject(fragmentation.missing, "frameProfiles.STANDARD_FRAME.contract.fragmentation.missing");
+  const timeout = asObject(fragmentation.timeout, "frameProfiles.STANDARD_FRAME.contract.fragmentation.timeout");
+  const resources = asObject(fragmentation.resources, "frameProfiles.STANDARD_FRAME.contract.fragmentation.resources");
+  const parser = asObject(item.parser, "frameProfiles.STANDARD_FRAME.contract.parser");
+  const byteStream = asObject(parser.byteStream, "frameProfiles.STANDARD_FRAME.contract.parser.byteStream");
+  const packet = asObject(parser.packet, "frameProfiles.STANDARD_FRAME.contract.parser.packet");
+  const heartbeat = asObject(item.heartbeat, "frameProfiles.STANDARD_FRAME.contract.heartbeat");
+  const ack = asObject(heartbeat.ack, "frameProfiles.STANDARD_FRAME.contract.heartbeat.ack");
+  const mapEffective = (entry: Record<string, any>) => ({
+    openField: String(entry.openField),
+    acceptOverrideField: String(entry.acceptOverrideField),
+    fallback: String(entry.fallback),
+    formula: optionalString(entry.formula)
+  });
+  return {
+    header: {
+      size: normalizeId(header.size, "STANDARD_FRAME.contract.header.size"),
+      magicBytes: asArray(header.magicBytes).map((entry, index) => normalizeId(entry, `STANDARD_FRAME.contract.header.magicBytes[${index}]`)),
+      version: normalizeId(header.version, "STANDARD_FRAME.contract.header.version"),
+      fields: asArray(header.fields).map((field) => ({
+        name: String(field.name),
+        offset: normalizeId(field.offset, `STANDARD_FRAME.contract.header.fields.${field.name}.offset`),
+        bytes: normalizeId(field.bytes, `STANDARD_FRAME.contract.header.fields.${field.name}.bytes`),
+        type: String(field.type)
+      }))
+    },
+    footer: { size: normalizeId(footer.size, "STANDARD_FRAME.contract.footer.size"), field: String(footer.field) },
+    overheadBytes: normalizeId(item.overheadBytes, "STANDARD_FRAME.contract.overheadBytes"),
+    crc: { algorithm: String(crc.algorithm), coverage: String(crc.coverage), excludesFooter: Boolean(crc.excludesFooter), byteOrder: String(crc.byteOrder) },
+    effectiveParameters: { maxFrameSize: mapEffective(maxFrameSize), heartbeatIntervalMs: mapEffective(heartbeatIntervalMs) },
+    fragmentation: {
+      sender: {
+        fragmentedFrameCountMin: normalizeId(sender.fragmentedFrameCountMin, "STANDARD_FRAME.contract.fragmentation.sender.fragmentedFrameCountMin"),
+        fragmentedFrameCountMax: normalizeId(sender.fragmentedFrameCountMax, "STANDARD_FRAME.contract.fragmentation.sender.fragmentedFrameCountMax"),
+        frameIndexCoverage: String(sender.frameIndexCoverage),
+        emissionOrder: String(sender.emissionOrder),
+        contiguousPerDirection: Boolean(sender.contiguousPerDirection),
+        invariants: asStringArray(sender.invariants),
+        over255Disposition: String(sender.over255Disposition)
+      },
+      reassemblyKey: asStringArray(fragmentation.reassemblyKey),
+      contextInvariants: asStringArray(fragmentation.contextInvariants),
+      receiveOrder: String(fragmentation.receiveOrder),
+      payloadOrder: String(fragmentation.payloadOrder),
+      dispatch: String(fragmentation.dispatch),
+      duplicate: { identical: String(duplicate.identical), conflicting: String(duplicate.conflicting), diagnostic: String(duplicate.diagnostic) },
+      messageId: { type: String(messageId.type), zeroReserved: Boolean(messageId.zeroReserved), allocationOwner: String(messageId.allocationOwner), activeUniqueness: String(messageId.activeUniqueness), reuseAfter: asStringArray(messageId.reuseAfter) },
+      missing: { trigger: String(missing.trigger), diagnostic: String(missing.diagnostic) },
+      timeout: { diagnostic: String(timeout.diagnostic), durationOwner: String(timeout.durationOwner) },
+      resources: { bounded: Boolean(resources.bounded), numericLimitsOwner: String(resources.numericLimitsOwner), exhaustionDiagnostic: String(resources.exhaustionDiagnostic), partialDispatch: Boolean(resources.partialDispatch) }
+    },
+    parser: {
+      validateBeforeDispatch: asStringArray(parser.validateBeforeDispatch),
+      invalidDispatch: Boolean(parser.invalidDispatch),
+      byteStream: { scanMagic: Boolean(byteStream.scanMagic), incompleteCandidate: String(byteStream.incompleteCandidate), recoverySearch: String(byteStream.recoverySearch), trailingMagicPrefixRetention: Boolean(byteStream.trailingMagicPrefixRetention) },
+      packet: { boundaryMayDiscardBadFrame: Boolean(packet.boundaryMayDiscardBadFrame), boundaryReplacesValidation: Boolean(packet.boundaryReplacesValidation) },
+      recoveryAggressivenessOwner: String(parser.recoveryAggressivenessOwner)
+    },
+    diagnostics: asStringArray(item.diagnostics),
+    heartbeat: {
+      activeAfter: String(heartbeat.activeAfter),
+      sender: String(heartbeat.sender),
+      ack: { opcode: String(ack.opcode), controlId: String(ack.controlId), statusCode: String(ack.statusCode) },
+      outstandingControlIdUnique: Boolean(heartbeat.outstandingControlIdUnique),
+      allocatorOwner: String(heartbeat.allocatorOwner),
+      cadenceSource: String(heartbeat.cadenceSource),
+      failureDeadlineOwner: String(heartbeat.failureDeadlineOwner),
+      schedulerOwner: String(heartbeat.schedulerOwner),
+      reconnectOwner: String(heartbeat.reconnectOwner)
+    }
+  };
+}
+
 function mapFrameProfiles(value: unknown): FrameProfile[] {
   return asArray(value).map((item) => ({
     name: String(item.name),
     magic: item.magic,
     l1: String(item.l1),
     l2: String(item.l2),
-    supportsMixing: item.supportsMixing === undefined ? undefined : Boolean(item.supportsMixing)
+    supportsMixing: item.supportsMixing === undefined ? undefined : Boolean(item.supportsMixing),
+    contract: mapStandardFrameContract(item.contract)
   }));
 }
 

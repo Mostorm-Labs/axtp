@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 
 const root = path.resolve(process.argv[2] ?? process.cwd());
 const framingDir = path.join(root, "conformance", "framing");
+const generatedProtocolPath = path.join(root, "contract", "generated", "protocol.json");
 const requireFromGenerators = createRequire(path.join(root, "tooling", "generators", "package.json"));
 const YAML = requireFromGenerators("yaml");
 const Ajv2020Module = requireFromGenerators("ajv/dist/2020");
@@ -70,6 +71,21 @@ if (errors.length === 0) {
   const stateOracle = readYaml(path.join(framingDir, "state-oracle.yaml"));
   const virtualTime = readYaml(path.join(framingDir, "virtual-time.yaml"));
   const corpus = readYaml(path.join(framingDir, "corpus", "raw-frames.yaml"));
+  const protocol = readJson(generatedProtocolPath);
+  const standardFrame = (protocol.frameProfiles ?? []).find((profile) => profile.name === "STANDARD_FRAME");
+  const machine = standardFrame?.contract;
+  if (!machine) fail("generated Protocol IR missing STANDARD_FRAME.contract");
+  if (machine) {
+    if (machine.header?.size !== 12 || machine.footer?.size !== 2 || machine.overheadBytes !== 14) fail("machine contract Standard Frame sizes must be 12+payload+2 / overhead 14");
+    if (JSON.stringify(machine.header?.magicBytes) !== JSON.stringify([0x41, 0x58]) || machine.header?.version !== 0x01) fail("machine contract magic/version mismatch");
+    const payloadIds = Object.fromEntries((protocol.payloadTypes ?? []).map((item) => [item.name, item.id]));
+    if (payloadIds.CONTROL !== 0x01 || payloadIds.RPC !== 0x02 || payloadIds.STREAM !== 0x03) fail("machine contract PayloadType values mismatch");
+    if (machine.crc?.algorithm !== "CRC16-CCITT-FALSE" || machine.crc?.coverage !== "header+payload" || machine.crc?.excludesFooter !== true) fail("machine contract CRC semantics mismatch");
+    if (machine.effectiveParameters?.maxFrameSize?.formula !== "PayloadLength + 14 <= effectiveMaxFrameSize") fail("machine contract effective max-frame formula mismatch");
+    const expectedDiagnostics = new Set((corpus.frames ?? []).map((frame) => frame.expected_error).filter(Boolean));
+    for (const name of expectedDiagnostics) if (!(machine.diagnostics ?? []).includes(name)) fail(`machine contract missing corpus diagnostic ${name}`);
+    if (machine.fragmentation?.timeout?.durationOwner !== "runtime_or_profile" || machine.fragmentation?.resources?.numericLimitsOwner !== "runtime_or_profile" || machine.heartbeat?.failureDeadlineOwner !== "runtime_or_profile" || machine.heartbeat?.allocatorOwner !== "runtime") fail("machine contract runtime/profile ownership boundary mismatch");
+  }
 
   validateWith(path.join(framingDir, "schemas", "frame-verification-manifest.schema.json"), manifest, "manifest");
   validateWith(path.join(framingDir, "schemas", "state-oracle.schema.json"), stateOracle, "state-oracle");
@@ -148,6 +164,7 @@ if (errors.length === 0) {
   }
 
   if (errors.length === 0) {
+    console.log(`[OK] A1 frame machine contract alignment: header=${machine.header.size}, overhead=${machine.overheadBytes}, crc=${machine.crc.algorithm}`);
     console.log(`[OK] A1 frame verification design: decisions=${expectedDecisions.length}, cases=${caseIds.size}, frames=${frameIds.size}, streams=${streamIds.size}`);
   }
 }

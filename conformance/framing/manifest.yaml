@@ -1,7 +1,7 @@
 version: 0.1.0
-status: verification-design
+status: release-required
 authority: AXTP-Core-Framing-Authority-v0.1
-release_required: false
+release_required: true
 
 required_decisions:
   - A1-D01
