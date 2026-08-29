@@ -33,7 +33,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 -c 'from pathlib import Path; p=Path("conformance/manifest.yaml"); s=p.read_text(); old="      - rpc.request_id_match\n"; assert s.count(old)==3; p.write_text(s.replace(old,"      - \"rpc.request_id_match\"\n",2))'
           python3 .github/p36_materialize.py
+          python3 -c 'from pathlib import Path; p=Path("conformance/manifest.yaml"); s=p.read_text(); old="      - \"rpc.request_id_match\"\n"; assert s.count(old)==2; p.write_text(s.replace(old,"      - rpc.request_id_match\n"))'
 
       - name: Generate and verify P36 tree
         shell: bash
