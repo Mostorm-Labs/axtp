@@ -30,6 +30,7 @@ jobs:
           python3 -c 'from pathlib import Path; p=Path("specs/20-core.md"); s=p.read_text(); old="PayloadLength + 14 <= effectiveMaxFrameSize"; p.write_text(s.replace(old,"total frame bytes <= effectiveMaxFrameSize",1))'
           python3 -c 'from pathlib import Path; p=Path("tooling/generators/src/protocolDocsValidator.ts"); s=p.read_text(); old="core spec must use the effective max-frame formula"; new="core spec must define PayloadLength + 14 <= effectiveMaxFrameSize"; assert s.count(old)==1; p.write_text(s.replace(old,new))'
           python3 -c 'from pathlib import Path; p=Path("conformance/manifest.yaml"); s=p.read_text(); p.write_text(s.replace("      - \"rpc.request_id_match\"\n","      - rpc.request_id_match\n"))'
+          python3 -c 'from pathlib import Path; p=Path("docs/governance/AXTP-Core-Framing-Verification-Design-v0.1.md"); s=p.read_text(); s=s.replace("Status: **A1 / P20 Verification Evidence — MATERIALIZED / RELEASE-REQUIRED; runtime adoption and release remain separate**  \n","Status: **A1 / P20 Verification Evidence — MATERIALIZED / RELEASE-REQUIRED; runtime adoption and release remain separate**\n"); p.write_text(s)'
       - name: Generate and verify P36 tree
         run: |
           pnpm --dir tooling/generators build
