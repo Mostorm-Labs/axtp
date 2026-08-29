@@ -61,3 +61,10 @@ levels:
       - handshake.close
       - handshake.heartbeat
       - rpc.request_id_match
+      - frame.effective_parameters
+      - frame.fragmentation_sender
+      - frame.reassembly_and_duplicates
+      - frame.missing_and_timeout
+      - frame.resource_bounds
+      - frame.parser_integrity_and_recovery
+      - frame.heartbeat_wire

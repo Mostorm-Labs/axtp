@@ -49,12 +49,83 @@ export interface WireDefinition {
   scope?: string;
 }
 
+export interface StandardFrameHeaderField {
+  name: string;
+  offset: number;
+  bytes: number;
+  type: string;
+}
+
+export interface StandardFrameEffectiveParameter {
+  openField: string;
+  acceptOverrideField: string;
+  fallback: string;
+  formula?: string;
+}
+
+export interface StandardFrameContract {
+  header: {
+    size: number;
+    magicBytes: number[];
+    version: number;
+    fields: StandardFrameHeaderField[];
+  };
+  footer: { size: number; field: string };
+  overheadBytes: number;
+  crc: { algorithm: string; coverage: string; excludesFooter: boolean; byteOrder: string };
+  effectiveParameters: {
+    maxFrameSize: StandardFrameEffectiveParameter;
+    heartbeatIntervalMs: StandardFrameEffectiveParameter;
+  };
+  fragmentation: {
+    sender: {
+      fragmentedFrameCountMin: number;
+      fragmentedFrameCountMax: number;
+      frameIndexCoverage: string;
+      emissionOrder: string;
+      contiguousPerDirection: boolean;
+      invariants: string[];
+      over255Disposition: string;
+    };
+    reassemblyKey: string[];
+    contextInvariants: string[];
+    receiveOrder: string;
+    payloadOrder: string;
+    dispatch: string;
+    duplicate: { identical: string; conflicting: string; diagnostic: string };
+    messageId: { type: string; zeroReserved: boolean; allocationOwner: string; activeUniqueness: string; reuseAfter: string[] };
+    missing: { trigger: string; diagnostic: string };
+    timeout: { diagnostic: string; durationOwner: string };
+    resources: { bounded: boolean; numericLimitsOwner: string; exhaustionDiagnostic: string; partialDispatch: boolean };
+  };
+  parser: {
+    validateBeforeDispatch: string[];
+    invalidDispatch: boolean;
+    byteStream: { scanMagic: boolean; incompleteCandidate: string; recoverySearch: string; trailingMagicPrefixRetention: boolean };
+    packet: { boundaryMayDiscardBadFrame: boolean; boundaryReplacesValidation: boolean };
+    recoveryAggressivenessOwner: string;
+  };
+  diagnostics: string[];
+  heartbeat: {
+    activeAfter: string;
+    sender: string;
+    ack: { opcode: string; controlId: string; statusCode: string };
+    outstandingControlIdUnique: boolean;
+    allocatorOwner: string;
+    cadenceSource: string;
+    failureDeadlineOwner: string;
+    schedulerOwner: string;
+    reconnectOwner: string;
+  };
+}
+
 export interface FrameProfile {
   name: string;
   magic?: string | number;
   l1: string;
   l2: string;
   supportsMixing?: boolean;
+  contract?: StandardFrameContract;
 }
 
 export interface TransportProfile {

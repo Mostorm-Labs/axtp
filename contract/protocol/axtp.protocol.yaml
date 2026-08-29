@@ -101,6 +101,162 @@ frameProfiles:
     l1: STANDARD_L1
     l2: STANDARD_L2
     supportsMixing: false
+    contract:
+      header:
+        size: 12
+        magicBytes:
+          - 65
+          - 88
+        version: 1
+        fields:
+          - name: magic
+            offset: 0
+            bytes: 2
+            type: bytes
+          - name: version
+            offset: 2
+            bytes: 1
+            type: uint8
+          - name: payloadType
+            offset: 3
+            bytes: 1
+            type: uint8
+          - name: payloadLength
+            offset: 4
+            bytes: 2
+            type: uint16
+          - name: sourceId
+            offset: 6
+            bytes: 1
+            type: uint8
+          - name: destinationId
+            offset: 7
+            bytes: 1
+            type: uint8
+          - name: messageId
+            offset: 8
+            bytes: 2
+            type: uint16
+          - name: frameIndex
+            offset: 10
+            bytes: 1
+            type: uint8
+          - name: frameCount
+            offset: 11
+            bytes: 1
+            type: uint8
+      footer:
+        size: 2
+        field: crc16
+      overheadBytes: 14
+      crc:
+        algorithm: CRC16-CCITT-FALSE
+        coverage: header+payload
+        excludesFooter: true
+        byteOrder: big-endian
+      effectiveParameters:
+        maxFrameSize:
+          openField: maxFrameSize
+          acceptOverrideField: maxFrameSize
+          fallback: OPEN.maxFrameSize
+          formula: PayloadLength + 14 <= effectiveMaxFrameSize
+        heartbeatIntervalMs:
+          openField: heartbeatIntervalMs
+          acceptOverrideField: heartbeatIntervalMs
+          fallback: OPEN.heartbeatIntervalMs
+      fragmentation:
+        sender:
+          fragmentedFrameCountMin: 2
+          fragmentedFrameCountMax: 255
+          frameIndexCoverage: 0..FrameCount-1 exactly once
+          emissionOrder: ascending
+          contiguousPerDirection: true
+          invariants:
+            - version
+            - payloadType
+            - sourceId
+            - destinationId
+            - messageId
+            - frameCount
+          over255Disposition: local-reject-before-transmit
+        reassemblyKey:
+          - framedLinkContext
+          - sourceId
+          - destinationId
+          - messageId
+        contextInvariants:
+          - payloadType
+          - frameCount
+          - version
+        receiveOrder: out-of-order-allowed
+        payloadOrder: frameIndex-ascending
+        dispatch: complete-only
+        duplicate:
+          identical: idempotent
+          conflicting: invalidate-context
+          diagnostic: FRAME_FRAGMENT_INVALID
+        messageId:
+          type: uint16
+          zeroReserved: false
+          allocationOwner: runtime
+          activeUniqueness: same-direction-fragmented-message
+          reuseAfter:
+            - completed
+            - invalidated
+            - abandoned
+            - expired
+        missing:
+          trigger: different-message-id-same-direction-before-completion
+          diagnostic: FRAME_FRAGMENT_MISSING
+        timeout:
+          diagnostic: FRAME_REASSEMBLY_TIMEOUT
+          durationOwner: runtime_or_profile
+        resources:
+          bounded: true
+          numericLimitsOwner: runtime_or_profile
+          exhaustionDiagnostic: RESOURCE_EXHAUSTED
+          partialDispatch: false
+      parser:
+        validateBeforeDispatch:
+          - magic
+          - version
+          - payloadType
+          - length
+          - fragmentRange
+          - payloadCompleteness
+          - crc
+        invalidDispatch: false
+        byteStream:
+          scanMagic: true
+          incompleteCandidate: hold-for-more-bytes
+          recoverySearch: after-first-rejected-byte
+          trailingMagicPrefixRetention: true
+        packet:
+          boundaryMayDiscardBadFrame: true
+          boundaryReplacesValidation: false
+        recoveryAggressivenessOwner: runtime_or_profile
+      diagnostics:
+        - FRAME_VERSION_UNSUPPORTED
+        - FRAME_PAYLOAD_TYPE_INVALID
+        - FRAME_LENGTH_INVALID
+        - FRAME_TOO_LARGE
+        - FRAME_CRC_ERROR
+        - FRAME_FRAGMENT_INVALID
+        - FRAME_FRAGMENT_MISSING
+        - FRAME_REASSEMBLY_TIMEOUT
+      heartbeat:
+        activeAfter: FRAMING_READY
+        sender: either-peer
+        ack:
+          opcode: HEARTBEAT_ACK
+          controlId: echo-request
+          statusCode: SUCCESS
+        outstandingControlIdUnique: true
+        allocatorOwner: runtime
+        cadenceSource: effectiveHeartbeatIntervalMs
+        failureDeadlineOwner: runtime_or_profile
+        schedulerOwner: runtime_or_profile
+        reconnectOwner: runtime_or_profile
 transports:
   - name: AXTP-USB-HID
     family: usb-hid

@@ -14,6 +14,7 @@ const manifestPath = path.join(conformanceDir, "manifest.yaml");
 const caseSchemaPath = path.join(conformanceDir, "schemas", "conformance-case.schema.json");
 const resultSchemaPath = path.join(conformanceDir, "schemas", "conformance-result.schema.json");
 const generatedProtocolPath = path.join(root, "contract", "generated", "protocol.json");
+const framingManifestPath = path.join(conformanceDir, "framing", "manifest.yaml");
 const fixturesDir = path.join(conformanceDir, "fixtures", "device_profiles");
 
 const errors = [];
@@ -427,6 +428,10 @@ if (fs.existsSync(fixturesDir)) {
   }
 }
 
+const framingManifest = readYaml(framingManifestPath);
+const externalFrameCases = new Set(framingManifest.required_cases ?? []);
+if (framingManifest.release_required !== true) fail("framing manifest must be release_required before main conformance promotion");
+
 const caseFiles = walkYaml(path.join(conformanceDir, "cases"));
 const casesById = new Map();
 for (const file of caseFiles) {
@@ -469,9 +474,11 @@ for (const [level, value] of Object.entries(manifest.levels ?? {})) {
   for (const id of requiredCases) {
     const caseEntry = casesById.get(id);
     if (!caseEntry) {
+      if (typeof id === "string" && id.startsWith("frame.") && level === "framed-binary" && externalFrameCases.has(id)) continue;
       fail(`manifest level ${level} references missing case: ${id}`);
       continue;
     }
+    if (typeof id === "string" && id.startsWith("frame.") && level !== "framed-binary") fail(`external frame case ${id} is only valid in framed-binary`);
     validateCaseReferences(`manifest required case ${level}/${id}`, caseEntry.value, runtimeRequiredRefs, false);
   }
 }

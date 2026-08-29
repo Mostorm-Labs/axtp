@@ -6,6 +6,7 @@
 
 - [Overview](#overview)
 - [Protocol Framework](#protocol-framework)
+- [Standard Frame Contract](#standard-frame-contract)
 - [Supported Connection Profiles](#supported-connection-profiles)
 - [Design Goals / Non-Goals](#design-goals--non-goals)
 - [Connection Lifecycle](#connection-lifecycle)
@@ -52,6 +53,32 @@ AXTP v1 has two formal integration paths:
 | WebSocket Unframed JSON | AXTP-WS-JSON<br>AXTP-WS-CLOUD-REVERSE | None | `JSON` | No | No |
 
 Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP v1 Core requirement. See `specs/20-core.md` for that path.
+
+## Standard Frame Contract
+
+Standard Frame uses a 12-byte header, payload bytes, and a 2-byte CRC footer (14 bytes fixed overhead).
+
+| Field | Offset | Bytes | Type |
+| ---- | ---: | ---: | :---: |
+| magic | 0 | 2 | bytes |
+| version | 2 | 1 | uint8 |
+| payloadType | 3 | 1 | uint8 |
+| payloadLength | 4 | 2 | uint16 |
+| sourceId | 6 | 1 | uint8 |
+| destinationId | 7 | 1 | uint8 |
+| messageId | 8 | 2 | uint16 |
+| frameIndex | 10 | 1 | uint8 |
+| frameCount | 11 | 1 | uint8 |
+
+- Magic: `0x41 0x58`
+- Header Version: `0x01`
+- CRC: `CRC16-CCITT-FALSE`, coverage `header+payload`, footer excluded, `big-endian` serialization.
+- Effective max frame: `PayloadLength + 14 <= effectiveMaxFrameSize`; ACCEPT override falls back to `OPEN.maxFrameSize`.
+- Effective heartbeat interval: ACCEPT override falls back to `OPEN.heartbeatIntervalMs`.
+- Reassembly key: `(framedLinkContext, sourceId, destinationId, messageId)`; dispatch is `complete-only`.
+- MessageId zero reserved: `false`; allocator owner: `runtime`.
+- Parser invalid dispatch: `false`; recovery aggressiveness owner: `runtime_or_profile`.
+- HEARTBEAT_ACK: controlId=`echo-request`, status=`SUCCESS`; scheduler/failure/reconnect policy remains `runtime_or_profile`.
 
 ## Design Goals / Non-Goals
 
