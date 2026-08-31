@@ -60,6 +60,54 @@ function isMetadataObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function validateRequiredArrayStructure(
+  value: unknown,
+  validationContext: SemanticValidationContext | undefined,
+  path: string,
+  code: string
+): asserts value is unknown[] {
+  if (!Array.isArray(value)) {
+    const message = `invalid semantic source structure at ${path}: expected array`;
+    throwDiagnostic(validationContext, path, "structure", code, message);
+  }
+}
+
+function validateSemanticSourceStructure(
+  source: SemanticSourceModel,
+  validationContext: SemanticValidationContext | undefined
+): void {
+  const rawSource = source as unknown as Record<string, unknown>;
+  validateRequiredArrayStructure(
+    rawSource.valueTypes,
+    validationContext,
+    "/valueTypes",
+    "SEM_STRUCTURE_VALUE_TYPES_ARRAY_REQUIRED"
+  );
+
+  for (let domainIndex = 0; domainIndex < source.domains.length; domainIndex += 1) {
+    const domain = source.domains[domainIndex] as unknown as Record<string, unknown>;
+    const resources = domain.resources;
+    const resourcesPath = `/domains/${domainIndex}/resources`;
+    validateRequiredArrayStructure(
+      resources,
+      validationContext,
+      resourcesPath,
+      "SEM_STRUCTURE_DOMAIN_RESOURCES_ARRAY_REQUIRED"
+    );
+
+    for (let resourceIndex = 0; resourceIndex < resources.length; resourceIndex += 1) {
+      const resource = resources[resourceIndex] as Record<string, unknown>;
+      const fieldsPath = `/domains/${domainIndex}/resources/${resourceIndex}/fields`;
+      validateRequiredArrayStructure(
+        resource.fields,
+        validationContext,
+        fieldsPath,
+        "SEM_STRUCTURE_RESOURCE_FIELDS_ARRAY_REQUIRED"
+      );
+    }
+  }
+}
+
 function validateMetadataObject(value: unknown, context: string): void {
   if (value !== undefined && !isMetadataObject(value)) {
     throw new Error(`invalid ${context}: expected metadata object`);
@@ -158,6 +206,8 @@ export function validateSemanticSource(
   source: SemanticSourceModel,
   validationContext?: SemanticValidationContext
 ): void {
+  validateSemanticSourceStructure(source, validationContext);
+
   if (!SOURCE_MODES.has(source.mode)) {
     const message = `invalid semantic source mode: ${source.mode}`;
     throwDiagnostic(
