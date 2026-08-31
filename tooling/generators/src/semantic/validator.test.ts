@@ -3,9 +3,25 @@ import type {
   FieldShape,
   OperationKind,
   ResourceLifetime,
+  SemanticOperationSource,
+  SemanticResourceSource,
   SemanticSourceModel
 } from "./sourceModel.js";
 import { validateSemanticSource } from "./validator.js";
+
+type ResourceWithIdentity = SemanticResourceSource & {
+  identity?: {
+    fields: string[];
+  };
+};
+
+type OperationWithInputProjection = SemanticOperationSource & {
+  inputProjection?: {
+    selector?: string[];
+    state?: string[];
+    methodLocal?: string[];
+  };
+};
 
 function baseSemanticSource(): SemanticSourceModel {
   return {
@@ -50,6 +66,18 @@ function baseSemanticSource(): SemanticSourceModel {
       }
     ]
   };
+}
+
+function resourceOf(source: SemanticSourceModel): ResourceWithIdentity {
+  return source.domains[0].resources[0] as ResourceWithIdentity;
+}
+
+function operationOf(source: SemanticSourceModel): OperationWithInputProjection {
+  return source.domains[0].operations[0] as OperationWithInputProjection;
+}
+
+function addValidIdentity(source: SemanticSourceModel): void {
+  resourceOf(source).identity = { fields: ["enabled"] };
 }
 
 describe("validateSemanticSource", () => {
@@ -159,5 +187,68 @@ describe("validateSemanticSource", () => {
     source.domains[0].operations[0].mode = undefined;
 
     expect(() => validateSemanticSource(source)).toThrow(/operation mode|lifecycle/i);
+  });
+
+  it("rejects a malformed resource identity field path", () => {
+    const source = baseSemanticSource();
+    resourceOf(source).identity = { fields: [""] };
+
+    expect(() => validateSemanticSource(source)).toThrow(/resource identity|identity/i);
+  });
+
+  it("rejects a resource identity that references a missing resource field", () => {
+    const source = baseSemanticSource();
+    resourceOf(source).identity = { fields: ["missing"] };
+
+    expect(() => validateSemanticSource(source)).toThrow(/identity.*field|field.*identity|resource identity/i);
+  });
+
+  it("rejects a selector projection that references a missing resource field", () => {
+    const source = baseSemanticSource();
+    addValidIdentity(source);
+    operationOf(source).inputProjection = { selector: ["missing"] };
+
+    expect(() => validateSemanticSource(source)).toThrow(/selector|projection|field/i);
+  });
+
+  it("rejects a state projection that references a missing resource field", () => {
+    const source = baseSemanticSource();
+    addValidIdentity(source);
+    operationOf(source).inputProjection = { state: ["missing"] };
+
+    expect(() => validateSemanticSource(source)).toThrow(/state|projection|field/i);
+  });
+
+  it("rejects selector and state category collision", () => {
+    const source = baseSemanticSource();
+    addValidIdentity(source);
+    operationOf(source).inputProjection = {
+      selector: ["enabled"],
+      state: ["enabled"]
+    };
+
+    expect(() => validateSemanticSource(source)).toThrow(/collision|selector|state/i);
+  });
+
+  it("rejects selector and method-local category collision", () => {
+    const source = baseSemanticSource();
+    addValidIdentity(source);
+    operationOf(source).inputProjection = {
+      selector: ["enabled"],
+      methodLocal: ["enabled"]
+    };
+
+    expect(() => validateSemanticSource(source)).toThrow(/collision|selector|method-local|methodLocal/i);
+  });
+
+  it("rejects state and method-local category collision", () => {
+    const source = baseSemanticSource();
+    addValidIdentity(source);
+    operationOf(source).inputProjection = {
+      state: ["enabled"],
+      methodLocal: ["enabled"]
+    };
+
+    expect(() => validateSemanticSource(source)).toThrow(/collision|state|method-local|methodLocal/i);
   });
 });
