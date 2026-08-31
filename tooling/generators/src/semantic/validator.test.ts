@@ -115,4 +115,49 @@ describe("validateSemanticSource", () => {
 
     expect(() => validateSemanticSource(source)).toThrow(/operation mode|query/i);
   });
+
+  it("rejects an unknown semantic source mode", () => {
+    const source = baseSemanticSource();
+    source.mode = "LEGACY_FIRST" as SemanticSourceModel["mode"];
+
+    expect(() => validateSemanticSource(source)).toThrow(/source mode|semantic mode|mode/i);
+  });
+
+  it("rejects an operation that references a missing resource", () => {
+    const source = baseSemanticSource();
+    source.domains[0].operations[0].resource = "network.missing";
+
+    expect(() => validateSemanticSource(source)).toThrow(/resource/i);
+  });
+
+  it("rejects a mode on an action", () => {
+    const source = baseSemanticSource();
+    source.domains[0].operations[0].kind = "ACTION";
+    source.domains[0].operations[0].mode = "PATCH";
+
+    expect(() => validateSemanticSource(source)).toThrow(/operation mode|action/i);
+  });
+
+  it("rejects a mutation mode on a lifecycle operation", () => {
+    const source = baseSemanticSource();
+    source.domains[0].operations[0].kind = "LIFECYCLE";
+    source.domains[0].operations[0].mode = "PATCH";
+
+    expect(() => validateSemanticSource(source)).toThrow(/operation mode|lifecycle/i);
+  });
+
+  it("requires a mode for mutation operations", () => {
+    const source = baseSemanticSource();
+    source.domains[0].operations[0].mode = undefined;
+
+    expect(() => validateSemanticSource(source)).toThrow(/operation mode|mutation/i);
+  });
+
+  it("requires a mode for lifecycle operations", () => {
+    const source = baseSemanticSource();
+    source.domains[0].operations[0].kind = "LIFECYCLE";
+    source.domains[0].operations[0].mode = undefined;
+
+    expect(() => validateSemanticSource(source)).toThrow(/operation mode|lifecycle/i);
+  });
 });
