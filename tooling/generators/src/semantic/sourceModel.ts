@@ -36,10 +36,21 @@ export interface SemanticFieldSource {
   required?: boolean;
 }
 
+export interface SemanticResourceIdentitySource {
+  fields: string[];
+}
+
 export interface SemanticResourceSource {
   name: string;
   lifetime: ResourceLifetime;
+  identity?: SemanticResourceIdentitySource;
   fields: SemanticFieldSource[];
+}
+
+export interface SemanticOperationInputProjectionSource {
+  selector?: string[];
+  state?: string[];
+  methodLocal?: string[];
 }
 
 export interface SemanticOperationSource {
@@ -47,6 +58,7 @@ export interface SemanticOperationSource {
   resource: string;
   kind: OperationKind;
   mode?: MutationMode | LifecycleMode;
+  inputProjection?: SemanticOperationInputProjectionSource;
 }
 
 export interface SemanticFeatureSource {
