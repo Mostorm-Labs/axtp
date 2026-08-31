@@ -1,5 +1,17 @@
 import type { SemanticSourceModel } from "./sourceModel.js";
 
+export interface SemanticDiagnostic {
+  file: string;
+  path: string;
+  category: string;
+  code: string;
+  message: string;
+}
+
+export interface SemanticValidationContext {
+  file: string;
+}
+
 const SOURCE_MODES = new Set(["BOUND_EXISTING", "SEMANTIC_FIRST"]);
 const RESOURCE_LIFETIMES = new Set(["persistent", "session", "ephemeral"]);
 const FIELD_SHAPES = new Set([
@@ -24,6 +36,25 @@ const LIFECYCLE_MODES = new Set([
   "RECONFIGURE",
   "ABORT"
 ]);
+
+function throwDiagnostic(
+  validationContext: SemanticValidationContext | undefined,
+  path: string,
+  category: string,
+  code: string,
+  message: string
+): never {
+  const diagnostic: SemanticDiagnostic = {
+    file: validationContext?.file ?? "",
+    path,
+    category,
+    code,
+    message
+  };
+  const error = new Error(message) as Error & { diagnostic: SemanticDiagnostic };
+  error.diagnostic = diagnostic;
+  throw error;
+}
 
 function isMetadataObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -103,21 +134,39 @@ function rejectProjectionCollision(
   leftCategory: string,
   leftValues: string[],
   rightCategory: string,
-  rightValues: string[]
+  rightValues: string[],
+  validationContext: SemanticValidationContext | undefined,
+  path: string
 ): void {
   const left = new Set(leftValues);
   for (const value of rightValues) {
     if (left.has(value)) {
-      throw new Error(
-        `projection category collision for operation ${operationName}: ${value} appears in ${leftCategory} and ${rightCategory}`
+      const message =
+        `projection category collision for operation ${operationName}: ${value} appears in ${leftCategory} and ${rightCategory}`;
+      throwDiagnostic(
+        validationContext,
+        path,
+        "projection",
+        "SEM_PROJECTION_CATEGORY_COLLISION",
+        message
       );
     }
   }
 }
 
-export function validateSemanticSource(source: SemanticSourceModel): void {
+export function validateSemanticSource(
+  source: SemanticSourceModel,
+  validationContext?: SemanticValidationContext
+): void {
   if (!SOURCE_MODES.has(source.mode)) {
-    throw new Error(`invalid semantic source mode: ${source.mode}`);
+    const message = `invalid semantic source mode: ${source.mode}`;
+    throwDiagnostic(
+      validationContext,
+      "/mode",
+      "source",
+      "SEM_SOURCE_MODE_INVALID",
+      message
+    );
   }
 
   const valueTypes = new Set(source.valueTypes.map((valueType) => valueType.name));
@@ -131,8 +180,12 @@ export function validateSemanticSource(source: SemanticSourceModel): void {
   const resourceIdentities = new Set<string>();
   const fieldsByResource = new Map<string, Set<string>>();
 
-  for (const domain of source.domains) {
-    for (const resource of domain.resources) {
+  for (let domainIndex = 0; domainIndex < source.domains.length; domainIndex += 1) {
+    const domain = source.domains[domainIndex];
+
+    for (let resourceIndex = 0; resourceIndex < domain.resources.length; resourceIndex += 1) {
+      const resource = domain.resources[resourceIndex];
+
       if (!RESOURCE_LIFETIMES.has(resource.lifetime)) {
         throw new Error(`invalid resource lifetime: ${resource.lifetime}`);
       }
@@ -143,17 +196,36 @@ export function validateSemanticSource(source: SemanticSourceModel): void {
       resourceIdentities.add(resource.name);
 
       const fieldIdentities = new Set<string>();
-      for (const field of resource.fields) {
+      for (let fieldIndex = 0; fieldIndex < resource.fields.length; fieldIndex += 1) {
+        const field = resource.fields[fieldIndex];
+
         if (fieldIdentities.has(field.name)) {
           throw new Error(`duplicate field identity in ${resource.name}: ${field.name}`);
         }
         fieldIdentities.add(field.name);
 
         if (!valueTypes.has(field.valueType)) {
-          throw new Error(`unknown valueType ${field.valueType} for ${resource.name}.${field.name}`);
+          const message = `unknown valueType ${field.valueType} for ${resource.name}.${field.name}`;
+          throwDiagnostic(
+            validationContext,
+            `/domains/${domainIndex}/resources/${resourceIndex}/fields/${fieldIndex}/valueType`,
+            "field",
+            "SEM_FIELD_VALUE_TYPE_UNKNOWN",
+            message
+          );
         }
 
-        validateMetadataObject(field.constraints, `constraints for ${resource.name}.${field.name}`);
+        if (field.constraints !== undefined && !isMetadataObject(field.constraints)) {
+          const message =
+            `invalid constraints for ${resource.name}.${field.name}: expected metadata object`;
+          throwDiagnostic(
+            validationContext,
+            `/domains/${domainIndex}/resources/${resourceIndex}/fields/${fieldIndex}/constraints`,
+            "field",
+            "SEM_FIELD_CONSTRAINTS_INVALID",
+            message
+          );
+        }
         validateOptionalNonBlankString(field.unit, `unit for ${resource.name}.${field.name}`);
         validateMetadataObject(
           field.defaultSemantics,
@@ -192,15 +264,26 @@ export function validateSemanticSource(source: SemanticSourceModel): void {
     }
   }
 
-  for (const domain of source.domains) {
-    for (const operation of domain.operations) {
+  for (let domainIndex = 0; domainIndex < source.domains.length; domainIndex += 1) {
+    const domain = source.domains[domainIndex];
+
+    for (let operationIndex = 0; operationIndex < domain.operations.length; operationIndex += 1) {
+      const operation = domain.operations[operationIndex];
+
       if (!OPERATION_KINDS.has(operation.kind)) {
         throw new Error(`invalid operation kind: ${operation.kind}`);
       }
 
       const resourceFields = fieldsByResource.get(operation.resource);
       if (resourceFields === undefined) {
-        throw new Error(`missing resource ${operation.resource} for operation ${operation.name}`);
+        const message = `missing resource ${operation.resource} for operation ${operation.name}`;
+        throwDiagnostic(
+          validationContext,
+          `/domains/${domainIndex}/operations/${operationIndex}/resource`,
+          "operation",
+          "SEM_OPERATION_RESOURCE_MISSING",
+          message
+        );
       }
 
       if (operation.kind === "MUTATION") {
@@ -226,6 +309,7 @@ export function validateSemanticSource(source: SemanticSourceModel): void {
       const selector = operation.inputProjection?.selector ?? [];
       const state = operation.inputProjection?.state ?? [];
       const methodLocal = operation.inputProjection?.methodLocal ?? [];
+      const projectionPath = `/domains/${domainIndex}/operations/${operationIndex}/inputProjection`;
 
       for (const selectorField of selector) {
         validateResourceFieldReference(
@@ -243,9 +327,33 @@ export function validateSemanticSource(source: SemanticSourceModel): void {
         );
       }
 
-      rejectProjectionCollision(operation.name, "selector", selector, "state", state);
-      rejectProjectionCollision(operation.name, "selector", selector, "methodLocal", methodLocal);
-      rejectProjectionCollision(operation.name, "state", state, "methodLocal", methodLocal);
+      rejectProjectionCollision(
+        operation.name,
+        "selector",
+        selector,
+        "state",
+        state,
+        validationContext,
+        projectionPath
+      );
+      rejectProjectionCollision(
+        operation.name,
+        "selector",
+        selector,
+        "methodLocal",
+        methodLocal,
+        validationContext,
+        projectionPath
+      );
+      rejectProjectionCollision(
+        operation.name,
+        "state",
+        state,
+        "methodLocal",
+        methodLocal,
+        validationContext,
+        projectionPath
+      );
     }
   }
 }
