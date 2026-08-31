@@ -1,0 +1,26 @@
+version: "0.1"
+mode: BOUND_EXISTING
+valueTypes:
+  - name: BooleanValue
+    shape: BOOL
+domains:
+  - name: network
+    features:
+      - name: network.ipConfig
+        resources:
+          - network.ipConfig
+        operations:
+          - network.setIpConfig
+    resources:
+      - name: network.ipConfig
+        lifetime: persistent
+        fields:
+          - name: enabled
+            valueType: BooleanValue
+            readable: true
+            writable: true
+    operations:
+      - name: network.setIpConfig
+        resource: network.ipConfig
+        kind: MUTATION
+        mode: PATCH

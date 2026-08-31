@@ -1,0 +1,8 @@
+version: "0.1"
+mode: BOUND_EXISTING
+valueTypes: []
+domains:
+  - name: network
+    features: []
+    resources: {}
+    operations: []
