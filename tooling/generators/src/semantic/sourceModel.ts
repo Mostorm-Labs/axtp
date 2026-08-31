@@ -24,6 +24,8 @@ export type LifecycleMode =
   | "RECONFIGURE"
   | "ABORT";
 
+export type SemanticMetadataSource = Record<string, unknown>;
+
 export interface SemanticValueTypeSource {
   name: string;
   shape: FieldShape;
@@ -34,9 +36,25 @@ export interface SemanticFieldSource {
   name: string;
   valueType: string;
   required?: boolean;
+  constraints?: SemanticMetadataSource;
+  unit?: string;
+  defaultSemantics?: SemanticMetadataSource;
+  emptySemantics?: SemanticMetadataSource;
+  readable?: boolean;
+  writable?: boolean;
+  version?: string;
+  compatibility?: SemanticMetadataSource;
 }
 
 export interface SemanticResourceIdentitySource {
+  fields: string[];
+}
+
+export interface SemanticResourceReadModelSource {
+  fields: string[];
+}
+
+export interface SemanticResourceDerivedStateSource {
   fields: string[];
 }
 
@@ -44,6 +62,9 @@ export interface SemanticResourceSource {
   name: string;
   lifetime: ResourceLifetime;
   identity?: SemanticResourceIdentitySource;
+  invariants?: string[];
+  readModel?: SemanticResourceReadModelSource;
+  derivedState?: SemanticResourceDerivedStateSource;
   fields: SemanticFieldSource[];
 }
 

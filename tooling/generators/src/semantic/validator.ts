@@ -25,6 +25,28 @@ const LIFECYCLE_MODES = new Set([
   "ABORT"
 ]);
 
+function isMetadataObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validateMetadataObject(value: unknown, context: string): void {
+  if (value !== undefined && !isMetadataObject(value)) {
+    throw new Error(`invalid ${context}: expected metadata object`);
+  }
+}
+
+function validateOptionalNonBlankString(value: unknown, context: string): void {
+  if (value !== undefined && (typeof value !== "string" || value.trim().length === 0)) {
+    throw new Error(`invalid ${context}: expected non-empty string`);
+  }
+}
+
+function validateOptionalBoolean(value: unknown, context: string): void {
+  if (value !== undefined && typeof value !== "boolean") {
+    throw new Error(`invalid ${context}: expected boolean`);
+  }
+}
+
 function validateResourceFieldReference(
   fieldPath: string,
   resourceFields: Set<string>,
@@ -36,6 +58,43 @@ function validateResourceFieldReference(
 
   if (!resourceFields.has(fieldPath)) {
     throw new Error(`${context} references missing resource field: ${fieldPath}`);
+  }
+}
+
+function validateResourceFieldView(
+  view: unknown,
+  resourceFields: Set<string>,
+  context: string
+): void {
+  if (view === undefined) {
+    return;
+  }
+
+  if (!isMetadataObject(view) || !Array.isArray(view.fields)) {
+    throw new Error(`invalid ${context}: expected fields array`);
+  }
+
+  for (const fieldPath of view.fields) {
+    if (typeof fieldPath !== "string") {
+      throw new Error(`invalid ${context}: field reference must be a string`);
+    }
+    validateResourceFieldReference(fieldPath, resourceFields, context);
+  }
+}
+
+function validateResourceInvariants(value: unknown, resourceName: string): void {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!Array.isArray(value)) {
+    throw new Error(`invalid invariant list for resource ${resourceName}`);
+  }
+
+  for (const invariant of value) {
+    if (typeof invariant !== "string" || invariant.trim().length === 0) {
+      throw new Error(`invalid invariant for resource ${resourceName}: expected non-empty string`);
+    }
   }
 }
 
@@ -93,6 +152,24 @@ export function validateSemanticSource(source: SemanticSourceModel): void {
         if (!valueTypes.has(field.valueType)) {
           throw new Error(`unknown valueType ${field.valueType} for ${resource.name}.${field.name}`);
         }
+
+        validateMetadataObject(field.constraints, `constraints for ${resource.name}.${field.name}`);
+        validateOptionalNonBlankString(field.unit, `unit for ${resource.name}.${field.name}`);
+        validateMetadataObject(
+          field.defaultSemantics,
+          `default semantics for ${resource.name}.${field.name}`
+        );
+        validateMetadataObject(
+          field.emptySemantics,
+          `empty semantics for ${resource.name}.${field.name}`
+        );
+        validateOptionalBoolean(field.readable, `readable for ${resource.name}.${field.name}`);
+        validateOptionalBoolean(field.writable, `writable for ${resource.name}.${field.name}`);
+        validateOptionalNonBlankString(field.version, `version for ${resource.name}.${field.name}`);
+        validateMetadataObject(
+          field.compatibility,
+          `compatibility for ${resource.name}.${field.name}`
+        );
       }
 
       fieldsByResource.set(resource.name, fieldIdentities);
@@ -104,6 +181,14 @@ export function validateSemanticSource(source: SemanticSourceModel): void {
           `resource identity for ${resource.name}`
         );
       }
+
+      validateResourceInvariants(resource.invariants, resource.name);
+      validateResourceFieldView(resource.readModel, fieldIdentities, `read model for ${resource.name}`);
+      validateResourceFieldView(
+        resource.derivedState,
+        fieldIdentities,
+        `derived state for ${resource.name}`
+      );
     }
   }
 
