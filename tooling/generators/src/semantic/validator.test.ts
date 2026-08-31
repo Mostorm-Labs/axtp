@@ -3,16 +3,20 @@ import type {
   FieldShape,
   OperationKind,
   ResourceLifetime,
+  SemanticFieldSource,
   SemanticOperationSource,
   SemanticResourceSource,
   SemanticSourceModel
 } from "./sourceModel.js";
 import { validateSemanticSource } from "./validator.js";
 
-type ResourceWithIdentity = SemanticResourceSource & {
+type ResourceWithMetadata = SemanticResourceSource & {
   identity?: {
     fields: string[];
   };
+  invariants?: unknown;
+  readModel?: unknown;
+  derivedState?: unknown;
 };
 
 type OperationWithInputProjection = SemanticOperationSource & {
@@ -21,6 +25,17 @@ type OperationWithInputProjection = SemanticOperationSource & {
     state?: string[];
     methodLocal?: string[];
   };
+};
+
+type FieldWithMetadata = SemanticFieldSource & {
+  constraints?: unknown;
+  unit?: unknown;
+  defaultSemantics?: unknown;
+  emptySemantics?: unknown;
+  readable?: unknown;
+  writable?: unknown;
+  version?: unknown;
+  compatibility?: unknown;
 };
 
 function baseSemanticSource(): SemanticSourceModel {
@@ -68,12 +83,16 @@ function baseSemanticSource(): SemanticSourceModel {
   };
 }
 
-function resourceOf(source: SemanticSourceModel): ResourceWithIdentity {
-  return source.domains[0].resources[0] as ResourceWithIdentity;
+function resourceOf(source: SemanticSourceModel): ResourceWithMetadata {
+  return source.domains[0].resources[0] as ResourceWithMetadata;
 }
 
 function operationOf(source: SemanticSourceModel): OperationWithInputProjection {
   return source.domains[0].operations[0] as OperationWithInputProjection;
+}
+
+function fieldOf(source: SemanticSourceModel, index = 0): FieldWithMetadata {
+  return source.domains[0].resources[0].fields[index] as FieldWithMetadata;
 }
 
 function addValidIdentity(source: SemanticSourceModel): void {
@@ -250,5 +269,115 @@ describe("validateSemanticSource", () => {
     };
 
     expect(() => validateSemanticSource(source)).toThrow(/collision|state|method-local|methodLocal/i);
+  });
+
+  it("accepts structurally valid resource and field metadata", () => {
+    const source = baseSemanticSource();
+    source.valueTypes.push({
+      name: "Percentage",
+      shape: "NUMBER"
+    });
+    resourceOf(source).fields.push(
+      {
+        name: "gain",
+        valueType: "Percentage"
+      },
+      {
+        name: "effectiveGain",
+        valueType: "Percentage"
+      }
+    );
+    resourceOf(source).invariants = ["gain metadata is source-defined"];
+    resourceOf(source).readModel = { fields: ["gain"] };
+    resourceOf(source).derivedState = { fields: ["effectiveGain"] };
+
+    const gain = fieldOf(source, 1);
+    gain.constraints = { minimum: 0, maximum: 100 };
+    gain.unit = "percent";
+    gain.defaultSemantics = { policy: "source-defined" };
+    gain.emptySemantics = { policy: "source-defined" };
+    gain.readable = true;
+    gain.writable = true;
+    gain.version = "0.1";
+    gain.compatibility = { policy: "source-defined" };
+
+    expect(() => validateSemanticSource(source)).not.toThrow();
+  });
+
+  it("rejects a blank resource invariant", () => {
+    const source = baseSemanticSource();
+    resourceOf(source).invariants = ["   "];
+
+    expect(() => validateSemanticSource(source)).toThrow(/invariant/i);
+  });
+
+  it("rejects a read model that references a missing resource field", () => {
+    const source = baseSemanticSource();
+    resourceOf(source).readModel = { fields: ["missing"] };
+
+    expect(() => validateSemanticSource(source)).toThrow(/read model|readModel|field/i);
+  });
+
+  it("rejects derived state that references a missing resource field", () => {
+    const source = baseSemanticSource();
+    resourceOf(source).derivedState = { fields: ["missing"] };
+
+    expect(() => validateSemanticSource(source)).toThrow(/derived state|derivedState|field/i);
+  });
+
+  it("rejects non-object field constraints metadata", () => {
+    const source = baseSemanticSource();
+    fieldOf(source).constraints = 42;
+
+    expect(() => validateSemanticSource(source)).toThrow(/constraint/i);
+  });
+
+  it("rejects a blank field unit", () => {
+    const source = baseSemanticSource();
+    fieldOf(source).unit = "   ";
+
+    expect(() => validateSemanticSource(source)).toThrow(/unit/i);
+  });
+
+  it("rejects non-object default semantics metadata", () => {
+    const source = baseSemanticSource();
+    fieldOf(source).defaultSemantics = "literal";
+
+    expect(() => validateSemanticSource(source)).toThrow(/default.*semantic|semantic.*default/i);
+  });
+
+  it("rejects non-object empty semantics metadata", () => {
+    const source = baseSemanticSource();
+    fieldOf(source).emptySemantics = null;
+
+    expect(() => validateSemanticSource(source)).toThrow(/empty.*semantic|semantic.*empty/i);
+  });
+
+  it("rejects a non-boolean readable flag", () => {
+    const source = baseSemanticSource();
+    fieldOf(source).readable = "yes";
+
+    expect(() => validateSemanticSource(source)).toThrow(/readable/i);
+  });
+
+  it("rejects a non-boolean writable flag", () => {
+    const source = baseSemanticSource();
+    fieldOf(source).writable = 1;
+
+    expect(() => validateSemanticSource(source)).toThrow(/writable/i);
+  });
+
+  it("rejects a blank field version", () => {
+    const source = baseSemanticSource();
+    fieldOf(source).version = "";
+
+    expect(() => validateSemanticSource(source)).toThrow(/version/i);
+  });
+
+  it("rejects non-object field compatibility metadata", () => {
+    const source = baseSemanticSource();
+    fieldOf(source).compatibility = "backward";
+
+    expect(() => validateSemanticSource(source)).toThrow(/compatibility/i);
   });
 });
