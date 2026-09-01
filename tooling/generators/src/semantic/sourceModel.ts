@@ -74,12 +74,44 @@ export interface SemanticOperationInputProjectionSource {
   methodLocal?: string[];
 }
 
+export interface SemanticOperationOutputProjectionSource {
+  state?: string[];
+}
+
 export interface SemanticOperationSource {
   name: string;
   resource: string;
   kind: OperationKind;
   mode?: MutationMode | LifecycleMode;
   inputProjection?: SemanticOperationInputProjectionSource;
+  outputProjection?: SemanticOperationOutputProjectionSource;
+}
+
+export interface SemanticProtocolFieldBindingSource {
+  semanticField: string;
+  protocolField: string;
+}
+
+export interface SemanticProtocolMethodLocalBindingSource {
+  methodLocal: string;
+  protocolField: string;
+}
+
+export interface SemanticProtocolOperationBindingSource {
+  operation: string;
+  method: string;
+  request?: {
+    selector?: SemanticProtocolFieldBindingSource[];
+    state?: SemanticProtocolFieldBindingSource[];
+    methodLocal?: SemanticProtocolMethodLocalBindingSource[];
+  };
+  response?: {
+    state?: SemanticProtocolFieldBindingSource[];
+  };
+}
+
+export interface SemanticProtocolBindingsSource {
+  operations: SemanticProtocolOperationBindingSource[];
 }
 
 export interface SemanticFeatureSource {
@@ -100,4 +132,5 @@ export interface SemanticSourceModel {
   mode: SemanticSourceMode;
   valueTypes: SemanticValueTypeSource[];
   domains: SemanticDomainSource[];
+  protocolBindings?: SemanticProtocolBindingsSource;
 }

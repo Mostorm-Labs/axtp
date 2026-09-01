@@ -51,13 +51,46 @@ export interface ResolvedSemanticOperationInputProjection {
   methodLocal: string[];
 }
 
+export interface ResolvedSemanticOperationOutputProjection {
+  state: ResolvedSemanticField[];
+}
+
 export interface ResolvedSemanticOperation {
   name: string;
   resource: ResolvedSemanticResource;
   kind: OperationKind;
   mode?: MutationMode | LifecycleMode;
   inputProjection?: ResolvedSemanticOperationInputProjection;
+  outputProjection?: ResolvedSemanticOperationOutputProjection;
   provenance: SemanticProvenance;
+}
+
+export interface ResolvedSemanticProtocolFieldBinding {
+  semanticField: ResolvedSemanticField;
+  protocolField: string;
+}
+
+export interface ResolvedSemanticProtocolMethodLocalBinding {
+  methodLocal: string;
+  protocolField: string;
+}
+
+export interface ResolvedSemanticProtocolOperationBinding {
+  operation: ResolvedSemanticOperation;
+  method: string;
+  request: {
+    selector: ResolvedSemanticProtocolFieldBinding[];
+    state: ResolvedSemanticProtocolFieldBinding[];
+    methodLocal: ResolvedSemanticProtocolMethodLocalBinding[];
+  };
+  response: {
+    state: ResolvedSemanticProtocolFieldBinding[];
+  };
+  provenance: SemanticProvenance;
+}
+
+export interface ResolvedSemanticProtocolBindings {
+  operations: ResolvedSemanticProtocolOperationBinding[];
 }
 
 export interface ResolvedSemanticFeature {
@@ -80,6 +113,7 @@ export interface ResolvedSemanticSource {
   mode: SemanticSourceMode;
   valueTypes: ResolvedSemanticValueType[];
   domains: ResolvedSemanticDomain[];
+  protocolBindings?: ResolvedSemanticProtocolBindings;
   provenance: SemanticProvenance;
 }
 
