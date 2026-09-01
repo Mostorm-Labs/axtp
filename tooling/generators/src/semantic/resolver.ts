@@ -4,11 +4,13 @@ import type {
   ResolvedSemanticField,
   ResolvedSemanticIR,
   ResolvedSemanticOperation,
+  ResolvedSemanticProtocolBindings,
   ResolvedSemanticResource,
   ResolvedSemanticSource,
   ResolvedSemanticValueType,
   SemanticProvenance
 } from "./resolvedModel.js";
+import type { SemanticProtocolBindingsSource } from "./sourceModel.js";
 import { validateSemanticSource } from "./validator.js";
 
 function compareLoadedSources(left: LoadedSemanticSource, right: LoadedSemanticSource): number {
@@ -66,6 +68,59 @@ function assertGlobalIdentityUniqueness(sources: LoadedSemanticSource[]): void {
       }
     }
   }
+}
+
+function resolveProtocolBindings(
+  bindings: SemanticProtocolBindingsSource | undefined,
+  operationsByName: Map<string, ResolvedSemanticOperation>,
+  sourceProvenance: SemanticProvenance
+): ResolvedSemanticProtocolBindings | undefined {
+  if (bindings === undefined) {
+    return undefined;
+  }
+
+  return {
+    operations: bindings.operations.map((binding) => {
+      const operation = operationsByName.get(binding.operation);
+      if (operation === undefined) {
+        throw new Error(`unresolved semantic operation for protocol binding: ${binding.operation}`);
+      }
+      const fieldsByName = new Map(operation.resource.fields.map((field) => [field.name, field]));
+      const resolveBindingField = (fieldName: string, context: string): ResolvedSemanticField => {
+        const field = fieldsByName.get(fieldName);
+        if (field === undefined) {
+          throw new Error(`unresolved ${context} semantic field: ${fieldName}`);
+        }
+        return field;
+      };
+
+      return {
+        operation,
+        method: binding.method,
+        request: {
+          selector: (binding.request?.selector ?? []).map((item) => ({
+            semanticField: resolveBindingField(item.semanticField, "request selector binding"),
+            protocolField: item.protocolField
+          })),
+          state: (binding.request?.state ?? []).map((item) => ({
+            semanticField: resolveBindingField(item.semanticField, "request state binding"),
+            protocolField: item.protocolField
+          })),
+          methodLocal: (binding.request?.methodLocal ?? []).map((item) => ({
+            methodLocal: item.methodLocal,
+            protocolField: item.protocolField
+          }))
+        },
+        response: {
+          state: (binding.response?.state ?? []).map((item) => ({
+            semanticField: resolveBindingField(item.semanticField, "response state binding"),
+            protocolField: item.protocolField
+          }))
+        },
+        provenance: sourceProvenance
+      };
+    })
+  };
 }
 
 function resolveSource(loaded: LoadedSemanticSource): ResolvedSemanticSource {
@@ -160,6 +215,15 @@ function resolveSource(loaded: LoadedSemanticSource): ResolvedSemanticSource {
             ),
             methodLocal: [...(operation.inputProjection.methodLocal ?? [])]
           };
+      const outputProjection = operation.outputProjection === undefined
+        ? undefined
+        : {
+            state: resolveFields(
+              operation.outputProjection.state ?? [],
+              fieldsByName,
+              `output projection for operation ${operation.name}`
+            )
+          };
 
       const resolvedOperation: ResolvedSemanticOperation = {
         name: operation.name,
@@ -167,6 +231,7 @@ function resolveSource(loaded: LoadedSemanticSource): ResolvedSemanticSource {
         kind: operation.kind,
         mode: operation.mode,
         inputProjection,
+        outputProjection,
         provenance: sourceProvenance
       };
       operationsByName.set(resolvedOperation.name, resolvedOperation);
@@ -206,6 +271,11 @@ function resolveSource(loaded: LoadedSemanticSource): ResolvedSemanticSource {
     mode: loaded.source.mode,
     valueTypes,
     domains,
+    protocolBindings: resolveProtocolBindings(
+      loaded.source.protocolBindings,
+      operationsByName,
+      sourceProvenance
+    ),
     provenance: sourceProvenance
   };
 }
