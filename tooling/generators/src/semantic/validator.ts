@@ -60,6 +60,18 @@ function isMetadataObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function validateRequiredObjectStructure(
+  value: unknown,
+  validationContext: SemanticValidationContext | undefined,
+  path: string,
+  code: string
+): asserts value is Record<string, unknown> {
+  if (!isMetadataObject(value)) {
+    const message = `invalid semantic source structure at ${path}: expected object`;
+    throwDiagnostic(validationContext, path, "structure", code, message);
+  }
+}
+
 function validateRequiredArrayStructure(
   value: unknown,
   validationContext: SemanticValidationContext | undefined,
@@ -76,18 +88,51 @@ function validateSemanticSourceStructure(
   source: SemanticSourceModel,
   validationContext: SemanticValidationContext | undefined
 ): void {
+  validateRequiredObjectStructure(
+    source as unknown,
+    validationContext,
+    "/",
+    "SEM_STRUCTURE_ROOT_OBJECT_REQUIRED"
+  );
+
   const rawSource = source as unknown as Record<string, unknown>;
+  const valueTypes = rawSource.valueTypes;
   validateRequiredArrayStructure(
-    rawSource.valueTypes,
+    valueTypes,
     validationContext,
     "/valueTypes",
     "SEM_STRUCTURE_VALUE_TYPES_ARRAY_REQUIRED"
   );
 
-  for (let domainIndex = 0; domainIndex < source.domains.length; domainIndex += 1) {
-    const domain = source.domains[domainIndex] as unknown as Record<string, unknown>;
+  for (let valueTypeIndex = 0; valueTypeIndex < valueTypes.length; valueTypeIndex += 1) {
+    validateRequiredObjectStructure(
+      valueTypes[valueTypeIndex],
+      validationContext,
+      `/valueTypes/${valueTypeIndex}`,
+      "SEM_STRUCTURE_VALUE_TYPE_OBJECT_REQUIRED"
+    );
+  }
+
+  const domains = rawSource.domains;
+  validateRequiredArrayStructure(
+    domains,
+    validationContext,
+    "/domains",
+    "SEM_STRUCTURE_DOMAINS_ARRAY_REQUIRED"
+  );
+
+  for (let domainIndex = 0; domainIndex < domains.length; domainIndex += 1) {
+    const domainPath = `/domains/${domainIndex}`;
+    const domain = domains[domainIndex];
+    validateRequiredObjectStructure(
+      domain,
+      validationContext,
+      domainPath,
+      "SEM_STRUCTURE_DOMAIN_OBJECT_REQUIRED"
+    );
+
     const resources = domain.resources;
-    const resourcesPath = `/domains/${domainIndex}/resources`;
+    const resourcesPath = `${domainPath}/resources`;
     validateRequiredArrayStructure(
       resources,
       validationContext,
@@ -96,13 +141,49 @@ function validateSemanticSourceStructure(
     );
 
     for (let resourceIndex = 0; resourceIndex < resources.length; resourceIndex += 1) {
-      const resource = resources[resourceIndex] as Record<string, unknown>;
-      const fieldsPath = `/domains/${domainIndex}/resources/${resourceIndex}/fields`;
+      const resourcePath = `${resourcesPath}/${resourceIndex}`;
+      const resource = resources[resourceIndex];
+      validateRequiredObjectStructure(
+        resource,
+        validationContext,
+        resourcePath,
+        "SEM_STRUCTURE_RESOURCE_OBJECT_REQUIRED"
+      );
+
+      const fields = resource.fields;
+      const fieldsPath = `${resourcePath}/fields`;
       validateRequiredArrayStructure(
-        resource.fields,
+        fields,
         validationContext,
         fieldsPath,
         "SEM_STRUCTURE_RESOURCE_FIELDS_ARRAY_REQUIRED"
+      );
+
+      for (let fieldIndex = 0; fieldIndex < fields.length; fieldIndex += 1) {
+        validateRequiredObjectStructure(
+          fields[fieldIndex],
+          validationContext,
+          `${fieldsPath}/${fieldIndex}`,
+          "SEM_STRUCTURE_FIELD_OBJECT_REQUIRED"
+        );
+      }
+    }
+
+    const operations = domain.operations;
+    const operationsPath = `${domainPath}/operations`;
+    validateRequiredArrayStructure(
+      operations,
+      validationContext,
+      operationsPath,
+      "SEM_STRUCTURE_DOMAIN_OPERATIONS_ARRAY_REQUIRED"
+    );
+
+    for (let operationIndex = 0; operationIndex < operations.length; operationIndex += 1) {
+      validateRequiredObjectStructure(
+        operations[operationIndex],
+        validationContext,
+        `${operationsPath}/${operationIndex}`,
+        "SEM_STRUCTURE_OPERATION_OBJECT_REQUIRED"
       );
     }
   }
