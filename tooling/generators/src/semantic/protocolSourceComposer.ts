@@ -9,8 +9,11 @@ export interface EffectiveProtocolSourceModel extends ProtocolSourceModel {
 }
 
 export function composeEffectiveProtocolSource(
-  _base: BaseProtocolSourceModel,
-  _delta: ProtocolProjectionDelta
+  base: BaseProtocolSourceModel,
+  delta: ProtocolProjectionDelta
 ): EffectiveProtocolSourceModel {
-  throw new Error("SRL-A3 protocol source composition is not implemented");
+  return {
+    ...base,
+    semanticProjection: delta
+  };
 }
