@@ -1,4 +1,10 @@
-import type { SemanticSourceModel } from "./sourceModel.js";
+import type {
+  SemanticOperationSource,
+  SemanticProtocolFieldBindingSource,
+  SemanticProtocolMethodLocalBindingSource,
+  SemanticProtocolOperationBindingSource,
+  SemanticSourceModel
+} from "./sourceModel.js";
 
 export interface SemanticDiagnostic {
   file: string;
@@ -81,6 +87,197 @@ function validateRequiredArrayStructure(
   if (!Array.isArray(value)) {
     const message = `invalid semantic source structure at ${path}: expected array`;
     throwDiagnostic(validationContext, path, "structure", code, message);
+  }
+}
+
+function validateNonBlankStringStructure(
+  value: unknown,
+  validationContext: SemanticValidationContext | undefined,
+  path: string,
+  code: string
+): asserts value is string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    const message = `invalid semantic source structure at ${path}: expected non-empty string`;
+    throwDiagnostic(validationContext, path, "structure", code, message);
+  }
+}
+
+function validateStringArrayEntriesStructure(
+  value: unknown[],
+  validationContext: SemanticValidationContext | undefined,
+  path: string,
+  code: string
+): void {
+  for (let index = 0; index < value.length; index += 1) {
+    validateNonBlankStringStructure(value[index], validationContext, `${path}/${index}`, code);
+  }
+}
+
+function validateProtocolFieldBindingArrayStructure(
+  value: unknown,
+  validationContext: SemanticValidationContext | undefined,
+  path: string,
+  prefix: string
+): void {
+  if (value === undefined) {
+    return;
+  }
+
+  validateRequiredArrayStructure(
+    value,
+    validationContext,
+    path,
+    `SEM_STRUCTURE_${prefix}_ARRAY_REQUIRED`
+  );
+
+  for (let index = 0; index < value.length; index += 1) {
+    const entryPath = `${path}/${index}`;
+    const entry = value[index];
+    validateRequiredObjectStructure(
+      entry,
+      validationContext,
+      entryPath,
+      `SEM_STRUCTURE_${prefix}_ENTRY_OBJECT_REQUIRED`
+    );
+    validateNonBlankStringStructure(
+      entry.semanticField,
+      validationContext,
+      `${entryPath}/semanticField`,
+      `SEM_STRUCTURE_${prefix}_SEMANTIC_FIELD_REQUIRED`
+    );
+    validateNonBlankStringStructure(
+      entry.protocolField,
+      validationContext,
+      `${entryPath}/protocolField`,
+      `SEM_STRUCTURE_${prefix}_PROTOCOL_FIELD_REQUIRED`
+    );
+  }
+}
+
+function validateProtocolMethodLocalBindingArrayStructure(
+  value: unknown,
+  validationContext: SemanticValidationContext | undefined,
+  path: string
+): void {
+  if (value === undefined) {
+    return;
+  }
+
+  validateRequiredArrayStructure(
+    value,
+    validationContext,
+    path,
+    "SEM_STRUCTURE_PROTOCOL_BINDING_REQUEST_METHOD_LOCAL_ARRAY_REQUIRED"
+  );
+
+  for (let index = 0; index < value.length; index += 1) {
+    const entryPath = `${path}/${index}`;
+    const entry = value[index];
+    validateRequiredObjectStructure(
+      entry,
+      validationContext,
+      entryPath,
+      "SEM_STRUCTURE_PROTOCOL_BINDING_REQUEST_METHOD_LOCAL_ENTRY_OBJECT_REQUIRED"
+    );
+    validateNonBlankStringStructure(
+      entry.methodLocal,
+      validationContext,
+      `${entryPath}/methodLocal`,
+      "SEM_STRUCTURE_PROTOCOL_BINDING_METHOD_LOCAL_REQUIRED"
+    );
+    validateNonBlankStringStructure(
+      entry.protocolField,
+      validationContext,
+      `${entryPath}/protocolField`,
+      "SEM_STRUCTURE_PROTOCOL_BINDING_METHOD_LOCAL_PROTOCOL_FIELD_REQUIRED"
+    );
+  }
+}
+
+function validateProtocolBindingsStructure(
+  rawSource: Record<string, unknown>,
+  validationContext: SemanticValidationContext | undefined
+): void {
+  const protocolBindings = rawSource.protocolBindings;
+  if (protocolBindings === undefined) {
+    return;
+  }
+
+  validateRequiredObjectStructure(
+    protocolBindings,
+    validationContext,
+    "/protocolBindings",
+    "SEM_STRUCTURE_PROTOCOL_BINDINGS_OBJECT_REQUIRED"
+  );
+  validateRequiredArrayStructure(
+    protocolBindings.operations,
+    validationContext,
+    "/protocolBindings/operations",
+    "SEM_STRUCTURE_PROTOCOL_BINDING_OPERATIONS_ARRAY_REQUIRED"
+  );
+
+  for (let bindingIndex = 0; bindingIndex < protocolBindings.operations.length; bindingIndex += 1) {
+    const bindingPath = `/protocolBindings/operations/${bindingIndex}`;
+    const binding = protocolBindings.operations[bindingIndex];
+    validateRequiredObjectStructure(
+      binding,
+      validationContext,
+      bindingPath,
+      "SEM_STRUCTURE_PROTOCOL_BINDING_OPERATION_OBJECT_REQUIRED"
+    );
+    validateNonBlankStringStructure(
+      binding.operation,
+      validationContext,
+      `${bindingPath}/operation`,
+      "SEM_STRUCTURE_PROTOCOL_BINDING_OPERATION_REQUIRED"
+    );
+    validateNonBlankStringStructure(
+      binding.method,
+      validationContext,
+      `${bindingPath}/method`,
+      "SEM_STRUCTURE_PROTOCOL_BINDING_METHOD_REQUIRED"
+    );
+
+    if (binding.request !== undefined) {
+      validateRequiredObjectStructure(
+        binding.request,
+        validationContext,
+        `${bindingPath}/request`,
+        "SEM_STRUCTURE_PROTOCOL_BINDING_REQUEST_OBJECT_REQUIRED"
+      );
+      validateProtocolFieldBindingArrayStructure(
+        binding.request.selector,
+        validationContext,
+        `${bindingPath}/request/selector`,
+        "PROTOCOL_BINDING_REQUEST_SELECTOR"
+      );
+      validateProtocolFieldBindingArrayStructure(
+        binding.request.state,
+        validationContext,
+        `${bindingPath}/request/state`,
+        "PROTOCOL_BINDING_REQUEST_STATE"
+      );
+      validateProtocolMethodLocalBindingArrayStructure(
+        binding.request.methodLocal,
+        validationContext,
+        `${bindingPath}/request/methodLocal`
+      );
+    }
+
+    if (binding.response !== undefined) {
+      validateRequiredObjectStructure(
+        binding.response,
+        validationContext,
+        `${bindingPath}/response`,
+        "SEM_STRUCTURE_PROTOCOL_BINDING_RESPONSE_OBJECT_REQUIRED"
+      );
+      validateProtocolFieldBindingArrayStructure(
+        binding.response.state,
+        validationContext,
+        `${bindingPath}/response/state`,
+        "PROTOCOL_BINDING_RESPONSE_STATE"
+      );
+    }
   }
 }
 
@@ -179,14 +376,42 @@ function validateSemanticSourceStructure(
     );
 
     for (let operationIndex = 0; operationIndex < operations.length; operationIndex += 1) {
+      const operationPath = `${operationsPath}/${operationIndex}`;
+      const operation = operations[operationIndex];
       validateRequiredObjectStructure(
-        operations[operationIndex],
+        operation,
         validationContext,
-        `${operationsPath}/${operationIndex}`,
+        operationPath,
         "SEM_STRUCTURE_OPERATION_OBJECT_REQUIRED"
       );
+
+      if (operation.outputProjection !== undefined) {
+        const outputPath = `${operationPath}/outputProjection`;
+        validateRequiredObjectStructure(
+          operation.outputProjection,
+          validationContext,
+          outputPath,
+          "SEM_STRUCTURE_OUTPUT_PROJECTION_OBJECT_REQUIRED"
+        );
+        if (operation.outputProjection.state !== undefined) {
+          validateRequiredArrayStructure(
+            operation.outputProjection.state,
+            validationContext,
+            `${outputPath}/state`,
+            "SEM_STRUCTURE_OUTPUT_PROJECTION_STATE_ARRAY_REQUIRED"
+          );
+          validateStringArrayEntriesStructure(
+            operation.outputProjection.state,
+            validationContext,
+            `${outputPath}/state`,
+            "SEM_STRUCTURE_OUTPUT_PROJECTION_STATE_FIELD_REQUIRED"
+          );
+        }
+      }
     }
   }
+
+  validateProtocolBindingsStructure(rawSource, validationContext);
 }
 
 function validateMetadataObject(value: unknown, context: string): void {
@@ -280,6 +505,144 @@ function rejectProjectionCollision(
         message
       );
     }
+  }
+}
+
+function validateUniqueSemanticFieldBindings(
+  bindings: SemanticProtocolFieldBindingSource[],
+  allowedFields: Set<string>,
+  context: string,
+  validationContext: SemanticValidationContext | undefined,
+  path: string
+): void {
+  const seen = new Set<string>();
+  for (let index = 0; index < bindings.length; index += 1) {
+    const binding = bindings[index];
+    if (!allowedFields.has(binding.semanticField)) {
+      const message = `${context} references missing projected semantic field: ${binding.semanticField}`;
+      throwDiagnostic(
+        validationContext,
+        `${path}/${index}/semanticField`,
+        "protocol-binding",
+        "SEM_PROTOCOL_BINDING_SEMANTIC_FIELD_MISSING",
+        message
+      );
+    }
+    if (seen.has(binding.semanticField)) {
+      const message = `${context} duplicates semantic field mapping: ${binding.semanticField}`;
+      throwDiagnostic(
+        validationContext,
+        `${path}/${index}/semanticField`,
+        "protocol-binding",
+        "SEM_PROTOCOL_BINDING_SEMANTIC_FIELD_DUPLICATE",
+        message
+      );
+    }
+    seen.add(binding.semanticField);
+  }
+}
+
+function validateUniqueMethodLocalBindings(
+  bindings: SemanticProtocolMethodLocalBindingSource[],
+  allowedNames: Set<string>,
+  context: string,
+  validationContext: SemanticValidationContext | undefined,
+  path: string
+): void {
+  const seen = new Set<string>();
+  for (let index = 0; index < bindings.length; index += 1) {
+    const binding = bindings[index];
+    if (!allowedNames.has(binding.methodLocal)) {
+      const message = `${context} references missing methodLocal name: ${binding.methodLocal}`;
+      throwDiagnostic(
+        validationContext,
+        `${path}/${index}/methodLocal`,
+        "protocol-binding",
+        "SEM_PROTOCOL_BINDING_METHOD_LOCAL_MISSING",
+        message
+      );
+    }
+    if (seen.has(binding.methodLocal)) {
+      const message = `${context} duplicates methodLocal mapping: ${binding.methodLocal}`;
+      throwDiagnostic(
+        validationContext,
+        `${path}/${index}/methodLocal`,
+        "protocol-binding",
+        "SEM_PROTOCOL_BINDING_METHOD_LOCAL_DUPLICATE",
+        message
+      );
+    }
+    seen.add(binding.methodLocal);
+  }
+}
+
+function validateProtocolBindingSemanticReferences(
+  source: SemanticSourceModel,
+  operationsByName: Map<string, SemanticOperationSource>,
+  validationContext: SemanticValidationContext | undefined
+): void {
+  const seenOperations = new Set<string>();
+  const bindings = source.protocolBindings?.operations ?? [];
+
+  for (let bindingIndex = 0; bindingIndex < bindings.length; bindingIndex += 1) {
+    const binding: SemanticProtocolOperationBindingSource = bindings[bindingIndex];
+    const bindingPath = `/protocolBindings/operations/${bindingIndex}`;
+    const operation = operationsByName.get(binding.operation);
+    if (operation === undefined) {
+      const message = `protocol binding references missing semantic operation: ${binding.operation}`;
+      throwDiagnostic(
+        validationContext,
+        `${bindingPath}/operation`,
+        "protocol-binding",
+        "SEM_PROTOCOL_BINDING_OPERATION_MISSING",
+        message
+      );
+    }
+    if (seenOperations.has(binding.operation)) {
+      const message = `duplicate protocol binding for semantic operation: ${binding.operation}`;
+      throwDiagnostic(
+        validationContext,
+        `${bindingPath}/operation`,
+        "protocol-binding",
+        "SEM_PROTOCOL_BINDING_OPERATION_DUPLICATE",
+        message
+      );
+    }
+    seenOperations.add(binding.operation);
+
+    const selector = new Set(operation.inputProjection?.selector ?? []);
+    const state = new Set(operation.inputProjection?.state ?? []);
+    const methodLocal = new Set(operation.inputProjection?.methodLocal ?? []);
+    const outputState = new Set(operation.outputProjection?.state ?? []);
+
+    validateUniqueSemanticFieldBindings(
+      binding.request?.selector ?? [],
+      selector,
+      `request selector binding for ${binding.operation}`,
+      validationContext,
+      `${bindingPath}/request/selector`
+    );
+    validateUniqueSemanticFieldBindings(
+      binding.request?.state ?? [],
+      state,
+      `request state binding for ${binding.operation}`,
+      validationContext,
+      `${bindingPath}/request/state`
+    );
+    validateUniqueMethodLocalBindings(
+      binding.request?.methodLocal ?? [],
+      methodLocal,
+      `request methodLocal binding for ${binding.operation}`,
+      validationContext,
+      `${bindingPath}/request/methodLocal`
+    );
+    validateUniqueSemanticFieldBindings(
+      binding.response?.state ?? [],
+      outputState,
+      `response state binding for ${binding.operation}`,
+      validationContext,
+      `${bindingPath}/response/state`
+    );
   }
 }
 
@@ -395,6 +758,8 @@ export function validateSemanticSource(
     }
   }
 
+  const operationsByName = new Map<string, SemanticOperationSource>();
+
   for (let domainIndex = 0; domainIndex < source.domains.length; domainIndex += 1) {
     const domain = source.domains[domainIndex];
 
@@ -440,6 +805,7 @@ export function validateSemanticSource(
       const selector = operation.inputProjection?.selector ?? [];
       const state = operation.inputProjection?.state ?? [];
       const methodLocal = operation.inputProjection?.methodLocal ?? [];
+      const outputState = operation.outputProjection?.state ?? [];
       const projectionPath = `/domains/${domainIndex}/operations/${operationIndex}/inputProjection`;
 
       for (const selectorField of selector) {
@@ -458,6 +824,14 @@ export function validateSemanticSource(
         );
       }
 
+      for (const outputField of outputState) {
+        validateResourceFieldReference(
+          outputField,
+          resourceFields,
+          `output projection for operation ${operation.name}`
+        );
+      }
+
       rejectProjectionCollision(
         operation.name,
         "selector",
@@ -485,6 +859,10 @@ export function validateSemanticSource(
         validationContext,
         projectionPath
       );
+
+      operationsByName.set(operation.name, operation);
     }
   }
+
+  validateProtocolBindingSemanticReferences(source, operationsByName, validationContext);
 }
