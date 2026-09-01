@@ -8,6 +8,8 @@ import { loadProtocolDocs, validateProtocolDocsConsistency } from "./protocolDoc
 import { loadProtocolDefinition } from "./protocolLoader.js";
 import { buildProtocolDefinition, buildProtocolDefinitionRaw, writeProtocolDefinition } from "./protocolBuilder.js";
 import { validateProtocolDefinition } from "./protocolValidator.js";
+import { loadSemanticSources } from "./semantic/sourceLoader.js";
+import { validateSemanticSource, type SemanticDiagnostic } from "./semantic/validator.js";
 import { loadProtocolSources } from "./sourceLoader.js";
 import { validateSpec } from "./validator.js";
 
@@ -51,6 +53,19 @@ async function loadAndValidateSources(specPath: string) {
     ...validateProtocolDocsConsistency(model, docs)
   ];
   return { sources, model, messages };
+}
+
+function formatSemanticCliError(error: unknown): string {
+  const diagnostic = (error as Error & { diagnostic?: SemanticDiagnostic }).diagnostic;
+  if (diagnostic === undefined) return formatGeneratorError(error);
+
+  return [
+    `ERROR ${diagnostic.code}`,
+    `file: ${diagnostic.file}`,
+    `path: ${diagnostic.path}`,
+    `category: ${diagnostic.category}`,
+    `message: ${diagnostic.message}`
+  ].join("\n");
 }
 
 function defaultOut(specPath: string): string {
@@ -111,6 +126,21 @@ program.command("validate-sources")
       for (const message of messages) console.log(message);
     } catch (error) {
       console.error(formatGeneratorError(error));
+      process.exitCode = 1;
+    }
+  });
+
+program.command("validate-semantic")
+  .description("validate semantic source YAML")
+  .requiredOption("--source <path>", "semantic source root")
+  .action(async (options) => {
+    try {
+      const sources = await loadSemanticSources(resolveInputPath(options.source));
+      for (const { relativePath, source } of sources) {
+        validateSemanticSource(source, { file: relativePath });
+      }
+    } catch (error) {
+      console.error(formatSemanticCliError(error));
       process.exitCode = 1;
     }
   });
