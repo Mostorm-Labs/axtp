@@ -142,7 +142,8 @@ jobs:
             src/semantic/descriptorEmitter.test.ts \
             src/semantic/descriptorPipeline.test.ts \
             src/semantic/descriptorCli.test.ts \
-            src/semantic/descriptorRepositoryIntegration.test.ts
+            src/semantic/descriptorRepositoryIntegration.test.ts \
+            src/semantic/descriptorP36Evidence.test.ts
 
       - name: Verify semantic descriptor canonical bytes
         shell: bash
