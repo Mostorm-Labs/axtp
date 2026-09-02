@@ -46,6 +46,36 @@ jobs:
           pnpm --dir tooling/generators validate:protocol
           tooling/scripts/check-generated-drift.sh
 
+      - name: Verify semantic descriptor generated-drift fails closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="contract/generated/semantic.json"
+          backup="$(mktemp "${TMPDIR:-/tmp}/axtp-semantic-backup.XXXXXX")"
+          cp "$artifact" "$backup"
+          restore_artifact() {
+            cp "$backup" "$artifact"
+            rm -f "$backup"
+          }
+          trap restore_artifact EXIT
+
+          cat > "$artifact" <<'JSON'
+          {
+            "descriptorVersion": "0.1",
+            "sources": [],
+            "tampered": true
+          }
+          JSON
+
+          if tooling/scripts/check-generated-drift.sh >/tmp/axtp-semantic-negative-drift.log 2>&1; then
+            echo "semantic generated drift unexpectedly accepted a tampered artifact" >&2
+            exit 1
+          fi
+
+          restore_artifact
+          trap - EXIT
+          tooling/scripts/check-generated-drift.sh
+
       - name: Validate conformance cases
         shell: bash
         run: tooling/scripts/validate-conformance.sh
