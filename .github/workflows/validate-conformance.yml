@@ -95,6 +95,45 @@ jobs:
         shell: bash
         run: tooling/scripts/check-release-artifact.sh 0.0.0
 
+      - name: Verify semantic descriptor release artifact fails closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="contract/generated/semantic.json"
+          archive="dist/axtp-spec-v0.0.0.zip"
+
+          python3 - "$archive" "$artifact" <<'PY'
+          import pathlib
+          import sys
+          import zipfile
+
+          archive_path, artifact_path = sys.argv[1], sys.argv[2]
+          expected = pathlib.Path(artifact_path).read_bytes()
+          member = f"axtp-spec-v0.0.0/{artifact_path}"
+          with zipfile.ZipFile(archive_path) as archive:
+              actual = archive.read(member)
+          if actual != expected:
+              raise SystemExit("release semantic.json bytes differ from committed canonical artifact")
+          PY
+
+          backup="$(mktemp "${TMPDIR:-/tmp}/axtp-release-semantic-backup.XXXXXX")"
+          cp "$artifact" "$backup"
+          restore_artifact() {
+            cp "$backup" "$artifact"
+            rm -f "$backup"
+          }
+          trap restore_artifact EXIT
+
+          rm -f "$artifact"
+          if tooling/scripts/check-release-artifact.sh 0.0.0 >/tmp/axtp-semantic-negative-release.log 2>&1; then
+            echo "release artifact contract unexpectedly accepted missing semantic.json" >&2
+            exit 1
+          fi
+
+          restore_artifact
+          trap - EXIT
+          tooling/scripts/check-release-artifact.sh 0.0.0
+
   semantic-descriptor-portability:
     name: Semantic descriptor portability (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
