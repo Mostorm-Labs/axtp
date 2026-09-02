@@ -38,7 +38,7 @@ function primarySource(reverse = false): SemanticSourceModel {
   const features: SemanticSourceModel["domains"][number]["features"] = [
     {
       name: "z.feature",
-      resources: reverse ? ["network.config"] : ["network.config"],
+      resources: ["network.config"],
       operations: ["network.setConfig"]
     },
     {
@@ -231,5 +231,31 @@ describe("semantic descriptor materializer", () => {
     expect(JSON.stringify(right)).toBe(JSON.stringify(left));
     const constraints = right.sources[1].domains[0].resources[0].fields[0].constraints;
     expect(JSON.stringify(constraints)).toBe('{"a":{"a":1,"z":2},"z":[2,1]}');
+  });
+
+  it("fails closed when canonical source identity collides", () => {
+    const semantic = resolveSemanticSources([
+      loaded("same.yaml", auxiliarySource()),
+      loaded("same.yaml", auxiliarySource())
+    ]);
+
+    expect(() => materializeSemanticDescriptor(semantic)).toThrow(/duplicate sourceKey.*same\.yaml/);
+  });
+
+  it("fails closed for non-serializable semantic metadata", () => {
+    const semantic = resolveSemanticSources([loaded("network.yaml", primarySource())]);
+    semantic.sources[0].domains[0].resources[0].fields[1].constraints = {
+      invalid: () => "not-json"
+    };
+
+    expect(() => materializeSemanticDescriptor(semantic)).toThrow(/non-serializable semantic metadata/);
+  });
+
+  it("fails closed when a resolved field reference does not belong to its resource", () => {
+    const semantic = resolveSemanticSources([loaded("network.yaml", primarySource())]);
+    const resource = semantic.sources[0].domains[0].resources[0];
+    resource.identity = [{ ...resource.fields[0], name: "ghost" }];
+
+    expect(() => materializeSemanticDescriptor(semantic)).toThrow(/resource identity.*does not belong/);
   });
 });
