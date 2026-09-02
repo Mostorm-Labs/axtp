@@ -46,6 +46,36 @@ jobs:
           pnpm --dir tooling/generators validate:protocol
           tooling/scripts/check-generated-drift.sh
 
+      - name: Verify semantic descriptor generated-drift fails closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="contract/generated/semantic.json"
+          backup="$(mktemp "${TMPDIR:-/tmp}/axtp-semantic-backup.XXXXXX")"
+          cp "$artifact" "$backup"
+          restore_artifact() {
+            cp "$backup" "$artifact"
+            rm -f "$backup"
+          }
+          trap restore_artifact EXIT
+
+          cat > "$artifact" <<'JSON'
+          {
+            "descriptorVersion": "0.1",
+            "sources": [],
+            "tampered": true
+          }
+          JSON
+
+          if tooling/scripts/check-generated-drift.sh >/tmp/axtp-semantic-negative-drift.log 2>&1; then
+            echo "semantic generated drift unexpectedly accepted a tampered artifact" >&2
+            exit 1
+          fi
+
+          restore_artifact
+          trap - EXIT
+          tooling/scripts/check-generated-drift.sh
+
       - name: Validate conformance cases
         shell: bash
         run: tooling/scripts/validate-conformance.sh
@@ -64,3 +94,103 @@ jobs:
       - name: Validate release artifact dry run
         shell: bash
         run: tooling/scripts/check-release-artifact.sh 0.0.0
+
+      - name: Verify semantic descriptor release artifact fails closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="contract/generated/semantic.json"
+          archive="dist/axtp-spec-v0.0.0.zip"
+
+          python3 - "$archive" "$artifact" <<'PY'
+          import pathlib
+          import sys
+          import zipfile
+
+          archive_path, artifact_path = sys.argv[1], sys.argv[2]
+          expected = pathlib.Path(artifact_path).read_bytes()
+          member = f"axtp-spec-v0.0.0/{artifact_path}"
+          with zipfile.ZipFile(archive_path) as archive:
+              actual = archive.read(member)
+          if actual != expected:
+              raise SystemExit("release semantic.json bytes differ from committed canonical artifact")
+          PY
+
+          backup="$(mktemp "${TMPDIR:-/tmp}/axtp-release-semantic-backup.XXXXXX")"
+          cp "$artifact" "$backup"
+          restore_artifact() {
+            cp "$backup" "$artifact"
+            rm -f "$backup"
+          }
+          trap restore_artifact EXIT
+
+          rm -f "$artifact"
+          if tooling/scripts/check-release-artifact.sh 0.0.0 >/tmp/axtp-semantic-negative-release.log 2>&1; then
+            echo "release artifact contract unexpectedly accepted missing semantic.json" >&2
+            exit 1
+          fi
+
+          restore_artifact
+          trap - EXIT
+          tooling/scripts/check-release-artifact.sh 0.0.0
+
+  semantic-descriptor-portability:
+    name: Semantic descriptor portability (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    steps:
+      - name: Checkout AXTP spec
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+
+      - name: Install generator dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/generators install --frozen-lockfile
+
+      - name: Build generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/generators build
+
+      - name: Run semantic descriptor focused tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/generators exec vitest run \
+            src/semantic/descriptorMaterializer.test.ts \
+            src/semantic/descriptorEmitter.test.ts \
+            src/semantic/descriptorPipeline.test.ts \
+            src/semantic/descriptorCli.test.ts \
+            src/semantic/descriptorRepositoryIntegration.test.ts \
+            src/semantic/descriptorP36Evidence.test.ts
+
+      - name: Verify semantic descriptor canonical bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          output=".semantic-portability.json"
+          node tooling/generators/dist/cli.js generate-semantic \
+            --spec . \
+            --out "$output"
+          node -e "const fs=require('fs'); const expected=fs.readFileSync('contract/generated/semantic.json'); const actual=fs.readFileSync(process.argv[1]); if (!expected.equals(actual)) { console.error('semantic descriptor bytes differ'); process.exit(1); }" "$output"
+          rm -f "$output"

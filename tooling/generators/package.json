@@ -16,6 +16,7 @@
     "build:protocol": "node dist/cli.js build-protocol --spec ../..",
     "emit:protocol": "node dist/cli.js emit-protocol --spec ../..",
     "generate": "node dist/cli.js generate --spec ../..",
+    "generate:semantic": "node dist/cli.js generate-semantic --spec ../..",
     "generate:registry": "node dist/cli.js generate-registry --spec ../..",
     "validate:protocol": "node dist/cli.js validate-protocol --spec ../..",
     "generate:protocol": "node dist/cli.js generate-protocol --spec ../.."

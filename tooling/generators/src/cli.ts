@@ -8,6 +8,8 @@ import { loadProtocolDocs, validateProtocolDocsConsistency } from "./protocolDoc
 import { loadProtocolDefinition } from "./protocolLoader.js";
 import { buildProtocolDefinition, buildProtocolDefinitionRaw, writeProtocolDefinition } from "./protocolBuilder.js";
 import { validateProtocolDefinition } from "./protocolValidator.js";
+import { writeSemanticDescriptor } from "./semantic/descriptorEmitter.js";
+import { prepareSemanticDescriptor } from "./semantic/descriptorPipeline.js";
 import { loadSemanticSources } from "./semantic/sourceLoader.js";
 import { validateSemanticSource, type SemanticDiagnostic } from "./semantic/validator.js";
 import { loadProtocolSources } from "./sourceLoader.js";
@@ -145,6 +147,29 @@ program.command("validate-semantic")
     }
   });
 
+program.command("generate-semantic")
+  .description("generate canonical semantic descriptor metadata")
+  .requiredOption("--spec <path>", "AXTP repository root")
+  .option("--source <path>", "semantic source root")
+  .option("--out <path>", "output semantic JSON file")
+  .action(async (options) => {
+    try {
+      const specRoot = resolveInputPath(options.spec);
+      const sourceRoot = options.source
+        ? resolveInputPath(options.source)
+        : path.join(specRoot, "contract", "semantic");
+      const out = options.out
+        ? resolveOutputPath(options.out)
+        : path.join(specRoot, "contract", "generated", "semantic.json");
+      const descriptor = await prepareSemanticDescriptor(specRoot, sourceRoot);
+      await writeSemanticDescriptor(descriptor, out);
+      console.log(`[OK] generated semantic descriptor: ${out}`);
+    } catch (error) {
+      console.error(formatGeneratorError(error));
+      process.exitCode = 1;
+    }
+  });
+
 program.command("build-protocol")
   .description("build contract/protocol/axtp.protocol.yaml from contract/registry/domain YAML sources")
   .requiredOption("--spec <path>", "AXTP repository root")
@@ -194,16 +219,26 @@ program.command("generate")
       const specRoot = resolveInputPath(options.spec);
       const protocolOut = options.protocolOut ? resolveOutputPath(options.protocolOut) : path.join(specRoot, "contract", "protocol", "axtp.protocol.yaml");
       const out = options.out ? resolveOutputPath(options.out) : specRoot;
+
       const { sources, model, messages } = await loadAndValidateSources(options.spec);
+      const descriptor = await prepareSemanticDescriptor(specRoot);
       const raw = buildProtocolDefinitionRaw(sources);
+
       await writeProtocolDefinition(raw, protocolOut);
       if (options.out) {
         await Promise.all([
           emitProtocolDocs(model, out),
-          emitAll(sources, out)
+          emitAll(sources, out),
+          writeSemanticDescriptor(descriptor, path.join(out, "semantic.json"))
         ]);
       } else {
-        await emitRepositoryArtifacts(sources, model, out);
+        await Promise.all([
+          emitRepositoryArtifacts(sources, model, out),
+          writeSemanticDescriptor(
+            descriptor,
+            path.join(specRoot, "contract", "generated", "semantic.json")
+          )
+        ]);
       }
       for (const message of messages) console.log(message);
       console.log(`[OK] generated protocol definition: ${protocolOut}`);
