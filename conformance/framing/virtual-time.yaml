@@ -1,0 +1,26 @@
+version: 0.1.0
+clock: monotonic_virtual
+
+operations:
+  - advance_by
+  - advance_to_policy_deadline
+
+policy_deadlines:
+  - id: reassembly_timeout
+    owner: runtime_or_profile
+    numeric_equality: false
+    required_capability: reassembly_timeout_policy
+    meaning: Local/profile deadline after which an incomplete reassembly context is classified as expired.
+  - id: heartbeat_timeout
+    owner: runtime_or_profile
+    numeric_equality: false
+    required_capability: control_semantics
+    meaning: Local/profile liveness deadline if the implementation chooses to declare heartbeat timeout.
+
+rules:
+  - Required deterministic framing cases MUST NOT sleep on wall-clock time.
+  - advance_to_policy_deadline asks the adapter for its own configured deadline and advances the virtual monotonic clock to that semantic boundary.
+  - Runtime/profile-owned deadline values are never compared numerically across languages.
+  - "A timeout case compares classification and safety outcome only: no partial dispatch, correct context cleanup, and diagnostic class when exposed."
+  - An adapter without reassembly_timeout_policy does not fail Core merely for lacking a timer; the timeout-specific scenario is not applicable.
+  - "Heartbeat cadence and failure deadline remain separate: effectiveHeartbeatIntervalMs may be protocol-resolved while heartbeat timeout remains runtime/profile policy."

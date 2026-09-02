@@ -1,0 +1,31 @@
+id: frame.resource_bounds
+title: Reassembly resource use is finite without standardizing one numeric budget
+authority_decisions: [A1-D07]
+evidence_class: audit_probe
+profile: framed-binary
+requires: [reassembly]
+applicability:
+  when_capability: resource_probe
+steps:
+  - op: probe_policy
+    policy: reassembly_memory_budget
+    when_capability: resource_probe
+  - op: expect
+    when_capability: resource_probe
+    expect:
+      policy:
+        id: reassembly_memory_budget
+        finite: true
+  - op: induce_policy_boundary
+    policy: reassembly_memory_budget
+    when_capability: resource_probe
+  - op: expect
+    when_capability: resource_probe
+    expect:
+      no_dispatch: true
+      context_outcome: resource_exhausted
+      diagnostic_if_supported: RESOURCE_EXHAUSTED
+assertions:
+  - The evidence proves a finite local bound, not equality with another runtime's byte/context limit.
+  - Resource exhaustion discards the affected incomplete context and never dispatches partial payload bytes.
+  - If executable resource_probe is unavailable, release evidence must provide an equivalent auditable finite-policy artifact rather than invent a Core numeric constant.

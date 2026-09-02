@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axtp.dev/schemas/raw-frame-corpus.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "frames", "streams"],
+  "properties": {
+    "version": { "type": "string", "minLength": 1 },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "purpose", "hex", "total_bytes", "length_relation", "expected_crc"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_.-]+$" },
+          "purpose": { "type": "string", "minLength": 1 },
+          "hex": { "type": "string", "pattern": "^(?:[0-9a-fA-F]{2})+$" },
+          "total_bytes": { "type": "integer", "minimum": 1 },
+          "length_relation": { "enum": ["exact", "mismatch"] },
+          "expected_crc": { "enum": ["valid", "invalid", "unchecked"] },
+          "expected_error": { "type": "string", "minLength": 1 },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "streams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "purpose", "chunks"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_.-]+$" },
+          "purpose": { "type": "string", "minLength": 1 },
+          "chunks": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "pattern": "^(?:[0-9a-fA-F]{2})*$" }
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+id: frame.fragmentation_sender
+title: Fragment sender emits one contiguous, invariant message sequence
+authority_decisions: [A1-D02, A1-D05]
+evidence_class: state_oracle
+profile: framed-binary
+requires: [frame_encode, fragment_sender]
+applicability:
+  when_capability: fragment_sender
+steps:
+  - op: fragment_message
+    payloadType: RPC
+    payloadHex: "deadbeefcafebabe"
+    sourceId: 1
+    destinationId: 2
+    messageId: 0
+    effectiveMaxFrameSize: 18
+  - op: expect
+    expect:
+      fragmenter:
+        frameCount: 2
+        indices: [0, 1]
+        contiguous: true
+        invariantFields: [Version, PayloadType, SourceId, DestinationId, MessageId, FrameCount]
+  - op: reset
+  - op: fragment_message
+    payloadType: RPC
+    payloadHex: "00"
+    sourceId: 1
+    destinationId: 2
+    messageId: 65535
+    effectiveMaxFrameSize: 15
+    requiredFrameCount: 256
+  - op: expect
+    expect:
+      local_reject: fragment_count_exceeds_uint8
+      no_dispatch: true
+assertions:
+  - MessageId zero is legal; the allocator sequence itself is not a conformance subject.
+  - Fragment indexes cover 0..FrameCount-1 exactly once in ascending sender order.
+  - A sender does not interleave a different MessageId on the same source/destination direction before finishing this sequence.
+  - A logical message that would require more than 255 fragments is rejected locally before invalid bytes are emitted.

@@ -260,6 +260,52 @@ function assertControlOpcodes(model: ProtocolModel): void {
   }
 }
 
+function assertStandardFrameContract(model: ProtocolModel): void {
+  const contract = model.frameProfiles.find((item) => item.name === "STANDARD_FRAME")?.contract;
+  if (!contract) fail("STANDARD_FRAME", "contract", "STANDARD_FRAME.contract is required by P23");
+  const same = (actual: unknown, expected: unknown) => JSON.stringify(actual) === JSON.stringify(expected);
+
+  if (contract.header.size !== 12) fail("STANDARD_FRAME.contract.header", "size", "Standard Frame header size must be 12 bytes");
+  if (contract.footer.size !== 2 || contract.footer.field !== "crc16" || contract.overheadBytes !== 14) fail("STANDARD_FRAME.contract", "footer", "Standard Frame footer must be crc16 / 2 bytes and total overhead must be 14 bytes");
+  if (!same(contract.header.magicBytes, [0x41, 0x58]) || contract.header.version !== 1) fail("STANDARD_FRAME.contract.header", "magicBytes/version", "Standard Frame magic/version must be AX / 0x01");
+  const expectedFields = [
+    ["magic", 0, 2, "bytes"], ["version", 2, 1, "uint8"], ["payloadType", 3, 1, "uint8"], ["payloadLength", 4, 2, "uint16"],
+    ["sourceId", 6, 1, "uint8"], ["destinationId", 7, 1, "uint8"], ["messageId", 8, 2, "uint16"], ["frameIndex", 10, 1, "uint8"], ["frameCount", 11, 1, "uint8"]
+  ];
+  if (!same(contract.header.fields.map((field) => [field.name, field.offset, field.bytes, field.type]), expectedFields)) fail("STANDARD_FRAME.contract.header", "fields", "Standard Frame header fields/offsets/types must match the frozen 12-byte P23 layout");
+  if (contract.crc.algorithm !== "CRC16-CCITT-FALSE" || contract.crc.coverage !== "header+payload" || !contract.crc.excludesFooter || contract.crc.byteOrder !== "big-endian") fail("STANDARD_FRAME.contract.crc", "coverage", "CRC coverage must be header+payload using CRC16-CCITT-FALSE with footer excluded and big-endian serialization");
+
+  const max = contract.effectiveParameters.maxFrameSize;
+  const heartbeatInterval = contract.effectiveParameters.heartbeatIntervalMs;
+  if (max.openField !== "maxFrameSize" || max.acceptOverrideField !== "maxFrameSize" || max.fallback !== "OPEN.maxFrameSize" || max.formula !== "PayloadLength + 14 <= effectiveMaxFrameSize") fail("STANDARD_FRAME.contract.effectiveParameters.maxFrameSize", "formula", "effective max frame rule must be PayloadLength + 14 <= effectiveMaxFrameSize with OPEN fallback");
+  if (heartbeatInterval.openField !== "heartbeatIntervalMs" || heartbeatInterval.acceptOverrideField !== "heartbeatIntervalMs" || heartbeatInterval.fallback !== "OPEN.heartbeatIntervalMs") fail("STANDARD_FRAME.contract.effectiveParameters.heartbeatIntervalMs", "fallback", "effective heartbeat interval must use ACCEPT override with OPEN fallback");
+
+  const fragmentation = contract.fragmentation;
+  const sender = fragmentation.sender;
+  if (sender.fragmentedFrameCountMin !== 2 || sender.fragmentedFrameCountMax !== 255 || sender.frameIndexCoverage !== "0..FrameCount-1 exactly once" || sender.emissionOrder !== "ascending" || !sender.contiguousPerDirection || !same(sender.invariants, ["version", "payloadType", "sourceId", "destinationId", "messageId", "frameCount"]) || sender.over255Disposition !== "local-reject-before-transmit") fail("STANDARD_FRAME.contract.fragmentation.sender", "semantics", "fragment sender semantics must match frozen P23 coverage/order/invariants/disposition");
+  if (!same(fragmentation.reassemblyKey, ["framedLinkContext", "sourceId", "destinationId", "messageId"])) fail("STANDARD_FRAME.contract.fragmentation", "reassemblyKey", "Standard Frame reassembly key must be framedLinkContext/sourceId/destinationId/messageId");
+  if (!same(fragmentation.contextInvariants, ["payloadType", "frameCount", "version"]) || fragmentation.receiveOrder !== "out-of-order-allowed" || fragmentation.payloadOrder !== "frameIndex-ascending" || fragmentation.dispatch !== "complete-only") fail("STANDARD_FRAME.contract.fragmentation", "reassembly", "reassembly invariants/order/dispatch must match frozen P23 semantics");
+  if (fragmentation.duplicate.identical !== "idempotent" || fragmentation.duplicate.conflicting !== "invalidate-context" || fragmentation.duplicate.diagnostic !== "FRAME_FRAGMENT_INVALID") fail("STANDARD_FRAME.contract.fragmentation.duplicate", "semantics", "duplicate handling must be idempotent/conflict-invalidating with FRAME_FRAGMENT_INVALID");
+  if (fragmentation.messageId.zeroReserved) fail("STANDARD_FRAME.contract.fragmentation.messageId", "zeroReserved", "MessageId zero must not be reserved");
+  if (fragmentation.messageId.type !== "uint16" || fragmentation.messageId.allocationOwner !== "runtime" || fragmentation.messageId.activeUniqueness !== "same-direction-fragmented-message" || !same(fragmentation.messageId.reuseAfter, ["completed", "invalidated", "abandoned", "expired"])) fail("STANDARD_FRAME.contract.fragmentation.messageId", "semantics", "MessageId type/ownership/active uniqueness/reuse semantics must match frozen P23");
+  if (fragmentation.missing.trigger !== "different-message-id-same-direction-before-completion" || fragmentation.missing.diagnostic !== "FRAME_FRAGMENT_MISSING") fail("STANDARD_FRAME.contract.fragmentation.missing", "semantics", "missing-fragment trigger/diagnostic must match frozen P23");
+  if (fragmentation.timeout.diagnostic !== "FRAME_REASSEMBLY_TIMEOUT" || fragmentation.timeout.durationOwner !== "runtime_or_profile") fail("STANDARD_FRAME.contract.fragmentation.timeout", "semantics", "reassembly timeout diagnostic must be FRAME_REASSEMBLY_TIMEOUT with runtime/profile-owned duration");
+  if (!fragmentation.resources.bounded || fragmentation.resources.numericLimitsOwner !== "runtime_or_profile" || fragmentation.resources.exhaustionDiagnostic !== "RESOURCE_EXHAUSTED" || fragmentation.resources.partialDispatch) fail("STANDARD_FRAME.contract.fragmentation.resources", "semantics", "resource policy must stay bounded/runtime-owned and exhaust without partial dispatch");
+
+  const parser = contract.parser;
+  if (!same(parser.validateBeforeDispatch, ["magic", "version", "payloadType", "length", "fragmentRange", "payloadCompleteness", "crc"]) || parser.invalidDispatch || parser.recoveryAggressivenessOwner !== "runtime_or_profile") fail("STANDARD_FRAME.contract.parser", "validation", "parser validation set must be complete, invalid dispatch forbidden, and recovery aggressiveness runtime/profile-owned");
+  if (!parser.byteStream.scanMagic || parser.byteStream.incompleteCandidate !== "hold-for-more-bytes" || parser.byteStream.recoverySearch !== "after-first-rejected-byte" || !parser.byteStream.trailingMagicPrefixRetention) fail("STANDARD_FRAME.contract.parser.byteStream", "recovery", "byte-stream parser recovery boundary must match frozen P23 semantics");
+  if (!parser.packet.boundaryMayDiscardBadFrame || parser.packet.boundaryReplacesValidation) fail("STANDARD_FRAME.contract.parser.packet", "boundary", "packet boundaries may discard bad frames but never replace validation");
+
+  const requiredDiagnostics = ["FRAME_VERSION_UNSUPPORTED", "FRAME_PAYLOAD_TYPE_INVALID", "FRAME_LENGTH_INVALID", "FRAME_TOO_LARGE", "FRAME_CRC_ERROR", "FRAME_FRAGMENT_INVALID", "FRAME_FRAGMENT_MISSING", "FRAME_REASSEMBLY_TIMEOUT"];
+  for (const name of requiredDiagnostics) if (!contract.diagnostics.includes(name)) fail("STANDARD_FRAME.contract", "diagnostics", `missing frame diagnostic ${name}`);
+
+  const heartbeat = contract.heartbeat;
+  if (heartbeat.activeAfter !== "FRAMING_READY" || heartbeat.ack.opcode !== "HEARTBEAT_ACK" || heartbeat.ack.controlId !== "echo-request" || heartbeat.ack.statusCode !== "SUCCESS") fail("STANDARD_FRAME.contract.heartbeat", "ack", "HEARTBEAT_ACK must echo request controlId with SUCCESS after FRAMING_READY");
+  if (heartbeat.sender !== "either-peer" || !heartbeat.outstandingControlIdUnique || heartbeat.allocatorOwner !== "runtime" || heartbeat.cadenceSource !== "effectiveHeartbeatIntervalMs") fail("STANDARD_FRAME.contract.heartbeat", "wireSemantics", "heartbeat sender/controlId/allocator/cadence semantics must match frozen P23");
+  for (const [field, value] of [["failureDeadlineOwner", heartbeat.failureDeadlineOwner], ["schedulerOwner", heartbeat.schedulerOwner], ["reconnectOwner", heartbeat.reconnectOwner]] as const) if (value !== "runtime_or_profile") fail("STANDARD_FRAME.contract.heartbeat", field, `${field} must remain runtime/profile-owned`);
+}
+
 function assertCurrentTransportPolicy(model: ProtocolModel): void {
   for (const frameProfile of model.frameProfiles) {
     if (frameProfile.name.startsWith("COMPACT_")) {
@@ -314,6 +360,7 @@ export function validateProtocolDefinition(model: ProtocolModel): string[] {
   assertWireByteOrder(model);
   assertStreamHeader(model);
   assertControlOpcodes(model);
+  assertStandardFrameContract(model);
 
   assertUnique(model.methods, (item) => item.name, "method name", "name");
   assertUnique(model.methods, (item) => item.methodId, "methodId", "methodId");
