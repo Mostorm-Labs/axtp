@@ -75,7 +75,15 @@ describe("semantic descriptor repository pipeline", () => {
       ""
     ].join("\n"), "utf8");
 
-    await expect(loaded.prepareSemanticDescriptor!(REPO_ROOT, sourceRoot))
-      .rejects.toThrow(/Protocol method not found: network\.__definitelyMissing__/);
+    try {
+      await loaded.prepareSemanticDescriptor!(REPO_ROOT, sourceRoot);
+      throw new Error("expected exact Protocol binding validation to fail");
+    } catch (error) {
+      const failure = error as Error & { diagnostic?: { code?: string } };
+      expect(failure.message).toBe(
+        "Protocol method target not found: network.__definitelyMissing__"
+      );
+      expect(failure.diagnostic?.code).toBe("SEM_PROTOCOL_METHOD_NOT_FOUND");
+    }
   });
 });
