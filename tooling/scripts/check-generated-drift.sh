@@ -24,6 +24,7 @@ diff -u "$root/contract/protocol/axtp.protocol.yaml" "$tmp/contract/protocol/axt
 
 diff -u "$root/contract/generated/protocol.md" "$tmp/generated/protocol.md"
 diff -u "$root/contract/generated/protocol.json" "$tmp/generated/protocol.json"
+diff -u "$root/contract/generated/semantic.json" "$tmp/generated/semantic.json"
 
 for file in \
   capability_registry.generated.md \
@@ -51,4 +52,4 @@ for file in "$root"/contract/test-vectors/*; do
   diff -u "$file" "$tmp/generated/test_vectors/$base"
 done
 
-echo "[OK] generated artifacts match contract/registry/domain YAML sources"
+echo "[OK] generated artifacts match Protocol and Semantic source authorities"

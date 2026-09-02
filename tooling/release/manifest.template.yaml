@@ -14,6 +14,7 @@ contents:
     - contract/protocol/axtp.protocol.yaml
     - contract/generated/protocol.md
     - contract/generated/protocol.json
+    - contract/generated/semantic.json
     - contract/registry/
     - specs/
     - conformance/
