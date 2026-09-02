@@ -15,6 +15,9 @@ jobs:
     steps:
       - name: Checkout AXTP spec
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -133,6 +136,208 @@ jobs:
           restore_artifact
           trap - EXIT
           tooling/scripts/check-release-artifact.sh 0.0.0
+
+      - name: Install semantic lifecycle dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+
+      - name: Validate semantic lifecycle exact source
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          actual_head="$(git rev-parse HEAD)"
+          if [ "$actual_head" != "$EXPECTED_HEAD_SHA" ]; then
+            echo "semantic lifecycle CI did not checkout exact source: expected=$EXPECTED_HEAD_SHA actual=$actual_head" >&2
+            exit 1
+          fi
+          pnpm --dir tooling/semantic-lifecycle build
+          pnpm --dir tooling/semantic-lifecycle lint
+          pnpm --dir tooling/semantic-lifecycle test
+
+      - name: Materialize semantic lifecycle exact-source report
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          cd tooling/semantic-lifecycle
+          rm -rf .evidence
+          mkdir -p .evidence
+
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import { InMemoryLifecycleControlStore } from './.test-dist/src/controlStore.js';
+          import { SemanticLifecycleCoordinator } from './.test-dist/src/coordinator.js';
+          import { buildClassificationReport, serializeClassificationReport } from './.test-dist/src/report.js';
+
+          const basisRef = Object.freeze({
+            refType: 'IMMUTABLE_REVISION',
+            namespace: 'classification-policy',
+            subject: 'semantic-delta-v1',
+            revision: 'policy-a',
+            digest: 'sha256:policy-a'
+          });
+
+          function fixture(name) {
+            return JSON.parse(readFileSync(`fixtures/classification/${name}`, 'utf8'));
+          }
+
+          function exactRef(caseId) {
+            return Object.freeze({
+              refType: 'IMMUTABLE_REVISION',
+              namespace: 'semantic-scope',
+              subject: caseId,
+              revision: `scope:${caseId}`,
+              digest: `sha256:${caseId}`
+            });
+          }
+
+          function proofCase(entry, observations = entry.observations) {
+            const coordinator = new SemanticLifecycleCoordinator(new InMemoryLifecycleControlStore());
+            const scopeRef = exactRef(entry.id);
+            const proof = coordinator.assess({ caseId: entry.id, scopeRef, observations }, basisRef);
+            const fastPath = coordinator.evaluateFastPath(proof.assessment, scopeRef, basisRef);
+            return {
+              caseId: entry.id,
+              semanticDimension: entry.changedDimension ?? null,
+              expectedDisposition: entry.expected,
+              observations,
+              proof,
+              fastPath
+            };
+          }
+
+          function buildCorpus(reverse = false) {
+            const semantic = fixture('semantic-delta-cases.json');
+            const noDelta = fixture('no-delta-cases.json');
+            const unresolved = fixture('unresolved-cases.json').filter((entry) => entry.kind === 'CLASSIFICATION');
+            const source = [...semantic, ...noDelta, ...unresolved];
+            const ordered = reverse ? [...source].reverse() : source;
+            return ordered.map((entry) => {
+              const observations = reverse
+                ? [...entry.observations].reverse().map((observation) => ({
+                    ...observation,
+                    evidenceRefs: [...observation.evidenceRefs].reverse()
+                  }))
+                : entry.observations;
+              return proofCase(entry, observations);
+            });
+          }
+
+          function freshnessProbes(cases) {
+            const noDeltaCase = cases.find((entry) => entry.expectedDisposition === 'NO_SEMANTIC_DELTA');
+            if (!noDeltaCase) throw new Error('NO_DELTA_CASE_MISSING');
+            const staleScope = {
+              ...noDeltaCase.proof.assessment.scopeRef,
+              revision: 'scope:stale',
+              digest: 'sha256:stale'
+            };
+            const staleBasis = {
+              ...basisRef,
+              revision: 'policy-b',
+              digest: 'sha256:policy-b'
+            };
+            const coordinator = new SemanticLifecycleCoordinator(new InMemoryLifecycleControlStore());
+            return [
+              {
+                probeId: 'stale-scope',
+                expectedEligible: false,
+                decision: coordinator.evaluateFastPath(noDeltaCase.proof.assessment, staleScope, basisRef)
+              },
+              {
+                probeId: 'stale-classification-basis',
+                expectedEligible: false,
+                decision: coordinator.evaluateFastPath(
+                  noDeltaCase.proof.assessment,
+                  noDeltaCase.proof.assessment.scopeRef,
+                  staleBasis
+                )
+              }
+            ];
+          }
+
+          function render(reverse) {
+            const cases = buildCorpus(reverse);
+            return serializeClassificationReport(buildClassificationReport(cases, freshnessProbes(cases)));
+          }
+
+          const first = render(false);
+          const second = render(true);
+          if (first !== second) throw new Error('REPORT_NONDETERMINISTIC');
+
+          const report = JSON.parse(first);
+          if (report.verdict !== 'PASS') throw new Error(`REPORT_VERDICT_${report.verdict}`);
+          if (!report.coverage.complete || report.coverage.coveredSemanticDeltaCategories.length !== 15) {
+            throw new Error('REPORT_COVERAGE_INCOMPLETE');
+          }
+          for (const [name, value] of Object.entries(report.metrics)) {
+            if (value !== 0) throw new Error(`NONZERO_METRIC:${name}:${value}`);
+          }
+
+          const digest = createHash('sha256').update(first).digest('hex');
+          writeFileSync('.evidence/semantic-delta-classification-report.json', first);
+          writeFileSync(
+            '.evidence/report-base-metadata.json',
+            `${JSON.stringify({
+              evidenceVersion: 'sem-lc-01-exact-source-evidence/v1',
+              proofContractVersion: report.proofContractVersion,
+              reportSha256: digest,
+              deterministicRepeatEqual: true,
+              classificationBasisRef: report.cases[0]?.classificationBasisRef ?? null,
+              scopeRefs: report.cases.map((entry) => entry.scopeRef),
+              coverage: report.coverage,
+              metrics: report.metrics,
+              verdict: report.verdict
+            }, null, 2)}\n`
+          );
+
+          console.log(`SEM_LC_REPORT_SHA256=${digest}`);
+          console.log(`SEM_LC_REPORT_VERDICT=${report.verdict}`);
+          console.log(`SEM_LC_COVERED_CATEGORIES=${report.coverage.coveredSemanticDeltaCategories.length}`);
+          console.log('SEM_LC_DETERMINISTIC_REPEAT=true');
+          NODE
+
+          source_sha="$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)"
+          source_tree="$(git -C "$GITHUB_WORKSPACE" rev-parse 'HEAD^{tree}')"
+          if [ "$source_sha" != "$EXPECTED_HEAD_SHA" ]; then
+            echo "report source mismatch: expected=$EXPECTED_HEAD_SHA actual=$source_sha" >&2
+            exit 1
+          fi
+          report_sha="$(sha256sum .evidence/semantic-delta-classification-report.json | awk '{print $1}')"
+
+          SOURCE_SHA="$source_sha" SOURCE_TREE="$source_tree" REPORT_SHA="$report_sha" node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const base = JSON.parse(readFileSync('.evidence/report-base-metadata.json', 'utf8'));
+          const metadata = Object.freeze({
+            ...base,
+            sourceRef: process.env.SOURCE_SHA,
+            sourceTree: process.env.SOURCE_TREE,
+            exactSourceEquality: true,
+            reportSha256: process.env.REPORT_SHA
+          });
+          writeFileSync('.evidence/exact-source-evidence.json', `${JSON.stringify(metadata, null, 2)}\n`);
+          NODE
+
+          printf '%s  %s\n' "$report_sha" semantic-delta-classification-report.json > .evidence/report.sha256
+          echo "SEM_LC_SOURCE_SHA=$source_sha"
+          echo "SEM_LC_SOURCE_TREE=$source_tree"
+          echo "SEM_LC_REPORT_SHA256=$report_sha"
+
+      - name: Upload semantic lifecycle exact-source evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sem-lc-01-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            tooling/semantic-lifecycle/.evidence/semantic-delta-classification-report.json
+            tooling/semantic-lifecycle/.evidence/exact-source-evidence.json
+            tooling/semantic-lifecycle/.evidence/report.sha256
+          if-no-files-found: error
+          retention-days: 90
 
   semantic-descriptor-portability:
     name: Semantic descriptor portability (${{ matrix.os }})
