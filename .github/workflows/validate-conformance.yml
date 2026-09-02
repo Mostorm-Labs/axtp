@@ -328,6 +328,162 @@ jobs:
           echo "SEM_LC_SOURCE_TREE=$source_tree"
           echo "SEM_LC_REPORT_SHA256=$report_sha"
 
+      - name: Reconstruct semantic lifecycle TDD RED-GREEN evidence
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          pkg="$GITHUB_WORKSPACE/tooling/semantic-lifecycle"
+          out="$pkg/.evidence/tdd"
+          rm -rf "$out"
+          mkdir -p "$out"
+          tsc_bin="$pkg/node_modules/.bin/tsc"
+          node_bin="$(command -v node)"
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+
+          compile_red() {
+            local group="$1"
+            local test_js="$2"
+            local impl_file="$3"
+            local red_dir="$tmp/${group}-red"
+            cp -R "$pkg" "$red_dir"
+            rm -rf "$red_dir/dist" "$red_dir/.test-dist" "$red_dir/.evidence" "$red_dir/node_modules"
+            rm -f "$red_dir/src/$impl_file"
+            local log="$out/${group}-red.txt"
+            set +e
+            (
+              cd "$red_dir"
+              "$tsc_bin" --module NodeNext --moduleResolution NodeNext --target ES2022 \
+                --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false \
+                --resolveJsonModule --esModuleInterop src/*.ts
+            ) >"$log" 2>&1
+            local compile_status=$?
+            (
+              cd "$red_dir"
+              "$node_bin" --test ".test-dist/src/$test_js"
+            ) >>"$log" 2>&1
+            local test_status=$?
+            set -e
+            printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' \
+              "$compile_status" "$test_status" >>"$log"
+            if [ "$compile_status" -eq 0 ] && [ "$test_status" -eq 0 ]; then
+              echo "unexpected green for $group" >&2
+              return 1
+            fi
+          }
+
+          run_green() {
+            local group="$1"
+            local test_js="$2"
+            local log="$out/${group}-green.txt"
+            (
+              cd "$pkg"
+              "$node_bin" --test ".test-dist/src/$test_js"
+            ) >"$log" 2>&1
+            printf '\ntest_status=0\nexpected_green=true\n' >>"$log"
+          }
+
+          compile_red T1 basis.test.js basis.ts
+          run_green T1 basis.test.js
+          compile_red T2 classification.test.js classification.ts
+          run_green T2 classification.test.js
+          compile_red T3 freshness.test.js freshness.ts
+          run_green T3 freshness.test.js
+          compile_red T4 controlStore.test.js controlStore.ts
+          run_green T4 controlStore.test.js
+          compile_red T5 coordinator.test.js coordinator.ts
+          run_green T5 coordinator.test.js
+          compile_red T6 report.test.js report.ts
+          run_green T6 report.test.js
+
+          t7_dir="$tmp/T7-red"
+          cp -R "$pkg" "$t7_dir"
+          rm -rf "$t7_dir/dist" "$t7_dir/.test-dist" "$t7_dir/.evidence" "$t7_dir/node_modules"
+          T7_FILE="$t7_dir/src/classification.ts" "$node_bin" <<'NODE'
+          const fs = require('fs');
+          const path = process.env.T7_FILE;
+          let text = fs.readFileSync(path, 'utf8');
+          const old = `    if (!Array.isArray(observation.evidenceRefs) || rawEvidenceRefs.some((ref) => !isValidEvidenceRef(ref))) {\n      diagnostics.push(\`INVALID_EVIDENCE_REF:\${observation.dimension}\`);\n      invalidEvidence = true;\n    }`;
+          if (!text.includes(old)) throw new Error('T7_REPLAY_PATTERN_NOT_FOUND');
+          text = text.replace(
+            old,
+            '    // controlled replay of pre-fix behavior: invalid refs are silently filtered'
+          );
+          fs.writeFileSync(path, text);
+          NODE
+
+          set +e
+          (
+            cd "$t7_dir"
+            "$tsc_bin" --module NodeNext --moduleResolution NodeNext --target ES2022 \
+              --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false \
+              --resolveJsonModule --esModuleInterop src/*.ts
+          ) >"$out/T7-red-invalid-evidence.txt" 2>&1
+          t7_compile=$?
+          (
+            cd "$t7_dir"
+            "$node_bin" --test .test-dist/src/classification.test.js
+          ) >>"$out/T7-red-invalid-evidence.txt" 2>&1
+          t7_test=$?
+          set -e
+          printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' \
+            "$t7_compile" "$t7_test" >>"$out/T7-red-invalid-evidence.txt"
+          if [ "$t7_test" -eq 0 ]; then
+            echo 'T7 controlled replay unexpectedly green' >&2
+            exit 1
+          fi
+          if ! grep -q 'any invalid EvidenceRef makes an otherwise NO_DELTA case UNRESOLVED' \
+            "$out/T7-red-invalid-evidence.txt"; then
+            echo 'T7 red transcript does not identify the invalid EvidenceRef regression' >&2
+            exit 1
+          fi
+          (
+            cd "$pkg"
+            "$node_bin" --test .test-dist/src/classification.test.js
+          ) >"$out/T7-green-invalid-evidence.txt" 2>&1
+          printf '\ntest_status=0\nexpected_green=true\n' >>"$out/T7-green-invalid-evidence.txt"
+
+          SOURCE_BASIS='7c20d5e720be6746b43037bc341ce53bbea1e7db' \
+          SEMANTIC_PATCH_SHA256='7b15287cdca27f6ab44a44f157de2a17d4c823b8cba3dab6e0f46dca2e9d4ec2' \
+          REPAIRED_HEAD="$EXPECTED_HEAD_SHA" OUT_DIR="$out" "$node_bin" <<'NODE'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const path = require('path');
+          const out = process.env.OUT_DIR;
+          const files = fs.readdirSync(out).sort().map((file) => {
+            const data = fs.readFileSync(path.join(out, file));
+            return {
+              file,
+              bytes: data.length,
+              sha256: crypto.createHash('sha256').update(data).digest('hex')
+            };
+          });
+          const manifest = {
+            reportVersion: 'sem-lc-01-tdd-replay-manifest/v1',
+            replayMode: 'CONTROLLED_ISOLATED_REPLAY',
+            semanticImplementationBasis: process.env.SOURCE_BASIS,
+            semanticImplementationPatchSha256: process.env.SEMANTIC_PATCH_SHA256,
+            repairedExactHead: process.env.REPAIRED_HEAD,
+            finalSemanticSourceModifiedByReplay: false,
+            groups: {
+              T1: 'missing basis implementation -> exact basis tests RED, final exact source GREEN',
+              T2: 'missing classifier implementation -> classification tests RED, final exact source GREEN',
+              T3: 'missing freshness implementation -> freshness tests RED, final exact source GREEN',
+              T4: 'missing control-store implementation -> store tests RED, final exact source GREEN',
+              T5: 'missing coordinator implementation -> coordinator tests RED, final exact source GREEN',
+              T6: 'missing report implementation -> report tests RED, final exact source GREEN',
+              T7: 'pre-fix invalid-EvidenceRef silent filtering -> regression test RED, fail-closed final source GREEN'
+            },
+            transcripts: files
+          };
+          fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+          NODE
+
+          cat "$out/manifest.json"
+          sha256sum "$out"/*
+
       - name: Upload semantic lifecycle exact-source evidence
         uses: actions/upload-artifact@v4
         with:
@@ -336,6 +492,8 @@ jobs:
             tooling/semantic-lifecycle/.evidence/semantic-delta-classification-report.json
             tooling/semantic-lifecycle/.evidence/exact-source-evidence.json
             tooling/semantic-lifecycle/.evidence/report.sha256
+            tooling/semantic-lifecycle/.evidence/tdd/*.txt
+            tooling/semantic-lifecycle/.evidence/tdd/manifest.json
           if-no-files-found: error
           retention-days: 90
 
