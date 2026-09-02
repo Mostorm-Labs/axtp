@@ -211,13 +211,13 @@ function expectedBoundDescriptor(sourceKey = "network.yaml") {
                 name: "semantic.network.setIpConfig",
                 resource: "network.ipConfig",
                 kind: "MUTATION",
-                mode: "PATCH",
                 inputProjection: {
                   selector: ["interfaceId"],
                   state: ["config"],
                   methodLocal: ["applyPolicy"]
                 },
-                outputProjection: { state: ["config"] }
+                outputProjection: { state: ["config"] },
+                mode: "PATCH"
               }
             ]
           }
