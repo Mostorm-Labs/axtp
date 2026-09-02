@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SemanticDescriptorBundleV01 } from "./descriptorModel.js";
 
 type DescriptorEmitterModule = {
@@ -83,6 +83,25 @@ describe("semantic descriptor emitter", () => {
     } as unknown as SemanticDescriptorBundleV01;
 
     await expect(loaded.writeSemanticDescriptor!(invalid, outputPath)).rejects.toThrow();
+    expect(await readFile(outputPath, "utf8")).toBe("previous-canonical-bytes\n");
+    expect(await readdir(root)).toEqual(["semantic.json"]);
+  });
+
+  it("preserves the previous target when temporary-file creation fails", async () => {
+    vi.resetModules();
+    const loaded = await import("./descriptorEmitter.js");
+
+    const root = await tempRoot();
+    const outputPath = path.join(root, "semantic.json");
+    const temporaryPath = path.join(root, `.semantic.json.${process.pid}.1.tmp`);
+    await writeFile(outputPath, "previous-canonical-bytes\n", "utf8");
+    await writeFile(temporaryPath, "occupied-temp-path\n", "utf8");
+
+    await expect(loaded.writeSemanticDescriptor(
+      { descriptorVersion: "0.1", sources: [] },
+      outputPath
+    )).rejects.toThrow();
+
     expect(await readFile(outputPath, "utf8")).toBe("previous-canonical-bytes\n");
     expect(await readdir(root)).toEqual(["semantic.json"]);
   });
