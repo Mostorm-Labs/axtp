@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -85,5 +85,22 @@ describe("semantic descriptor emitter", () => {
     await expect(loaded.writeSemanticDescriptor!(invalid, outputPath)).rejects.toThrow();
     expect(await readFile(outputPath, "utf8")).toBe("previous-canonical-bytes\n");
     expect(await readdir(root)).toEqual(["semantic.json"]);
+  });
+
+  it("cleans temporary state when atomic replacement fails", async () => {
+    const loaded = await emitter();
+    expect(typeof loaded.writeSemanticDescriptor).toBe("function");
+
+    const root = await tempRoot();
+    const outputPath = path.join(root, "semantic.json");
+    await mkdir(outputPath);
+
+    await expect(loaded.writeSemanticDescriptor!(
+      { descriptorVersion: "0.1", sources: [] },
+      outputPath
+    )).rejects.toThrow();
+
+    expect(await readdir(root)).toEqual(["semantic.json"]);
+    expect(await readdir(outputPath)).toEqual([]);
   });
 });
