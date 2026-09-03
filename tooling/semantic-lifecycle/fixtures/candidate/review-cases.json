@@ -1,0 +1,6 @@
+[
+  { "id": "exact-human-pass", "source": "HUMAN", "verdict": "PASS", "expectedEligible": true, "reason": "ELIGIBLE" },
+  { "id": "machine-pass", "source": "MACHINE", "verdict": "PASS", "expectedEligible": false, "reason": "NOT_HUMAN_REVIEW" },
+  { "id": "human-reject", "source": "HUMAN", "verdict": "REJECT", "expectedEligible": false, "reason": "REVIEW_NOT_PASS" },
+  { "id": "stale-candidate", "source": "HUMAN", "verdict": "PASS", "expectedEligible": false, "reason": "STALE_CANDIDATE" }
+]
