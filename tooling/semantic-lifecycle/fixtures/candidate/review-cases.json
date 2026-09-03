@@ -1,0 +1,11 @@
+[
+  { "id": "exact-human-pass", "source": "HUMAN", "verdict": "PASS", "expectedEligible": true, "reason": "ELIGIBLE" },
+  { "id": "human-reject", "source": "HUMAN", "verdict": "REJECT", "expectedEligible": false, "reason": "REVIEW_NOT_PASS" },
+  { "id": "missing-review-evidence", "source": "HUMAN", "verdict": "PASS", "evidence": [], "expectedEligible": false, "reason": "MISSING_REVIEW_EVIDENCE" },
+  { "id": "stale-candidate", "source": "HUMAN", "verdict": "PASS", "expectedEligible": false, "reason": "STALE_CANDIDATE" },
+  { "id": "stale-scope", "source": "HUMAN", "verdict": "PASS", "expectedEligible": false, "reason": "STALE_SCOPE" },
+  { "id": "stale-classification-basis", "source": "HUMAN", "verdict": "PASS", "expectedEligible": false, "reason": "STALE_CLASSIFICATION_BASIS" },
+  { "id": "invalid-immutable-ref", "source": "HUMAN", "verdict": "PASS", "candidateRevision": "HEAD", "expectedEligible": false, "reason": "INVALID_IMMUTABLE_REF" },
+  { "id": "machine-runtime-shaped", "source": "MACHINE", "verdict": "PASS", "expectedEligible": false, "reason": "NOT_HUMAN_REVIEW" },
+  { "id": "same-review-id-conflict", "source": "HUMAN", "verdict": "REJECT", "expectedError": "IMMUTABLE_RECORD_CONFLICT" }
+]

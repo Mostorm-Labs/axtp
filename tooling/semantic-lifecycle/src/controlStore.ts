@@ -1,4 +1,4 @@
-import type { ChangeScopeSnapshot, MachineProofReceipt, SemanticDeltaAssessment } from "./model.js";
+import type { ChangeScopeSnapshot, MachineProofReceipt, ReviewDecision, SemanticDeltaAssessment } from "./model.js";
 
 export type ImmutablePutResult = "CREATED" | "IDEMPOTENT";
 
@@ -9,6 +9,8 @@ export interface LifecycleControlStore {
   getAssessment(assessmentId: string): SemanticDeltaAssessment | undefined;
   putMachineProof(receipt: MachineProofReceipt): ImmutablePutResult;
   getMachineProof(receiptId: string): MachineProofReceipt | undefined;
+  putReviewDecision(decision: ReviewDecision): ImmutablePutResult;
+  getReviewDecision(reviewId: string): ReviewDecision | undefined;
 }
 
 type Stored<T> = Readonly<{ canonical: string; value: T }>;
@@ -17,6 +19,7 @@ export class InMemoryLifecycleControlStore implements LifecycleControlStore {
   readonly #scopes = new Map<string, Stored<ChangeScopeSnapshot>>();
   readonly #assessments = new Map<string, Stored<SemanticDeltaAssessment>>();
   readonly #proofs = new Map<string, Stored<MachineProofReceipt>>();
+  readonly #reviews = new Map<string, Stored<ReviewDecision>>();
 
   putScope(snapshot: ChangeScopeSnapshot): ImmutablePutResult {
     return putImmutable(this.#scopes, requireId(snapshot.caseId, "caseId"), snapshot, "ChangeScopeSnapshot");
@@ -50,6 +53,19 @@ export class InMemoryLifecycleControlStore implements LifecycleControlStore {
 
   getMachineProof(receiptId: string): MachineProofReceipt | undefined {
     return this.#proofs.get(receiptId)?.value;
+  }
+
+  putReviewDecision(decision: ReviewDecision): ImmutablePutResult {
+    return putImmutable(
+      this.#reviews,
+      requireId(decision.reviewId, "reviewId"),
+      decision,
+      "ReviewDecision"
+    );
+  }
+
+  getReviewDecision(reviewId: string): ReviewDecision | undefined {
+    return this.#reviews.get(reviewId)?.value;
   }
 }
 

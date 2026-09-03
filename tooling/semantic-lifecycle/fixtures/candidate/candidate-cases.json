@@ -1,0 +1,56 @@
+[
+  {
+    "id": "candidate-create",
+    "candidateId": "candidate-1",
+    "caseId": "case-1",
+    "candidateRevision": "candidate-v1",
+    "payload": { "fieldMeaning": "v1" }
+  },
+  {
+    "id": "candidate-same-ref-idempotent",
+    "candidateId": "candidate-1",
+    "candidateRevision": "candidate-v1",
+    "expected": "IDEMPOTENT"
+  },
+  {
+    "id": "candidate-same-ref-conflict",
+    "candidateId": "candidate-1",
+    "candidateRevision": "candidate-v1",
+    "expectedError": "IMMUTABLE_CANDIDATE_CONFLICT"
+  },
+  {
+    "id": "candidate-repair",
+    "candidateId": "candidate-1",
+    "caseId": "case-1",
+    "candidateRevision": "candidate-v2",
+    "supersedesRevision": "candidate-v1",
+    "payload": { "fieldMeaning": "v2" }
+  },
+  {
+    "id": "candidate-missing-superseded",
+    "candidateId": "candidate-1",
+    "candidateRevision": "candidate-v2",
+    "supersedesRevision": "candidate-v1",
+    "expectedError": "SUPERSEDED_CANDIDATE_NOT_FOUND"
+  },
+  {
+    "id": "candidate-no-semantic-delta-rejected",
+    "assessmentDisposition": "NO_SEMANTIC_DELTA",
+    "expectedError": "CANDIDATE_REQUIRES_SEMANTIC_DELTA"
+  },
+  {
+    "id": "candidate-unresolved-rejected",
+    "assessmentDisposition": "UNRESOLVED",
+    "expectedError": "CANDIDATE_REQUIRES_SEMANTIC_DELTA"
+  },
+  {
+    "id": "candidate-invalid-mutable-ref",
+    "candidateRevision": "HEAD",
+    "expectedError": "INVALID_IMMUTABLE_REF"
+  },
+  {
+    "id": "candidate-non-json-payload-rejected",
+    "payloadKind": "undefined",
+    "expectedError": "INVALID_CANDIDATE_PAYLOAD"
+  }
+]

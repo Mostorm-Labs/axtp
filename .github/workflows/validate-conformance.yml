@@ -557,3 +557,137 @@ jobs:
             --out "$output"
           node -e "const fs=require('fs'); const expected=fs.readFileSync('contract/generated/semantic.json'); const actual=fs.readFileSync(process.argv[1]); if (!expected.equals(actual)) { console.error('semantic descriptor bytes differ'); process.exit(1); }" "$output"
           rm -f "$output"
+
+  sem-lc-02-evidence:
+    name: SEM-LC-02 candidate/review exact-source evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+      - name: Validate exact source and materialize SEM-LC-02 evidence
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TASK_ANCHOR: 48aa536f3a0875350cf3c4270aa4f9f7e6ce993e
+          REPAIR_BASIS: 64a4b264af46350caaddcbbb05efc0d920a7e113
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE"
+          pkg="$root/tooling/semantic-lifecycle"
+          out="$pkg/.evidence/sem-lc-02"
+          [ "$(git -C "$root" rev-parse HEAD)" = "$EXPECTED_HEAD_SHA" ] || exit 1
+          git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
+          git -C "$root" merge-base --is-ancestor "$REPAIR_BASIS" HEAD
+          allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/candidate/(candidate-cases|review-cases)\.json|src/(architectureBoundary\.test|candidateReport(\.test)?|candidateReviewCoordinator\.test|review(\.test)?)\.ts))$'
+          while IFS= read -r path; do
+            [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-02 unauthorized path: $path" >&2; exit 1; }
+          done < <(git -C "$root" diff --name-only "$REPAIR_BASIS"...HEAD)
+          rm -rf "$out"
+          mkdir -p "$out/tdd"
+          pnpm --dir "$pkg" install --lockfile=false
+          pnpm --dir "$pkg" build
+          pnpm --dir "$pkg" lint
+          pnpm --dir "$pkg" test
+          cd "$pkg"
+          SOURCE_SHA="$(git -C "$root" rev-parse HEAD)"; SOURCE_TREE="$(git -C "$root" rev-parse 'HEAD^{tree}')"; export SOURCE_SHA SOURCE_TREE
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import { InMemoryLifecycleControlStore } from './.test-dist/src/controlStore.js';
+          import { InMemorySemanticCandidateStore } from './.test-dist/src/candidateStore.js';
+          import { CandidateReviewCoordinator } from './.test-dist/src/candidateReviewCoordinator.js';
+          import { buildCandidateIsolationReport, serializeCandidateIsolationReport } from './.test-dist/src/candidateReport.js';
+          const candidateFixtures=JSON.parse(readFileSync('fixtures/candidate/candidate-cases.json','utf8'));
+          const reviewFixtures=JSON.parse(readFileSync('fixtures/candidate/review-cases.json','utf8'));
+          const candidateFixtureIds=candidateFixtures.map(({id})=>id);
+          const reviewFixtureIds=reviewFixtures.map(({id})=>id);
+          if(candidateFixtureIds.length<9||reviewFixtureIds.length<9) throw new Error('incomplete SEM-LC-02 fixture corpus');
+          const requireFixture=(ids,id)=>{if(!ids.includes(id)) throw new Error(`missing fixture ${id}`)};
+          for(const id of ['candidate-create','candidate-same-ref-idempotent','candidate-same-ref-conflict','candidate-repair','candidate-missing-superseded','candidate-no-semantic-delta-rejected','candidate-unresolved-rejected','candidate-invalid-mutable-ref','candidate-non-json-payload-rejected']) requireFixture(candidateFixtureIds,id);
+          for(const id of ['exact-human-pass','human-reject','missing-review-evidence','stale-candidate','stale-scope','stale-classification-basis','invalid-immutable-ref','machine-runtime-shaped','same-review-id-conflict']) requireFixture(reviewFixtureIds,id);
+          const scopeRef={refType:'IMMUTABLE_REVISION',namespace:'semantic-scope',subject:'case-evidence',revision:'scope-v1',digest:'sha256:scope-v1'};
+          const basis={refType:'IMMUTABLE_REVISION',namespace:'classification-policy',subject:'semantic-delta-v1',revision:'policy-a',digest:'sha256:policy-a'};
+          const ref1={refType:'IMMUTABLE_REVISION',namespace:'semantic-candidate',subject:'candidate-evidence',revision:'candidate-v1',digest:'sha256:candidate-v1'};
+          const ref2={...ref1,revision:'candidate-v2',digest:'sha256:candidate-v2'};
+          const controls=new InMemoryLifecycleControlStore(), candidates=new InMemorySemanticCandidateStore(), service=new CandidateReviewCoordinator(controls,candidates);
+          controls.putAssessment({assessmentId:'assessment:evidence',caseId:'case-evidence',scopeRef,classificationBasisRef:basis,disposition:'SEMANTIC_DELTA',evaluatedDimensions:['FIELD_MEANING'],evidenceRefs:[{refType:'EVIDENCE',id:'classification'}]});
+          const first=service.createCandidate({candidateId:'candidate-evidence',candidateRef:ref1,assessmentId:'assessment:evidence',payload:{meaning:'v1'},evidenceRefs:[{refType:'EVIDENCE',id:'candidate-v1'}]});
+          const human={reviewId:'review:v1',reviewKind:'SEMANTIC_CANDIDATE',decisionSource:'HUMAN',verdict:'PASS',candidateRef:ref1,scopeRef,classificationBasisRef:basis,evidenceRefs:[{refType:'EVIDENCE',id:'human-v1'}]};
+          service.recordHumanReviewDecision(human);
+          if (!service.evaluateHumanReview(human,first).eligible) throw new Error('exact human review rejected');
+          const repaired=service.createCandidate({candidateId:'candidate-evidence',candidateRef:ref2,supersedesCandidateRef:ref1,assessmentId:'assessment:evidence',payload:{meaning:'v2'},evidenceRefs:[{refType:'EVIDENCE',id:'candidate-v2'}]});
+          const staleReviewAccepted=service.evaluateHumanReview(human,repaired).eligible;
+          if(staleReviewAccepted) throw new Error('stale review accepted');
+          const humanV2={...human,reviewId:'review:v2',candidateRef:ref2,evidenceRefs:[{refType:'EVIDENCE',id:'human-v2'}]};
+          service.recordHumanReviewDecision(humanV2);
+          const accepts=(operation)=>{try{operation();return true;}catch{return false;}};
+          const candidateOverwriteAccepted=accepts(()=>candidates.putCandidate({...first,payload:{meaning:'overwrite'}}));
+          const nonSemanticDeltaCandidateAccepted=['NO_SEMANTIC_DELTA','UNRESOLVED'].some(disposition=>{
+            const localControls=new InMemoryLifecycleControlStore(), localCandidates=new InMemorySemanticCandidateStore(), localService=new CandidateReviewCoordinator(localControls,localCandidates);
+            localControls.putAssessment({...controls.getAssessment('assessment:evidence'),assessmentId:`assessment:${disposition}`,disposition});
+            return accepts(()=>localService.createCandidate({candidateId:`candidate-${disposition}`,candidateRef:{...ref1,subject:`candidate-${disposition}`,revision:`candidate-${disposition}`},assessmentId:`assessment:${disposition}`,payload:{meaning:disposition},evidenceRefs:[{refType:'EVIDENCE',id:disposition}]}));
+          });
+          const missingSupersededAccepted=accepts(()=>service.createCandidate({candidateId:'candidate-evidence',candidateRef:{...ref2,revision:'candidate-v3',digest:'sha256:candidate-v3'},supersedesCandidateRef:{...ref2,revision:'candidate-missing',digest:'sha256:candidate-missing'},assessmentId:'assessment:evidence',payload:{meaning:'v3'},evidenceRefs:[{refType:'EVIDENCE',id:'candidate-v3'}]}));
+          const invalidRefPriority=service.evaluateHumanReview({...human,decisionSource:'MACHINE',candidateRef:{...ref1,revision:'HEAD'}},first);
+          if(invalidRefPriority.reason!=='INVALID_IMMUTABLE_REF') throw new Error(`invalid ref priority ${invalidRefPriority.reason}`);
+          const machineCreatedHumanPass=accepts(()=>service.recordHumanReviewDecision({...human,reviewId:'review:machine',decisionSource:'MACHINE'}));
+          const unprovenHumanReviewAccepted=service.evaluateHumanReview({...human,reviewId:'review:empty',evidenceRefs:[]},first).eligible;
+          const candidateLeakObserved=['update','delete','current','approve','adopt','authority'].some(name=>Object.getOwnPropertyNames(Object.getPrototypeOf(candidates)).some(method=>method.toLowerCase().includes(name)));
+          const sameReviewIdConflictAccepted=accepts(()=>controls.putReviewDecision({...human,verdict:'REJECT'}));
+          if(missingSupersededAccepted) throw new Error('missing superseded candidate accepted');
+          const probes=[{probeId:'fixture-candidate-and-review',candidateLeakObserved,nonSemanticDeltaCandidateAccepted,candidateOverwriteAccepted,staleReviewAccepted,repairedCandidateReviewReused:staleReviewAccepted,machineCreatedHumanPass,unprovenHumanReviewAccepted}];
+          if(sameReviewIdConflictAccepted) throw new Error('same review ID conflict accepted');
+          const context={exactSource:{sourceRef:process.env.SOURCE_SHA,sourceTree:process.env.SOURCE_TREE,taskAnchor:process.env.TASK_ANCHOR},predecessor:{taskId:'AXTP-SEM-LC-01',state:'MERGED_CLOSED',semanticMerge:'8c4f930a12a964dc0be826e9e308f024efd91d8a'},candidateReviewContract:{packageRef:'AXTP-SEM-LC-02-P31-v0.1@48aa536f3a0875350cf3c4270aa4f9f7e6ce993e'},candidateRefs:[ref1,ref2],reviewRefs:[human,humanV2],fixtureCaseIds:{candidate:candidateFixtureIds,review:reviewFixtureIds},c2EvidenceManifest:['C2-T1','C2-T2','C2-T3','C2-T4','C2-T5','C2-T6'],deterministicRepeat:{enumerations:2,byteEqual:true}};
+          const bytes=serializeCandidateIsolationReport(buildCandidateIsolationReport(context,probes));
+          const reversed=serializeCandidateIsolationReport(buildCandidateIsolationReport({...context,candidateRefs:[...context.candidateRefs].reverse(),reviewRefs:[...context.reviewRefs].reverse(),fixtureCaseIds:{candidate:[...candidateFixtureIds].reverse(),review:[...reviewFixtureIds].reverse()},c2EvidenceManifest:[...context.c2EvidenceManifest].reverse()},[...probes].reverse()));
+          if(bytes!==reversed) throw new Error('SEM-LC-02 deterministic repeat mismatch');
+          const report=JSON.parse(bytes); if(report.verdict!=='PASS'||Object.values(report.metrics).some(v=>v!==0)) throw new Error('SEM-LC-02 report failed');
+          const sha=createHash('sha256').update(bytes).digest('hex');
+          writeFileSync('.evidence/sem-lc-02/candidate-review-report.json',bytes);
+          writeFileSync('.evidence/sem-lc-02/report-base-metadata.json',JSON.stringify({evidenceVersion:'sem-lc-02-exact-source-evidence/v1',gate:'VG-SM-02 CANDIDATE_AND_REVIEW_ISOLATION',reportSha256:sha,report},null,2)+'\n');
+          NODE
+          tsc="$pkg/node_modules/.bin/tsc"; nodebin="$(command -v node)"; tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          replay() {
+            group="$1"; testjs="$2"; mode="$3"; target="$4"; pattern="$5"; source_ref="${6:-}"; red="$tmp/$group"; cp -R "$pkg" "$red"; rm -rf "$red/.test-dist" "$red/.evidence" "$red/node_modules"
+            if [ "$mode" = remove ]; then rm -f "$red/src/$target"; else git -C "$root" show "${source_ref}:tooling/semantic-lifecycle/src/$target" > "$red/src/$target"; fi
+            set +e; (cd "$red" && "$tsc" --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts) >"$out/tdd/$group-red.txt" 2>&1; cs=$?; (cd "$red" && "$nodebin" --test ".test-dist/src/$testjs") >>"$out/tdd/$group-red.txt" 2>&1; ts=$?; set -e
+            printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' "$cs" "$ts" >>"$out/tdd/$group-red.txt"; [ "$ts" -ne 0 ]; grep -Fq "$pattern" "$out/tdd/$group-red.txt"
+            (cd "$pkg" && "$nodebin" --test ".test-dist/src/$testjs") >"$out/tdd/$group-green.txt" 2>&1; printf '\ntest_status=0\nexpected_green=true\n' >>"$out/tdd/$group-green.txt"
+          }
+          replay C2-T1 candidateStore.test.js remove candidateStore.ts 'candidateStore module must exist'
+          replay C2-T2 candidateReviewCoordinator.test.js remove candidateReviewCoordinator.ts 'candidateReviewCoordinator module must exist'
+          replay C2-T3 controlStore.test.js baseline controlStore.ts 'store.putReviewDecision is not a function' "$TASK_ANCHOR"
+          replay C2-T4 review.test.js baseline review.ts 'NOT_HUMAN_REVIEW' "$REPAIR_BASIS"
+          replay C2-T5 architectureBoundary.test.js remove candidateStore.ts 'candidateStore.ts must exist'
+          replay C2-T6 candidateReport.test.js baseline candidateReport.ts 'inputs is not iterable' "$REPAIR_BASIS"
+          export OUT_DIR="$out/tdd"
+          node --input-type=module <<'NODE'
+          import {readdirSync,readFileSync,writeFileSync} from 'node:fs'; import {createHash} from 'node:crypto'; import {join} from 'node:path';
+          const out=process.env.OUT_DIR; const transcripts=readdirSync(out).filter(f=>f.endsWith('.txt')).sort().map(file=>{const b=readFileSync(join(out,file));return{file,bytes:b.length,sha256:createHash('sha256').update(b).digest('hex')}});
+          if(transcripts.length!==12) throw new Error(`transcript count ${transcripts.length}`);
+          writeFileSync(join(out,'manifest.json'),JSON.stringify({reportVersion:'sem-lc-02-tdd-replay-manifest/v1',replayMode:'CONTROLLED_ISOLATED_REPLAY',taskAnchor:process.env.TASK_ANCHOR,remoteRed:{head:'2bf61e9c6a42ef2b4760a1d72e0aacfb79b1d824',runId:33713198212,jobId:100516856742,tests:{total:43,pass:27,fail:16}},finalExactHead:process.env.SOURCE_SHA,finalExactTree:process.env.SOURCE_TREE,finalSourceModifiedByReplay:false,groups:['C2-T1','C2-T2','C2-T3','C2-T4','C2-T5','C2-T6'],transcripts},null,2)+'\n');
+          NODE
+          report_sha="$(sha256sum "$out/candidate-review-report.json" | awk '{print $1}')"; manifest_sha="$(sha256sum "$out/tdd/manifest.json" | awk '{print $1}')"; export REPORT_SHA="$report_sha" MANIFEST_SHA="$manifest_sha" SOURCE_SHA SOURCE_TREE
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs'; const base=JSON.parse(readFileSync('.evidence/sem-lc-02/report-base-metadata.json','utf8')); const report=base.report; writeFileSync('.evidence/sem-lc-02/exact-source-evidence.json',JSON.stringify({evidenceVersion:base.evidenceVersion,gate:base.gate,sourceRef:process.env.SOURCE_SHA,sourceTree:process.env.SOURCE_TREE,exactSourceEquality:true,reportSha256:process.env.REPORT_SHA,tddManifestSha256:process.env.MANIFEST_SHA,predecessor:report.predecessor,candidateReviewContract:report.candidateReviewContract,candidateRefs:report.candidateRefs,reviewRefs:report.reviewRefs,fixtureCaseIds:report.fixtureCaseIds,c2EvidenceManifest:report.c2EvidenceManifest,deterministicRepeat:report.deterministicRepeat,metrics:report.metrics,verdict:report.verdict},null,2)+'\n');
+          NODE
+          printf '%s  candidate-review-report.json\n' "$report_sha" > "$out/report.sha256"
+          printf '%s  tdd/manifest.json\n' "$manifest_sha" > "$out/tdd-manifest.sha256"
+      - name: Upload SEM-LC-02 exact-source evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sem-lc-02-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: tooling/semantic-lifecycle/.evidence/sem-lc-02
+          if-no-files-found: error
+          retention-days: 90

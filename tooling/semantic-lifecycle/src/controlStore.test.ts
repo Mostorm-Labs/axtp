@@ -55,6 +55,25 @@ function receipt(disposition = "NO_SEMANTIC_DELTA") {
   };
 }
 
+function reviewDecision(overrides = {}) {
+  return {
+    reviewId: "review-1",
+    reviewKind: "SEMANTIC_CANDIDATE",
+    decisionSource: "HUMAN",
+    verdict: "PASS",
+    candidateRef: {
+      refType: "IMMUTABLE_REVISION",
+      namespace: "semantic-candidate",
+      subject: "candidate-1",
+      revision: "candidate-v1"
+    },
+    scopeRef,
+    classificationBasisRef: basisRef,
+    evidenceRefs: [{ refType: "EVIDENCE", id: "human-review-1" }],
+    ...overrides
+  };
+}
+
 test("same ID and same canonical content is idempotent", async () => {
   const mod = await loadStore();
   assert.ok(mod, "controlStore module must exist");
@@ -99,4 +118,16 @@ test("reads cannot mutate stored immutable control records", async () => {
   assert.ok(Object.isFrozen(read.scopeRef));
   assert.throws(() => { read.scopeRef.revision = "tampered"; });
   assert.equal(store.getScope("case-1").scopeRef.revision, "scope-a");
+});
+
+test("human ReviewDecision is an immutable control record, not Candidate payload", async () => {
+  const mod = await loadStore();
+  assert.ok(mod, "controlStore module must exist");
+  const store = new mod.InMemoryLifecycleControlStore();
+  assert.equal(store.putReviewDecision(reviewDecision()), "CREATED");
+  assert.equal(store.putReviewDecision(structuredClone(reviewDecision())), "IDEMPOTENT");
+  assert.deepEqual(store.getReviewDecision("review-1"), reviewDecision());
+  assert.throws(() => store.putReviewDecision(reviewDecision({ verdict: "REJECT" })), /IMMUTABLE_RECORD_CONFLICT/);
+  const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(store));
+  assert.equal(methods.some((name) => name.toLowerCase().includes("candidatepayload")), false);
 });
