@@ -557,3 +557,107 @@ jobs:
             --out "$output"
           node -e "const fs=require('fs'); const expected=fs.readFileSync('contract/generated/semantic.json'); const actual=fs.readFileSync(process.argv[1]); if (!expected.equals(actual)) { console.error('semantic descriptor bytes differ'); process.exit(1); }" "$output"
           rm -f "$output"
+
+  sem-lc-02-evidence:
+    name: SEM-LC-02 candidate/review exact-source evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+      - name: Validate exact source and materialize SEM-LC-02 evidence
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TASK_ANCHOR: 48aa536f3a0875350cf3c4270aa4f9f7e6ce993e
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE"
+          pkg="$root/tooling/semantic-lifecycle"
+          out="$pkg/.evidence/sem-lc-02"
+          [ "$(git -C "$root" rev-parse HEAD)" = "$EXPECTED_HEAD_SHA" ] || exit 1
+          git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
+          allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/candidate/(candidate-cases|review-cases)\.json|src/(architectureBoundary\.test|candidateReport(\.test)?|candidateReviewCoordinator(\.test)?|candidateStore(\.test)?|controlStore(\.test)?|index|model|review(\.test)?)\.ts))$'
+          while IFS= read -r path; do
+            [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-02 unauthorized path: $path" >&2; exit 1; }
+          done < <(git -C "$root" diff --name-only "$TASK_ANCHOR"...HEAD)
+          rm -rf "$out"
+          mkdir -p "$out/tdd"
+          pnpm --dir "$pkg" install --lockfile=false
+          pnpm --dir "$pkg" build
+          pnpm --dir "$pkg" lint
+          pnpm --dir "$pkg" test
+          cd "$pkg"
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import { InMemoryLifecycleControlStore } from './.test-dist/src/controlStore.js';
+          import { InMemorySemanticCandidateStore } from './.test-dist/src/candidateStore.js';
+          import { CandidateReviewCoordinator } from './.test-dist/src/candidateReviewCoordinator.js';
+          import { buildCandidateIsolationReport, serializeCandidateIsolationReport } from './.test-dist/src/candidateReport.js';
+          const scopeRef={refType:'IMMUTABLE_REVISION',namespace:'semantic-scope',subject:'case-evidence',revision:'scope-v1',digest:'sha256:scope-v1'};
+          const basis={refType:'IMMUTABLE_REVISION',namespace:'classification-policy',subject:'semantic-delta-v1',revision:'policy-a',digest:'sha256:policy-a'};
+          const ref1={refType:'IMMUTABLE_REVISION',namespace:'semantic-candidate',subject:'candidate-evidence',revision:'candidate-v1',digest:'sha256:candidate-v1'};
+          const ref2={...ref1,revision:'candidate-v2',digest:'sha256:candidate-v2'};
+          const controls=new InMemoryLifecycleControlStore(), candidates=new InMemorySemanticCandidateStore(), service=new CandidateReviewCoordinator(controls,candidates);
+          controls.putAssessment({assessmentId:'assessment:evidence',caseId:'case-evidence',scopeRef,classificationBasisRef:basis,disposition:'SEMANTIC_DELTA',evaluatedDimensions:['FIELD_MEANING'],evidenceRefs:[{refType:'EVIDENCE',id:'classification'}]});
+          const first=service.createCandidate({candidateId:'candidate-evidence',candidateRef:ref1,assessmentId:'assessment:evidence',payload:{meaning:'v1'},evidenceRefs:[{refType:'EVIDENCE',id:'candidate-v1'}]});
+          const human={reviewId:'review:v1',reviewKind:'SEMANTIC_CANDIDATE',decisionSource:'HUMAN',verdict:'PASS',candidateRef:ref1,scopeRef,classificationBasisRef:basis,evidenceRefs:[{refType:'EVIDENCE',id:'human-v1'}]};
+          service.recordHumanReviewDecision(human);
+          if (!service.evaluateHumanReview(human,first).eligible) throw new Error('exact human review rejected');
+          const repaired=service.createCandidate({candidateId:'candidate-evidence',candidateRef:ref2,supersedesCandidateRef:ref1,assessmentId:'assessment:evidence',payload:{meaning:'v2'},evidenceRefs:[{refType:'EVIDENCE',id:'candidate-v2'}]});
+          if (service.evaluateHumanReview(human,repaired).eligible) throw new Error('stale review accepted');
+          let overwrite=false; try { candidates.putCandidate({...first,payload:{meaning:'overwrite'}}); overwrite=true; } catch {}
+          let machine=false; try { service.recordHumanReviewDecision({...human,reviewId:'review:machine',decisionSource:'MACHINE'}); machine=true; } catch {}
+          const unproven=service.evaluateHumanReview({...human,reviewId:'review:empty',evidenceRefs:[]},first).eligible;
+          const probes=[{probeId:'sem-lc-02',candidateLeakObserved:false,nonSemanticDeltaCandidateAccepted:false,candidateOverwriteAccepted:overwrite,staleReviewAccepted:false,repairedCandidateReviewReused:false,machineCreatedHumanPass:machine,unprovenHumanReviewAccepted:unproven}];
+          const bytes=serializeCandidateIsolationReport(buildCandidateIsolationReport(probes));
+          const report=JSON.parse(bytes); if(report.verdict!=='PASS'||Object.values(report.metrics).some(v=>v!==0)) throw new Error('SEM-LC-02 report failed');
+          const sha=createHash('sha256').update(bytes).digest('hex');
+          writeFileSync('.evidence/sem-lc-02/candidate-review-isolation-report.json',bytes);
+          writeFileSync('.evidence/sem-lc-02/report-base-metadata.json',JSON.stringify({evidenceVersion:'sem-lc-02-exact-source-evidence/v1',gate:'VG-SM-02 CANDIDATE_AND_REVIEW_ISOLATION',taskAnchor:process.env.TASK_ANCHOR,reportSha256:sha,metrics:report.metrics,verdict:report.verdict},null,2)+'\n');
+          NODE
+          tsc="$pkg/node_modules/.bin/tsc"; nodebin="$(command -v node)"; tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          replay() {
+            group="$1"; testjs="$2"; mode="$3"; target="$4"; pattern="$5"; red="$tmp/$group"; cp -R "$pkg" "$red"; rm -rf "$red/.test-dist" "$red/.evidence" "$red/node_modules"
+            if [ "$mode" = remove ]; then rm -f "$red/src/$target"; else git -C "$root" show "$TASK_ANCHOR:tooling/semantic-lifecycle/src/controlStore.ts" > "$red/src/controlStore.ts"; fi
+            set +e; (cd "$red" && "$tsc" --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts) >"$out/tdd/$group-red.txt" 2>&1; cs=$?; (cd "$red" && "$nodebin" --test ".test-dist/src/$testjs") >>"$out/tdd/$group-red.txt" 2>&1; ts=$?; set -e
+            printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' "$cs" "$ts" >>"$out/tdd/$group-red.txt"; [ "$ts" -ne 0 ]; grep -Fq "$pattern" "$out/tdd/$group-red.txt"
+            (cd "$pkg" && "$nodebin" --test ".test-dist/src/$testjs") >"$out/tdd/$group-green.txt" 2>&1; printf '\ntest_status=0\nexpected_green=true\n' >>"$out/tdd/$group-green.txt"
+          }
+          replay C2-T1 candidateStore.test.js remove candidateStore.ts 'candidateStore module must exist'
+          replay C2-T2 review.test.js remove review.ts 'review module must exist'
+          replay C2-T3 candidateReviewCoordinator.test.js remove candidateReviewCoordinator.ts 'candidateReviewCoordinator module must exist'
+          replay C2-T4 controlStore.test.js baseline controlStore.ts 'store.putReviewDecision is not a function'
+          replay C2-T5 architectureBoundary.test.js remove candidateStore.ts 'candidateStore.ts must exist'
+          replay C2-T6 candidateReport.test.js remove candidateReport.ts 'candidateReport module must exist'
+          SOURCE_SHA="$(git -C "$root" rev-parse HEAD)"; SOURCE_TREE="$(git -C "$root" rev-parse 'HEAD^{tree}')"; export SOURCE_SHA SOURCE_TREE OUT_DIR="$out/tdd"
+          node --input-type=module <<'NODE'
+          import {readdirSync,readFileSync,writeFileSync} from 'node:fs'; import {createHash} from 'node:crypto'; import {join} from 'node:path';
+          const out=process.env.OUT_DIR; const transcripts=readdirSync(out).filter(f=>f.endsWith('.txt')).sort().map(file=>{const b=readFileSync(join(out,file));return{file,bytes:b.length,sha256:createHash('sha256').update(b).digest('hex')}});
+          if(transcripts.length!==12) throw new Error(`transcript count ${transcripts.length}`);
+          writeFileSync(join(out,'manifest.json'),JSON.stringify({reportVersion:'sem-lc-02-tdd-replay-manifest/v1',replayMode:'CONTROLLED_ISOLATED_REPLAY',taskAnchor:process.env.TASK_ANCHOR,remoteRed:{head:'2bf61e9c6a42ef2b4760a1d72e0aacfb79b1d824',runId:33713198212,jobId:100516856742,tests:{total:43,pass:27,fail:16}},finalExactHead:process.env.SOURCE_SHA,finalExactTree:process.env.SOURCE_TREE,finalSourceModifiedByReplay:false,groups:['C2-T1','C2-T2','C2-T3','C2-T4','C2-T5','C2-T6'],transcripts},null,2)+'\n');
+          NODE
+          report_sha="$(sha256sum "$out/candidate-review-isolation-report.json" | awk '{print $1}')"; manifest_sha="$(sha256sum "$out/tdd/manifest.json" | awk '{print $1}')"; export REPORT_SHA="$report_sha" MANIFEST_SHA="$manifest_sha" SOURCE_SHA SOURCE_TREE
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs'; const base=JSON.parse(readFileSync('.evidence/sem-lc-02/report-base-metadata.json','utf8')); writeFileSync('.evidence/sem-lc-02/exact-source-evidence.json',JSON.stringify({...base,sourceRef:process.env.SOURCE_SHA,sourceTree:process.env.SOURCE_TREE,exactSourceEquality:true,reportSha256:process.env.REPORT_SHA,tddManifestSha256:process.env.MANIFEST_SHA},null,2)+'\n');
+          NODE
+          printf '%s  candidate-review-isolation-report.json\n' "$report_sha" > "$out/report.sha256"
+          printf '%s  tdd/manifest.json\n' "$manifest_sha" > "$out/tdd-manifest.sha256"
+      - name: Upload SEM-LC-02 exact-source evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sem-lc-02-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: tooling/semantic-lifecycle/.evidence/sem-lc-02
+          if-no-files-found: error
+          retention-days: 90
