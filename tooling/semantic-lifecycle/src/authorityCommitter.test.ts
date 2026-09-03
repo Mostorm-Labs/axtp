@@ -101,6 +101,16 @@ test("first Authority commit requires exact Candidate, human PASS Review, Scope,
   assert.deepEqual(env.authorities.getCanonicalSource("contract/semantic/display/settings.yaml"), { meaning: "v1", nested: { a: 1, z: 2 } });
 });
 
+test("Authority payload digest uses locale-independent ordinal ordering for non-ASCII keys", async () => {
+  const env = await setup();
+  createReviewedCandidate(env, "candidate-v1", { z: 1, "ä": 2, a: 3 });
+  const result = env.service.commitAuthority(commitInput("authority-v1", "candidate-v1"));
+  const expectedCanonical = '{"a":3,"z":1,"ä":2}';
+  const expectedDigest = `sha256:${createHash("sha256").update(expectedCanonical).digest("hex")}`;
+  assert.equal(result.authority.sourceBinding.payloadDigest, expectedDigest);
+  assert.deepEqual(env.authorities.getCanonicalSource("contract/semantic/display/settings.yaml"), { a: 3, z: 1, "ä": 2 });
+});
+
 test("supersede binds a fresh reviewed Candidate and exact expected Authority head", async () => {
   const env = await setup();
   const firstCandidate = createReviewedCandidate(env, "candidate-v1", { meaning: "v1" }).candidate;
