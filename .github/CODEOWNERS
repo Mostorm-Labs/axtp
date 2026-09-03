@@ -1,15 +1,15 @@
-# Replace this team with the concrete maintainer team if the GitHub org uses a
-# different name.
-* @Mostorm-Labs/axtp-maintainers
+# AXTP repository code owner.
+# @luckievan is the current maintainer/admin owner for this repository.
+* @luckievan
 
-/contract/registry/ @Mostorm-Labs/axtp-maintainers
-/contract/protocol/ @Mostorm-Labs/axtp-maintainers
-/contract/generated/ @Mostorm-Labs/axtp-maintainers
-/contract/mcp/ @Mostorm-Labs/axtp-maintainers
-/contract/test-vectors/ @Mostorm-Labs/axtp-maintainers
-/conformance/ @Mostorm-Labs/axtp-maintainers
-/release/ @Mostorm-Labs/axtp-maintainers
-/tooling/generators/ @Mostorm-Labs/axtp-maintainers
-/tooling/scripts/ @Mostorm-Labs/axtp-maintainers
-/tooling/release/ @Mostorm-Labs/axtp-maintainers
-/.github/workflows/ @Mostorm-Labs/axtp-maintainers
+/contract/registry/ @luckievan
+/contract/protocol/ @luckievan
+/contract/generated/ @luckievan
+/contract/mcp/ @luckievan
+/contract/test-vectors/ @luckievan
+/conformance/ @luckievan
+/release/ @luckievan
+/tooling/generators/ @luckievan
+/tooling/scripts/ @luckievan
+/tooling/release/ @luckievan
+/.github/workflows/ @luckievan
