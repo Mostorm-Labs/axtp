@@ -86,6 +86,20 @@ test("repository atomically publishes a complete Authority and retries the same 
   assert.deepEqual(retry.authority, created.authority);
 });
 
+test("repository canonicalizes non-ASCII payload keys with locale-independent ordinal ordering", async () => {
+  const repositoryModule = await loadRepository();
+  assert.ok(repositoryModule, "authorityRepository module must exist");
+  const repository = new repositoryModule.InMemorySemanticAuthorityRepository();
+  const request = mutation({
+    payload: { z: 1, "ä": 2, a: 3 },
+    canonicalPayload: '{"a":3,"z":1,"ä":2}'
+  });
+  const created = repository.publishAuthority(request);
+  assert.equal(created.status, "CREATED");
+  assert.equal(created.authority.sourceBinding.payloadDigest, payloadDigest('{"a":3,"z":1,"ä":2}'));
+  assert.deepEqual(repository.getCanonicalSource(request.record.sourceBinding.path), { a: 3, z: 1, "ä": 2 });
+});
+
 test("operation ID collision and immutable Authority-ref collision fail without mutation", async () => {
   const repositoryModule = await loadRepository();
   assert.ok(repositoryModule, "authorityRepository module must exist");
