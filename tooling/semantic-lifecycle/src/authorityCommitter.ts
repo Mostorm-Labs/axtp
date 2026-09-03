@@ -156,13 +156,17 @@ function canonicalizePayload(payload: SemanticCandidatePayload): SemanticCandida
   return deepFreeze(canonicalize(payload)) as SemanticCandidatePayload;
 }
 
+function compareOrdinal(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function canonicalize(value: unknown): CanonicalJsonValue {
   if (value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number") {
     return value as CanonicalJsonValue;
   }
   if (Array.isArray(value)) return Object.freeze(value.map((entry) => canonicalize(entry)));
   const output: Record<string, CanonicalJsonValue> = {};
-  for (const [key, child] of Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [key, child] of Object.entries(value as Record<string, unknown>).sort(([a], [b]) => compareOrdinal(a, b))) {
     output[key] = canonicalize(child);
   }
   return Object.freeze(output);
