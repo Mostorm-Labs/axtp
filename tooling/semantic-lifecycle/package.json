@@ -1,0 +1,18 @@
+{
+  "name": "@axtp/semantic-lifecycle",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "rm -rf .test-dist && tsc --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts && node --test .test-dist/src/*.test.js"
+  },
+  "devDependencies": {
+    "typescript": "5.7.2"
+  },
+  "packageManager": "pnpm@11.3.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

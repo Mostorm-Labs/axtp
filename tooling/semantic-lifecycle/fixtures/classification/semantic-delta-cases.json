@@ -1,0 +1,2514 @@
+[
+  {
+    "changedDimension": "RESOURCE_EXISTENCE",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-resource-existence",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-existence:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "RESOURCE_IDENTITY",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-resource-identity",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-resource-identity:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "LIFETIME",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-lifetime",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifetime:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "STATE_OWNERSHIP",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-state-ownership",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-state-ownership:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "FIELD_MEANING",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-field-meaning",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-field-meaning:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "DEFAULT_EMPTY_SEMANTICS",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-default-empty-semantics",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-default-empty-semantics:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "READ_WRITE_SEMANTICS",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-read-write-semantics",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-read-write-semantics:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "DERIVED_STATE",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-derived-state",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-derived-state:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "OPERATION_SEMANTICS",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-operation-semantics",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-semantics:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "OPERATION_KIND_MODE",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-operation-kind-mode",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-kind-mode:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "LIFECYCLE_SEMANTICS",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-lifecycle-semantics",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-lifecycle-semantics:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "OPERATION_LEGALITY",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-operation-legality",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-operation-legality:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "INVARIANTS",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-invariants",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-invariants:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "COMPATIBILITY_MEANING",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-compatibility-meaning",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-compatibility-meaning:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "SEMANTIC_PROTOCOL_BINDING",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-semantic-protocol-binding",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-semantic-protocol-binding:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      }
+    ]
+  },
+  {
+    "changedDimension": "RESOURCE_EXISTENCE",
+    "expected": "SEMANTIC_DELTA",
+    "id": "delta-dominates-unknown",
+    "observations": [
+      {
+        "dimension": "RESOURCE_EXISTENCE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:RESOURCE_EXISTENCE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "CHANGED"
+      },
+      {
+        "dimension": "RESOURCE_IDENTITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:RESOURCE_IDENTITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFETIME",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:LIFETIME",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "STATE_OWNERSHIP",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:STATE_OWNERSHIP",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "FIELD_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:FIELD_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNKNOWN"
+      },
+      {
+        "dimension": "DEFAULT_EMPTY_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:DEFAULT_EMPTY_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "READ_WRITE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:READ_WRITE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "DERIVED_STATE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:DERIVED_STATE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:OPERATION_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_KIND_MODE",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:OPERATION_KIND_MODE",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "LIFECYCLE_SEMANTICS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:LIFECYCLE_SEMANTICS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "OPERATION_LEGALITY",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:OPERATION_LEGALITY",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "INVARIANTS",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:INVARIANTS",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "COMPATIBILITY_MEANING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:COMPATIBILITY_MEANING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      },
+      {
+        "dimension": "SEMANTIC_PROTOCOL_BINDING",
+        "evidenceRefs": [
+          {
+            "id": "evidence:delta-dominates-unknown:SEMANTIC_PROTOCOL_BINDING",
+            "refType": "EVIDENCE"
+          }
+        ],
+        "state": "UNCHANGED"
+      }
+    ]
+  }
+]
