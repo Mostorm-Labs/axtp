@@ -1,0 +1,17 @@
+[
+  {
+    "id": "candidate-create",
+    "candidateId": "candidate-1",
+    "caseId": "case-1",
+    "candidateRevision": "candidate-v1",
+    "payload": { "fieldMeaning": "v1" }
+  },
+  {
+    "id": "candidate-repair",
+    "candidateId": "candidate-1",
+    "caseId": "case-1",
+    "candidateRevision": "candidate-v2",
+    "supersedesRevision": "candidate-v1",
+    "payload": { "fieldMeaning": "v2" }
+  }
+]
