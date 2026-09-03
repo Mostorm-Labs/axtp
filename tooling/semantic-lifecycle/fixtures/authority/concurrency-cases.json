@@ -1,0 +1,8 @@
+[
+  { "id": "same-head-two-supersessions", "expectedLoserError": "AUTHORITY_HEAD_CONFLICT" },
+  { "id": "unrelated-initial-commits", "expected": "BOTH_CREATED" },
+  { "id": "key-a-conflict-does-not-mutate-key-b", "expected": "KEY_B_UNCHANGED" },
+  { "id": "successful-operation-retry", "expected": "IDEMPOTENT" },
+  { "id": "competing-canonical-path-claim", "expectedLoserError": "AUTHORITY_PATH_CONFLICT" },
+  { "id": "key-a-head-movement-preserves-key-b-cas", "expected": "KEY_B_CREATED" }
+]
