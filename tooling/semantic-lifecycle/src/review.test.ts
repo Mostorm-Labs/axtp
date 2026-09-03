@@ -84,3 +84,19 @@ test("mutable review references return INVALID_IMMUTABLE_REF", async () => {
   assert.ok(mod, "review module must exist");
   assert.deepEqual(mod.evaluateReviewFreshness(review({ candidateRef: { ...candidateRef, revision: "HEAD" } }), candidate()), { eligible: false, reason: "INVALID_IMMUTABLE_REF" });
 });
+
+test("invalid immutable refs dominate machine, reject, and missing-evidence collisions", async () => {
+  const mod = await loadReview();
+  assert.ok(mod, "review module must exist");
+  const invalidCandidateRef = { ...candidateRef, revision: "HEAD" };
+  for (const overrides of [
+    { decisionSource: "MACHINE" },
+    { verdict: "REJECT" },
+    { evidenceRefs: [] }
+  ]) {
+    assert.deepEqual(
+      mod.evaluateReviewFreshness(review({ ...overrides, candidateRef: invalidCandidateRef }), candidate()),
+      { eligible: false, reason: "INVALID_IMMUTABLE_REF" }
+    );
+  }
+});

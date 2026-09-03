@@ -69,6 +69,26 @@ test("only a stored SEMANTIC_DELTA assessment can create a candidate", async () 
   const { service: noDeltaService, controls: noDeltaControls } = await build();
   noDeltaControls.putAssessment(assessment("NO_SEMANTIC_DELTA"));
   assert.throws(() => noDeltaService.createCandidate({ candidateId: "candidate-1", candidateRef: candidateRefV1, assessmentId: "assessment-1", payload: {}, evidenceRefs: [] }), /CANDIDATE_REQUIRES_SEMANTIC_DELTA/);
+
+  const { service: unresolvedService, controls: unresolvedControls } = await build();
+  unresolvedControls.putAssessment(assessment("UNRESOLVED"));
+  assert.throws(() => unresolvedService.createCandidate({ candidateId: "candidate-1", candidateRef: candidateRefV1, assessmentId: "assessment-1", payload: {}, evidenceRefs: [] }), /CANDIDATE_REQUIRES_SEMANTIC_DELTA/);
+});
+
+test("candidate repair rejects a missing superseded candidate revision", async () => {
+  const { service, controls } = await build();
+  controls.putAssessment(assessment());
+  assert.throws(
+    () => service.createCandidate({
+      candidateId: "candidate-1",
+      candidateRef: candidateRefV2,
+      supersedesCandidateRef: candidateRefV1,
+      assessmentId: "assessment-1",
+      payload: { fieldMeaning: "v2" },
+      evidenceRefs: [{ refType: "EVIDENCE", id: "candidate-evidence-v2" }]
+    }),
+    /SUPERSEDED_CANDIDATE_NOT_FOUND/
+  );
 });
 
 test("human review is external evidence and a machine source cannot be recorded as human PASS", async () => {

@@ -20,27 +20,31 @@ export function evaluateReviewFreshness(
   decision: ReviewDecision,
   currentCandidate: SemanticCandidate
 ): ReviewFreshnessDecision {
+  let reviewCandidateRef;
+  let reviewScopeRef;
+  let reviewBasisRef;
+  let currentCandidateRef;
+  let currentScopeRef;
+  let currentBasisRef;
+  try {
+    reviewCandidateRef = basisRefFrom(decision.candidateRef);
+    reviewScopeRef = basisRefFrom(decision.scopeRef);
+    reviewBasisRef = basisRefFrom(decision.classificationBasisRef);
+    currentCandidateRef = basisRefFrom(currentCandidate.candidateRef);
+    currentScopeRef = basisRefFrom(currentCandidate.scopeRef);
+    currentBasisRef = basisRefFrom(currentCandidate.classificationBasisRef);
+  } catch {
+    return ineligible("INVALID_IMMUTABLE_REF");
+  }
   if (decision.reviewKind !== "SEMANTIC_CANDIDATE" || decision.decisionSource !== "HUMAN") {
     return ineligible("NOT_HUMAN_REVIEW");
   }
   if (decision.verdict !== "PASS") return ineligible("REVIEW_NOT_PASS");
   if (!hasValidReviewEvidence(decision.evidenceRefs)) return ineligible("MISSING_REVIEW_EVIDENCE");
-
-  try {
-    const reviewCandidateRef = basisRefFrom(decision.candidateRef);
-    const reviewScopeRef = basisRefFrom(decision.scopeRef);
-    const reviewBasisRef = basisRefFrom(decision.classificationBasisRef);
-    const currentCandidateRef = basisRefFrom(currentCandidate.candidateRef);
-    const currentScopeRef = basisRefFrom(currentCandidate.scopeRef);
-    const currentBasisRef = basisRefFrom(currentCandidate.classificationBasisRef);
-
-    if (!equalBasisRef(reviewCandidateRef, currentCandidateRef)) return ineligible("STALE_CANDIDATE");
-    if (!equalBasisRef(reviewScopeRef, currentScopeRef)) return ineligible("STALE_SCOPE");
-    if (!equalBasisRef(reviewBasisRef, currentBasisRef)) return ineligible("STALE_CLASSIFICATION_BASIS");
-    return Object.freeze({ eligible: true, reason: "ELIGIBLE" as const });
-  } catch {
-    return ineligible("INVALID_IMMUTABLE_REF");
-  }
+  if (!equalBasisRef(reviewCandidateRef, currentCandidateRef)) return ineligible("STALE_CANDIDATE");
+  if (!equalBasisRef(reviewScopeRef, currentScopeRef)) return ineligible("STALE_SCOPE");
+  if (!equalBasisRef(reviewBasisRef, currentBasisRef)) return ineligible("STALE_CLASSIFICATION_BASIS");
+  return Object.freeze({ eligible: true, reason: "ELIGIBLE" as const });
 }
 
 export function assertRecordableHumanReview(decision: ReviewDecision): void {

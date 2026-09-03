@@ -47,3 +47,11 @@ test("candidate review coordinator remains separate from classification and Auth
   assert.equal(classificationText.includes("CandidateReviewCoordinator"), false);
   assert.equal(classificationText.includes("SemanticCandidateStore"), false);
 });
+
+test("machine proof has no human ReviewDecision surface", () => {
+  const machineProof = source("machineProof.ts");
+  assert.equal(machineProof.includes("ReviewDecision"), false);
+  assert.equal(machineProof.includes("createPassReview"), false);
+  assert.equal(machineProof.includes("autoApprove"), false);
+  assert.equal(machineProof.includes("approveCandidate"), false);
+});
