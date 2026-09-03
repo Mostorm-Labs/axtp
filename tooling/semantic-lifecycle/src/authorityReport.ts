@@ -57,7 +57,7 @@ export function buildAuthorityReport(
 ): SemanticAuthorityReport {
   const exactContext = normalizeContext(context);
   const probes = [...inputs]
-    .sort((left, right) => left.probeId.localeCompare(right.probeId))
+    .sort((left, right) => compareOrdinal(left.probeId, right.probeId))
     .map((probe) => Object.freeze({ ...probe, verdict: hasViolation(probe) ? "FAIL" : "PASS" }));
   const metrics: AuthorityReportMetrics = Object.freeze({
     partial_authority_commit_total: count(inputs, (probe) => probe.partialAuthorityCommitObserved),
@@ -148,11 +148,15 @@ function requireNonEmpty(value: unknown, field: string): string {
   return value;
 }
 
+function compareOrdinal(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function sortStrings(value: unknown, field: string): string[] {
   if (!Array.isArray(value) || value.length === 0 || value.some((entry) => typeof entry !== "string" || entry.trim().length === 0)) {
     throw new Error(`INVALID_AUTHORITY_REPORT_CONTEXT:${field}`);
   }
-  return [...value].sort((left, right) => left.localeCompare(right));
+  return [...value].sort(compareOrdinal);
 }
 
 function sortRecords(value: unknown, field: string): Readonly<Record<string, unknown>>[] {
@@ -161,7 +165,7 @@ function sortRecords(value: unknown, field: string): Readonly<Record<string, unk
   }
   return value
     .map((entry) => canonicalize(entry) as Readonly<Record<string, unknown>>)
-    .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+    .sort((left, right) => compareOrdinal(JSON.stringify(left), JSON.stringify(right)));
 }
 
 function count(inputs: readonly AuthorityProbe[], predicate: (input: AuthorityProbe) => boolean): number {
@@ -182,7 +186,7 @@ function canonicalize(value: unknown): unknown {
   if (value === null || typeof value !== "object") return value;
   if (Array.isArray(value)) return value.map((entry) => canonicalize(entry));
   const output: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [key, child] of Object.entries(value as Record<string, unknown>).sort(([a], [b]) => compareOrdinal(a, b))) {
     if (child !== undefined) output[key] = canonicalize(child);
   }
   return output;
