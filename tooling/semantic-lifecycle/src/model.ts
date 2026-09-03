@@ -70,3 +70,39 @@ export interface MachineProofReceipt {
   readonly diagnostics: readonly string[];
   readonly evidenceRefs: readonly EvidenceRef[];
 }
+
+export type CanonicalJsonPrimitive = string | number | boolean | null;
+
+export type CanonicalJsonValue =
+  | CanonicalJsonPrimitive
+  | readonly CanonicalJsonValue[]
+  | Readonly<{ [key: string]: CanonicalJsonValue }>;
+
+export type SemanticCandidatePayload = Readonly<{
+  [key: string]: CanonicalJsonValue;
+}>;
+
+export interface SemanticCandidate {
+  readonly candidateId: string;
+  readonly caseId: string;
+  readonly candidateRef: ImmutableRevisionRef;
+  readonly supersedesCandidateRef?: ImmutableRevisionRef;
+  readonly assessmentId: string;
+  readonly scopeRef: ImmutableRevisionRef;
+  readonly classificationBasisRef: BasisRef;
+  readonly payload: SemanticCandidatePayload;
+  readonly evidenceRefs: readonly EvidenceRef[];
+}
+
+export type HumanReviewVerdict = "PASS" | "REJECT";
+
+export interface ReviewDecision {
+  readonly reviewId: string;
+  readonly reviewKind: "SEMANTIC_CANDIDATE";
+  readonly decisionSource: "HUMAN";
+  readonly verdict: HumanReviewVerdict;
+  readonly candidateRef: ImmutableRevisionRef;
+  readonly scopeRef: ImmutableRevisionRef;
+  readonly classificationBasisRef: BasisRef;
+  readonly evidenceRefs: readonly EvidenceRef[];
+}
