@@ -98,6 +98,24 @@ test("authority report binds exact source, lineage, fixtures, evidence groups, a
   assert.equal(report.verdict, "PASS");
 });
 
+test("authority report uses locale-independent ordinal ordering for non-ASCII sortable values", async () => {
+  const reportModule = await loadReport();
+  assert.ok(reportModule, "authorityReport module must exist");
+  const base = context();
+  const report = reportModule.buildAuthorityReport(context({
+    reviewIds: ["z", "ä", "a"],
+    authorityRefs: [
+      { refType: "IMMUTABLE_REVISION", namespace: "semantic-authority", subject: "z", revision: "v1" },
+      { refType: "IMMUTABLE_REVISION", namespace: "semantic-authority", subject: "ä", revision: "v1" },
+      { refType: "IMMUTABLE_REVISION", namespace: "semantic-authority", subject: "a", revision: "v1" }
+    ],
+    candidateRefs: base.candidateRefs
+  }), [probe("z"), probe("ä"), probe("a")]);
+  assert.deepEqual(report.reviewIds, ["a", "z", "ä"]);
+  assert.deepEqual(report.probes.map((entry) => entry.probeId), ["a", "z", "ä"]);
+  assert.deepEqual(report.authorityRefs.map((entry) => entry.subject), ["a", "z", "ä"]);
+});
+
 test("every zero-tolerance Authority violation makes the report fail", async () => {
   const reportModule = await loadReport();
   assert.ok(reportModule, "authorityReport module must exist");
