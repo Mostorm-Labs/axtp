@@ -1,0 +1,18 @@
+[
+  {
+    "id": "SF01",
+    "description": "A semantic change reaches initial Semantic Authority through assessment, proof, Candidate, and external human PASS review."
+  },
+  {
+    "id": "SF02",
+    "description": "A Candidate without protocolBindings reaches Semantic Authority without Protocol Authority or a Protocol provider."
+  },
+  {
+    "id": "SF03",
+    "description": "A NO_SEMANTIC_DELTA case cannot enter the Candidate or Authority path."
+  },
+  {
+    "id": "SF04",
+    "description": "A human REJECT review cannot authorize Semantic Authority."
+  }
+]

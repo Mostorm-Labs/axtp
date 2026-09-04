@@ -1,0 +1,18 @@
+[
+  {
+    "id": "SF05",
+    "description": "The exact current Semantic Authority resolves to a read-only projection basis."
+  },
+  {
+    "id": "SF06",
+    "description": "A downstream projection failure after basis resolution cannot roll back accepted Semantic Authority."
+  },
+  {
+    "id": "SF07",
+    "description": "A superseded Semantic Authority ref is rejected as a stale projection basis."
+  },
+  {
+    "id": "SF08",
+    "description": "A controlled canonical-source digest mismatch fails closed."
+  }
+]
