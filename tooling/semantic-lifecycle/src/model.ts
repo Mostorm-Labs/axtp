@@ -106,3 +106,25 @@ export interface ReviewDecision {
   readonly classificationBasisRef: BasisRef;
   readonly evidenceRefs: readonly EvidenceRef[];
 }
+
+export type SemanticAuthorityKey = string;
+
+export interface CanonicalSemanticSourceBinding {
+  readonly path: string;
+  readonly payloadDigest: string;
+}
+
+export interface SemanticAuthorityRecord {
+  readonly authorityKey: SemanticAuthorityKey;
+  readonly authorityRef: ImmutableRevisionRef;
+  readonly operationId: string;
+  readonly caseId: string;
+  readonly assessmentId: string;
+  readonly candidateRef: ImmutableRevisionRef;
+  readonly reviewId: string;
+  readonly scopeRef: ImmutableRevisionRef;
+  readonly classificationBasisRef: BasisRef;
+  readonly sourceBinding: CanonicalSemanticSourceBinding;
+  readonly supersedesAuthorityRef?: ImmutableRevisionRef;
+  readonly evidenceRefs: readonly EvidenceRef[];
+}

@@ -581,6 +581,7 @@ jobs:
           EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           TASK_ANCHOR: 48aa536f3a0875350cf3c4270aa4f9f7e6ce993e
           REPAIR_BASIS: 64a4b264af46350caaddcbbb05efc0d920a7e113
+          SEM_LC_02_CLOSURE: 40fa88a1d52df7e9f8251f0f7247b87f04409be0
         run: |
           set -euo pipefail
           root="$GITHUB_WORKSPACE"
@@ -589,10 +590,11 @@ jobs:
           [ "$(git -C "$root" rev-parse HEAD)" = "$EXPECTED_HEAD_SHA" ] || exit 1
           git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
           git -C "$root" merge-base --is-ancestor "$REPAIR_BASIS" HEAD
-          allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/candidate/(candidate-cases|review-cases)\.json|src/(architectureBoundary\.test|candidateReport(\.test)?|candidateReviewCoordinator\.test|review(\.test)?)\.ts))$'
+          git -C "$root" merge-base --is-ancestor "$SEM_LC_02_CLOSURE" HEAD
+          allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/authority/(authority-cases|concurrency-cases)\.json|src/(authorityIdentity(\.test)?|authorityRepository(\.test)?|authorityCommitter(\.test)?|authorityConcurrency\.test|authorityArchitectureBoundary\.test|authorityReport(\.test)?|model|index)\.ts))$'
           while IFS= read -r path; do
-            [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-02 unauthorized path: $path" >&2; exit 1; }
-          done < <(git -C "$root" diff --name-only "$REPAIR_BASIS"...HEAD)
+            [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-02 successor changed predecessor-owned path: $path" >&2; exit 1; }
+          done < <(git -C "$root" diff --name-only "$SEM_LC_02_CLOSURE"...HEAD)
           rm -rf "$out"
           mkdir -p "$out/tdd"
           pnpm --dir "$pkg" install --lockfile=false
@@ -689,5 +691,228 @@ jobs:
         with:
           name: sem-lc-02-evidence-${{ github.event.pull_request.head.sha || github.sha }}
           path: tooling/semantic-lifecycle/.evidence/sem-lc-02
+          if-no-files-found: error
+          retention-days: 90
+
+  sem-lc-03-evidence:
+    name: SEM-LC-03 Authority exact-source evidence
+    runs-on: ubuntu-latest
+    needs:
+      - validate-spec
+      - sem-lc-02-evidence
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+      - name: Validate exact source and frozen SEM-LC-03 scope
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TASK_ANCHOR: 40fa88a1d52df7e9f8251f0f7247b87f04409be0
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE"
+          [ "$(git -C "$root" rev-parse HEAD)" = "$EXPECTED_HEAD_SHA" ]
+          git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
+          allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/authority/(authority-cases|concurrency-cases)\.json|src/(authorityIdentity(\.test)?|authorityRepository(\.test)?|authorityCommitter(\.test)?|authorityConcurrency\.test|authorityArchitectureBoundary\.test|authorityReport(\.test)?|model|index)\.ts))$'
+          changed="$(git -C "$root" diff --name-only "$TASK_ANCHOR"...HEAD)"
+          count="$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l | tr -d ' ')"
+          [ "$count" = 15 ] || { echo "SEM-LC-03 changed-file count must be 15, got $count" >&2; exit 1; }
+          while IFS= read -r path; do
+            [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-03 unauthorized path: $path" >&2; exit 1; }
+          done <<<"$changed"
+          required=(
+            .github/workflows/validate-conformance.yml
+            tooling/semantic-lifecycle/fixtures/authority/authority-cases.json
+            tooling/semantic-lifecycle/fixtures/authority/concurrency-cases.json
+            tooling/semantic-lifecycle/src/authorityIdentity.ts
+            tooling/semantic-lifecycle/src/authorityIdentity.test.ts
+            tooling/semantic-lifecycle/src/authorityRepository.ts
+            tooling/semantic-lifecycle/src/authorityRepository.test.ts
+            tooling/semantic-lifecycle/src/authorityCommitter.ts
+            tooling/semantic-lifecycle/src/authorityCommitter.test.ts
+            tooling/semantic-lifecycle/src/authorityConcurrency.test.ts
+            tooling/semantic-lifecycle/src/authorityArchitectureBoundary.test.ts
+            tooling/semantic-lifecycle/src/authorityReport.ts
+            tooling/semantic-lifecycle/src/authorityReport.test.ts
+            tooling/semantic-lifecycle/src/model.ts
+            tooling/semantic-lifecycle/src/index.ts
+          )
+          for path in "${required[@]}"; do
+            printf '%s\n' "$changed" | grep -Fxq "$path" || { echo "SEM-LC-03 required changed path missing: $path" >&2; exit 1; }
+          done
+          git -C "$root" diff --quiet "$TASK_ANCHOR" -- contract/semantic
+          git -C "$root" diff --quiet "$TASK_ANCHOR" -- tooling/generators/src/semantic
+      - name: Validate SEM-LC-03 implementation and predecessor regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+          pnpm --dir tooling/semantic-lifecycle build
+          pnpm --dir tooling/semantic-lifecycle lint
+          pnpm --dir tooling/semantic-lifecycle test
+      - name: Materialize SEM-LC-03 report and TDD evidence
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TASK_ANCHOR: 40fa88a1d52df7e9f8251f0f7247b87f04409be0
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE"
+          pkg="$root/tooling/semantic-lifecycle"
+          out="$pkg/.evidence/sem-lc-03"
+          rm -rf "$out"
+          mkdir -p "$out/tdd"
+          cd "$pkg"
+          SOURCE_SHA="$(git -C "$root" rev-parse HEAD)"
+          SOURCE_TREE="$(git -C "$root" rev-parse 'HEAD^{tree}')"
+          [ "$SOURCE_SHA" = "$EXPECTED_HEAD_SHA" ]
+          export SOURCE_SHA SOURCE_TREE TASK_ANCHOR
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import { InMemoryLifecycleControlStore } from './.test-dist/src/controlStore.js';
+          import { InMemorySemanticCandidateStore } from './.test-dist/src/candidateStore.js';
+          import { CandidateReviewCoordinator } from './.test-dist/src/candidateReviewCoordinator.js';
+          import { SemanticAuthorityCommitter } from './.test-dist/src/authorityCommitter.js';
+          import { InMemorySemanticAuthorityRepository } from './.test-dist/src/authorityRepository.js';
+          import { buildAuthorityReport, serializeAuthorityReport } from './.test-dist/src/authorityReport.js';
+
+          const authorityFixtures = JSON.parse(readFileSync('fixtures/authority/authority-cases.json', 'utf8'));
+          const concurrencyFixtures = JSON.parse(readFileSync('fixtures/authority/concurrency-cases.json', 'utf8'));
+          const authorityFixtureIds = authorityFixtures.map(({ id }) => id);
+          const concurrencyFixtureIds = concurrencyFixtures.map(({ id }) => id);
+          if (authorityFixtureIds.length < 12 || concurrencyFixtureIds.length < 6) throw new Error('SEM-LC-03 fixture corpus incomplete');
+
+          const scopeRef = Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'semantic-scope', subject: 'case-authority', revision: 'scope-v1', digest: 'sha256:scope-v1' });
+          const basisRef = Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'classification-policy', subject: 'semantic-delta-v1', revision: 'policy-v1', digest: 'sha256:policy-v1' });
+          const candidateRef = revision => Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'semantic-candidate', subject: 'candidate-authority', revision, digest: `sha256:${revision}` });
+          const authorityRef = (revision, key = 'display.settings') => Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'semantic-authority', subject: key, revision, digest: `sha256:${revision}` });
+          const controls = new InMemoryLifecycleControlStore();
+          const candidates = new InMemorySemanticCandidateStore();
+          const candidateService = new CandidateReviewCoordinator(controls, candidates);
+          const authorities = new InMemorySemanticAuthorityRepository();
+          const committer = new SemanticAuthorityCommitter(controls, candidates, authorities);
+          controls.putAssessment({ assessmentId: 'assessment-authority', caseId: 'case-authority', scopeRef, classificationBasisRef: basisRef, disposition: 'SEMANTIC_DELTA', evaluatedDimensions: ['FIELD_MEANING'], evidenceRefs: [{ refType: 'EVIDENCE', id: 'classification' }] });
+
+          const reviewedCandidate = (revision, payload, supersedesCandidateRef) => {
+            const ref = candidateRef(revision);
+            const candidate = candidateService.createCandidate({ candidateId: 'candidate-authority', candidateRef: ref, ...(supersedesCandidateRef ? { supersedesCandidateRef } : {}), assessmentId: 'assessment-authority', payload, evidenceRefs: [{ refType: 'EVIDENCE', id: `candidate:${revision}` }] });
+            const review = { reviewId: `review:${revision}`, reviewKind: 'SEMANTIC_CANDIDATE', decisionSource: 'HUMAN', verdict: 'PASS', candidateRef: ref, scopeRef, classificationBasisRef: basisRef, evidenceRefs: [{ refType: 'EVIDENCE', id: `human:${revision}` }] };
+            candidateService.recordHumanReviewDecision(review);
+            return { candidate, review };
+          };
+          const input = (authorityRevision, candidateRevision, overrides = {}) => ({ operationId: `op:${authorityRevision}`, authorityKey: 'display.settings', authorityRef: authorityRef(authorityRevision), candidateRef: candidateRef(candidateRevision), reviewId: `review:${candidateRevision}`, expectedScopeRef: scopeRef, expectedClassificationBasisRef: basisRef, expectedAuthorityHead: null, canonicalPath: 'contract/semantic/display/settings.yaml', evidenceRefs: [{ refType: 'EVIDENCE', id: `authority:${authorityRevision}` }], ...overrides });
+          const accepts = operation => { try { operation(); return true; } catch { return false; } };
+
+          const firstCandidate = reviewedCandidate('candidate-v1', { meaning: 'v1' });
+          const firstInput = input('authority-v1', 'candidate-v1');
+          const first = committer.commitAuthority(firstInput);
+          if (committer.commitAuthority(firstInput).status !== 'IDEMPOTENT') throw new Error('Authority retry was not idempotent');
+          const operationIdCollisionAccepted = accepts(() => committer.commitAuthority({ ...firstInput, canonicalPath: 'contract/semantic/display/collision.yaml' }));
+
+          const secondCandidate = reviewedCandidate('candidate-v2', { meaning: 'v2' }, firstCandidate.candidate.candidateRef);
+          const second = committer.supersedeAuthority(input('authority-v2', 'candidate-v2', { expectedAuthorityHead: first.authority.authorityRef, canonicalPath: 'contract/semantic/relocated/display.yml' }));
+          const pathDerivedIdentityChangeObserved = second.authority.authorityKey !== first.authority.authorityKey;
+
+          const staleBasis = { ...basisRef, revision: 'policy-stale', digest: 'sha256:policy-stale' };
+          const staleBasisAuthorityAccepted = accepts(() => committer.supersedeAuthority(input('authority-stale-basis', 'candidate-v2', { expectedAuthorityHead: second.authority.authorityRef, expectedClassificationBasisRef: staleBasis })));
+          const candidateReviewMismatchAccepted = accepts(() => committer.supersedeAuthority(input('authority-mismatch', 'candidate-v2', { expectedAuthorityHead: second.authority.authorityRef, reviewId: 'review:candidate-v1' })));
+
+          const leftCandidate = reviewedCandidate('candidate-v3-left', { meaning: 'v3-left' }, secondCandidate.candidate.candidateRef);
+          const rightCandidate = reviewedCandidate('candidate-v3-right', { meaning: 'v3-right' }, secondCandidate.candidate.candidateRef);
+          const left = committer.supersedeAuthority(input('authority-v3-left', 'candidate-v3-left', { expectedAuthorityHead: second.authority.authorityRef, canonicalPath: 'contract/semantic/relocated/display.yml' }));
+          const rightAccepted = accepts(() => committer.supersedeAuthority(input('authority-v3-right', 'candidate-v3-right', { expectedAuthorityHead: second.authority.authorityRef, canonicalPath: 'contract/semantic/relocated/display.yml' })));
+          const lostUpdateObserved = rightAccepted || authorities.getCurrentAuthority('display.settings')?.authorityRef.revision !== 'authority-v3-left';
+
+          let inject = true;
+          const faultRepository = new InMemorySemanticAuthorityRepository({ beforePublish() { if (inject) { inject = false; throw new Error('INJECTED_BEFORE_PUBLISH'); } } });
+          const faultCommitter = new SemanticAuthorityCommitter(controls, candidates, faultRepository);
+          const faultRef = authorityRef('authority-atomic', 'atomic.settings');
+          const faultInput = { ...input('authority-atomic', 'candidate-v1'), operationId: 'op:authority-atomic', authorityKey: 'atomic.settings', authorityRef: faultRef, canonicalPath: 'contract/semantic/atomic.yaml' };
+          accepts(() => faultCommitter.commitAuthority(faultInput));
+          const partialAuthorityCommitObserved = faultRepository.getCurrentAuthority('atomic.settings') !== undefined || faultRepository.getAuthority(faultRef) !== undefined || faultRepository.getCanonicalSource('contract/semantic/atomic.yaml') !== undefined;
+
+          const independentRef = authorityRef('authority-v1', 'audio.settings');
+          const independentResult = committer.commitAuthority({ ...input('authority-audio', 'candidate-v1'), operationId: 'op:authority-audio', authorityKey: 'audio.settings', authorityRef: independentRef, canonicalPath: 'contract/semantic/audio.yaml' });
+          const unrelatedAuthorityKeyInterferenceObserved = independentResult.status !== 'CREATED' || authorities.getCurrentAuthority('audio.settings')?.authorityRef.subject !== 'audio.settings';
+
+          const probes = [{ probeId: 'authority-fixture-corpus', partialAuthorityCommitObserved, staleBasisAuthorityAccepted, lostUpdateObserved, pathDerivedIdentityChangeObserved, operationIdCollisionAccepted, candidateReviewMismatchAccepted, unrelatedAuthorityKeyInterferenceObserved }];
+          const context = { exactSource: { sourceRef: process.env.SOURCE_SHA, sourceTree: process.env.SOURCE_TREE, taskAnchor: process.env.TASK_ANCHOR }, implementationRelease: { notionPageId: '3d04c57a-590c-814d-9f9a-df6bfe38bd02', githubComment: 5527601747 }, predecessor: { taskId: 'AXTP-SEM-LC-02', state: 'REPOSITORY_INTEGRATION_CLOSED', mergeCommit: process.env.TASK_ANCHOR }, authorityContract: { packageRef: 'AXTP-SEM-LC-03-P31-v0.1@40fa88a1d52df7e9f8251f0f7247b87f04409be0' }, authorityRefs: [first.authority.authorityRef, second.authority.authorityRef, left.authority.authorityRef, independentResult.authority.authorityRef], candidateRefs: [firstCandidate.candidate.candidateRef, secondCandidate.candidate.candidateRef, leftCandidate.candidate.candidateRef, rightCandidate.candidate.candidateRef], reviewIds: [firstCandidate.review.reviewId, secondCandidate.review.reviewId, leftCandidate.review.reviewId, rightCandidate.review.reviewId], fixtureCaseIds: { authority: authorityFixtureIds, concurrency: concurrencyFixtureIds }, c3EvidenceManifest: ['C3-T1', 'C3-T2', 'C3-T3', 'C3-T4', 'C3-T5', 'C3-T6'], deterministicRepeat: { enumerations: 2, byteEqual: true } };
+          const bytes = serializeAuthorityReport(buildAuthorityReport(context, probes));
+          const reversed = serializeAuthorityReport(buildAuthorityReport({ ...context, authorityRefs: [...context.authorityRefs].reverse(), candidateRefs: [...context.candidateRefs].reverse(), reviewIds: [...context.reviewIds].reverse(), fixtureCaseIds: { authority: [...authorityFixtureIds].reverse(), concurrency: [...concurrencyFixtureIds].reverse() }, c3EvidenceManifest: [...context.c3EvidenceManifest].reverse() }, [...probes].reverse()));
+          if (bytes !== reversed) throw new Error('SEM-LC-03 deterministic repeat mismatch');
+          const report = JSON.parse(bytes);
+          if (report.verdict !== 'PASS' || Object.values(report.metrics).some(value => value !== 0)) throw new Error('SEM-LC-03 report failed');
+          const reportSha = createHash('sha256').update(bytes).digest('hex');
+          writeFileSync('.evidence/sem-lc-03/authority-report.json', bytes);
+          writeFileSync('.evidence/sem-lc-03/report-base-metadata.json', JSON.stringify({ evidenceVersion: 'sem-lc-03-exact-source-evidence/v1', gate: 'VG-SM-03 AUTHORITY_ATOMICITY_CONCURRENCY_IDENTITY', reportSha256: reportSha, report }, null, 2) + '\n');
+          NODE
+
+          tsc="$pkg/node_modules/.bin/tsc"
+          nodebin="$(command -v node)"
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          replay() {
+            group="$1"; testjs="$2"; target="$3"; pattern="$4"; red="$tmp/$group"
+            cp -R "$pkg" "$red"
+            rm -rf "$red/.test-dist" "$red/.evidence" "$red/node_modules"
+            rm -f "$red/src/$target"
+            set +e
+            (cd "$red" && "$tsc" --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts) >"$out/tdd/$group-red.txt" 2>&1
+            compile_status=$?
+            (cd "$red" && "$nodebin" --test ".test-dist/src/$testjs") >>"$out/tdd/$group-red.txt" 2>&1
+            test_status=$?
+            set -e
+            printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' "$compile_status" "$test_status" >>"$out/tdd/$group-red.txt"
+            [ "$test_status" -ne 0 ]
+            grep -Fq "$pattern" "$out/tdd/$group-red.txt"
+            (cd "$pkg" && "$nodebin" --test ".test-dist/src/$testjs") >"$out/tdd/$group-green.txt" 2>&1
+            printf '\ntest_status=0\nexpected_green=true\n' >>"$out/tdd/$group-green.txt"
+          }
+          replay C3-T1 authorityIdentity.test.js authorityIdentity.ts 'authorityIdentity module must exist'
+          replay C3-T2 authorityRepository.test.js authorityRepository.ts 'authorityRepository module must exist'
+          replay C3-T3 authorityCommitter.test.js authorityCommitter.ts 'authorityCommitter module must exist'
+          replay C3-T4 authorityConcurrency.test.js authorityRepository.ts 'authorityRepository module must exist for CAS'
+          replay C3-T5 authorityArchitectureBoundary.test.js authorityIdentity.ts 'authorityIdentity.ts must exist'
+          replay C3-T6 authorityReport.test.js authorityReport.ts 'authorityReport module must exist'
+
+          export OUT_DIR="$out/tdd"
+          node --input-type=module <<'NODE'
+          import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import { join } from 'node:path';
+          const out = process.env.OUT_DIR;
+          const transcripts = readdirSync(out).filter(file => file.endsWith('.txt')).sort().map(file => { const bytes = readFileSync(join(out, file)); return { file, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') }; });
+          if (transcripts.length !== 12) throw new Error(`SEM-LC-03 transcript count ${transcripts.length}`);
+          writeFileSync(join(out, 'manifest.json'), JSON.stringify({ reportVersion: 'sem-lc-03-tdd-replay-manifest/v1', replayMode: 'CONTROLLED_ISOLATED_REPLAY', taskAnchor: process.env.TASK_ANCHOR, finalExactHead: process.env.SOURCE_SHA, finalExactTree: process.env.SOURCE_TREE, finalSourceModifiedByReplay: false, groups: ['C3-T1', 'C3-T2', 'C3-T3', 'C3-T4', 'C3-T5', 'C3-T6'], transcripts }, null, 2) + '\n');
+          NODE
+
+          report_sha="$(sha256sum "$out/authority-report.json" | awk '{print $1}')"
+          manifest_sha="$(sha256sum "$out/tdd/manifest.json" | awk '{print $1}')"
+          export REPORT_SHA="$report_sha" MANIFEST_SHA="$manifest_sha" SOURCE_SHA SOURCE_TREE
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const base = JSON.parse(readFileSync('.evidence/sem-lc-03/report-base-metadata.json', 'utf8'));
+          const report = base.report;
+          writeFileSync('.evidence/sem-lc-03/exact-source-evidence.json', JSON.stringify({ evidenceVersion: base.evidenceVersion, gate: base.gate, source_sha: process.env.SOURCE_SHA, source_tree: process.env.SOURCE_TREE, task_anchor: process.env.TASK_ANCHOR, task_anchor_ancestor: true, authorized_changed_files: 15, forbidden_paths_changed: 0, deterministic_repeat_byte_equal: true, exactSourceEquality: true, finalSourceModifiedByReplay: false, predecessor_regression: 'SUCCESS', reportSha256: process.env.REPORT_SHA, tddManifestSha256: process.env.MANIFEST_SHA, implementationRelease: report.implementationRelease, predecessor: report.predecessor, authorityContract: report.authorityContract, authorityRefs: report.authorityRefs, candidateRefs: report.candidateRefs, reviewIds: report.reviewIds, fixtureCaseIds: report.fixtureCaseIds, c3EvidenceManifest: report.c3EvidenceManifest, metrics: report.metrics, verdict: report.verdict }, null, 2) + '\n');
+          NODE
+          printf '%s  authority-report.json\n' "$report_sha" > "$out/report.sha256"
+          printf '%s  tdd/manifest.json\n' "$manifest_sha" > "$out/tdd-manifest.sha256"
+      - name: Upload SEM-LC-03 exact-source evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sem-lc-03-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: tooling/semantic-lifecycle/.evidence/sem-lc-03
           if-no-files-found: error
           retention-days: 90

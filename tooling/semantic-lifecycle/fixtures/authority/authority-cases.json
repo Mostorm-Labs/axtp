@@ -1,0 +1,14 @@
+[
+  { "id": "initial-authority-commit", "expected": "CREATED" },
+  { "id": "same-operation-idempotent", "expected": "IDEMPOTENT" },
+  { "id": "operation-id-payload-conflict", "expectedError": "AUTHORITY_OPERATION_CONFLICT" },
+  { "id": "second-initial-commit-rejected", "expectedError": "AUTHORITY_HEAD_CONFLICT" },
+  { "id": "valid-authority-supersession", "expected": "CREATED" },
+  { "id": "stale-expected-head-rejected", "expectedError": "AUTHORITY_HEAD_CONFLICT" },
+  { "id": "pre-publication-failure-atomic", "expectedError": "INJECTED_BEFORE_PUBLISH" },
+  { "id": "stale-scope-basis-review-rejected", "expectedError": "AUTHORITY_REVIEW_NOT_FRESH" },
+  { "id": "canonical-path-relocation", "expected": "CREATED" },
+  { "id": "canonical-path-owner-conflict", "expectedError": "AUTHORITY_PATH_CONFLICT" },
+  { "id": "same-authority-ref-content-conflict", "expectedError": "IMMUTABLE_AUTHORITY_CONFLICT" },
+  { "id": "non-pass-or-unproven-review-rejected", "expectedError": "AUTHORITY_REVIEW_NOT_FRESH" }
+]
