@@ -124,7 +124,8 @@ export class SemanticFirstRoute {
 
   commitInitialAuthority(caseId: string, input: AuthorityCommitInput): AuthorityMutationResult {
     const state = this.#requireCase(caseId);
-    this.#assertCommitReady(state, input, true);
+    const acceptedRetry = this.#isAcceptedOperationRetry(state, input);
+    this.#assertCommitReady(state, input, acceptedRetry);
     const result = this.#authorityCommitter.commitAuthority(input);
     this.#acceptAuthority(state, result.authority.authorityRef);
     return result;
@@ -162,11 +163,12 @@ export class SemanticFirstRoute {
 
   commitSupersedingAuthority(caseId: string, input: AuthorityCommitInput): AuthorityMutationResult {
     const state = this.#requireCase(caseId);
+    const acceptedRetry = this.#isAcceptedOperationRetry(state, input);
     const current = this.#authorityRepository.getCurrentAuthority(input.authorityKey);
-    if (current !== undefined && current.caseId === state.caseId) {
+    if (current !== undefined && current.caseId === state.caseId && !acceptedRetry) {
       throw new Error("SEMANTIC_FIRST_SUPERSESSION_REQUIRES_NEW_CASE");
     }
-    this.#assertCommitReady(state, input, false);
+    this.#assertCommitReady(state, input, acceptedRetry);
     const result = this.#authorityCommitter.supersedeAuthority(input);
     this.#acceptAuthority(state, result.authority.authorityRef);
     return result;
@@ -219,6 +221,27 @@ export class SemanticFirstRoute {
 
   #assertAssessment(state: SemanticFirstCaseState, assessmentId: string): void {
     if (assessmentId !== state.assessmentId) throw new Error("SEMANTIC_FIRST_CASE_CONFLICT:assessment");
+  }
+
+  #isAcceptedOperationRetry(state: SemanticFirstCaseState, input: AuthorityCommitInput): boolean {
+    if (state.status !== "AUTHORITY_ACCEPTED" || state.acceptedAuthorityRef === undefined) return false;
+    let accepted;
+    try {
+      accepted = this.#authorityRepository.getAuthority(state.acceptedAuthorityRef);
+    } catch {
+      return false;
+    }
+    if (
+      accepted === undefined ||
+      accepted.caseId !== state.caseId ||
+      accepted.operationId !== input.operationId ||
+      !sameRef(accepted.authorityRef, input.authorityRef)
+    ) {
+      return false;
+    }
+    return accepted.supersedesAuthorityRef === undefined
+      ? input.expectedAuthorityHead === null
+      : input.expectedAuthorityHead !== null && sameRef(accepted.supersedesAuthorityRef, input.expectedAuthorityHead);
   }
 
   #assertCommitReady(state: SemanticFirstCaseState, input: AuthorityCommitInput, allowAcceptedRetry: boolean): void {

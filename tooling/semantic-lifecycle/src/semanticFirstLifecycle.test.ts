@@ -118,6 +118,17 @@ test("C4-T4 keeps repair, retry, cancel, and supersede observably distinct", asy
     () => env.route.commitInitialAuthority(repairCase.caseId, { ...initialInput, canonicalPath: "contract/semantic/display/other.yaml" }),
     /AUTHORITY_OPERATION_CONFLICT/
   );
+  assert.throws(
+    () => env.route.commitInitialAuthority(repairCase.caseId, {
+      ...initialInput,
+      operationId: "operation:audio-v1",
+      authorityKey: "audio.settings",
+      authorityRef: ref("semantic-authority", "audio.settings", "authority-v1"),
+      canonicalPath: "contract/semantic/audio/settings.yaml"
+    }),
+    /SEMANTIC_FIRST_CASE_ALREADY_ACCEPTED/
+  );
+  assert.equal(env.authorityRepository.getCurrentAuthority("audio.settings"), undefined);
 
   const cancelledCase = changeCase("case-sf12");
   env.route.openCase(cancelledCase);
@@ -134,13 +145,29 @@ test("C4-T4 keeps repair, retry, cancel, and supersede observably distinct", asy
   const supersedingCase = changeCase("case-sf14");
   const supersedingCandidate = openCandidate(env.route, supersedingCase, "v2");
   const supersedingReview = review(env.route, supersedingCase, supersedingCandidate);
-  const superseded = env.route.commitSupersedingAuthority(
-    supersedingCase.caseId,
-    commitInput(supersedingCase, supersedingCandidate, supersedingReview, "authority-v2", initial.authority.authorityRef)
+  const supersedingInput = commitInput(
+    supersedingCase,
+    supersedingCandidate,
+    supersedingReview,
+    "authority-v2",
+    initial.authority.authorityRef
   );
+  const superseded = env.route.commitSupersedingAuthority(supersedingCase.caseId, supersedingInput);
   assert.deepEqual(superseded.authority.supersedesAuthorityRef, initial.authority.authorityRef);
   assert.deepEqual(env.authorityRepository.getAuthority(initial.authority.authorityRef), initial.authority);
   assert.equal(env.route.getCaseStatus(supersedingCase.caseId), "AUTHORITY_ACCEPTED");
+  const supersedingRetry = env.route.commitSupersedingAuthority(supersedingCase.caseId, supersedingInput);
+  assert.equal(supersedingRetry.status, "IDEMPOTENT");
+  assert.deepEqual(supersedingRetry.authority, superseded.authority);
+  assert.throws(
+    () => env.route.commitSupersedingAuthority(supersedingCase.caseId, {
+      ...supersedingInput,
+      operationId: "operation:authority-v3",
+      authorityRef: ref("semantic-authority", "display.settings", "authority-v3"),
+      expectedAuthorityHead: superseded.authority.authorityRef
+    }),
+    /SEMANTIC_FIRST_SUPERSESSION_REQUIRES_NEW_CASE/
+  );
 });
 
 test("lifecycle errors distinguish missing, conflict, cancelled, accepted, and non-current inputs", async () => {
