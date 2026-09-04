@@ -1,0 +1,26 @@
+[
+  {
+    "id": "SF09",
+    "description": "Repair creates a new immutable Candidate in the same case and requires a new human Review."
+  },
+  {
+    "id": "SF10",
+    "description": "An exact replay of a successful Authority operation is idempotent."
+  },
+  {
+    "id": "SF11",
+    "description": "Reusing an operationId with a different request fails closed."
+  },
+  {
+    "id": "SF12",
+    "description": "Pre-Authority cancellation is control-only and prevents later lifecycle operations."
+  },
+  {
+    "id": "SF13",
+    "description": "Cancellation after Authority acceptance cannot roll back accepted Authority."
+  },
+  {
+    "id": "SF14",
+    "description": "Supersession requires a new case, new Candidate, new Review, and the exact current Authority head."
+  }
+]

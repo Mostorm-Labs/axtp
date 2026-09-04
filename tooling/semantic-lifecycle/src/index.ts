@@ -14,3 +14,5 @@ export * from "./machineProof.js";
 export * from "./model.js";
 export * from "./report.js";
 export * from "./review.js";
+export * from "./semanticFirstReport.js";
+export * from "./semanticFirstRoute.js";

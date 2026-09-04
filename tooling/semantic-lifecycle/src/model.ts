@@ -128,3 +128,20 @@ export interface SemanticAuthorityRecord {
   readonly supersedesAuthorityRef?: ImmutableRevisionRef;
   readonly evidenceRefs: readonly EvidenceRef[];
 }
+
+export interface SemanticChangeCase {
+  readonly caseId: string;
+  readonly scopeSnapshot: ChangeScopeSnapshot;
+  readonly classificationBasisRef: BasisRef;
+}
+
+export type SemanticFirstCaseStatus =
+  | "OPEN"
+  | "CANCELLED"
+  | "AUTHORITY_ACCEPTED";
+
+export interface SemanticAuthorityProjectionBasis {
+  readonly authorityKey: SemanticAuthorityKey;
+  readonly authorityRef: ImmutableRevisionRef;
+  readonly sourceBinding: CanonicalSemanticSourceBinding;
+}
