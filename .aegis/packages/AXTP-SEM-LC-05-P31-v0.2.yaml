@@ -1,0 +1,176 @@
+package:
+  task_id: AXTP-SEM-LC-05
+  task_name: BOUND_EXISTING Route
+  stage: P31_TASK_PACKAGING_REGENERATION
+  package_id: AXTP-SEM-LC-05-P31-v0.2@4c2ad24b10d190eb1dd3565b88e380b2eab5f69d
+  verdict: READY_FOR_P32
+  package_ref: notion://3d14c57a-590c-81d7-a035-e77076955719/AXTP-SEM-LC-05-P31-v0.2
+  authoritative_page: https://app.notion.com/p/3d14c57a590c81d7a035e77076955719?pvs=204
+
+repository:
+  provider: github
+  full_name: Mostorm-Labs/axtp
+  canonical_branch: integration/axtp-next
+
+task_anchor:
+  revision: 4c2ad24b10d190eb1dd3565b88e380b2eab5f69d
+  relation: ancestor
+resume_cursor: null
+execution_surface: CODE_EXECUTION
+preferred_executor: codex
+
+current_authority:
+  master_plan: 3d04c57a-590c-81f5-ad5e-eb6c3f184cac
+  P10_product_model: 3d14c57a-590c-8189-b43b-c26e04d7c58c
+  P11_interaction_behavior: 3d14c57a-590c-816a-b0ab-fd2f9667ddc1
+  P12_semantic_schema: 3d14c57a-590c-81a0-aa02-cfdbe1eac342
+  P13_operation_mutation: 3d14c57a-590c-81a3-b7f8-cb03e8cbdf9c
+  P14_system_architecture: 3d14c57a-590c-8157-9221-dd9acd618a1e
+  P20_verification: 3d14c57a-590c-8176-8bef-c8358a20d2b4
+  P23_authority_supersession: 3d14c57a-590c-8191-a18c-ef2e016f071a
+  P30_release: 3d14c57a-590c-81e7-9d69-df6c3c2b029e
+
+gate:
+  id: VG-SM-05_BOUND_EXISTING_NO_REINTERPRETATION
+  hard_threshold: all_v7_safety_metrics_equal_zero
+
+implementation_contract:
+  preserve:
+    - historical v1 SEMANTIC_FIRST record meaning
+    - CandidateReviewCoordinator remains SEMANTIC_FIRST-specific
+    - SemanticAuthorityCommitter remains predecessor SEMANTIC_FIRST commit path
+    - one LifecycleControlStore owner
+    - one SemanticCandidateStore owner
+    - one route-neutral SemanticAuthorityRepository owner
+    - SEM-LC-03 authority repository CAS/idempotency/path/digest invariants
+  require:
+    - distinct BoundExistingReconstructionCase identity
+    - immutable MigrationBasis and basis-selection occurrence identity
+    - route-aware Candidate/proof/two-human-review lineage with no synthetic SemanticDeltaAssessment
+    - A1 -> B2 -> A3 anti-resurrection
+    - read-only ProtocolBasisProvider with publication fence
+    - SemanticAuthorityAcceptanceBoundary as the only BOUND_EXISTING authority writer
+    - atomic Authority publication plus OPEN -> AUTHORITY_ACCEPTED terminal case transition
+    - explicit INCOMPATIBLE then distinct new SemanticChangeCase fallback
+    - implementation-independent reference lineage evaluator
+    - exact-source deterministic V7 evidence
+
+authorized_files:
+  modify:
+    - tooling/semantic-lifecycle/src/model.ts
+    - tooling/semantic-lifecycle/src/controlStore.ts
+    - tooling/semantic-lifecycle/src/candidateStore.ts
+    - tooling/semantic-lifecycle/src/authorityRepository.ts
+    - tooling/semantic-lifecycle/src/semanticFirstRoute.ts
+    - tooling/semantic-lifecycle/src/index.ts
+    - .github/workflows/validate-conformance.yml
+  create_production:
+    - tooling/semantic-lifecycle/src/protocolBasisProvider.ts
+    - tooling/semantic-lifecycle/src/semanticAuthorityAcceptanceBoundary.ts
+    - tooling/semantic-lifecycle/src/boundExistingRoute.ts
+    - tooling/semantic-lifecycle/src/boundExistingReferenceEvaluator.ts
+    - tooling/semantic-lifecycle/src/boundExistingReport.ts
+  create_tests:
+    - tooling/semantic-lifecycle/src/boundExistingRoute.test.ts
+    - tooling/semantic-lifecycle/src/boundExistingLineage.test.ts
+    - tooling/semantic-lifecycle/src/boundExistingFreshness.test.ts
+    - tooling/semantic-lifecycle/src/boundExistingAtomicity.test.ts
+    - tooling/semantic-lifecycle/src/boundExistingConcurrency.test.ts
+    - tooling/semantic-lifecycle/src/boundExistingCompatibility.test.ts
+    - tooling/semantic-lifecycle/src/boundExistingArchitectureBoundary.test.ts
+    - tooling/semantic-lifecycle/src/boundExistingReport.test.ts
+  create_fixtures:
+    - tooling/semantic-lifecycle/fixtures/bound-existing/route-cases.json
+    - tooling/semantic-lifecycle/fixtures/bound-existing/safety-cases.json
+    - tooling/semantic-lifecycle/fixtures/bound-existing/compatibility-cases.json
+  exact_count: 23
+
+unchanged_predecessor_surfaces:
+  - tooling/semantic-lifecycle/src/basis.ts
+  - tooling/semantic-lifecycle/src/classification.ts
+  - tooling/semantic-lifecycle/src/freshness.ts
+  - tooling/semantic-lifecycle/src/machineProof.ts
+  - tooling/semantic-lifecycle/src/coordinator.ts
+  - tooling/semantic-lifecycle/src/candidateReviewCoordinator.ts
+  - tooling/semantic-lifecycle/src/review.ts
+  - tooling/semantic-lifecycle/src/authorityIdentity.ts
+  - tooling/semantic-lifecycle/src/authorityCommitter.ts
+  - tooling/semantic-lifecycle/src/authorityReport.ts
+  - tooling/semantic-lifecycle/src/semanticFirstReport.ts
+  - all existing SEM-LC-01/02/03/04 tests and fixtures
+  - tooling/semantic-lifecycle/package.json
+  - tooling/semantic-lifecycle/tsconfig.json
+
+forbidden_scope:
+  - contract/semantic/**
+  - contract/protocol/**
+  - contract/registry/**
+  - contract/generated/**
+  - specs/**
+  - runtime/**
+  - SDK code
+  - tooling/generators/src/semantic/**
+  - tooling/skills/**
+  - main branch / tags / releases
+  - SEM-LC-06+
+  - Protocol Authority mutation
+  - protocol projection/adoption implementation
+  - workflow stage adapter integration
+  - production persistence backend
+  - performance/scale optimization
+
+p13_operations:
+  - REGISTER_MIGRATION_BASIS
+  - OPEN_BOUND_EXISTING_RECONSTRUCTION
+  - RESELECT_BOUND_EXISTING_BASIS
+  - CREATE_BOUND_EXISTING_CANDIDATE
+  - REVISE_BOUND_EXISTING_CANDIDATE
+  - RECORD_BOUND_EXISTING_MACHINE_PROOF
+  - RECORD_BOUND_EXISTING_HUMAN_REVIEW
+  - CANCEL_BOUND_EXISTING_RECONSTRUCTION
+  - DECLARE_BOUND_EXISTING_INCOMPATIBLE
+  - CREATE_SEMANTIC_CHANGE_FALLBACK
+  - COMMIT_BOUND_EXISTING_AUTHORITY
+  - SUPERSEDE_BOUND_EXISTING_AUTHORITY
+
+v7_required_metrics:
+  protocol_mutation_total: 0
+  stale_protocol_basis_acceptance_total: 0
+  stale_migration_review_acceptance_total: 0
+  stale_basis_selection_acceptance_total: 0
+  stale_candidate_or_evidence_acceptance_total: 0
+  stale_authorization_resurrection_total: 0
+  silent_reinterpretation_acceptance_total: 0
+  synthetic_semantic_delta_total: 0
+  lineage_mismatch_acceptance_total: 0
+  missing_required_review_acceptance_total: 0
+  split_brain_state_total: 0
+  concurrent_double_winner_total: 0
+  operation_id_conflict_mutation_total: 0
+  duplicate_authority_publication_total: 0
+  fallback_authorization_carryover_total: 0
+  unknown_discriminator_acceptance_total: 0
+  unauthorized_authority_writer_total: 0
+  reference_production_divergence_total: 0
+  mandatory_fixture_failure_total: 0
+
+blocked_returns:
+  - BLOCKED_REPOSITORY_IDENTITY
+  - BLOCKED_EXECUTION_DIVERGENCE
+  - BLOCKED_SCOPE
+  - BLOCKED_AUTHORITY
+  - BLOCKED_ENVIRONMENT
+  - BLOCKED_EVIDENCE
+
+p32_result_obligation:
+  execution_ref: REQUIRED_REMOTE_BRANCH_OR_PR_REF
+  source_ref: REQUIRED_40_CHAR_SHA
+  source_tree: REQUIRED_40_CHAR_TREE_SHA
+  materialized_ref: REQUIRED_REVIEWER_ACCESSIBLE_IMMUTABLE_REF
+  ci_run: REQUIRED_EXACT_SOURCE_RUN
+  ci_artifact: REQUIRED_V7_EVIDENCE_ARTIFACT
+
+notes:
+  - This file is a same-repository package materialization mirror for repository-identity preflight.
+  - The authoritative full package text is the Notion package_ref above.
+  - This package-only branch is not the implementation execution branch and must not be merged into the 23-file implementation diff.
