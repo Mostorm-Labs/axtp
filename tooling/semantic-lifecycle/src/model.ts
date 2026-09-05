@@ -187,6 +187,7 @@ export interface BoundExistingReconstructionCase {
   readonly migrationBasisRef: ImmutableRevisionRef;
   readonly selectedProtocolBasis: AdoptedProtocolBasis;
   readonly currentBasisSelectionRef: ImmutableRevisionRef;
+  readonly evidenceRefs: readonly EvidenceRef[];
   readonly acceptedAuthorityRef?: ImmutableRevisionRef;
 }
 
@@ -330,16 +331,20 @@ export function normalizeSemanticCandidateRecordV2(value: unknown): SemanticCand
   requireSchemaAndRoute(record, "candidate");
   requireString(record.candidateId, "candidateId");
   requireString(record.caseId, "caseId");
+  requireRef(record.candidateRef, "candidateRef");
+  if (record.supersedesCandidateRef !== undefined) requireRef(record.supersedesCandidateRef, "supersedesCandidateRef");
+  requirePayload(record.payload, "payload");
+  requireEvidenceRefs(record.evidenceRefs, "evidenceRefs");
   if (record.route === "BOUND_EXISTING") {
     requireString(record.reconstructionCaseId, "reconstructionCaseId");
     requireRef(record.basisSelectionRef, "basisSelectionRef");
-    if (Object.prototype.hasOwnProperty.call(record, "assessmentId")) throw new Error("BOUND_EXISTING_SYNTHETIC_SEMANTIC_FIRST");
+    rejectFields(record, ["assessmentId", "scopeRef", "classificationBasisRef"], "BOUND_EXISTING_SYNTHETIC_SEMANTIC_FIRST");
   } else {
     requireString(record.assessmentId, "assessmentId");
     requireRef(record.scopeRef, "scopeRef");
     requireRef(record.classificationBasisRef, "classificationBasisRef");
+    rejectFields(record, ["reconstructionCaseId", "basisSelectionRef"], "SEMANTIC_FIRST_SYNTHETIC_BOUND_EXISTING");
   }
-  requireRef(record.candidateRef, "candidateRef");
   return freezeClone(record) as SemanticCandidateRecordV2;
 }
 
@@ -348,17 +353,21 @@ export function normalizeHumanReviewDecisionV2(value: unknown): HumanReviewDecis
   requireSchemaAndRoute(record, "review");
   if (record.reviewKind !== "SEMANTIC_CANDIDATE" && record.reviewKind !== "NO_REINTERPRETATION") throw new Error("UNKNOWN_REVIEW_KIND");
   if (record.decisionSource !== "HUMAN") throw new Error("INVALID_REVIEW_SOURCE");
+  requireString(record.reviewId, "reviewId");
+  requireRef(record.candidateRef, "candidateRef");
+  requireEvidenceRefs(record.evidenceRefs, "evidenceRefs");
   if (record.route === "BOUND_EXISTING") {
     requireString(record.reconstructionCaseId, "reconstructionCaseId");
     requireRef(record.basisSelectionRef, "basisSelectionRef");
-    if (Object.prototype.hasOwnProperty.call(record, "assessmentId")) throw new Error("BOUND_EXISTING_SYNTHETIC_SEMANTIC_FIRST");
+    rejectFields(record, ["assessmentId", "scopeRef", "classificationBasisRef"], "BOUND_EXISTING_SYNTHETIC_SEMANTIC_FIRST");
   } else {
+    if (record.reviewKind !== "SEMANTIC_CANDIDATE") throw new Error("INVALID_REVIEW_KIND");
     requireString(record.assessmentId, "assessmentId");
     requireRef(record.scopeRef, "scopeRef");
     requireRef(record.classificationBasisRef, "classificationBasisRef");
+    rejectFields(record, ["reconstructionCaseId", "basisSelectionRef"], "SEMANTIC_FIRST_SYNTHETIC_BOUND_EXISTING");
   }
   if (record.verdict !== "PASS" && record.verdict !== "REJECT") throw new Error("INVALID_REVIEW_VERDICT");
-  requireRef(record.candidateRef, "candidateRef");
   return freezeClone(record) as HumanReviewDecisionV2;
 }
 
@@ -368,6 +377,16 @@ export function normalizeBoundExistingMachineProofReceipt(value: unknown): Bound
   if (record.verdict !== "PASS" && record.verdict !== "FAIL") throw new Error("UNKNOWN_PROOF_VERDICT");
   for (const field of ["receiptId", "proofContractVersion", "reconstructionCaseId", "inputDigest"]) requireString(record[field], field);
   for (const field of ["candidateRef", "basisSelectionRef", "migrationBasisRef", "protocolBasisRef"]) requireRef(record[field], field);
+  let engine: Record<string, any>;
+  try {
+    engine = asRecord(record.engine);
+  } catch {
+    throw new Error("INVALID_RECORD:engine");
+  }
+  requireString(engine.name, "engine.name");
+  requireString(engine.version, "engine.version");
+  requireStringArray(record.diagnostics, "diagnostics");
+  requireEvidenceRefs(record.evidenceRefs, "evidenceRefs");
   return freezeClone(record) as BoundExistingMachineProofReceipt;
 }
 
@@ -376,6 +395,15 @@ export function normalizeBoundExistingReconstructionCase(value: unknown): BoundE
   requireSchemaAndRoute(record, "case");
   if (!["OPEN", "CANCELLED", "INCOMPATIBLE", "AUTHORITY_ACCEPTED"].includes(String(record.status))) throw new Error("UNKNOWN_CASE_STATUS");
   requireString(record.reconstructionCaseId, "reconstructionCaseId");
+  requireString(record.caseId, "caseId");
+  requireRef(record.migrationBasisRef, "migrationBasisRef");
+  const protocolBasis = asRecord(record.selectedProtocolBasis);
+  requireRef(protocolBasis.protocolBasisRef, "selectedProtocolBasis.protocolBasisRef");
+  requireString(protocolBasis.protocolBasisId, "selectedProtocolBasis.protocolBasisId");
+  requireString(protocolBasis.payloadDigest, "selectedProtocolBasis.payloadDigest");
+  requireRef(record.currentBasisSelectionRef, "currentBasisSelectionRef");
+  requireEvidenceRefs(record.evidenceRefs, "evidenceRefs");
+  if (record.acceptedAuthorityRef !== undefined) requireRef(record.acceptedAuthorityRef, "acceptedAuthorityRef");
   return freezeClone(record) as BoundExistingReconstructionCase;
 }
 
@@ -385,19 +413,30 @@ export function normalizeSemanticAuthorityRecordV2(value: unknown): SemanticAuth
   requireString(record.authorityKey, "authorityKey");
   requireString(record.operationId, "operationId");
   requireRef(record.authorityRef, "authorityRef");
+  const sourceBinding = asRecord(record.sourceBinding);
+  requireString(sourceBinding.path, "sourceBinding.path");
+  requireString(sourceBinding.payloadDigest, "sourceBinding.payloadDigest");
+  requireEvidenceRefs(record.evidenceRefs, "evidenceRefs");
+  if (record.supersedesAuthorityRef !== undefined) requireRef(record.supersedesAuthorityRef, "supersedesAuthorityRef");
   if (record.route === "BOUND_EXISTING") {
     for (const field of ["reconstructionCaseId", "machineProofReceiptId", "semanticReviewId", "noReinterpretationReviewId"]) requireString(record[field], field);
+    requireRef(record.candidateRef, "candidateRef");
     requireRef(record.basisSelectionRef, "basisSelectionRef");
-    if (Object.prototype.hasOwnProperty.call(record, "assessmentId")) throw new Error("BOUND_EXISTING_SYNTHETIC_SEMANTIC_FIRST");
+    rejectFields(record, ["caseId", "assessmentId", "reviewId", "scopeRef", "classificationBasisRef"], "BOUND_EXISTING_SYNTHETIC_SEMANTIC_FIRST");
   } else {
     for (const field of ["caseId", "assessmentId", "reviewId"]) requireString(record[field], field);
     requireRef(record.candidateRef, "candidateRef");
+    requireRef(record.scopeRef, "scopeRef");
+    requireRef(record.classificationBasisRef, "classificationBasisRef");
+    rejectFields(record, ["reconstructionCaseId", "basisSelectionRef", "machineProofReceiptId", "semanticReviewId", "noReinterpretationReviewId"], "SEMANTIC_FIRST_SYNTHETIC_BOUND_EXISTING");
   }
   return freezeClone(record) as SemanticAuthorityRecordV2;
 }
 
 function asRecord(value: unknown): Record<string, any> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("INVALID_RECORD");
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) throw new Error("INVALID_RECORD");
   return value as Record<string, any>;
 }
 
@@ -413,9 +452,58 @@ function requireString(value: unknown, field: string): asserts value is string {
 }
 
 function requireRef(value: unknown, field: string): asserts value is ImmutableRevisionRef {
-  const ref = asRecord(value);
+  let ref: Record<string, any>;
+  try {
+    ref = asRecord(value);
+  } catch {
+    throw new Error(`INVALID_RECORD:${field}`);
+  }
   if (ref.refType !== "IMMUTABLE_REVISION") throw new Error(`INVALID_RECORD:${field}`);
   for (const key of ["namespace", "subject", "revision"]) requireString(ref[key], `${field}.${key}`);
+}
+
+function requirePayload(value: unknown, field: string): void {
+  try {
+    requireCanonicalObject(value);
+  } catch {
+    throw new Error(`INVALID_RECORD:${field}`);
+  }
+}
+
+function requireCanonicalObject(value: unknown): void {
+  const record = asRecord(value);
+  for (const child of Object.values(record)) requireCanonicalValue(child);
+}
+
+function requireCanonicalValue(value: unknown): void {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return;
+  if (typeof value === "number") {
+    if (Number.isFinite(value)) return;
+    throw new Error("INVALID_CANONICAL_VALUE");
+  }
+  if (Array.isArray(value)) {
+    for (const child of value) requireCanonicalValue(child);
+    return;
+  }
+  requireCanonicalObject(value);
+}
+
+function requireEvidenceRefs(value: unknown, field: string): void {
+  if (!Array.isArray(value)) throw new Error(`INVALID_RECORD:${field}`);
+  for (const evidence of value) {
+    const entry = asRecord(evidence);
+    if (entry.refType !== "EVIDENCE") throw new Error(`INVALID_RECORD:${field}`);
+    requireString(entry.id, `${field}.id`);
+    if (entry.digest !== undefined) requireString(entry.digest, `${field}.digest`);
+  }
+}
+
+function requireStringArray(value: unknown, field: string): void {
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) throw new Error(`INVALID_RECORD:${field}`);
+}
+
+function rejectFields(record: Record<string, any>, fields: readonly string[], code: string): void {
+  if (fields.some((field) => Object.prototype.hasOwnProperty.call(record, field))) throw new Error(code);
 }
 
 function freezeClone<T>(value: T): T {

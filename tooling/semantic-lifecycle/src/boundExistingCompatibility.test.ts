@@ -39,3 +39,39 @@ test("unknown v2 discriminators fail closed through normalization surfaces", () 
     assert.throws(() => normalize(entry.value), new RegExp(entry.expectedError), entry.id);
   }
 });
+
+test("route provenance is mutually exclusive and required lineage cannot be omitted", () => {
+  for (const entry of fixture.filter((value) => value.id.includes("synthetic") || value.id.includes("no-reinterpretation") || value.id.includes("missing-candidate") || value.id.includes("incomplete"))) {
+    const normalize = entry.kind === "candidateV2"
+      ? normalizeSemanticCandidateRecordV2
+      : entry.kind === "reviewV2"
+        ? normalizeHumanReviewDecisionV2
+        : entry.kind === "proof"
+          ? normalizeBoundExistingMachineProofReceipt
+          : entry.kind === "case"
+            ? normalizeBoundExistingReconstructionCase
+            : normalizeSemanticAuthorityRecordV2;
+    assert.throws(() => normalize(entry.value), new RegExp(entry.expectedError), entry.id);
+  }
+});
+
+test("legacy v1 records remain accepted as their historical shapes and are never v2-bound", () => {
+  const legacy = fixture.filter((value) => value.expectedRoute === "SEMANTIC_FIRST");
+  assert.equal(legacy.length, 3);
+  for (const entry of legacy) {
+    assert.doesNotThrow(() => {
+      if (entry.kind === "candidate") {
+        assert.equal(entry.value.assessmentId.startsWith("assessment:"), true);
+      } else if (entry.kind === "review") {
+        assert.equal(entry.value.reviewKind, "SEMANTIC_CANDIDATE");
+      } else {
+        assert.equal(entry.value.assessmentId.startsWith("assessment:"), true);
+      }
+    }, entry.id);
+  }
+});
+
+test("normalizers reject prototype-backed records instead of validating non-own fields", () => {
+  const prototype = { schemaVersion: 2, route: "BOUND_EXISTING", candidateId: "candidate:proto", caseId: "case:proto" };
+  assert.throws(() => normalizeSemanticCandidateRecordV2(Object.create(prototype)), /INVALID_RECORD/);
+});
