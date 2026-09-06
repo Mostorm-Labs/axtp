@@ -1,14 +1,16 @@
 import type {
   AdoptedProtocolBasis, BoundExistingBasisSelection, BoundExistingOperationReceipt,
-  BoundExistingReconstructionCase, ImmutableRevisionRef, MigrationBasisRecord
+  BoundExistingReconstructionCase, ImmutableRevisionRef, MigrationBasisRecord, SemanticCandidateRecordV2
 } from "./model.js";
 import {
   normalizeAdoptedProtocolBasis, normalizeBoundExistingBasisSelection,
-  normalizeBoundExistingReconstructionCase, normalizeMigrationBasisRecord
+  normalizeBoundExistingReconstructionCase, normalizeMigrationBasisRecord,
+  normalizeSemanticCandidateRecordV2
 } from "./model.js";
 import type { BoundExistingCommand, BoundExistingControlStore } from "./controlStore.js";
 import { normalizeControlCommand } from "./controlStore.js";
-import { basisRefFrom } from "./basis.js";
+import { basisRefFrom, equalBasisRef } from "./basis.js";
+import { InMemorySemanticCandidateStore, type SemanticCandidateStore } from "./candidateStore.js";
 
 /** Read-only adoption port. The acceptance fence is supplied by the later provider. */
 export interface AdoptedProtocolBasisReader {
@@ -39,11 +41,22 @@ export interface CancelReconstructionCommand extends OperationMetadata {
   readonly reconstructionCaseId: string;
 }
 
+export interface CreateBoundExistingCandidateCommand extends OperationMetadata {
+  readonly candidate: SemanticCandidateRecordV2;
+}
+
+export interface ReviseBoundExistingCandidateCommand extends OperationMetadata {
+  readonly candidate: SemanticCandidateRecordV2;
+  readonly expectedCandidateRef: ImmutableRevisionRef;
+  readonly revisionReason: "REPAIR" | "BASIS_RESELECTION";
+}
+
 /** Orchestration only: canonical control records remain in the injected owner. */
 export class BoundExistingRoute {
   constructor(
     private readonly control: BoundExistingControlStore,
-    private readonly adoption: AdoptedProtocolBasisReader
+    private readonly adoption: AdoptedProtocolBasisReader,
+    private readonly candidates: SemanticCandidateStore = new InMemorySemanticCandidateStore()
   ) {}
 
   registerMigrationBasis(input: RegisterMigrationBasisCommand): BoundExistingOperationReceipt {
@@ -98,6 +111,89 @@ export class BoundExistingRoute {
     );
     prepared.commit();
     return this.control.getOperationReceipt(command.operationId)!;
+  }
+
+  createCandidate(input: CreateBoundExistingCandidateCommand): BoundExistingOperationReceipt {
+    const raw = commandInput(input, "CREATE_BOUND_EXISTING_CANDIDATE", ["candidate"]);
+    const candidate = normalizeSemanticCandidateRecordV2(raw.payload.candidate);
+    if (candidate.provenance.route !== "BOUND_EXISTING") throw new Error("INVALID_CANDIDATE_ROUTE");
+    const command = normalizeControlCommand({ ...raw.command, payload: { candidate } });
+    const replay = this.control.replayOperation(command);
+    if (replay !== undefined) return replay;
+    const currentCase = this.control.getReconstructionCase(candidate.provenance.reconstructionCaseId);
+    if (currentCase?.status !== "OPEN") throw new Error("CASE_NOT_OPEN");
+    if (!equalBasisRef(currentCase.basisSelectionRef, candidate.provenance.basisSelectionRef)) {
+      throw new Error("BASIS_SELECTION_CONFLICT");
+    }
+    const alreadyStored = this.candidates.getCandidateV2(candidate.candidateRef) !== undefined;
+    const receipt: BoundExistingOperationReceipt = {
+      schemaVersion: 2, route: "BOUND_EXISTING", operationId: command.operationId,
+      operationKind: command.operationKind, status: alreadyStored ? "IDEMPOTENT" : "CREATED", resultRef: candidate.candidateRef
+    };
+    const lineage = { reconstructionCaseId: candidate.provenance.reconstructionCaseId, basisSelectionRef: candidate.provenance.basisSelectionRef };
+    let controlPrepared;
+    let candidatePrepared;
+    try {
+      controlPrepared = this.control.prepareOperation({ command, receipt }, lineage);
+      candidatePrepared = this.candidates.prepareCandidatePublication(candidate, null);
+    } catch (error) {
+      if (controlPrepared) controlPrepared.abort();
+      throw error;
+    }
+    // Publish the control receipt first; both capabilities are already fully
+    // prevalidated, and commits are synchronous no-throw swaps. This avoids
+    // mutating Candidate state before attempting its receipt publication.
+    controlPrepared.commit();
+    candidatePrepared.commit();
+    return this.control.getOperationReceipt(command.operationId)!;
+  }
+
+  reviseCandidate(input: ReviseBoundExistingCandidateCommand): BoundExistingOperationReceipt {
+    const raw = commandInput(input, "REVISE_BOUND_EXISTING_CANDIDATE", ["candidate", "expectedCandidateRef", "revisionReason"]);
+    const candidate = normalizeSemanticCandidateRecordV2(raw.payload.candidate);
+    const expectedCandidateRef = exactRef(raw.payload.expectedCandidateRef);
+    const revisionReason = raw.payload.revisionReason;
+    if (revisionReason !== "REPAIR" && revisionReason !== "BASIS_RESELECTION") throw new Error("INVALID_OPERATION");
+    if (candidate.provenance.route !== "BOUND_EXISTING") throw new Error("INVALID_CANDIDATE_ROUTE");
+    const command = normalizeControlCommand({ ...raw.command, payload: { candidate, expectedCandidateRef, revisionReason } });
+    const replay = this.control.replayOperation(command);
+    if (replay !== undefined) return replay;
+    if (candidate.supersedesCandidateRef === undefined || !equalBasisRef(candidate.supersedesCandidateRef, expectedCandidateRef)) {
+      throw new Error("CANDIDATE_SUPERSESSION_CONFLICT");
+    }
+    const currentCase = this.control.getReconstructionCase(candidate.provenance.reconstructionCaseId);
+    if (currentCase?.status !== "OPEN") throw new Error("CASE_NOT_OPEN");
+    if (!equalBasisRef(currentCase.basisSelectionRef, candidate.provenance.basisSelectionRef)) throw new Error("BASIS_SELECTION_CONFLICT");
+    const prior = this.candidates.getCandidateV2(expectedCandidateRef);
+    if (prior === undefined || prior.provenance.route !== "BOUND_EXISTING" || prior.provenance.reconstructionCaseId !== candidate.provenance.reconstructionCaseId) throw new Error("CANDIDATE_HEAD_CONFLICT");
+    if (revisionReason === "REPAIR" && !equalBasisRef(prior.provenance.basisSelectionRef, candidate.provenance.basisSelectionRef)) throw new Error("BASIS_SELECTION_CONFLICT");
+    if (revisionReason === "BASIS_RESELECTION" && equalBasisRef(prior.provenance.basisSelectionRef, candidate.provenance.basisSelectionRef)) throw new Error("BASIS_SELECTION_CONFLICT");
+    const alreadyStored = this.candidates.getCandidateV2(candidate.candidateRef) !== undefined;
+    const receipt: BoundExistingOperationReceipt = {
+      schemaVersion: 2, route: "BOUND_EXISTING", operationId: command.operationId,
+      operationKind: command.operationKind, status: alreadyStored ? "IDEMPOTENT" : "CREATED", resultRef: candidate.candidateRef
+    };
+    const lineage = { reconstructionCaseId: candidate.provenance.reconstructionCaseId, basisSelectionRef: candidate.provenance.basisSelectionRef };
+    let controlPrepared;
+    let candidatePrepared;
+    try {
+      controlPrepared = this.control.prepareOperation({ command, receipt }, lineage);
+      candidatePrepared = this.candidates.prepareCandidatePublication(candidate, expectedCandidateRef);
+    } catch (error) {
+      if (controlPrepared) controlPrepared.abort();
+      throw error;
+    }
+    controlPrepared.commit();
+    candidatePrepared.commit();
+    return this.control.getOperationReceipt(command.operationId)!;
+  }
+
+  createBoundExistingCandidate(input: CreateBoundExistingCandidateCommand): BoundExistingOperationReceipt {
+    return this.createCandidate(input);
+  }
+
+  reviseBoundExistingCandidate(input: ReviseBoundExistingCandidateCommand): BoundExistingOperationReceipt {
+    return this.reviseCandidate(input);
   }
 
   private requireAdopted(proposed: AdoptedProtocolBasis): void {

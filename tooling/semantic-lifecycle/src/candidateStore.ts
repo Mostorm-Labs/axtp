@@ -4,24 +4,42 @@ import type {
   EvidenceRef,
   ImmutableRevisionRef,
   SemanticCandidate,
-  SemanticCandidatePayload
+  SemanticCandidatePayload,
+  SemanticCandidateRecordV2
 } from "./model.js";
+import { normalizeSemanticCandidateRecordV2 } from "./model.js";
 
 export interface SemanticCandidateStore {
   putCandidate(candidate: SemanticCandidate): ImmutablePutResult;
   getCandidate(candidateRef: ImmutableRevisionRef): SemanticCandidate | undefined;
+  putCandidateV2(candidate: SemanticCandidateRecordV2, expectedCandidateRef?: ImmutableRevisionRef | null): ImmutablePutResult;
+  getCandidateV2(candidateRef: ImmutableRevisionRef): SemanticCandidateRecordV2 | undefined;
+  getCandidateHead(candidateId: string): ImmutableRevisionRef | undefined;
+  getCurrentCandidateHead(candidateId: string): ImmutableRevisionRef | undefined;
+  prepareCandidatePublication(candidate: SemanticCandidateRecordV2, expectedCandidateRef?: ImmutableRevisionRef | null): PreparedCandidatePublication;
+}
+
+export interface PreparedCandidatePublication {
+  commit(): void;
+  abort(): void;
 }
 
 type StoredCandidate = Readonly<{ canonical: string; value: SemanticCandidate }>;
 
 export class InMemorySemanticCandidateStore implements SemanticCandidateStore {
   readonly #candidates = new Map<string, StoredCandidate>();
+  readonly #candidatesV2 = new Map<string, Readonly<{ canonical: string; value: SemanticCandidateRecordV2 }>>();
+  readonly #heads = new Map<string, ImmutableRevisionRef>();
+  #reservation: object | undefined;
+  readonly getCurrentCandidateHead = (candidateId: string): ImmutableRevisionRef | undefined => this.getCandidateHead(candidateId);
 
   putCandidate(candidate: SemanticCandidate): ImmutablePutResult {
     const normalized = normalizeCandidate(candidate);
     const key = basisRefKey(normalized.candidateRef);
     const canonical = canonicalJson(normalized);
     const existing = this.#candidates.get(key);
+    const existingV2 = this.#candidatesV2.get(key);
+    if (existingV2 !== undefined) throw new Error(`IMMUTABLE_CANDIDATE_CONFLICT:${key}`);
     if (existing === undefined) {
       this.#candidates.set(key, Object.freeze({ canonical, value: normalized }));
       return "CREATED";
@@ -33,6 +51,77 @@ export class InMemorySemanticCandidateStore implements SemanticCandidateStore {
   getCandidate(candidateRef: ImmutableRevisionRef): SemanticCandidate | undefined {
     const exactRef = normalizeCandidateRef(candidateRef);
     return this.#candidates.get(basisRefKey(exactRef))?.value;
+  }
+
+  putCandidateV2(candidate: SemanticCandidateRecordV2, expectedCandidateRef: ImmutableRevisionRef | null = null): ImmutablePutResult {
+    const normalizedBefore = normalizeCandidateV2(candidate);
+    const hadExisting = this.#candidatesV2.has(basisRefKey(normalizedBefore.candidateRef));
+    const prepared = this.prepareCandidatePublication(candidate, expectedCandidateRef);
+    prepared.commit();
+    return hadExisting ? "IDEMPOTENT" : "CREATED";
+  }
+
+  getCandidateV2(candidateRef: ImmutableRevisionRef): SemanticCandidateRecordV2 | undefined {
+    const ref = normalizeCandidateRef(candidateRef);
+    return this.#candidatesV2.get(basisRefKey(ref))?.value;
+  }
+
+  getCandidateHead(candidateId: string): ImmutableRevisionRef | undefined {
+    const id = requireNonEmptyString(candidateId, "candidateId");
+    const ref = this.#heads.get(id);
+    return ref === undefined ? undefined : deepFreeze(cloneJson(ref));
+  }
+
+  prepareCandidatePublication(candidate: SemanticCandidateRecordV2, expectedCandidateRef: ImmutableRevisionRef | null = null): PreparedCandidatePublication {
+    if (this.#reservation !== undefined) throw new Error("CANDIDATE_PUBLICATION_RESERVED");
+    const normalized = normalizeCandidateV2(candidate);
+    const expected = expectedCandidateRef === undefined ? null : (expectedCandidateRef === null ? null : normalizeCandidateRef(expectedCandidateRef));
+    const current = this.#heads.get(normalized.candidateId);
+    const key = basisRefKey(normalized.candidateRef);
+    const canonical = canonicalJson(normalized);
+    const existingV2 = this.#candidatesV2.get(key);
+    const existingV1 = this.#candidates.get(key);
+    if (existingV1 !== undefined && existingV1.canonical !== canonical) throw new Error(`IMMUTABLE_CANDIDATE_CONFLICT:${key}`);
+    if (existingV2 !== undefined) {
+      if (existingV2.canonical !== canonical) throw new Error(`IMMUTABLE_CANDIDATE_CONFLICT:${key}`);
+      if (current === undefined || !equalBasisRef(current, normalized.candidateRef)) throw new Error("CANDIDATE_HEAD_CONFLICT");
+      if (expected !== null && !equalBasisRef(current, expected)) throw new Error("CANDIDATE_HEAD_CONFLICT");
+      return { commit: () => {}, abort: () => {} };
+    }
+    if (expected === null) {
+      if (current !== undefined) throw new Error("CANDIDATE_HEAD_CONFLICT");
+      if (normalized.supersedesCandidateRef !== undefined) throw new Error("CANDIDATE_HEAD_CONFLICT");
+    } else {
+      if (current === undefined || !equalBasisRef(current, expected)) throw new Error("CANDIDATE_HEAD_CONFLICT");
+      if (normalized.supersedesCandidateRef === undefined || !equalBasisRef(normalized.supersedesCandidateRef, expected)) {
+        throw new Error("CANDIDATE_SUPERSESSION_CONFLICT");
+      }
+      const predecessor = this.#candidatesV2.get(basisRefKey(expected))?.value;
+      if (predecessor === undefined || predecessor.provenance.route !== normalized.provenance.route) {
+        throw new Error("CANDIDATE_LINEAGE_CONFLICT");
+      }
+      if (predecessor.provenance.route === "BOUND_EXISTING" && normalized.provenance.route === "BOUND_EXISTING" &&
+          predecessor.provenance.reconstructionCaseId !== normalized.provenance.reconstructionCaseId) {
+        throw new Error("CANDIDATE_LINEAGE_CONFLICT");
+      }
+    }
+    const token = {};
+    this.#reservation = token;
+    let active = true;
+    return {
+      commit: () => {
+        if (!active || this.#reservation !== token) return;
+        active = false;
+        this.#candidatesV2.set(key, Object.freeze({ canonical, value: normalized }));
+        this.#heads.set(normalized.candidateId, normalized.candidateRef);
+        this.#reservation = undefined;
+      },
+      abort: () => {
+        if (!active || this.#reservation !== token) return;
+        active = false;
+        this.#reservation = undefined;
+      }
+    };
   }
 }
 
@@ -82,6 +171,18 @@ function normalizeCandidate(candidate: SemanticCandidate): SemanticCandidate {
     payload,
     evidenceRefs
   });
+}
+
+function normalizeCandidateV2(candidate: SemanticCandidateRecordV2): SemanticCandidateRecordV2 {
+  const normalized = normalizeSemanticCandidateRecordV2(candidate);
+  if (normalized.provenance.route !== "BOUND_EXISTING") return normalized;
+  if (normalized.provenance.basisSelectionRef.subject !== normalized.provenance.reconstructionCaseId) {
+    throw new Error("INVALID_CANDIDATE_LINEAGE");
+  }
+  if (normalized.supersedesCandidateRef !== undefined && equalBasisRef(normalized.supersedesCandidateRef, normalized.candidateRef)) {
+    throw new Error("INVALID_CANDIDATE_SUPERSESSION:self");
+  }
+  return normalized;
 }
 
 function normalizePayload(value: unknown): SemanticCandidatePayload {
