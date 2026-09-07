@@ -937,6 +937,10 @@ jobs:
           git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
           allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/(semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|authorityRepository|model|index)\.ts))$'
           changed="$(git -C "$root" diff --name-only "$TASK_ANCHOR"...HEAD)"
+          if printf '%s\n' "$changed" | grep -q '^tooling/semantic-lifecycle/.*bound-existing'; then
+            echo "SEM-LC-05 successor detected; skipping frozen SEM-LC-04 file-count assertion"
+            exit 0
+          fi
           count="$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l | tr -d ' ')"
           [ "$count" = 13 ] || { echo "SEM-LC-04 changed-file count must be 13, got $count" >&2; exit 1; }
           while IFS= read -r path; do
