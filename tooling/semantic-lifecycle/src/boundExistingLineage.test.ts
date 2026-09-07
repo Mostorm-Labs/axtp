@@ -16,6 +16,17 @@ function candidate(revision = "c1", overrides = {}) {
     provenance: { route: "BOUND_EXISTING", reconstructionCaseId: caseId, basisSelectionRef: selectionRef },
     payload: { meaning: revision }, evidenceRefs: [{ refType: "EVIDENCE", id: `candidate-${revision}` }], ...overrides };
 }
+function proof(candidateRefValue, selectionRefValue = selectionRef, overrides = {}) {
+  return { schemaVersion: 1, receiptId: `proof-${candidateRefValue.revision}`, proofKind: "BOUND_EXISTING_RECONSTRUCTION",
+    proofContractVersion: "1", engine: { name: "reference", version: "1" }, reconstructionCaseId: caseId,
+    candidateRef: candidateRefValue, basisSelectionRef: selectionRefValue, verdict: "PASS", inputDigest: `sha256:input-${candidateRefValue.revision}`,
+    ruleIds: ["BOUND-EXACT"], diagnostics: [], evidenceRefs: [{ refType: "EVIDENCE", id: `proof-evidence-${candidateRefValue.revision}` }], ...overrides };
+}
+function review(kind, candidateRefValue, selectionRefValue = selectionRef, verdict = "PASS", overrides = {}) {
+  return { schemaVersion: 2, reviewId: `${kind}-review-${candidateRefValue.revision}`, reviewKind: kind, decisionSource: "HUMAN", verdict,
+    candidateRef: candidateRefValue, provenance: { route: "BOUND_EXISTING", reconstructionCaseId: caseId, basisSelectionRef: selectionRefValue },
+    evidenceRefs: [{ refType: "EVIDENCE", id: `${kind}-evidence-${candidateRefValue.revision}` }], ...overrides };
+}
 function selection(revision, protocolRevision = revision) {
   const protocolBasis = { ...copy(fixtures.selection.protocolBasis), protocolAuthorityRef: { ...fixtures.selection.protocolBasis.protocolAuthorityRef, revision: protocolRevision } };
   const basisSelectionRef = { ...selectionRef, revision, digest: `sha256:${revision}` };
@@ -121,4 +132,57 @@ test("operation-id conflict is checked before Candidate mutation", async () => {
   assert.throws(() => route.createCandidate({ operationId: "same-operation", candidate: candidate("other") }), /OPERATION_ID_CONFLICT/);
   assert.equal(candidates.getCandidateHead("candidate-1").revision, "c1");
   assert.equal(control.getOperationReceipt("same-operation").resultRef.revision, "c1");
+});
+
+test("proof PASS gates both independent HUMAN reviews on the exact current lineage", async () => {
+  const { route, control, candidates } = await setup();
+  const current = candidate();
+  route.createCandidate({ operationId: "candidate-for-proof", candidate: current });
+  const machine = proof(current.candidateRef);
+  assert.equal(route.recordMachineProof({ operationId: "proof-pass", proof: machine }).status, "CREATED");
+  assert.equal(route.recordHumanReview({ operationId: "semantic-review", review: review("SEMANTIC_CANDIDATE", current.candidateRef) }).status, "CREATED");
+  assert.equal(route.recordHumanReview({ operationId: "no-reinterpretation-review", review: review("NO_REINTERPRETATION", current.candidateRef) }).status, "CREATED");
+  assert.equal(control.getBoundExistingMachineProof(machine.receiptId).verdict, "PASS");
+  assert.equal(control.getHumanReviewDecisionV2("SEMANTIC_CANDIDATE-review-c1").verdict, "PASS");
+  assert.equal(control.getHumanReviewDecisionV2("NO_REINTERPRETATION-review-c1").verdict, "PASS");
+  assert.equal(candidates.getCandidateHead("candidate-1").revision, "c1");
+});
+
+test("proof/review failures remain OPEN and cannot be replaced or machine-authored", async () => {
+  const { route, control } = await setup();
+  const current = candidate();
+  route.createCandidate({ operationId: "candidate-for-failure", candidate: current });
+  assert.throws(() => route.recordHumanReview({ operationId: "review-before-proof", review: review("SEMANTIC_CANDIDATE", current.candidateRef) }), /PROOF_REQUIRED/);
+  const failed = proof(current.candidateRef, selectionRef, { verdict: "FAIL" });
+  assert.equal(route.recordMachineProof({ operationId: "proof-fail", proof: failed }).status, "CREATED");
+  assert.throws(() => route.recordHumanReview({ operationId: "review-after-fail", review: review("SEMANTIC_CANDIDATE", current.candidateRef) }), /PROOF_REQUIRED/);
+  assert.throws(() => route.recordMachineProof({ operationId: "proof-pass-conflict", proof: proof(current.candidateRef) }), /PROOF_ALREADY_DECIDED|IMMUTABLE_RECORD_CONFLICT/);
+  assert.throws(() => route.recordHumanReview({ operationId: "machine-review", review: review("SEMANTIC_CANDIDATE", current.candidateRef, selectionRef, "PASS", { decisionSource: "MACHINE" }) }), /INVALID_REVIEW_SOURCE/);
+  assert.equal(control.getReconstructionCase(caseId).status, "OPEN");
+  assert.equal(control.getHumanReviewDecisionV2("SEMANTIC_CANDIDATE-review-c1"), undefined);
+});
+
+test("a HUMAN REJECT is immutable for its review kind and lineage", async () => {
+  const { route, control } = await setup();
+  const current = candidate();
+  route.createCandidate({ operationId: "candidate-for-reject", candidate: current });
+  route.recordMachineProof({ operationId: "proof-for-reject", proof: proof(current.candidateRef) });
+  route.recordHumanReview({ operationId: "reject-review", review: review("SEMANTIC_CANDIDATE", current.candidateRef, selectionRef, "REJECT") });
+  assert.throws(() => route.recordHumanReview({ operationId: "overwrite-reject", review: review("SEMANTIC_CANDIDATE", current.candidateRef) }), /REVIEW_ALREADY_DECIDED|IMMUTABLE_RECORD_CONFLICT/);
+  assert.equal(control.getReconstructionCase(caseId).status, "OPEN");
+});
+
+test("repair and basis reselection make old proof and reviews stale", async () => {
+  const { route, adopt } = await setup();
+  const first = candidate();
+  route.createCandidate({ operationId: "candidate-before-proof", candidate: first });
+  route.recordMachineProof({ operationId: "proof-before-repair", proof: proof(first.candidateRef) });
+  route.recordHumanReview({ operationId: "review-before-repair", review: review("SEMANTIC_CANDIDATE", first.candidateRef) });
+  const repaired = candidate("c2", { supersedesCandidateRef: first.candidateRef });
+  route.reviseCandidate({ operationId: "repair", candidate: repaired, expectedCandidateRef: first.candidateRef, revisionReason: "REPAIR" });
+  assert.throws(() => route.recordHumanReview({ operationId: "stale-review", review: review("NO_REINTERPRETATION", first.candidateRef) }), /CANDIDATE_HEAD_CONFLICT|STALE/);
+  const b2 = selection("b2", "b");
+  adopt(b2.protocolBasis);
+  route.reselectBasis({ operationId: "basis-b2", expectedBasisSelectionRef: selectionRef, selection: b2 });
+  assert.throws(() => route.recordMachineProof({ operationId: "stale-proof", proof: proof(repaired.candidateRef, b2.basisSelectionRef) }), /PROOF_REQUIRED|CANDIDATE_HEAD_CONFLICT|BASIS_SELECTION_CONFLICT/);
 });

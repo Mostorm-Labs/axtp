@@ -65,6 +65,7 @@ export interface BoundExistingControlStore extends LifecycleControlStore {
   prepareTerminalTransition(record: BoundExistingReconstructionCase, expected: ImmutableRevisionRef, operation?: ControlOperation): PreparedControlPublication;
   putBoundExistingMachineProof(record: BoundExistingMachineProofReceipt, command?: BoundExistingCommand): ImmutablePutResult;
   getBoundExistingMachineProof(id: string): BoundExistingMachineProofReceipt | undefined;
+  getBoundExistingMachineProofForLineage(reconstructionCaseId: string, candidateRef: ImmutableRevisionRef, basisSelectionRef: ImmutableRevisionRef): BoundExistingMachineProofReceipt | undefined;
   putHumanReviewDecisionV2(record: HumanReviewDecisionV2, command?: BoundExistingCommand): ImmutablePutResult;
   getHumanReviewDecisionV2(id: string): HumanReviewDecisionV2 | undefined;
   prepareIncompatibility(record: BoundExistingIncompatibilityDetermination, operation?: ControlOperation): PreparedControlPublication;
@@ -254,6 +255,16 @@ export class InMemoryLifecycleControlStore implements BoundExistingControlStore 
 
   getBoundExistingMachineProof(id: string): BoundExistingMachineProofReceipt | undefined {
     return this.#bound.proofs.get(id)?.value;
+  }
+
+  getBoundExistingMachineProofForLineage(reconstructionCaseId: string, candidateRef: ImmutableRevisionRef, basisSelectionRef: ImmutableRevisionRef): BoundExistingMachineProofReceipt | undefined {
+    for (const entry of this.#bound.proofs.values()) {
+      const proof = entry.value;
+      if (proof.reconstructionCaseId === reconstructionCaseId && equalBasisRef(proof.candidateRef, candidateRef) && equalBasisRef(proof.basisSelectionRef, basisSelectionRef)) {
+        return proof;
+      }
+    }
+    return undefined;
   }
 
   putHumanReviewDecisionV2(input: HumanReviewDecisionV2, command?: BoundExistingCommand): ImmutablePutResult {

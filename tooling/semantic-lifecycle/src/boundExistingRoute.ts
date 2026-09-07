@@ -1,11 +1,12 @@
 import type {
   AdoptedProtocolBasis, BoundExistingBasisSelection, BoundExistingOperationReceipt,
-  BoundExistingReconstructionCase, ImmutableRevisionRef, MigrationBasisRecord, SemanticCandidateRecordV2
+  BoundExistingReconstructionCase, ImmutableRevisionRef, MigrationBasisRecord, SemanticCandidateRecordV2,
+  BoundExistingMachineProofReceipt, HumanReviewDecisionV2
 } from "./model.js";
 import {
   normalizeAdoptedProtocolBasis, normalizeBoundExistingBasisSelection,
   normalizeBoundExistingReconstructionCase, normalizeMigrationBasisRecord,
-  normalizeSemanticCandidateRecordV2
+  normalizeSemanticCandidateRecordV2, normalizeBoundExistingMachineProofReceipt, normalizeHumanReviewDecisionV2
 } from "./model.js";
 import type { BoundExistingCommand, BoundExistingControlStore } from "./controlStore.js";
 import { normalizeControlCommand } from "./controlStore.js";
@@ -49,6 +50,14 @@ export interface ReviseBoundExistingCandidateCommand extends OperationMetadata {
   readonly candidate: SemanticCandidateRecordV2;
   readonly expectedCandidateRef: ImmutableRevisionRef;
   readonly revisionReason: "REPAIR" | "BASIS_RESELECTION";
+}
+
+export interface RecordBoundExistingMachineProofCommand extends OperationMetadata {
+  readonly proof: BoundExistingMachineProofReceipt;
+}
+
+export interface RecordBoundExistingHumanReviewCommand extends OperationMetadata {
+  readonly review: HumanReviewDecisionV2;
 }
 
 /** Orchestration only: canonical control records remain in the injected owner. */
@@ -194,6 +203,60 @@ export class BoundExistingRoute {
 
   reviseBoundExistingCandidate(input: ReviseBoundExistingCandidateCommand): BoundExistingOperationReceipt {
     return this.reviseCandidate(input);
+  }
+
+  recordMachineProof(input: RecordBoundExistingMachineProofCommand): BoundExistingOperationReceipt {
+    const raw = commandInput(input, "RECORD_BOUND_EXISTING_MACHINE_PROOF", ["proof"]);
+    const proof = normalizeBoundExistingMachineProofReceipt(raw.payload.proof);
+    const command = normalizeControlCommand({ ...raw.command, payload: { proof } });
+    const replay = this.control.replayOperation(command);
+    if (replay !== undefined) return replay;
+    this.requireCurrentCandidate(proof.reconstructionCaseId, proof.basisSelectionRef, proof.candidateRef);
+    const receipt: BoundExistingOperationReceipt = {
+      schemaVersion: 2, route: "BOUND_EXISTING", operationId: command.operationId,
+      operationKind: command.operationKind, status: "CREATED"
+    };
+    const result = this.control.putBoundExistingMachineProof(proof, command);
+    return { ...receipt, status: result };
+  }
+
+  recordBoundExistingMachineProof(input: RecordBoundExistingMachineProofCommand): BoundExistingOperationReceipt {
+    return this.recordMachineProof(input);
+  }
+
+  recordHumanReview(input: RecordBoundExistingHumanReviewCommand): BoundExistingOperationReceipt {
+    const raw = commandInput(input, "RECORD_BOUND_EXISTING_HUMAN_REVIEW", ["review"]);
+    const review = normalizeHumanReviewDecisionV2(raw.payload.review);
+    const command = normalizeControlCommand({ ...raw.command, payload: { review } });
+    const replay = this.control.replayOperation(command);
+    if (replay !== undefined) return replay;
+    if (review.provenance.route !== "BOUND_EXISTING") throw new Error("INVALID_REVIEW_ROUTE");
+    this.requireCurrentCandidate(review.provenance.reconstructionCaseId, review.provenance.basisSelectionRef, review.candidateRef);
+    const proof = this.control.getBoundExistingMachineProofForLineage(review.provenance.reconstructionCaseId, review.candidateRef, review.provenance.basisSelectionRef);
+    if (proof?.verdict !== "PASS") throw new Error("PROOF_REQUIRED");
+    const receipt: BoundExistingOperationReceipt = {
+      schemaVersion: 2, route: "BOUND_EXISTING", operationId: command.operationId,
+      operationKind: command.operationKind, status: "CREATED"
+    };
+    const result = this.control.putHumanReviewDecisionV2(review, command);
+    return { ...receipt, status: result };
+  }
+
+  recordBoundExistingHumanReview(input: RecordBoundExistingHumanReviewCommand): BoundExistingOperationReceipt {
+    return this.recordHumanReview(input);
+  }
+
+  private requireCurrentCandidate(reconstructionCaseId: string, basisSelectionRef: ImmutableRevisionRef, candidateRef: ImmutableRevisionRef): SemanticCandidateRecordV2 {
+    const record = this.control.getReconstructionCase(reconstructionCaseId);
+    if (record?.status !== "OPEN") throw new Error("CASE_NOT_OPEN");
+    if (!equalBasisRef(record.basisSelectionRef, basisSelectionRef)) throw new Error("BASIS_SELECTION_CONFLICT");
+    const candidate = this.candidates.getCandidateV2(candidateRef);
+    if (candidate === undefined || candidate.provenance.route !== "BOUND_EXISTING" || candidate.provenance.reconstructionCaseId !== reconstructionCaseId || !equalBasisRef(candidate.provenance.basisSelectionRef, basisSelectionRef)) {
+      throw new Error("CANDIDATE_HEAD_CONFLICT");
+    }
+    const head = this.candidates.getCandidateHead(candidate.candidateId);
+    if (head === undefined || !equalBasisRef(head, candidateRef)) throw new Error("CANDIDATE_HEAD_CONFLICT");
+    return candidate;
   }
 
   private requireAdopted(proposed: AdoptedProtocolBasis): void {
