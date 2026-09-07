@@ -121,8 +121,8 @@ jobs:
           tmp="$(mktemp -d)"
           trap 'rm -rf "$tmp"' EXIT
           groups=(B5-T1 B5-T2 B5-T3 B5-T4 B5-T5 B5-T6 B5-T7 B5-T8 B5-T9 B5-T10)
-          tests=(boundExistingCompatibility.test.js boundExistingRoute.test.js boundExistingLineage.test.js boundExistingFreshness.test.js boundExistingLineage.test.js boundExistingAtomicity.test.js boundExistingConcurrency.test.js boundExistingRoute.test.js boundExistingReport.test.js boundExistingReport.test.js)
-          targets=(boundExistingCompatibility.test.ts boundExistingRoute.test.ts boundExistingLineage.test.ts boundExistingFreshness.test.ts boundExistingLineage.test.ts boundExistingAtomicity.test.ts boundExistingConcurrency.test.ts boundExistingRoute.test.ts boundExistingReferenceEvaluator.test.ts boundExistingReport.test.ts)
+          tests=(boundExistingCompatibility.test.js boundExistingRoute.test.js boundExistingLineage.test.js boundExistingFreshness.test.js boundExistingLineage.test.js boundExistingAtomicity.test.js boundExistingConcurrency.test.js boundExistingRoute.test.js boundExistingRoute.test.js boundExistingReport.test.js)
+          targets=(model.ts boundExistingRoute.ts candidateStore.ts protocolBasisProvider.ts boundExistingRoute.ts semanticAuthorityAcceptanceBoundary.ts authorityRepository.ts controlStore.ts boundExistingRoute.ts boundExistingReport.ts)
           for i in "${!groups[@]}"; do
             group="${groups[$i]}"; testjs="${tests[$i]}"; target="${targets[$i]}"
             red="$tmp/$group"
