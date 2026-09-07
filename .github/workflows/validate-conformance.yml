@@ -222,9 +222,13 @@ jobs:
           const reviewLineage = [];
           const lineageCases = ['missing-proof','wrong-candidate','wrong-basis','stale-after-reselection'];
           for (const caseId of lineageCases) {
-            const before = { status: 'OPEN', basisSelectionRef: structuredClone(fixture.selection.basisSelectionRef), candidateRef };
-            const after = { ...before, ...(caseId === 'stale-after-reselection' ? { basisSelectionRef: { ...before.basisSelectionRef, revision: 'b2' } } : {}) };
-            reviewLineage.push({ caseId, accepted: false, missingRequiredReview: caseId === 'missing-proof', lineageMismatch: caseId !== 'missing-proof', beforeDigest: digest(before), afterDigest: digest(after), fixtureFailure: false });
+            const { store, route, candidates } = routeHarness();
+            const before = snapshot(store, candidates);
+            const reviewCandidateRef = caseId === 'wrong-candidate' ? { ...candidateRef, revision: 'wrong' } : candidateRef;
+            const reviewBasisRef = caseId === 'wrong-basis' ? { ...fixture.selection.basisSelectionRef, revision: 'wrong' } : fixture.selection.basisSelectionRef;
+            const attempt = run(() => route.recordHumanReview({ operationId: `lineage-${caseId}`, review: { schemaVersion: 2, reviewId: `lineage-${caseId}`, reviewKind: 'SEMANTIC_CANDIDATE', decisionSource: 'HUMAN', verdict: 'PASS', candidateRef: reviewCandidateRef, provenance: { route: 'BOUND_EXISTING', reconstructionCaseId: caseId === 'stale-after-reselection' ? 'stale-case' : caseId === 'missing-proof' ? caseId : caseId, basisSelectionRef: structuredClone(reviewBasisRef) }, evidenceRefs } }));
+            const after = snapshot(store, candidates);
+            reviewLineage.push({ caseId, accepted: attempt.accepted, missingRequiredReview: caseId === 'missing-proof' && attempt.accepted, lineageMismatch: ['wrong-candidate','wrong-basis','stale-after-reselection'].includes(caseId) && attempt.accepted, beforeDigest: digest(before), afterDigest: digest(after), error: attempt.error, fixtureFailure: attempt.accepted || digest(before) !== digest(after) });
           }
           const compatibilityCases = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/compatibility-cases.json', 'utf8'));
           const compatibility = compatibilityCases.map((item) => ({ caseId: item.id, accepted: false, unknownDiscriminatorAccepted: false, fallbackAuthorizationCarryover: false, fixtureFailure: false }));
