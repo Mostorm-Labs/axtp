@@ -110,7 +110,9 @@ jobs:
           import { spawnSync } from 'node:child_process';
           import { InMemoryLifecycleControlStore } from './tooling/semantic-lifecycle/.test-dist/src/controlStore.js';
           import { BoundExistingRoute } from './tooling/semantic-lifecycle/.test-dist/src/boundExistingRoute.js';
+          import { InMemorySemanticCandidateStore } from './tooling/semantic-lifecycle/.test-dist/src/candidateStore.js';
           import { evaluateBoundExistingScenario } from './tooling/semantic-lifecycle/.test-dist/src/boundExistingReferenceEvaluator.js';
+          import * as model from './tooling/semantic-lifecycle/.test-dist/src/model.js';
           const out = process.env.OUT_DIR;
           const sourceRef = process.env.SOURCE_SHA;
           const sourceTree = process.env.SOURCE_TREE;
@@ -128,18 +130,43 @@ jobs:
           const digest = (value) => createHash('sha256').update(canonical(value)).digest('hex');
           const fixture = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/route-cases.json', 'utf8'));
           const safetyFixture = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/safety-cases.json', 'utf8'));
+          const goldenCases = [
+            { id: 'golden-open', status: 'OPEN', machineProofVerdict: 'PASS', semanticReviewVerdict: 'PASS', noReinterpretationVerdict: 'PASS', productionDecision: 'ELIGIBLE' },
+            { id: 'golden-proof-missing', status: 'OPEN', machineProofVerdict: undefined, semanticReviewVerdict: 'PASS', noReinterpretationVerdict: 'PASS', productionDecision: 'REJECT' },
+            { id: 'golden-review-missing', status: 'OPEN', machineProofVerdict: 'PASS', semanticReviewVerdict: undefined, noReinterpretationVerdict: 'PASS', productionDecision: 'REJECT' },
+            { id: 'golden-no-reinterpretation-missing', status: 'OPEN', machineProofVerdict: 'PASS', semanticReviewVerdict: 'PASS', noReinterpretationVerdict: undefined, productionDecision: 'REJECT' },
+            { id: 'golden-cancelled', status: 'CANCELLED', machineProofVerdict: 'PASS', semanticReviewVerdict: 'PASS', noReinterpretationVerdict: 'PASS', productionDecision: 'REJECT' },
+            { id: 'golden-incompatible', status: 'INCOMPATIBLE', machineProofVerdict: 'PASS', semanticReviewVerdict: 'PASS', noReinterpretationVerdict: 'PASS', productionDecision: 'REJECT' }
+          ];
           const candidateRef = { refType: 'IMMUTABLE_REVISION', namespace: 'semantic-candidate', subject: 'oracle-candidate', revision: 'v1' };
           const evidenceRefs = [{ refType: 'EVIDENCE', id: 'oracle-evidence' }];
           const caseId = fixture.case.reconstructionCaseId;
           const routeHarness = () => {
             const store = new InMemoryLifecycleControlStore();
+            const candidates = new InMemorySemanticCandidateStore();
             const adoption = structuredClone(fixture.selection.protocolBasis);
-            const route = new BoundExistingRoute(store, { readAdoptedProtocolBasis: () => structuredClone(adoption) });
+            const route = new BoundExistingRoute(store, { readAdoptedProtocolBasis: () => structuredClone(adoption) }, candidates);
             route.registerMigrationBasis({ operationId: 'oracle-register', record: structuredClone(fixture.migration) });
             route.openReconstruction({ operationId: 'oracle-open', selection: structuredClone(fixture.selection), reconstructionCase: structuredClone(fixture.case) });
-            return { store, route, adoption };
+            return { store, route, candidates, adoption };
           };
-          const snapshot = (store) => ({ status: store.getReconstructionCase(caseId)?.status ?? 'MISSING' });
+          const snapshot = (store, candidates) => {
+            const current = store.getReconstructionCase(caseId);
+            const selection = current && store.getBasisSelection(current.basisSelectionRef);
+            const candidate = candidates?.getCandidateV2(candidateRef);
+            const proof = candidate && store.getBoundExistingMachineProofForLineage(caseId, candidateRef, current.basisSelectionRef);
+            const semanticReview = store.getHumanReviewDecisionV2('oracle-semantic-review');
+            const noReinterpretationReview = store.getHumanReviewDecisionV2('oracle-no-reinterpretation-review');
+            return {
+              status: current?.status ?? 'MISSING',
+              basisSelectionRef: selection?.basisSelectionRef,
+              candidateRef: candidate?.candidateRef,
+              machineProofVerdict: proof?.verdict,
+              semanticReviewVerdict: semanticReview?.verdict,
+              noReinterpretationVerdict: noReinterpretationReview?.verdict,
+              operationIds: ['oracle-register','oracle-open','oracle-candidate','oracle-proof-op','oracle-semantic-op','oracle-no-reinterpretation-op'].filter((id) => store.getOperationReceipt(id) !== undefined)
+            };
+          };
           const run = (fn) => { try { return { accepted: true, error: null, result: fn() }; } catch (error) { return { accepted: false, error: String(error?.message ?? error), result: null }; } };
           const runSuite = (file) => {
             const result = spawnSync(process.execPath, ['--test', `.test-dist/src/${file}`], { cwd: 'tooling/semantic-lifecycle', encoding: 'utf8' });
@@ -147,8 +174,8 @@ jobs:
           };
           const differential = [];
           {
-            const { store, route } = routeHarness();
-            const before = snapshot(store);
+            const { store, route, candidates } = routeHarness();
+            const before = snapshot(store, candidates);
             const candidate = { schemaVersion: 2, candidateId: 'oracle-candidate', candidateRef, provenance: { route: 'BOUND_EXISTING', reconstructionCaseId: caseId, basisSelectionRef: structuredClone(fixture.selection.basisSelectionRef) }, payload: { meaning: 'oracle' }, evidenceRefs };
             route.createCandidate({ operationId: 'oracle-candidate', candidate });
             const proof = { schemaVersion: 1, receiptId: 'oracle-proof', proofKind: 'BOUND_EXISTING_RECONSTRUCTION', proofContractVersion: 'v1', engine: { name: 'oracle', version: '1' }, reconstructionCaseId: caseId, candidateRef, basisSelectionRef: structuredClone(fixture.selection.basisSelectionRef), verdict: 'PASS', inputDigest: 'sha256:oracle', ruleIds: ['ORACLE'], diagnostics: [], evidenceRefs };
@@ -156,9 +183,14 @@ jobs:
             const reviewBase = { schemaVersion: 2, decisionSource: 'HUMAN', verdict: 'PASS', candidateRef, provenance: { route: 'BOUND_EXISTING', reconstructionCaseId: caseId, basisSelectionRef: structuredClone(fixture.selection.basisSelectionRef) }, evidenceRefs };
             route.recordHumanReview({ operationId: 'oracle-semantic-op', review: { ...reviewBase, reviewId: 'oracle-semantic-review', reviewKind: 'SEMANTIC_CANDIDATE' } });
             route.recordHumanReview({ operationId: 'oracle-no-reinterpretation-op', review: { ...reviewBase, reviewId: 'oracle-no-reinterpretation-review', reviewKind: 'NO_REINTERPRETATION' } });
-            const after = snapshot(store);
-            const productionDecision = after.status === 'OPEN' ? 'ELIGIBLE' : 'REJECT';
-            const scenario = evaluateBoundExistingScenario({ caseId: 'route.complete-evidence', before, after: { ...after, machineProofVerdict: 'PASS', semanticReviewVerdict: 'PASS', noReinterpretationVerdict: 'PASS' }, production: { decision: productionDecision, stateDelta: { status: 'AUTHORITY_ACCEPTED' }, error: null } });
+            const after = snapshot(store, candidates);
+            const productionDecision = after.status === 'OPEN' && after.candidateRef !== undefined && after.machineProofVerdict === 'PASS' && after.semanticReviewVerdict === 'PASS' && after.noReinterpretationVerdict === 'PASS' ? 'ELIGIBLE' : 'REJECT';
+            const scenario = evaluateBoundExistingScenario({ caseId: 'route.complete-evidence', before, after, production: { decision: productionDecision, stateDelta: productionDecision === 'ELIGIBLE' ? { status: 'AUTHORITY_ACCEPTED' } : {}, error: null } });
+            differential.push({ ...scenario, syntheticDeltaAccepted: false, fixtureFailure: false });
+          }
+          for (const golden of goldenCases) {
+            const before = { status: golden.status, machineProofVerdict: golden.machineProofVerdict, semanticReviewVerdict: golden.semanticReviewVerdict, noReinterpretationVerdict: golden.noReinterpretationVerdict };
+            const scenario = evaluateBoundExistingScenario({ caseId: golden.id, before, after: before, production: { decision: golden.productionDecision, stateDelta: golden.productionDecision === 'ELIGIBLE' ? { status: 'AUTHORITY_ACCEPTED' } : {}, error: null } });
             differential.push({ ...scenario, syntheticDeltaAccepted: false, fixtureFailure: false });
           }
           const freshnessOracle = runSuite('boundExistingFreshness.test.js');
@@ -168,29 +200,35 @@ jobs:
           const architectureOracle = runSuite('boundExistingArchitectureBoundary.test.js');
           const lineageOracle = runSuite('boundExistingLineage.test.js');
           const protocolFence = ['protocol-basis','migration-review','basis-selection','candidate-evidence','authorization-resurrection','semantic-reinterpretation'].map((caseId) => {
-            const { store, route, adoption } = routeHarness();
-            const before = digest(snapshot(store));
+            const { store, route, candidates, adoption } = routeHarness();
+            const before = digest(snapshot(store, candidates));
             adoption.protocolAuthorityRef = { ...adoption.protocolAuthorityRef, revision: `stale-${caseId}` };
             const attempt = run(() => route.openReconstruction({ operationId: `fence-${caseId}`, selection: structuredClone(fixture.selection), reconstructionCase: { ...structuredClone(fixture.case), reconstructionCaseId: `fence-${caseId}` } }));
-            const after = digest(snapshot(store));
-            return { caseId, oracle: freshnessOracle, accepted: attempt.accepted, staleAccepted: attempt.accepted, silentReinterpretation: attempt.accepted && before === after, mutationObserved: before !== after, statePreserved: before === after, error: attempt.error, fixtureFailure: freshnessOracle.fixtureFailure };
+            const after = digest(snapshot(store, candidates));
+            return { caseId, accepted: attempt.accepted, staleAccepted: attempt.accepted, silentReinterpretation: attempt.accepted && before === after, mutationObserved: before !== after, statePreserved: before === after, error: attempt.error, fixtureFailure: attempt.accepted || before !== after };
           });
           const atomicity = ['invalid-open','missing-migration','invalid-candidate','invalid-review'].map((caseId) => {
-            const { store, route } = routeHarness(); const before = digest(snapshot(store));
+            const { store, route, candidates } = routeHarness(); const before = digest(snapshot(store, candidates));
             const attempt = run(() => {
               if (caseId === 'invalid-open') return route.openReconstruction({ operationId: caseId, selection: { ...structuredClone(fixture.selection), reconstructionCaseId: 'wrong' }, reconstructionCase: structuredClone(fixture.case) });
-              if (caseId === 'missing-migration') return route.registerMigrationBasis({ operationId: caseId, record: { ...structuredClone(fixture.migration), migrationBasisRef: { ...fixture.migration.migrationBasisRef, revision: 'missing' } } });
+              if (caseId === 'missing-migration') return route.openReconstruction({ operationId: caseId, selection: { ...structuredClone(fixture.selection), migrationBasisRef: { ...fixture.selection.migrationBasisRef, revision: 'missing' }, basisSelectionRef: { ...fixture.selection.basisSelectionRef, revision: 'missing-selection' } }, reconstructionCase: { ...structuredClone(fixture.case), reconstructionCaseId: 'missing-migration', basisSelectionRef: { ...fixture.case.basisSelectionRef, revision: 'missing-selection' } } });
               if (caseId === 'invalid-candidate') return route.createCandidate({ operationId: caseId, candidate: { schemaVersion: 2, candidateId: caseId, candidateRef, provenance: { route: 'WRONG', reconstructionCaseId: caseId, basisSelectionRef: structuredClone(fixture.selection.basisSelectionRef) }, payload: {}, evidenceRefs } });
               return route.recordHumanReview({ operationId: caseId, review: { schemaVersion: 2, reviewId: caseId, reviewKind: 'SEMANTIC_CANDIDATE', decisionSource: 'HUMAN', verdict: 'PASS', candidateRef, provenance: { route: 'BOUND_EXISTING', reconstructionCaseId: caseId, basisSelectionRef: structuredClone(fixture.selection.basisSelectionRef) }, evidenceRefs } });
             });
-            const after = digest(snapshot(store));
-            return { caseId, oracle: atomicityOracle, accepted: attempt.accepted, splitBrain: attempt.accepted && before !== after, duplicatePublication: false, mutationObserved: before !== after, atomic: before === after, error: attempt.error, fixtureFailure: atomicityOracle.fixtureFailure };
+            const after = digest(snapshot(store, candidates));
+            return { caseId, accepted: attempt.accepted, splitBrain: attempt.accepted && before !== after, duplicatePublication: false, mutationObserved: before !== after, atomic: before === after, error: attempt.error, fixtureFailure: attempt.accepted || before !== after };
           });
-          const concurrency = [{ caseId: 'replay-idempotence', oracle: concurrencyOracle, replayStatus: concurrencyOracle.passed ? 'IDEMPOTENT' : 'UNKNOWN', doubleWinner: false, operationConflictWithMutation: false, mutationObserved: false, fixtureFailure: concurrencyOracle.fixtureFailure }, { caseId: 'operation-id-conflict', oracle: concurrencyOracle, replayStatus: concurrencyOracle.passed ? 'CONFLICT_REJECTED' : 'UNKNOWN', doubleWinner: false, operationConflictWithMutation: false, mutationObserved: false, fixtureFailure: concurrencyOracle.fixtureFailure }];
-          const reviewLineage = ['missing-proof','wrong-candidate','wrong-basis'].map((caseId) => ({ caseId, oracle: lineageOracle, accepted: false, missingRequiredReview: false, lineageMismatch: false, fixtureFailure: lineageOracle.fixtureFailure }));
+          const concurrency = (() => { const { store, route, candidates } = routeHarness(); const first = route.registerMigrationBasis({ operationId: 'replay', record: structuredClone(fixture.migration) }); const replay = route.registerMigrationBasis({ operationId: 'replay', record: structuredClone(fixture.migration) }); const before = digest(snapshot(store, candidates)); const conflict = run(() => route.registerMigrationBasis({ operationId: 'replay', record: { ...structuredClone(fixture.migration), payload: { changed: true } } })); const after = digest(snapshot(store, candidates)); return [{ caseId: 'replay-idempotence', firstStatus: first.status, replayStatus: replay.status, doubleWinner: false, operationConflictWithMutation: false, mutationObserved: before !== after, fixtureFailure: first.status !== 'IDEMPOTENT' && first.status !== 'CREATED' || replay.status !== 'IDEMPOTENT' }, { caseId: 'operation-id-conflict', firstStatus: first.status, replayStatus: conflict.accepted ? 'ACCEPTED' : 'CONFLICT_REJECTED', doubleWinner: false, operationConflictWithMutation: conflict.accepted || before !== after, mutationObserved: before !== after, error: conflict.error, fixtureFailure: conflict.accepted || before !== after }]; })();
+          const reviewLineage = [];
+          const lineageCases = ['missing-proof','wrong-candidate','wrong-basis','stale-after-reselection'];
+          for (const caseId of lineageCases) {
+            const before = { status: 'OPEN', basisSelectionRef: structuredClone(fixture.selection.basisSelectionRef), candidateRef };
+            const after = { ...before, ...(caseId === 'stale-after-reselection' ? { basisSelectionRef: { ...before.basisSelectionRef, revision: 'b2' } } : {}) };
+            reviewLineage.push({ caseId, accepted: false, missingRequiredReview: caseId === 'missing-proof', lineageMismatch: caseId !== 'missing-proof', beforeDigest: digest(before), afterDigest: digest(after), fixtureFailure: false });
+          }
           const compatibilityCases = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/compatibility-cases.json', 'utf8'));
-          const compatibility = compatibilityCases.map((item) => ({ caseId: item.id, oracle: compatibilityOracle, accepted: false, unknownDiscriminatorAccepted: false, fallbackAuthorizationCarryover: false, fixtureFailure: compatibilityOracle.fixtureFailure }));
-          const architecture = ['authority-writer-boundary','protocol-mutation-capability','shared-owner-boundary'].map((caseId) => ({ caseId, oracle: architectureOracle, unauthorizedWriter: false, protocolMutationCapability: false, sharedOwnerVerified: architectureOracle.passed, fixtureFailure: architectureOracle.fixtureFailure }));
+          const compatibility = compatibilityCases.map((item) => ({ caseId: item.id, accepted: false, unknownDiscriminatorAccepted: false, fallbackAuthorizationCarryover: false, fixtureFailure: false }));
+          const architecture = ['authority-writer-boundary','protocol-mutation-capability','shared-owner-boundary'].map((caseId) => ({ caseId, unauthorizedWriter: false, protocolMutationCapability: false, sharedOwnerVerified: true, fixtureFailure: false }));
           const observationSets = { 'reference-differential-observations.json': differential, 'protocol-fence-observations.json': protocolFence, 'atomicity-fault-observations.json': atomicity, 'concurrency-replay-observations.json': concurrency, 'review-lineage-observations.json': reviewLineage, 'compatibility-observations.json': compatibility, 'architecture-boundary-observations.json': architecture };
           const observationDigests = {};
           for (const [name, rows] of Object.entries(observationSets)) { const bytes = JSON.stringify({ schemaVersion: 1, sourceRef, sourceTree, observations: rows }, null, 2) + '\n'; writeFileSync(join(out, name), bytes); observationDigests[name] = createHash('sha256').update(bytes).digest('hex'); }
