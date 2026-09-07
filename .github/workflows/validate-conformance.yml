@@ -180,9 +180,9 @@ jobs:
           const tddBytes = readFileSync(join(out, 'tdd/manifest.json'));
           const tddManifestSha256 = createHash('sha256').update(tddBytes).digest('hex');
           const fixtureCounts = {
-            compatibility: JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/compatibility-cases.json')).length,
-            route: JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/route-cases.json')).length,
-            safety: JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/safety-cases.json')).length
+            compatibility: (() => { const value = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/compatibility-cases.json')); return Array.isArray(value) ? value.length : Object.keys(value).length; })(),
+            route: (() => { const value = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/route-cases.json')); return Array.isArray(value) ? value.length : Object.keys(value).length; })(),
+            safety: (() => { const value = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/safety-cases.json')); return Array.isArray(value) ? value.length : Object.keys(value).length; })()
           };
           const base = { evidenceVersion: 'sem-lc-05-evidence-contract/v1', gate: 'VG-SM-05_BOUND_EXISTING_NO_REINTERPRETATION', packageRef: 'notion://3d04c57a-590c-81d7-a035-e77076955719/AXTP-SEM-LC-05-P31-v0.2', taskAnchor: '4c2ad24b10d190eb1dd3565b88e380b2eab5f69d', sourceRef, sourceTree, metrics, fixtureCounts, tddManifestSha256, verdict: 'PASS' };
           const docs = {
@@ -200,6 +200,10 @@ jobs:
           const gateBytes = JSON.stringify(gateSummary, null, 2) + '\n';
           writeFileSync(join(out, 'gate-summary.json'), gateBytes);
           const gateSummaryDigest = createHash('sha256').update(gateBytes).digest('hex');
+          const exactSourcePath = join(out, 'exact-source-evidence.json');
+          const exactSource = JSON.parse(readFileSync(exactSourcePath, 'utf8'));
+          const exactSourceUpdated = { ...exactSource, tddManifestSha256, gateSummarySha256: gateSummaryDigest, evidenceInputs: Object.keys(docs).sort().concat(['gate-summary.json', 'tdd/manifest.json']), metrics, fixtureCounts };
+          writeFileSync(exactSourcePath, JSON.stringify(exactSourceUpdated, null, 2) + '\n');
           const manifest = { ...base, sourceRef, sourceTree, tddManifestSha256, gateSummarySha256: gateSummaryDigest, artifacts: Object.keys(docs).sort().concat(['gate-summary.json','tdd/manifest.json','exact-source-evidence.json']), artifactDigests: {} };
           for (const name of manifest.artifacts) { const bytes = readFileSync(join(out, name)); manifest.artifactDigests[name] = createHash('sha256').update(bytes).digest('hex'); }
           writeFileSync(join(out, 'v7-evidence-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
