@@ -14,6 +14,7 @@ import type {
 } from "./model.js";
 import { normalizeSemanticAuthorityRecordV2 } from "./model.js";
 import type { SemanticAuthorityRecordV2 } from "./model.js";
+import type { PreparedControlPublication } from "./controlStore.js";
 
 export interface AuthorityMutationRequest {
   readonly operationId: string;
@@ -44,7 +45,7 @@ export interface AuthorityV2MutationRequest {
   readonly canonicalPayload: SemanticCandidatePayload;
 }
 
-export interface PreparedAuthorityPublication { commit(): void; abort(): void; }
+export interface PreparedAuthorityPublication { commit(): void; abort(): void; commitWith?(other: PreparedControlPublication): void; }
 
 export interface InMemorySemanticAuthorityRepositoryOptions {
   readonly beforePublish?: () => void;
@@ -187,7 +188,15 @@ export class InMemorySemanticAuthorityRepository implements SemanticAuthorityRep
     const result = Object.freeze({ status: "CREATED" as const, authority: record });
     operations.set(operationId, Object.freeze({ canonical: operationCanonical, result: result as unknown as AuthorityMutationResult }));
     let active = true;
-    return { commit: () => { if (!active) return; this.#state = Object.freeze({ records, heads, sources, pathOwners, operations }); active = false; }, abort: () => { active = false; } };
+    const commit = () => { if (!active) return; this.#state = Object.freeze({ records, heads, sources, pathOwners, operations }); active = false; };
+    return { commit, abort: () => { active = false; }, commitWith: (other: PreparedControlPublication) => {
+      if (!active) return;
+      // Both swaps are synchronous and callback-free; no user code runs between
+      // preparation and the commit barrier. The callback performs the paired
+      // control-store swap and is required to be non-throwing.
+      other.commit();
+      commit();
+    } };
   }
 }
 

@@ -62,13 +62,18 @@ export class SemanticAuthorityAcceptanceBoundary {
     const receipt: BoundExistingOperationReceipt = { schemaVersion: 2, route: "BOUND_EXISTING", operationId: input.operationId, operationKind: kind, status: "CREATED", resultRef: authority.authorityRef };
     const operation: ControlOperation = { command, receipt };
     const run = () => {
+      // Recompute every mutable acceptance predicate at the commit barrier.
+      const barrier = this.readEligibility(input);
+      const barrierAdopted = this.readAdoptedBasis();
+      if (JSON.stringify(barrierAdopted.protocolAuthorityRef) !== JSON.stringify(barrier.selection.protocolBasis.protocolAuthorityRef)) throw new Error("PROTOCOL_BASIS_NOT_ADOPTED");
       const authorityPrepared = this.deps.authorities.prepareAuthorityV2Publication({ operationId: input.operationId, record: authority, expectedAuthorityHead: input.expectedAuthorityHead, canonicalPayload: candidate.payload });
       let controlPrepared;
       try {
-        const terminal = normalizeBoundExistingReconstructionCase({ ...currentCase, status: "AUTHORITY_ACCEPTED", authorityRef: authority.authorityRef });
-        controlPrepared = this.deps.control.prepareTerminalTransition(terminal, selection.basisSelectionRef, operation);
+        const terminal = normalizeBoundExistingReconstructionCase({ ...barrier.currentCase, status: "AUTHORITY_ACCEPTED", authorityRef: authority.authorityRef });
+        controlPrepared = this.deps.control.prepareTerminalTransition(terminal, barrier.selection.basisSelectionRef, operation);
       } catch (e) { authorityPrepared.abort(); throw e; }
-      authorityPrepared.commit(); controlPrepared.commit();
+      if (authorityPrepared.commitWith) authorityPrepared.commitWith(controlPrepared);
+      else { controlPrepared.commit(); authorityPrepared.commit(); }
       return receipt;
     };
     return this.deps.protocol.withPublicationFence ? this.deps.protocol.withPublicationFence(selection.protocolBasis, run) : run();
@@ -80,6 +85,20 @@ export class SemanticAuthorityAcceptanceBoundary {
   private readAdoptedBasis(): any {
     const provider = this.deps.protocol as any;
     return typeof provider.readAdoptedProtocolBasis === "function" ? provider.readAdoptedProtocolBasis() : provider.readAdoptedBasis();
+  }
+
+  private readEligibility(input: BoundExistingAuthorityAcceptanceInput): { selection: any; currentCase: any; candidate: any } {
+    const selection = this.deps.control.getBasisSelection(input.basisSelectionRef);
+    const currentCase = this.deps.control.getReconstructionCase(input.reconstructionCaseId);
+    if (currentCase?.status !== "OPEN") throw new Error("CASE_NOT_OPEN");
+    if (selection === undefined || selection.reconstructionCaseId !== input.reconstructionCaseId || !equalBasisRef(currentCase.basisSelectionRef, selection.basisSelectionRef)) throw new Error("BASIS_SELECTION_CONFLICT");
+    const candidate = this.deps.candidates.getCandidateV2(input.candidateRef);
+    if (candidate === undefined || candidate.provenance.route !== "BOUND_EXISTING" || candidate.provenance.reconstructionCaseId !== input.reconstructionCaseId || !equalBasisRef(candidate.provenance.basisSelectionRef, selection.basisSelectionRef) || !equalBasisRef(this.deps.candidates.getCandidateHead(candidate.candidateId)!, candidate.candidateRef)) throw new Error("CANDIDATE_HEAD_CONFLICT");
+    const proof = this.deps.control.getBoundExistingMachineProof(input.machineProofReceiptId);
+    if (!proof || proof.verdict !== "PASS" || !equalBasisRef(proof.candidateRef, candidate.candidateRef) || !equalBasisRef(proof.basisSelectionRef, selection.basisSelectionRef) || proof.reconstructionCaseId !== input.reconstructionCaseId) throw new Error("AUTHORITY_LINEAGE_NOT_ELIGIBLE");
+    this.requireReview(this.deps.control.getHumanReviewDecisionV2(input.semanticReviewId), "SEMANTIC_CANDIDATE", input, candidate.candidateRef, selection.basisSelectionRef);
+    this.requireReview(this.deps.control.getHumanReviewDecisionV2(input.noReinterpretationReviewId), "NO_REINTERPRETATION", input, candidate.candidateRef, selection.basisSelectionRef);
+    return { selection, currentCase, candidate };
   }
 
   private requireReview(review: any, kind: string, input: BoundExistingAuthorityAcceptanceInput, candidateRef: ImmutableRevisionRef, selectionRef: ImmutableRevisionRef): void {
