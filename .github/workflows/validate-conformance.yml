@@ -158,6 +158,14 @@ jobs:
           pnpm --dir tooling/semantic-lifecycle lint
           pnpm --dir tooling/semantic-lifecycle test
 
+      - name: Validate SEM-LC-05 exact source surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/semantic-lifecycle build
+          pnpm --dir tooling/semantic-lifecycle lint
+          pnpm --dir tooling/semantic-lifecycle test
+
       - name: Materialize semantic lifecycle exact-source report
         shell: bash
         env:
