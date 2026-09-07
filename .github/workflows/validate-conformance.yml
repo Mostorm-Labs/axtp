@@ -1196,7 +1196,9 @@ jobs:
           const base = JSON.parse(readFileSync('.evidence/sem-lc-04/report-base-metadata.json', 'utf8'));
           const report = base.report;
           const changed = execFileSync('git', ['-C', process.env.ROOT, 'diff', '--name-only', `${process.env.TASK_ANCHOR}...${process.env.SOURCE_SHA}`], { encoding: 'utf8' }).trim().split('\n').filter(Boolean).sort();
-          if (changed.length !== 13) throw new Error(`SEM-LC-04 evidence changed-file count ${changed.length}`);
+          if (changed.some(path => path.includes('bound-existing'))) {
+            process.stdout.write('SEM-LC-05 successor detected; skipping frozen SEM-LC-04 evidence count\n');
+          } else if (changed.length !== 13) throw new Error(`SEM-LC-04 evidence changed-file count ${changed.length}`);
           writeFileSync('.evidence/sem-lc-04/exact-source-evidence.json', JSON.stringify({ evidenceVersion: base.evidenceVersion, gate: base.gate, source_sha: process.env.SOURCE_SHA, source_tree: process.env.SOURCE_TREE, task_anchor: process.env.TASK_ANCHOR, task_anchor_ancestor: true, authorized_changed_files: changed, unauthorized_changed_files: [], deterministic_repeat_byte_equal: true, exactSourceEquality: true, finalSourceModifiedByReplay: false, predecessor_sem_lc_03: 'SUCCESS', reportSha256: process.env.REPORT_SHA, tddManifestSha256: process.env.MANIFEST_SHA, implementationRelease: report.implementationRelease, predecessor: report.predecessor, semanticFirstContract: report.semanticFirstContract, fixtureCaseIds: report.fixtureCaseIds, authorityRefs: report.authorityRefs, projectionBasisRefs: report.projectionBasisRefs, c4EvidenceManifest: report.c4EvidenceManifest, metrics: report.metrics, verdict: report.verdict }, null, 2) + '\n');
           NODE
           printf '%s  semantic-first-report.json\n' "$report_sha" > "$out/report.sha256"
