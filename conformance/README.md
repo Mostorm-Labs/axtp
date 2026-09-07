@@ -15,6 +15,8 @@ AXTP conformance 用例维护在根目录 `conformance/` 下，是 runtime、SDK
 | `fixtures/` | 协议行为用例使用的设备画像。 |
 | `cases/` | YAML 格式的用例描述。 |
 
+篮球事件检测配置的多设备行为由 `sport` level 覆盖，包含 MAC 路由、get/set 往返、status-only 成功响应，以及参数校验和原子更新失败语义。
+
 ## Phase 1 MVP Scope
 
 | 能力 | WebSocket JSON runtime | Standard Framed runtime |

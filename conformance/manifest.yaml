@@ -56,6 +56,14 @@ levels:
       - rpc.method_not_found
       - rpc.request_id_match
 
+  sport:
+    description: Sport event detection configuration behavior for multi-device App control.
+    required_cases:
+      - sport.capability_config_method_discovery
+      - sport.config_multi_device_roundtrip
+      - sport.config_status_only
+      - sport.config_validation_atomicity
+
   framed-binary:
     description: Standard framed CONTROL, RPC and STREAM behavior.
     required_cases:

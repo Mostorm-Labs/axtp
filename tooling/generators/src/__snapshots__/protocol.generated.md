@@ -47,7 +47,7 @@
 | network | 18 | 8 |
 | signage | 5 | 1 |
 | software | 6 | 2 |
-| sport | 3 | 2 |
+| sport | 7 | 2 |
 | stream | 8 | 4 |
 | video | 6 | 3 |
 
@@ -231,7 +231,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
 | signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl |
 | software | 0: software.getConfig<br>1: software.setConfig<br>2: software.resetConfig<br>3: software.getUpdatePolicy<br>4: software.setUpdatePolicy<br>5: software.resetUpdatePolicy |
-| sport | 0: sport.getEventDetectionCapabilities<br>1: sport.getEventDetectionConfig<br>2: sport.setEventDetectionConfig |
+| sport | 0: sport.getEventDetectionCapabilities<br>1: sport.getEventDetectionConfig<br>2: sport.setEventDetectionConfig<br>3: sport.getGoalShotWatermarkConfig<br>4: sport.setGoalShotWatermarkConfig<br>5: sport.getEventClipConfig<br>6: sport.setEventClipConfig |
 | stream | 0: stream.getCapabilities<br>1: stream.getState<br>2: stream.getStats<br>3: stream.ack<br>4: stream.windowUpdate<br>5: stream.pause<br>6: stream.resume<br>7: stream.abort |
 | video | 1: video.openStream<br>2: video.closeStream<br>3: video.getStreamState<br>0: video.getStreamCapabilities<br>4: video.getStreamSourceState<br>5: video.requestKeyFrame |
 
@@ -2877,6 +2877,10 @@ Type: `SoftwareUpdatePolicy`
 - [sport.getEventDetectionCapabilities](#sportgeteventdetectioncapabilities)
 - [sport.getEventDetectionConfig](#sportgeteventdetectionconfig)
 - [sport.setEventDetectionConfig](#sportseteventdetectionconfig)
+- [sport.getGoalShotWatermarkConfig](#sportgetgoalshotwatermarkconfig)
+- [sport.setGoalShotWatermarkConfig](#sportsetgoalshotwatermarkconfig)
+- [sport.getEventClipConfig](#sportgeteventclipconfig)
+- [sport.setEventClipConfig](#sportseteventclipconfig)
 
 ---
 
@@ -2983,6 +2987,144 @@ Type: `SetEventDetectionConfigResult`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | accepted | Boolean | 0x01 | Whether the device accepted the toggle request. | None | N/A |
 | state | SportEventDetectionState | 0x02 | Effective or pending state after processing the request. | None | N/A |
+
+---
+
+### sport.getGoalShotWatermarkConfig
+
+Return Goal and Shot watermark visibility for one device and sport type.
+
+- Method ID: `0x1804`
+- Domain: `sport`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportConfigTargetParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type whose configuration is requested. | maxLength=32 | N/A |
+
+#### Response Fields
+
+Type: `SportGoalShotWatermarkConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in canonical uppercase colon-separated form. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Sport type represented by this configuration. | maxLength=32 | N/A |
+| goalVisible | Boolean | 0x03 | Whether Goal watermarks are displayed for detected Goal events. | None | N/A |
+| shotVisible | Boolean | 0x04 | Whether Shot watermarks are displayed for detected Shot events. | None | N/A |
+
+---
+
+### sport.setGoalShotWatermarkConfig
+
+Atomically set Goal and Shot watermark visibility for one device and sport type; success is represented only by the standard RPC status.
+
+- Method ID: `0x1805`
+- Domain: `sport`
+- bitOffset: `4`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `NOT_FOUND`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportSetGoalShotWatermarkConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type to configure. | maxLength=32 | N/A |
+| goalVisible | Boolean | 0x03 | Desired Goal watermark visibility. | None | N/A |
+| shotVisible | Boolean | 0x04 | Desired Shot watermark visibility. | None | N/A |
+
+#### Response Fields
+
+Type: `Empty`
+
+No fields.
+
+---
+
+### sport.getEventClipConfig
+
+Return the video clip window before and after a Goal or Shot event for one device and sport type.
+
+- Method ID: `0x1806`
+- Domain: `sport`
+- bitOffset: `5`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportConfigTargetParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type whose configuration is requested. | maxLength=32 | N/A |
+
+#### Response Fields
+
+Type: `SportEventClipConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in canonical uppercase colon-separated form. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Sport type represented by this configuration. | maxLength=32 | N/A |
+| beforeOffsetSeconds | UInt32 | 0x03 | Number of whole seconds included before the detected event timestamp. | None | N/A |
+| afterOffsetSeconds | UInt32 | 0x04 | Number of whole seconds included after the detected event timestamp. | None | N/A |
+
+---
+
+### sport.setEventClipConfig
+
+Atomically set the video clip window before and after a Goal or Shot event for one device and sport type; success is represented only by the standard RPC status.
+
+- Method ID: `0x1807`
+- Domain: `sport`
+- bitOffset: `6`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `NOT_SUPPORTED`, `NOT_FOUND`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportSetEventClipConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type to configure. | maxLength=32 | N/A |
+| beforeOffsetSeconds | UInt32 | 0x03 | Number of whole seconds to include before the detected event timestamp. | None | N/A |
+| afterOffsetSeconds | UInt32 | 0x04 | Number of whole seconds to include after the detected event timestamp. | None | N/A |
+
+#### Response Fields
+
+Type: `Empty`
+
+No fields.
 
 ---
 

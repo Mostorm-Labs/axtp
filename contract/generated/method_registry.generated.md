@@ -85,3 +85,7 @@
 | `0x1801` | `sport.getEventDetectionCapabilities` | sport | draft | GetEventDetectionCapabilitiesParams | GetEventDetectionCapabilitiesResult | - |
 | `0x1802` | `sport.getEventDetectionConfig` | sport | draft | GetEventDetectionConfigParams | SportEventDetectionState | - |
 | `0x1803` | `sport.setEventDetectionConfig` | sport | draft | SetEventDetectionConfigParams | SetEventDetectionConfigResult | - |
+| `0x1804` | `sport.getGoalShotWatermarkConfig` | sport | draft | SportConfigTargetParams | SportGoalShotWatermarkConfig | - |
+| `0x1805` | `sport.setGoalShotWatermarkConfig` | sport | draft | SportSetGoalShotWatermarkConfigParams | Empty | - |
+| `0x1806` | `sport.getEventClipConfig` | sport | draft | SportConfigTargetParams | SportEventClipConfig | - |
+| `0x1807` | `sport.setEventClipConfig` | sport | draft | SportSetEventClipConfigParams | Empty | - |

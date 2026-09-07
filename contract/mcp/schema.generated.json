@@ -10063,6 +10063,195 @@
       ]
     },
     {
+      "name": "SportConfigTargetParams",
+      "type": "object",
+      "description": "Target selector shared by sport configuration queries in multi-device App sessions.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 17,
+          "description": "Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF."
+        },
+        {
+          "id": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 32,
+          "description": "Capability-supported sport type whose configuration is requested."
+        }
+      ]
+    },
+    {
+      "name": "SportGoalShotWatermarkConfig",
+      "type": "object",
+      "description": "Complete Goal and Shot watermark visibility configuration for one device and sport type.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 17,
+          "description": "Target device MAC address in canonical uppercase colon-separated form."
+        },
+        {
+          "id": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 32,
+          "description": "Sport type represented by this configuration."
+        },
+        {
+          "id": 3,
+          "name": "goalVisible",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether Goal watermarks are displayed for detected Goal events."
+        },
+        {
+          "id": 4,
+          "name": "shotVisible",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether Shot watermarks are displayed for detected Shot events."
+        }
+      ]
+    },
+    {
+      "name": "SportSetGoalShotWatermarkConfigParams",
+      "type": "object",
+      "description": "Full atomic update of Goal and Shot watermark visibility for one device and sport type.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 17,
+          "description": "Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF."
+        },
+        {
+          "id": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 32,
+          "description": "Capability-supported sport type to configure."
+        },
+        {
+          "id": 3,
+          "name": "goalVisible",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Desired Goal watermark visibility."
+        },
+        {
+          "id": 4,
+          "name": "shotVisible",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Desired Shot watermark visibility."
+        }
+      ]
+    },
+    {
+      "name": "SportEventClipConfig",
+      "type": "object",
+      "description": "Complete video clip window configuration centered on Goal and Shot events for one device and sport type.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 17,
+          "description": "Target device MAC address in canonical uppercase colon-separated form."
+        },
+        {
+          "id": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 32,
+          "description": "Sport type represented by this configuration."
+        },
+        {
+          "id": 3,
+          "name": "beforeOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Number of whole seconds included before the detected event timestamp."
+        },
+        {
+          "id": 4,
+          "name": "afterOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Number of whole seconds included after the detected event timestamp."
+        }
+      ]
+    },
+    {
+      "name": "SportSetEventClipConfigParams",
+      "type": "object",
+      "description": "Full atomic update of the video clip window centered on Goal and Shot events for one device and sport type.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 17,
+          "description": "Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF."
+        },
+        {
+          "id": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 32,
+          "description": "Capability-supported sport type to configure."
+        },
+        {
+          "id": 3,
+          "name": "beforeOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Number of whole seconds to include before the detected event timestamp."
+        },
+        {
+          "id": 4,
+          "name": "afterOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Number of whole seconds to include after the detected event timestamp."
+        }
+      ]
+    },
+    {
       "name": "GetEventDetectionCapabilitiesParams",
       "type": "object",
       "description": "Optional selector for event detection capability discovery.",
@@ -10107,7 +10296,7 @@
     {
       "name": "SportEventDetectionSportDescriptor",
       "type": "object",
-      "description": "Capability descriptor for one supported sport type and its registered event types.",
+      "description": "Capability descriptor for one supported sport type, its registered event types, and optional sport-specific configuration methods.",
       "fields": [
         {
           "id": 1,
@@ -10147,6 +10336,17 @@
             "itemType": "string"
           },
           "description": "Registered sport-specific detail schema names for the supported event types."
+        },
+        {
+          "id": 5,
+          "name": "supportedConfigMethods",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional registered sport configuration methods supported for this sport type, such as Goal/Shot watermark or event clip configuration."
         }
       ]
     },

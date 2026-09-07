@@ -45,6 +45,62 @@ methods:
     events: [sport.eventDetectionStateChanged]
     errors: [SUCCESS, INVALID_ARGUMENT, NOT_SUPPORTED, INVALID_STATE, BUSY, PERMISSION_DENIED, UNAVAILABLE]
 
+  - id: 0x1804
+    name: sport.getGoalShotWatermarkConfig
+    domain: sport
+    status: draft
+    bitOffset: 3
+    since: 1.0.0
+    description: Return Goal and Shot watermark visibility for one device and sport type.
+    rpc_op: request_response
+    request_schema: SportConfigTargetParams
+    response_schema: SportGoalShotWatermarkConfig
+    recommended_encoding: [json, tlv]
+    capabilities: [sport.eventDetection]
+    errors: [SUCCESS, INVALID_ARGUMENT, NOT_SUPPORTED, NOT_FOUND, PERMISSION_DENIED, UNAVAILABLE]
+
+  - id: 0x1805
+    name: sport.setGoalShotWatermarkConfig
+    domain: sport
+    status: draft
+    bitOffset: 4
+    since: 1.0.0
+    description: Atomically set Goal and Shot watermark visibility for one device and sport type; success is represented only by the standard RPC status.
+    rpc_op: request_response
+    request_schema: SportSetGoalShotWatermarkConfigParams
+    response_schema: Empty
+    recommended_encoding: [json, tlv]
+    capabilities: [sport.eventDetection]
+    errors: [SUCCESS, INVALID_ARGUMENT, NOT_SUPPORTED, NOT_FOUND, INVALID_STATE, BUSY, PERMISSION_DENIED, UNAVAILABLE]
+
+  - id: 0x1806
+    name: sport.getEventClipConfig
+    domain: sport
+    status: draft
+    bitOffset: 5
+    since: 1.0.0
+    description: Return the video clip window before and after a Goal or Shot event for one device and sport type.
+    rpc_op: request_response
+    request_schema: SportConfigTargetParams
+    response_schema: SportEventClipConfig
+    recommended_encoding: [json, tlv]
+    capabilities: [sport.eventDetection]
+    errors: [SUCCESS, INVALID_ARGUMENT, NOT_SUPPORTED, NOT_FOUND, PERMISSION_DENIED, UNAVAILABLE]
+
+  - id: 0x1807
+    name: sport.setEventClipConfig
+    domain: sport
+    status: draft
+    bitOffset: 6
+    since: 1.0.0
+    description: Atomically set the video clip window before and after a Goal or Shot event for one device and sport type; success is represented only by the standard RPC status.
+    rpc_op: request_response
+    request_schema: SportSetEventClipConfigParams
+    response_schema: Empty
+    recommended_encoding: [json, tlv]
+    capabilities: [sport.eventDetection]
+    errors: [SUCCESS, INVALID_ARGUMENT, OUT_OF_RANGE, NOT_SUPPORTED, NOT_FOUND, INVALID_STATE, BUSY, PERMISSION_DENIED, UNAVAILABLE]
+
 events:
   - id: 0x1801
     name: sport.eventDetectionStateChanged
@@ -71,6 +127,131 @@ events:
     capabilities: [sport.eventDetection]
 
 types:
+  SportConfigTargetParams:
+    kind: object
+    description: Target selector shared by sport configuration queries in multi-device App sessions.
+    fields:
+      - id: 0x01
+        name: macAddress
+        type: string
+        required: true
+        max_length: 17
+        description: Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF.
+      - id: 0x02
+        name: sportType
+        type: string
+        required: true
+        max_length: 32
+        description: Capability-supported sport type whose configuration is requested.
+
+  SportGoalShotWatermarkConfig:
+    kind: object
+    description: Complete Goal and Shot watermark visibility configuration for one device and sport type.
+    fields:
+      - id: 0x01
+        name: macAddress
+        type: string
+        required: true
+        max_length: 17
+        description: Target device MAC address in canonical uppercase colon-separated form.
+      - id: 0x02
+        name: sportType
+        type: string
+        required: true
+        max_length: 32
+        description: Sport type represented by this configuration.
+      - id: 0x03
+        name: goalVisible
+        type: bool
+        required: true
+        description: Whether Goal watermarks are displayed for detected Goal events.
+      - id: 0x04
+        name: shotVisible
+        type: bool
+        required: true
+        description: Whether Shot watermarks are displayed for detected Shot events.
+
+  SportSetGoalShotWatermarkConfigParams:
+    kind: object
+    description: Full atomic update of Goal and Shot watermark visibility for one device and sport type.
+    fields:
+      - id: 0x01
+        name: macAddress
+        type: string
+        required: true
+        max_length: 17
+        description: Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF.
+      - id: 0x02
+        name: sportType
+        type: string
+        required: true
+        max_length: 32
+        description: Capability-supported sport type to configure.
+      - id: 0x03
+        name: goalVisible
+        type: bool
+        required: true
+        description: Desired Goal watermark visibility.
+      - id: 0x04
+        name: shotVisible
+        type: bool
+        required: true
+        description: Desired Shot watermark visibility.
+
+  SportEventClipConfig:
+    kind: object
+    description: Complete video clip window configuration centered on Goal and Shot events for one device and sport type.
+    fields:
+      - id: 0x01
+        name: macAddress
+        type: string
+        required: true
+        max_length: 17
+        description: Target device MAC address in canonical uppercase colon-separated form.
+      - id: 0x02
+        name: sportType
+        type: string
+        required: true
+        max_length: 32
+        description: Sport type represented by this configuration.
+      - id: 0x03
+        name: beforeOffsetSeconds
+        type: uint32
+        required: true
+        description: Number of whole seconds included before the detected event timestamp.
+      - id: 0x04
+        name: afterOffsetSeconds
+        type: uint32
+        required: true
+        description: Number of whole seconds included after the detected event timestamp.
+
+  SportSetEventClipConfigParams:
+    kind: object
+    description: Full atomic update of the video clip window centered on Goal and Shot events for one device and sport type.
+    fields:
+      - id: 0x01
+        name: macAddress
+        type: string
+        required: true
+        max_length: 17
+        description: Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF.
+      - id: 0x02
+        name: sportType
+        type: string
+        required: true
+        max_length: 32
+        description: Capability-supported sport type to configure.
+      - id: 0x03
+        name: beforeOffsetSeconds
+        type: uint32
+        required: true
+        description: Number of whole seconds to include before the detected event timestamp.
+      - id: 0x04
+        name: afterOffsetSeconds
+        type: uint32
+        required: true
+        description: Number of whole seconds to include after the detected event timestamp.
+
   GetEventDetectionCapabilitiesParams:
     kind: object
     description: Optional selector for event detection capability discovery.
@@ -101,7 +282,7 @@ types:
 
   SportEventDetectionSportDescriptor:
     kind: object
-    description: Capability descriptor for one supported sport type and its registered event types.
+    description: Capability descriptor for one supported sport type, its registered event types, and optional sport-specific configuration methods.
     fields:
       - id: 0x01
         name: sportType
@@ -128,6 +309,13 @@ types:
           item_type: string
         required: false
         description: Registered sport-specific detail schema names for the supported event types.
+      - id: 0x05
+        name: supportedConfigMethods
+        type: array
+        array:
+          item_type: string
+        required: false
+        description: Optional registered sport configuration methods supported for this sport type, such as Goal/Shot watermark or event clip configuration.
 
   SportEventDetectionCapabilities:
     kind: object

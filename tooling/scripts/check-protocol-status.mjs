@@ -59,6 +59,9 @@ for (const event of generated.events ?? []) {
   addDomainCount(event.domain);
   for (const capability of event.capabilities ?? []) generatedFeatures.add(capability);
 }
+for (const capability of generated.capabilities ?? []) {
+  generatedFeatures.add(capability.name);
+}
 
 for (const file of walkProtocolDrafts(protocolDraftRoot)) {
   const relative = path.relative(root, file);

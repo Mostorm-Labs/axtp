@@ -6846,6 +6846,126 @@ schemas:
         type: bool
         required: false
         description: Whether restoring defaults via resetUpdatePolicy is supported.
+  SportConfigTargetParams:
+    kind: object
+    description: Target selector shared by sport configuration queries in multi-device App sessions.
+    fields:
+      - fieldId: 1
+        name: macAddress
+        type: string
+        required: true
+        maxLength: 17
+        description: Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF.
+      - fieldId: 2
+        name: sportType
+        type: string
+        required: true
+        maxLength: 32
+        description: Capability-supported sport type whose configuration is requested.
+  SportGoalShotWatermarkConfig:
+    kind: object
+    description: Complete Goal and Shot watermark visibility configuration for one device and sport type.
+    fields:
+      - fieldId: 1
+        name: macAddress
+        type: string
+        required: true
+        maxLength: 17
+        description: Target device MAC address in canonical uppercase colon-separated form.
+      - fieldId: 2
+        name: sportType
+        type: string
+        required: true
+        maxLength: 32
+        description: Sport type represented by this configuration.
+      - fieldId: 3
+        name: goalVisible
+        type: bool
+        required: true
+        description: Whether Goal watermarks are displayed for detected Goal events.
+      - fieldId: 4
+        name: shotVisible
+        type: bool
+        required: true
+        description: Whether Shot watermarks are displayed for detected Shot events.
+  SportSetGoalShotWatermarkConfigParams:
+    kind: object
+    description: Full atomic update of Goal and Shot watermark visibility for one device and sport type.
+    fields:
+      - fieldId: 1
+        name: macAddress
+        type: string
+        required: true
+        maxLength: 17
+        description: Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF.
+      - fieldId: 2
+        name: sportType
+        type: string
+        required: true
+        maxLength: 32
+        description: Capability-supported sport type to configure.
+      - fieldId: 3
+        name: goalVisible
+        type: bool
+        required: true
+        description: Desired Goal watermark visibility.
+      - fieldId: 4
+        name: shotVisible
+        type: bool
+        required: true
+        description: Desired Shot watermark visibility.
+  SportEventClipConfig:
+    kind: object
+    description: Complete video clip window configuration centered on Goal and Shot events for one device and sport type.
+    fields:
+      - fieldId: 1
+        name: macAddress
+        type: string
+        required: true
+        maxLength: 17
+        description: Target device MAC address in canonical uppercase colon-separated form.
+      - fieldId: 2
+        name: sportType
+        type: string
+        required: true
+        maxLength: 32
+        description: Sport type represented by this configuration.
+      - fieldId: 3
+        name: beforeOffsetSeconds
+        type: uint32
+        required: true
+        description: Number of whole seconds included before the detected event timestamp.
+      - fieldId: 4
+        name: afterOffsetSeconds
+        type: uint32
+        required: true
+        description: Number of whole seconds included after the detected event timestamp.
+  SportSetEventClipConfigParams:
+    kind: object
+    description: Full atomic update of the video clip window centered on Goal and Shot events for one device and sport type.
+    fields:
+      - fieldId: 1
+        name: macAddress
+        type: string
+        required: true
+        maxLength: 17
+        description: Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF.
+      - fieldId: 2
+        name: sportType
+        type: string
+        required: true
+        maxLength: 32
+        description: Capability-supported sport type to configure.
+      - fieldId: 3
+        name: beforeOffsetSeconds
+        type: uint32
+        required: true
+        description: Number of whole seconds to include before the detected event timestamp.
+      - fieldId: 4
+        name: afterOffsetSeconds
+        type: uint32
+        required: true
+        description: Number of whole seconds to include after the detected event timestamp.
   GetEventDetectionCapabilitiesParams:
     kind: object
     description: Optional selector for event detection capability discovery.
@@ -6875,7 +6995,8 @@ schemas:
         description: Cross-sport event detection capability descriptor.
   SportEventDetectionSportDescriptor:
     kind: object
-    description: Capability descriptor for one supported sport type and its registered event types.
+    description: Capability descriptor for one supported sport type, its registered event types, and optional sport-specific
+      configuration methods.
     fields:
       - fieldId: 1
         name: sportType
@@ -6902,6 +7023,14 @@ schemas:
         array:
           itemType: string
         description: Registered sport-specific detail schema names for the supported event types.
+      - fieldId: 5
+        name: supportedConfigMethods
+        type: array
+        required: false
+        array:
+          itemType: string
+        description: Optional registered sport configuration methods supported for this sport type, such as Goal/Shot watermark
+          or event clip configuration.
   SportEventDetectionCapabilities:
     kind: object
     description: Cross-sport event detection capability descriptor.
@@ -10041,6 +10170,109 @@ methods:
       - SUCCESS
       - INVALID_ARGUMENT
       - NOT_SUPPORTED
+      - INVALID_STATE
+      - BUSY
+      - PERMISSION_DENIED
+      - UNAVAILABLE
+  - name: sport.getGoalShotWatermarkConfig
+    description: Return Goal and Shot watermark visibility for one device and sport type.
+    methodId: 6148
+    bitOffset: 3
+    domain: sport
+    since: 1.0.0
+    status: draft
+    request:
+      type: SportConfigTargetParams
+    response:
+      type: SportGoalShotWatermarkConfig
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - sport.eventDetection
+    events: []
+    errors:
+      - SUCCESS
+      - INVALID_ARGUMENT
+      - NOT_SUPPORTED
+      - NOT_FOUND
+      - PERMISSION_DENIED
+      - UNAVAILABLE
+  - name: sport.setGoalShotWatermarkConfig
+    description: Atomically set Goal and Shot watermark visibility for one device and sport type; success is represented
+      only by the standard RPC status.
+    methodId: 6149
+    bitOffset: 4
+    domain: sport
+    since: 1.0.0
+    status: draft
+    request:
+      type: SportSetGoalShotWatermarkConfigParams
+    response:
+      type: Empty
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - sport.eventDetection
+    events: []
+    errors:
+      - SUCCESS
+      - INVALID_ARGUMENT
+      - NOT_SUPPORTED
+      - NOT_FOUND
+      - INVALID_STATE
+      - BUSY
+      - PERMISSION_DENIED
+      - UNAVAILABLE
+  - name: sport.getEventClipConfig
+    description: Return the video clip window before and after a Goal or Shot event for one device and sport type.
+    methodId: 6150
+    bitOffset: 5
+    domain: sport
+    since: 1.0.0
+    status: draft
+    request:
+      type: SportConfigTargetParams
+    response:
+      type: SportEventClipConfig
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - sport.eventDetection
+    events: []
+    errors:
+      - SUCCESS
+      - INVALID_ARGUMENT
+      - NOT_SUPPORTED
+      - NOT_FOUND
+      - PERMISSION_DENIED
+      - UNAVAILABLE
+  - name: sport.setEventClipConfig
+    description: Atomically set the video clip window before and after a Goal or Shot event for one device and sport type;
+      success is represented only by the standard RPC status.
+    methodId: 6151
+    bitOffset: 6
+    domain: sport
+    since: 1.0.0
+    status: draft
+    request:
+      type: SportSetEventClipConfigParams
+    response:
+      type: Empty
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - sport.eventDetection
+    events: []
+    errors:
+      - SUCCESS
+      - INVALID_ARGUMENT
+      - OUT_OF_RANGE
+      - NOT_SUPPORTED
+      - NOT_FOUND
       - INVALID_STATE
       - BUSY
       - PERMISSION_DENIED

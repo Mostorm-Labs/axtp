@@ -33,6 +33,7 @@
 | room | 5 | ASK | 0 | P7 | 补产品/设备/legacy 确认。 |
 | signage | 2 | ASK | 6 | P7 | `signage.playlist` 已进入 generated；补产品/设备/legacy 确认。`signage.media`/`signage.osd`/`signage.schedule` 已合并到其他域。 |
 | software | 2 | ASK | 8 | P7 | `software.config`、`software.updatePolicy` 已进入 generated，承接应用/launcher 侧配置和更新策略。 |
+| sport | 2 | generated | 9 | P2 | `sport.eventDetection` 与 `sport.basketball` 已进入 generated；新增多设备 Goal/Shot 水印和事件视频片段窗口配置，后续按修订流程维护。 |
 | storage | 6 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | stream | 2 | ASK | 12 | P0 data-plane plumbing | Phase 1 需要通用 STREAM open/data/close 语义支撑 audio/video；具体业务参数仍由 audio/video profile 定义。 |
 | system | 6 | ASK | 0 | P1 | 补产品/设备/legacy 确认，优先进入采纳批次。 |

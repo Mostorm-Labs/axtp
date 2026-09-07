@@ -41,6 +41,49 @@ describe("protocol source pipeline", () => {
     expect(validateProtocolDefinition(model)).toContain(`[OK] contract/protocol/axtp.protocol.yaml: ${model.methods.length} methods checked`);
   });
 
+  it("registers sport configuration methods for multi-device app control", async () => {
+    const sources = await loadProtocolSources(repoRoot);
+    const methods = new Map(sources.methods.map((method) => [method.name, method]));
+    for (const name of [
+      "sport.getGoalShotWatermarkConfig",
+      "sport.setGoalShotWatermarkConfig",
+      "sport.getEventClipConfig",
+      "sport.setEventClipConfig"
+    ]) {
+      expect(methods.get(name)).toBeDefined();
+    }
+    expect(methods.get("sport.getGoalShotWatermarkConfig")?.requestSchema).toBe("SportConfigTargetParams");
+    expect(methods.get("sport.getGoalShotWatermarkConfig")?.responseSchema).toBe("SportGoalShotWatermarkConfig");
+    expect(methods.get("sport.setGoalShotWatermarkConfig")?.requestSchema).toBe("SportSetGoalShotWatermarkConfigParams");
+    expect(methods.get("sport.setGoalShotWatermarkConfig")?.responseSchema).toBe("Empty");
+    expect(methods.get("sport.getEventClipConfig")?.requestSchema).toBe("SportConfigTargetParams");
+    expect(methods.get("sport.getEventClipConfig")?.responseSchema).toBe("SportEventClipConfig");
+    expect(methods.get("sport.setEventClipConfig")?.requestSchema).toBe("SportSetEventClipConfigParams");
+    expect(methods.get("sport.setEventClipConfig")?.responseSchema).toBe("Empty");
+  });
+
+  it("advertises sport-specific configuration methods in event detection descriptors", async () => {
+    const sources = await loadProtocolSources(repoRoot);
+    const descriptor = sources.schemas.find((schema) => schema.name === "SportEventDetectionSportDescriptor");
+    expect(descriptor).toBeDefined();
+    const configMethods = descriptor?.fields.find((field) => field.name === "supportedConfigMethods");
+    expect(configMethods).toMatchObject({
+      type: "array",
+      required: false,
+      array: { itemType: "string" }
+    });
+
+    const registeredMethods = new Set(sources.methods.filter((method) => method.domain === "sport").map((method) => method.name));
+    for (const name of [
+      "sport.getGoalShotWatermarkConfig",
+      "sport.setGoalShotWatermarkConfig",
+      "sport.getEventClipConfig",
+      "sport.setEventClipConfig"
+    ]) {
+      expect(registeredMethods.has(name)).toBe(true);
+    }
+  });
+
   it("rejects deprecated top-level domain YAML sources", async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), "axtp-legacy-domains-"));
     try {

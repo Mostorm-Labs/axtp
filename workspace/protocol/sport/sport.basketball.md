@@ -1,11 +1,11 @@
 ---
-status: review-ok
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: sport
 feature: sport.basketball
 registry: contract/registry/domains/sport/domain.yaml
-lastReviewed: 2026-08-07
+lastReviewed: 2026-09-07
 ---
 
 # sport.basketball
@@ -14,15 +14,17 @@ lastReviewed: 2026-08-07
 
 > Adoption note (2026-08-07): 用户已确认并采纳篮球专项默认决策：shot 表示一次有效投篮尝试；goal 必须引用一个 shotId，且一次 shot 最多一个 goal；关闭时允许已上报 shot 的在途 goal 完成，disabled 后不再发送新事件；MVP 不做断线补发或历史查询。公共控制面和 wire event 统一复用 `sport.eventDetection`，篮球 details 在 wire 上使用 `SportEventDetails`，本文件的 Shot/Goal Details 是专项语义投影。
 
+> Amendment note (2026-09-07): 篮球专项复用 `sport.eventDetection` 新增的 Goal/Shot 水印和事件视频片段窗口配置。App 通过 `macAddress` + `sportType=basketball` 定位目标 VM33PRO；两类配置均提供英文 `get` / `set` method，set 采用 status-only 成功响应。
+
 ## 0. 速读结论
 
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 声明 VM33PRO 的篮球投篮/进球事件语义，并为通用事件检测能力提供专项 payload。 |
-| 当前状态 | review-ok；已按方案 C 正式采纳，生成物待 Stage 50 刷新。 |
+| 当前状态 | generated；已按方案 C 正式采纳，并于 2026-09-07 完成配置扩展和 Stage 50 刷新。 |
 | 本次决策 | Adopted：篮球作为 `sport.basketball` 专项 capability，公共控制面和统一事件 envelope 复用 `sport.eventDetection`。 |
-| 是否可直接实现 | Registry 源事实已具备；运行时实现需在 Stage 50 生成 Protocol IR、文档和 conformance 产物后进行。 |
-| 主要交互 | 复用 `sport.eventDetection` 的 RPC + EVENT；本 feature 不新增独立控制 method。 |
+| 是否可直接实现 | 是；Registry 源事实与 generated 合同已刷新，运行时应绑定包含本 amendment 的 spec commit/tag。 |
+| 主要交互 | 复用 `sport.eventDetection` 的 RPC + EVENT；篮球配置使用公共的水印与事件视频片段窗口 method。 |
 | 是否使用 STREAM | 否。投篮/进球是低频业务事件；原始视频、轨迹和训练报告不在本 feature。 |
 | Registry readiness | adopted：`sport.basketball` 已登记为 `sport` domain 下的专项 capability。 |
 | Conformance | needed |
@@ -64,10 +66,20 @@ App 应先查询通用 capability，确认 `basketball` 支持 `shot` / `goal`�
 | `sport.getEventDetectionCapabilities` | 查询 `sportType=basketball`、`supportedEvents=["shot","goal"]` 和 `detailsSchemas`。 |
 | `sport.getEventDetectionConfig` | 使用 `params.sportType=basketball` 查询有效开关和运行态。 |
 | `sport.setEventDetectionConfig` | 使用 `params.sportType=basketball` 设置 `enabled`。 |
+| `sport.getGoalShotWatermarkConfig` / `sport.setGoalShotWatermarkConfig` | 使用 `params.macAddress` + `params.sportType=basketball` 查询/原子设置 Goal/Shot 水印显示。 |
+| `sport.getEventClipConfig` / `sport.setEventClipConfig` | 使用 `params.macAddress` + `params.sportType=basketball` 查询/原子设置以 shot/goal 事件时间为中心的视频片段前后秒数。 |
 | `sport.eventDetectionStateChanged` | `state.sportType=basketball` 时更新篮球开关和算法运行态。 |
 | `sport.eventDetected` | 通过 `sportType=basketball` 和 `eventType=shot/goal` 路由到本专项 schema。 |
 
-通用 method 的完整 Params/Result 表、`request` / `success` d block 和公共错误分支见 [sport.eventDetection 第 3 章](sport.eventDetection.md#3-方法-methods)。本文件不复制这些示例，避免形成两套可冲突的控制合同。
+通用 method 的完整 Params/Result 表、`request` / `success` d block 和公共错误分支见 [sport.eventDetection 第 3 章](sport.eventDetection.md#3-方法-methods)。本文件不复制这些示例，避免形成两套可冲突的控制合同。设备应在 `sport.eventDetection` capability 的 `supportedSports[]` 中，通过 `supportedConfigMethods` 声明本篮球实现支持的配置 method。
+
+篮球配置的具体规则：
+
+- `macAddress` 必须使用大写、冒号分隔形式，例如 `AA:BB:CC:DD:EE:FF`；每个 App 请求都必须显式携带目标 MAC。
+- `sportType` 固定为 `basketball`，但保留在请求中以复用跨运动项目配置 method。
+- `sport.setGoalShotWatermarkConfig` 的 `goalVisible` 和 `shotVisible` 一次原子更新，成功响应不带业务 `result`。
+- `sport.setEventClipConfig` 的 `beforeOffsetSeconds` 和 `afterOffsetSeconds` 一次原子更新；二者表示以 `shot` / `goal` 的 `occurredAt` 为中心的视频片段窗口。
+- 目标设备不存在返回 `NOT_FOUND`；篮球能力或配置不支持返回 `NOT_SUPPORTED`；MAC 格式或 offset 非法分别返回 `INVALID_ARGUMENT` / `OUT_OF_RANGE`。
 
 ## 4. Basketball Events
 
@@ -197,6 +209,17 @@ Capability name: `sport.basketball`（adopted specialization）。它描述篮�
 | `requiresEventDetectionToggle` | bool | yes | `true` / `false` | none | 是否依赖通用 `sport.setEventDetectionConfig` 开关。 |
 | `goalRequiresShotReference` | bool | yes | `true` | `true` | MVP 固定要求每个 goal 引用一个 `shotId`。 |
 
+通用 capability descriptor 对 `sportType=basketball` 的推荐 `supportedConfigMethods` 值为：
+
+```json
+[
+  "sport.getGoalShotWatermarkConfig",
+  "sport.setGoalShotWatermarkConfig",
+  "sport.getEventClipConfig",
+  "sport.setEventClipConfig"
+]
+```
+
 ## 6. Schemas
 
 ### 6.0 Schema hierarchy
@@ -275,9 +298,9 @@ SportBasketballGoalDetails
 | Draft status | Adopted：本文件记录已采纳的 `sport.basketball` formal proposal。 |
 | Domain registry | Adopted：`sport` 使用 high-byte `0x18`，状态为 `draft`。 |
 | Domain YAML | Adopted：`contract/registry/domains/sport/domain.yaml`。 |
-| Generated protocol | Pending Stage 50：生成物尚未刷新，不在本阶段手工修改。 |
-| Protocol IR / MCP / test vectors | 未修改、未生成。 |
-| Conformance | needed：capability descriptor、shot/goal details、关联/乱序/重复、通用 state event 和 reconnect cases。 |
+| Generated protocol | Generated：已通过 Stage 50 从 Registry YAML 刷新。 |
+| Protocol IR / MCP / test vectors | 已由 Generator 更新 Protocol IR、generated docs 和 MCP registry；测试向量无内容变化。 |
+| Conformance | needed：capability descriptor、shot/goal details、关联/乱序/重复、通用 state event、reconnect、multi-device target、watermark 和 event clip atomic update cases。 |
 
 专项采纳前置条件：无。用户已确认方案 C 及全部推荐决策；后续已采纳语义变更须使用 `amend-adopted-protocol`。
 
@@ -292,6 +315,9 @@ SportBasketballGoalDetails
 | unknown correlation | goal 引用未知 shot | App 收到 goal | 不静默绑定最近 shot；暂存、校准或展示未关联结果。 |
 | duplicate / out-of-order | 重试或事件并发 | App 收到重复/乱序 | 通用 eventId/sequence 去重排序，专项关联稳定。 |
 | no STREAM | AXTP-WS-JSON | 设备产生篮球事件 | 只发送 RPC Event，不发送 STREAM 或原始视频。 |
+| multi-device config | 一个 App 管理多个 VM33PRO | App 携带不同 `macAddress` 调用配置 method | 设备只处理指定 MAC 的篮球配置，不使用隐式当前设备。 |
+| watermark visibility | `sportType=basketball` | App 设置 Goal/Shot 水印 | set 只返回标准 status；后续 get 返回完整 `goalVisible` / `shotVisible`。 |
+| event clip window | 检测到 shot/goal | App 设置前后偏移 | 片段窗口以事件 `occurredAt` 为中心，两个 offset 原子更新。 |
 
 ## 12. Adoption Decisions / Closed Questions
 
@@ -310,6 +336,13 @@ SportBasketballGoalDetails
 - 用户已确认方案 C 及全部推荐决策；本稿无未解决审核阻塞、修复或询问项。
 - method/event/capability/schema 的机器事实以 `contract/registry/domains/sport/domain.yaml` 为唯一来源。
 - 后续已采纳语义变更必须先更新本 formal proposal，再使用 `amend-adopted-protocol`。
+
+## 附录 C. Amendment History
+
+| 日期 | 变更 | 兼容性 |
+|---|---|---|
+| 2026-09-07 | 复用 `sport.eventDetection` 新增 `sport.getGoalShotWatermarkConfig` / `sport.setGoalShotWatermarkConfig` 和 `sport.getEventClipConfig` / `sport.setEventClipConfig`；请求包含 `macAddress` 与 `sportType`。 | 向后兼容的 draft method/schema addition；既有篮球事件合同不变。 |
+| 2026-09-07 | 通过通用 capability descriptor 的可选 `supportedConfigMethods` 声明篮球设备支持的 4 个配置 method。 | 向后兼容的 optional capability metadata addition；既有篮球事件字段和 method ID 不变。 |
 
 ## 附录 B. Registry 草案输入
 

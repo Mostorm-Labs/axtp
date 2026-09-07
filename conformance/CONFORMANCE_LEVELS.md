@@ -14,6 +14,8 @@ Conformance level 是测试入口，不是协议功能清单的替代品。具�
 | L3 | Low-bandwidth / HID / BLE profile | 低带宽、短包、分片、降级 profile。 | MCU、BLE、UART、HID-64 等受限链路。 |
 | L4 | Business domain conformance | 已 generated 业务 domain 的 method/event/schema 行为。 | 交付设备、业务 SDK、客户 release runtime。 |
 
+仓库 manifest 还可以按 generated domain 定义细分 level；当前 `sport` level 使用 [profiles/sport.yaml](profiles/sport.yaml) 声明 VM33PRO 篮球事件检测配置行为。
+
 ## L0: WebSocket JSON RPC Only
 
 | 项 | 要求 |
