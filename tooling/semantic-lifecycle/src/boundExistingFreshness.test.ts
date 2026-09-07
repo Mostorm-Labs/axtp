@@ -7,6 +7,15 @@ import {
   ProtocolBasisUnavailableError,
   type PublicationFenceHook,
 } from "./protocolBasisProvider.js";
+import { readFileSync } from "node:fs";
+import { InMemoryLifecycleControlStore } from "./controlStore.js";
+import { InMemorySemanticCandidateStore } from "./candidateStore.js";
+import { BoundExistingRoute } from "./boundExistingRoute.js";
+
+const routeFixtures = JSON.parse(readFileSync("fixtures/bound-existing/route-cases.json", "utf8"));
+const routeCopy = (value: unknown) => structuredClone(value);
+const routeCaseId = routeFixtures.case.reconstructionCaseId;
+const routeCandidateRef = (revision: string) => ({ refType: "IMMUTABLE_REVISION", namespace: "semantic-candidate", subject: "candidate-1", revision, digest: `sha256:${revision}` });
 
 const basisA = {
   protocolAuthorityRef: {
@@ -115,4 +124,21 @@ test("provider contract has no protocol mutation method", () => {
   const provider = new InMemoryProtocolBasisProvider(basisA);
   assert.equal("writeAdoptedBasis" in provider, false);
   assert.equal("mutateProtocol" in provider, false);
+});
+
+test("proof and review lineage becomes stale after basis reselection", () => {
+  const control = new InMemoryLifecycleControlStore();
+  const candidates = new InMemorySemanticCandidateStore();
+  let adopted = routeCopy(routeFixtures.selection.protocolBasis);
+  const route = new BoundExistingRoute(control, { readAdoptedProtocolBasis: () => routeCopy(adopted) }, candidates);
+  route.registerMigrationBasis({ operationId: "freshness-migration", record: routeCopy(routeFixtures.migration) });
+  route.openReconstruction({ operationId: "freshness-open", selection: routeCopy(routeFixtures.selection), reconstructionCase: routeCopy(routeFixtures.case) });
+  const candidate = { schemaVersion: 2, candidateId: "candidate-1", candidateRef: routeCandidateRef("c1"), provenance: { route: "BOUND_EXISTING", reconstructionCaseId: routeCaseId, basisSelectionRef: routeFixtures.selection.basisSelectionRef }, payload: { meaning: "c1" }, evidenceRefs: [{ refType: "EVIDENCE", id: "freshness-candidate" }] };
+  route.createCandidate({ operationId: "freshness-candidate", candidate });
+  const proof = { schemaVersion: 1, receiptId: "freshness-proof", proofKind: "BOUND_EXISTING_RECONSTRUCTION", proofContractVersion: "1", engine: { name: "reference", version: "1" }, reconstructionCaseId: routeCaseId, candidateRef: candidate.candidateRef, basisSelectionRef: routeFixtures.selection.basisSelectionRef, verdict: "PASS", inputDigest: "sha256:freshness", ruleIds: ["BOUND-EXACT"], diagnostics: [], evidenceRefs: [{ refType: "EVIDENCE", id: "freshness-proof-evidence" }] };
+  route.recordMachineProof({ operationId: "freshness-proof-op", proof });
+  const changedSelection = { ...routeCopy(routeFixtures.selection), basisSelectionRef: { ...routeFixtures.selection.basisSelectionRef, revision: "freshness-b2", digest: "sha256:freshness-b2" }, supersedesBasisSelectionRef: routeFixtures.selection.basisSelectionRef, protocolBasis: { ...routeCopy(routeFixtures.selection.protocolBasis), protocolAuthorityRef: { ...routeFixtures.selection.protocolBasis.protocolAuthorityRef, revision: "freshness-b" } } };
+  adopted = routeCopy(changedSelection.protocolBasis);
+  route.reselectBasis({ operationId: "freshness-reselect", expectedBasisSelectionRef: routeFixtures.selection.basisSelectionRef, selection: changedSelection });
+  assert.throws(() => route.recordHumanReview({ operationId: "freshness-stale-review", review: { schemaVersion: 2, reviewId: "freshness-review", reviewKind: "SEMANTIC_CANDIDATE", decisionSource: "HUMAN", verdict: "PASS", candidateRef: candidate.candidateRef, provenance: { route: "BOUND_EXISTING", reconstructionCaseId: routeCaseId, basisSelectionRef: routeFixtures.selection.basisSelectionRef }, evidenceRefs: [{ refType: "EVIDENCE", id: "freshness-review-evidence" }] } }), /BASIS_SELECTION_CONFLICT|CANDIDATE_HEAD_CONFLICT/);
 });

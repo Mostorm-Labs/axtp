@@ -246,6 +246,18 @@ export class BoundExistingRoute {
     return this.recordHumanReview(input);
   }
 
+  recordSemanticCandidateReview(input: RecordBoundExistingHumanReviewCommand): BoundExistingOperationReceipt {
+    const review = normalizeHumanReviewDecisionV2(input.review);
+    if (review.reviewKind !== "SEMANTIC_CANDIDATE") throw new Error("INVALID_REVIEW_KIND");
+    return this.recordHumanReview(input);
+  }
+
+  recordNoReinterpretationReview(input: RecordBoundExistingHumanReviewCommand): BoundExistingOperationReceipt {
+    const review = normalizeHumanReviewDecisionV2(input.review);
+    if (review.reviewKind !== "NO_REINTERPRETATION") throw new Error("INVALID_REVIEW_KIND");
+    return this.recordHumanReview(input);
+  }
+
   private requireCurrentCandidate(reconstructionCaseId: string, basisSelectionRef: ImmutableRevisionRef, candidateRef: ImmutableRevisionRef): SemanticCandidateRecordV2 {
     const record = this.control.getReconstructionCase(reconstructionCaseId);
     if (record?.status !== "OPEN") throw new Error("CASE_NOT_OPEN");

@@ -16,23 +16,61 @@ function candidate(revision = "c1", overrides = {}) {
     provenance: { route: "BOUND_EXISTING", reconstructionCaseId: caseId, basisSelectionRef: selectionRef },
     payload: { meaning: revision }, evidenceRefs: [{ refType: "EVIDENCE", id: `candidate-${revision}` }], ...overrides };
 }
-function proof(candidateRefValue, selectionRefValue = selectionRef, overrides = {}) {
-  return { schemaVersion: 1, receiptId: `proof-${candidateRefValue.revision}`, proofKind: "BOUND_EXISTING_RECONSTRUCTION",
-    proofContractVersion: "1", engine: { name: "reference", version: "1" }, reconstructionCaseId: caseId,
-    candidateRef: candidateRefValue, basisSelectionRef: selectionRefValue, verdict: "PASS", inputDigest: `sha256:input-${candidateRefValue.revision}`,
-    ruleIds: ["BOUND-EXACT"], diagnostics: [], evidenceRefs: [{ refType: "EVIDENCE", id: `proof-evidence-${candidateRefValue.revision}` }], ...overrides };
-}
-function review(kind, candidateRefValue, selectionRefValue = selectionRef, verdict = "PASS", overrides = {}) {
-  return { schemaVersion: 2, reviewId: `${kind}-review-${candidateRefValue.revision}`, reviewKind: kind, decisionSource: "HUMAN", verdict,
-    candidateRef: candidateRefValue, provenance: { route: "BOUND_EXISTING", reconstructionCaseId: caseId, basisSelectionRef: selectionRefValue },
-    evidenceRefs: [{ refType: "EVIDENCE", id: `${kind}-evidence-${candidateRefValue.revision}` }], ...overrides };
-}
 function selection(revision, protocolRevision = revision) {
   const protocolBasis = { ...copy(fixtures.selection.protocolBasis), protocolAuthorityRef: { ...fixtures.selection.protocolBasis.protocolAuthorityRef, revision: protocolRevision } };
   const basisSelectionRef = { ...selectionRef, revision, digest: `sha256:${revision}` };
   if (revision === "a1") return { ...copy(fixtures.selection), basisSelectionRef, protocolBasis };
   const supersedesBasisSelectionRef = revision === "b2" ? selectionRef : { ...selectionRef, revision: "b2", digest: "sha256:b2" };
   return { ...copy(fixtures.selection), basisSelectionRef, protocolBasis, supersedesBasisSelectionRef };
+}
+function proof(candidateRefValue = candidateRef("c1"), selectionRefValue = selectionRef, overrides = {}) {
+  if (candidateRefValue && candidateRefValue.refType !== "IMMUTABLE_REVISION") {
+    overrides = candidateRefValue;
+    candidateRefValue = candidateRef("c1");
+    selectionRefValue = selectionRef;
+  }
+  return {
+    schemaVersion: 1,
+    receiptId: "proof-1",
+    proofKind: "BOUND_EXISTING_RECONSTRUCTION",
+    proofContractVersion: "v1",
+    engine: { name: "proof", version: "1" },
+    reconstructionCaseId: caseId,
+    candidateRef: candidateRefValue,
+    basisSelectionRef: selectionRefValue,
+    verdict: "PASS",
+    inputDigest: "sha256:proof",
+    ruleIds: ["RULE"],
+    diagnostics: [],
+    evidenceRefs: [{ refType: "EVIDENCE", id: "proof-evidence" }],
+    ...overrides
+  };
+}
+function review(reviewKind, candidateRefValue = candidateRef("c1"), selectionRefValue = selectionRef, verdict = "PASS", overrides = {}) {
+  if (candidateRefValue && candidateRefValue.refType !== "IMMUTABLE_REVISION") {
+    overrides = candidateRefValue;
+    candidateRefValue = candidateRef("c1");
+    selectionRefValue = selectionRef;
+    verdict = "PASS";
+  }
+  return {
+    schemaVersion: 2,
+    reviewId: reviewKind === "NO_REINTERPRETATION" ? "no-reinterpretation-review" : "semantic-review",
+    reviewKind,
+    decisionSource: "HUMAN",
+    verdict,
+    candidateRef: candidateRefValue,
+    provenance: {
+      route: "BOUND_EXISTING",
+      reconstructionCaseId: caseId,
+      basisSelectionRef: selectionRefValue
+    },
+    evidenceRefs: [{ refType: "EVIDENCE", id: `review-${reviewKind}` }],
+    ...overrides
+  };
+}
+function nextSelection(revision, _previous) {
+  return selection(revision, revision === "b2" ? "b" : revision);
 }
 async function setup() {
   const control = new InMemoryLifecycleControlStore();
@@ -134,6 +172,56 @@ test("operation-id conflict is checked before Candidate mutation", async () => {
   assert.equal(control.getOperationReceipt("same-operation").resultRef.revision, "c1");
 });
 
+test("proof then both human review route operations bind the current case, candidate, and selection exactly", async () => {
+  const { route, control, adopt } = await setup();
+  const currentCandidate = candidate();
+  route.createCandidate({ operationId: "candidate-create", candidate: currentCandidate });
+
+  const proofReceipt = route.recordBoundExistingMachineProof({
+    operationId: "proof-operation",
+    proof: proof()
+  });
+  assert.equal(proofReceipt.status, "CREATED");
+  assert.deepEqual(control.getBoundExistingMachineProof("proof-1"), proof());
+  assert.deepEqual(route.recordBoundExistingMachineProof({ operationId: "proof-operation", proof: copy(proof()) }), proofReceipt);
+
+  for (const reviewKind of ["SEMANTIC_CANDIDATE", "NO_REINTERPRETATION"]) {
+    const record = review(reviewKind);
+    const receipt = route[reviewKind === "SEMANTIC_CANDIDATE" ? "recordSemanticCandidateReview" : "recordNoReinterpretationReview"]({
+      operationId: `${reviewKind.toLowerCase()}-review`,
+      review: record
+    });
+    assert.equal(receipt.status, "CREATED");
+    assert.deepEqual(control.getHumanReviewDecisionV2(record.reviewId), record);
+  }
+
+  assert.throws(() => route.recordBoundExistingMachineProof({
+    operationId: "machine-overwrite",
+    proof: proof({ receiptId: "proof-2" })
+  }), /PROOF_ALREADY_DECIDED|IMMUTABLE_RECORD_CONFLICT/);
+  assert.throws(() => route.recordSemanticCandidateReview({
+    operationId: "review-overwrite",
+    review: review("SEMANTIC_CANDIDATE", { reviewId: "semantic-review-2" })
+  }), /REVIEW_ALREADY_DECIDED|IMMUTABLE_RECORD_CONFLICT/);
+
+  adopt(nextSelection("b2", selectionRef).protocolBasis);
+  route.reselectBasis({
+    operationId: "reselect-b",
+    expectedBasisSelectionRef: selectionRef,
+    selection: nextSelection("b2", selectionRef)
+  });
+  assert.throws(() => route.recordBoundExistingMachineProof({
+    operationId: "stale-proof",
+    proof: proof({ basisSelectionRef: selectionRef, receiptId: "proof-3" })
+  }), /BASIS_SELECTION_CONFLICT|CASE_NOT_OPEN/);
+  assert.throws(() => route.recordNoReinterpretationReview({
+    operationId: "stale-review",
+    review: review("NO_REINTERPRETATION", { reviewId: "stale-review", provenance: { route: "BOUND_EXISTING", reconstructionCaseId: caseId, basisSelectionRef: selectionRef } })
+  }), /BASIS_SELECTION_CONFLICT|CASE_NOT_OPEN/);
+  assert.equal(control.getReconstructionCase(caseId).status, "OPEN");
+  assert.equal(control.getIncompatibilityDetermination("determination-1"), undefined);
+});
+
 test("proof PASS gates both independent HUMAN reviews on the exact current lineage", async () => {
   const { route, control, candidates } = await setup();
   const current = candidate();
@@ -143,8 +231,8 @@ test("proof PASS gates both independent HUMAN reviews on the exact current linea
   assert.equal(route.recordHumanReview({ operationId: "semantic-review", review: review("SEMANTIC_CANDIDATE", current.candidateRef) }).status, "CREATED");
   assert.equal(route.recordHumanReview({ operationId: "no-reinterpretation-review", review: review("NO_REINTERPRETATION", current.candidateRef) }).status, "CREATED");
   assert.equal(control.getBoundExistingMachineProof(machine.receiptId).verdict, "PASS");
-  assert.equal(control.getHumanReviewDecisionV2("SEMANTIC_CANDIDATE-review-c1").verdict, "PASS");
-  assert.equal(control.getHumanReviewDecisionV2("NO_REINTERPRETATION-review-c1").verdict, "PASS");
+  assert.equal(control.getHumanReviewDecisionV2("semantic-review").verdict, "PASS");
+  assert.equal(control.getHumanReviewDecisionV2("no-reinterpretation-review").verdict, "PASS");
   assert.equal(candidates.getCandidateHead("candidate-1").revision, "c1");
 });
 
