@@ -74,6 +74,36 @@ Capability/profile compatibility 在 semantic validation 层执行，而不是�
 
 完整 capability reflection、capability trees 和复杂 profile negotiation 属于 future 或单独采纳的业务协议，除非已经出现在 generated contract 中。
 
+## RPC 对象 Envelope 编码
+
+JSON、CBOR 和 MSGPACK 使用同一 RPC 对象语义：
+
+```json
+{ "sid": "12345678", "op": 7, "m": { "src": "ep-app-001", "dst": "ep-device-001" }, "d": {} }
+```
+
+`m` 是 optional object；省略 `m` 时，receiver MUST 按既有 `{ sid, op, d }` 规则处理消息。对象编码的 `m` 与业务 `d` 分层：`m` 只承载跨 `op` 的消息级元数据，`d` 继续承载 Request、RequestResponse、Event 等 op-specific 数据。
+
+v1 已定义 metadata field：
+
+| 字段 | JSON/CBOR/MSGPACK 类型 | 规则 |
+|---|---|---|
+| `m.src` | string | Optional logical source Endpoint ID。非空；推荐不超过 128 UTF-8 bytes。 |
+| `m.dst` | string | Optional logical destination Endpoint ID。非空；推荐不超过 128 UTF-8 bytes；MUST NOT 是 array。 |
+
+对象编码 receiver：
+
+1. MUST 接受缺失 `m`；
+2. MUST 在 `m` 存在时要求它是 object；
+3. MUST 在已知 `src` / `dst` 存在时要求其类型为 string 且非空；
+4. MUST 拒绝 array 形式的 `m.dst`，不能把一个 Request 隐式扩展为多目标 Request；
+5. MUST 对 structurally valid 的未知 optional `m` field 使用通用 unknown-field policy：忽略或按 SDK policy 保留，并继续处理已知字段；
+6. MUST NOT 因未知 optional `m` field 关闭 session 或拒绝不相关后续 RPC。
+
+Event fanout 不通过 `m.dst` array 编码。一个 relay MAY 根据 subscription/policy 复制 Event 到多个 outbound sessions；每个对象编码 Event message 的 `m.dst` 仍是单个 string 或缺失。
+
+JSON_BINARY 是独立 fixed binary envelope。当前 15B JSON_BINARY header 不增加 `m`、metadata length、`src` 或 `dst` 字段；对象编码 Endpoint Relay 不得改变 JSON_BINARY v1 wire offset。若未来为 binary RPC 增加 Endpoint metadata，MUST 使用独立版本/profile/codec 设计，而不是在现有 15B header 中原位插入字段。
+
 ## TLV 编码
 
 TLV body encoding 使用 field id、length 和 raw value：

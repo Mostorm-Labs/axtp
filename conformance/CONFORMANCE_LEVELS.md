@@ -16,6 +16,8 @@ Conformance level 是测试入口，不是协议功能清单的替代品。具�
 
 仓库 manifest 还可以按 generated domain 定义细分 level；当前 `sport` level 使用 [profiles/sport.yaml](profiles/sport.yaml) 声明 VM33PRO 篮球事件检测配置行为。
 
+`endpoint-relay` 是独立的 optional behavior level，不改变 L0-L4 的传输/业务分层。Cloud、Agent、Gateway 或需要通过 `m.src` / `m.dst` 代理下级 Endpoint 的 runtime 可以额外声明它；普通直连设备或只实现 JSON_BINARY 的 MCU 不需要声明。
+
 ## L0: WebSocket JSON RPC Only
 
 | 项 | 要求 |
@@ -23,7 +25,7 @@ Conformance level 是测试入口，不是协议功能清单的替代品。具�
 | 适用 runtime | App、Web、Node、Python、WS-only mock server、云端控制面。 |
 | 必须 profile | `websocket-jsonrpc`，以及 shared `core` RPC 行为。 |
 | 必须 case 分类 | `session/**`、`rpc/**`、`error/**` 中与 WS-JSON 相关的 case。 |
-| 可选 case | `capability/**`、`event/**`，取决于 runtime 声明。 |
+| 可选 case | `capability/**`、`event/**`、`endpoint-relay`，取决于 runtime 声明。 |
 | 可声明不支持 | `framed-binary`、`stream`、低带宽 profile。 |
 
 L0 不要求 Frame Header、CRC16、CONTROL、STREAM data packet 或 JSON_BINARY RPC Header。
@@ -35,7 +37,7 @@ L0 不要求 Frame Header、CRC16、CONTROL、STREAM data packet 或 JSON_BINARY
 | 适用 runtime | TCP、USB HID、设备端 C/C++ runtime、需要 framed wire 的 SDK、Node TCP mock-server。 |
 | 必须 profile | `framed-binary`，以及 shared `core` RPC 行为。 |
 | 必须 case 分类 | `handshake/**`、`session/**`、`rpc/**`、`error/**`。 |
-| 可选 case | `capability/**`、`event/**`、`stream/**`。 |
+| 可选 case | `capability/**`、`event/**`、`stream/**`、对象编码 `endpoint-relay`。 |
 | 可声明不支持 | STREAM、低带宽 profile、业务 domain conformance。 |
 
 L1 必须完成 `CONTROL OPEN / ACCEPT` 后才允许进入 RPC Hello / Identify / Identified。

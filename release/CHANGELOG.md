@@ -4,6 +4,82 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.16.0
+
+Basketball device configuration controls for watermark display and event clip time windows.
+
+### Protocol
+
+- Adds `sport.getGoalShotWatermarkConfig` and `sport.setGoalShotWatermarkConfig` for per-device Goal/Shot watermark control.
+- Adds `sport.getEventClipConfig` and `sport.setEventClipConfig` for configuring the pre-event and post-event clip window around `shot` / `goal` events.
+- Requests target one connected device using `macAddress` and select the sport with `sportType`; set methods return operation status and the resulting configuration.
+
+### Registry
+
+- Registers the four methods as `0x1804`–`0x1807` with method bit offsets `3`–`6`.
+- Extends the `sport.basketball` capability descriptor with optional `supportedConfigMethods` (`fieldId=0x05`) for capability-driven method discovery.
+- Preserves all existing event-detection method, event, capability, and schema IDs.
+
+### Schemas
+
+- Adds watermark configuration fields for Goal/Shot display state and sport selection.
+- Adds event clip configuration fields for pre-event and post-event seconds, with validation and atomic update semantics.
+- Adds MAC-address device selectors and status-only set response behavior for app-to-device configuration calls.
+
+### Conformance
+
+- Adds four sport cases covering capability discovery, multi-device MAC routing, get/set round trips, status-only set responses, validation, and atomic updates.
+- Expands the shared conformance manifest from 36 to 40 cases.
+- Generator tests, source/protocol validation, generated drift checks, and conformance validation pass.
+
+### Migration
+
+- Existing runtimes remain compatible when they do not advertise the new configuration methods; unsupported calls continue to use normal capability/`NOT_SUPPORTED` handling.
+- Runtime implementations should route configuration by `macAddress` and `sportType`, preserve unrelated device settings, and reject invalid clip windows without partial updates.
+
+### Runtime Impact
+
+- Runtime and SDK teams should bind to `spec/v0.16.0`, regenerate protocol metadata, and verify that `kMethodRegistry` (or equivalent) includes the four new `sport.*` methods.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
+## spec/v0.15.0
+
+Object-RPC endpoint relay addressing, merged through PR #11 at authority commit `2d88ff4c369411d8e3afbb551886d423bd63bb82`.
+
+### Protocol
+
+- Adds optional object-RPC endpoint addressing metadata for a caller-selected destination endpoint and a relay-selected source endpoint, while preserving operation on peers that omit endpoint metadata.
+- Defines deterministic endpoint identity keys and endpoint-ID assignment so a relay can address child or virtual endpoints consistently.
+- Defines single-destination RPC relay and event fanout semantics, including source endpoint metadata for relayed events.
+- Clarifies the endpoint-relay codec representation in the core and codec specifications.
+- Incorporates the previously merged cast AV reconfiguration documentation: active NT10 encoder parameter changes rebuild the complete audio/video pair with new stream IDs and a new shared sync group.
+
+### Registry
+
+- Does not add or renumber generated method, event, capability, error, or schema IDs.
+- Keeps endpoint relay metadata optional and compatible with implementations that do not advertise the endpoint-relay profile.
+
+### Schemas
+
+- Extends the conformance case schema to express endpoint metadata and relay addressing expectations without changing existing generated business schemas.
+
+### Conformance
+
+- Adds the `endpoint-relay` profile and cases for endpoint metadata compatibility, single-destination RPC relay addressing, and event fanout addressing.
+- Registers endpoint relay requirements in the conformance-level documentation and manifest.
+- Updates the video-stream parameter reconfiguration cases to reflect full audio/video replacement and rollback semantics.
+
+### Migration
+
+- Existing object-RPC implementations remain valid when endpoint metadata is absent; relays and endpoints that support the optional profile must use the defined deterministic identity and addressing rules.
+- Runtime implementations of `cast.setVideoStreamParams` must treat active reconfiguration as complete AV-pair replacement, invalidating old stream IDs and sync group IDs.
+
+### Runtime Impact
+
+- Runtime and SDK teams that implement object-RPC endpoint relays should bind to `spec/v0.15.0`, add the optional endpoint-relay profile, and run the new relay conformance cases.
+- Runtime implementations of NT10 encoder parameter control should follow the clarified AV replacement lifecycle before advertising active video reconfiguration support.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.14.0
 
 Cross-sport event detection registry and VM33PRO basketball shot/goal event contract.
