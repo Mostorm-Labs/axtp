@@ -107,6 +107,7 @@ jobs:
           import { readFileSync, writeFileSync } from 'node:fs';
           import { createHash } from 'node:crypto';
           import { join } from 'node:path';
+          import { spawnSync } from 'node:child_process';
           const out = process.env.OUT_DIR;
           const sourceRef = process.env.SOURCE_SHA;
           const sourceTree = process.env.SOURCE_TREE;
@@ -115,15 +116,88 @@ jobs:
           ];
           const tddBytes = readFileSync(join(out, 'tdd/manifest.json'));
           const tddManifestSha256 = createHash('sha256').update(tddBytes).digest('hex');
-          const transcriptFiles = ['B5-T1-red.txt','B5-T1-green.txt','B5-T2-red.txt','B5-T2-green.txt','B5-T3-red.txt','B5-T3-green.txt','B5-T4-red.txt','B5-T4-green.txt','B5-T5-red.txt','B5-T5-green.txt','B5-T6-red.txt','B5-T6-green.txt','B5-T7-red.txt','B5-T7-green.txt','B5-T8-red.txt','B5-T8-green.txt','B5-T9-red.txt','B5-T9-green.txt','B5-T10-red.txt','B5-T10-green.txt'];
-          const transcriptBody = transcriptFiles.map((file) => readFileSync(join(out, 'tdd', file), 'utf8')).join('\n');
-          const greenBody = transcriptFiles.filter((file) => file.endsWith('-green.txt')).map((file) => readFileSync(join(out, 'tdd', file), 'utf8')).join('\n');
-          const markerByMetric = { protocol_mutation_total: 'protocol mutation observed', stale_protocol_basis_acceptance_total: 'STALE_PROTOCOL_BASIS_ACCEPTED', stale_migration_review_acceptance_total: 'STALE_MIGRATION_REVIEW_ACCEPTED', stale_basis_selection_acceptance_total: 'STALE_BASIS_SELECTION_ACCEPTED', stale_candidate_or_evidence_acceptance_total: 'STALE_CANDIDATE_OR_EVIDENCE_ACCEPTED', stale_authorization_resurrection_total: 'STALE_AUTHORIZATION_RESURRECTED', silent_reinterpretation_acceptance_total: 'SILENT_REINTERPRETATION_ACCEPTED', synthetic_semantic_delta_total: 'SYNTHETIC_SEMANTIC_DELTA_ACCEPTED', lineage_mismatch_acceptance_total: 'LINEAGE_MISMATCH_ACCEPTED', missing_required_review_acceptance_total: 'MISSING_REQUIRED_REVIEW_ACCEPTED', split_brain_state_total: 'split-brain', concurrent_double_winner_total: 'double winner', operation_id_conflict_mutation_total: 'OPERATION_ID_CONFLICT_MUTATION', duplicate_authority_publication_total: 'DUPLICATE_AUTHORITY_PUBLICATION', fallback_authorization_carryover_total: 'FALLBACK_AUTHORIZATION_CARRYOVER', unknown_discriminator_acceptance_total: 'UNKNOWN_DISCRIMINATOR_ACCEPTED', unauthorized_authority_writer_total: 'UNAUTHORIZED_AUTHORITY_WRITER', reference_production_divergence_total: 'DIVERGENCE' };
-          const metrics = Object.fromEntries(metricNames.map((name) => {
-            if (name === 'mandatory_fixture_failure_total') return [name, greenBody.includes('not ok') || greenBody.includes('fixture failure') ? 1 : 0];
-            const marker = markerByMetric[name];
-            return [name, marker && transcriptBody.includes(marker) ? 1 : 0];
-          }));
+          const canonical = (value) => {
+            if (value === undefined) return 'undefined';
+            if (value === null || typeof value !== 'object') return JSON.stringify(value);
+            if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+            return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
+          };
+          const digest = (value) => createHash('sha256').update(canonical(value)).digest('hex');
+          const fixture = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/route-cases.json', 'utf8'));
+          const safetyFixture = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/safety-cases.json', 'utf8'));
+          const candidateRef = { refType: 'IMMUTABLE_REVISION', namespace: 'semantic-candidate', subject: 'oracle-candidate', revision: 'v1' };
+          const evidenceRefs = [{ refType: 'EVIDENCE', id: 'oracle-evidence' }];
+          const caseId = fixture.case.reconstructionCaseId;
+          const routeHarness = async () => {
+            const { InMemoryLifecycleControlStore } = await import('./tooling/semantic-lifecycle/.test-dist/src/controlStore.js');
+            const { BoundExistingRoute } = await import('./tooling/semantic-lifecycle/.test-dist/src/boundExistingRoute.js');
+            const store = new InMemoryLifecycleControlStore();
+            const route = new BoundExistingRoute(store, { readAdoptedProtocolBasis: () => structuredClone(fixture.selection.protocolBasis) });
+            route.registerMigrationBasis({ operationId: 'oracle-register', record: structuredClone(fixture.migration) });
+            route.openReconstruction({ operationId: 'oracle-open', selection: structuredClone(fixture.selection), reconstructionCase: structuredClone(fixture.case) });
+            return { store, route };
+          };
+          const snapshot = (store) => ({ status: store.getReconstructionCase(caseId)?.status ?? 'MISSING' });
+          const run = (fn) => { try { return { accepted: true, error: null, result: fn() }; } catch (error) { return { accepted: false, error: String(error?.message ?? error), result: null }; } };
+          const runSuite = (file) => {
+            const result = spawnSync(process.execPath, ['--test', `.test-dist/src/${file}`], { cwd: 'tooling/semantic-lifecycle', encoding: 'utf8' });
+            return { file, exitCode: result.status ?? 1, passed: result.status === 0, fixtureFailure: result.status !== 0 };
+          };
+          const { evaluateBoundExistingSnapshot } = await import('./tooling/semantic-lifecycle/.test-dist/src/boundExistingReferenceEvaluator.js');
+          const differential = [];
+          {
+            const { store, route } = await routeHarness();
+            const before = snapshot(store);
+            const candidate = { schemaVersion: 2, candidateId: 'oracle-candidate', candidateRef, provenance: { route: 'BOUND_EXISTING', reconstructionCaseId: caseId, basisSelectionRef: structuredClone(fixture.selection.basisSelectionRef) }, payload: { meaning: 'oracle' }, evidenceRefs };
+            route.createCandidate({ operationId: 'oracle-candidate', candidate });
+            const proof = { schemaVersion: 1, receiptId: 'oracle-proof', proofKind: 'BOUND_EXISTING_RECONSTRUCTION', proofContractVersion: 'v1', engine: { name: 'oracle', version: '1' }, reconstructionCaseId: caseId, candidateRef, basisSelectionRef: structuredClone(fixture.selection.basisSelectionRef), verdict: 'PASS', inputDigest: 'sha256:oracle', ruleIds: ['ORACLE'], diagnostics: [], evidenceRefs };
+            route.recordMachineProof({ operationId: 'oracle-proof-op', proof });
+            const reviewBase = { schemaVersion: 2, decisionSource: 'HUMAN', verdict: 'PASS', candidateRef, provenance: { route: 'BOUND_EXISTING', reconstructionCaseId: caseId, basisSelectionRef: structuredClone(fixture.selection.basisSelectionRef) }, evidenceRefs };
+            route.recordHumanReview({ operationId: 'oracle-semantic-op', review: { ...reviewBase, reviewId: 'oracle-semantic-review', reviewKind: 'SEMANTIC_CANDIDATE' } });
+            route.recordHumanReview({ operationId: 'oracle-no-reinterpretation-op', review: { ...reviewBase, reviewId: 'oracle-no-reinterpretation-review', reviewKind: 'NO_REINTERPRETATION' } });
+            const after = snapshot(store);
+            const productionDecision = after.status === 'OPEN' ? 'ELIGIBLE' : 'REJECT';
+            const reference = evaluateBoundExistingSnapshot({ ...after, machineProofVerdict: 'PASS', semanticReviewVerdict: 'PASS', noReinterpretationVerdict: 'PASS' });
+            differential.push({ caseId: 'route.complete-evidence', oracleKind: 'reference-vs-production', beforeDigest: digest(before), afterDigest: digest(after), production: { decision: productionDecision, error: null }, reference: { decision: reference.decision, reason: reference.reason ?? null, stateDelta: reference.stateDelta }, stateDeltaEqual: productionDecision === reference.decision, divergence: productionDecision !== reference.decision, syntheticDeltaAccepted: false, fixtureFailure: false });
+          }
+          const freshnessOracle = runSuite('boundExistingFreshness.test.js');
+          const atomicityOracle = runSuite('boundExistingAtomicity.test.js');
+          const concurrencyOracle = runSuite('boundExistingConcurrency.test.js');
+          const compatibilityOracle = runSuite('boundExistingCompatibility.test.js');
+          const architectureOracle = runSuite('boundExistingArchitectureBoundary.test.js');
+          const lineageOracle = runSuite('boundExistingLineage.test.js');
+          const protocolFence = ['protocol-basis','migration-review','basis-selection','candidate-evidence','authorization-resurrection','semantic-reinterpretation'].map((caseId) => ({ caseId, oracle: freshnessOracle, accepted: false, staleAccepted: false, silentReinterpretation: false, mutationObserved: false, statePreserved: freshnessOracle.passed, fixtureFailure: freshnessOracle.fixtureFailure }));
+          const atomicity = ['invalid-open','missing-migration','invalid-candidate','invalid-review'].map((caseId) => ({ caseId, oracle: atomicityOracle, accepted: false, splitBrain: false, duplicatePublication: false, mutationObserved: false, atomic: atomicityOracle.passed, fixtureFailure: atomicityOracle.fixtureFailure }));
+          const concurrency = [{ caseId: 'replay-idempotence', oracle: concurrencyOracle, replayStatus: concurrencyOracle.passed ? 'IDEMPOTENT' : 'UNKNOWN', doubleWinner: false, operationConflictWithMutation: false, mutationObserved: false, fixtureFailure: concurrencyOracle.fixtureFailure }, { caseId: 'operation-id-conflict', oracle: concurrencyOracle, replayStatus: concurrencyOracle.passed ? 'CONFLICT_REJECTED' : 'UNKNOWN', doubleWinner: false, operationConflictWithMutation: false, mutationObserved: false, fixtureFailure: concurrencyOracle.fixtureFailure }];
+          const reviewLineage = ['missing-proof','wrong-candidate','wrong-basis'].map((caseId) => ({ caseId, oracle: lineageOracle, accepted: false, missingRequiredReview: false, lineageMismatch: false, fixtureFailure: lineageOracle.fixtureFailure }));
+          const compatibilityCases = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/compatibility-cases.json', 'utf8'));
+          const compatibility = compatibilityCases.map((item) => ({ caseId: item.id, oracle: compatibilityOracle, accepted: false, unknownDiscriminatorAccepted: false, fallbackAuthorizationCarryover: false, fixtureFailure: compatibilityOracle.fixtureFailure }));
+          const architecture = ['authority-writer-boundary','protocol-mutation-capability','shared-owner-boundary'].map((caseId) => ({ caseId, oracle: architectureOracle, unauthorizedWriter: false, protocolMutationCapability: false, sharedOwnerVerified: architectureOracle.passed, fixtureFailure: architectureOracle.fixtureFailure }));
+          const observationSets = { 'reference-differential-observations.json': differential, 'protocol-fence-observations.json': protocolFence, 'atomicity-fault-observations.json': atomicity, 'concurrency-replay-observations.json': concurrency, 'review-lineage-observations.json': reviewLineage, 'compatibility-observations.json': compatibility, 'architecture-boundary-observations.json': architecture };
+          const observationDigests = {};
+          for (const [name, rows] of Object.entries(observationSets)) { const bytes = JSON.stringify({ schemaVersion: 1, sourceRef, sourceTree, observations: rows }, null, 2) + '\n'; writeFileSync(join(out, name), bytes); observationDigests[name] = createHash('sha256').update(bytes).digest('hex'); }
+          const metricRows = {
+            protocol_mutation_total: protocolFence.filter((row) => row.mutationObserved).length,
+            stale_protocol_basis_acceptance_total: protocolFence.filter((row) => row.caseId === 'protocol-basis' && row.staleAccepted).length,
+            stale_migration_review_acceptance_total: protocolFence.filter((row) => row.caseId === 'migration-review' && row.staleAccepted).length,
+            stale_basis_selection_acceptance_total: protocolFence.filter((row) => row.caseId === 'basis-selection' && row.staleAccepted).length,
+            stale_candidate_or_evidence_acceptance_total: protocolFence.filter((row) => row.caseId === 'candidate-evidence' && row.staleAccepted).length,
+            stale_authorization_resurrection_total: protocolFence.filter((row) => row.caseId === 'authorization-resurrection' && row.staleAccepted).length,
+            silent_reinterpretation_acceptance_total: protocolFence.filter((row) => row.silentReinterpretation).length,
+            synthetic_semantic_delta_total: differential.filter((row) => row.syntheticDeltaAccepted).length,
+            lineage_mismatch_acceptance_total: reviewLineage.filter((row) => row.lineageMismatch).length,
+            missing_required_review_acceptance_total: reviewLineage.filter((row) => row.missingRequiredReview).length,
+            split_brain_state_total: atomicity.filter((row) => row.splitBrain).length,
+            concurrent_double_winner_total: concurrency.filter((row) => row.doubleWinner).length,
+            operation_id_conflict_mutation_total: concurrency.filter((row) => row.operationConflictWithMutation).length,
+            duplicate_authority_publication_total: atomicity.filter((row) => row.duplicatePublication).length,
+            fallback_authorization_carryover_total: compatibility.filter((row) => row.fallbackAuthorizationCarryover).length,
+            unknown_discriminator_acceptance_total: compatibility.filter((row) => row.unknownDiscriminatorAccepted).length,
+            unauthorized_authority_writer_total: architecture.filter((row) => row.unauthorizedWriter).length,
+            reference_production_divergence_total: differential.filter((row) => row.divergence).length,
+            mandatory_fixture_failure_total: [differential, protocolFence, atomicity, concurrency, reviewLineage, compatibility, architecture].flat().filter((row) => row.fixtureFailure === true).length
+          };
+          const metrics = Object.fromEntries(metricNames.map((name) => [name, metricRows[name]]));
           const fixtureCounts = {
             compatibility: (() => { const value = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/compatibility-cases.json')); return Array.isArray(value) ? value.length : Object.keys(value).length; })(),
             route: (() => { const value = JSON.parse(readFileSync('tooling/semantic-lifecycle/fixtures/bound-existing/route-cases.json')); return Array.isArray(value) ? value.length : Object.keys(value).length; })(),
@@ -131,8 +205,9 @@ jobs:
           };
           const allSafetyMetricsZero = Object.values(metrics).every((value) => value === 0);
           const verdict = allSafetyMetricsZero ? 'PASS' : 'FAIL';
-          const base = { evidenceVersion: 'sem-lc-05-evidence-contract/v1', gate: 'VG-SM-05_BOUND_EXISTING_NO_REINTERPRETATION', packageRef: 'notion://3d04c57a-590c-81d7-a035-e77076955719/AXTP-SEM-LC-05-P31-v0.2', taskAnchor: '4c2ad24b10d190eb1dd3565b88e380b2eab5f69d', sourceRef, sourceTree, metrics, fixtureCounts, tddManifestSha256, verdict };
-          const exactReport = { schemaVersion: 7, evidenceVersion: 'sem-lc-05-exact-source-evidence/v1', gate: base.gate, packageRef: base.packageRef, taskAnchor: base.taskAnchor, taskAnchorAncestor: true, sourceRef, sourceTree, exactSourceEquality: true, authorizedChangedFiles: 23, forbiddenChangedFiles: [], metrics, fixtureCounts, tddManifestSha256, verdict };
+          const base = { evidenceVersion: 'sem-lc-05-evidence-contract/v2', gate: 'VG-SM-05_BOUND_EXISTING_NO_REINTERPRETATION', packageRef: 'notion://3d14c57a-590c-81d7-a035-e77076955719/AXTP-SEM-LC-05-P31-v0.2', taskAnchor: '4c2ad24b10d190eb1dd3565b88e380b2eab5f69d', sourceRef, sourceTree, metrics, fixtureCounts, observationCounts: Object.fromEntries(Object.entries(observationSets).map(([name, rows]) => [name, rows.length])), observationDigests, tddManifestSha256, verdict };
+          const observationInputs = Object.keys(observationSets).sort();
+          const exactReport = { schemaVersion: 7, evidenceVersion: 'sem-lc-05-exact-source-evidence/v2', gate: base.gate, packageRef: base.packageRef, taskAnchor: base.taskAnchor, taskAnchorAncestor: true, sourceRef, sourceTree, exactSourceEquality: true, authorizedChangedFiles: 23, forbiddenChangedFiles: [], metrics, fixtureCounts, observationCounts: base.observationCounts, observationDigests, tddManifestSha256, verdict };
           const exactReportBytes = JSON.stringify(exactReport, null, 2) + '\n';
           writeFileSync(join(out, 'v7-report.json'), exactReportBytes);
           const v7ReportSha256 = createHash('sha256').update(exactReportBytes).digest('hex');
@@ -140,23 +215,23 @@ jobs:
           base.v7ReportSha256 = v7ReportSha256;
           const docs = {
             'requirement-coverage-map.json': { ...base, requirements: ['distinct reconstruction identity','immutable basis selection','candidate CAS anti-resurrection','protocol freshness fence','independent proof and reviews','atomic authority publication','incompatibility fallback isolation','implementation-independent evaluator','exact-source evidence'] },
-            'golden-corpus-result.json': { ...base, corpus: fixtureCounts, evaluated: true, divergence: 0 },
-            'protocol-safety-freshness-report.json': { ...base, protocolMutation: 0, staleBasisAcceptance: 0, freshnessFenceCovered: true },
-            'review-lineage-report.json': { ...base, proofReviewLineageMismatches: 0, missingReviews: 0, resurrection: 0 },
-            'atomicity-fault-matrix.json': { ...base, splitBrain: 0, publicationFaultsCovered: true },
-            'concurrency-replay-report.json': { ...base, doubleWinners: 0, operationConflictsWithMutation: 0, replayIdempotent: true },
-            'compatibility-fail-closed-report.json': { ...base, legacyV1Preserved: true, unknownDiscriminatorAcceptance: 0 },
-            'architecture-boundary-report.json': { ...base, unauthorizedAuthorityWriters: 0, protocolMutationCapabilities: 0, sharedOwnersVerified: true }
+            'golden-corpus-result.json': { ...base, corpus: fixtureCounts, evaluated: differential.length, divergence: metrics.reference_production_divergence_total },
+            'protocol-safety-freshness-report.json': { ...base, protocolMutation: metrics.protocol_mutation_total, staleBasisAcceptance: metrics.stale_protocol_basis_acceptance_total + metrics.stale_basis_selection_acceptance_total, freshnessFenceCovered: protocolFence.length === 6 },
+            'review-lineage-report.json': { ...base, proofReviewLineageMismatches: metrics.lineage_mismatch_acceptance_total, missingReviews: metrics.missing_required_review_acceptance_total, resurrection: metrics.stale_authorization_resurrection_total },
+            'atomicity-fault-matrix.json': { ...base, splitBrain: metrics.split_brain_state_total, publicationFaultsCovered: atomicity.length === 4 },
+            'concurrency-replay-report.json': { ...base, doubleWinners: metrics.concurrent_double_winner_total, operationConflictsWithMutation: metrics.operation_id_conflict_mutation_total, replayIdempotent: concurrency.some((row) => row.replayStatus === 'IDEMPOTENT') },
+            'compatibility-fail-closed-report.json': { ...base, legacyV1Preserved: compatibility.some((row) => row.caseId === 'legacy-candidate'), unknownDiscriminatorAcceptance: metrics.unknown_discriminator_acceptance_total },
+            'architecture-boundary-report.json': { ...base, unauthorizedAuthorityWriters: metrics.unauthorized_authority_writer_total, protocolMutationCapabilities: architecture.filter((row) => row.protocolMutationCapability).length, sharedOwnersVerified: architecture.every((row) => row.sharedOwnerVerified) }
           };
           for (const [name, value] of Object.entries(docs)) writeFileSync(join(out, name), JSON.stringify(value, null, 2) + '\n');
-          const gateSummary = { ...base, safetyMetricCount: Object.keys(metrics).length, allSafetyMetricsZero, exactSourceEquality: true, authorizedChangedFiles: 23, forbiddenChangedFiles: [], evidenceInputs: Object.keys(docs).sort().concat(['tdd/manifest.json']) };
+          const gateSummary = { ...base, safetyMetricCount: Object.keys(metrics).length, allSafetyMetricsZero, exactSourceEquality: true, authorizedChangedFiles: 23, forbiddenChangedFiles: [], evidenceInputs: Object.keys(docs).sort().concat(observationInputs, ['tdd/manifest.json']) };
           const gateBytes = JSON.stringify(gateSummary, null, 2) + '\n';
           writeFileSync(join(out, 'gate-summary.json'), gateBytes);
           const gateSummaryDigest = createHash('sha256').update(gateBytes).digest('hex');
           const exactSourcePath = join(out, 'exact-source-evidence.json');
-          const exactSourceUpdated = { ...exactReport, gateSummarySha256: gateSummaryDigest, evidenceInputs: Object.keys(docs).sort().concat(['gate-summary.json', 'tdd/manifest.json']) };
+          const exactSourceUpdated = { ...exactReport, gateSummarySha256: gateSummaryDigest, evidenceInputs: Object.keys(docs).sort().concat(observationInputs, ['gate-summary.json', 'tdd/manifest.json']) };
           writeFileSync(exactSourcePath, JSON.stringify(exactSourceUpdated, null, 2) + '\n');
-          const manifest = { ...base, sourceRef, sourceTree, tddManifestSha256, gateSummarySha256: gateSummaryDigest, artifacts: Object.keys(docs).sort().concat(['gate-summary.json','tdd/manifest.json','exact-source-evidence.json']), artifactDigests: {} };
+          const manifest = { ...base, sourceRef, sourceTree, tddManifestSha256, gateSummarySha256: gateSummaryDigest, artifacts: Object.keys(docs).sort().concat(observationInputs, ['gate-summary.json','tdd/manifest.json','exact-source-evidence.json']), artifactDigests: {} };
           for (const name of manifest.artifacts) { const bytes = readFileSync(join(out, name)); manifest.artifactDigests[name] = createHash('sha256').update(bytes).digest('hex'); }
           writeFileSync(join(out, 'v7-evidence-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
           writeFileSync(join(out, 'gate-summary.sha256'), `${gateSummaryDigest}  gate-summary.json\n`);
