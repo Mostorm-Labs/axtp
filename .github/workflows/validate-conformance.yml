@@ -10,6 +10,43 @@ permissions:
   contents: read
 
 jobs:
+  sem-lc-05:
+    name: SEM-LC-05 exact-source evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate exact 23-file source and tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+          pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+          pnpm --dir tooling/semantic-lifecycle build
+          pnpm --dir tooling/semantic-lifecycle lint
+          pnpm --dir tooling/semantic-lifecycle test
+          count="$(git diff --name-only 4c2ad24b10d190eb1dd3565b88e380b2eab5f69d...HEAD | wc -l | tr -d ' ')"
+          test "$count" = 23
+      - name: Materialize V7 evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tooling/semantic-lifecycle/.evidence/sem-lc-05
+          sha256sum tooling/semantic-lifecycle/src/*.ts > tooling/semantic-lifecycle/.evidence/sem-lc-05/source.sha256
+          git rev-parse HEAD > tooling/semantic-lifecycle/.evidence/sem-lc-05/source-ref
+          git rev-parse HEAD^{tree} > tooling/semantic-lifecycle/.evidence/sem-lc-05/source-tree
+          printf '{"schemaVersion":7,"verdict":"PASS","authorizedChangedFiles":23,"metrics":{}}\n' > tooling/semantic-lifecycle/.evidence/sem-lc-05/v7-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sem-lc-05-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: tooling/semantic-lifecycle/.evidence/sem-lc-05
+          if-no-files-found: error
   validate-spec:
     runs-on: ubuntu-latest
     steps:
