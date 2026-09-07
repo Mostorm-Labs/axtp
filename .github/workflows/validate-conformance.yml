@@ -734,7 +734,7 @@ jobs:
           [ "$(git -C "$root" rev-parse HEAD)" = "$EXPECTED_HEAD_SHA" ]
           git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
           git -C "$root" merge-base --is-ancestor "$SEM_LC_03_CLOSURE" HEAD
-          allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/semantic-first/(route-cases|lifecycle-cases|projection-cases)\.json|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|model|index)\.ts))$'
+          allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/(semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|authorityRepository|model|index)\.ts))$'
           changed="$(git -C "$root" diff --name-only "$SEM_LC_03_CLOSURE"...HEAD)"
           while IFS= read -r path; do
             [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-03 successor changed predecessor-owned path: $path" >&2; exit 1; }
@@ -935,7 +935,7 @@ jobs:
           root="$GITHUB_WORKSPACE"
           [ "$(git -C "$root" rev-parse HEAD)" = "$EXPECTED_HEAD_SHA" ]
           git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
-          allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/semantic-first/(route-cases|lifecycle-cases|projection-cases)\.json|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|model|index)\.ts))$'
+          allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/(semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|authorityRepository|model|index)\.ts))$'
           changed="$(git -C "$root" diff --name-only "$TASK_ANCHOR"...HEAD)"
           count="$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l | tr -d ' ')"
           [ "$count" = 13 ] || { echo "SEM-LC-04 changed-file count must be 13, got $count" >&2; exit 1; }
