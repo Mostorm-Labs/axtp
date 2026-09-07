@@ -66,10 +66,13 @@ export class SemanticAuthorityAcceptanceBoundary {
       const barrier = this.readEligibility(input);
       const barrierAdopted = this.readAdoptedBasis();
       if (JSON.stringify(barrierAdopted.protocolAuthorityRef) !== JSON.stringify(barrier.selection.protocolBasis.protocolAuthorityRef)) throw new Error("PROTOCOL_BASIS_NOT_ADOPTED");
-      const authorityPrepared = this.deps.authorities.prepareAuthorityV2Publication({ operationId: input.operationId, record: authority, expectedAuthorityHead: input.expectedAuthorityHead, canonicalPayload: candidate.payload });
+      const barrierAuthority = normalizeSemanticAuthorityRecordV2({ ...authority,
+        sourceBinding: { path: input.canonicalPath, payloadDigest: canonicalPayloadDigest(barrier.candidate.payload) }
+      });
+      const authorityPrepared = this.deps.authorities.prepareAuthorityV2Publication({ operationId: input.operationId, record: barrierAuthority, expectedAuthorityHead: input.expectedAuthorityHead, canonicalPayload: barrier.candidate.payload });
       let controlPrepared;
       try {
-        const terminal = normalizeBoundExistingReconstructionCase({ ...barrier.currentCase, status: "AUTHORITY_ACCEPTED", authorityRef: authority.authorityRef });
+        const terminal = normalizeBoundExistingReconstructionCase({ ...barrier.currentCase, status: "AUTHORITY_ACCEPTED", authorityRef: barrierAuthority.authorityRef });
         controlPrepared = this.deps.control.prepareTerminalTransition(terminal, barrier.selection.basisSelectionRef, operation);
       } catch (e) { authorityPrepared.abort(); throw e; }
       if (authorityPrepared.commitWith) authorityPrepared.commitWith(controlPrepared);
