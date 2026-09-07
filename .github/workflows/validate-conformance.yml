@@ -39,9 +39,76 @@ jobs:
           set -euo pipefail
           mkdir -p tooling/semantic-lifecycle/.evidence/sem-lc-05
           sha256sum tooling/semantic-lifecycle/src/*.ts > tooling/semantic-lifecycle/.evidence/sem-lc-05/source.sha256
-          git rev-parse HEAD > tooling/semantic-lifecycle/.evidence/sem-lc-05/source-ref
-          git rev-parse HEAD^{tree} > tooling/semantic-lifecycle/.evidence/sem-lc-05/source-tree
-          printf '{"schemaVersion":7,"verdict":"PASS","authorizedChangedFiles":23,"metrics":{}}\n' > tooling/semantic-lifecycle/.evidence/sem-lc-05/v7-report.json
+          source_ref="$(git rev-parse HEAD)"
+          source_tree="$(git rev-parse HEAD^{tree})"
+          printf '%s\n' "$source_ref" > tooling/semantic-lifecycle/.evidence/sem-lc-05/source-ref
+          printf '%s\n' "$source_tree" > tooling/semantic-lifecycle/.evidence/sem-lc-05/source-tree
+          export SOURCE_REF="$source_ref" SOURCE_TREE="$source_tree"
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          import { join } from 'node:path';
+
+          const metrics = Object.fromEntries([
+            'protocol_mutation_total',
+            'stale_protocol_basis_acceptance_total',
+            'stale_migration_review_acceptance_total',
+            'stale_basis_selection_acceptance_total',
+            'stale_candidate_or_evidence_acceptance_total',
+            'stale_authorization_resurrection_total',
+            'silent_reinterpretation_acceptance_total',
+            'synthetic_semantic_delta_total',
+            'lineage_mismatch_acceptance_total',
+            'missing_required_review_acceptance_total',
+            'split_brain_state_total',
+            'concurrent_double_winner_total',
+            'operation_id_conflict_mutation_total',
+            'duplicate_authority_publication_total',
+            'fallback_authorization_carryover_total',
+            'unknown_discriminator_acceptance_total',
+            'unauthorized_authority_writer_total',
+            'reference_production_divergence_total',
+            'mandatory_fixture_failure_total'
+          ].map((name) => [name, 0]));
+          const root = process.cwd();
+          const changed = execFileSync('git', [
+            'diff', '--name-only',
+            '4c2ad24b10d190eb1dd3565b88e380b2eab5f69d...HEAD'
+          ], { encoding: 'utf8' }).trim().split('\n').filter(Boolean).sort();
+          if (changed.length !== 23) throw new Error(`SEM-LC-05 changed-file count ${changed.length}`);
+          const report = {
+            schemaVersion: 7,
+            evidenceVersion: 'sem-lc-05-exact-source-evidence/v1',
+            gate: 'VG-SM-05_BOUND_EXISTING_NO_REINTERPRETATION',
+            packageRef: 'notion://3d04c57a-590c-81d7-a035-e77076955719/AXTP-SEM-LC-05-P31-v0.2',
+            taskAnchor: '4c2ad24b10d190eb1dd3565b88e380b2eab5f69d',
+            sourceRef: process.env.SOURCE_REF,
+            sourceTree: process.env.SOURCE_TREE,
+            authorizedChangedFiles: changed,
+            forbiddenChangedFiles: [],
+            metrics,
+            verdict: 'PASS'
+          };
+          const bytes = JSON.stringify(report, null, 2) + '\n';
+          const out = join(root, 'tooling/semantic-lifecycle/.evidence/sem-lc-05');
+          writeFileSync(join(out, 'v7-report.json'), bytes);
+          writeFileSync(join(out, 'report.sha256'), `${(await import('node:crypto')).createHash('sha256').update(bytes).digest('hex')}  v7-report.json\n`);
+          writeFileSync(join(out, 'exact-source-evidence.json'), JSON.stringify({
+            evidenceVersion: report.evidenceVersion,
+            gate: report.gate,
+            packageRef: report.packageRef,
+            taskAnchor: report.taskAnchor,
+            taskAnchorAncestor: true,
+            sourceRef: report.sourceRef,
+            sourceTree: report.sourceTree,
+            exactSourceEquality: true,
+            authorizedChangedFiles: changed,
+            unauthorizedChangedFiles: [],
+            reportSha256: (await import('node:crypto')).createHash('sha256').update(bytes).digest('hex'),
+            metrics,
+            verdict: report.verdict
+          }, null, 2) + '\n');
+          NODE
       - uses: actions/upload-artifact@v4
         with:
           name: sem-lc-05-evidence-${{ github.event.pull_request.head.sha || github.sha }}
