@@ -18,3 +18,7 @@ Implemented `SemanticAuthorityAcceptanceBoundary` as the route-specific Authorit
 ## Concerns
 
 The new boundary API is additive and intentionally leaves existing SEMANTIC_FIRST behavior unchanged. Additional end-to-end acceptance/concurrency scenarios are expected in Task 7 verification; current Task 6 tests cover boundary export and repository compatibility only.
+
+## Fix round 1
+
+Addressed the independent review blockers by adding a paired staged publication path, recomputing case/selection/Candidate/proof/review/adopted-basis predicates inside the publication fence, rebuilding the Authority record from the barrier-time Candidate payload, and adding initial/supersession/idempotency/old-record/observation tests. Final verification after the fix: `pnpm test` 144/144 passing, `pnpm lint` PASS, `git diff --check` PASS. Fix commits: `46cfe70f82a888e3737926bca35e44a4ab746d1d`, `8d3cc6887ae52ef4b88a1e528d655c66b0ec3ece`.
