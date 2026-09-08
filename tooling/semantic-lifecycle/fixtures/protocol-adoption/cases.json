@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "cases": [
+    {"id":"guard-finalize","family":"B6-1","expected":"APPLIED_EXACT"},
+    {"id":"operation-idempotency","family":"B6-1","expected":"IDEMPOTENT"},
+    {"id":"protocol-head-conflict","family":"B6-2","expected":"CONFLICT"},
+    {"id":"machine-only-review","family":"B6-3","expected":"REJECT"},
+    {"id":"restart-finalization-reservation","family":"B6-4","expected":"FINALIZATION_BUSY"},
+    {"id":"unknown-reconcile","family":"B6-4","expected":"UNKNOWN_OR_UNAVAILABLE"},
+    {"id":"writer-boundary","family":"B6-5","expected":"PASS"}
+  ]
+}

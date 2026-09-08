@@ -361,6 +361,45 @@ export interface BoundExistingOperationReceipt {
   readonly resultRef?: ImmutableRevisionRef;
 }
 
+/** SEM-LC-06 protocol-adoption records. Additive to all prior lifecycle models. */
+export type ProtocolAdoptionCaseStatus = "OPEN" | "FINALIZING" | "PROTOCOL_ADOPTED" | "INCOMPATIBLE";
+export type ProtocolAdoptionReconciliationStatus = "NOT_APPLIED" | "APPLIED_EXACT" | "APPLIED_CONFLICT" | "UNKNOWN_OR_UNAVAILABLE";
+export interface ProtocolAdoptionCase {
+  readonly schemaVersion: 1;
+  readonly caseId: string;
+  readonly operationId: string;
+  readonly status: ProtocolAdoptionCaseStatus;
+  readonly protocolBasisRef: ImmutableRevisionRef;
+  readonly semanticAuthorityRef?: ImmutableRevisionRef;
+  readonly assessmentRef?: ImmutableRevisionRef;
+  readonly evidenceRefs: readonly EvidenceRef[];
+}
+export interface ProtocolAdoptionOccurrence {
+  readonly schemaVersion: 1;
+  readonly occurrenceId: string;
+  readonly caseId: string;
+  readonly operationId: string;
+  readonly protocolBasisRef: ImmutableRevisionRef;
+  readonly committedPayload: CanonicalJsonValue;
+  readonly evidenceRefs: readonly EvidenceRef[];
+}
+
+export function normalizeProtocolAdoptionCase(value: unknown): ProtocolAdoptionCase {
+  const record = asRecord(value);
+  if (record.schemaVersion !== 1 || typeof record.caseId !== "string" || typeof record.operationId !== "string" ||
+      !["OPEN", "FINALIZING", "PROTOCOL_ADOPTED", "INCOMPATIBLE"].includes(record.status as string)) throw new Error("INVALID_PROTOCOL_ADOPTION_CASE");
+  const protocolBasisRef = basisRefFrom(record.protocolBasisRef);
+  if (!Array.isArray(record.evidenceRefs)) throw new Error("INVALID_PROTOCOL_ADOPTION_CASE");
+  return Object.freeze({ ...record, protocolBasisRef, evidenceRefs: Object.freeze(record.evidenceRefs.map((entry) => Object.freeze({ ...(entry as object) }))) }) as unknown as ProtocolAdoptionCase;
+}
+
+export function normalizeProtocolAdoptionOccurrence(value: unknown): ProtocolAdoptionOccurrence {
+  const record = asRecord(value);
+  if (record.schemaVersion !== 1 || typeof record.occurrenceId !== "string" || typeof record.caseId !== "string" || typeof record.operationId !== "string" || record.committedPayload === undefined || !Array.isArray(record.evidenceRefs)) throw new Error("INVALID_PROTOCOL_ADOPTION_OCCURRENCE");
+  const protocolBasisRef = basisRefFrom(record.protocolBasisRef);
+  return Object.freeze({ ...record, protocolBasisRef, evidenceRefs: Object.freeze(record.evidenceRefs.map((entry) => Object.freeze({ ...(entry as object) }))) }) as unknown as ProtocolAdoptionOccurrence;
+}
+
 
 import { basisRefFrom, equalBasisRef } from "./basis.js";
 import { canonicalSemanticPathFrom, semanticAuthorityKeyFrom } from "./authorityIdentity.js";

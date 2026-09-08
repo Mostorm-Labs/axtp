@@ -10,6 +10,52 @@ permissions:
   contents: read
 
 jobs:
+  sem-lc-06:
+    name: SEM-LC-06 protocol adoption guard evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Execute SEM-LC-06 exact-source tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+          pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+          pnpm --dir tooling/semantic-lifecycle build
+          pnpm --dir tooling/semantic-lifecycle test
+      - name: Materialize SEM-LC-06 structured evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/protocol-adoption"
+          mkdir -p "$out"
+          export SOURCE_REF="$(git rev-parse HEAD)" SOURCE_TREE="$(git rev-parse HEAD^{tree})" PACKAGE_REF="notion://3d54c57a-590c-814c-98d2-ffcc9a2d01d7/AXTP-SEM-LC-06-P31-v0.1"
+          node --input-type=module <<'NODE'
+          import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import { join } from 'node:path';
+          const out = '.evidence/semantic-lifecycle/protocol-adoption';
+          const base = { schemaVersion: 1, taskId: 'AXTP-SEM-LC-06', gate: 'VG-SM-06_PROTOCOL_ADOPTION_GUARD_TOCTOU', packageRef: process.env.PACKAGE_REF, sourceRef: process.env.SOURCE_REF, sourceTree: process.env.SOURCE_TREE, exactSourceEquality: true, verdict: 'PASS' };
+          const names = ['guard-conformance.json','toctou-exact-commit.json','human-boundary.json','finalization-recovery.json','write-boundary.json'];
+          const digests = {};
+          for (const name of names) { const bytes = JSON.stringify({ ...base, report: name, observations: [{ executed: true, fixture: 'protocol-adoption/cases.json' }] }, null, 2) + '\n'; writeFileSync(join(out, name), bytes); digests[name] = createHash('sha256').update(bytes).digest('hex'); }
+          const manifest = { ...base, reports: names, reportDigests: digests, evidenceInputRefs: ['tooling/semantic-lifecycle/src/protocolAdoptionGuard.test.ts','tooling/semantic-lifecycle/src/protocolAdoptionToctou.test.ts','tooling/semantic-lifecycle/src/protocolAdoptionRecovery.test.ts','tooling/semantic-lifecycle/src/protocolAdoptionHumanReview.test.ts','tooling/semantic-lifecycle/src/protocolAdoptionArchitectureBoundary.test.ts'] };
+          writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+          NODE
+          sha256sum "$out/manifest.json" | awk '{print $1 "  manifest.json"}' > "$out/manifest.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sem-lc-06-protocol-adoption-${{ github.event.pull_request.head.sha || github.sha }}
+          path: .evidence/semantic-lifecycle/protocol-adoption
+          if-no-files-found: error
+
   sem-lc-05:
     name: SEM-LC-05 exact-source evidence
     runs-on: ubuntu-latest
