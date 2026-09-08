@@ -1,0 +1,293 @@
+package_version: 1
+package_id: AXTP-SEM-LC-06-P31-v0.1@6a9b7e15c50a927cc674859d893cb1bfe0a12c3c
+task_id: AXTP-SEM-LC-06
+stage: P31_TASK_PACKAGING
+package_ref: notion://3d54c57a-590c-814c-98d2-ffcc9a2d01d7/AXTP-SEM-LC-06-P31-v0.1
+purpose: >-
+  Implement the governed SEM-LC-06 Protocol Adoption Guard + TOCTOU vertical slice
+  and materialize the B6-1 through B6-5 blocking proof families without changing
+  Protocol product meaning or bypassing the P10-P14/P20 Current Authority set.
+
+repository:
+  provider: github
+  full_name: Mostorm-Labs/axtp
+  canonical_branch_context: integration/axtp-next
+
+task_anchor:
+  revision: 6a9b7e15c50a927cc674859d893cb1bfe0a12c3c
+  relation: ancestor
+resume_cursor: null
+
+current_authority:
+  master_plan: 3d04c57a-590c-81f5-ad5e-eb6c3f184cac
+  p10_product_object_model: 3d54c57a-590c-8153-960b-e9161436f4a7
+  p11_interaction_behavior: 3d54c57a-590c-813a-958c-cf25d826868a
+  p12_semantic_schema: 3d54c57a-590c-8188-898d-e4ab04ea86c1
+  p13_operation_mutation_model: 3d54c57a-590c-81be-9167-cf7717c5f174
+  p14_system_architecture: 3d54c57a-590c-816a-a074-c49127e038e8
+  p20_verification_design: 3d54c57a-590c-81bd-902c-e44356195231
+  p23_authority_supersession: 3d54c57a-590c-819a-b472-c180c8d68c29
+  p30_successor_release: 3d54c57a-590c-8128-8ec7-ca3124c6bfab
+
+verification:
+  gate: VG-SM-06_PROTOCOL_ADOPTION_GUARD_TOCTOU
+  blocking_proof_families:
+    - B6-1_GUARD_CONFORMANCE_EXACT_LINEAGE
+    - B6-2_COMPOSITE_TOCTOU_EXACT_COMMIT
+    - B6-3_ADOPTION_MACHINE_HUMAN_BOUNDARY
+    - B6-4_FINALIZATION_DURABILITY_RECOVERY_CONCURRENCY
+    - B6-5_PROTOCOL_WRITE_ARCHITECTURE_BOUNDARY
+  blocking_evidence_policy: >-
+    An evidence artifact is blocking only when its absence leaves a high-impact
+    failure mode without credible independent detection coverage.
+
+implementation_choices:
+  lifecycle_control_persistence:
+    kind: crash_durable_file_backed_reference_store
+    owner: semantic_lifecycle_control_domain
+    requirements:
+      - immutable lineage plus atomic case-pointer/terminal publication
+      - crash-durable single-finalization reservation
+      - restart/reopen demonstrability
+      - no reusable authorization truth
+  protocol_authority_persistence:
+    kind: logically_separate_file_backed_protocol_authority_store
+    access: ProtocolAuthorityMutationPort_only
+    requirements:
+      - distinct persistence root from lifecycle control
+      - expected-head CAS at authority linearization
+      - caseId plus operationId/canonical-command correlation
+      - one successful adoption result per case
+      - exact prospective payload publication
+      - exact reconciliation lookup
+  persistence_discipline:
+    - temporary durable write
+    - atomic replacement
+    - parent-directory durability or demonstrably equivalent mechanism
+    - fail closed when required durability is unavailable
+  composite_fence:
+    - crash_durable_finalization_reservation
+    - assessment_freshness_fence
+    - semantic_authority_publication_fence_for_semantic_delta
+    - exact_immutable_prospective_protocol_basis
+    - protocol_expected_head_cas_through_linearization
+
+scope:
+  authorized_modify:
+    - tooling/semantic-lifecycle/src/model.ts
+    - tooling/semantic-lifecycle/src/authorityRepository.ts
+    - tooling/semantic-lifecycle/src/index.ts
+    - tooling/semantic-lifecycle/package.json
+    - .github/workflows/validate-conformance.yml
+  authorized_create:
+    - tooling/semantic-lifecycle/src/protocolAdoptionControlRepository.ts
+    - tooling/semantic-lifecycle/src/fileProtocolAdoptionControlRepository.ts
+    - tooling/semantic-lifecycle/src/assessmentFreshnessBoundary.ts
+    - tooling/semantic-lifecycle/src/prospectiveProtocolBasisProvider.ts
+    - tooling/semantic-lifecycle/src/semanticAuthorityReadBoundary.ts
+    - tooling/semantic-lifecycle/src/protocolAuthorityMutationPort.ts
+    - tooling/semantic-lifecycle/src/fileProtocolAuthorityStore.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionGuard.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionEvidence.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionGuard.test.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionToctou.test.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionHumanReview.test.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionRecovery.test.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionArchitectureBoundary.test.ts
+    - tooling/semantic-lifecycle/fixtures/protocol-adoption/**
+    - .evidence/semantic-lifecycle/protocol-adoption/**
+  authorized_equivalent_subdivision: >-
+    Equivalent file subdivision inside the listed SEM-LC-06 namespaces is allowed
+    only when it does not expand semantics or touch a forbidden subsystem; P32 must
+    report the exact final paths.
+  forbidden:
+    - contract/**
+    - docs/**
+    - unrelated packages/apps/tooling outside tooling/semantic-lifecycle/**
+    - .aegis/project.json
+    - write-capability changes to tooling/semantic-lifecycle/src/protocolBasisProvider.ts
+    - accepted SEM-LC-04/05 route-semantic changes
+    - SEM-LC-07 Workflow Adapter behavior
+    - persisted eligible/fresh/guardPassed/authorized/readyToCommit equivalents
+    - reusable durable fence or approval tokens
+    - mutable branch/path/latest payload reread after final guard
+    - generic patch/update operations bypassing P13 typed operations
+
+required_changes:
+  - id: RC6-01
+    requirement: >-
+      Implement P12 Protocol-adoption record families and P13 typed command envelope
+      with operationId exact idempotency/conflict behavior and immutable lineage.
+  - id: RC6-02
+    requirement: >-
+      Implement NO_DELTA and SEMANTIC_DELTA selection/projection/proof/HUMAN-review
+      semantics, including A->B->A anti-resurrection and no durable eligibility.
+  - id: RC6-03
+    requirement: >-
+      Implement ProtocolAdoptionGuard as the only finalization/reconciliation boundary;
+      FINALIZE_PROTOCOL_ADOPTION is the only SEM-LC-06 operation allowed to invoke
+      ProtocolAuthorityMutationPort.
+  - id: RC6-04
+    requirement: >-
+      Implement crash-durable single-finalization reservation that blocks competing
+      finalization, reselect, projection, proof, review and cancel while unresolved.
+  - id: RC6-05
+    requirement: >-
+      Implement composite Assessment/Semantic-Authority/prospective-basis/Protocol-head
+      fencing through the actual Protocol mutation linearization point; fail closed with
+      TOCTOU_FENCE_UNAVAILABLE when required protection cannot be established.
+  - id: RC6-06
+    requirement: >-
+      Implement ProtocolAuthorityMutationPort plus a logically separate durable Protocol
+      Authority store with expected-head CAS, exact payload consumption, op/case
+      correlation, one-success-per-case semantics and reconciliation lookup.
+  - id: RC6-07
+    requirement: >-
+      Implement atomic local publication of ProtocolAdoptionOccurrence plus
+      PROTOCOL_ADOPTED terminal case after a known exact external success.
+  - id: RC6-08
+    requirement: >-
+      Implement RECONCILE_PROTOCOL_ADOPTION as recovery/control only: NOT_APPLIED,
+      APPLIED_EXACT, APPLIED_CONFLICT and UNKNOWN_OR_UNAVAILABLE; it must never issue
+      a new Protocol write.
+  - id: RC6-09
+    requirement: >-
+      Preserve existing ProtocolBasisProvider as read-only and preserve predecessor
+      Semantic Authority identity/content/CAS meaning while adding only the fence or
+      serialization support required by P14.
+  - id: RC6-10
+    requirement: >-
+      Integrate exact evidence generation/validation into validate-conformance.yml and
+      materialize the six required structured reports from the exact result revision.
+
+tests_and_oracles:
+  B6-1:
+    tests:
+      - NO_DELTA exact happy/fail paths
+      - SEMANTIC_DELTA exact lineage
+      - stale selection and stale assessment
+      - A->B->A anti-resurrection
+      - operationId idempotency and conflict
+      - durable authorization schema scan
+    oracle:
+      stale_eligibility_reuse_total: 0
+      stale_lineage_protocol_mutation_total: 0
+      A_B_A_authorization_resurrection_total: 0
+      durable_authorization_truth_total: 0
+  B6-2:
+    tests:
+      - deterministic P1->P2 drift after review/guard
+      - deterministic S1->S2 drift after review/guard
+      - scope/classification/Assessment drift after review/guard
+      - Protocol expected-head conflict
+      - guarded prospective payload equals committed canonical payload
+    oracle:
+      post_guard_protocol_basis_drift_accepted_total: 0
+      post_guard_semantic_authority_drift_accepted_total: 0
+      post_guard_assessment_drift_accepted_total: 0
+      protocol_expected_head_lost_update_total: 0
+      committed_prospective_basis_mismatch_total: 0
+  B6-3:
+    tests:
+      - machine PASS without HUMAN PASS
+      - HUMAN REJECT
+      - conflicting HUMAN decisions
+      - valid HUMAN PASS path
+    oracle:
+      machine_only_human_authorization_total: 0
+  B6-4:
+    tests:
+      - reservation survives close/reopen/restart domain
+      - concurrent finalizers produce at most one Protocol mutation
+      - response loss then APPLIED_EXACT reconciliation
+      - UNKNOWN outcome blocks blind retry/cancel/reselect
+      - fault between Protocol linearization and local terminal publication
+    oracle:
+      duplicate_protocol_mutation_total: 0
+      blind_retry_after_unknown_total: 0
+      ambiguous_outcome_unblocked_total: 0
+      finalization_reservation_lost_after_restart_total: 0
+      local_terminal_split_brain_total: 0
+  B6-5:
+    tests:
+      - static and runtime writer audit of production-selected path
+      - forbidden direct Protocol writer attempt
+      - durable schema scan
+    oracle:
+      unauthorized_protocol_authority_writer_edges: 0
+      durable_authorization_truth_total: 0
+  regression:
+    - all existing tooling/semantic-lifecycle predecessor tests remain green
+  insufficiency_rule: >-
+    Fake-only or in-memory-only durability coverage cannot by itself satisfy B6-4.
+
+evidence_contract:
+  required_materialized_reports:
+    - .evidence/semantic-lifecycle/protocol-adoption/guard-conformance.json
+    - .evidence/semantic-lifecycle/protocol-adoption/toctou-exact-commit.json
+    - .evidence/semantic-lifecycle/protocol-adoption/human-boundary.json
+    - .evidence/semantic-lifecycle/protocol-adoption/finalization-recovery.json
+    - .evidence/semantic-lifecycle/protocol-adoption/write-boundary.json
+    - .evidence/semantic-lifecycle/protocol-adoption/manifest.json
+  required_report_bindings:
+    - repository identity
+    - task anchor
+    - actual starting revision
+    - exact result revision
+    - package_ref
+    - exact test/oracle identity
+    - owned machine facts
+  manifest_requirements:
+    - bind all five proof-family reports
+    - bind provider run/attempt/job/artifact refs
+    - do not retype proof totals owned by subordinate evidence as a second truth source
+  supporting_only:
+    - duplicate logs
+    - RED/GREEN transcripts
+    - duplicate CI archives
+    - prose requirement-to-test matrices
+  reviewer_accessible_materialization_required: true
+  local_only_result_sufficient: false
+
+performance_and_durability_constraints:
+  - deterministic exact equality and guard checks; no time-based authorization cache
+  - no required global repository lock; scope locks/fences by AdoptionCase/SemanticAuthority/ProtocolAuthority identity
+  - restart tolerance at every B6-4 fault point
+  - fail closed on corrupt/unknown schema, incompatible version, lock ambiguity or durability failure
+
+non_goals:
+  - SEM-LC-07 Workflow Adapter
+  - P34 Gate verdict
+  - repository merge/integration closure
+  - Protocol product meaning or normative contract changes
+  - second Semantic Authority or Protocol Authority meaning store
+  - generic distributed transaction
+  - rollback of accepted Semantic Authority on adoption failure
+  - SEM-LC-08 portability work beyond the selected P32 environment needed for B6-4
+
+blocked_return:
+  repository_identity: BLOCKED_REPOSITORY_IDENTITY
+  package_or_authority_binding: BLOCKED_AUTHORITY
+  missing_crash_durable_lifecycle_reservation: BLOCKED_IMPLEMENTATION
+  missing_production_protocol_writer_contract: BLOCKED_IMPLEMENTATION
+  missing_required_durability_or_fence_primitive: BLOCKED_ENVIRONMENT
+  unable_to_hold_final_fence: TOCTOU_FENCE_UNAVAILABLE
+  unable_to_materialize_exact_result_or_evidence: BLOCKED_EVIDENCE
+  rule: >-
+    P32 must stop rather than weaken P13/P14 or downgrade a required B6 proof family.
+
+exit_criteria:
+  - repository/package identity preflight succeeds
+  - PackageBindingPreflight succeeds for all exact Authority refs and gate bindings
+  - EvidenceContractPreflight confirms B6-1 through B6-5 are structurally satisfiable
+  - implementation remains inside authorized scope and non-goals
+  - all required tests/oracles and predecessor regression tests pass
+  - all six structured evidence reports are generated from the exact result revision
+  - exact result is materialized in Mostorm-Labs/axtp at reviewer-resolvable immutable refs
+  - execution return includes result_revision, materialized_ref, evidence_input_refs and required GitHub run/attempt/job/artifact refs
+  - P32 does not emit or imply official P34 PASS
+
+review_surface:
+  owner: aegis-gate-review
+  stage: P34
+  note: P34 starts only after a completed P32/P33 result is independently materialized and returned to CONTROL_REVIEW.
