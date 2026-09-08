@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "refs": {
+    "scope": {"refType":"IMMUTABLE_REVISION","namespace":"semantic-scope","subject":"case-1","revision":"scope-1","digest":"sha256:scope-1"},
+    "classification": {"refType":"IMMUTABLE_REVISION","namespace":"classification-basis","subject":"semantic","revision":"basis-1","digest":"sha256:basis-1"},
+    "proposalA": {"refType":"IMMUTABLE_REVISION","namespace":"prospective-protocol-basis","subject":"axtp","revision":"proposal-a","digest":"sha256:proposal-a"},
+    "proposalB": {"refType":"IMMUTABLE_REVISION","namespace":"prospective-protocol-basis","subject":"axtp","revision":"proposal-b","digest":"sha256:proposal-b"},
+    "protocolHead": {"refType":"IMMUTABLE_REVISION","namespace":"protocol-authority","subject":"axtp","revision":"head-1","digest":"sha256:head-1"},
+    "semanticAuthority": {"refType":"IMMUTABLE_REVISION","namespace":"semantic-authority","subject":"semantic-main","revision":"semantic-1","digest":"sha256:semantic-1"}
+  },
+  "assessments": {
+    "noDelta": {"assessmentId":"assessment-no-delta","caseId":"semantic-case-1","scopeRef":{"refType":"IMMUTABLE_REVISION","namespace":"semantic-scope","subject":"case-1","revision":"scope-1","digest":"sha256:scope-1"},"classificationBasisRef":{"refType":"IMMUTABLE_REVISION","namespace":"classification-basis","subject":"semantic","revision":"basis-1","digest":"sha256:basis-1"},"disposition":"NO_SEMANTIC_DELTA","evaluatedDimensions":["FIELD_MEANING"],"evidenceRefs":[{"refType":"EVIDENCE","id":"assessment-no-delta"}]},
+    "semanticDelta": {"assessmentId":"assessment-semantic-delta","caseId":"semantic-case-1","scopeRef":{"refType":"IMMUTABLE_REVISION","namespace":"semantic-scope","subject":"case-1","revision":"scope-1","digest":"sha256:scope-1"},"classificationBasisRef":{"refType":"IMMUTABLE_REVISION","namespace":"classification-basis","subject":"semantic","revision":"basis-1","digest":"sha256:basis-1"},"disposition":"SEMANTIC_DELTA","evaluatedDimensions":["FIELD_MEANING"],"evidenceRefs":[{"refType":"EVIDENCE","id":"assessment-semantic-delta"}]}
+  },
+  "proposalPayloads": {
+    "proposalA": {"domains":{"video":{"methods":["openStream"]}},"version":"1.0.0"},
+    "proposalB": {"domains":{"video":{"methods":["openStream","setParams"]}},"version":"1.1.0"}
+  }
+}

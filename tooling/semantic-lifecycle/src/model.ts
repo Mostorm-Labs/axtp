@@ -361,6 +361,153 @@ export interface BoundExistingOperationReceipt {
   readonly resultRef?: ImmutableRevisionRef;
 }
 
+/** P12 SEM-LC-06 additive Protocol-adoption records. */
+export type ProtocolAdoptionCaseStatus = "OPEN" | "CANCELLED" | "PROTOCOL_ADOPTED";
+export type ProtocolAdoptionRoute = "NO_DELTA" | "SEMANTIC_DELTA";
+export type ProspectiveProtocolBasisRef = ImmutableRevisionRef;
+export type ProjectionMachineProofVerdict = "PASS" | "FAIL";
+export type ProjectionReviewVerdict = "PASS" | "REJECT";
+
+export type ProtocolAdoptionSelectionV1 =
+  | {
+      readonly schemaVersion: 1;
+      readonly protocolAdoptionCaseId: string;
+      readonly selectionRef: ImmutableRevisionRef;
+      readonly route: "NO_DELTA";
+      readonly assessmentId: string;
+      readonly scopeRef: ImmutableRevisionRef;
+      readonly classificationBasisRef: BasisRef;
+      readonly prospectiveProtocolBasisRef: ProspectiveProtocolBasisRef;
+      readonly supersedesSelectionRef?: ImmutableRevisionRef;
+      readonly evidenceRefs: readonly EvidenceRef[];
+    }
+  | {
+      readonly schemaVersion: 1;
+      readonly protocolAdoptionCaseId: string;
+      readonly selectionRef: ImmutableRevisionRef;
+      readonly route: "SEMANTIC_DELTA";
+      readonly assessmentId: string;
+      readonly scopeRef: ImmutableRevisionRef;
+      readonly classificationBasisRef: BasisRef;
+      readonly semanticAuthorityRef: ImmutableRevisionRef;
+      readonly prospectiveProtocolBasisRef: ProspectiveProtocolBasisRef;
+      readonly protocolProjectionRef?: ImmutableRevisionRef;
+      readonly supersedesSelectionRef?: ImmutableRevisionRef;
+      readonly evidenceRefs: readonly EvidenceRef[];
+    };
+
+export type ProtocolAdoptionCaseRecordV1 =
+  | { readonly schemaVersion: 1; readonly protocolAdoptionCaseId: string; readonly status: "OPEN"; readonly workingSelectionRef: ImmutableRevisionRef; readonly evidenceRefs: readonly EvidenceRef[] }
+  | { readonly schemaVersion: 1; readonly protocolAdoptionCaseId: string; readonly status: "CANCELLED"; readonly finalSelectionRef: ImmutableRevisionRef; readonly evidenceRefs: readonly EvidenceRef[] }
+  | { readonly schemaVersion: 1; readonly protocolAdoptionCaseId: string; readonly status: "PROTOCOL_ADOPTED"; readonly finalSelectionRef: ImmutableRevisionRef; readonly adoptionOccurrenceRef: ImmutableRevisionRef; readonly evidenceRefs: readonly EvidenceRef[] };
+
+export interface ProtocolProjectionRecordV1 {
+  readonly schemaVersion: 1;
+  readonly projectionId: string;
+  readonly projectionRef: ImmutableRevisionRef;
+  readonly protocolAdoptionCaseId: string;
+  readonly assessmentId: string;
+  readonly scopeRef: ImmutableRevisionRef;
+  readonly classificationBasisRef: BasisRef;
+  readonly semanticAuthorityRef: ImmutableRevisionRef;
+  readonly prospectiveProtocolBasisRef: ProspectiveProtocolBasisRef;
+  readonly supersedesProjectionRef?: ImmutableRevisionRef;
+  readonly evidenceRefs: readonly EvidenceRef[];
+}
+
+export interface ProjectionMachineProofReceiptV1 {
+  readonly schemaVersion: 1;
+  readonly receiptId: string;
+  readonly proofKind: "PROTOCOL_PROJECTION";
+  readonly proofContractVersion: string;
+  readonly engine: Readonly<{ name: string; version: string }>;
+  readonly protocolAdoptionCaseId: string;
+  readonly selectionRef: ImmutableRevisionRef;
+  readonly projectionRef: ImmutableRevisionRef;
+  readonly semanticAuthorityRef: ImmutableRevisionRef;
+  readonly prospectiveProtocolBasisRef: ProspectiveProtocolBasisRef;
+  readonly verdict: ProjectionMachineProofVerdict;
+  readonly inputDigest: string;
+  readonly ruleIds: readonly string[];
+  readonly diagnostics: readonly string[];
+  readonly evidenceRefs: readonly EvidenceRef[];
+}
+
+export interface ProjectionReviewDecisionV1 {
+  readonly schemaVersion: 1;
+  readonly reviewId: string;
+  readonly reviewKind: "PROTOCOL_PROJECTION";
+  readonly decisionSource: "HUMAN";
+  readonly verdict: ProjectionReviewVerdict;
+  readonly protocolAdoptionCaseId: string;
+  readonly selectionRef: ImmutableRevisionRef;
+  readonly projectionRef: ImmutableRevisionRef;
+  readonly semanticAuthorityRef: ImmutableRevisionRef;
+  readonly prospectiveProtocolBasisRef: ProspectiveProtocolBasisRef;
+  readonly evidenceRefs: readonly EvidenceRef[];
+}
+
+export type ProtocolAdoptionOccurrenceRecordV1 =
+  | {
+      readonly schemaVersion: 1;
+      readonly occurrenceId: string;
+      readonly occurrenceRef: ImmutableRevisionRef;
+      readonly protocolAdoptionCaseId: string;
+      readonly route: "NO_DELTA";
+      readonly selectionRef: ImmutableRevisionRef;
+      readonly assessmentId: string;
+      readonly scopeRef: ImmutableRevisionRef;
+      readonly classificationBasisRef: BasisRef;
+      readonly prospectiveProtocolBasisRef: ProspectiveProtocolBasisRef;
+      readonly resultingProtocolAuthorityRef: ImmutableRevisionRef;
+      readonly evidenceRefs: readonly EvidenceRef[];
+    }
+  | {
+      readonly schemaVersion: 1;
+      readonly occurrenceId: string;
+      readonly occurrenceRef: ImmutableRevisionRef;
+      readonly protocolAdoptionCaseId: string;
+      readonly route: "SEMANTIC_DELTA";
+      readonly selectionRef: ImmutableRevisionRef;
+      readonly assessmentId: string;
+      readonly scopeRef: ImmutableRevisionRef;
+      readonly classificationBasisRef: BasisRef;
+      readonly semanticAuthorityRef: ImmutableRevisionRef;
+      readonly prospectiveProtocolBasisRef: ProspectiveProtocolBasisRef;
+      readonly projectionRef: ImmutableRevisionRef;
+      readonly machineProofReceiptId: string;
+      readonly projectionReviewId: string;
+      readonly resultingProtocolAuthorityRef: ImmutableRevisionRef;
+      readonly evidenceRefs: readonly EvidenceRef[];
+    };
+
+export type ProtocolAdoptionOperationKind =
+  | "OPEN_PROTOCOL_ADOPTION_CASE"
+  | "RESELECT_PROTOCOL_ADOPTION_INPUTS"
+  | "CREATE_PROTOCOL_PROJECTION"
+  | "REVISE_PROTOCOL_PROJECTION"
+  | "RECORD_PROTOCOL_PROJECTION_MACHINE_PROOF"
+  | "RECORD_PROTOCOL_PROJECTION_REVIEW"
+  | "CANCEL_PROTOCOL_ADOPTION_CASE"
+  | "FINALIZE_PROTOCOL_ADOPTION"
+  | "RECONCILE_PROTOCOL_ADOPTION";
+
+export interface ProtocolAdoptionOperationEnvelopeV1<TKind extends ProtocolAdoptionOperationKind = ProtocolAdoptionOperationKind, TPayload = unknown> {
+  readonly operationVersion: 1;
+  readonly operationId: string;
+  readonly operationKind: TKind;
+  readonly payload: TPayload;
+}
+
+export type ProtocolAdoptionOperationStatus = "APPLIED" | "IDEMPOTENT" | "NOOP" | "RECONCILED";
+export interface ProtocolAdoptionOperationReceiptV1 {
+  readonly schemaVersion: 1;
+  readonly operationId: string;
+  readonly operationKind: ProtocolAdoptionOperationKind;
+  readonly status: ProtocolAdoptionOperationStatus;
+  readonly resultRef?: ImmutableRevisionRef;
+}
+
 
 import { basisRefFrom, equalBasisRef } from "./basis.js";
 import { canonicalSemanticPathFrom, semanticAuthorityKeyFrom } from "./authorityIdentity.js";
@@ -610,6 +757,102 @@ export function normalizeBoundExistingIncompatibilityDetermination(value: unknow
     schemaVersion: literal(1), determinationId: textValue, ...boundLineage(record),
     candidateRef: immutableRef("semantic-candidate"), outcome: literal("SEMANTIC_CHANGE_REQUIRED"), evidenceRefs
   }, ["candidateRef"]) as unknown as BoundExistingIncompatibilityDetermination;
+}
+
+export function normalizeProtocolAdoptionSelectionV1(value: unknown): ProtocolAdoptionSelectionV1 {
+  const record = schemaRecord(value, 1);
+  if (record.route !== "NO_DELTA" && record.route !== "SEMANTIC_DELTA") throw new Error("UNKNOWN_ADOPTION_ROUTE");
+  const common: RecordFields = {
+    schemaVersion: literal(1), protocolAdoptionCaseId: textValue,
+    selectionRef: immutableRef("protocol-adoption-selection", record.protocolAdoptionCaseId),
+    route: literal(record.route), assessmentId: textValue, scopeRef: immutableRef(),
+    classificationBasisRef: immutableRef(),
+    prospectiveProtocolBasisRef: immutableRef("prospective-protocol-basis"),
+    supersedesSelectionRef: predecessor(record.selectionRef, "protocol-adoption-selection", record.protocolAdoptionCaseId),
+    evidenceRefs
+  };
+  if (record.route === "NO_DELTA") {
+    return shape(record, common, ["supersedesSelectionRef"]) as unknown as ProtocolAdoptionSelectionV1;
+  }
+  return shape(record, {
+    ...common,
+    semanticAuthorityRef: immutableRef("semantic-authority"),
+    protocolProjectionRef: immutableRef("protocol-projection")
+  }, ["protocolProjectionRef", "supersedesSelectionRef"]) as unknown as ProtocolAdoptionSelectionV1;
+}
+
+export function normalizeProtocolAdoptionCaseRecordV1(value: unknown): ProtocolAdoptionCaseRecordV1 {
+  const record = schemaRecord(value, 1);
+  if (record.status !== "OPEN" && record.status !== "CANCELLED" && record.status !== "PROTOCOL_ADOPTED") throw new Error("UNKNOWN_CASE_STATUS");
+  const fields: RecordFields = {
+    schemaVersion: literal(1), protocolAdoptionCaseId: textValue, status: literal(record.status), evidenceRefs
+  };
+  if (record.status === "OPEN") fields.workingSelectionRef = immutableRef("protocol-adoption-selection", record.protocolAdoptionCaseId);
+  else fields.finalSelectionRef = immutableRef("protocol-adoption-selection", record.protocolAdoptionCaseId);
+  if (record.status === "PROTOCOL_ADOPTED") fields.adoptionOccurrenceRef = immutableRef("protocol-adoption-occurrence");
+  return shape(record, fields) as unknown as ProtocolAdoptionCaseRecordV1;
+}
+
+export function normalizeProtocolProjectionRecordV1(value: unknown): ProtocolProjectionRecordV1 {
+  const record = schemaRecord(value, 1);
+  return shape(record, {
+    schemaVersion: literal(1), projectionId: textValue,
+    projectionRef: immutableRef("protocol-projection", record.projectionId),
+    protocolAdoptionCaseId: textValue, assessmentId: textValue,
+    scopeRef: immutableRef(), classificationBasisRef: immutableRef(),
+    semanticAuthorityRef: immutableRef("semantic-authority"),
+    prospectiveProtocolBasisRef: immutableRef("prospective-protocol-basis"),
+    supersedesProjectionRef: predecessor(record.projectionRef, "protocol-projection", record.projectionId),
+    evidenceRefs
+  }, ["supersedesProjectionRef"]) as unknown as ProtocolProjectionRecordV1;
+}
+
+export function normalizeProjectionMachineProofReceiptV1(value: unknown): ProjectionMachineProofReceiptV1 {
+  const record = schemaRecord(value, 1);
+  if (record.verdict !== "PASS" && record.verdict !== "FAIL") throw new Error("UNKNOWN_PROOF_VERDICT");
+  return shape(record, {
+    schemaVersion: literal(1), receiptId: textValue,
+    proofKind: literal("PROTOCOL_PROJECTION", "UNKNOWN_PROOF_KIND"),
+    proofContractVersion: textValue, engine: (entry) => shape(entry, { name: textValue, version: textValue }),
+    protocolAdoptionCaseId: textValue,
+    selectionRef: immutableRef("protocol-adoption-selection", record.protocolAdoptionCaseId),
+    projectionRef: immutableRef("protocol-projection"), semanticAuthorityRef: immutableRef("semantic-authority"),
+    prospectiveProtocolBasisRef: immutableRef("prospective-protocol-basis"),
+    verdict: literal(record.verdict), inputDigest: textValue, ruleIds, diagnostics, evidenceRefs
+  }) as unknown as ProjectionMachineProofReceiptV1;
+}
+
+export function normalizeProjectionReviewDecisionV1(value: unknown): ProjectionReviewDecisionV1 {
+  const record = schemaRecord(value, 1);
+  if (record.verdict !== "PASS" && record.verdict !== "REJECT") throw new Error("UNKNOWN_REVIEW_VERDICT");
+  return shape(record, {
+    schemaVersion: literal(1), reviewId: textValue,
+    reviewKind: literal("PROTOCOL_PROJECTION", "UNKNOWN_REVIEW_KIND"),
+    decisionSource: literal("HUMAN", "INVALID_REVIEW_SOURCE"), verdict: literal(record.verdict),
+    protocolAdoptionCaseId: textValue,
+    selectionRef: immutableRef("protocol-adoption-selection", record.protocolAdoptionCaseId),
+    projectionRef: immutableRef("protocol-projection"), semanticAuthorityRef: immutableRef("semantic-authority"),
+    prospectiveProtocolBasisRef: immutableRef("prospective-protocol-basis"), evidenceRefs
+  }) as unknown as ProjectionReviewDecisionV1;
+}
+
+export function normalizeProtocolAdoptionOccurrenceRecordV1(value: unknown): ProtocolAdoptionOccurrenceRecordV1 {
+  const record = schemaRecord(value, 1);
+  if (record.route !== "NO_DELTA" && record.route !== "SEMANTIC_DELTA") throw new Error("UNKNOWN_ADOPTION_ROUTE");
+  const fields: RecordFields = {
+    schemaVersion: literal(1), occurrenceId: textValue,
+    occurrenceRef: immutableRef("protocol-adoption-occurrence", record.occurrenceId),
+    protocolAdoptionCaseId: textValue, route: literal(record.route),
+    selectionRef: immutableRef("protocol-adoption-selection", record.protocolAdoptionCaseId),
+    assessmentId: textValue, scopeRef: immutableRef(), classificationBasisRef: immutableRef(),
+    prospectiveProtocolBasisRef: immutableRef("prospective-protocol-basis"),
+    resultingProtocolAuthorityRef: immutableRef("protocol-authority"), evidenceRefs
+  };
+  if (record.route === "SEMANTIC_DELTA") Object.assign(fields, {
+    semanticAuthorityRef: immutableRef("semantic-authority"), projectionRef: immutableRef("protocol-projection"),
+    machineProofReceiptId: textValue, projectionReviewId: textValue
+  });
+  return shape(record, fields) as unknown as ProtocolAdoptionOccurrenceRecordV1;
 }
 
 export function normalizeBoundExistingFallbackLink(value: unknown): BoundExistingFallbackLink {

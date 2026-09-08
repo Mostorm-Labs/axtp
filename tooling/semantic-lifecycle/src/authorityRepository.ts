@@ -36,6 +36,7 @@ export interface SemanticAuthorityRepository {
   getCurrentAuthorityV2(authorityKey: SemanticAuthorityKey): SemanticAuthorityRecordV2 | undefined;
   getAuthorityV2(authorityRef: ImmutableRevisionRef): SemanticAuthorityRecordV2 | undefined;
   prepareAuthorityV2Publication(request: AuthorityV2MutationRequest): PreparedAuthorityPublication;
+  withCurrentAuthorityFenceV2<T>(authorityKey: SemanticAuthorityKey, expectedAuthorityRef: ImmutableRevisionRef, action: () => T): T;
 }
 
 export interface AuthorityV2MutationRequest {
@@ -68,6 +69,8 @@ interface RepositoryState {
 export class InMemorySemanticAuthorityRepository implements SemanticAuthorityRepository {
   readonly #beforePublish: (() => void) | undefined;
   #state: RepositoryState = emptyState();
+  readonly #fencedKeys = new Set<string>();
+  readonly #preparedKeys = new Set<string>();
 
   constructor(options: InMemorySemanticAuthorityRepositoryOptions = {}) {
     this.#beforePublish = options.beforePublish;
@@ -89,6 +92,7 @@ export class InMemorySemanticAuthorityRepository implements SemanticAuthorityRep
 
   publishAuthority(request: AuthorityMutationRequest): AuthorityMutationResult {
     const normalized = normalizeMutation(request);
+    if (this.#fencedKeys.has(normalized.record.authorityKey)) throw new Error("TOCTOU_FENCE_UNAVAILABLE");
     const operationCanonical = canonicalJson(normalized);
     const priorOperation = this.#state.operations.get(normalized.operationId);
     if (priorOperation !== undefined) {
@@ -158,6 +162,7 @@ export class InMemorySemanticAuthorityRepository implements SemanticAuthorityRep
 
   prepareAuthorityV2Publication(request: AuthorityV2MutationRequest): PreparedAuthorityPublication {
     const record = normalizeSemanticAuthorityRecordV2(request.record);
+    if (this.#fencedKeys.has(record.authorityKey) || this.#preparedKeys.has(record.authorityKey)) throw new Error("TOCTOU_FENCE_UNAVAILABLE");
     const payload = normalizePayload(request.canonicalPayload);
     if (record.sourceBinding.payloadDigest !== canonicalPayloadDigest(payload)) throw new Error("AUTHORITY_PAYLOAD_DIGEST_MISMATCH");
     const expected = request.expectedAuthorityHead === null ? null : authorityRefFrom(record.authorityKey, request.expectedAuthorityHead);
@@ -188,8 +193,10 @@ export class InMemorySemanticAuthorityRepository implements SemanticAuthorityRep
     const result = Object.freeze({ status: "CREATED" as const, authority: record });
     operations.set(operationId, Object.freeze({ canonical: operationCanonical, result: result as unknown as AuthorityMutationResult }));
     let active = true;
-    const commit = () => { if (!active) return; this.#state = Object.freeze({ records, heads, sources, pathOwners, operations }); active = false; };
-    return { commit, abort: () => { active = false; }, commitWith: (other: PreparedControlPublication) => {
+    this.#preparedKeys.add(record.authorityKey);
+    const finish = () => { this.#preparedKeys.delete(record.authorityKey); active = false; };
+    const commit = () => { if (!active) return; this.#state = Object.freeze({ records, heads, sources, pathOwners, operations }); finish(); };
+    return { commit, abort: () => { if (active) finish(); }, commitWith: (other: PreparedControlPublication) => {
       if (!active) return;
       // Both swaps are synchronous and callback-free; no user code runs between
       // preparation and the commit barrier. The callback performs the paired
@@ -197,6 +204,17 @@ export class InMemorySemanticAuthorityRepository implements SemanticAuthorityRep
       other.commit();
       commit();
     } };
+  }
+
+  withCurrentAuthorityFenceV2<T>(authorityKey: SemanticAuthorityKey, expectedAuthorityRef: ImmutableRevisionRef, action: () => T): T {
+    const key = semanticAuthorityKeyFrom(authorityKey);
+    const current = this.#state.heads.get(key);
+    if (current === undefined || !equalBasisRef(current.authorityRef, expectedAuthorityRef) || this.#fencedKeys.has(key) || this.#preparedKeys.has(key)) {
+      throw new Error("TOCTOU_FENCE_UNAVAILABLE");
+    }
+    this.#fencedKeys.add(key);
+    try { return action(); }
+    finally { this.#fencedKeys.delete(key); }
   }
 }
 
