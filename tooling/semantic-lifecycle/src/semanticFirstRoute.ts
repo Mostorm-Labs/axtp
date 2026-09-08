@@ -30,6 +30,9 @@ export const semanticFirstControlStateFields = Object.freeze([
   "status"
 ] as const);
 
+// SEM-LC-05 v2 Authority heads are route-neutral and coexist with this v1 route.
+export const semanticFirstSupportsRouteNeutralAuthorityHeads = true;
+
 export interface SemanticFirstRouteDependencies {
   readonly lifecycleCoordinator: SemanticLifecycleCoordinator;
   readonly candidateReviewCoordinator: CandidateReviewCoordinator;

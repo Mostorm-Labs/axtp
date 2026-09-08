@@ -16,3 +16,4 @@ export * from "./report.js";
 export * from "./review.js";
 export * from "./semanticFirstReport.js";
 export * from "./semanticFirstRoute.js";
+export * from "./semanticAuthorityAcceptanceBoundary.js";

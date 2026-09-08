@@ -1,0 +1,27 @@
+{
+  "migration": {
+    "schemaVersion": 1,
+    "migrationBasisId": "migration-1",
+    "migrationBasisRef": { "refType": "IMMUTABLE_REVISION", "namespace": "semantic-migration-basis", "subject": "migration-1", "revision": "a" },
+    "payload": { "meaning": "original" },
+    "evidenceRefs": [{ "refType": "EVIDENCE", "id": "migration-evidence" }]
+  },
+  "selection": {
+    "schemaVersion": 1,
+    "reconstructionCaseId": "reconstruction-1",
+    "basisSelectionRef": { "refType": "IMMUTABLE_REVISION", "namespace": "bound-existing-basis-selection", "subject": "reconstruction-1", "revision": "a1" },
+    "protocolBasis": {
+      "protocolAuthorityRef": { "refType": "IMMUTABLE_REVISION", "namespace": "protocol-authority", "subject": "protocol-1", "revision": "a" },
+      "adoptionEvidenceRefs": [{ "refType": "EVIDENCE", "id": "adoption-a" }]
+    },
+    "migrationBasisRef": { "refType": "IMMUTABLE_REVISION", "namespace": "semantic-migration-basis", "subject": "migration-1", "revision": "a" },
+    "evidenceRefs": [{ "refType": "EVIDENCE", "id": "selection-evidence" }]
+  },
+  "case": {
+    "schemaVersion": 1,
+    "reconstructionCaseId": "reconstruction-1",
+    "status": "OPEN",
+    "basisSelectionRef": { "refType": "IMMUTABLE_REVISION", "namespace": "bound-existing-basis-selection", "subject": "reconstruction-1", "revision": "a1" },
+    "evidenceRefs": [{ "refType": "EVIDENCE", "id": "case-evidence" }]
+  }
+}

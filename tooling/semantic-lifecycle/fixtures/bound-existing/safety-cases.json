@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "cases": [
+    { "id": "proof-failure-keeps-open", "status": "OPEN", "expected": "NO_AUTO_INCOMPATIBLE" },
+    { "id": "terminal-cancelled", "status": "CANCELLED", "expected": "REJECT" },
+    { "id": "terminal-incompatible", "status": "INCOMPATIBLE", "expected": "REJECT" }
+  ]
+}

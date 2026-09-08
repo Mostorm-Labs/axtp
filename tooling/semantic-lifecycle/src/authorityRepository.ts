@@ -12,6 +12,9 @@ import type {
   SemanticAuthorityRecord,
   SemanticCandidatePayload
 } from "./model.js";
+import { normalizeSemanticAuthorityRecordV2 } from "./model.js";
+import type { SemanticAuthorityRecordV2 } from "./model.js";
+import type { PreparedControlPublication } from "./controlStore.js";
 
 export interface AuthorityMutationRequest {
   readonly operationId: string;
@@ -30,7 +33,19 @@ export interface SemanticAuthorityRepository {
   getAuthority(authorityRef: ImmutableRevisionRef): SemanticAuthorityRecord | undefined;
   getCanonicalSource(path: string): SemanticCandidatePayload | undefined;
   publishAuthority(request: AuthorityMutationRequest): AuthorityMutationResult;
+  getCurrentAuthorityV2(authorityKey: SemanticAuthorityKey): SemanticAuthorityRecordV2 | undefined;
+  getAuthorityV2(authorityRef: ImmutableRevisionRef): SemanticAuthorityRecordV2 | undefined;
+  prepareAuthorityV2Publication(request: AuthorityV2MutationRequest): PreparedAuthorityPublication;
 }
+
+export interface AuthorityV2MutationRequest {
+  readonly operationId: string;
+  readonly record: SemanticAuthorityRecordV2;
+  readonly expectedAuthorityHead: ImmutableRevisionRef | null;
+  readonly canonicalPayload: SemanticCandidatePayload;
+}
+
+export interface PreparedAuthorityPublication { commit(): void; abort(): void; commitWith?(other: PreparedControlPublication): void; }
 
 export interface InMemorySemanticAuthorityRepositoryOptions {
   readonly beforePublish?: () => void;
@@ -129,6 +144,59 @@ export class InMemorySemanticAuthorityRepository implements SemanticAuthorityRep
     this.#beforePublish?.();
     this.#state = Object.freeze({ records, heads, sources, pathOwners, operations });
     return result;
+  }
+
+  getCurrentAuthorityV2(authorityKey: SemanticAuthorityKey): SemanticAuthorityRecordV2 | undefined {
+    return this.#state.heads.get(semanticAuthorityKeyFrom(authorityKey)) as unknown as SemanticAuthorityRecordV2 | undefined;
+  }
+
+  getAuthorityV2(authorityRef: ImmutableRevisionRef): SemanticAuthorityRecordV2 | undefined {
+    const ref = basisRefFrom(authorityRef);
+    if (ref.namespace !== "semantic-authority") throw new Error("INVALID_AUTHORITY_REF");
+    return this.#state.records.get(basisRefKey(ref))?.value as unknown as SemanticAuthorityRecordV2 | undefined;
+  }
+
+  prepareAuthorityV2Publication(request: AuthorityV2MutationRequest): PreparedAuthorityPublication {
+    const record = normalizeSemanticAuthorityRecordV2(request.record);
+    const payload = normalizePayload(request.canonicalPayload);
+    if (record.sourceBinding.payloadDigest !== canonicalPayloadDigest(payload)) throw new Error("AUTHORITY_PAYLOAD_DIGEST_MISMATCH");
+    const expected = request.expectedAuthorityHead === null ? null : authorityRefFrom(record.authorityKey, request.expectedAuthorityHead);
+    const operationId = requireNonEmptyString(request.operationId, "operationId");
+    if (record.operationId !== operationId) throw new Error("AUTHORITY_OPERATION_ID_MISMATCH");
+    const operationCanonical = canonicalJson({ operationId, record, expectedAuthorityHead: expected, canonicalPayload: payload });
+    const prior = this.#state.operations.get(operationId);
+    if (prior !== undefined) {
+      if (prior.canonical !== operationCanonical) throw new Error(`AUTHORITY_OPERATION_CONFLICT:${operationId}`);
+      return { commit: () => {}, abort: () => {} };
+    }
+    const key = basisRefKey(record.authorityRef);
+    const existing = this.#state.records.get(key);
+    if (existing !== undefined) {
+      if (existing.canonical !== canonicalJson(record)) throw new Error(`IMMUTABLE_AUTHORITY_CONFLICT:${key}`);
+      throw new Error(`AUTHORITY_REF_ALREADY_EXISTS:${key}`);
+    }
+    const current = this.#state.heads.get(record.authorityKey);
+    if (expected === null ? current !== undefined : current === undefined || !equalBasisRef(current.authorityRef, expected)) throw new Error("AUTHORITY_HEAD_CONFLICT");
+    const path = record.sourceBinding.path;
+    const owner = this.#state.pathOwners.get(path);
+    if (owner !== undefined && owner !== record.authorityKey) throw new Error(`AUTHORITY_PATH_CONFLICT:${path}`);
+    const records = new Map(this.#state.records), heads = new Map(this.#state.heads), sources = new Map(this.#state.sources), pathOwners = new Map(this.#state.pathOwners), operations = new Map(this.#state.operations);
+    if (current !== undefined && current.sourceBinding.path !== path && pathOwners.get(current.sourceBinding.path) === record.authorityKey) { pathOwners.delete(current.sourceBinding.path); sources.delete(current.sourceBinding.path); }
+    records.set(key, Object.freeze({ canonical: canonicalJson(record), value: record as unknown as SemanticAuthorityRecord }));
+    heads.set(record.authorityKey, record as unknown as SemanticAuthorityRecord);
+    sources.set(path, payload); pathOwners.set(path, record.authorityKey);
+    const result = Object.freeze({ status: "CREATED" as const, authority: record });
+    operations.set(operationId, Object.freeze({ canonical: operationCanonical, result: result as unknown as AuthorityMutationResult }));
+    let active = true;
+    const commit = () => { if (!active) return; this.#state = Object.freeze({ records, heads, sources, pathOwners, operations }); active = false; };
+    return { commit, abort: () => { active = false; }, commitWith: (other: PreparedControlPublication) => {
+      if (!active) return;
+      // Both swaps are synchronous and callback-free; no user code runs between
+      // preparation and the commit barrier. The callback performs the paired
+      // control-store swap and is required to be non-throwing.
+      other.commit();
+      commit();
+    } };
   }
 }
 
