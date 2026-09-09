@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { buildReferenceBundle, canonicalJson, compareUtf8UnsignedBytes, permutationIds, sha256 } from "./semanticLifecycleEvidenceCore.js";
+import { buildReferenceBundle, canonicalJson, compareUtf8UnsignedBytes, permutationIds, sha256, type WorkflowExecution } from "./semanticLifecycleEvidenceCore.js";
 import { RegistryProspectiveProtocolBasisProvider } from "./registryProspectiveProtocolBasisProvider.js";
 
 const resultRevision = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -27,6 +27,12 @@ test("FULL_REFERENCE_MODE completes exact E4096 under all eight permutations", (
   assert.equal(new Set(bundle.permutations.map((entry) => entry.canonical_report_sha256)).size, 1);
   assert.ok(bundle.canonical_input_bytes <= 33_554_432);
   assert.ok(Object.values(bundle.blocking_thresholds).every((value) => value === 0));
+  assert.deepEqual(bundle.workflow_execution, { adapter_invocations: 4096, semantic_first_invocations: 2048, bound_existing_invocations: 2048, production_route_bound: true });
+});
+
+test("reference proof fails closed when workflow participation is bypassed", () => {
+  const bypassed: WorkflowExecution = { adapter_invocations: 0, semantic_first_invocations: 0, bound_existing_invocations: 0, production_route_bound: false };
+  assert.throws(() => buildReferenceBundle({ resultRevision, resultTree, platform: "ubuntu-latest", workflowExecution: bypassed }), /WORKFLOW_PARTICIPATION_REQUIRED/);
 });
 
 test("fixture identity is canonical JSON rather than checkout text bytes", () => {

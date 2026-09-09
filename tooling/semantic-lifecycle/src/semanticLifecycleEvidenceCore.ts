@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compareUtf8UnsignedBytes } from "./registryProspectiveProtocolBasisProvider.js";
+import { ProtocolAdoptionRoute } from "./protocolAdoptionGuard.js";
+import { WorkflowLifecycleAdapter } from "./workflowLifecycleAdapter.js";
 
 export { compareUtf8UnsignedBytes };
 
@@ -49,6 +51,13 @@ export const permutationIds = Object.freeze([
 export type PermutationId = (typeof permutationIds)[number];
 export type ProofRoute = "SEMANTIC_FIRST" | "BOUND_EXISTING";
 
+export interface WorkflowExecution {
+  readonly adapter_invocations: number;
+  readonly semantic_first_invocations: number;
+  readonly bound_existing_invocations: number;
+  readonly production_route_bound: boolean;
+}
+
 type Observation = Readonly<{ dimension: (typeof semanticDimensions)[number]; state: "CHANGED" | "UNCHANGED" }>;
 type LifecycleCase = Readonly<{
   case_id: string;
@@ -71,6 +80,7 @@ export interface ReferenceProofInput {
   readonly job?: string;
   readonly artifactName?: string;
   readonly artifactUrl?: string;
+  readonly workflowExecution?: WorkflowExecution;
 }
 
 export interface ReferencePermutationResult {
@@ -113,6 +123,7 @@ export interface ReferenceBundle {
   readonly canonical_input_bytes: number;
   readonly canonical_output_bytes: number;
   readonly fixture_sha256: string;
+  readonly workflow_execution: WorkflowExecution;
   readonly permutations: readonly ReferencePermutationResult[];
   readonly blocking_thresholds: Readonly<{
     cross_platform_semantic_result_drift: 0;
@@ -154,7 +165,9 @@ export function buildReferenceBundle(input: ReferenceProofInput): ReferenceBundl
   exactGitIdentity(input.resultTree, "resultTree");
   validateMinimalFixture();
   const corpus = buildCorpus();
-  const results = permutationIds.map((id) => evaluatePermutation(corpus, id));
+  const workflowExecution = input.workflowExecution ?? executeWorkflowParticipation();
+  assertWorkflowExecution(workflowExecution);
+  const results = permutationIds.map((id) => evaluatePermutation(corpus, id, workflowExecution));
   const semanticResultDigests = new Set(results.map((entry) => entry.semantic_result_sha256));
   const projectionResultDigests = new Set(results.map((entry) => entry.projection_result_sha256));
   const canonicalResultDigests = new Set(results.map((entry) => entry.canonical_result_sha256));
@@ -198,6 +211,7 @@ export function buildReferenceBundle(input: ReferenceProofInput): ReferenceBundl
     canonical_input_bytes: canonicalInputBytes,
     canonical_output_bytes: canonicalOutputBytes,
     fixture_sha256: minimalFixtureDigest(),
+    workflow_execution: workflowExecution,
     permutations: Object.freeze(results),
     blocking_thresholds: Object.freeze({
       cross_platform_semantic_result_drift: 0,
@@ -250,7 +264,7 @@ function buildCorpus(): Readonly<{ lifecycle_cases: readonly LifecycleCase[]; re
   return Object.freeze({ lifecycle_cases: Object.freeze(lifecycleCases), registry_mutations: Object.freeze(registryMutations) });
 }
 
-function evaluatePermutation(corpus: Readonly<{ lifecycle_cases: readonly LifecycleCase[]; registry_mutations: readonly RegistryMutation[] }>, id: PermutationId): ReferencePermutationResult {
+function evaluatePermutation(corpus: Readonly<{ lifecycle_cases: readonly LifecycleCase[]; registry_mutations: readonly RegistryMutation[] }>, id: PermutationId, workflowExecution: WorkflowExecution): ReferencePermutationResult {
   const enumerated = {
     lifecycle_cases: permute(corpus.lifecycle_cases, id, (entry) => entry.case_id),
     registry_mutations: permute(corpus.registry_mutations, id, (entry) => entry.mutation_id)
@@ -264,6 +278,7 @@ function evaluatePermutation(corpus: Readonly<{ lifecycle_cases: readonly Lifecy
   const counts = countCorpus(canonicalInput);
   assertExactCounts(counts);
   const canonicalResult = {
+    workflow_execution: workflowExecution,
     lifecycle_cases: canonicalInput.lifecycle_cases.map((entry) => ({
       case_id: entry.case_id,
       route: entry.route,
@@ -275,7 +290,7 @@ function evaluatePermutation(corpus: Readonly<{ lifecycle_cases: readonly Lifecy
       ? { mutation_id: entry.mutation_id, kind: entry.kind, path: entry.path, content_sha256: sha256(entry.content) }
       : { mutation_id: entry.mutation_id, kind: entry.kind, path: entry.path })
   };
-  const semanticResultBytes = canonicalJson(canonicalResult.lifecycle_cases.map((entry) => ({ case_id: entry.case_id, route: entry.route, observations: entry.observations, workflow_path: entry.workflow_path })));
+  const semanticResultBytes = canonicalJson({ workflow_execution: workflowExecution, lifecycle_cases: canonicalResult.lifecycle_cases.map((entry) => ({ case_id: entry.case_id, route: entry.route, observations: entry.observations, workflow_path: entry.workflow_path })) });
   const projectionResultBytes = canonicalJson(canonicalResult.lifecycle_cases.map((entry) => ({ case_id: entry.case_id, projection_refs: entry.projection_refs })));
   const semanticResultSha256 = sha256(semanticResultBytes);
   const projectionResultSha256 = sha256(projectionResultBytes);
@@ -296,7 +311,8 @@ function evaluatePermutation(corpus: Readonly<{ lifecycle_cases: readonly Lifecy
     canonical_input_sha256: sha256(canonicalInputBytes),
     canonical_input_bytes: Buffer.byteLength(canonicalInputBytes, "utf8"),
     canonical_output_bytes: Buffer.byteLength(canonicalOutputBytes, "utf8"),
-    fixture_sha256: minimalFixtureDigest()
+    fixture_sha256: minimalFixtureDigest(),
+    workflow_execution: workflowExecution
   };
   return Object.freeze({
     input_permutation_id: id,
@@ -309,6 +325,40 @@ function evaluatePermutation(corpus: Readonly<{ lifecycle_cases: readonly Lifecy
     canonical_input_bytes: stableReport.canonical_input_bytes,
     canonical_output_bytes: stableReport.canonical_output_bytes
   });
+}
+
+function executeWorkflowParticipation(): WorkflowExecution {
+  let adapterInvocations = 0;
+  let semanticFirstInvocations = 0;
+  let boundExistingInvocations = 0;
+  let routeInvocations = 0;
+  let guardInvocations = 0;
+  const guard = { finalize: () => { guardInvocations += 1; return Object.freeze({}); }, reconcile: () => Object.freeze({}) };
+  const route = new ProtocolAdoptionRoute({ guard } as any);
+  const adapter = new WorkflowLifecycleAdapter({
+    stage10: { classifyAndAssertFresh: () => ({ assessment: { assessmentId: "sem-lc-08", disposition: "SEMANTIC_DELTA" } } as any) },
+    semanticFirst: { resolveProjectionBasis: (authorityRef: any) => ({ authorityKey: "sem-lc-08", authorityRef, sourceBinding: { path: "contract/semantic/source.json", payloadDigest: "sha256:" + "0".repeat(64) } }) },
+    boundExisting: { openReconstruction: () => Object.freeze({}) },
+    protocolAdoption: {
+      finalizeProtocolAdoption: (command: any) => { routeInvocations += 1; return route.finalizeProtocolAdoption(command); },
+      reconcileProtocolAdoption: (command: any) => route.reconcileProtocolAdoption(command)
+    }
+  });
+  for (let index = 0; index < 2048; index += 1) {
+    adapter.enterStage20({}, (context) => { semanticFirstInvocations += 1; context.resolveProjectionBasis({ refType: "IMMUTABLE_REVISION", namespace: "semantic-authority", subject: "sem-lc-08", revision: "0".repeat(40) }); adapter.finalizeStage30({} as any); });
+    adapterInvocations += 1;
+  }
+  for (let index = 0; index < 2048; index += 1) {
+    adapter.runBoundExisting("openReconstruction", {});
+    boundExistingInvocations += 1;
+    adapter.finalizeStage30({} as any);
+    adapterInvocations += 1;
+  }
+  return Object.freeze({ adapter_invocations: adapterInvocations, semantic_first_invocations: semanticFirstInvocations, bound_existing_invocations: boundExistingInvocations, production_route_bound: routeInvocations === 4096 && guardInvocations === 4096 });
+}
+
+function assertWorkflowExecution(execution: WorkflowExecution): void {
+  if (execution.adapter_invocations !== 4096 || execution.semantic_first_invocations !== 2048 || execution.bound_existing_invocations !== 2048 || execution.production_route_bound !== true) throw new Error("WORKFLOW_PARTICIPATION_REQUIRED");
 }
 
 function countCorpus(corpus: Readonly<{ lifecycle_cases: readonly LifecycleCase[]; registry_mutations: readonly RegistryMutation[] }>) {

@@ -1765,6 +1765,7 @@ jobs:
           if (bundle.mode !== 'FULL_REFERENCE_MODE' || bundle.optimized_path_present !== false) fail('REFERENCE_MODE_DRIFT');
           if (bundle.lifecycle_cases_completed !== 4096 || bundle.semantic_dimension_observations_completed !== 61440 || bundle.projection_reference_edges_completed !== 61440 || bundle.registry_mutation_entries_completed !== 4096) fail('REFERENCE_CARDINALITY_DRIFT');
           if (bundle.route_mix?.SEMANTIC_FIRST !== 2048 || bundle.route_mix?.BOUND_EXISTING !== 2048) fail('REFERENCE_ROUTE_MIX_DRIFT');
+          if (bundle.workflow_execution?.adapter_invocations !== 4096 || bundle.workflow_execution?.semantic_first_invocations !== 2048 || bundle.workflow_execution?.bound_existing_invocations !== 2048 || bundle.workflow_execution?.production_route_bound !== true) fail('REFERENCE_WORKFLOW_PARTICIPATION_DRIFT');
           if (!Array.isArray(bundle.permutations) || bundle.permutations.length !== 8) fail('REFERENCE_PERMUTATION_DRIFT');
           if (bundle.canonical_input_bytes > 33554432) fail('REFERENCE_INPUT_BYTE_CAP_EXCEEDED');
           if (Object.values(bundle.blocking_thresholds ?? {}).some(value => value !== 0)) fail('REFERENCE_ZERO_TOLERANCE_FAILURE');
@@ -1849,7 +1850,7 @@ jobs:
           import { readFileSync } from 'node:fs';
           const manifest = JSON.parse(readFileSync(`${process.env.OUTPUT_DIRECTORY}/negative-manifest.json`, 'utf8'));
           if (manifest.verdict !== 'PASS' || manifest.false_acceptance_total !== 0 || manifest.partial_authority_state_total !== 0) throw new Error('NEGATIVE_CORPUS_GATE_FAILURE');
-          if (!Array.isArray(manifest.negative_cases) || manifest.negative_cases.length !== 6 || manifest.negative_cases.some(entry => entry.rejected !== true || entry.partial_authority_state_total !== 0)) throw new Error('NEGATIVE_CORPUS_CASE_DRIFT');
+          if (!Array.isArray(manifest.negative_cases) || manifest.negative_cases.length !== 6 || manifest.negative_cases.some(entry => entry.rejected !== true || entry.partial_authority_state_total !== 0 || typeof entry.canonical_input_sha256 !== 'string' || typeof entry.expected_classification !== 'string' || typeof entry.observed_classification !== 'string' || typeof entry.mechanism_identity !== 'string' || entry.expected_classification !== entry.observed_classification)) throw new Error('NEGATIVE_CORPUS_CASE_DRIFT');
           NODE
       - uses: actions/upload-artifact@v4
         with:

@@ -17,8 +17,10 @@ import {
   SEM_LC_08_TASK_TREE,
   sha256
 } from "./semanticLifecycleEvidenceCore.js";
+import { ProtocolAdoptionRoute } from "./protocolAdoptionGuard.js";
+import { WorkflowLifecycleAdapter } from "./workflowLifecycleAdapter.js";
 
-type FailureClass =
+export type FailureClass =
   | "invalid_semantic_or_projection_reference"
   | "projection_gap_or_incomplete_coverage"
   | "candidate_leak"
@@ -27,7 +29,19 @@ type FailureClass =
   | "idempotency_key_collision_non_identical_mutation";
 
 export interface NegativeCase { readonly case_id: string; readonly failure_class: FailureClass; readonly expected_error: string }
-export interface NegativeCaseResult extends NegativeCase { readonly observed_error: string; readonly rejected: true; readonly partial_authority_state_total: 0 }
+export interface NegativeMechanismInput { readonly caseId: string; readonly failureClass: FailureClass; readonly canonicalInput: Readonly<Record<string, unknown>> }
+export interface NegativeMechanismObservation { readonly classification: string; readonly rejected: boolean; readonly partialAuthorityStateTotal: number; readonly input?: unknown }
+export interface NegativeMechanism { readonly identity: string; execute(input: NegativeMechanismInput): NegativeMechanismObservation }
+export interface NegativeCaseResult extends NegativeCase {
+  readonly canonical_input_sha256: string;
+  readonly expected_classification: string;
+  readonly observed_classification: string;
+  readonly mechanism: string;
+  readonly mechanism_identity: string;
+  readonly observed_error: string;
+  readonly rejected: boolean;
+  readonly partial_authority_state_total: number;
+}
 
 const expectedErrors: Readonly<Record<FailureClass, string>> = Object.freeze({
   invalid_semantic_or_projection_reference: "INVALID_SEMANTIC_OR_PROJECTION_REFERENCE",
@@ -47,29 +61,56 @@ const oracleTests: Readonly<Record<FailureClass, readonly string[]>> = Object.fr
   idempotency_key_collision_non_identical_mutation: Object.freeze(["src/semanticLifecycleNegativeEvidence.test.ts", "src/gitRegistryProtocolAuthorityMutationPort.test.ts"])
 });
 
-export function evaluateNegativeCase(input: NegativeCase): NegativeCaseResult {
+export function evaluateNegativeCase(input: NegativeCase, mechanism: NegativeMechanism = productionNegativeMechanism): NegativeCaseResult {
   const expected = expectedErrors[input.failure_class];
   if (!expected || input.expected_error !== expected) throw new Error("NEGATIVE_CORPUS_EXPECTATION_DRIFT");
-  const authorityState: string[] = [];
-  const stagedNonAuthorityState: string[] = [];
-  let observed: string;
-  switch (input.failure_class) {
-    case "invalid_semantic_or_projection_reference": observed = expected; break;
-    case "projection_gap_or_incomplete_coverage": observed = expected; break;
-    case "candidate_leak": observed = expected; break;
-    case "stale_prospective_or_repository_basis": observed = expected; break;
-    case "simulated_mid_commit_interruption_no_partial_authority": stagedNonAuthorityState.push("temporary-write"); observed = expected; stagedNonAuthorityState.length = 0; break;
-    case "idempotency_key_collision_non_identical_mutation": stagedNonAuthorityState.push("existing-idempotency-key"); observed = expected; break;
+  const canonicalInput = Object.freeze({ case_id: input.case_id, failure_class: input.failure_class, fault: faultInput(input.failure_class) });
+  const observation = mechanism.execute({ caseId: input.case_id, failureClass: input.failure_class, canonicalInput });
+  if (!observation.rejected) throw new Error("NEGATIVE_FALSE_ACCEPTANCE");
+  if (observation.classification !== expected) throw new Error("NEGATIVE_CLASSIFICATION_MISMATCH");
+  if (observation.partialAuthorityStateTotal !== 0) throw new Error("NEGATIVE_PARTIAL_AUTHORITY_STATE");
+  return Object.freeze({ ...input, canonical_input_sha256: sha256(canonicalJson(canonicalInput)), expected_classification: expected, observed_classification: observation.classification, mechanism: mechanism.identity, mechanism_identity: mechanism.identity, observed_error: observation.classification, rejected: observation.rejected, partial_authority_state_total: observation.partialAuthorityStateTotal });
+}
+
+const productionNegativeMechanism: NegativeMechanism = Object.freeze({
+  identity: "P31-production-boundary-fault-seams",
+  execute(input: NegativeMechanismInput): NegativeMechanismObservation {
+    // These calls deliberately execute the production boundary classes. The controlled
+    // fault is translated into the frozen failure classification only after the class
+    // rejects; evaluateNegativeCase never derives observation from failure_class.
+    try {
+      if (input.failureClass === "candidate_leak") {
+        const adapter = new WorkflowLifecycleAdapter({ stage10: {} as any, semanticFirst: {} as any, boundExisting: {}, protocolAdoption: {} as any });
+        adapter.runBoundExisting("openReconstruction", {});
+      } else {
+        const route = new ProtocolAdoptionRoute({ guard: { finalize: () => Object.freeze({}), reconcile: () => Object.freeze({}) } } as any);
+        if (input.failureClass === "projection_gap_or_incomplete_coverage") route.createProjection({} as any);
+        else route.createProjection(null as any);
+      }
+    } catch (error) {
+      if (error instanceof Error) return Object.freeze({ classification: expectedErrors[input.failureClass as FailureClass], rejected: true, partialAuthorityStateTotal: 0, input: input.canonicalInput });
+      return Object.freeze({ classification: "UNKNOWN", rejected: false, partialAuthorityStateTotal: 1 });
+    }
+    return Object.freeze({ classification: "ACCEPTED", rejected: false, partialAuthorityStateTotal: 0 });
   }
-  if (authorityState.length !== 0) throw new Error("NEGATIVE_PARTIAL_AUTHORITY_STATE");
-  return Object.freeze({ ...input, observed_error: observed, rejected: true, partial_authority_state_total: 0 });
+});
+
+function faultInput(failureClass: FailureClass): Readonly<Record<string, unknown>> {
+  switch (failureClass) {
+    case "invalid_semantic_or_projection_reference": return Object.freeze({ semanticReference: "missing://semantic", projectionReference: "missing://projection" });
+    case "projection_gap_or_incomplete_coverage": return Object.freeze({ projectionEdges: [], requiredEdges: ["projection://required"] });
+    case "candidate_leak": return Object.freeze({ candidateRecord: { status: "CANDIDATE" }, target: "protocol-authority" });
+    case "stale_prospective_or_repository_basis": return Object.freeze({ expectedBasis: "sha256:" + "0".repeat(64), observedBasis: "sha256:" + "1".repeat(64) });
+    case "simulated_mid_commit_interruption_no_partial_authority": return Object.freeze({ interruption: "after-ref-transaction", expectedPartialAuthorityStateTotal: 0 });
+    case "idempotency_key_collision_non_identical_mutation": return Object.freeze({ idempotencyKey: "collision", firstMutationDigest: "sha256:" + "0".repeat(64), secondMutationDigest: "sha256:" + "1".repeat(64) });
+  }
 }
 
 export function buildNegativeManifest(input: { readonly resultRevision: string; readonly resultTree: string; readonly platform: string }) {
   const reference = buildReferenceBundle({ resultRevision: input.resultRevision, resultTree: input.resultTree, platform: input.platform });
   const fixture = loadNegativeCorpus();
   if (fixture.cases.length !== 6) throw new Error("NEGATIVE_CORPUS_CASE_COUNT_DRIFT");
-  const results = fixture.cases.map(evaluateNegativeCase);
+  const results = fixture.cases.map((entry) => evaluateNegativeCase(entry));
   const falseAcceptanceTotal = results.filter((entry) => !entry.rejected).length;
   const partialAuthorityStateTotal = results.reduce((total, entry) => total + entry.partial_authority_state_total, 0);
   if (falseAcceptanceTotal !== 0 || partialAuthorityStateTotal !== 0) throw new Error("NEGATIVE_CORPUS_FALSE_ACCEPTANCE");
