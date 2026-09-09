@@ -1754,6 +1754,7 @@ jobs:
           export RESULT_REVISION="$(git rev-parse HEAD)"
           export RESULT_TREE="$(git rev-parse 'HEAD^{tree}')"
           export OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-08/reference/${PLATFORM_LABEL}"
+          export pnpm_config_verify_deps_before_run=false
           pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reference
           node --input-type=module <<'NODE'
           import { readFileSync } from 'node:fs';
