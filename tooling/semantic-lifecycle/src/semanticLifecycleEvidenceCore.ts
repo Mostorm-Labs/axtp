@@ -370,7 +370,8 @@ function minimalFixturePath(): string {
 }
 
 function minimalFixtureDigest(): string {
-  return sha256(readFileSync(minimalFixturePath()));
+  const fixture = JSON.parse(readFileSync(minimalFixturePath(), "utf8")) as unknown;
+  return sha256(canonicalJson(fixture));
 }
 
 function validateMinimalFixture(): void {

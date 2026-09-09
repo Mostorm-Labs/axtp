@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { buildReferenceBundle, compareUtf8UnsignedBytes, permutationIds } from "./semanticLifecycleEvidenceCore.js";
+import { buildReferenceBundle, canonicalJson, compareUtf8UnsignedBytes, permutationIds, sha256 } from "./semanticLifecycleEvidenceCore.js";
 import { RegistryProspectiveProtocolBasisProvider } from "./registryProspectiveProtocolBasisProvider.js";
 
 const resultRevision = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -27,6 +27,12 @@ test("FULL_REFERENCE_MODE completes exact E4096 under all eight permutations", (
   assert.equal(new Set(bundle.permutations.map((entry) => entry.canonical_report_sha256)).size, 1);
   assert.ok(bundle.canonical_input_bytes <= 33_554_432);
   assert.ok(Object.values(bundle.blocking_thresholds).every((value) => value === 0));
+});
+
+test("fixture identity is canonical JSON rather than checkout text bytes", () => {
+  const bundle = buildReferenceBundle({ resultRevision, resultTree, platform: "ubuntu-latest" });
+  const fixture = JSON.parse(readFileSync(join("fixtures", "sem-lc-08", "minimal-reference.json"), "utf8"));
+  assert.equal(bundle.fixture_sha256, sha256(canonicalJson(fixture)));
 });
 
 test("UTF-8 unsigned-byte ordering is normalization-free", () => {
