@@ -1,29 +1,153 @@
-// @ts-nocheck
-import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { basisRefFrom, equalBasisRef } from "./basis.js";
+import { equalBasisRef } from "./basis.js";
+import type { CanonicalJsonValue, ImmutableRevisionRef } from "./model.js";
+import { ProtocolMutationOutcomeUnknownError, type ProtocolAuthorityCommitRequest, type ProtocolAuthorityCommitResult, type ProtocolAuthorityMutationOutcome, type ProtocolAuthorityMutationPort, type ProtocolAuthorityOutcomeQuery } from "./protocolAuthorityMutationPort.js";
 
-/** Crash-durable Protocol Authority writer with expected-head CAS. */
-export class FileProtocolAuthorityStore {
-  constructor(file) { this.file = file; this.state = this.read(); }
-  mutate(request) {
-    const normalized = normalizeRequest(request);
-    const prior = this.state.operations[normalized.operationId];
-    const canonical = stableJson(normalized);
-    if (prior) return prior.canonical === canonical ? { status: "IDEMPOTENT", authorityRef: prior.authorityRef } : { status: "CONFLICT", reason: "OPERATION_CONFLICT" };
-    const subject = normalized.protocolBasisRef.subject;
-    const current = this.state.heads[subject];
-    if (normalized.expectedHead === null ? current : !current || !equalBasisRef(current, normalized.expectedHead)) return { status: "CONFLICT", reason: "EXPECTED_HEAD_CONFLICT" };
-    const existing = this.state.cases[normalized.caseId];
-    if (existing && existing.operationId !== normalized.operationId) return { status: "CONFLICT", reason: "CASE_ALREADY_ADOPTED" };
-    const authorityRef = Object.freeze({ refType: "IMMUTABLE_REVISION", namespace: "protocol-authority", subject, revision: normalized.operationId });
-    this.write({ ...this.state, heads: { ...this.state.heads, [subject]: authorityRef }, cases: { ...this.state.cases, [normalized.caseId]: normalized }, operations: { ...this.state.operations, [normalized.operationId]: { canonical, authorityRef } } });
-    return { status: "APPLIED", authorityRef };
-  }
-  reconcile(caseId, operationId) { const entry = this.state.cases[caseId]; if (!entry) return undefined; if (entry.operationId !== operationId) return { status: "CONFLICT", reason: "OPERATION_CONFLICT" }; const op = this.state.operations[operationId]; return op ? { status: "IDEMPOTENT", authorityRef: op.authorityRef } : undefined; }
-  read() { if (!this.file || !existsSync(this.file)) return { version: 1, heads: {}, cases: {}, operations: {} }; try { const value = JSON.parse(readFileSync(this.file, "utf8")); if (value?.version !== 1) throw new Error(); return value; } catch { throw new Error("PROTOCOL_AUTHORITY_STORE_UNAVAILABLE"); } }
-  write(next) { this.state = next; if (!this.file) return; mkdirSync(dirname(this.file), { recursive: true }); const temp = `${this.file}.${process.pid}.${Date.now()}.tmp`; writeFileSync(temp, `${JSON.stringify(next)}\n`, { mode: 0o600 }); const fd = openSync(temp, "r"); try { fsyncSync(fd); } finally { closeSync(fd); } renameSync(temp, this.file); const dir = openSync(dirname(this.file), "r"); try { fsyncSync(dir); } finally { closeSync(dir); } }
+interface AuthorityEntry { readonly ref: ImmutableRevisionRef; readonly payload: CanonicalJsonValue; }
+interface AppliedOperation { readonly request: ProtocolAuthorityCommitRequest; readonly result: ProtocolAuthorityCommitResult; }
+interface ProtocolStoreState {
+  readonly schemaVersion: 1;
+  readonly heads: Record<string, AuthorityEntry>;
+  readonly operations: Record<string, AppliedOperation>;
+  readonly adoptedCases: Record<string, string>;
+  mutationCount: number;
 }
-function normalizeRequest(request) { if (!request || typeof request !== "object") throw new Error("INVALID_PROTOCOL_MUTATION"); const operationId = text(request.operationId, "operationId"); const caseId = text(request.caseId, "caseId"); const protocolBasisRef = basisRefFrom(request.protocolBasisRef); const expectedHead = request.expectedHead === null ? null : basisRefFrom(request.expectedHead); if (request.prospectivePayload === undefined) throw new Error("INVALID_PROSPECTIVE_PAYLOAD"); return { caseId, operationId, protocolBasisRef, prospectivePayload: request.prospectivePayload, expectedHead }; }
-function text(value, field) { if (typeof value !== "string" || !value.trim()) throw new Error(`INVALID_PROTOCOL_MUTATION:${field}`); return value; }
-function stableJson(value) { if (value === null || typeof value !== "object") return JSON.stringify(value); if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`; return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${stableJson(value[k])}`).join(",")}}`; }
+
+export interface InitialProtocolAuthority {
+  readonly key: string;
+  readonly ref: ImmutableRevisionRef;
+  readonly payload: CanonicalJsonValue;
+}
+
+export interface FileProtocolAuthorityStoreOptions {
+  readonly afterReplaceBeforeDirectorySync?: () => void;
+}
+
+export class FileProtocolAuthorityStore implements ProtocolAuthorityMutationPort {
+  constructor(private readonly path: string, initialAuthorities: readonly InitialProtocolAuthority[] = [], private readonly options: FileProtocolAuthorityStoreOptions = {}) { this.initialize(initialAuthorities); }
+
+  initialize(initialAuthorities: readonly InitialProtocolAuthority[] = []): void {
+    mkdirSync(dirname(this.path), { recursive: true });
+    if (!existsSync(this.path)) this.mutate((state) => {
+      for (const entry of initialAuthorities) {
+        validateAuthorityRef(entry.key, entry.ref);
+        if (state.heads[entry.key] !== undefined) throw new Error("DUPLICATE_INITIAL_PROTOCOL_AUTHORITY");
+        state.heads[entry.key] = { ref: clone(entry.ref), payload: canonicalValue(entry.payload) };
+      }
+    });
+  }
+
+  getCurrent(key: string): AuthorityEntry | undefined { return clone(this.read().heads[key]); }
+  getCurrentHead(key: string): ImmutableRevisionRef | null { return clone(this.read().heads[key]?.ref ?? null); }
+  getMutationCount(): number { return this.read().mutationCount; }
+
+  commit(input: ProtocolAuthorityCommitRequest): ProtocolAuthorityCommitResult {
+    const request = normalizeRequest(input);
+    try {
+      return this.mutate((state) => {
+        const prior = state.operations[request.operationId];
+        if (prior !== undefined) {
+          if (canonicalJson(prior.request) !== canonicalJson(request)) throw new Error("OPERATION_ID_CONFLICT");
+          return { ...clone(prior.result), status: "IDEMPOTENT" as const };
+        }
+        const priorCaseOperation = state.adoptedCases[request.protocolAdoptionCaseId];
+        if (priorCaseOperation !== undefined) throw new Error("PROTOCOL_ADOPTION_ALREADY_APPLIED");
+        const current = state.heads[request.protocolAuthorityKey]?.ref ?? null;
+        if (!sameNullableRef(current, request.expectedProtocolAuthorityHead)) throw new Error("PROTOCOL_AUTHORITY_HEAD_CONFLICT");
+        const digest = createHash("sha256").update(canonicalJson(request)).digest("hex");
+        const resultingProtocolAuthorityRef: ImmutableRevisionRef = {
+          refType: "IMMUTABLE_REVISION",
+          namespace: "protocol-authority",
+          subject: request.protocolAuthorityKey,
+          revision: digest,
+          digest: `sha256:${digest}`
+        };
+        const result: ProtocolAuthorityCommitResult = {
+          status: "APPLIED",
+          resultingProtocolAuthorityRef,
+          prospectiveProtocolBasisRef: request.prospectiveProtocolBasisRef,
+          payload: request.payload
+        };
+        state.heads[request.protocolAuthorityKey] = { ref: resultingProtocolAuthorityRef, payload: request.payload };
+        state.operations[request.operationId] = { request, result };
+        state.adoptedCases[request.protocolAdoptionCaseId] = request.operationId;
+        state.mutationCount += 1;
+        return result;
+      });
+    } catch (error) {
+      if (error instanceof PostReplacementDurabilityError) throw new ProtocolMutationOutcomeUnknownError();
+      throw error;
+    }
+  }
+
+  queryOutcome(query: ProtocolAuthorityOutcomeQuery): ProtocolAuthorityMutationOutcome {
+    const state = this.read();
+    const prior = state.operations[query.operationId];
+    if (prior === undefined) {
+      return state.adoptedCases[query.protocolAdoptionCaseId] === undefined ? { status: "NOT_APPLIED" } : { status: "APPLIED_CONFLICT" };
+    }
+    if (prior.request.protocolAdoptionCaseId !== query.protocolAdoptionCaseId || prior.request.commandDigest !== query.commandDigest) return { status: "APPLIED_CONFLICT" };
+    return {
+      status: "APPLIED_EXACT",
+      resultingProtocolAuthorityRef: clone(prior.result.resultingProtocolAuthorityRef),
+      prospectiveProtocolBasisRef: clone(prior.result.prospectiveProtocolBasisRef),
+      payload: clone(prior.result.payload)
+    };
+  }
+
+  private read(): ProtocolStoreState {
+    if (!existsSync(this.path)) return emptyState();
+    const value = JSON.parse(readFileSync(this.path, "utf8")) as ProtocolStoreState;
+    if (value.schemaVersion !== 1) throw new Error("UNSUPPORTED_PROTOCOL_STORE_VERSION");
+    return value;
+  }
+
+  private mutate<T>(action: (state: ProtocolStoreState) => T): T {
+    mkdirSync(dirname(this.path), { recursive: true });
+    const lockPath = `${this.path}.lock`;
+    let lock: number;
+    try { lock = openSync(lockPath, "wx", 0o600); } catch { throw new Error("PROTOCOL_STORE_LOCK_UNAVAILABLE"); }
+    try {
+      const state = this.read();
+      const result = action(state);
+      writeDurable(this.path, state, this.options);
+      return clone(result);
+    } finally { closeSync(lock); unlinkSync(lockPath); }
+  }
+}
+
+function emptyState(): ProtocolStoreState { return { schemaVersion: 1, heads: {}, operations: {}, adoptedCases: {}, mutationCount: 0 }; }
+function normalizeRequest(value: ProtocolAuthorityCommitRequest): ProtocolAuthorityCommitRequest {
+  if (!value || typeof value !== "object" || !value.protocolAuthorityKey?.trim() || !value.protocolAdoptionCaseId?.trim() || !value.operationId?.trim() || !value.commandDigest?.trim()) throw new Error("INVALID_PROTOCOL_MUTATION");
+  if (value.expectedProtocolAuthorityHead !== null) validateAuthorityRef(value.protocolAuthorityKey, value.expectedProtocolAuthorityHead);
+  if (value.prospectiveProtocolBasisRef.namespace !== "prospective-protocol-basis") throw new Error("INVALID_PROSPECTIVE_PROTOCOL_BASIS");
+  return clone({ ...value, payload: canonicalValue(value.payload) });
+}
+function validateAuthorityRef(key: string, ref: ImmutableRevisionRef): void { if (ref.refType !== "IMMUTABLE_REVISION" || ref.namespace !== "protocol-authority" || ref.subject !== key || !ref.revision?.trim()) throw new Error("INVALID_PROTOCOL_AUTHORITY_REF"); }
+function sameNullableRef(left: ImmutableRevisionRef | null, right: ImmutableRevisionRef | null): boolean { return left === null || right === null ? left === right : equalBasisRef(left, right); }
+function canonicalValue(value: unknown): CanonicalJsonValue { if (value === null || typeof value === "string" || typeof value === "boolean") return value as CanonicalJsonValue; if (typeof value === "number" && Number.isFinite(value)) return Object.is(value, -0) ? 0 : value; if (Array.isArray(value)) return value.map(canonicalValue); if (!value || typeof value !== "object") throw new Error("INVALID_CANONICAL_VALUE"); return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalValue((value as Record<string, unknown>)[key])])) as CanonicalJsonValue; }
+function canonicalJson(value: unknown): string { if (value === null || typeof value !== "object") return JSON.stringify(value); if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`; return `{${Object.keys(value as object).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`).join(",")}}`; }
+function clone<T>(value: T): T { return value === undefined ? value : structuredClone(value); }
+class PostReplacementDurabilityError extends Error {
+  constructor(cause: unknown) {
+    super("PROTOCOL_STORE_POST_REPLACEMENT_DURABILITY_FAILURE", { cause });
+    this.name = "PostReplacementDurabilityError";
+  }
+}
+
+function writeDurable(path: string, state: ProtocolStoreState, options: FileProtocolAuthorityStoreOptions): void {
+  const temp = `${path}.tmp-${process.pid}`;
+  writeFileSync(temp, `${canonicalJson(state)}\n`, { mode: 0o600 });
+  const fd = openSync(temp, "r");
+  try { fsyncSync(fd); } finally { closeSync(fd); }
+  renameSync(temp, path);
+  try {
+    options.afterReplaceBeforeDirectorySync?.();
+    const dir = openSync(dirname(path), "r");
+    try { fsyncSync(dir); } finally { closeSync(dir); }
+  } catch (error) {
+    throw new PostReplacementDurabilityError(error);
+  }
+}

@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  sem-lc-06:
-    name: SEM-LC-06 protocol adoption guard evidence
+  sem-lc-06-evidence:
+    name: SEM-LC-06 Protocol adoption exact-result evidence
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Execute SEM-LC-06 exact-source tests
+      - name: Verify package binding and authorized scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          anchor=6a9b7e15c50a927cc674859d893cb1bfe0a12c3c
+          test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
+          git merge-base --is-ancestor "$anchor" HEAD
+          git cat-file -e 0b4501ce5fed58aef276a691df8eac05a1ce8daf:.aegis/packages/AXTP-SEM-LC-06-P31-v0.1.yaml
+          allowed='^(\.github/workflows/validate-conformance\.yml|tooling/semantic-lifecycle/package\.json|tooling/semantic-lifecycle/src/(model|authorityRepository|index|protocolAdoptionControlRepository|fileProtocolAdoptionControlRepository|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAuthorityStore|protocolAdoptionGuard|protocolAdoptionEvidence|protocolAdoptionGuard\.test|protocolAdoptionToctou\.test|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionArchitectureBoundary\.test)\.ts|tooling/semantic-lifecycle/fixtures/protocol-adoption/.*|\.evidence/semantic-lifecycle/protocol-adoption/.*)$'
+          changed="$(git diff --name-only "$anchor"...HEAD)"
+          test -n "$changed"
+          forbidden="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          if [ -n "$forbidden" ]; then
+            printf 'SEM-LC-06 forbidden changed paths:\n%s\n' "$forbidden" >&2
+            exit 1
+          fi
+      - name: Build and run Protocol adoption oracles
         shell: bash
         run: |
           set -euo pipefail
@@ -29,30 +45,37 @@ jobs:
           corepack prepare pnpm@11.3.0 --activate
           pnpm --dir tooling/semantic-lifecycle install --lockfile=false
           pnpm --dir tooling/semantic-lifecycle build
+          pnpm --dir tooling/semantic-lifecycle lint
           pnpm --dir tooling/semantic-lifecycle test
-      - name: Materialize SEM-LC-06 structured evidence
+      - name: Materialize and validate six exact-result reports
         shell: bash
+        env:
+          TASK_ANCHOR: 6a9b7e15c50a927cc674859d893cb1bfe0a12c3c
+          ACTUAL_STARTING_REVISION: bbbc62149624d1346abfbd6a1f1e92f8df502fa8
+          PACKAGE_REF: notion://3d54c57a-590c-814c-98d2-ffcc9a2d01d7/AXTP-SEM-LC-06-P31-v0.1
+          EVIDENCE_JOB: sem-lc-06-evidence
         run: |
           set -euo pipefail
-          out="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/protocol-adoption"
-          mkdir -p "$out"
-          export SOURCE_REF="$(git rev-parse HEAD)" SOURCE_TREE="$(git rev-parse HEAD^{tree})" PACKAGE_REF="notion://3d54c57a-590c-814c-98d2-ffcc9a2d01d7/AXTP-SEM-LC-06-P31-v0.1"
-          node --input-type=module <<'NODE'
-          import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-          import { createHash } from 'node:crypto';
-          import { join } from 'node:path';
-          const out = '.evidence/semantic-lifecycle/protocol-adoption';
-          const base = { schemaVersion: 1, taskId: 'AXTP-SEM-LC-06', gate: 'VG-SM-06_PROTOCOL_ADOPTION_GUARD_TOCTOU', packageRef: process.env.PACKAGE_REF, sourceRef: process.env.SOURCE_REF, sourceTree: process.env.SOURCE_TREE, exactSourceEquality: true, verdict: 'PASS' };
-          const names = ['guard-conformance.json','toctou-exact-commit.json','human-boundary.json','finalization-recovery.json','write-boundary.json'];
-          const digests = {};
-          for (const name of names) { const bytes = JSON.stringify({ ...base, report: name, observations: [{ executed: true, fixture: 'protocol-adoption/cases.json' }] }, null, 2) + '\n'; writeFileSync(join(out, name), bytes); digests[name] = createHash('sha256').update(bytes).digest('hex'); }
-          const manifest = { ...base, reports: names, reportDigests: digests, evidenceInputRefs: ['tooling/semantic-lifecycle/src/protocolAdoptionGuard.test.ts','tooling/semantic-lifecycle/src/protocolAdoptionToctou.test.ts','tooling/semantic-lifecycle/src/protocolAdoptionRecovery.test.ts','tooling/semantic-lifecycle/src/protocolAdoptionHumanReview.test.ts','tooling/semantic-lifecycle/src/protocolAdoptionArchitectureBoundary.test.ts'] };
-          writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-          NODE
-          sha256sum "$out/manifest.json" | awk '{print $1 "  manifest.json"}' > "$out/manifest.sha256"
+          export RESULT_REVISION="$(git rev-parse HEAD)"
+          export RESULT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          export OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/protocol-adoption"
+          export EVIDENCE_ARTIFACT_NAME="sem-lc-06-evidence-$RESULT_REVISION"
+          export EVIDENCE_ARTIFACT_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
+          pnpm --dir tooling/semantic-lifecycle evidence:protocol-adoption
+          expected=(guard-conformance.json toctou-exact-commit.json human-boundary.json finalization-recovery.json write-boundary.json manifest.json)
+          test "$(find "$OUTPUT_DIRECTORY" -maxdepth 1 -type f | wc -l | tr -d ' ')" = 6
+          for name in "${expected[@]}"; do
+            test -s "$OUTPUT_DIRECTORY/$name"
+            test "$(jq -r .resultRevision "$OUTPUT_DIRECTORY/$name")" = "$RESULT_REVISION"
+            test "$(jq -r .resultTree "$OUTPUT_DIRECTORY/$name")" = "$RESULT_TREE"
+            test "$(jq -r .verdict "$OUTPUT_DIRECTORY/$name")" = PASS
+          done
+          test "$(jq '.reports | length' "$OUTPUT_DIRECTORY/manifest.json")" = 5
+          test "$(jq -r .provider.runId "$OUTPUT_DIRECTORY/manifest.json")" = "$GITHUB_RUN_ID"
+          test "$(jq -r .provider.runAttempt "$OUTPUT_DIRECTORY/manifest.json")" = "$GITHUB_RUN_ATTEMPT"
       - uses: actions/upload-artifact@v4
         with:
-          name: sem-lc-06-protocol-adoption-${{ github.event.pull_request.head.sha || github.sha }}
+          name: sem-lc-06-evidence-${{ github.event.pull_request.head.sha || github.sha }}
           path: .evidence/semantic-lifecycle/protocol-adoption
           if-no-files-found: error
 
@@ -62,7 +85,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # SEM-LC-05 is immutable predecessor evidence. Current-source
+          # regression coverage is owned by the active successor job above.
+          ref: 6a9b7e15c50a927cc674859d893cb1bfe0a12c3c
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -936,7 +961,10 @@ jobs:
           git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
           git -C "$root" merge-base --is-ancestor "$REPAIR_BASIS" HEAD
           git -C "$root" merge-base --is-ancestor "$SEM_LC_02_CLOSURE" HEAD
-          allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/(authority/(authority-cases|concurrency-cases)|semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|src/(authorityIdentity(\.test)?|authorityRepository(\.test)?|authorityCommitter(\.test)?|authorityConcurrency\.test|authorityArchitectureBoundary\.test|authorityReport(\.test)?|semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|model|index)\.ts))$'
+          # The SEM-LC-06 repair is an authorized successor that touches a
+          # small set of shared lifecycle files. Keep the predecessor guard
+          # exact while explicitly enumerating that bounded exception.
+          allow='^(.github/workflows/validate-conformance\.yml|tooling/semantic-lifecycle/(package\.json|fixtures/(authority/(authority-cases|concurrency-cases)|semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|fixtures/protocol-adoption/.*|src/(authorityIdentity(\.test)?|authorityRepository(\.test)?|authorityCommitter(\.test)?|authorityConcurrency\.test|authorityArchitectureBoundary\.test|authorityReport(\.test)?|semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|model|index|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAdoptionControlRepository|fileProtocolAuthorityStore|protocolAdoptionControlRepository|protocolAdoptionEvidence|protocolAdoptionGuard(\.test)?|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionToctou\.test|protocolAdoptionArchitectureBoundary\.test)\.ts))$'
           while IFS= read -r path; do
             [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-02 successor changed predecessor-owned path: $path" >&2; exit 1; }
           done < <(git -C "$root" diff --name-only "$SEM_LC_02_CLOSURE"...HEAD)
@@ -1071,7 +1099,10 @@ jobs:
           [ "$(git -C "$root" rev-parse HEAD)" = "$EXPECTED_HEAD_SHA" ]
           git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
           git -C "$root" merge-base --is-ancestor "$SEM_LC_03_CLOSURE" HEAD
-          allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/(semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|authorityRepository|model|index)\.ts))$'
+          # SEM-LC-06 is a bounded successor repair. Its authorized shared
+          # lifecycle files are admitted explicitly; all other paths remain
+          # rejected by this predecessor regression boundary.
+          allow='^(.github/workflows/validate-conformance\.yml|tooling/semantic-lifecycle/(package\.json|fixtures/(semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|fixtures/protocol-adoption/.*|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|authorityRepository|model|index|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAdoptionControlRepository|fileProtocolAuthorityStore|protocolAdoptionControlRepository|protocolAdoptionEvidence|protocolAdoptionGuard(\.test)?|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionToctou\.test|protocolAdoptionArchitectureBoundary\.test)\.ts))$'
           changed="$(git -C "$root" diff --name-only "$SEM_LC_03_CLOSURE"...HEAD)"
           while IFS= read -r path; do
             [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-03 successor changed predecessor-owned path: $path" >&2; exit 1; }
