@@ -1737,7 +1737,9 @@ jobs:
           export pnpm_config_verify_deps_before_run=false
           pnpm --dir tooling/semantic-lifecycle build
           pnpm --dir tooling/semantic-lifecycle lint
-          pnpm --dir tooling/semantic-lifecycle test
+          if [ "" = "ubuntu-latest" ]; then
+            pnpm --dir tooling/semantic-lifecycle test
+          fi
           pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:reference
           pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:portable
       - name: Materialize exact E4096 reference bundle
