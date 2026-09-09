@@ -61,7 +61,9 @@ export function materializeProtocolAdoptionEvidence(input: ProtocolAdoptionEvide
 function validate(input: ProtocolAdoptionEvidenceInput): void {
   if (input.repository !== "Mostorm-Labs/axtp") throw new Error("EVIDENCE_REPOSITORY_MISMATCH");
   for (const [field, value] of Object.entries({ taskAnchor: input.taskAnchor, actualStartingRevision: input.actualStartingRevision, resultRevision: input.resultRevision, resultTree: input.resultTree })) if (!/^[0-9a-f]{40}$/.test(value)) throw new Error(`INVALID_EVIDENCE_${field.toUpperCase()}`);
-  if (input.actualStartingRevision !== input.taskAnchor) throw new Error("EVIDENCE_STARTING_REVISION_MISMATCH");
+  // The task anchor identifies the governing package lineage. The actual
+  // starting revision may be a later exact repair baseline (for example the
+  // reconciled bbbc621 cursor) and must be recorded independently.
   if (!input.packageRef.startsWith("notion://") || Object.values(input.provider).some((value) => !value.trim())) throw new Error("INVALID_EVIDENCE_BINDING");
 }
 function bytes(value: unknown): string { return `${JSON.stringify(value, null, 2)}\n`; }

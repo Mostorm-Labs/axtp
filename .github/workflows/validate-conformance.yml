@@ -51,7 +51,7 @@ jobs:
         shell: bash
         env:
           TASK_ANCHOR: 6a9b7e15c50a927cc674859d893cb1bfe0a12c3c
-          ACTUAL_STARTING_REVISION: 6a9b7e15c50a927cc674859d893cb1bfe0a12c3c
+          ACTUAL_STARTING_REVISION: bbbc62149624d1346abfbd6a1f1e92f8df502fa8
           PACKAGE_REF: notion://3d54c57a-590c-814c-98d2-ffcc9a2d01d7/AXTP-SEM-LC-06-P31-v0.1
           EVIDENCE_JOB: sem-lc-06-evidence
         run: |

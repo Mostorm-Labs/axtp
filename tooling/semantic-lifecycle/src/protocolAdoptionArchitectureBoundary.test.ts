@@ -40,7 +40,7 @@ test("evidence materialization binds all five proof families to one exact result
       outputDirectory: directory,
       repository: "Mostorm-Labs/axtp",
       taskAnchor: "6a9b7e15c50a927cc674859d893cb1bfe0a12c3c",
-      actualStartingRevision: "6a9b7e15c50a927cc674859d893cb1bfe0a12c3c",
+      actualStartingRevision: "bbbc62149624d1346abfbd6a1f1e92f8df502fa8",
       resultRevision: "0123456789abcdef0123456789abcdef01234567",
       resultTree: "89abcdef0123456789abcdef0123456789abcdef",
       packageRef: "notion://3d54c57a-590c-814c-98d2-ffcc9a2d01d7/AXTP-SEM-LC-06-P31-v0.1",
