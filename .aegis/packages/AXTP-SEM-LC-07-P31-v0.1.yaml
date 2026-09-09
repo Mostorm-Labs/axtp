@@ -1,0 +1,375 @@
+package_version: 1
+package_id: AXTP-SEM-LC-07-P31-v0.1@74e1153700e07d31cb471c859a7dec5a03163416
+task_id: AXTP-SEM-LC-07
+stage: P31_TASK_PACKAGING
+package_ref: notion://3d64c57a-590c-810d-924e-ccb32a814687/AXTP-SEM-LC-07-P31-v0.1
+purpose: >-
+  Connect the accepted Semantic Lifecycle capabilities to the existing AXTP Protocol
+  workflow and prove end-to-end V1-V10 enforcement at Stage 10/20/30/40/50
+  boundaries without moving product semantic truth, HUMAN review, Semantic Authority,
+  or Protocol-adoption authorization into workflow code.
+
+repository:
+  provider: github
+  full_name: Mostorm-Labs/axtp
+  canonical_branch_context: integration/axtp-next
+
+task_anchor:
+  revision: 74e1153700e07d31cb471c859a7dec5a03163416
+  tree: 9158a88fa775173b6a27bdaeeb7440ecf9cc14fc
+  relation: ancestor
+resume_cursor: null
+
+current_authority:
+  master_plan: 3d04c57a-590c-81f5-ad5e-eb6c3f184cac
+  predecessor_sem_lc_06_closure: 3d64c57a-590c-81a5-8721-eeeff4d8484e
+  predecessor_sem_lc_06_p23: 3d54c57a-590c-819a-b472-c180c8d68c29
+  predecessor_sem_lc_06_p14: 3d54c57a-590c-816a-a074-c49127e038e8
+  predecessor_sem_lc_06_p20: 3d54c57a-590c-81bd-902c-e44356195231
+  p30_successor_release: 3d64c57a-590c-81df-afc0-e7d1f82873a3
+
+verification:
+  gate: VG-SM-07_WORKFLOW_LIFECYCLE_ENFORCEMENT
+  obligation: END_TO_END_V1_V10_AT_WORKFLOW_BOUNDARIES
+  sem_lc_06_p20_scope_note: >-
+    SEM-LC-06 P20 is V8/V9/V10-specific and is not the full SEM-LC-07
+    verification contract. SEM-LC-07 inherits the accepted upstream P20 obligation
+    plus predecessor gates required for V1-V10 workflow enforcement.
+  blocking_evidence_policy: >-
+    Evidence is blocking only when its absence leaves a high-impact failure mode
+    without credible independent detection coverage.
+
+implementation_mechanism:
+  component: WorkflowLifecycleAdapter
+  placement: tooling/semantic-lifecycle/src/workflowLifecycleAdapter.ts
+  ownership:
+    persistent_state: none
+    product_semantic_truth: forbidden
+    human_review_creation: forbidden
+    semantic_authority_ownership: forbidden
+    protocol_authority_ownership: forbidden
+    direct_protocol_mutation_capability: forbidden
+  accepted_high_level_dependencies:
+    - SemanticLifecycleCoordinator
+    - SemanticFirstRoute
+    - BoundExistingRoute
+    - ProtocolAdoptionRoute
+    - ProtocolAdoptionGuard_indirect_via_ProtocolAdoptionRoute
+  exact_delegation:
+    stage10:
+      call: SemanticLifecycleCoordinator.assess
+      rules:
+        - UNRESOLVED fails closed before Stage20
+        - NO_SEMANTIC_DELTA continues only with exact freshness
+        - SEMANTIC_DELTA enters accepted SEMANTIC_FIRST lifecycle before Stage20 projection proposal
+    semantic_first:
+      owner: SemanticFirstRoute
+      rules:
+        - adapter may orchestrate externally supplied inputs only
+        - adapter cannot manufacture Candidate content or HUMAN review
+        - accepted current projection basis comes from SemanticFirstRoute.resolveProjectionBasis
+    bound_existing:
+      owner: BoundExistingRoute
+      rules:
+        - adopted Protocol semantic reconstruction delegates to predecessor route
+        - workflow-layer reinterpretation is forbidden
+        - Protocol mutation from BOUND_EXISTING is forbidden
+    stage30:
+      owner: ProtocolAdoptionRoute
+      finalization_call: ProtocolAdoptionRoute.finalizeProtocolAdoption
+      mutation_chain: ProtocolAdoptionRoute.finalizeProtocolAdoption -> ProtocolAdoptionGuard -> ProtocolAuthorityMutationPort
+      direct_mutation_from_workflow: forbidden
+    stage40:
+      first_call: SemanticLifecycleCoordinator.assess
+      true_delta_requirement: >-
+        A new SEMANTIC_FIRST case must complete SemanticFirstRoute.commitSupersedingAuthority
+        before Protocol amendment/adoption may continue.
+    stage50:
+      role: derived_artifact_generation_and_machine_evidence_only
+    stage99:
+      role: lifecycle_aware_router_only
+
+stage30_production_writer_bridge:
+  requirement: >-
+    The actual Authority-changing Protocol write must linearize only inside
+    ProtocolAdoptionGuard -> ProtocolAuthorityMutationPort. A textual "call Guard first"
+    followed by direct contract/registry YAML mutation is non-conforming.
+  blocker_if_unavailable: BLOCKED_IMPLEMENTATION:PROTOCOL_AUTHORITY_BRIDGE_UNAVAILABLE
+  forbidden_workaround:
+    - direct registry or YAML mutation after a detached guard precheck
+    - second Protocol truth store
+    - reusable guard authorization token
+    - direct WorkflowLifecycleAdapter access to ProtocolAuthorityMutationPort
+
+scope:
+  authorized_modify:
+    - tooling/skills/10-plan-protocol-flow/SKILL.md
+    - tooling/skills/20-draft-business-protocol/SKILL.md
+    - tooling/skills/30-adopt-protocol-draft/SKILL.md
+    - tooling/skills/40-amend-adopted-protocol/SKILL.md
+    - tooling/skills/50-generate-axtp-protocol/SKILL.md
+    - tooling/skills/99-axtp-protocol-workflow/SKILL.md
+    - tooling/semantic-lifecycle/src/index.ts
+    - tooling/semantic-lifecycle/package.json
+    - .github/workflows/validate-conformance.yml
+  authorized_create:
+    - tooling/semantic-lifecycle/src/workflowLifecycleAdapter.ts
+    - tooling/semantic-lifecycle/src/workflowLifecycleAdapter.test.ts
+    - tooling/semantic-lifecycle/src/workflowLifecycleArchitectureBoundary.test.ts
+    - tooling/semantic-lifecycle/src/workflowLifecycleEvidence.ts
+    - tooling/semantic-lifecycle/fixtures/workflow-lifecycle/workflow-boundary-cases.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/**
+  authorized_equivalent_subdivision: none
+  forbidden:
+    - contract/**
+    - specs/**
+    - docs/**
+    - workspace/business/**
+    - workspace/flows/**
+    - workspace/protocol/**
+    - tooling/skills/00-business-intake/**
+    - tooling/skills/60-release-axtp-spec/**
+    - tooling/skills/README.md
+    - .aegis/project.json
+    - tooling/semantic-lifecycle/src/model.ts
+    - tooling/semantic-lifecycle/src/classification.ts
+    - tooling/semantic-lifecycle/src/freshness.ts
+    - tooling/semantic-lifecycle/src/coordinator.ts
+    - tooling/semantic-lifecycle/src/candidateStore.ts
+    - tooling/semantic-lifecycle/src/candidateReviewCoordinator.ts
+    - tooling/semantic-lifecycle/src/review.ts
+    - tooling/semantic-lifecycle/src/authorityRepository.ts
+    - tooling/semantic-lifecycle/src/authorityCommitter.ts
+    - tooling/semantic-lifecycle/src/semanticAuthorityAcceptanceBoundary.ts
+    - tooling/semantic-lifecycle/src/semanticAuthorityReadBoundary.ts
+    - tooling/semantic-lifecycle/src/semanticFirstRoute.ts
+    - tooling/semantic-lifecycle/src/boundExistingRoute.ts
+    - tooling/semantic-lifecycle/src/protocolBasisProvider.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionControlRepository.ts
+    - tooling/semantic-lifecycle/src/fileProtocolAdoptionControlRepository.ts
+    - tooling/semantic-lifecycle/src/assessmentFreshnessBoundary.ts
+    - tooling/semantic-lifecycle/src/prospectiveProtocolBasisProvider.ts
+    - tooling/semantic-lifecycle/src/protocolAuthorityMutationPort.ts
+    - tooling/semantic-lifecycle/src/fileProtocolAuthorityStore.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionGuard.ts
+  scope_extension_rule: >-
+    If another implementation path is required, P32 must stop with BLOCKED_SCOPE and
+    request a P31 addendum. It may not extend this list itself.
+  predecessor_defect_rule: >-
+    If a read-only predecessor lifecycle file must change, return
+    BLOCKED_PREDECESSOR_DEFECT and route by root cause rather than repairing it inside SEM-LC-07.
+
+required_changes:
+  - id: RC7-01
+    requirement: Add stateless WorkflowLifecycleAdapter with the frozen delegation/ownership contract.
+  - id: RC7-02
+    requirement: Stage10 gap routing classifies first and fails closed on unresolved or stale classification.
+  - id: RC7-03
+    requirement: >-
+      Stage20 distinguishes non-authoritative proposal from Product Semantic Authority;
+      SEMANTIC_DELTA draft input binds exact accepted current Semantic Authority projection basis.
+  - id: RC7-04
+    requirement: >-
+      Stage30 has no Authority-changing Protocol mutation path outside
+      ProtocolAdoptionRoute.finalizeProtocolAdoption -> ProtocolAdoptionGuard -> ProtocolAuthorityMutationPort.
+  - id: RC7-05
+    requirement: >-
+      Stage40 reclassifies first; true semantic delta requires a new accepted superseding
+      Semantic Authority before Protocol amendment/adoption.
+  - id: RC7-06
+    requirement: Stage50 remains machine-evidence and derived-generation only.
+  - id: RC7-07
+    requirement: Stage99 routes to lifecycle-aware boundaries without copying lifecycle logic.
+  - id: RC7-08
+    requirement: Preserve stage numbering, Skill count, predecessor semantics, and no second truth store.
+  - id: RC7-09
+    requirement: >-
+      Add deterministic workflow-boundary evidence generation and one SEM-LC-07 job to
+      the existing validate-conformance.yml; do not create a new CI workflow.
+
+tests_and_oracles:
+  W7-1:
+    purpose: Stage10 classification and exact freshness for V1/V2
+    cases:
+      - no assessment
+      - UNRESOLVED
+      - stale scope
+      - stale classification basis
+      - valid NO_SEMANTIC_DELTA
+      - SEMANTIC_DELTA route
+    oracle:
+      stage20_without_fresh_classification_total: 0
+      unresolved_or_stale_stage20_entry_total: 0
+  W7-2:
+    purpose: Semantic Authority and proposal boundary for V3/V4/V5/V6/V10
+    cases:
+      - adapter cannot synthesize Candidate HUMAN review or Authority
+      - SEMANTIC_DELTA draft without accepted current projection basis fails
+      - accepted SEMANTIC_FIRST projection basis succeeds
+      - repair and supersession use predecessor route only
+    oracle:
+      workflow_created_semantic_truth_total: 0
+      machine_created_human_pass_total: 0
+      semantic_delta_draft_without_current_authority_total: 0
+  W7-3:
+    purpose: BOUND_EXISTING no-reinterpretation for V7
+    cases:
+      - adopted Protocol semantic reconstruction delegates to BoundExistingRoute
+      - workflow reinterpretation attempt fails
+      - BOUND_EXISTING Protocol mutation attempt fails
+    oracle:
+      workflow_bound_existing_reinterpretation_total: 0
+      bound_existing_protocol_mutation_total: 0
+  W7-4:
+    purpose: Stage30 guarded Protocol mutation for V8/V9/V10
+    cases:
+      - direct Stage30 writer path rejected
+      - exact guard finalization path succeeds
+      - stale Assessment Semantic Authority prospective basis and Protocol head fail
+      - machine PASS without HUMAN Projection Review fails
+      - production writer edge is Guard to MutationPort only
+    oracle:
+      unguarded_protocol_authority_mutation_total: 0
+      post_guard_drift_acceptance_total: 0
+      machine_only_adoption_authorization_total: 0
+      unauthorized_protocol_writer_edges: 0
+  W7-5:
+    purpose: Stage40 supersession before amendment
+    cases:
+      - NO_DELTA reclassification path
+      - SEMANTIC_DELTA without superseding Authority blocked
+      - accepted new Authority exact basis permits amendment path
+      - stale prior Authority cannot authorize amendment
+    oracle:
+      semantic_delta_amendment_without_supersession_total: 0
+      stale_semantic_authority_amendment_total: 0
+  W7-6:
+    purpose: Stage50 and Stage99 architecture boundary
+    cases:
+      - Stage50 cannot own semantic truth review or adoption
+      - Stage99 cannot bypass adapter or create lifecycle logic
+      - exact six Skill surfaces contain lifecycle boundary clauses
+      - stage numbers remain 10 20 30 40 50 99
+    oracle:
+      generator_semantic_truth_edges: 0
+      workflow_router_bypass_edges: 0
+      stage_renumbering_total: 0
+      unauthorized_skill_surface_changes_total: 0
+  regression:
+    - all existing tooling/semantic-lifecycle predecessor tests remain green
+
+verification_commands:
+  - corepack enable
+  - corepack prepare pnpm@11.3.0 --activate
+  - pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+  - pnpm --dir tooling/semantic-lifecycle build
+  - pnpm --dir tooling/semantic-lifecycle lint
+  - pnpm --dir tooling/semantic-lifecycle test
+  - pnpm --dir tooling/semantic-lifecycle evidence:workflow-lifecycle
+  - git diff --check
+
+hosted_verification:
+  required: true
+  workflow: .github/workflows/validate-conformance.yml
+  job: sem-lc-07-evidence
+  requirements:
+    - task-anchor ancestry check
+    - exact package-materialization binding check
+    - exact authorized-path check
+    - build lint test and workflow evidence command
+    - exact result revision and tree binding
+    - upload reviewer-accessible workflow-lifecycle evidence artifact
+
+evidence_contract:
+  required_materialized_reports:
+    - .evidence/semantic-lifecycle/workflow-lifecycle/stage10-classification.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/semantic-authority-boundary.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/bound-existing-boundary.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/stage30-adoption.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/stage40-amendment.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/stage50-stage99-boundary.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/manifest.json
+  required_report_bindings:
+    - repository identity
+    - task anchor
+    - actual starting revision
+    - exact result revision and tree
+    - package_ref
+    - test and oracle IDs
+    - owned machine facts only
+  manifest_requirements:
+    - bind all six boundary reports
+    - bind provider run attempt job and artifact refs
+  reviewer_accessible_materialization_required: true
+  local_only_result_sufficient: false
+  supporting_only:
+    - duplicate logs
+    - duplicate archives
+    - RED/GREEN transcripts unless independently needed
+    - prose traceability matrices
+
+execution_closure_contract:
+  required_changes:
+    - RC7-01
+    - RC7-02
+    - RC7-03
+    - RC7-04
+    - RC7-05
+    - RC7-06
+    - RC7-07
+    - RC7-08
+    - RC7-09
+  forbidden_changes:
+    - any path outside exact authorized scope
+    - direct Protocol Authority mutation outside Guard -> MutationPort
+    - second lifecycle implementation in workflow layer
+    - modification of accepted predecessor lifecycle implementation files
+    - stage renumbering or unrelated Skill/workflow redesign
+    - new semantic or Protocol truth store
+  required_tests_or_oracles:
+    - W7-1
+    - W7-2
+    - W7-3
+    - W7-4
+    - W7-5
+    - W7-6
+    - predecessor semantic-lifecycle regression
+  hosted_verification: required
+  blocking_evidence:
+    - six owned workflow-boundary reports
+    - exact package and scope binding
+    - exact result revision and tree
+    - production-selected Stage30 writer-edge proof
+  corroborative_only:
+    - duplicate logs and archives
+    - RED/GREEN transcripts unless independently needed
+    - prose traceability matrices
+  terminal_success_condition: >-
+    Exact package preflight succeeds; all RC7 changes remain inside scope; W7-1 through
+    W7-6 and predecessor regression pass; all zero-tolerance counters remain zero; the
+    actual Stage30 Authority-changing writer path is demonstrably linearized inside
+    ProtocolAdoptionGuard -> ProtocolAuthorityMutationPort; seven exact-result evidence
+    files are materialized and uploaded from the exact result revision; no official P34
+    verdict is emitted.
+  explicit_blockers:
+    BLOCKED_REPOSITORY_IDENTITY: repository or ancestry cannot be established
+    BLOCKED_AUTHORITY: package or Authority binding conflict or required upstream decision missing
+    BLOCKED_SCOPE: implementation requires an unlisted path or broader redesign
+    BLOCKED_PREDECESSOR_DEFECT: accepted predecessor lifecycle implementation must change
+    BLOCKED_IMPLEMENTATION: workflow enforcement or actual Protocol Authority bridge unavailable
+    BLOCKED_VERIFICATION: required W7 oracle cannot be made failure-sensitive
+    BLOCKED_EVIDENCE: reviewer-accessible exact-result evidence cannot be materialized
+  continue_until_terminal_state: true
+
+non_goals:
+  - P32 execution in this P31 occurrence
+  - real Protocol Authority mutation
+  - SEM-LC-08 release or implementation
+  - Current Authority mutation
+  - reopening SEM-LC-06 P34/P35/P36/P24/integration
+  - promoting NF6-01 to blocking absent a new independent uncovered high-impact failure mode
+
+review_surface:
+  owner: aegis-gate-review
+  stage: P34
+  starts_after: completed_P32_or_P33_exact_result_materialized
