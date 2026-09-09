@@ -7,6 +7,10 @@ description: Stage 20 drafting skill for AXTP business protocol proposals. Use w
 
 Stage 20. Create or update an AXTP business protocol draft in `workspace/protocol/<domain>/<domain.feature>.md`. Use this stage after business intake or flow planning has identified concrete protocol semantics that need review.
 
+## Semantic Lifecycle Boundary
+
+Enter this stage only through `WorkflowLifecycleAdapter` after exact Stage 10 classification freshness succeeds. Drafts, projections, and Registry working-tree edits are proposals, not Authority. For a true semantic delta, resolve the current accepted Semantic Authority as the projection basis; this stage cannot create a HUMAN review, accept or supersede Semantic Authority, or adopt Protocol Authority. `BOUND_EXISTING` work delegates to its accepted route without reinterpretation.
+
 ## Boundaries
 
 - Edit only `workspace/protocol/**` unless the user explicitly asks for documentation around the draft.

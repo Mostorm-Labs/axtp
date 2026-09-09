@@ -38,10 +38,10 @@ test("durable lifecycle schema contains correlation state but no reusable author
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
-test("only ProtocolAdoptionGuard production module imports the mutation port", () => {
-  const files = ["protocolAdoptionControlRepository.ts", "fileProtocolAdoptionControlRepository.ts", "assessmentFreshnessBoundary.ts", "prospectiveProtocolBasisProvider.ts", "semanticAuthorityReadBoundary.ts", "fileProtocolAuthorityStore.ts", "protocolAdoptionGuard.ts", "protocolAdoptionEvidence.ts"];
+test("only internal writer implementations and ProtocolAdoptionGuard import the mutation port", () => {
+  const files = ["protocolAdoptionControlRepository.ts", "fileProtocolAdoptionControlRepository.ts", "assessmentFreshnessBoundary.ts", "prospectiveProtocolBasisProvider.ts", "registryProspectiveProtocolBasisProvider.ts", "semanticAuthorityReadBoundary.ts", "fileProtocolAuthorityStore.ts", "gitRegistryProtocolAuthorityMutationPort.ts", "productionProtocolAdoptionRuntime.ts", "protocolAdoptionGuard.ts", "protocolAdoptionEvidence.ts", "workflowLifecycleAdapter.ts"];
   const writers = files.filter((file) => readFileSync(`src/${file}`, "utf8").includes('from "./protocolAuthorityMutationPort.js"'));
-  assert.deepEqual(writers.sort(), ["fileProtocolAuthorityStore.ts", "protocolAdoptionGuard.ts"]);
+  assert.deepEqual(writers.sort(), ["fileProtocolAuthorityStore.ts", "gitRegistryProtocolAuthorityMutationPort.ts", "protocolAdoptionGuard.ts"]);
   const provider = readFileSync("src/protocolBasisProvider.ts", "utf8");
   assert.doesNotMatch(provider, /commit|mutate|writeProtocol|publishProtocol/);
   const protocolStore = readFileSync("src/fileProtocolAuthorityStore.ts", "utf8");

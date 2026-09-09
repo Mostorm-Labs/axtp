@@ -7,6 +7,14 @@ description: Stage 30 adoption skill for reviewed AXTP workspace/protocol domain
 
 Stage 30. Convert a reviewed AXTP protocol draft into formal protocol facts after `draft-business-protocol`: align the accepted proposal with `specs/30-registry.md` and `specs/40-codec.md`, freeze the draft as the formal proposal, and write the confirmed facts into YAML.
 
+## Semantic Lifecycle Production Boundary
+
+Working-tree YAML edits are prospective non-authoritative Registry staging. Capture their complete UTF-8 bytes with `RegistryProspectiveProtocolBasisProvider`, then adopt only through this single production chain:
+
+`ProtocolAdoptionRoute.finalizeProtocolAdoption -> ProtocolAdoptionGuard -> GitRegistryProtocolAuthorityMutationPort -> atomic Git ref transaction -> committed contract/registry Authority`.
+
+The exact immutable snapshot bytes—not a mutable Registry reread—are the commit payload. Stage 30 must never receive the raw writer, run a direct Protocol Authority commit, or perform a detached Guard check followed by `apply_patch`/Git mutation. Ambiguous outcomes use `reconcileProtocolAdoption`; do not retry the write blindly.
+
 ## Hard Boundaries
 
 - Start from an existing `workspace/protocol/<domain>/<domain.feature>.md` draft.
@@ -117,9 +125,9 @@ Compute from specs and existing YAML:
 
 Never reuse deprecated or stable values for different semantics.
 
-### 7. Edit YAML Sources
+### 7. Prepare Prospective YAML Sources
 
-Use `apply_patch`. Keep edits scoped to Registry/Capability Types specs, Profiles Registry when applicable, the adopted draft, and chosen YAML sources.
+Use `apply_patch` to prepare the non-authoritative working-tree proposal. Keep edits scoped to Registry/Capability Types specs, Profiles Registry when applicable, the adopted draft, and chosen YAML sources. Before treating the YAML as adopted, stage its exact bytes and finalize through the production boundary above; only the resulting committed Registry revision is Protocol Authority.
 
 Rules:
 

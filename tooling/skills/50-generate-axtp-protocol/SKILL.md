@@ -7,6 +7,10 @@ description: Stage 50 generation skill for accepted AXTP registry YAML facts. Us
 
 Stage 50. Run the deterministic AXTP generation stage after `adopt-protocol-draft` or `amend-adopted-protocol` has updated YAML facts.
 
+## Semantic Lifecycle Boundary
+
+Generate only from committed Registry Authority. Before invoking the generator, use `WorkflowLifecycleAdapter.runStage50` (or its equivalent exact check) to require the checked-out target ref and reject both staged and unstaged `contract/registry/**` drift, including untracked Registry files. Generated output is derived-only and cannot become an alternative Protocol truth source.
+
 ## Boundaries
 
 - Input is `contract/registry/**/*.yaml` and `contract/registry/domains/**/*.yaml`.

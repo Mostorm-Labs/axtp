@@ -7,6 +7,10 @@ description: Stage 99 top-level router for AXTP protocol lifecycle work. Use whe
 
 Stage 99. Use this skill as the top-level router for AXTP protocol lifecycle work. It decides whether the task belongs in business intake, flow planning, protocol drafting, adoption, post-adoption amendment, generation, release, direct maintenance, or runtime implementation.
 
+## Semantic Lifecycle Routing Boundary
+
+Route lifecycle-sensitive work through the stateless `WorkflowLifecycleAdapter`. Stage 99 owns no copied lifecycle truth, HUMAN decision, Semantic Authority, prospective basis, Protocol writer, or finalization token. Stage 10/20 classification and proposal operations, `BOUND_EXISTING` delegation, guarded Stage 30/40 finalization, and committed-source Stage 50 generation remain owned by their accepted high-level capabilities.
+
 This skill is a coordinator. It should not create protocol content itself unless the task is narrow governance maintenance that is explicitly safe.
 
 ## Workflow Decision
@@ -103,4 +107,3 @@ Report:
 - Generated files changed by Generator, if any.
 - Validation commands and results.
 - Unresolved questions or skipped sections.
-
