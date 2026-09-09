@@ -94,7 +94,7 @@ jobs:
             test "$(jq -r .verdict "$OUTPUT_DIRECTORY/$name")" = PASS
           done
           test "$(jq '.reports | length' "$OUTPUT_DIRECTORY/manifest.json")" = 6
-          test "$(jq '[.zeroTolerance[]] | unique' "$OUTPUT_DIRECTORY/manifest.json")" = '[0]'
+          test "$(jq -c '[.zeroTolerance[]] | unique' "$OUTPUT_DIRECTORY/manifest.json")" = '[0]'
           git diff --check
       - uses: actions/upload-artifact@v4
         with:
