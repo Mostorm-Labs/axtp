@@ -1,0 +1,349 @@
+package_version: 2
+package_id: AXTP-SEM-LC-08-P31-v0.2@7b4092d80bd4aabab6e3389c42810654aeaa894c
+task_id: AXTP-SEM-LC-08
+stage: P31_TASK_PACKAGING
+occurrence: FRESH_V0_2
+state: READY_FOR_P32_AFTER_MATERIALIZATION_VERIFICATION
+package_ref: notion://3d64c57a-590c-8158-a930-ec076569ee92/AXTP-SEM-LC-08-P31-v0.2
+replaces_package_ref: notion://3d64c57a-590c-8115-bf17-f546c6c9f2c2/AXTP-SEM-LC-08-P31-v0.1
+replacement_reason: >-
+  Historical P31 v0.1 blocked because exact P18 engineering Authority was missing.
+  P18 v0.2, P23 supersession, and fresh P20 v0.2 now resolve the engineering and
+  Verification contracts. This is a fresh package and never resumes or edits v0.1.
+
+repository:
+  provider: github
+  full_name: Mostorm-Labs/axtp
+  canonical_branch_context: integration/axtp-next
+
+task_anchor:
+  revision: 7b4092d80bd4aabab6e3389c42810654aeaa894c
+  tree: f23ece9893783d4d844306e1a4e2fbf1026f3f69
+  relation: exact_canonical_at_packaging
+resume_cursor: null
+
+package_materialization_policy:
+  artifact_path: .aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml
+  relation: PACKAGE_ONLY_EXACTLY_ONE_COMMIT_ABOVE_TASK_ANCHOR
+  consumption: READ_ONLY_NO_MERGE_NO_CHERRY_PICK
+  implementation_branch_base: task_anchor_revision_only
+  materialization_commit_identity: bound_in_normative_notion_package_after_commit
+
+current_authority:
+  master_plan: 3d04c57a-590c-81f5-ad5e-eb6c3f184cac
+  sem_lc_08_p30_release: 3d64c57a-590c-8128-8af6-f47396bd3f73
+  p18_engineering_current: 3d64c57a-590c-8155-abbf-f3ef08ed4658
+  p23_supersession: 3d64c57a-590c-811e-b0bf-d0c195167fe7
+  p20_verification_current: 3d64c57a-590c-81ce-bfd1-e9a14bd0a92d
+  central_routing: 3d64c57a-590c-8141-97b0-d0057b486c56
+  p18_current_unique: true
+  p20_current_for_sem_lc_08: true
+  upstream_redesign_authorized: false
+
+verification:
+  gate: VG-SM-08_DETERMINISM_PORTABILITY_REFERENCE_PARITY
+  blocking_evidence_policy: >-
+    Evidence is blocking only when its absence leaves a high-impact failure mode
+    without credible independent detection coverage.
+  gate_closure_stability: enforced
+  anti_proof_recursion: enforced
+
+engineering_envelope:
+  id: SEM-LC-08-E4096
+  lifecycle_cases_total: 4096
+  route_mix:
+    SEMANTIC_FIRST: 2048
+    BOUND_EXISTING: 2048
+  semantic_delta_dimensions_per_case: 15
+  semantic_dimension_observations_total: 61440
+  projection_reference_edges_total: 61440
+  prospective_registry_mutation:
+    entries_total: 4096
+    writes: 2048
+    deletes: 2048
+    bytes_per_write: 2048
+    write_payload_bytes_total: 4194304
+  canonical_input_permutations: 8
+  hosted_platforms:
+    - ubuntu-latest
+    - macos-latest
+    - windows-latest
+  reference_mode: FULL_REFERENCE_MODE
+  input_uncompressed_max_bytes: 33554432
+  canonical_evidence_bundle_uncompressed_max_bytes: 67108864
+  hosted_job_timeout_minutes_per_os: 15
+  wall_clock_gate: NON_BLOCKING_TELEMETRY
+  peak_rss_gate: NON_BLOCKING_TELEMETRY
+
+permutations:
+  - canonical_ascending_logical_identity
+  - exact_reverse
+  - rotate_left_1
+  - rotate_left_n_over_2
+  - even_index_then_odd_index
+  - odd_index_then_even_index
+  - ascending_sha256_stable_logical_identity
+  - descending_sha256_stable_logical_identity
+
+stress_envelope:
+  id: SEM-LC-08-S16384
+  lifecycle_cases_total: 16384
+  semantic_dimension_observations_total: 245760
+  projection_reference_edges_total: 245760
+  hosted_platform: ubuntu-latest
+  blocking: false
+
+canonicalization:
+  canonical_path_order: UTF8_UNSIGNED_BYTE_LEXICOGRAPHIC_ASCENDING
+  locale_collation_as_truth: forbidden
+  locale_compare_as_truth: forbidden
+  unicode_normalization: forbidden
+  identifier_equality_change: forbidden
+
+optimized_path:
+  present_at_task_anchor: false
+  v13_branch: NO_OPTIMIZED_PATH
+  full_reference_mode_authoritative: true
+  create_optimization_to_satisfy_v13: forbidden
+  contradiction_action: PACKAGE_SOURCE_INSPECTION_CONFLICT
+
+blocking_thresholds:
+  cross_platform_semantic_result_drift: 0
+  cross_platform_projection_result_drift: 0
+  canonical_report_byte_drift_across_permutations: 0
+  optimized_reference_mismatch_total: 0
+  incomplete_E4096_cases: 0
+  incomplete_E4096_reference_edges: 0
+  incomplete_E4096_registry_mutation_entries: 0
+  canonical_locale_dependent_ordering_total: 0
+
+required_failure_modes:
+  V12_1_enumeration_nondeterminism:
+    oracle: same logical E4096 corpus under all eight permutations has identical canonical semantic projection and report bytes/digests
+  V12_2_cross_platform_drift:
+    oracle: Ubuntu macOS Windows have identical canonical semantic and projection results for exact source/corpus/config
+  V12_3_incomplete_exact_scale:
+    oracle: exact E4096 counts and byte caps complete within hosted proof envelope
+  V12_4_negative_false_acceptance:
+    cases:
+      - invalid_semantic_or_projection_reference
+      - projection_gap_or_incomplete_coverage
+      - candidate_leak
+      - stale_prospective_or_repository_basis
+      - simulated_mid_commit_interruption_no_partial_authority
+      - idempotency_key_collision_non_identical_mutation
+    oracle: deterministic fail_closed rejection with no partial Authority state
+  V12_5_metadata_pollution:
+    oracle: platform job runner timestamp temp_path elapsed and RSS metadata never change canonical digest
+  V12_6_route_workflow_regression:
+    oracle: exact route mix and WorkflowLifecycleAdapter_to_ProtocolAdoptionRoute_to_ProtocolAdoptionGuard only
+  V13_full_reference:
+    oracle: FULL_REFERENCE_MODE independently runnable end_to_end and no optimized production path is invented
+
+authorized_scope:
+  may_modify:
+    - tooling/semantic-lifecycle/package.json
+    - tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts
+    - .github/workflows/validate-conformance.yml
+  may_create:
+    - tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
+    - tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts
+    - tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
+    - tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
+    - tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts
+    - tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.test.ts
+    - tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
+    - tooling/semantic-lifecycle/src/semanticLifecyclePortable.test.ts
+    - tooling/semantic-lifecycle/fixtures/sem-lc-08/minimal-reference.json
+    - tooling/semantic-lifecycle/fixtures/sem-lc-08/negative-corpus.json
+    - .evidence/semantic-lifecycle/sem-lc-08/**
+  predecessor_read_call_only:
+    - tooling/semantic-lifecycle/src/model.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionRoute.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionGuard.ts
+    - tooling/semantic-lifecycle/src/workflowLifecycleAdapter.ts
+    - tooling/semantic-lifecycle/src/workflowLifecycleEvidence.ts
+    - tooling/semantic-lifecycle/src/prospectiveProtocolBasisProvider.ts
+    - tooling/semantic-lifecycle/src/protocolAuthorityMutationPort.ts
+    - tooling/semantic-lifecycle/src/semanticAuthorityReadBoundary.ts
+    - tooling/semantic-lifecycle/src/assessmentFreshnessBoundary.ts
+  forbidden_substantive_paths:
+    - contract/semantic/**
+    - contract/registry/**
+    - contract/protocol/**
+    - contract/generated/**
+    - contract/mcp/**
+    - contract/test-vectors/**
+    - specs/**
+    - workspace/**
+    - .aegis/project.json
+  scope_extension_without_new_package: forbidden
+
+required_changes:
+  - id: RC8-01
+    requirement: replace locale-dependent canonical path ordering with UTF-8 unsigned byte lexical ordering without semantic normalization
+  - id: RC8-02
+    requirement: add deterministic E4096 FULL_REFERENCE_MODE core with all eight permutations and exact counts
+  - id: RC8-03
+    requirement: add exact three-OS semantic/projection parity proof and canonical metadata separation
+  - id: RC8-04
+    requirement: add six-class negative corpus with deterministic fail-closed rejection and no partial Authority state
+  - id: RC8-05
+    requirement: preserve exact SEMANTIC_FIRST and BOUND_EXISTING route/workflow boundaries in scale proof
+  - id: RC8-06
+    requirement: implement V13 no-optimized-path evidence bound to exact task-anchor inspection and independently runnable FULL_REFERENCE_MODE
+  - id: RC8-07
+    requirement: add cross-platform reconciliation and reviewer-accessible blocking evidence using existing validate-conformance workflow
+  - id: RC8-08
+    requirement: preserve predecessor semantic lifecycle regressions and Authority boundaries
+
+stable_command_surface:
+  package_scripts:
+    evidence_semantic_lifecycle_reference: node --enable-source-maps dist/semanticLifecycleReferenceEvidence.js
+    evidence_semantic_lifecycle_negative: node --enable-source-maps dist/semanticLifecycleNegativeEvidence.js
+    evidence_semantic_lifecycle_optimized: node --enable-source-maps dist/semanticLifecycleOptimizedEvidence.js
+    evidence_semantic_lifecycle_reconcile: node --enable-source-maps dist/semanticLifecycleReconcileEvidence.js
+  required_test_scripts:
+    - test:semantic-lifecycle:reference
+    - test:semantic-lifecycle:negative
+    - test:semantic-lifecycle:portable
+
+verification_commands:
+  - corepack enable
+  - corepack prepare pnpm@11.3.0 --activate
+  - pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+  - pnpm --dir tooling/semantic-lifecycle build
+  - pnpm --dir tooling/semantic-lifecycle lint
+  - pnpm --dir tooling/semantic-lifecycle test
+  - pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:reference
+  - pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:negative
+  - pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:portable
+  - pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reference
+  - pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:negative
+  - pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:optimized
+  - git diff --check
+  hosted_reconcile: pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reconcile
+
+hosted_verification:
+  workflow: .github/workflows/validate-conformance.yml
+  forbidden_new_workflow: true
+  required_jobs:
+    sem_lc_08_reference:
+      matrix:
+        - ubuntu-latest
+        - macos-latest
+        - windows-latest
+      required:
+        - exact package and task-anchor binding
+        - build lint reference and portable tests
+        - E4096 FULL_REFERENCE_MODE
+        - per-platform machine-readable reference bundle
+    sem_lc_08_negative:
+      runner: ubuntu-latest
+      required:
+        - exact package binding
+        - negative tests
+        - negative evidence manifest
+    sem_lc_08_v13_reference_mode:
+      runner: ubuntu-latest
+      required:
+        - exact package binding
+        - optimized_path_present false source inspection
+        - FULL_REFERENCE_MODE evidence
+    sem_lc_08_reconcile:
+      runner: ubuntu-latest
+      requires_all_previous: true
+      required:
+        - download all three platform bundles and negative/V13 manifests
+        - cross-platform reconciliation
+        - reviewer-accessible Gate bundle
+
+blocking_evidence:
+  - three_per_platform_E4096_reference_bundles
+  - cross_platform_reconciliation_manifest
+  - negative_corpus_manifest
+  - v13_no_optimized_reference_manifest
+  - exact_package_scope_result_revision_binding
+corroborative_only:
+  - SEM_LC_08_S16384
+  - wall_clock
+  - peak_rss
+  - performance_charts
+  - duplicate_raw_logs
+  - duplicate_archives
+  - red_green_transcripts_without_unique_failure_coverage
+  - NF7_02_evidence_summary_hardening
+
+evidence_root: .evidence/semantic-lifecycle/sem-lc-08/**
+required_manifest_bindings:
+  - task_anchor
+  - p18_ref
+  - p20_ref
+  - envelope_id
+  - mode
+  - optimized_path_present
+  - lifecycle_cases_completed
+  - semantic_dimension_observations_completed
+  - projection_reference_edges_completed
+  - registry_mutation_entries_completed
+  - input_permutation_id_where_applicable
+  - canonical_result_sha256
+  - canonical_report_sha256
+  - canonical_input_bytes
+  - canonical_output_bytes
+  - result_revision
+canonical_digest_excludes:
+  - platform
+  - runner
+  - job_id
+  - timestamp
+  - temp_path
+  - elapsed_ms
+  - peak_rss_bytes
+
+EXECUTION_CLOSURE_CONTRACT:
+  state: FROZEN
+  continue_until_terminal_state: true
+  implementation:
+    required:
+      - RC8-01
+      - RC8-02
+      - RC8-03
+      - RC8-04
+      - RC8-05
+      - RC8-06
+      - RC8-07
+      - RC8-08
+    forbidden:
+      - any path outside exact authorized scope
+      - any P10-P18 P20 or P23 Authority mutation
+      - semantic dimension count or meaning change
+      - Protocol Authority writer-boundary redesign
+      - optimization cache index or incremental production path creation
+      - SEM-LC-09 work
+      - weakening E4096 permutations platforms zero thresholds or resource caps
+      - promoting S16384 wall-clock RSS performance charts duplicate logs or NF7-02 to blocking
+  terminal_success:
+    all_of:
+      - PackageBindingPreflight PASS
+      - task anchor and Current Authority refs unchanged
+      - RC8-01 through RC8-08 complete within scope
+      - build lint and full predecessor semantic-lifecycle test regression PASS
+      - named reference negative and portable test scripts PASS
+      - E4096 exact counts and all eight permutations PASS
+      - Ubuntu macOS Windows canonical semantic/projection parity PASS
+      - all six negative classes reject deterministically with no partial Authority state
+      - V13 no-optimized-path branch PASS with FULL_REFERENCE_MODE independently runnable
+      - all frozen zero-tolerance thresholds equal zero
+      - input and evidence byte caps satisfied
+      - all required hosted jobs PASS on exact result revision
+      - blocking artifacts reviewer-accessible and identity-bound
+  terminal_blockers:
+    - TASK_ANCHOR_STALE_REQUIRES_P31_RECONCILIATION
+    - PACKAGE_MATERIALIZATION_IDENTITY_MISMATCH
+    - CURRENT_AUTHORITY_OR_P20_DRIFT
+    - PACKAGE_SOURCE_INSPECTION_CONFLICT
+    - REQUIRED_CHANGE_OUTSIDE_AUTHORIZED_SCOPE
+    - E4096_OR_GATE_REQUIRES_AUTHORITY_WEAKENING
+    - HOSTED_PROOF_CANNOT_COMPLETE_WITHIN_FROZEN_ENVELOPE
+    - ENVIRONMENT_OR_PLATFORM_BLOCKER_WITHOUT_SAFE_IN_SCOPE_REPAIR
