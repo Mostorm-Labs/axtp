@@ -1,0 +1,56 @@
+name: SEM-LC-08 one-shot materialization patch helper
+
+on:
+  push:
+    branches:
+      - codex/sem-lc-08-p32-v02
+    paths:
+      - .github/workflows/sem-lc-08-materialize-patch-helper.yml
+
+permissions:
+  contents: write
+
+jobs:
+  stage-patched-blob:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Patch exact reference materialization environment only
+        shell: bash
+        run: |
+          set -euo pipefail
+          target=.github/workflows/validate-conformance.yml
+          expected_blob=660df8c61f9754df038c86dd05c67b9df505fbf7
+          test "$(git hash-object "$target")" = "$expected_blob"
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/validate-conformance.yml')
+          data = path.read_bytes()
+          old = b'''          export OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-08/reference/${PLATFORM_LABEL}"\n          pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reference\n'''
+          new = b'''          export OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-08/reference/${PLATFORM_LABEL}"\n          export pnpm_config_verify_deps_before_run=false\n          pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reference\n'''
+          count = data.count(old)
+          if count != 1:
+              raise SystemExit(f'expected exactly one SEM-LC-08 reference materialization block, found {count}')
+          path.write_bytes(data.replace(old, new, 1))
+          PY
+          test "$(git diff --name-only)" = "$target"
+          test "$(git diff --numstat -- "$target")" = $'1\t0\t.github/workflows/validate-conformance.yml'
+          git diff --check -- "$target"
+          git diff --unified=2 -- "$target"
+          patched_blob="$(git hash-object "$target")"
+          transport=.aegis/tmp/sem-lc-08-materialize-workflow.blob
+          mkdir -p "$(dirname "$transport")"
+          cp "$target" "$transport"
+          test "$(git hash-object "$transport")" = "$patched_blob"
+          git checkout -- "$target"
+          test "$(git hash-object "$target")" = "$expected_blob"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -- "$transport"
+          test "$(git diff --cached --name-only)" = "$transport"
+          git commit -m 'SEM-LC-08: stage materialization workflow blob transport'
+          git push origin "HEAD:codex/sem-lc-08-p32-v02"
+          echo "PATCHED_BLOB_SHA=$patched_blob"
