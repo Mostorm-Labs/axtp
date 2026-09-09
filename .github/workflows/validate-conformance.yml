@@ -1,1 +1,13 @@
 name: Validate AXTP Spec
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
