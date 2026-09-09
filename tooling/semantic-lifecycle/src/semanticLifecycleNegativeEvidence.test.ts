@@ -27,7 +27,7 @@ test("negative corpus expectation drift fails closed", () => {
 test("negative oracle fails when the production mechanism accepts the controlled fault", () => {
   const accepting: NegativeMechanism = {
     identity: "controlled-accepting-mechanism",
-    execute: () => ({ classification: "ACCEPTED", rejected: false, partialAuthorityStateTotal: 0 })
+    execute: () => ({ classification: "ACCEPTED", rejected: false, partialAuthorityStateTotal: 0, actualErrorCode: "NONE", actualOutcomeKind: "ACCEPTED" })
   };
   assert.throws(() => evaluateNegativeCase(cases[0]!, accepting), /NEGATIVE_FALSE_ACCEPTANCE/);
 });
@@ -35,7 +35,7 @@ test("negative oracle fails when the production mechanism accepts the controlled
 test("negative oracle fails on a wrong mechanism classification", () => {
   const wrong: NegativeMechanism = {
     identity: "controlled-wrong-classification",
-    execute: () => ({ classification: "WRONG_CLASSIFICATION", rejected: true, partialAuthorityStateTotal: 0 })
+    execute: () => ({ classification: "WRONG_CLASSIFICATION", rejected: true, partialAuthorityStateTotal: 0, actualErrorCode: "WRONG", actualOutcomeKind: "REJECTED" })
   };
   assert.throws(() => evaluateNegativeCase(cases[0]!, wrong), /NEGATIVE_CLASSIFICATION_MISMATCH/);
 });
@@ -43,15 +43,33 @@ test("negative oracle fails on a wrong mechanism classification", () => {
 test("negative oracle fails when the mechanism leaves partial Authority state", () => {
   const partial: NegativeMechanism = {
     identity: "controlled-partial-state",
-    execute: () => ({ classification: "INVALID_SEMANTIC_OR_PROJECTION_REFERENCE", rejected: true, partialAuthorityStateTotal: 1 })
+    execute: () => ({ classification: "INVALID_SEMANTIC_OR_PROJECTION_REFERENCE", rejected: true, partialAuthorityStateTotal: 1, actualErrorCode: "INVALID_REFERENCE", actualOutcomeKind: "REJECTED" })
   };
   assert.throws(() => evaluateNegativeCase(cases[0]!, partial), /NEGATIVE_PARTIAL_AUTHORITY_STATE/);
+});
+
+test("negative oracle fails closed on an unrelated production exception", () => {
+  const unrelated: NegativeMechanism = {
+    identity: "controlled-unrelated-exception",
+    execute: () => { throw new Error("MISSING_DEPENDENCY"); }
+  };
+  assert.throws(() => evaluateNegativeCase(cases[0]!, unrelated), /NEGATIVE_UNEXPECTED_PRODUCTION_ERROR/);
+});
+
+test("negative oracle requires an actual production error code and outcome", () => {
+  const mechanism: NegativeMechanism = {
+    identity: "controlled-actual-outcome",
+    execute: () => ({ classification: "INVALID_SEMANTIC_OR_PROJECTION_REFERENCE", rejected: true, partialAuthorityStateTotal: 0, actualErrorCode: "INVALID_REFERENCE", actualOutcomeKind: "REJECTED" })
+  };
+  const result = evaluateNegativeCase(cases[0]!, mechanism);
+  assert.equal(result.actual_error_code, "INVALID_REFERENCE");
+  assert.equal(result.actual_outcome_kind, "REJECTED");
 });
 
 test("negative oracle records mechanism-derived observation and canonical input identity", () => {
   const mechanism: NegativeMechanism = {
     identity: "controlled-production-mechanism",
-    execute: (input) => ({ classification: "INVALID_SEMANTIC_OR_PROJECTION_REFERENCE", rejected: true, partialAuthorityStateTotal: 0, input })
+    execute: (input) => ({ classification: "INVALID_SEMANTIC_OR_PROJECTION_REFERENCE", rejected: true, partialAuthorityStateTotal: 0, actualErrorCode: "INVALID_REFERENCE", actualOutcomeKind: "REJECTED", input })
   };
   const result = evaluateNegativeCase(cases[0]!, mechanism);
   assert.equal(result.observed_classification, "INVALID_SEMANTIC_OR_PROJECTION_REFERENCE");
@@ -69,6 +87,9 @@ test("negative manifest binds the six classes to the exact E4096 reference ident
   assert.equal(manifest.negative_cases.length, 6);
   assert.equal(manifest.false_acceptance_total, 0);
   assert.equal(manifest.partial_authority_state_total, 0);
+  assert.equal(manifest.unrelated_exception_false_pass_total, 0);
+  assert.equal(manifest.actual_production_outcome_bound_for_all_cases, true);
+  assert.equal(manifest.canonical_input_identity_bound, true);
   assert.equal(manifest.lifecycle_cases_completed, 4096);
   assert.equal(manifest.canonical_report_sha256.length, 64);
 });

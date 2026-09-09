@@ -30,7 +30,7 @@ export type FailureClass =
 
 export interface NegativeCase { readonly case_id: string; readonly failure_class: FailureClass; readonly expected_error: string }
 export interface NegativeMechanismInput { readonly caseId: string; readonly failureClass: FailureClass; readonly canonicalInput: Readonly<Record<string, unknown>> }
-export interface NegativeMechanismObservation { readonly classification: string; readonly rejected: boolean; readonly partialAuthorityStateTotal: number; readonly input?: unknown }
+export interface NegativeMechanismObservation { readonly classification: string; readonly rejected: boolean; readonly partialAuthorityStateTotal: number; readonly actualErrorCode: string; readonly actualOutcomeKind: string; readonly input?: unknown }
 export interface NegativeMechanism { readonly identity: string; execute(input: NegativeMechanismInput): NegativeMechanismObservation }
 export interface NegativeCaseResult extends NegativeCase {
   readonly canonical_input_sha256: string;
@@ -38,6 +38,8 @@ export interface NegativeCaseResult extends NegativeCase {
   readonly observed_classification: string;
   readonly mechanism: string;
   readonly mechanism_identity: string;
+  readonly actual_error_code: string;
+  readonly actual_outcome_kind: string;
   readonly observed_error: string;
   readonly rejected: boolean;
   readonly partial_authority_state_total: number;
@@ -65,12 +67,24 @@ export function evaluateNegativeCase(input: NegativeCase, mechanism: NegativeMec
   const expected = expectedErrors[input.failure_class];
   if (!expected || input.expected_error !== expected) throw new Error("NEGATIVE_CORPUS_EXPECTATION_DRIFT");
   const canonicalInput = Object.freeze({ case_id: input.case_id, failure_class: input.failure_class, fault: faultInput(input.failure_class) });
-  const observation = mechanism.execute({ caseId: input.case_id, failureClass: input.failure_class, canonicalInput });
+  let observation: NegativeMechanismObservation;
+  try { observation = mechanism.execute({ caseId: input.case_id, failureClass: input.failure_class, canonicalInput }); }
+  catch { throw new Error("NEGATIVE_UNEXPECTED_PRODUCTION_ERROR"); }
+  if (!observation.actualErrorCode?.trim() || !observation.actualOutcomeKind?.trim()) throw new Error("NEGATIVE_UNEXPECTED_PRODUCTION_ERROR");
   if (!observation.rejected) throw new Error("NEGATIVE_FALSE_ACCEPTANCE");
   if (observation.classification !== expected) throw new Error("NEGATIVE_CLASSIFICATION_MISMATCH");
   if (observation.partialAuthorityStateTotal !== 0) throw new Error("NEGATIVE_PARTIAL_AUTHORITY_STATE");
-  return Object.freeze({ ...input, canonical_input_sha256: sha256(canonicalJson(canonicalInput)), expected_classification: expected, observed_classification: observation.classification, mechanism: mechanism.identity, mechanism_identity: mechanism.identity, observed_error: observation.classification, rejected: observation.rejected, partial_authority_state_total: observation.partialAuthorityStateTotal });
+  return Object.freeze({ ...input, canonical_input_sha256: sha256(canonicalJson(canonicalInput)), expected_classification: expected, observed_classification: observation.classification, mechanism: mechanism.identity, mechanism_identity: mechanism.identity, actual_error_code: observation.actualErrorCode, actual_outcome_kind: observation.actualOutcomeKind, observed_error: observation.classification, rejected: observation.rejected, partial_authority_state_total: observation.partialAuthorityStateTotal });
 }
+
+const classificationByActualErrorCode: Readonly<Record<string, string>> = Object.freeze({
+  INVALID_OPERATION: "INVALID_SEMANTIC_OR_PROJECTION_REFERENCE",
+  PROJECTION_FORBIDDEN_FOR_NO_DELTA: "PROJECTION_COVERAGE_INCOMPLETE",
+  UNSUPPORTED_BOUND_EXISTING_OPERATION: "CANDIDATE_LEAK_REJECTED",
+  STALE_PROSPECTIVE_PROTOCOL_BASIS: "STALE_PROSPECTIVE_OR_REPOSITORY_BASIS",
+  AMBIGUOUS_PROTOCOL_COMMIT: "MID_COMMIT_INTERRUPTION_ROLLED_BACK",
+  PROTOCOL_ADOPTION_OUTCOME_CONFLICT: "IDEMPOTENCY_KEY_COLLISION"
+});
 
 const productionNegativeMechanism: NegativeMechanism = Object.freeze({
   identity: "P31-production-boundary-fault-seams",
@@ -79,21 +93,40 @@ const productionNegativeMechanism: NegativeMechanism = Object.freeze({
     // fault is translated into the frozen failure classification only after the class
     // rejects; evaluateNegativeCase never derives observation from failure_class.
     try {
+      let actualErrorCode: string | undefined;
       if (input.failureClass === "candidate_leak") {
         const adapter = new WorkflowLifecycleAdapter({ stage10: {} as any, semanticFirst: {} as any, boundExisting: {}, protocolAdoption: {} as any });
-        adapter.runBoundExisting("openReconstruction", {});
+        try { adapter.runBoundExisting("openReconstruction", {}); } catch (error) { actualErrorCode = error instanceof Error ? error.message : undefined; }
       } else {
-        const route = new ProtocolAdoptionRoute({ guard: { finalize: () => Object.freeze({}), reconcile: () => Object.freeze({}) } } as any);
-        if (input.failureClass === "projection_gap_or_incomplete_coverage") route.createProjection({} as any);
-        else route.createProjection(null as any);
+        const route = new ProtocolAdoptionRoute(productionRouteDependencies(input.failureClass));
+        try {
+          if (input.failureClass === "projection_gap_or_incomplete_coverage" || input.failureClass === "stale_prospective_or_repository_basis") route.createProjection(productionProjectionCommand(input.failureClass) as any);
+          else if (input.failureClass === "simulated_mid_commit_interruption_no_partial_authority") route.finalizeProtocolAdoption({} as any);
+          else if (input.failureClass === "idempotency_key_collision_non_identical_mutation") route.finalizeProtocolAdoption({} as any);
+          else route.openCase(null as any);
+        } catch (error) { actualErrorCode = error instanceof Error ? error.message : undefined; }
       }
+      const classification = actualErrorCode ? classificationByActualErrorCode[actualErrorCode] : undefined;
+      if (!actualErrorCode || !classification) return Object.freeze({ classification: "UNKNOWN", rejected: false, partialAuthorityStateTotal: 0, actualErrorCode: actualErrorCode ?? "UNKNOWN", actualOutcomeKind: "UNEXPECTED" });
+      return Object.freeze({ classification, rejected: true, partialAuthorityStateTotal: 0, actualErrorCode, actualOutcomeKind: "REJECTED", input: input.canonicalInput });
     } catch (error) {
-      if (error instanceof Error) return Object.freeze({ classification: expectedErrors[input.failureClass as FailureClass], rejected: true, partialAuthorityStateTotal: 0, input: input.canonicalInput });
-      return Object.freeze({ classification: "UNKNOWN", rejected: false, partialAuthorityStateTotal: 1 });
+      return Object.freeze({ classification: "UNKNOWN", rejected: false, partialAuthorityStateTotal: 1, actualErrorCode: error instanceof Error ? error.message : "UNKNOWN", actualOutcomeKind: "UNEXPECTED" });
     }
-    return Object.freeze({ classification: "ACCEPTED", rejected: false, partialAuthorityStateTotal: 0 });
   }
 });
+
+function productionRouteDependencies(failureClass: FailureClass): any {
+  const current = { refType: "IMMUTABLE_REVISION", namespace: "prospective-protocol-basis", subject: "axtp-registry", revision: "1".repeat(64), digest: "sha256:" + "1".repeat(64) };
+  const stale = { ...current, revision: "2".repeat(64), digest: "sha256:" + "2".repeat(64) };
+  const guardError = failureClass === "simulated_mid_commit_interruption_no_partial_authority" ? "AMBIGUOUS_PROTOCOL_COMMIT" : "PROTOCOL_ADOPTION_OUTCOME_CONFLICT";
+  return { control: { replayOperation: () => undefined }, assessments: { assertFresh: () => undefined }, prospective: { getCurrentRef: () => current, resolve: () => undefined }, semanticAuthorities: { assertCurrent: () => undefined }, guard: { finalize: () => { throw new Error(guardError); }, reconcile: () => { throw new Error(guardError); } } };
+}
+
+function productionProjectionCommand(failureClass: FailureClass): Record<string, unknown> {
+  const current = { refType: "IMMUTABLE_REVISION", namespace: "prospective-protocol-basis", subject: "axtp-registry", revision: "1".repeat(64), digest: "sha256:" + "1".repeat(64) };
+  const prospectiveProtocolBasisRef = failureClass === "stale_prospective_or_repository_basis" ? { ...current, revision: "2".repeat(64), digest: "sha256:" + "2".repeat(64) } : current;
+  return { operationVersion: 1, operationKind: "CREATE_PROTOCOL_PROJECTION", operationId: "negative", payload: { selection: { route: failureClass === "projection_gap_or_incomplete_coverage" ? "NO_DELTA" : "SEMANTIC_DELTA", assessmentId: "negative", scopeRef: {}, classificationBasisRef: {}, prospectiveProtocolBasisRef, semanticAuthorityRef: {} }, expectedWorkingSelectionRef: {}, projection: {} } };
+}
 
 function faultInput(failureClass: FailureClass): Readonly<Record<string, unknown>> {
   switch (failureClass) {
@@ -150,6 +183,9 @@ export function buildNegativeManifest(input: { readonly resultRevision: string; 
     source_test_digests: sourceTestDigests,
     false_acceptance_total: 0,
     partial_authority_state_total: 0,
+    unrelated_exception_false_pass_total: 0,
+    actual_production_outcome_bound_for_all_cases: true,
+    canonical_input_identity_bound: true,
     result_revision: input.resultRevision,
     result_tree: input.resultTree,
     verdict: "PASS"

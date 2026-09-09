@@ -1850,7 +1850,8 @@ jobs:
           import { readFileSync } from 'node:fs';
           const manifest = JSON.parse(readFileSync(`${process.env.OUTPUT_DIRECTORY}/negative-manifest.json`, 'utf8'));
           if (manifest.verdict !== 'PASS' || manifest.false_acceptance_total !== 0 || manifest.partial_authority_state_total !== 0) throw new Error('NEGATIVE_CORPUS_GATE_FAILURE');
-          if (!Array.isArray(manifest.negative_cases) || manifest.negative_cases.length !== 6 || manifest.negative_cases.some(entry => entry.rejected !== true || entry.partial_authority_state_total !== 0 || typeof entry.canonical_input_sha256 !== 'string' || typeof entry.expected_classification !== 'string' || typeof entry.observed_classification !== 'string' || typeof entry.mechanism_identity !== 'string' || entry.expected_classification !== entry.observed_classification)) throw new Error('NEGATIVE_CORPUS_CASE_DRIFT');
+          if (manifest.unrelated_exception_false_pass_total !== 0 || manifest.actual_production_outcome_bound_for_all_cases !== true || manifest.canonical_input_identity_bound !== true) throw new Error('NEGATIVE_CORPUS_MECHANISM_BINDING_DRIFT');
+          if (!Array.isArray(manifest.negative_cases) || manifest.negative_cases.length !== 6 || manifest.negative_cases.some(entry => entry.rejected !== true || entry.partial_authority_state_total !== 0 || typeof entry.canonical_input_sha256 !== 'string' || typeof entry.expected_classification !== 'string' || typeof entry.observed_classification !== 'string' || typeof entry.mechanism_identity !== 'string' || typeof entry.actual_error_code !== 'string' || typeof entry.actual_outcome_kind !== 'string' || entry.expected_classification !== entry.observed_classification)) throw new Error('NEGATIVE_CORPUS_CASE_DRIFT');
           NODE
       - uses: actions/upload-artifact@v4
         with:
