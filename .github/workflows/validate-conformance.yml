@@ -381,7 +381,38 @@ jobs:
             const after = digest(snapshot(store, candidates));
             return { caseId, accepted: attempt.accepted, splitBrain: attempt.accepted && before !== after, duplicatePublication: false, mutationObserved: before !== after, atomic: before === after, error: attempt.error, fixtureFailure: attempt.accepted || before !== after };
           });
-          const concurrency = (() => { const { store, route, candidates } = routeHarness(); const first = route.registerMigrationBasis({ operationId: 'replay', record: structuredClone(fixture.migration) }); const replay = route.registerMigrationBasis({ operationId: 'replay', record: structuredClone(fixture.migration) }); const before = digest(snapshot(store, candidates)); const conflict = run(() => route.registerMigrationBasis({ operationId: 'replay', record: { ...structuredClone(fixture.migration), payload: { changed: true } })); const after = digest(snapshot(store, candidates)); return [{ caseId: 'replay-idempotence', firstStatus: first.status, replayStatus: replay.status, doubleWinner: false, operationConflictWithMutation: false, mutationObserved: before !== after, fixtureFailure: first.status !== 'IDEMPOTENT' && first.status !== 'CREATED' || replay.status !== 'IDEMPOTENT' }, { caseId: 'operation-id-conflict', firstStatus: first.status, replayStatus: conflict.accepted ? 'ACCEPTED' : 'CONFLICT_REJECTED', doubleWinner: false, operationConflictWithMutation: conflict.accepted || before !== after, mutationObserved: before !== after, error: conflict.error, fixtureFailure: conflict.accepted || before !== after }]; })();
+          const concurrency = (() => {
+            const { store, route, candidates } = routeHarness();
+            const first = route.registerMigrationBasis({ operationId: 'replay', record: structuredClone(fixture.migration) });
+            const replay = route.registerMigrationBasis({ operationId: 'replay', record: structuredClone(fixture.migration) });
+            const before = digest(snapshot(store, candidates));
+            const conflict = run(() => route.registerMigrationBasis({
+              operationId: 'replay',
+              record: { ...structuredClone(fixture.migration), payload: { changed: true } }
+            }));
+            const after = digest(snapshot(store, candidates));
+            return [
+              {
+                caseId: 'replay-idempotence',
+                firstStatus: first.status,
+                replayStatus: replay.status,
+                doubleWinner: false,
+                operationConflictWithMutation: false,
+                mutationObserved: before !== after,
+                fixtureFailure: first.status !== 'IDEMPOTENT' && first.status !== 'CREATED' || replay.status !== 'IDEMPOTENT'
+              },
+              {
+                caseId: 'operation-id-conflict',
+                firstStatus: first.status,
+                replayStatus: conflict.accepted ? 'ACCEPTED' : 'CONFLICT_REJECTED',
+                doubleWinner: false,
+                operationConflictWithMutation: conflict.accepted || before !== after,
+                mutationObserved: before !== after,
+                error: conflict.error,
+                fixtureFailure: conflict.accepted || before !== after
+              }
+            ];
+          })();
           const reviewLineage = [];
           const lineageCases = ['missing-proof','wrong-candidate','wrong-basis','stale-after-reselection'];
           for (const caseId of lineageCases) {
@@ -515,7 +546,6 @@ jobs:
             rm -f "$backup"
           }
           trap restore_artifact EXIT
-
           cat > "$artifact" <<'JSON'
           {
             "descriptorVersion": "0.1",
@@ -523,20 +553,16 @@ jobs:
             "tampered": true
           }
           JSON
-
           if tooling/scripts/check-generated-drift.sh >/tmp/axtp-semantic-negative-drift.log 2>&1; then
             echo "semantic generated drift unexpectedly accepted a tampered artifact" >&2
             exit 1
           fi
-
           restore_artifact
           trap - EXIT
           tooling/scripts/check-generated-drift.sh
-
       - name: Validate conformance cases
         shell: bash
         run: tooling/scripts/validate-conformance.sh
-
       - name: Validate docs and protocol status
         shell: bash
         run: |
@@ -547,23 +573,19 @@ jobs:
           node tooling/scripts/check-draft-noise.mjs
           tooling/scripts/check-protocol-status.mjs
           node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/protocol-draft-health.md
-
       - name: Validate release artifact dry run
         shell: bash
         run: tooling/scripts/check-release-artifact.sh 0.0.0
-
       - name: Verify semantic descriptor release artifact fails closed
         shell: bash
         run: |
           set -euo pipefail
           artifact="contract/generated/semantic.json"
           archive="dist/axtp-spec-v0.0.0.zip"
-
           python3 - "$archive" "$artifact" <<'PY'
           import pathlib
           import sys
           import zipfile
-
           archive_path, artifact_path = sys.argv[1], sys.argv[2]
           expected = pathlib.Path(artifact_path).read_bytes()
           member = f"axtp-spec-v0.0.0/{artifact_path}"
@@ -572,7 +594,6 @@ jobs:
           if actual != expected:
               raise SystemExit("release semantic.json bytes differ from committed canonical artifact")
           PY
-
           backup="$(mktemp "${TMPDIR:-/tmp}/axtp-release-semantic-backup.XXXXXX")"
           cp "$artifact" "$backup"
           restore_artifact() {
@@ -580,23 +601,19 @@ jobs:
             rm -f "$backup"
           }
           trap restore_artifact EXIT
-
           rm -f "$artifact"
           if tooling/scripts/check-release-artifact.sh 0.0.0 >/tmp/axtp-semantic-negative-release.log 2>&1; then
             echo "release artifact contract unexpectedly accepted missing semantic.json" >&2
             exit 1
           fi
-
           restore_artifact
           trap - EXIT
           tooling/scripts/check-release-artifact.sh 0.0.0
-
       - name: Install semantic lifecycle dependencies
         shell: bash
         run: |
           set -euo pipefail
           pnpm --dir tooling/semantic-lifecycle install --lockfile=false
-
       - name: Validate semantic lifecycle exact source
         shell: bash
         env:
@@ -611,7 +628,6 @@ jobs:
           pnpm --dir tooling/semantic-lifecycle build
           pnpm --dir tooling/semantic-lifecycle lint
           pnpm --dir tooling/semantic-lifecycle test
-
       - name: Validate SEM-LC-05 exact source surfaces
         shell: bash
         run: |
@@ -619,7 +635,6 @@ jobs:
           pnpm --dir tooling/semantic-lifecycle build
           pnpm --dir tooling/semantic-lifecycle lint
           pnpm --dir tooling/semantic-lifecycle test
-
       - name: Materialize semantic lifecycle exact-source report
         shell: bash
         env:
@@ -629,51 +644,22 @@ jobs:
           cd tooling/semantic-lifecycle
           rm -rf .evidence
           mkdir -p .evidence
-
           node --input-type=module <<'NODE'
           import { readFileSync, writeFileSync } from 'node:fs';
           import { createHash } from 'node:crypto';
           import { InMemoryLifecycleControlStore } from './.test-dist/src/controlStore.js';
           import { SemanticLifecycleCoordinator } from './.test-dist/src/coordinator.js';
           import { buildClassificationReport, serializeClassificationReport } from './.test-dist/src/report.js';
-
-          const basisRef = Object.freeze({
-            refType: 'IMMUTABLE_REVISION',
-            namespace: 'classification-policy',
-            subject: 'semantic-delta-v1',
-            revision: 'policy-a',
-            digest: 'sha256:policy-a'
-          });
-
-          function fixture(name) {
-            return JSON.parse(readFileSync(`fixtures/classification/${name}`, 'utf8'));
-          }
-
-          function exactRef(caseId) {
-            return Object.freeze({
-              refType: 'IMMUTABLE_REVISION',
-              namespace: 'semantic-scope',
-              subject: caseId,
-              revision: `scope:${caseId}`,
-              digest: `sha256:${caseId}`
-            });
-          }
-
+          const basisRef = Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'classification-policy', subject: 'semantic-delta-v1', revision: 'policy-a', digest: 'sha256:policy-a' });
+          function fixture(name) { return JSON.parse(readFileSync(`fixtures/classification/${name}`, 'utf8')); }
+          function exactRef(caseId) { return Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'semantic-scope', subject: caseId, revision: `scope:${caseId}`, digest: `sha256:${caseId}` }); }
           function proofCase(entry, observations = entry.observations) {
             const coordinator = new SemanticLifecycleCoordinator(new InMemoryLifecycleControlStore());
             const scopeRef = exactRef(entry.id);
             const proof = coordinator.assess({ caseId: entry.id, scopeRef, observations }, basisRef);
             const fastPath = coordinator.evaluateFastPath(proof.assessment, scopeRef, basisRef);
-            return {
-              caseId: entry.id,
-              semanticDimension: entry.changedDimension ?? null,
-              expectedDisposition: entry.expected,
-              observations,
-              proof,
-              fastPath
-            };
+            return { caseId: entry.id, semanticDimension: entry.changedDimension ?? null, expectedDisposition: entry.expected, observations, proof, fastPath };
           }
-
           function buildCorpus(reverse = false) {
             const semantic = fixture('semantic-delta-cases.json');
             const noDelta = fixture('no-delta-cases.json');
@@ -681,89 +667,37 @@ jobs:
             const source = [...semantic, ...noDelta, ...unresolved];
             const ordered = reverse ? [...source].reverse() : source;
             return ordered.map((entry) => {
-              const observations = reverse
-                ? [...entry.observations].reverse().map((observation) => ({
-                    ...observation,
-                    evidenceRefs: [...observation.evidenceRefs].reverse()
-                  }))
-                : entry.observations;
+              const observations = reverse ? [...entry.observations].reverse().map((observation) => ({ ...observation, evidenceRefs: [...observation.evidenceRefs].reverse() })) : entry.observations;
               return proofCase(entry, observations);
             });
           }
-
           function freshnessProbes(cases) {
             const noDeltaCase = cases.find((entry) => entry.expectedDisposition === 'NO_SEMANTIC_DELTA');
             if (!noDeltaCase) throw new Error('NO_DELTA_CASE_MISSING');
-            const staleScope = {
-              ...noDeltaCase.proof.assessment.scopeRef,
-              revision: 'scope:stale',
-              digest: 'sha256:stale'
-            };
-            const staleBasis = {
-              ...basisRef,
-              revision: 'policy-b',
-              digest: 'sha256:policy-b'
-            };
+            const staleScope = { ...noDeltaCase.proof.assessment.scopeRef, revision: 'scope:stale', digest: 'sha256:stale' };
+            const staleBasis = { ...basisRef, revision: 'policy-b', digest: 'sha256:policy-b' };
             const coordinator = new SemanticLifecycleCoordinator(new InMemoryLifecycleControlStore());
             return [
-              {
-                probeId: 'stale-scope',
-                expectedEligible: false,
-                decision: coordinator.evaluateFastPath(noDeltaCase.proof.assessment, staleScope, basisRef)
-              },
-              {
-                probeId: 'stale-classification-basis',
-                expectedEligible: false,
-                decision: coordinator.evaluateFastPath(
-                  noDeltaCase.proof.assessment,
-                  noDeltaCase.proof.assessment.scopeRef,
-                  staleBasis
-                )
-              }
+              { probeId: 'stale-scope', expectedEligible: false, decision: coordinator.evaluateFastPath(noDeltaCase.proof.assessment, staleScope, basisRef) },
+              { probeId: 'stale-classification-basis', expectedEligible: false, decision: coordinator.evaluateFastPath(noDeltaCase.proof.assessment, noDeltaCase.proof.assessment.scopeRef, staleBasis) }
             ];
           }
-
-          function render(reverse) {
-            const cases = buildCorpus(reverse);
-            return serializeClassificationReport(buildClassificationReport(cases, freshnessProbes(cases)));
-          }
-
+          function render(reverse) { const cases = buildCorpus(reverse); return serializeClassificationReport(buildClassificationReport(cases, freshnessProbes(cases))); }
           const first = render(false);
           const second = render(true);
           if (first !== second) throw new Error('REPORT_NONDETERMINISTIC');
-
           const report = JSON.parse(first);
           if (report.verdict !== 'PASS') throw new Error(`REPORT_VERDICT_${report.verdict}`);
-          if (!report.coverage.complete || report.coverage.coveredSemanticDeltaCategories.length !== 15) {
-            throw new Error('REPORT_COVERAGE_INCOMPLETE');
-          }
-          for (const [name, value] of Object.entries(report.metrics)) {
-            if (value !== 0) throw new Error(`NONZERO_METRIC:${name}:${value}`);
-          }
-
+          if (!report.coverage.complete || report.coverage.coveredSemanticDeltaCategories.length !== 15) throw new Error('REPORT_COVERAGE_INCOMPLETE');
+          for (const [name, value] of Object.entries(report.metrics)) if (value !== 0) throw new Error(`NONZERO_METRIC:${name}:${value}`);
           const digest = createHash('sha256').update(first).digest('hex');
           writeFileSync('.evidence/semantic-delta-classification-report.json', first);
-          writeFileSync(
-            '.evidence/report-base-metadata.json',
-            `${JSON.stringify({
-              evidenceVersion: 'sem-lc-01-exact-source-evidence/v1',
-              proofContractVersion: report.proofContractVersion,
-              reportSha256: digest,
-              deterministicRepeatEqual: true,
-              classificationBasisRef: report.cases[0]?.classificationBasisRef ?? null,
-              scopeRefs: report.cases.map((entry) => entry.scopeRef),
-              coverage: report.coverage,
-              metrics: report.metrics,
-              verdict: report.verdict
-            }, null, 2)}\n`
-          );
-
+          writeFileSync('.evidence/report-base-metadata.json', `${JSON.stringify({ evidenceVersion: 'sem-lc-01-exact-source-evidence/v1', proofContractVersion: report.proofContractVersion, reportSha256: digest, deterministicRepeatEqual: true, classificationBasisRef: report.cases[0]?.classificationBasisRef ?? null, scopeRefs: report.cases.map((entry) => entry.scopeRef), coverage: report.coverage, metrics: report.metrics, verdict: report.verdict }, null, 2)}\n`);
           console.log(`SEM_LC_REPORT_SHA256=${digest}`);
           console.log(`SEM_LC_REPORT_VERDICT=${report.verdict}`);
           console.log(`SEM_LC_COVERED_CATEGORIES=${report.coverage.coveredSemanticDeltaCategories.length}`);
           console.log('SEM_LC_DETERMINISTIC_REPEAT=true');
           NODE
-
           source_sha="$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)"
           source_tree="$(git -C "$GITHUB_WORKSPACE" rev-parse 'HEAD^{tree}')"
           if [ "$source_sha" != "$EXPECTED_HEAD_SHA" ]; then
@@ -771,25 +705,16 @@ jobs:
             exit 1
           fi
           report_sha="$(sha256sum .evidence/semantic-delta-classification-report.json | awk '{print $1}')"
-
           SOURCE_SHA="$source_sha" SOURCE_TREE="$source_tree" REPORT_SHA="$report_sha" node --input-type=module <<'NODE'
           import { readFileSync, writeFileSync } from 'node:fs';
           const base = JSON.parse(readFileSync('.evidence/report-base-metadata.json', 'utf8'));
-          const metadata = Object.freeze({
-            ...base,
-            sourceRef: process.env.SOURCE_SHA,
-            sourceTree: process.env.SOURCE_TREE,
-            exactSourceEquality: true,
-            reportSha256: process.env.REPORT_SHA
-          });
+          const metadata = Object.freeze({ ...base, sourceRef: process.env.SOURCE_SHA, sourceTree: process.env.SOURCE_TREE, exactSourceEquality: true, reportSha256: process.env.REPORT_SHA });
           writeFileSync('.evidence/exact-source-evidence.json', `${JSON.stringify(metadata, null, 2)}\n`);
           NODE
-
           printf '%s  %s\n' "$report_sha" semantic-delta-classification-report.json > .evidence/report.sha256
           echo "SEM_LC_SOURCE_SHA=$source_sha"
           echo "SEM_LC_SOURCE_TREE=$source_tree"
           echo "SEM_LC_REPORT_SHA256=$report_sha"
-
       - name: Reconstruct semantic lifecycle TDD RED-GREEN evidence
         shell: bash
         env:
@@ -804,62 +729,28 @@ jobs:
           node_bin="$(command -v node)"
           tmp="$(mktemp -d)"
           trap 'rm -rf "$tmp"' EXIT
-
           compile_red() {
-            local group="$1"
-            local test_js="$2"
-            local impl_file="$3"
-            local red_dir="$tmp/${group}-red"
+            local group="$1"; local test_js="$2"; local impl_file="$3"; local red_dir="$tmp/${group}-red"
             cp -R "$pkg" "$red_dir"
             rm -rf "$red_dir/dist" "$red_dir/.test-dist" "$red_dir/.evidence" "$red_dir/node_modules"
             rm -f "$red_dir/src/$impl_file"
             local log="$out/${group}-red.txt"
             set +e
-            (
-              cd "$red_dir"
-              "$tsc_bin" --module NodeNext --moduleResolution NodeNext --target ES2022 \
-                --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false \
-                --resolveJsonModule --esModuleInterop src/*.ts
-            ) >"$log" 2>&1
+            (cd "$red_dir" && "$tsc_bin" --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts) >"$log" 2>&1
             local compile_status=$?
-            (
-              cd "$red_dir"
-              "$node_bin" --test ".test-dist/src/$test_js"
-            ) >>"$log" 2>&1
+            (cd "$red_dir" && "$node_bin" --test ".test-dist/src/$test_js") >>"$log" 2>&1
             local test_status=$?
             set -e
-            printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' \
-              "$compile_status" "$test_status" >>"$log"
-            if [ "$compile_status" -eq 0 ] && [ "$test_status" -eq 0 ]; then
-              echo "unexpected green for $group" >&2
-              return 1
-            fi
+            printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' "$compile_status" "$test_status" >>"$log"
+            if [ "$compile_status" -eq 0 ] && [ "$test_status" -eq 0 ]; then echo "unexpected green for $group" >&2; return 1; fi
           }
-
-          run_green() {
-            local group="$1"
-            local test_js="$2"
-            local log="$out/${group}-green.txt"
-            (
-              cd "$pkg"
-              "$node_bin" --test ".test-dist/src/$test_js"
-            ) >"$log" 2>&1
-            printf '\ntest_status=0\nexpected_green=true\n' >>"$log"
-          }
-
-          compile_red T1 basis.test.js basis.ts
-          run_green T1 basis.test.js
-          compile_red T2 classification.test.js classification.ts
-          run_green T2 classification.test.js
-          compile_red T3 freshness.test.js freshness.ts
-          run_green T3 freshness.test.js
-          compile_red T4 controlStore.test.js controlStore.ts
-          run_green T4 controlStore.test.js
-          compile_red T5 coordinator.test.js coordinator.ts
-          run_green T5 coordinator.test.js
-          compile_red T6 report.test.js report.ts
-          run_green T6 report.test.js
-
+          run_green() { local group="$1"; local test_js="$2"; local log="$out/${group}-green.txt"; (cd "$pkg" && "$node_bin" --test ".test-dist/src/$test_js") >"$log" 2>&1; printf '\ntest_status=0\nexpected_green=true\n' >>"$log"; }
+          compile_red T1 basis.test.js basis.ts; run_green T1 basis.test.js
+          compile_red T2 classification.test.js classification.ts; run_green T2 classification.test.js
+          compile_red T3 freshness.test.js freshness.ts; run_green T3 freshness.test.js
+          compile_red T4 controlStore.test.js controlStore.ts; run_green T4 controlStore.test.js
+          compile_red T5 coordinator.test.js coordinator.ts; run_green T5 coordinator.test.js
+          compile_red T6 report.test.js report.ts; run_green T6 report.test.js
           t7_dir="$tmp/T7-red"
           cp -R "$pkg" "$t7_dir"
           rm -rf "$t7_dir/dist" "$t7_dir/.test-dist" "$t7_dir/.evidence" "$t7_dir/node_modules"
@@ -869,83 +760,28 @@ jobs:
           let text = fs.readFileSync(path, 'utf8');
           const old = `    if (!Array.isArray(observation.evidenceRefs) || rawEvidenceRefs.some((ref) => !isValidEvidenceRef(ref))) {\n      diagnostics.push(\`INVALID_EVIDENCE_REF:\${observation.dimension}\`);\n      invalidEvidence = true;\n    }`;
           if (!text.includes(old)) throw new Error('T7_REPLAY_PATTERN_NOT_FOUND');
-          text = text.replace(
-            old,
-            '    // controlled replay of pre-fix behavior: invalid refs are silently filtered'
-          );
+          text = text.replace(old, '    // controlled replay of pre-fix behavior: invalid refs are silently filtered');
           fs.writeFileSync(path, text);
           NODE
-
           set +e
-          (
-            cd "$t7_dir"
-            "$tsc_bin" --module NodeNext --moduleResolution NodeNext --target ES2022 \
-              --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false \
-              --resolveJsonModule --esModuleInterop src/*.ts
-          ) >"$out/T7-red-invalid-evidence.txt" 2>&1
+          (cd "$t7_dir" && "$tsc_bin" --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts) >"$out/T7-red-invalid-evidence.txt" 2>&1
           t7_compile=$?
-          (
-            cd "$t7_dir"
-            "$node_bin" --test .test-dist/src/classification.test.js
-          ) >>"$out/T7-red-invalid-evidence.txt" 2>&1
+          (cd "$t7_dir" && "$node_bin" --test .test-dist/src/classification.test.js) >>"$out/T7-red-invalid-evidence.txt" 2>&1
           t7_test=$?
           set -e
-          printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' \
-            "$t7_compile" "$t7_test" >>"$out/T7-red-invalid-evidence.txt"
-          if [ "$t7_test" -eq 0 ]; then
-            echo 'T7 controlled replay unexpectedly green' >&2
-            exit 1
-          fi
-          if ! grep -q 'any invalid EvidenceRef makes an otherwise NO_DELTA case UNRESOLVED' \
-            "$out/T7-red-invalid-evidence.txt"; then
-            echo 'T7 red transcript does not identify the invalid EvidenceRef regression' >&2
-            exit 1
-          fi
-          (
-            cd "$pkg"
-            "$node_bin" --test .test-dist/src/classification.test.js
-          ) >"$out/T7-green-invalid-evidence.txt" 2>&1
+          printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' "$t7_compile" "$t7_test" >>"$out/T7-red-invalid-evidence.txt"
+          if [ "$t7_test" -eq 0 ]; then echo 'T7 controlled replay unexpectedly green' >&2; exit 1; fi
+          if ! grep -q 'any invalid EvidenceRef makes an otherwise NO_DELTA case UNRESOLVED' "$out/T7-red-invalid-evidence.txt"; then echo 'T7 red transcript does not identify the invalid EvidenceRef regression' >&2; exit 1; fi
+          (cd "$pkg" && "$node_bin" --test .test-dist/src/classification.test.js) >"$out/T7-green-invalid-evidence.txt" 2>&1
           printf '\ntest_status=0\nexpected_green=true\n' >>"$out/T7-green-invalid-evidence.txt"
-
-          SOURCE_BASIS='7c20d5e720be6746b43037bc341ce53bbea1e7db' \
-          SEMANTIC_PATCH_SHA256='7b15287cdca27f6ab44a44f157de2a17d4c823b8cba3dab6e0f46dca2e9d4ec2' \
-          REPAIRED_HEAD="$EXPECTED_HEAD_SHA" OUT_DIR="$out" "$node_bin" <<'NODE'
-          const fs = require('fs');
-          const crypto = require('crypto');
-          const path = require('path');
-          const out = process.env.OUT_DIR;
-          const files = fs.readdirSync(out).sort().map((file) => {
-            const data = fs.readFileSync(path.join(out, file));
-            return {
-              file,
-              bytes: data.length,
-              sha256: crypto.createHash('sha256').update(data).digest('hex')
-            };
-          });
-          const manifest = {
-            reportVersion: 'sem-lc-01-tdd-replay-manifest/v1',
-            replayMode: 'CONTROLLED_ISOLATED_REPLAY',
-            semanticImplementationBasis: process.env.SOURCE_BASIS,
-            semanticImplementationPatchSha256: process.env.SEMANTIC_PATCH_SHA256,
-            repairedExactHead: process.env.REPAIRED_HEAD,
-            finalSemanticSourceModifiedByReplay: false,
-            groups: {
-              T1: 'missing basis implementation -> exact basis tests RED, final exact source GREEN',
-              T2: 'missing classifier implementation -> classification tests RED, final exact source GREEN',
-              T3: 'missing freshness implementation -> freshness tests RED, final exact source GREEN',
-              T4: 'missing control-store implementation -> store tests RED, final exact source GREEN',
-              T5: 'missing coordinator implementation -> coordinator tests RED, final exact source GREEN',
-              T6: 'missing report implementation -> report tests RED, final exact source GREEN',
-              T7: 'pre-fix invalid-EvidenceRef silent filtering -> regression test RED, fail-closed final source GREEN'
-            },
-            transcripts: files
-          };
+          SOURCE_BASIS='7c20d5e720be6746b43037bc341ce53bbea1e7db' SEMANTIC_PATCH_SHA256='7b15287cdca27f6ab44a44f157de2a17d4c823b8cba3dab6e0f46dca2e9d4ec2' REPAIRED_HEAD="$EXPECTED_HEAD_SHA" OUT_DIR="$out" "$node_bin" <<'NODE'
+          const fs = require('fs'); const crypto = require('crypto'); const path = require('path'); const out = process.env.OUT_DIR;
+          const files = fs.readdirSync(out).sort().map((file) => { const data = fs.readFileSync(path.join(out, file)); return { file, bytes: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex') }; });
+          const manifest = { reportVersion: 'sem-lc-01-tdd-replay-manifest/v1', replayMode: 'CONTROLLED_ISOLATED_REPLAY', semanticImplementationBasis: process.env.SOURCE_BASIS, semanticImplementationPatchSha256: process.env.SEMANTIC_PATCH_SHA256, repairedExactHead: process.env.REPAIRED_HEAD, finalSemanticSourceModifiedByReplay: false, groups: { T1: 'missing basis implementation -> exact basis tests RED, final exact source GREEN', T2: 'missing classifier implementation -> classification tests RED, final exact source GREEN', T3: 'missing freshness implementation -> freshness tests RED, final exact source GREEN', T4: 'missing control-store implementation -> store tests RED, final exact source GREEN', T5: 'missing coordinator implementation -> coordinator tests RED, final exact source GREEN', T6: 'missing report implementation -> report tests RED, final exact source GREEN', T7: 'pre-fix invalid-EvidenceRef silent filtering -> regression test RED, fail-closed final source GREEN' }, transcripts: files };
           fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
           NODE
-
           cat "$out/manifest.json"
           sha256sum "$out"/*
-
       - name: Upload semantic lifecycle exact-source evidence
         uses: actions/upload-artifact@v4
         with:
@@ -972,31 +808,26 @@ jobs:
     steps:
       - name: Checkout AXTP spec
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Setup pnpm
         shell: bash
         run: |
           set -euo pipefail
           corepack enable
           corepack prepare pnpm@11.3.0 --activate
-
       - name: Install generator dependencies
         shell: bash
         run: |
           set -euo pipefail
           pnpm --dir tooling/generators install --frozen-lockfile
-
       - name: Build generator
         shell: bash
         run: |
           set -euo pipefail
           pnpm --dir tooling/generators build
-
       - name: Run semantic descriptor focused tests
         shell: bash
         run: |
@@ -1008,15 +839,12 @@ jobs:
             src/semantic/descriptorCli.test.ts \
             src/semantic/descriptorRepositoryIntegration.test.ts \
             src/semantic/descriptorP36Evidence.test.ts
-
       - name: Verify semantic descriptor canonical bytes
         shell: bash
         run: |
           set -euo pipefail
           output=".semantic-portability.json"
-          node tooling/generators/dist/cli.js generate-semantic \
-            --spec . \
-            --out "$output"
+          node tooling/generators/dist/cli.js generate-semantic --spec . --out "$output"
           node -e "const fs=require('fs'); const expected=fs.readFileSync('contract/generated/semantic.json'); const actual=fs.readFileSync(process.argv[1]); if (!expected.equals(actual)) { console.error('semantic descriptor bytes differ'); process.exit(1); }" "$output"
           rm -f "$output"
 
@@ -1053,15 +881,9 @@ jobs:
           git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
           git -C "$root" merge-base --is-ancestor "$REPAIR_BASIS" HEAD
           git -C "$root" merge-base --is-ancestor "$SEM_LC_02_CLOSURE" HEAD
-          # The SEM-LC-06 repair is an authorized successor that touches a
-          # small set of shared lifecycle files. Keep the predecessor guard
-          # exact while explicitly enumerating that bounded exception.
           allow='^(.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/(package\.json|fixtures/(authority/(authority-cases|concurrency-cases)|semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|fixtures/(protocol-adoption|workflow-lifecycle)/.*|fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|src/(authorityIdentity(\.test)?|authorityRepository(\.test)?|authorityCommitter(\.test)?|authorityConcurrency\.test|authorityArchitectureBoundary\.test|authorityReport(\.test)?|semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|model|index|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider(\.test)?|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAdoptionControlRepository|fileProtocolAuthorityStore|gitRegistryProtocolAuthorityMutationPort(\.test)?|productionProtocolAdoptionRuntime(\.test)?|workflowLifecycleAdapter(\.test)?|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|protocolAdoptionControlRepository|protocolAdoptionEvidence|protocolAdoptionGuard(\.test)?|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionToctou\.test|protocolAdoptionArchitectureBoundary\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts))$'
-          while IFS= read -r path; do
-            [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-02 successor changed predecessor-owned path: $path" >&2; exit 1; }
-          done < <(git -C "$root" diff --name-only "$SEM_LC_02_CLOSURE"...HEAD)
-          rm -rf "$out"
-          mkdir -p "$out/tdd"
+          while IFS= read -r path; do [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-02 successor changed predecessor-owned path: $path" >&2; exit 1; }; done < <(git -C "$root" diff --name-only "$SEM_LC_02_CLOSURE"...HEAD)
+          rm -rf "$out"; mkdir -p "$out/tdd"
           pnpm --dir "$pkg" install --lockfile=false
           pnpm --dir "$pkg" build
           pnpm --dir "$pkg" lint
@@ -1077,61 +899,38 @@ jobs:
           import { buildCandidateIsolationReport, serializeCandidateIsolationReport } from './.test-dist/src/candidateReport.js';
           const candidateFixtures=JSON.parse(readFileSync('fixtures/candidate/candidate-cases.json','utf8'));
           const reviewFixtures=JSON.parse(readFileSync('fixtures/candidate/review-cases.json','utf8'));
-          const candidateFixtureIds=candidateFixtures.map(({id})=>id);
-          const reviewFixtureIds=reviewFixtures.map(({id})=>id);
+          const candidateFixtureIds=candidateFixtures.map(({id})=>id); const reviewFixtureIds=reviewFixtures.map(({id})=>id);
           if(candidateFixtureIds.length<9||reviewFixtureIds.length<9) throw new Error('incomplete SEM-LC-02 fixture corpus');
           const requireFixture=(ids,id)=>{if(!ids.includes(id)) throw new Error(`missing fixture ${id}`)};
           for(const id of ['candidate-create','candidate-same-ref-idempotent','candidate-same-ref-conflict','candidate-repair','candidate-missing-superseded','candidate-no-semantic-delta-rejected','candidate-unresolved-rejected','candidate-invalid-mutable-ref','candidate-non-json-payload-rejected']) requireFixture(candidateFixtureIds,id);
           for(const id of ['exact-human-pass','human-reject','missing-review-evidence','stale-candidate','stale-scope','stale-classification-basis','invalid-immutable-ref','machine-runtime-shaped','same-review-id-conflict']) requireFixture(reviewFixtureIds,id);
           const scopeRef={refType:'IMMUTABLE_REVISION',namespace:'semantic-scope',subject:'case-evidence',revision:'scope-v1',digest:'sha256:scope-v1'};
           const basis={refType:'IMMUTABLE_REVISION',namespace:'classification-policy',subject:'semantic-delta-v1',revision:'policy-a',digest:'sha256:policy-a'};
-          const ref1={refType:'IMMUTABLE_REVISION',namespace:'semantic-candidate',subject:'candidate-evidence',revision:'candidate-v1',digest:'sha256:candidate-v1'};
-          const ref2={...ref1,revision:'candidate-v2',digest:'sha256:candidate-v2'};
+          const ref1={refType:'IMMUTABLE_REVISION',namespace:'semantic-candidate',subject:'candidate-evidence',revision:'candidate-v1',digest:'sha256:candidate-v1'}; const ref2={...ref1,revision:'candidate-v2',digest:'sha256:candidate-v2'};
           const controls=new InMemoryLifecycleControlStore(), candidates=new InMemorySemanticCandidateStore(), service=new CandidateReviewCoordinator(controls,candidates);
           controls.putAssessment({assessmentId:'assessment:evidence',caseId:'case-evidence',scopeRef,classificationBasisRef:basis,disposition:'SEMANTIC_DELTA',evaluatedDimensions:['FIELD_MEANING'],evidenceRefs:[{refType:'EVIDENCE',id:'classification'}]});
           const first=service.createCandidate({candidateId:'candidate-evidence',candidateRef:ref1,assessmentId:'assessment:evidence',payload:{meaning:'v1'},evidenceRefs:[{refType:'EVIDENCE',id:'candidate-v1'}]});
           const human={reviewId:'review:v1',reviewKind:'SEMANTIC_CANDIDATE',decisionSource:'HUMAN',verdict:'PASS',candidateRef:ref1,scopeRef,classificationBasisRef:basis,evidenceRefs:[{refType:'EVIDENCE',id:'human-v1'}]};
-          service.recordHumanReviewDecision(human);
-          if (!service.evaluateHumanReview(human,first).eligible) throw new Error('exact human review rejected');
+          service.recordHumanReviewDecision(human); if (!service.evaluateHumanReview(human,first).eligible) throw new Error('exact human review rejected');
           const repaired=service.createCandidate({candidateId:'candidate-evidence',candidateRef:ref2,supersedesCandidateRef:ref1,assessmentId:'assessment:evidence',payload:{meaning:'v2'},evidenceRefs:[{refType:'EVIDENCE',id:'candidate-v2'}]});
-          const staleReviewAccepted=service.evaluateHumanReview(human,repaired).eligible;
-          if(staleReviewAccepted) throw new Error('stale review accepted');
-          const humanV2={...human,reviewId:'review:v2',candidateRef:ref2,evidenceRefs:[{refType:'EVIDENCE',id:'human-v2'}]};
-          service.recordHumanReviewDecision(humanV2);
+          const staleReviewAccepted=service.evaluateHumanReview(human,repaired).eligible; if(staleReviewAccepted) throw new Error('stale review accepted');
+          const humanV2={...human,reviewId:'review:v2',candidateRef:ref2,evidenceRefs:[{refType:'EVIDENCE',id:'human-v2'}]}; service.recordHumanReviewDecision(humanV2);
           const accepts=(operation)=>{try{operation();return true;}catch{return false;}};
           const candidateOverwriteAccepted=accepts(()=>candidates.putCandidate({...first,payload:{meaning:'overwrite'}}));
-          const nonSemanticDeltaCandidateAccepted=['NO_SEMANTIC_DELTA','UNRESOLVED'].some(disposition=>{
-            const localControls=new InMemoryLifecycleControlStore(), localCandidates=new InMemorySemanticCandidateStore(), localService=new CandidateReviewCoordinator(localControls,localCandidates);
-            localControls.putAssessment({...controls.getAssessment('assessment:evidence'),assessmentId:`assessment:${disposition}`,disposition});
-            return accepts(()=>localService.createCandidate({candidateId:`candidate-${disposition}`,candidateRef:{...ref1,subject:`candidate-${disposition}`,revision:`candidate-${disposition}`},assessmentId:`assessment:${disposition}`,payload:{meaning:disposition},evidenceRefs:[{refType:'EVIDENCE',id:disposition}]}));
-          });
+          const nonSemanticDeltaCandidateAccepted=['NO_SEMANTIC_DELTA','UNRESOLVED'].some(disposition=>{ const localControls=new InMemoryLifecycleControlStore(), localCandidates=new InMemorySemanticCandidateStore(), localService=new CandidateReviewCoordinator(localControls,localCandidates); localControls.putAssessment({...controls.getAssessment('assessment:evidence'),assessmentId:`assessment:${disposition}`,disposition}); return accepts(()=>localService.createCandidate({candidateId:`candidate-${disposition}`,candidateRef:{...ref1,subject:`candidate-${disposition}`,revision:`candidate-${disposition}`},assessmentId:`assessment:${disposition}`,payload:{meaning:disposition},evidenceRefs:[{refType:'EVIDENCE',id:disposition}]})); });
           const missingSupersededAccepted=accepts(()=>service.createCandidate({candidateId:'candidate-evidence',candidateRef:{...ref2,revision:'candidate-v3',digest:'sha256:candidate-v3'},supersedesCandidateRef:{...ref2,revision:'candidate-missing',digest:'sha256:candidate-missing'},assessmentId:'assessment:evidence',payload:{meaning:'v3'},evidenceRefs:[{refType:'EVIDENCE',id:'candidate-v3'}]}));
-          const invalidRefPriority=service.evaluateHumanReview({...human,decisionSource:'MACHINE',candidateRef:{...ref1,revision:'HEAD'}},first);
-          if(invalidRefPriority.reason!=='INVALID_IMMUTABLE_REF') throw new Error(`invalid ref priority ${invalidRefPriority.reason}`);
+          const invalidRefPriority=service.evaluateHumanReview({...human,decisionSource:'MACHINE',candidateRef:{...ref1,revision:'HEAD'}},first); if(invalidRefPriority.reason!=='INVALID_IMMUTABLE_REF') throw new Error(`invalid ref priority ${invalidRefPriority.reason}`);
           const machineCreatedHumanPass=accepts(()=>service.recordHumanReviewDecision({...human,reviewId:'review:machine',decisionSource:'MACHINE'}));
           const unprovenHumanReviewAccepted=service.evaluateHumanReview({...human,reviewId:'review:empty',evidenceRefs:[]},first).eligible;
           const candidateLeakObserved=['update','delete','current','approve','adopt','authority'].some(name=>Object.getOwnPropertyNames(Object.getPrototypeOf(candidates)).some(method=>method.toLowerCase().includes(name)));
-          const sameReviewIdConflictAccepted=accepts(()=>controls.putReviewDecision({...human,verdict:'REJECT'}));
-          if(missingSupersededAccepted) throw new Error('missing superseded candidate accepted');
-          const probes=[{probeId:'fixture-candidate-and-review',candidateLeakObserved,nonSemanticDeltaCandidateAccepted,candidateOverwriteAccepted,staleReviewAccepted,repairedCandidateReviewReused:staleReviewAccepted,machineCreatedHumanPass,unprovenHumanReviewAccepted}];
-          if(sameReviewIdConflictAccepted) throw new Error('same review ID conflict accepted');
+          const sameReviewIdConflictAccepted=accepts(()=>controls.putReviewDecision({...human,verdict:'REJECT'})); if(missingSupersededAccepted) throw new Error('missing superseded candidate accepted');
+          const probes=[{probeId:'fixture-candidate-and-review',candidateLeakObserved,nonSemanticDeltaCandidateAccepted,candidateOverwriteAccepted,staleReviewAccepted,repairedCandidateReviewReused:staleReviewAccepted,machineCreatedHumanPass,unprovenHumanReviewAccepted}]; if(sameReviewIdConflictAccepted) throw new Error('same review ID conflict accepted');
           const context={exactSource:{sourceRef:process.env.SOURCE_SHA,sourceTree:process.env.SOURCE_TREE,taskAnchor:process.env.TASK_ANCHOR},predecessor:{taskId:'AXTP-SEM-LC-01',state:'MERGED_CLOSED',semanticMerge:'8c4f930a12a964dc0be826e9e308f024efd91d8a'},candidateReviewContract:{packageRef:'AXTP-SEM-LC-02-P31-v0.1@48aa536f3a0875350cf3c4270aa4f9f7e6ce993e'},candidateRefs:[ref1,ref2],reviewRefs:[human,humanV2],fixtureCaseIds:{candidate:candidateFixtureIds,review:reviewFixtureIds},c2EvidenceManifest:['C2-T1','C2-T2','C2-T3','C2-T4','C2-T5','C2-T6'],deterministicRepeat:{enumerations:2,byteEqual:true}};
-          const bytes=serializeCandidateIsolationReport(buildCandidateIsolationReport(context,probes));
-          const reversed=serializeCandidateIsolationReport(buildCandidateIsolationReport({...context,candidateRefs:[...context.candidateRefs].reverse(),reviewRefs:[...context.reviewRefs].reverse(),fixtureCaseIds:{candidate:[...candidateFixtureIds].reverse(),review:[...reviewFixtureIds].reverse()},c2EvidenceManifest:[...context.c2EvidenceManifest].reverse()},[...probes].reverse()));
-          if(bytes!==reversed) throw new Error('SEM-LC-02 deterministic repeat mismatch');
-          const report=JSON.parse(bytes); if(report.verdict!=='PASS'||Object.values(report.metrics).some(v=>v!==0)) throw new Error('SEM-LC-02 report failed');
-          const sha=createHash('sha256').update(bytes).digest('hex');
-          writeFileSync('.evidence/sem-lc-02/candidate-review-report.json',bytes);
-          writeFileSync('.evidence/sem-lc-02/report-base-metadata.json',JSON.stringify({evidenceVersion:'sem-lc-02-exact-source-evidence/v1',gate:'VG-SM-02 CANDIDATE_AND_REVIEW_ISOLATION',reportSha256:sha,report},null,2)+'\n');
+          const bytes=serializeCandidateIsolationReport(buildCandidateIsolationReport(context,probes)); const reversed=serializeCandidateIsolationReport(buildCandidateIsolationReport({...context,candidateRefs:[...context.candidateRefs].reverse(),reviewRefs:[...context.reviewRefs].reverse(),fixtureCaseIds:{candidate:[...candidateFixtureIds].reverse(),review:[...reviewFixtureIds].reverse()},c2EvidenceManifest:[...context.c2EvidenceManifest].reverse()},[...probes].reverse())); if(bytes!==reversed) throw new Error('SEM-LC-02 deterministic repeat mismatch');
+          const report=JSON.parse(bytes); if(report.verdict!=='PASS'||Object.values(report.metrics).some(v=>v!==0)) throw new Error('SEM-LC-02 report failed'); const sha=createHash('sha256').update(bytes).digest('hex'); writeFileSync('.evidence/sem-lc-02/candidate-review-report.json',bytes); writeFileSync('.evidence/sem-lc-02/report-base-metadata.json',JSON.stringify({evidenceVersion:'sem-lc-02-exact-source-evidence/v1',gate:'VG-SM-02 CANDIDATE_AND_REVIEW_ISOLATION',reportSha256:sha,report},null,2)+'\n');
           NODE
           tsc="$pkg/node_modules/.bin/tsc"; nodebin="$(command -v node)"; tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-          replay() {
-            group="$1"; testjs="$2"; mode="$3"; target="$4"; pattern="$5"; source_ref="${6:-}"; red="$tmp/$group"; cp -R "$pkg" "$red"; rm -rf "$red/.test-dist" "$red/.evidence" "$red/node_modules"
-            if [ "$mode" = remove ]; then rm -f "$red/src/$target"; else git -C "$root" show "${source_ref}:tooling/semantic-lifecycle/src/$target" > "$red/src/$target"; fi
-            set +e; (cd "$red" && "$tsc" --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts) >"$out/tdd/$group-red.txt" 2>&1; cs=$?; (cd "$red" && "$nodebin" --test ".test-dist/src/$testjs") >>"$out/tdd/$group-red.txt" 2>&1; ts=$?; set -e
-            printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' "$cs" "$ts" >>"$out/tdd/$group-red.txt"; [ "$ts" -ne 0 ]; grep -Fq "$pattern" "$out/tdd/$group-red.txt"
-            (cd "$pkg" && "$nodebin" --test ".test-dist/src/$testjs") >"$out/tdd/$group-green.txt" 2>&1; printf '\ntest_status=0\nexpected_green=true\n' >>"$out/tdd/$group-green.txt"
-          }
+          replay() { group="$1"; testjs="$2"; mode="$3"; target="$4"; pattern="$5"; source_ref="${6:-}"; red="$tmp/$group"; cp -R "$pkg" "$red"; rm -rf "$red/.test-dist" "$red/.evidence" "$red/node_modules"; if [ "$mode" = remove ]; then rm -f "$red/src/$target"; else git -C "$root" show "${source_ref}:tooling/semantic-lifecycle/src/$target" > "$red/src/$target"; fi; set +e; (cd "$red" && "$tsc" --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts) >"$out/tdd/$group-red.txt" 2>&1; cs=$?; (cd "$red" && "$nodebin" --test ".test-dist/src/$testjs") >>"$out/tdd/$group-red.txt" 2>&1; ts=$?; set -e; printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' "$cs" "$ts" >>"$out/tdd/$group-red.txt"; [ "$ts" -ne 0 ]; grep -Fq "$pattern" "$out/tdd/$group-red.txt"; (cd "$pkg" && "$nodebin" --test ".test-dist/src/$testjs") >"$out/tdd/$group-green.txt" 2>&1; printf '\ntest_status=0\nexpected_green=true\n' >>"$out/tdd/$group-green.txt"; }
           replay C2-T1 candidateStore.test.js remove candidateStore.ts 'candidateStore module must exist'
           replay C2-T2 candidateReviewCoordinator.test.js remove candidateReviewCoordinator.ts 'candidateReviewCoordinator module must exist'
           replay C2-T3 controlStore.test.js baseline controlStore.ts 'store.putReviewDecision is not a function' "$TASK_ANCHOR"
@@ -1140,10 +939,7 @@ jobs:
           replay C2-T6 candidateReport.test.js baseline candidateReport.ts 'inputs is not iterable' "$REPAIR_BASIS"
           export OUT_DIR="$out/tdd"
           node --input-type=module <<'NODE'
-          import {readdirSync,readFileSync,writeFileSync} from 'node:fs'; import {createHash} from 'node:crypto'; import {join} from 'node:path';
-          const out=process.env.OUT_DIR; const transcripts=readdirSync(out).filter(f=>f.endsWith('.txt')).sort().map(file=>{const b=readFileSync(join(out,file));return{file,bytes:b.length,sha256:createHash('sha256').update(b).digest('hex')}});
-          if(transcripts.length!==12) throw new Error(`transcript count ${transcripts.length}`);
-          writeFileSync(join(out,'manifest.json'),JSON.stringify({reportVersion:'sem-lc-02-tdd-replay-manifest/v1',replayMode:'CONTROLLED_ISOLATED_REPLAY',taskAnchor:process.env.TASK_ANCHOR,remoteRed:{head:'2bf61e9c6a42ef2b4760a1d72e0aacfb79b1d824',runId:33713198212,jobId:100516856742,tests:{total:43,pass:27,fail:16}},finalExactHead:process.env.SOURCE_SHA,finalExactTree:process.env.SOURCE_TREE,finalSourceModifiedByReplay:false,groups:['C2-T1','C2-T2','C2-T3','C2-T4','C2-T5','C2-T6'],transcripts},null,2)+'\n');
+          import {readdirSync,readFileSync,writeFileSync} from 'node:fs'; import {createHash} from 'node:crypto'; import {join} from 'node:path'; const out=process.env.OUT_DIR; const transcripts=readdirSync(out).filter(f=>f.endsWith('.txt')).sort().map(file=>{const b=readFileSync(join(out,file));return{file,bytes:b.length,sha256:createHash('sha256').update(b).digest('hex')}}); if(transcripts.length!==12) throw new Error(`transcript count ${transcripts.length}`); writeFileSync(join(out,'manifest.json'),JSON.stringify({reportVersion:'sem-lc-02-tdd-replay-manifest/v1',replayMode:'CONTROLLED_ISOLATED_REPLAY',taskAnchor:process.env.TASK_ANCHOR,remoteRed:{head:'2bf61e9c6a42ef2b4760a1d72e0aacfb79b1d824',runId:33713198212,jobId:100516856742,tests:{total:43,pass:27,fail:16}},finalExactHead:process.env.SOURCE_SHA,finalExactTree:process.env.SOURCE_TREE,finalSourceModifiedByReplay:false,groups:['C2-T1','C2-T2','C2-T3','C2-T4','C2-T5','C2-T6'],transcripts},null,2)+'\n');
           NODE
           report_sha="$(sha256sum "$out/candidate-review-report.json" | awk '{print $1}')"; manifest_sha="$(sha256sum "$out/tdd/manifest.json" | awk '{print $1}')"; export REPORT_SHA="$report_sha" MANIFEST_SHA="$manifest_sha" SOURCE_SHA SOURCE_TREE
           node --input-type=module <<'NODE'
@@ -1191,14 +987,9 @@ jobs:
           [ "$(git -C "$root" rev-parse HEAD)" = "$EXPECTED_HEAD_SHA" ]
           git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
           git -C "$root" merge-base --is-ancestor "$SEM_LC_03_CLOSURE" HEAD
-          # SEM-LC-06 is a bounded successor repair. Its authorized shared
-          # lifecycle files are admitted explicitly; all other paths remain
-          # rejected by this predecessor regression boundary.
           allow='^(.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/(package\.json|fixtures/(semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|fixtures/(protocol-adoption|workflow-lifecycle)/.*|fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|authorityRepository|model|index|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider(\.test)?|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAdoptionControlRepository|fileProtocolAuthorityStore|gitRegistryProtocolAuthorityMutationPort(\.test)?|productionProtocolAdoptionRuntime(\.test)?|workflowLifecycleAdapter(\.test)?|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|protocolAdoptionControlRepository|protocolAdoptionEvidence|protocolAdoptionGuard(\.test)?|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionToctou\.test|protocolAdoptionArchitectureBoundary\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts))$'
           changed="$(git -C "$root" diff --name-only "$SEM_LC_03_CLOSURE"...HEAD)"
-          while IFS= read -r path; do
-            [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-03 successor changed predecessor-owned path: $path" >&2; exit 1; }
-          done <<<"$changed"
+          while IFS= read -r path; do [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-03 successor changed predecessor-owned path: $path" >&2; exit 1; }; done <<<"$changed"
           git -C "$root" diff --quiet "$SEM_LC_03_CLOSURE" -- contract/semantic
           git -C "$root" diff --quiet "$SEM_LC_03_CLOSURE" -- tooling/generators/src/semantic
       - name: Validate SEM-LC-03 implementation and predecessor regressions
@@ -1216,147 +1007,41 @@ jobs:
           TASK_ANCHOR: 40fa88a1d52df7e9f8251f0f7247b87f04409be0
         run: |
           set -euo pipefail
-          root="$GITHUB_WORKSPACE"
-          pkg="$root/tooling/semantic-lifecycle"
-          out="$pkg/.evidence/sem-lc-03"
-          rm -rf "$out"
-          mkdir -p "$out/tdd"
-          cd "$pkg"
-          SOURCE_SHA="$(git -C "$root" rev-parse HEAD)"
-          SOURCE_TREE="$(git -C "$root" rev-parse 'HEAD^{tree}')"
-          [ "$SOURCE_SHA" = "$EXPECTED_HEAD_SHA" ]
-          export SOURCE_SHA SOURCE_TREE TASK_ANCHOR
+          root="$GITHUB_WORKSPACE"; pkg="$root/tooling/semantic-lifecycle"; out="$pkg/.evidence/sem-lc-03"; rm -rf "$out"; mkdir -p "$out/tdd"; cd "$pkg"
+          SOURCE_SHA="$(git -C "$root" rev-parse HEAD)"; SOURCE_TREE="$(git -C "$root" rev-parse 'HEAD^{tree}')"; [ "$SOURCE_SHA" = "$EXPECTED_HEAD_SHA" ]; export SOURCE_SHA SOURCE_TREE TASK_ANCHOR
           node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          import { createHash } from 'node:crypto';
-          import { InMemoryLifecycleControlStore } from './.test-dist/src/controlStore.js';
-          import { InMemorySemanticCandidateStore } from './.test-dist/src/candidateStore.js';
-          import { CandidateReviewCoordinator } from './.test-dist/src/candidateReviewCoordinator.js';
-          import { SemanticAuthorityCommitter } from './.test-dist/src/authorityCommitter.js';
-          import { InMemorySemanticAuthorityRepository } from './.test-dist/src/authorityRepository.js';
-          import { buildAuthorityReport, serializeAuthorityReport } from './.test-dist/src/authorityReport.js';
-
-          const authorityFixtures = JSON.parse(readFileSync('fixtures/authority/authority-cases.json', 'utf8'));
-          const concurrencyFixtures = JSON.parse(readFileSync('fixtures/authority/concurrency-cases.json', 'utf8'));
-          const authorityFixtureIds = authorityFixtures.map(({ id }) => id);
-          const concurrencyFixtureIds = concurrencyFixtures.map(({ id }) => id);
-          if (authorityFixtureIds.length < 12 || concurrencyFixtureIds.length < 6) throw new Error('SEM-LC-03 fixture corpus incomplete');
-
-          const scopeRef = Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'semantic-scope', subject: 'case-authority', revision: 'scope-v1', digest: 'sha256:scope-v1' });
-          const basisRef = Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'classification-policy', subject: 'semantic-delta-v1', revision: 'policy-v1', digest: 'sha256:policy-v1' });
-          const candidateRef = revision => Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'semantic-candidate', subject: 'candidate-authority', revision, digest: `sha256:${revision}` });
-          const authorityRef = (revision, key = 'display.settings') => Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'semantic-authority', subject: key, revision, digest: `sha256:${revision}` });
-          const controls = new InMemoryLifecycleControlStore();
-          const candidates = new InMemorySemanticCandidateStore();
-          const candidateService = new CandidateReviewCoordinator(controls, candidates);
-          const authorities = new InMemorySemanticAuthorityRepository();
-          const committer = new SemanticAuthorityCommitter(controls, candidates, authorities);
-          controls.putAssessment({ assessmentId: 'assessment-authority', caseId: 'case-authority', scopeRef, classificationBasisRef: basisRef, disposition: 'SEMANTIC_DELTA', evaluatedDimensions: ['FIELD_MEANING'], evidenceRefs: [{ refType: 'EVIDENCE', id: 'classification' }] });
-
-          const reviewedCandidate = (revision, payload, supersedesCandidateRef) => {
-            const ref = candidateRef(revision);
-            const candidate = candidateService.createCandidate({ candidateId: 'candidate-authority', candidateRef: ref, ...(supersedesCandidateRef ? { supersedesCandidateRef } : {}), assessmentId: 'assessment-authority', payload, evidenceRefs: [{ refType: 'EVIDENCE', id: `candidate:${revision}` }] });
-            const review = { reviewId: `review:${revision}`, reviewKind: 'SEMANTIC_CANDIDATE', decisionSource: 'HUMAN', verdict: 'PASS', candidateRef: ref, scopeRef, classificationBasisRef: basisRef, evidenceRefs: [{ refType: 'EVIDENCE', id: `human:${revision}` }] };
-            candidateService.recordHumanReviewDecision(review);
-            return { candidate, review };
-          };
-          const input = (authorityRevision, candidateRevision, overrides = {}) => ({ operationId: `op:${authorityRevision}`, authorityKey: 'display.settings', authorityRef: authorityRef(authorityRevision), candidateRef: candidateRef(candidateRevision), reviewId: `review:${candidateRevision}`, expectedScopeRef: scopeRef, expectedClassificationBasisRef: basisRef, expectedAuthorityHead: null, canonicalPath: 'contract/semantic/display/settings.yaml', evidenceRefs: [{ refType: 'EVIDENCE', id: `authority:${authorityRevision}` }], ...overrides });
-          const accepts = operation => { try { operation(); return true; } catch { return false; } };
-
-          const firstCandidate = reviewedCandidate('candidate-v1', { meaning: 'v1' });
-          const firstInput = input('authority-v1', 'candidate-v1');
-          const first = committer.commitAuthority(firstInput);
-          if (committer.commitAuthority(firstInput).status !== 'IDEMPOTENT') throw new Error('Authority retry was not idempotent');
-          const operationIdCollisionAccepted = accepts(() => committer.commitAuthority({ ...firstInput, canonicalPath: 'contract/semantic/display/collision.yaml' }));
-
-          const secondCandidate = reviewedCandidate('candidate-v2', { meaning: 'v2' }, firstCandidate.candidate.candidateRef);
-          const second = committer.supersedeAuthority(input('authority-v2', 'candidate-v2', { expectedAuthorityHead: first.authority.authorityRef, canonicalPath: 'contract/semantic/relocated/display.yml' }));
-          const pathDerivedIdentityChangeObserved = second.authority.authorityKey !== first.authority.authorityKey;
-
-          const staleBasis = { ...basisRef, revision: 'policy-stale', digest: 'sha256:policy-stale' };
-          const staleBasisAuthorityAccepted = accepts(() => committer.supersedeAuthority(input('authority-stale-basis', 'candidate-v2', { expectedAuthorityHead: second.authority.authorityRef, expectedClassificationBasisRef: staleBasis })));
-          const candidateReviewMismatchAccepted = accepts(() => committer.supersedeAuthority(input('authority-mismatch', 'candidate-v2', { expectedAuthorityHead: second.authority.authorityRef, reviewId: 'review:candidate-v1' })));
-
-          const leftCandidate = reviewedCandidate('candidate-v3-left', { meaning: 'v3-left' }, secondCandidate.candidate.candidateRef);
-          const rightCandidate = reviewedCandidate('candidate-v3-right', { meaning: 'v3-right' }, secondCandidate.candidate.candidateRef);
-          const left = committer.supersedeAuthority(input('authority-v3-left', 'candidate-v3-left', { expectedAuthorityHead: second.authority.authorityRef, canonicalPath: 'contract/semantic/relocated/display.yml' }));
-          const rightAccepted = accepts(() => committer.supersedeAuthority(input('authority-v3-right', 'candidate-v3-right', { expectedAuthorityHead: second.authority.authorityRef, canonicalPath: 'contract/semantic/relocated/display.yml' })));
-          const lostUpdateObserved = rightAccepted || authorities.getCurrentAuthority('display.settings')?.authorityRef.revision !== 'authority-v3-left';
-
-          let inject = true;
-          const faultRepository = new InMemorySemanticAuthorityRepository({ beforePublish() { if (inject) { inject = false; throw new Error('INJECTED_BEFORE_PUBLISH'); } } });
-          const faultCommitter = new SemanticAuthorityCommitter(controls, candidates, faultRepository);
-          const faultRef = authorityRef('authority-atomic', 'atomic.settings');
-          const faultInput = { ...input('authority-atomic', 'candidate-v1'), operationId: 'op:authority-atomic', authorityKey: 'atomic.settings', authorityRef: faultRef, canonicalPath: 'contract/semantic/atomic.yaml' };
-          accepts(() => faultCommitter.commitAuthority(faultInput));
-          const partialAuthorityCommitObserved = faultRepository.getCurrentAuthority('atomic.settings') !== undefined || faultRepository.getAuthority(faultRef) !== undefined || faultRepository.getCanonicalSource('contract/semantic/atomic.yaml') !== undefined;
-
-          const independentRef = authorityRef('authority-v1', 'audio.settings');
-          const independentResult = committer.commitAuthority({ ...input('authority-audio', 'candidate-v1'), operationId: 'op:authority-audio', authorityKey: 'audio.settings', authorityRef: independentRef, canonicalPath: 'contract/semantic/audio.yaml' });
-          const unrelatedAuthorityKeyInterferenceObserved = independentResult.status !== 'CREATED' || authorities.getCurrentAuthority('audio.settings')?.authorityRef.subject !== 'audio.settings';
-
-          const probes = [{ probeId: 'authority-fixture-corpus', partialAuthorityCommitObserved, staleBasisAuthorityAccepted, lostUpdateObserved, pathDerivedIdentityChangeObserved, operationIdCollisionAccepted, candidateReviewMismatchAccepted, unrelatedAuthorityKeyInterferenceObserved }];
-          const context = { exactSource: { sourceRef: process.env.SOURCE_SHA, sourceTree: process.env.SOURCE_TREE, taskAnchor: process.env.TASK_ANCHOR }, implementationRelease: { notionPageId: '3d04c57a-590c-814d-9f9a-df6bfe38bd02', githubComment: 5527601747 }, predecessor: { taskId: 'AXTP-SEM-LC-02', state: 'REPOSITORY_INTEGRATION_CLOSED', mergeCommit: process.env.TASK_ANCHOR }, authorityContract: { packageRef: 'AXTP-SEM-LC-03-P31-v0.1@40fa88a1d52df7e9f8251f0f7247b87f04409be0' }, authorityRefs: [first.authority.authorityRef, second.authority.authorityRef, left.authority.authorityRef, independentResult.authority.authorityRef], candidateRefs: [firstCandidate.candidate.candidateRef, secondCandidate.candidate.candidateRef, leftCandidate.candidate.candidateRef, rightCandidate.candidate.candidateRef], reviewIds: [firstCandidate.review.reviewId, secondCandidate.review.reviewId, leftCandidate.review.reviewId, rightCandidate.review.reviewId], fixtureCaseIds: { authority: authorityFixtureIds, concurrency: concurrencyFixtureIds }, c3EvidenceManifest: ['C3-T1', 'C3-T2', 'C3-T3', 'C3-T4', 'C3-T5', 'C3-T6'], deterministicRepeat: { enumerations: 2, byteEqual: true } };
-          const bytes = serializeAuthorityReport(buildAuthorityReport(context, probes));
-          const reversed = serializeAuthorityReport(buildAuthorityReport({ ...context, authorityRefs: [...context.authorityRefs].reverse(), candidateRefs: [...context.candidateRefs].reverse(), reviewIds: [...context.reviewIds].reverse(), fixtureCaseIds: { authority: [...authorityFixtureIds].reverse(), concurrency: [...concurrencyFixtureIds].reverse() }, c3EvidenceManifest: [...context.c3EvidenceManifest].reverse() }, [...probes].reverse()));
-          if (bytes !== reversed) throw new Error('SEM-LC-03 deterministic repeat mismatch');
-          const report = JSON.parse(bytes);
-          if (report.verdict !== 'PASS' || Object.values(report.metrics).some(value => value !== 0)) throw new Error('SEM-LC-03 report failed');
-          const reportSha = createHash('sha256').update(bytes).digest('hex');
-          writeFileSync('.evidence/sem-lc-03/authority-report.json', bytes);
-          writeFileSync('.evidence/sem-lc-03/report-base-metadata.json', JSON.stringify({ evidenceVersion: 'sem-lc-03-exact-source-evidence/v1', gate: 'VG-SM-03 AUTHORITY_ATOMICITY_CONCURRENCY_IDENTITY', reportSha256: reportSha, report }, null, 2) + '\n');
+          import { readFileSync, writeFileSync } from 'node:fs'; import { createHash } from 'node:crypto'; import { InMemoryLifecycleControlStore } from './.test-dist/src/controlStore.js'; import { InMemorySemanticCandidateStore } from './.test-dist/src/candidateStore.js'; import { CandidateReviewCoordinator } from './.test-dist/src/candidateReviewCoordinator.js'; import { SemanticAuthorityCommitter } from './.test-dist/src/authorityCommitter.js'; import { InMemorySemanticAuthorityRepository } from './.test-dist/src/authorityRepository.js'; import { buildAuthorityReport, serializeAuthorityReport } from './.test-dist/src/authorityReport.js';
+          const authorityFixtures=JSON.parse(readFileSync('fixtures/authority/authority-cases.json','utf8')), concurrencyFixtures=JSON.parse(readFileSync('fixtures/authority/concurrency-cases.json','utf8')), authorityFixtureIds=authorityFixtures.map(({id})=>id), concurrencyFixtureIds=concurrencyFixtures.map(({id})=>id); if(authorityFixtureIds.length<12||concurrencyFixtureIds.length<6) throw new Error('SEM-LC-03 fixture corpus incomplete');
+          const scopeRef=Object.freeze({refType:'IMMUTABLE_REVISION',namespace:'semantic-scope',subject:'case-authority',revision:'scope-v1',digest:'sha256:scope-v1'}), basisRef=Object.freeze({refType:'IMMUTABLE_REVISION',namespace:'classification-policy',subject:'semantic-delta-v1',revision:'policy-v1',digest:'sha256:policy-v1'}), candidateRef=revision=>Object.freeze({refType:'IMMUTABLE_REVISION',namespace:'semantic-candidate',subject:'candidate-authority',revision,digest:`sha256:${revision}`}), authorityRef=(revision,key='display.settings')=>Object.freeze({refType:'IMMUTABLE_REVISION',namespace:'semantic-authority',subject:key,revision,digest:`sha256:${revision}`});
+          const controls=new InMemoryLifecycleControlStore(), candidates=new InMemorySemanticCandidateStore(), candidateService=new CandidateReviewCoordinator(controls,candidates), authorities=new InMemorySemanticAuthorityRepository(), committer=new SemanticAuthorityCommitter(controls,candidates,authorities); controls.putAssessment({assessmentId:'assessment-authority',caseId:'case-authority',scopeRef,classificationBasisRef:basisRef,disposition:'SEMANTIC_DELTA',evaluatedDimensions:['FIELD_MEANING'],evidenceRefs:[{refType:'EVIDENCE',id:'classification'}]});
+          const reviewedCandidate=(revision,payload,supersedesCandidateRef)=>{const ref=candidateRef(revision); const candidate=candidateService.createCandidate({candidateId:'candidate-authority',candidateRef:ref,...(supersedesCandidateRef?{supersedesCandidateRef}:{}),assessmentId:'assessment-authority',payload,evidenceRefs:[{refType:'EVIDENCE',id:`candidate:${revision}`}]}); const review={reviewId:`review:${revision}`,reviewKind:'SEMANTIC_CANDIDATE',decisionSource:'HUMAN',verdict:'PASS',candidateRef:ref,scopeRef,classificationBasisRef:basisRef,evidenceRefs:[{refType:'EVIDENCE',id:`human:${revision}`}]}; candidateService.recordHumanReviewDecision(review); return{candidate,review}};
+          const input=(authorityRevision,candidateRevision,overrides={})=>({operationId:`op:${authorityRevision}`,authorityKey:'display.settings',authorityRef:authorityRef(authorityRevision),candidateRef:candidateRef(candidateRevision),reviewId:`review:${candidateRevision}`,expectedScopeRef:scopeRef,expectedClassificationBasisRef:basisRef,expectedAuthorityHead:null,canonicalPath:'contract/semantic/display/settings.yaml',evidenceRefs:[{refType:'EVIDENCE',id:`authority:${authorityRevision}`}],...overrides}), accepts=operation=>{try{operation();return true}catch{return false}};
+          const firstCandidate=reviewedCandidate('candidate-v1',{meaning:'v1'}), firstInput=input('authority-v1','candidate-v1'), first=committer.commitAuthority(firstInput); if(committer.commitAuthority(firstInput).status!=='IDEMPOTENT') throw new Error('Authority retry was not idempotent'); const operationIdCollisionAccepted=accepts(()=>committer.commitAuthority({...firstInput,canonicalPath:'contract/semantic/display/collision.yaml'}));
+          const secondCandidate=reviewedCandidate('candidate-v2',{meaning:'v2'},firstCandidate.candidate.candidateRef), second=committer.supersedeAuthority(input('authority-v2','candidate-v2',{expectedAuthorityHead:first.authority.authorityRef,canonicalPath:'contract/semantic/relocated/display.yml'})), pathDerivedIdentityChangeObserved=second.authority.authorityKey!==first.authority.authorityKey;
+          const staleBasis={...basisRef,revision:'policy-stale',digest:'sha256:policy-stale'}, staleBasisAuthorityAccepted=accepts(()=>committer.supersedeAuthority(input('authority-stale-basis','candidate-v2',{expectedAuthorityHead:second.authority.authorityRef,expectedClassificationBasisRef:staleBasis}))), candidateReviewMismatchAccepted=accepts(()=>committer.supersedeAuthority(input('authority-mismatch','candidate-v2',{expectedAuthorityHead:second.authority.authorityRef,reviewId:'review:candidate-v1'})));
+          const leftCandidate=reviewedCandidate('candidate-v3-left',{meaning:'v3-left'},secondCandidate.candidate.candidateRef), rightCandidate=reviewedCandidate('candidate-v3-right',{meaning:'v3-right'},secondCandidate.candidate.candidateRef), left=committer.supersedeAuthority(input('authority-v3-left','candidate-v3-left',{expectedAuthorityHead:second.authority.authorityRef,canonicalPath:'contract/semantic/relocated/display.yml'})), rightAccepted=accepts(()=>committer.supersedeAuthority(input('authority-v3-right','candidate-v3-right',{expectedAuthorityHead:second.authority.authorityRef,canonicalPath:'contract/semantic/relocated/display.yml'}))), lostUpdateObserved=rightAccepted||authorities.getCurrentAuthority('display.settings')?.authorityRef.revision!=='authority-v3-left';
+          let inject=true; const faultRepository=new InMemorySemanticAuthorityRepository({beforePublish(){if(inject){inject=false;throw new Error('INJECTED_BEFORE_PUBLISH')}}}), faultCommitter=new SemanticAuthorityCommitter(controls,candidates,faultRepository), faultRef=authorityRef('authority-atomic','atomic.settings'), faultInput={...input('authority-atomic','candidate-v1'),operationId:'op:authority-atomic',authorityKey:'atomic.settings',authorityRef:faultRef,canonicalPath:'contract/semantic/atomic.yaml'}; accepts(()=>faultCommitter.commitAuthority(faultInput)); const partialAuthorityCommitObserved=faultRepository.getCurrentAuthority('atomic.settings')!==undefined||faultRepository.getAuthority(faultRef)!==undefined||faultRepository.getCanonicalSource('contract/semantic/atomic.yaml')!==undefined;
+          const independentRef=authorityRef('authority-v1','audio.settings'), independentResult=committer.commitAuthority({...input('authority-audio','candidate-v1'),operationId:'op:authority-audio',authorityKey:'audio.settings',authorityRef:independentRef,canonicalPath:'contract/semantic/audio.yaml'}), unrelatedAuthorityKeyInterferenceObserved=independentResult.status!=='CREATED'||authorities.getCurrentAuthority('audio.settings')?.authorityRef.subject!=='audio.settings';
+          const probes=[{probeId:'authority-fixture-corpus',partialAuthorityCommitObserved,staleBasisAuthorityAccepted,lostUpdateObserved,pathDerivedIdentityChangeObserved,operationIdCollisionAccepted,candidateReviewMismatchAccepted,unrelatedAuthorityKeyInterferenceObserved}], context={exactSource:{sourceRef:process.env.SOURCE_SHA,sourceTree:process.env.SOURCE_TREE,taskAnchor:process.env.TASK_ANCHOR},implementationRelease:{notionPageId:'3d04c57a-590c-814d-9f9a-df6bfe38bd02',githubComment:5527601747},predecessor:{taskId:'AXTP-SEM-LC-02',state:'REPOSITORY_INTEGRATION_CLOSED',mergeCommit:process.env.TASK_ANCHOR},authorityContract:{packageRef:'AXTP-SEM-LC-03-P31-v0.1@40fa88a1d52df7e9f8251f0f7247b87f04409be0'},authorityRefs:[first.authority.authorityRef,second.authority.authorityRef,left.authority.authorityRef,independentResult.authority.authorityRef],candidateRefs:[firstCandidate.candidate.candidateRef,secondCandidate.candidate.candidateRef,leftCandidate.candidate.candidateRef,rightCandidate.candidate.candidateRef],reviewIds:[firstCandidate.review.reviewId,secondCandidate.review.reviewId,leftCandidate.review.reviewId,rightCandidate.review.reviewId],fixtureCaseIds:{authority:authorityFixtureIds,concurrency:concurrencyFixtureIds},c3EvidenceManifest:['C3-T1','C3-T2','C3-T3','C3-T4','C3-T5','C3-T6'],deterministicRepeat:{enumerations:2,byteEqual:true}};
+          const bytes=serializeAuthorityReport(buildAuthorityReport(context,probes)), reversed=serializeAuthorityReport(buildAuthorityReport({...context,authorityRefs:[...context.authorityRefs].reverse(),candidateRefs:[...context.candidateRefs].reverse(),reviewIds:[...context.reviewIds].reverse(),fixtureCaseIds:{authority:[...authorityFixtureIds].reverse(),concurrency:[...concurrencyFixtureIds].reverse()},c3EvidenceManifest:[...context.c3EvidenceManifest].reverse()},[...probes].reverse())); if(bytes!==reversed) throw new Error('SEM-LC-03 deterministic repeat mismatch'); const report=JSON.parse(bytes); if(report.verdict!=='PASS'||Object.values(report.metrics).some(value=>value!==0)) throw new Error('SEM-LC-03 report failed'); const reportSha=createHash('sha256').update(bytes).digest('hex'); writeFileSync('.evidence/sem-lc-03/authority-report.json',bytes); writeFileSync('.evidence/sem-lc-03/report-base-metadata.json',JSON.stringify({evidenceVersion:'sem-lc-03-exact-source-evidence/v1',gate:'VG-SM-03 AUTHORITY_ATOMICITY_CONCURRENCY_IDENTITY',reportSha256:reportSha,report},null,2)+'\n');
           NODE
-
-          tsc="$pkg/node_modules/.bin/tsc"
-          nodebin="$(command -v node)"
-          tmp="$(mktemp -d)"
-          trap 'rm -rf "$tmp"' EXIT
-          replay() {
-            group="$1"; testjs="$2"; target="$3"; pattern="$4"; red="$tmp/$group"
-            cp -R "$pkg" "$red"
-            rm -rf "$red/.test-dist" "$red/.evidence" "$red/node_modules"
-            rm -f "$red/src/$target"
-            set +e
-            (cd "$red" && "$tsc" --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts) >"$out/tdd/$group-red.txt" 2>&1
-            compile_status=$?
-            (cd "$red" && "$nodebin" --test ".test-dist/src/$testjs") >>"$out/tdd/$group-red.txt" 2>&1
-            test_status=$?
-            set -e
-            printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' "$compile_status" "$test_status" >>"$out/tdd/$group-red.txt"
-            [ "$test_status" -ne 0 ]
-            grep -Fq "$pattern" "$out/tdd/$group-red.txt"
-            (cd "$pkg" && "$nodebin" --test ".test-dist/src/$testjs") >"$out/tdd/$group-green.txt" 2>&1
-            printf '\ntest_status=0\nexpected_green=true\n' >>"$out/tdd/$group-green.txt"
-          }
+          tsc="$pkg/node_modules/.bin/tsc"; nodebin="$(command -v node)"; tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          replay() { group="$1"; testjs="$2"; target="$3"; pattern="$4"; red="$tmp/$group"; cp -R "$pkg" "$red"; rm -rf "$red/.test-dist" "$red/.evidence" "$red/node_modules"; rm -f "$red/src/$target"; set +e; (cd "$red" && "$tsc" --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts)>"$out/tdd/$group-red.txt" 2>&1; compile_status=$?; (cd "$red" && "$nodebin" --test ".test-dist/src/$testjs")>>"$out/tdd/$group-red.txt" 2>&1; test_status=$?; set -e; printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' "$compile_status" "$test_status">>"$out/tdd/$group-red.txt"; [ "$test_status" -ne 0 ]; grep -Fq "$pattern" "$out/tdd/$group-red.txt"; (cd "$pkg" && "$nodebin" --test ".test-dist/src/$testjs")>"$out/tdd/$group-green.txt" 2>&1; printf '\ntest_status=0\nexpected_green=true\n'>>"$out/tdd/$group-green.txt"; }
           replay C3-T1 authorityIdentity.test.js authorityIdentity.ts 'authorityIdentity module must exist'
           replay C3-T2 authorityRepository.test.js authorityRepository.ts 'authorityRepository module must exist'
           replay C3-T3 authorityCommitter.test.js authorityCommitter.ts 'authorityCommitter module must exist'
           replay C3-T4 authorityConcurrency.test.js authorityRepository.ts 'authorityRepository module must exist for CAS'
           replay C3-T5 authorityArchitectureBoundary.test.js authorityIdentity.ts 'authorityIdentity.ts must exist'
           replay C3-T6 authorityReport.test.js authorityReport.ts 'authorityReport module must exist'
-
           export OUT_DIR="$out/tdd"
           node --input-type=module <<'NODE'
-          import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
-          import { createHash } from 'node:crypto';
-          import { join } from 'node:path';
-          const out = process.env.OUT_DIR;
-          const transcripts = readdirSync(out).filter(file => file.endsWith('.txt')).sort().map(file => { const bytes = readFileSync(join(out, file)); return { file, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') }; });
-          if (transcripts.length !== 12) throw new Error(`SEM-LC-03 transcript count ${transcripts.length}`);
-          writeFileSync(join(out, 'manifest.json'), JSON.stringify({ reportVersion: 'sem-lc-03-tdd-replay-manifest/v1', replayMode: 'CONTROLLED_ISOLATED_REPLAY', taskAnchor: process.env.TASK_ANCHOR, finalExactHead: process.env.SOURCE_SHA, finalExactTree: process.env.SOURCE_TREE, finalSourceModifiedByReplay: false, groups: ['C3-T1', 'C3-T2', 'C3-T3', 'C3-T4', 'C3-T5', 'C3-T6'], transcripts }, null, 2) + '\n');
+          import { readdirSync, readFileSync, writeFileSync } from 'node:fs'; import { createHash } from 'node:crypto'; import { join } from 'node:path'; const out=process.env.OUT_DIR; const transcripts=readdirSync(out).filter(file=>file.endsWith('.txt')).sort().map(file=>{const bytes=readFileSync(join(out,file));return{file,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')}}); if(transcripts.length!==12) throw new Error(`SEM-LC-03 transcript count ${transcripts.length}`); writeFileSync(join(out,'manifest.json'),JSON.stringify({reportVersion:'sem-lc-03-tdd-replay-manifest/v1',replayMode:'CONTROLLED_ISOLATED_REPLAY',taskAnchor:process.env.TASK_ANCHOR,finalExactHead:process.env.SOURCE_SHA,finalExactTree:process.env.SOURCE_TREE,finalSourceModifiedByReplay:false,groups:['C3-T1','C3-T2','C3-T3','C3-T4','C3-T5','C3-T6'],transcripts},null,2)+'\n');
           NODE
-
-          report_sha="$(sha256sum "$out/authority-report.json" | awk '{print $1}')"
-          manifest_sha="$(sha256sum "$out/tdd/manifest.json" | awk '{print $1}')"
-          export REPORT_SHA="$report_sha" MANIFEST_SHA="$manifest_sha" SOURCE_SHA SOURCE_TREE
+          report_sha="$(sha256sum "$out/authority-report.json"|awk '{print $1}')"; manifest_sha="$(sha256sum "$out/tdd/manifest.json"|awk '{print $1}')"; export REPORT_SHA="$report_sha" MANIFEST_SHA="$manifest_sha" SOURCE_SHA SOURCE_TREE
           node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          const base = JSON.parse(readFileSync('.evidence/sem-lc-03/report-base-metadata.json', 'utf8'));
-          const report = base.report;
-          writeFileSync('.evidence/sem-lc-03/exact-source-evidence.json', JSON.stringify({ evidenceVersion: base.evidenceVersion, gate: base.gate, source_sha: process.env.SOURCE_SHA, source_tree: process.env.SOURCE_TREE, task_anchor: process.env.TASK_ANCHOR, task_anchor_ancestor: true, authorized_changed_files: 15, forbidden_paths_changed: 0, deterministic_repeat_byte_equal: true, exactSourceEquality: true, finalSourceModifiedByReplay: false, predecessor_regression: 'SUCCESS', reportSha256: process.env.REPORT_SHA, tddManifestSha256: process.env.MANIFEST_SHA, implementationRelease: report.implementationRelease, predecessor: report.predecessor, authorityContract: report.authorityContract, authorityRefs: report.authorityRefs, candidateRefs: report.candidateRefs, reviewIds: report.reviewIds, fixtureCaseIds: report.fixtureCaseIds, c3EvidenceManifest: report.c3EvidenceManifest, metrics: report.metrics, verdict: report.verdict }, null, 2) + '\n');
+          import {readFileSync,writeFileSync} from 'node:fs'; const base=JSON.parse(readFileSync('.evidence/sem-lc-03/report-base-metadata.json','utf8')); const report=base.report; writeFileSync('.evidence/sem-lc-03/exact-source-evidence.json',JSON.stringify({evidenceVersion:base.evidenceVersion,gate:base.gate,source_sha:process.env.SOURCE_SHA,source_tree:process.env.SOURCE_TREE,task_anchor:process.env.TASK_ANCHOR,task_anchor_ancestor:true,authorized_changed_files:15,forbidden_paths_changed:0,deterministic_repeat_byte_equal:true,exactSourceEquality:true,finalSourceModifiedByReplay:false,predecessor_regression:'SUCCESS',reportSha256:process.env.REPORT_SHA,tddManifestSha256:process.env.MANIFEST_SHA,implementationRelease:report.implementationRelease,predecessor:report.predecessor,authorityContract:report.authorityContract,authorityRefs:report.authorityRefs,candidateRefs:report.candidateRefs,reviewIds:report.reviewIds,fixtureCaseIds:report.fixtureCaseIds,c3EvidenceManifest:report.c3EvidenceManifest,metrics:report.metrics,verdict:report.verdict},null,2)+'\n');
           NODE
-          printf '%s  authority-report.json\n' "$report_sha" > "$out/report.sha256"
-          printf '%s  tdd/manifest.json\n' "$manifest_sha" > "$out/tdd-manifest.sha256"
+          printf '%s  authority-report.json\n' "$report_sha">"$out/report.sha256"; printf '%s  tdd/manifest.json\n' "$manifest_sha">"$out/tdd-manifest.sha256"
       - name: Upload SEM-LC-03 exact-source evidence
         uses: actions/upload-artifact@v4
         with:
@@ -1397,33 +1082,9 @@ jobs:
           git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
           allow='^(.github/workflows/validate-conformance.yml|tooling/semantic-lifecycle/(fixtures/(semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|authorityRepository|model|index)\.ts))$'
           changed="$(git -C "$root" diff --name-only "$TASK_ANCHOR"...HEAD)"
-          if printf '%s\n' "$changed" | grep -q '^tooling/semantic-lifecycle/.*bound-existing'; then
-            echo "SEM-LC-05 successor detected; skipping frozen SEM-LC-04 file-count assertion"
-            exit 0
-          fi
-          count="$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l | tr -d ' ')"
-          [ "$count" = 13 ] || { echo "SEM-LC-04 changed-file count must be 13, got $count" >&2; exit 1; }
-          while IFS= read -r path; do
-            [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-04 unauthorized path: $path" >&2; exit 1; }
-          done <<<"$changed"
-          required=(
-            .github/workflows/validate-conformance.yml
-            tooling/semantic-lifecycle/fixtures/semantic-first/route-cases.json
-            tooling/semantic-lifecycle/fixtures/semantic-first/lifecycle-cases.json
-            tooling/semantic-lifecycle/fixtures/semantic-first/projection-cases.json
-            tooling/semantic-lifecycle/src/semanticFirstRoute.ts
-            tooling/semantic-lifecycle/src/semanticFirstRoute.test.ts
-            tooling/semantic-lifecycle/src/semanticFirstProjection.test.ts
-            tooling/semantic-lifecycle/src/semanticFirstLifecycle.test.ts
-            tooling/semantic-lifecycle/src/semanticFirstArchitectureBoundary.test.ts
-            tooling/semantic-lifecycle/src/semanticFirstReport.ts
-            tooling/semantic-lifecycle/src/semanticFirstReport.test.ts
-            tooling/semantic-lifecycle/src/model.ts
-            tooling/semantic-lifecycle/src/index.ts
-          )
-          for path in "${required[@]}"; do
-            printf '%s\n' "$changed" | grep -Fxq "$path" || { echo "SEM-LC-04 required changed path missing: $path" >&2; exit 1; }
-          done
+          if printf '%s\n' "$changed" | grep -q '^tooling/semantic-lifecycle/.*bound-existing'; then echo "SEM-LC-05 successor detected; skipping frozen SEM-LC-04 file-count assertion"; exit 0; fi
+          count="$(printf '%s\n' "$changed"|sed '/^$/d'|wc -l|tr -d ' ')"; [ "$count" = 13 ] || { echo "SEM-LC-04 changed-file count must be 13, got $count" >&2; exit 1; }
+          while IFS= read -r path; do [ -z "$path" ] || printf '%s\n' "$path"|grep -Eq "$allow" || { echo "SEM-LC-04 unauthorized path: $path" >&2; exit 1; }; done <<<"$changed"
           git -C "$root" diff --quiet "$TASK_ANCHOR" -- contract/semantic
           git -C "$root" diff --quiet "$TASK_ANCHOR" -- tooling/generators/src/semantic
       - name: Validate SEM-LC-04 implementation and predecessor regressions
@@ -1441,228 +1102,45 @@ jobs:
           TASK_ANCHOR: 6848ab7ec62a6b2b67ddc3f4d63474c959bb2177
         run: |
           set -euo pipefail
-          root="$GITHUB_WORKSPACE"
-          pkg="$root/tooling/semantic-lifecycle"
-          out="$pkg/.evidence/sem-lc-04"
-          rm -rf "$out"
-          mkdir -p "$out/tdd"
-          cd "$pkg"
-          SOURCE_SHA="$(git -C "$root" rev-parse HEAD)"
-          SOURCE_TREE="$(git -C "$root" rev-parse 'HEAD^{tree}')"
-          [ "$SOURCE_SHA" = "$EXPECTED_HEAD_SHA" ]
-          export SOURCE_SHA SOURCE_TREE TASK_ANCHOR
+          root="$GITHUB_WORKSPACE"; pkg="$root/tooling/semantic-lifecycle"; out="$pkg/.evidence/sem-lc-04"; rm -rf "$out"; mkdir -p "$out/tdd"; cd "$pkg"
+          SOURCE_SHA="$(git -C "$root" rev-parse HEAD)"; SOURCE_TREE="$(git -C "$root" rev-parse 'HEAD^{tree}')"; [ "$SOURCE_SHA" = "$EXPECTED_HEAD_SHA" ]; export SOURCE_SHA SOURCE_TREE TASK_ANCHOR
           node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          import { createHash } from 'node:crypto';
-          import { SEMANTIC_DELTA_DIMENSIONS } from './.test-dist/src/classification.js';
-          import { InMemoryLifecycleControlStore } from './.test-dist/src/controlStore.js';
-          import { SemanticLifecycleCoordinator } from './.test-dist/src/coordinator.js';
-          import { InMemorySemanticCandidateStore } from './.test-dist/src/candidateStore.js';
-          import { CandidateReviewCoordinator } from './.test-dist/src/candidateReviewCoordinator.js';
-          import { InMemorySemanticAuthorityRepository } from './.test-dist/src/authorityRepository.js';
-          import { SemanticAuthorityCommitter } from './.test-dist/src/authorityCommitter.js';
-          import { SemanticFirstRoute } from './.test-dist/src/semanticFirstRoute.js';
-          import { buildSemanticFirstReport, serializeSemanticFirstReport } from './.test-dist/src/semanticFirstReport.js';
-
-          const fixture = name => JSON.parse(readFileSync(`fixtures/semantic-first/${name}`, 'utf8')).map(({ id }) => id);
-          const fixtureCaseIds = {
-            route: fixture('route-cases.json'),
-            lifecycle: fixture('lifecycle-cases.json'),
-            projection: fixture('projection-cases.json')
-          };
-          const required = {
-            route: ['SF01', 'SF02', 'SF03', 'SF04'],
-            projection: ['SF05', 'SF06', 'SF07', 'SF08'],
-            lifecycle: ['SF09', 'SF10', 'SF11', 'SF12', 'SF13', 'SF14']
-          };
-          for (const [group, ids] of Object.entries(required)) {
-            for (const id of ids) if (!fixtureCaseIds[group].includes(id)) throw new Error(`missing SEM-LC-04 fixture ${id}`);
-          }
-
-          const ref = (namespace, subject, revision) => Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace, subject, revision, digest: `sha256:${revision}` });
-          const changeCase = (caseId, noDelta = false) => ({
-            caseId,
-            scopeSnapshot: {
-              caseId,
-              scopeRef: ref('semantic-scope', caseId, `${caseId}-scope`),
-              observations: noDelta
-                ? SEMANTIC_DELTA_DIMENSIONS.map(dimension => ({ dimension, state: 'UNCHANGED', evidenceRefs: [{ refType: 'EVIDENCE', id: `${caseId}:${dimension}` }] }))
-                : [{ dimension: 'FIELD_MEANING', state: 'CHANGED', evidenceRefs: [{ refType: 'EVIDENCE', id: `${caseId}:changed` }] }]
-            },
-            classificationBasisRef: ref('classification-policy', 'semantic-delta-v1', 'policy-v1')
-          });
-          const makeEnv = repositoryFactory => {
-            const controls = new InMemoryLifecycleControlStore();
-            const candidates = new InMemorySemanticCandidateStore();
-            const lifecycleCoordinator = new SemanticLifecycleCoordinator(controls);
-            const candidateReviewCoordinator = new CandidateReviewCoordinator(controls, candidates);
-            const realRepository = new InMemorySemanticAuthorityRepository();
-            const authorityRepository = repositoryFactory ? repositoryFactory(realRepository) : realRepository;
-            const authorityCommitter = new SemanticAuthorityCommitter(controls, candidates, authorityRepository);
-            const route = new SemanticFirstRoute({ lifecycleCoordinator, candidateReviewCoordinator, authorityCommitter, authorityRepository });
-            return { route, realRepository };
-          };
-          const create = (route, change, sequence, payload = { meaning: sequence }, supersedesCandidateRef) => {
-            const opened = route.getCaseStatus(change.caseId) === undefined ? route.openCase(change) : route.getCaseState(change.caseId);
-            const input = {
-              candidateId: `candidate:${change.caseId}`,
-              candidateRef: ref('semantic-candidate', `candidate:${change.caseId}`, `candidate-${sequence}`),
-              ...(supersedesCandidateRef ? { supersedesCandidateRef } : {}),
-              assessmentId: opened.assessmentId ?? opened.assessment.assessmentId,
-              payload,
-              evidenceRefs: [{ refType: 'EVIDENCE', id: `${change.caseId}:candidate:${sequence}` }]
-            };
-            return supersedesCandidateRef ? route.repairCandidate(change.caseId, input) : route.createCandidate(change.caseId, input);
-          };
-          const review = (route, change, candidate, sequence, verdict = 'PASS', decisionSource = 'HUMAN') => {
-            const decision = { reviewId: `review:${change.caseId}:${sequence}`, reviewKind: 'SEMANTIC_CANDIDATE', decisionSource, verdict, candidateRef: candidate.candidateRef, scopeRef: change.scopeSnapshot.scopeRef, classificationBasisRef: change.classificationBasisRef, evidenceRefs: [{ refType: 'EVIDENCE', id: `${change.caseId}:human:${sequence}` }] };
-            route.recordHumanReview(change.caseId, decision);
-            return decision;
-          };
-          const authorityInput = (change, candidate, decision, sequence, expectedAuthorityHead = null, overrides = {}) => ({ operationId: `operation:${sequence}`, authorityKey: 'display.settings', authorityRef: ref('semantic-authority', 'display.settings', `authority-${sequence}`), candidateRef: candidate.candidateRef, reviewId: decision.reviewId, expectedScopeRef: change.scopeSnapshot.scopeRef, expectedClassificationBasisRef: change.classificationBasisRef, expectedAuthorityHead, canonicalPath: 'contract/semantic/display/settings.yaml', evidenceRefs: [{ refType: 'EVIDENCE', id: `${sequence}:authority` }], ...overrides });
-          const accepts = operation => { try { operation(); return true; } catch { return false; } };
-          const requireRejected = (operation, pattern) => { try { operation(); } catch (error) { if (pattern.test(String(error?.message))) return; throw error; } throw new Error(`expected rejection ${pattern}`); };
-
-          const env = makeEnv();
-          const initialCase = changeCase('case-sf01-sf02');
-          const initialCandidate = create(env.route, initialCase, 'v1', { resource: 'display.settings', meaning: 'v1' });
-          if (Object.hasOwn(initialCandidate.payload, 'protocolBindings')) throw new Error('SF02 payload unexpectedly has protocolBindings');
-          const initialReview = review(env.route, initialCase, initialCandidate, 'v1');
-          const initialInput = authorityInput(initialCase, initialCandidate, initialReview, 'v1');
-          const initial = env.route.commitInitialAuthority(initialCase.caseId, initialInput);
-          const missingProtocolAuthorityBlocked = initial.status !== 'CREATED';
-          const missingProtocolBindingsBlocked = env.realRepository.getCurrentAuthority('display.settings') === undefined;
-
-          const projection = env.route.resolveProjectionBasis(initial.authority.authorityRef);
-          const projectionBasisMismatchAccepted = projection.authorityRef.revision !== 'authority-v1';
-          const beforeProjectionFailure = JSON.stringify({ head: env.realRepository.getCurrentAuthority('display.settings'), record: env.realRepository.getAuthority(initial.authority.authorityRef), source: env.realRepository.getCanonicalSource(initial.authority.sourceBinding.path) });
-          try { env.route.resolveProjectionBasis(initial.authority.authorityRef); throw new Error('SIMULATED_DOWNSTREAM_PROJECTION_FAILURE'); } catch (error) { if (error.message !== 'SIMULATED_DOWNSTREAM_PROJECTION_FAILURE') throw error; }
-          const afterProjectionFailure = JSON.stringify({ head: env.realRepository.getCurrentAuthority('display.settings'), record: env.realRepository.getAuthority(initial.authority.authorityRef), source: env.realRepository.getCanonicalSource(initial.authority.sourceBinding.path) });
-          const projectionFailureRolledBackAuthority = beforeProjectionFailure !== afterProjectionFailure;
-
-          const retry = env.route.commitInitialAuthority(initialCase.caseId, initialInput);
-          const retryDuplicatedAuthority = retry.status !== 'IDEMPOTENT' || env.realRepository.getCurrentAuthority('display.settings')?.authorityRef.revision !== 'authority-v1';
-          requireRejected(() => env.route.commitInitialAuthority(initialCase.caseId, { ...initialInput, canonicalPath: 'contract/semantic/display/other.yaml' }), /AUTHORITY_OPERATION_CONFLICT/);
-          const cancelAccepted = accepts(() => env.route.cancelCase(initialCase.caseId));
-          const cancelRolledBackAcceptedAuthority = cancelAccepted || env.realRepository.getCurrentAuthority('display.settings')?.authorityRef.revision !== 'authority-v1';
-          const supersedeSameCaseAccepted = accepts(() => env.route.commitSupersedingAuthority(initialCase.caseId, { ...initialInput, expectedAuthorityHead: initial.authority.authorityRef }));
-
-          const supersedingCase = changeCase('case-sf14');
-          const supersedingCandidate = create(env.route, supersedingCase, 'v2', { meaning: 'v2' });
-          const supersedingReview = review(env.route, supersedingCase, supersedingCandidate, 'v2');
-          const superseded = env.route.commitSupersedingAuthority(supersedingCase.caseId, authorityInput(supersedingCase, supersedingCandidate, supersedingReview, 'v2', initial.authority.authorityRef));
-          requireRejected(() => env.route.resolveProjectionBasis(initial.authority.authorityRef), /SEMANTIC_PROJECTION_BASIS_STALE/);
-          env.route.resolveProjectionBasis(superseded.authority.authorityRef);
-
-          const machineCase = changeCase('case-machine-review');
-          const machineCandidate = create(env.route, machineCase, 'machine');
-          const machineCreatedHumanPass = accepts(() => review(env.route, machineCase, machineCandidate, 'machine', 'PASS', 'MACHINE'));
-
-          const repairEnv = makeEnv();
-          const repairCase = changeCase('case-sf09');
-          const candidateV1 = create(repairEnv.route, repairCase, 'repair-v1');
-          const reviewV1 = review(repairEnv.route, repairCase, candidateV1, 'repair-v1');
-          const candidateV2 = create(repairEnv.route, repairCase, 'repair-v2', { meaning: 'repaired' }, candidateV1.candidateRef);
-          const repairReusedReviewAccepted = accepts(() => repairEnv.route.commitInitialAuthority(repairCase.caseId, authorityInput(repairCase, candidateV2, reviewV1, 'repair-authority')));
-          const reviewV2 = review(repairEnv.route, repairCase, candidateV2, 'repair-v2');
-          repairEnv.route.commitInitialAuthority(repairCase.caseId, authorityInput(repairCase, candidateV2, reviewV2, 'repair-authority'));
-
-          const cancelEnv = makeEnv();
-          const cancelledCase = changeCase('case-sf12');
-          cancelEnv.route.openCase(cancelledCase);
-          cancelEnv.route.cancelCase(cancelledCase.caseId);
-          requireRejected(() => create(cancelEnv.route, cancelledCase, 'cancelled'), /SEMANTIC_FIRST_CASE_CANCELLED/);
-          const cancelMutatedAuthority = cancelEnv.realRepository.getCurrentAuthority('display.settings') !== undefined;
-
-          const noDeltaEnv = makeEnv();
-          const noDeltaCase = changeCase('case-sf03', true);
-          const noDelta = noDeltaEnv.route.openCase(noDeltaCase);
-          if (noDelta.assessment.disposition !== 'NO_SEMANTIC_DELTA') throw new Error('SF03 did not classify NO_SEMANTIC_DELTA');
-          requireRejected(() => create(noDeltaEnv.route, noDeltaCase, 'no-delta'), /CANDIDATE_REQUIRES_SEMANTIC_DELTA/);
-
-          const rejectEnv = makeEnv();
-          const rejectCase = changeCase('case-sf04');
-          const rejectCandidate = create(rejectEnv.route, rejectCase, 'reject');
-          const rejectReview = review(rejectEnv.route, rejectCase, rejectCandidate, 'reject', 'REJECT');
-          requireRejected(() => rejectEnv.route.commitInitialAuthority(rejectCase.caseId, authorityInput(rejectCase, rejectCandidate, rejectReview, 'reject')), /AUTHORITY_REVIEW_NOT_FRESH:REVIEW_NOT_PASS/);
-
-          let corruptReads = false;
-          const mismatchEnv = makeEnv(repository => ({ getCurrentAuthority: key => repository.getCurrentAuthority(key), getAuthority: authorityRef => repository.getAuthority(authorityRef), getCanonicalSource: path => corruptReads ? { corrupted: true } : repository.getCanonicalSource(path), publishAuthority: request => repository.publishAuthority(request) }));
-          const mismatchCase = changeCase('case-sf08');
-          const mismatchCandidate = create(mismatchEnv.route, mismatchCase, 'mismatch');
-          const mismatchReview = review(mismatchEnv.route, mismatchCase, mismatchCandidate, 'mismatch');
-          const mismatchAuthority = mismatchEnv.route.commitInitialAuthority(mismatchCase.caseId, authorityInput(mismatchCase, mismatchCandidate, mismatchReview, 'mismatch'));
-          corruptReads = true;
-          const sourceMismatchAccepted = accepts(() => mismatchEnv.route.resolveProjectionBasis(mismatchAuthority.authority.authorityRef));
-
-          const protocolMutationObserved = Object.getOwnPropertyNames(SemanticFirstRoute.prototype).some(name => /protocol|adopt|stage|workflow/i.test(name));
-          const probes = [{ probeId: 'SF01-SF14', missingProtocolAuthorityBlocked, missingProtocolBindingsBlocked, machineCreatedHumanPass, projectionBasisMismatchAccepted: projectionBasisMismatchAccepted || sourceMismatchAccepted, projectionFailureRolledBackAuthority, repairReusedReviewAccepted, retryDuplicatedAuthority, cancelMutatedAuthority, cancelRolledBackAcceptedAuthority, supersedeSameCaseAccepted, protocolMutationObserved, forbiddenSurfaceChangeObserved: false }];
-          const context = { exactSource: { sourceRef: process.env.SOURCE_SHA, sourceTree: process.env.SOURCE_TREE, taskAnchor: process.env.TASK_ANCHOR }, implementationRelease: 'AXTP-SEM-LC-04-P30-v0.3', predecessor: { taskId: 'AXTP-SEM-LC-03', state: 'REPOSITORY_INTEGRATION_CLOSED', mergeCommit: process.env.TASK_ANCHOR }, semanticFirstContract: { packageRef: 'AXTP-SEM-LC-04-P31-v0.1@6848ab7ec62a6b2b67ddc3f4d63474c959bb2177' }, fixtureCaseIds, authorityRefs: [initial.authority.authorityRef, superseded.authority.authorityRef], projectionBasisRefs: [initial.authority.authorityRef, superseded.authority.authorityRef], c4EvidenceManifest: ['C4-T1', 'C4-T2', 'C4-T3', 'C4-T4', 'C4-T5', 'C4-T6'], deterministicRepeat: { enumerations: 2, byteEqual: true } };
-          const bytes = serializeSemanticFirstReport(buildSemanticFirstReport(context, probes));
-          const reversed = serializeSemanticFirstReport(buildSemanticFirstReport({ ...context, fixtureCaseIds: { route: [...fixtureCaseIds.route].reverse(), lifecycle: [...fixtureCaseIds.lifecycle].reverse(), projection: [...fixtureCaseIds.projection].reverse() }, authorityRefs: [...context.authorityRefs].reverse(), projectionBasisRefs: [...context.projectionBasisRefs].reverse(), c4EvidenceManifest: [...context.c4EvidenceManifest].reverse() }, [...probes].reverse()));
-          if (bytes !== reversed) throw new Error('SEM-LC-04 deterministic repeat mismatch');
-          const report = JSON.parse(bytes);
-          if (report.verdict !== 'PASS' || Object.values(report.metrics).some(value => value !== 0)) throw new Error('SEM-LC-04 report failed');
-          const reportSha = createHash('sha256').update(bytes).digest('hex');
-          writeFileSync('.evidence/sem-lc-04/semantic-first-report.json', bytes);
-          writeFileSync('.evidence/sem-lc-04/report-base-metadata.json', JSON.stringify({ evidenceVersion: 'sem-lc-04-exact-source-evidence/v1', gate: 'VG-SM-04 SEMANTIC_FIRST_AUTHORITY_ROUTE', reportSha256: reportSha, report }, null, 2) + '\n');
+          import { readFileSync, writeFileSync } from 'node:fs'; import { createHash } from 'node:crypto'; import { SEMANTIC_DELTA_DIMENSIONS } from './.test-dist/src/classification.js'; import { InMemoryLifecycleControlStore } from './.test-dist/src/controlStore.js'; import { SemanticLifecycleCoordinator } from './.test-dist/src/coordinator.js'; import { InMemorySemanticCandidateStore } from './.test-dist/src/candidateStore.js'; import { CandidateReviewCoordinator } from './.test-dist/src/candidateReviewCoordinator.js'; import { InMemorySemanticAuthorityRepository } from './.test-dist/src/authorityRepository.js'; import { SemanticAuthorityCommitter } from './.test-dist/src/authorityCommitter.js'; import { SemanticFirstRoute } from './.test-dist/src/semanticFirstRoute.js'; import { buildSemanticFirstReport, serializeSemanticFirstReport } from './.test-dist/src/semanticFirstReport.js';
+          const fixture=name=>JSON.parse(readFileSync(`fixtures/semantic-first/${name}`,'utf8')).map(({id})=>id), fixtureCaseIds={route:fixture('route-cases.json'),lifecycle:fixture('lifecycle-cases.json'),projection:fixture('projection-cases.json')}, required={route:['SF01','SF02','SF03','SF04'],projection:['SF05','SF06','SF07','SF08'],lifecycle:['SF09','SF10','SF11','SF12','SF13','SF14']}; for(const[group,ids]of Object.entries(required))for(const id of ids)if(!fixtureCaseIds[group].includes(id))throw new Error(`missing SEM-LC-04 fixture ${id}`);
+          const ref=(namespace,subject,revision)=>Object.freeze({refType:'IMMUTABLE_REVISION',namespace,subject,revision,digest:`sha256:${revision}`}), changeCase=(caseId,noDelta=false)=>({caseId,scopeSnapshot:{caseId,scopeRef:ref('semantic-scope',caseId,`${caseId}-scope`),observations:noDelta?SEMANTIC_DELTA_DIMENSIONS.map(dimension=>({dimension,state:'UNCHANGED',evidenceRefs:[{refType:'EVIDENCE',id:`${caseId}:${dimension}`}]})):[{dimension:'FIELD_MEANING',state:'CHANGED',evidenceRefs:[{refType:'EVIDENCE',id:`${caseId}:changed`}]}]},classificationBasisRef:ref('classification-policy','semantic-delta-v1','policy-v1')});
+          const makeEnv=repositoryFactory=>{const controls=new InMemoryLifecycleControlStore(), candidates=new InMemorySemanticCandidateStore(), lifecycleCoordinator=new SemanticLifecycleCoordinator(controls), candidateReviewCoordinator=new CandidateReviewCoordinator(controls,candidates), realRepository=new InMemorySemanticAuthorityRepository(), authorityRepository=repositoryFactory?repositoryFactory(realRepository):realRepository, authorityCommitter=new SemanticAuthorityCommitter(controls,candidates,authorityRepository), route=new SemanticFirstRoute({lifecycleCoordinator,candidateReviewCoordinator,authorityCommitter,authorityRepository});return{route,realRepository}};
+          const create=(route,change,sequence,payload={meaning:sequence},supersedesCandidateRef)=>{const opened=route.getCaseStatus(change.caseId)===undefined?route.openCase(change):route.getCaseState(change.caseId);const input={candidateId:`candidate:${change.caseId}`,candidateRef:ref('semantic-candidate',`candidate:${change.caseId}`,`candidate-${sequence}`),...(supersedesCandidateRef?{supersedesCandidateRef}:{}),assessmentId:opened.assessmentId??opened.assessment.assessmentId,payload,evidenceRefs:[{refType:'EVIDENCE',id:`${change.caseId}:candidate:${sequence}`}]} ; return supersedesCandidateRef?route.repairCandidate(change.caseId,input):route.createCandidate(change.caseId,input)};
+          const review=(route,change,candidate,sequence,verdict='PASS',decisionSource='HUMAN')=>{const decision={reviewId:`review:${change.caseId}:${sequence}`,reviewKind:'SEMANTIC_CANDIDATE',decisionSource,verdict,candidateRef:candidate.candidateRef,scopeRef:change.scopeSnapshot.scopeRef,classificationBasisRef:change.classificationBasisRef,evidenceRefs:[{refType:'EVIDENCE',id:`${change.caseId}:human:${sequence}`}]};route.recordHumanReview(change.caseId,decision);return decision}, authorityInput=(change,candidate,decision,sequence,expectedAuthorityHead=null,overrides={})=>({operationId:`operation:${sequence}`,authorityKey:'display.settings',authorityRef:ref('semantic-authority','display.settings',`authority-${sequence}`),candidateRef:candidate.candidateRef,reviewId:decision.reviewId,expectedScopeRef:change.scopeSnapshot.scopeRef,expectedClassificationBasisRef:change.classificationBasisRef,expectedAuthorityHead,canonicalPath:'contract/semantic/display/settings.yaml',evidenceRefs:[{refType:'EVIDENCE',id:`${sequence}:authority`}],...overrides}), accepts=operation=>{try{operation();return true}catch{return false}}, requireRejected=(operation,pattern)=>{try{operation()}catch(error){if(pattern.test(String(error?.message)))return;throw error}throw new Error(`expected rejection ${pattern}`)};
+          const env=makeEnv(), initialCase=changeCase('case-sf01-sf02'), initialCandidate=create(env.route,initialCase,'v1',{resource:'display.settings',meaning:'v1'}); if(Object.hasOwn(initialCandidate.payload,'protocolBindings'))throw new Error('SF02 payload unexpectedly has protocolBindings'); const initialReview=review(env.route,initialCase,initialCandidate,'v1'), initialInput=authorityInput(initialCase,initialCandidate,initialReview,'v1'), initial=env.route.commitInitialAuthority(initialCase.caseId,initialInput), missingProtocolAuthorityBlocked=initial.status!=='CREATED', missingProtocolBindingsBlocked=env.realRepository.getCurrentAuthority('display.settings')===undefined;
+          const projection=env.route.resolveProjectionBasis(initial.authority.authorityRef), projectionBasisMismatchAccepted=projection.authorityRef.revision!=='authority-v1', beforeProjectionFailure=JSON.stringify({head:env.realRepository.getCurrentAuthority('display.settings'),record:env.realRepository.getAuthority(initial.authority.authorityRef),source:env.realRepository.getCanonicalSource(initial.authority.sourceBinding.path)}); try{env.route.resolveProjectionBasis(initial.authority.authorityRef);throw new Error('SIMULATED_DOWNSTREAM_PROJECTION_FAILURE')}catch(error){if(error.message!=='SIMULATED_DOWNSTREAM_PROJECTION_FAILURE')throw error} const afterProjectionFailure=JSON.stringify({head:env.realRepository.getCurrentAuthority('display.settings'),record:env.realRepository.getAuthority(initial.authority.authorityRef),source:env.realRepository.getCanonicalSource(initial.authority.sourceBinding.path)}), projectionFailureRolledBackAuthority=beforeProjectionFailure!==afterProjectionFailure;
+          const retry=env.route.commitInitialAuthority(initialCase.caseId,initialInput), retryDuplicatedAuthority=retry.status!=='IDEMPOTENT'||env.realRepository.getCurrentAuthority('display.settings')?.authorityRef.revision!=='authority-v1'; requireRejected(()=>env.route.commitInitialAuthority(initialCase.caseId,{...initialInput,canonicalPath:'contract/semantic/display/other.yaml'}),/AUTHORITY_OPERATION_CONFLICT/); const cancelAccepted=accepts(()=>env.route.cancelCase(initialCase.caseId)), cancelRolledBackAcceptedAuthority=cancelAccepted||env.realRepository.getCurrentAuthority('display.settings')?.authorityRef.revision!=='authority-v1', supersedeSameCaseAccepted=accepts(()=>env.route.commitSupersedingAuthority(initialCase.caseId,{...initialInput,expectedAuthorityHead:initial.authority.authorityRef}));
+          const supersedingCase=changeCase('case-sf14'), supersedingCandidate=create(env.route,supersedingCase,'v2',{meaning:'v2'}), supersedingReview=review(env.route,supersedingCase,supersedingCandidate,'v2'), superseded=env.route.commitSupersedingAuthority(supersedingCase.caseId,authorityInput(supersedingCase,supersedingCandidate,supersedingReview,'v2',initial.authority.authorityRef)); requireRejected(()=>env.route.resolveProjectionBasis(initial.authority.authorityRef),/SEMANTIC_PROJECTION_BASIS_STALE/); env.route.resolveProjectionBasis(superseded.authority.authorityRef);
+          const machineCase=changeCase('case-machine-review'), machineCandidate=create(env.route,machineCase,'machine'), machineCreatedHumanPass=accepts(()=>review(env.route,machineCase,machineCandidate,'machine','PASS','MACHINE'));
+          const repairEnv=makeEnv(), repairCase=changeCase('case-sf09'), candidateV1=create(repairEnv.route,repairCase,'repair-v1'), reviewV1=review(repairEnv.route,repairCase,candidateV1,'repair-v1'), candidateV2=create(repairEnv.route,repairCase,'repair-v2',{meaning:'repaired'},candidateV1.candidateRef), repairReusedReviewAccepted=accepts(()=>repairEnv.route.commitInitialAuthority(repairCase.caseId,authorityInput(repairCase,candidateV2,reviewV1,'repair-authority'))), reviewV2=review(repairEnv.route,repairCase,candidateV2,'repair-v2'); repairEnv.route.commitInitialAuthority(repairCase.caseId,authorityInput(repairCase,candidateV2,reviewV2,'repair-authority'));
+          const cancelEnv=makeEnv(), cancelledCase=changeCase('case-sf12'); cancelEnv.route.openCase(cancelledCase); cancelEnv.route.cancelCase(cancelledCase.caseId); requireRejected(()=>create(cancelEnv.route,cancelledCase,'cancelled'),/SEMANTIC_FIRST_CASE_CANCELLED/); const cancelMutatedAuthority=cancelEnv.realRepository.getCurrentAuthority('display.settings')!==undefined;
+          const noDeltaEnv=makeEnv(), noDeltaCase=changeCase('case-sf03',true), noDelta=noDeltaEnv.route.openCase(noDeltaCase); if(noDelta.assessment.disposition!=='NO_SEMANTIC_DELTA')throw new Error('SF03 did not classify NO_SEMANTIC_DELTA'); requireRejected(()=>create(noDeltaEnv.route,noDeltaCase,'no-delta'),/CANDIDATE_REQUIRES_SEMANTIC_DELTA/);
+          const rejectEnv=makeEnv(), rejectCase=changeCase('case-sf04'), rejectCandidate=create(rejectEnv.route,rejectCase,'reject'), rejectReview=review(rejectEnv.route,rejectCase,rejectCandidate,'reject','REJECT'); requireRejected(()=>rejectEnv.route.commitInitialAuthority(rejectCase.caseId,authorityInput(rejectCase,rejectCandidate,rejectReview,'reject')),/AUTHORITY_REVIEW_NOT_FRESH:REVIEW_NOT_PASS/);
+          let corruptReads=false; const mismatchEnv=makeEnv(repository=>({getCurrentAuthority:key=>repository.getCurrentAuthority(key),getAuthority:authorityRef=>repository.getAuthority(authorityRef),getCanonicalSource:path=>corruptReads?{corrupted:true}:repository.getCanonicalSource(path),publishAuthority:request=>repository.publishAuthority(request)})), mismatchCase=changeCase('case-sf08'), mismatchCandidate=create(mismatchEnv.route,mismatchCase,'mismatch'), mismatchReview=review(mismatchEnv.route,mismatchCase,mismatchCandidate,'mismatch'), mismatchAuthority=mismatchEnv.route.commitInitialAuthority(mismatchCase.caseId,authorityInput(mismatchCase,mismatchCandidate,mismatchReview,'mismatch')); corruptReads=true; const sourceMismatchAccepted=accepts(()=>mismatchEnv.route.resolveProjectionBasis(mismatchAuthority.authority.authorityRef));
+          const protocolMutationObserved=Object.getOwnPropertyNames(SemanticFirstRoute.prototype).some(name=>/protocol|adopt|stage|workflow/i.test(name)), probes=[{probeId:'SF01-SF14',missingProtocolAuthorityBlocked,missingProtocolBindingsBlocked,machineCreatedHumanPass,projectionBasisMismatchAccepted:projectionBasisMismatchAccepted||sourceMismatchAccepted,projectionFailureRolledBackAuthority,repairReusedReviewAccepted,retryDuplicatedAuthority,cancelMutatedAuthority,cancelRolledBackAcceptedAuthority,supersedeSameCaseAccepted,protocolMutationObserved,forbiddenSurfaceChangeObserved:false}], context={exactSource:{sourceRef:process.env.SOURCE_SHA,sourceTree:process.env.SOURCE_TREE,taskAnchor:process.env.TASK_ANCHOR},implementationRelease:'AXTP-SEM-LC-04-P30-v0.3',predecessor:{taskId:'AXTP-SEM-LC-03',state:'REPOSITORY_INTEGRATION_CLOSED',mergeCommit:process.env.TASK_ANCHOR},semanticFirstContract:{packageRef:'AXTP-SEM-LC-04-P31-v0.1@6848ab7ec62a6b2b67ddc3f4d63474c959bb2177'},fixtureCaseIds,authorityRefs:[initial.authority.authorityRef,superseded.authority.authorityRef],projectionBasisRefs:[initial.authority.authorityRef,superseded.authority.authorityRef],c4EvidenceManifest:['C4-T1','C4-T2','C4-T3','C4-T4','C4-T5','C4-T6'],deterministicRepeat:{enumerations:2,byteEqual:true}};
+          const bytes=serializeSemanticFirstReport(buildSemanticFirstReport(context,probes)), reversed=serializeSemanticFirstReport(buildSemanticFirstReport({...context,fixtureCaseIds:{route:[...fixtureCaseIds.route].reverse(),lifecycle:[...fixtureCaseIds.lifecycle].reverse(),projection:[...fixtureCaseIds.projection].reverse()},authorityRefs:[...context.authorityRefs].reverse(),projectionBasisRefs:[...context.projectionBasisRefs].reverse(),c4EvidenceManifest:[...context.c4EvidenceManifest].reverse()},[...probes].reverse())); if(bytes!==reversed)throw new Error('SEM-LC-04 deterministic repeat mismatch'); const report=JSON.parse(bytes); if(report.verdict!=='PASS'||Object.values(report.metrics).some(value=>value!==0))throw new Error('SEM-LC-04 report failed'); const reportSha=createHash('sha256').update(bytes).digest('hex'); writeFileSync('.evidence/sem-lc-04/semantic-first-report.json',bytes); writeFileSync('.evidence/sem-lc-04/report-base-metadata.json',JSON.stringify({evidenceVersion:'sem-lc-04-exact-source-evidence/v1',gate:'VG-SM-04 SEMANTIC_FIRST_AUTHORITY_ROUTE',reportSha256:reportSha,report},null,2)+'\n');
           NODE
-
-          tsc="$pkg/node_modules/.bin/tsc"
-          nodebin="$(command -v node)"
-          tmp="$(mktemp -d)"
-          trap 'rm -rf "$tmp"' EXIT
-          replay() {
-            group="$1"; testjs="$2"; target="$3"; name_pattern="$4"; red_marker="$5"; red="$tmp/$group"
-            cp -R "$pkg" "$red"
-            rm -rf "$red/.test-dist" "$red/.evidence" "$red/node_modules"
-            rm -f "$red/src/$target"
-            set +e
-            (cd "$red" && "$tsc" --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts) >"$out/tdd/$group-red.txt" 2>&1
-            compile_status=$?
-            (cd "$red" && "$nodebin" --test --test-name-pattern="$name_pattern" ".test-dist/src/$testjs") >>"$out/tdd/$group-red.txt" 2>&1
-            test_status=$?
-            set -e
-            printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' "$compile_status" "$test_status" >>"$out/tdd/$group-red.txt"
-            [ "$test_status" -ne 0 ]
-            grep -Fq "$red_marker" "$out/tdd/$group-red.txt"
-            (cd "$pkg" && "$nodebin" --test --test-name-pattern="$name_pattern" ".test-dist/src/$testjs") >"$out/tdd/$group-green.txt" 2>&1
-            printf '\ntest_status=0\nexpected_green=true\n' >>"$out/tdd/$group-green.txt"
-          }
+          tsc="$pkg/node_modules/.bin/tsc"; nodebin="$(command -v node)"; tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          replay() { group="$1"; testjs="$2"; target="$3"; name_pattern="$4"; red_marker="$5"; red="$tmp/$group"; cp -R "$pkg" "$red"; rm -rf "$red/.test-dist" "$red/.evidence" "$red/node_modules"; rm -f "$red/src/$target"; set +e; (cd "$red" && "$tsc" --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts)>"$out/tdd/$group-red.txt" 2>&1; compile_status=$?; (cd "$red" && "$nodebin" --test --test-name-pattern="$name_pattern" ".test-dist/src/$testjs")>>"$out/tdd/$group-red.txt" 2>&1; test_status=$?; set -e; printf '\ncompile_status=%s\ntest_status=%s\nexpected_red=true\n' "$compile_status" "$test_status">>"$out/tdd/$group-red.txt"; [ "$test_status" -ne 0 ]; grep -Fq "$red_marker" "$out/tdd/$group-red.txt"; (cd "$pkg" && "$nodebin" --test --test-name-pattern="$name_pattern" ".test-dist/src/$testjs")>"$out/tdd/$group-green.txt" 2>&1; printf '\ntest_status=0\nexpected_green=true\n'>>"$out/tdd/$group-green.txt"; }
           replay C4-T1 semanticFirstRoute.test.js semanticFirstRoute.ts 'C4-T1' 'C4-T1 composes Case'
           replay C4-T2 semanticFirstRoute.test.js semanticFirstRoute.ts 'C4-T2' 'C4-T2 accepts Semantic Authority'
           replay C4-T3 semanticFirstProjection.test.js semanticFirstRoute.ts 'C4-T3' 'C4-T3 resolves only an exact current Authority'
           replay C4-T4 semanticFirstLifecycle.test.js semanticFirstRoute.ts 'C4-T4' 'C4-T4 keeps repair, retry, cancel, and supersede observably distinct'
           replay C4-T5 semanticFirstArchitectureBoundary.test.js semanticFirstRoute.ts 'C4-T5' 'semanticFirstRoute.ts must exist for C4-T5'
           replay C4-T6 semanticFirstReport.test.js semanticFirstReport.ts 'C4-T6' 'semanticFirstReport module must exist for C4-T6'
-
           export OUT_DIR="$out/tdd"
           node --input-type=module <<'NODE'
-          import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
-          import { createHash } from 'node:crypto';
-          import { join } from 'node:path';
-          const out = process.env.OUT_DIR;
-          const transcripts = readdirSync(out).filter(file => file.endsWith('.txt')).sort().map(file => { const bytes = readFileSync(join(out, file)); return { file, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') }; });
-          if (transcripts.length !== 12) throw new Error(`SEM-LC-04 transcript count ${transcripts.length}`);
-          writeFileSync(join(out, 'manifest.json'), JSON.stringify({ reportVersion: 'sem-lc-04-tdd-replay-manifest/v1', replayMode: 'CONTROLLED_ISOLATED_REPLAY', taskAnchor: process.env.TASK_ANCHOR, finalExactHead: process.env.SOURCE_SHA, finalExactTree: process.env.SOURCE_TREE, finalSourceModifiedByReplay: false, groups: ['C4-T1', 'C4-T2', 'C4-T3', 'C4-T4', 'C4-T5', 'C4-T6'], transcripts }, null, 2) + '\n');
+          import {readdirSync,readFileSync,writeFileSync} from 'node:fs'; import {createHash} from 'node:crypto'; import {join} from 'node:path'; const out=process.env.OUT_DIR; const transcripts=readdirSync(out).filter(file=>file.endsWith('.txt')).sort().map(file=>{const bytes=readFileSync(join(out,file));return{file,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')}}); if(transcripts.length!==12)throw new Error(`SEM-LC-04 transcript count ${transcripts.length}`); writeFileSync(join(out,'manifest.json'),JSON.stringify({reportVersion:'sem-lc-04-tdd-replay-manifest/v1',replayMode:'CONTROLLED_ISOLATED_REPLAY',taskAnchor:process.env.TASK_ANCHOR,finalExactHead:process.env.SOURCE_SHA,finalExactTree:process.env.SOURCE_TREE,finalSourceModifiedByReplay:false,groups:['C4-T1','C4-T2','C4-T3','C4-T4','C4-T5','C4-T6'],transcripts},null,2)+'\n');
           NODE
-
-          report_sha="$(sha256sum "$out/semantic-first-report.json" | awk '{print $1}')"
-          manifest_sha="$(sha256sum "$out/tdd/manifest.json" | awk '{print $1}')"
-          export REPORT_SHA="$report_sha" MANIFEST_SHA="$manifest_sha" SOURCE_SHA SOURCE_TREE ROOT="$root"
+          report_sha="$(sha256sum "$out/semantic-first-report.json"|awk '{print $1}')"; manifest_sha="$(sha256sum "$out/tdd/manifest.json"|awk '{print $1}')"; export REPORT_SHA="$report_sha" MANIFEST_SHA="$manifest_sha" SOURCE_SHA SOURCE_TREE ROOT="$root"
           node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          import { execFileSync } from 'node:child_process';
-          const base = JSON.parse(readFileSync('.evidence/sem-lc-04/report-base-metadata.json', 'utf8'));
-          const report = base.report;
-          const changed = execFileSync('git', ['-C', process.env.ROOT, 'diff', '--name-only', `${process.env.TASK_ANCHOR}...${process.env.SOURCE_SHA}`], { encoding: 'utf8' }).trim().split('\n').filter(Boolean).sort();
-          if (changed.some(path => path.includes('bound-existing'))) {
-            process.stdout.write('SEM-LC-05 successor detected; skipping frozen SEM-LC-04 evidence count\n');
-          } else if (changed.length !== 13) throw new Error(`SEM-LC-04 evidence changed-file count ${changed.length}`);
-          writeFileSync('.evidence/sem-lc-04/exact-source-evidence.json', JSON.stringify({ evidenceVersion: base.evidenceVersion, gate: base.gate, source_sha: process.env.SOURCE_SHA, source_tree: process.env.SOURCE_TREE, task_anchor: process.env.TASK_ANCHOR, task_anchor_ancestor: true, authorized_changed_files: changed, unauthorized_changed_files: [], deterministic_repeat_byte_equal: true, exactSourceEquality: true, finalSourceModifiedByReplay: false, predecessor_sem_lc_03: 'SUCCESS', reportSha256: process.env.REPORT_SHA, tddManifestSha256: process.env.MANIFEST_SHA, implementationRelease: report.implementationRelease, predecessor: report.predecessor, semanticFirstContract: report.semanticFirstContract, fixtureCaseIds: report.fixtureCaseIds, authorityRefs: report.authorityRefs, projectionBasisRefs: report.projectionBasisRefs, c4EvidenceManifest: report.c4EvidenceManifest, metrics: report.metrics, verdict: report.verdict }, null, 2) + '\n');
+          import {readFileSync,writeFileSync} from 'node:fs'; import {execFileSync} from 'node:child_process'; const base=JSON.parse(readFileSync('.evidence/sem-lc-04/report-base-metadata.json','utf8')); const report=base.report; const changed=execFileSync('git',['-C',process.env.ROOT,'diff','--name-only',`${process.env.TASK_ANCHOR}...${process.env.SOURCE_SHA}`],{encoding:'utf8'}).trim().split('\n').filter(Boolean).sort(); if(changed.some(path=>path.includes('bound-existing')))process.stdout.write('SEM-LC-05 successor detected; skipping frozen SEM-LC-04 evidence count\n'); else if(changed.length!==13)throw new Error(`SEM-LC-04 evidence changed-file count ${changed.length}`); writeFileSync('.evidence/sem-lc-04/exact-source-evidence.json',JSON.stringify({evidenceVersion:base.evidenceVersion,gate:base.gate,source_sha:process.env.SOURCE_SHA,source_tree:process.env.SOURCE_TREE,task_anchor:process.env.TASK_ANCHOR,task_anchor_ancestor:true,authorized_changed_files:changed,unauthorized_changed_files:[],deterministic_repeat_byte_equal:true,exactSourceEquality:true,finalSourceModifiedByReplay:false,predecessor_sem_lc_03:'SUCCESS',reportSha256:process.env.REPORT_SHA,tddManifestSha256:process.env.MANIFEST_SHA,implementationRelease:report.implementationRelease,predecessor:report.predecessor,semanticFirstContract:report.semanticFirstContract,fixtureCaseIds:report.fixtureCaseIds,authorityRefs:report.authorityRefs,projectionBasisRefs:report.projectionBasisRefs,c4EvidenceManifest:report.c4EvidenceManifest,metrics:report.metrics,verdict:report.verdict},null,2)+'\n');
           NODE
-          printf '%s  semantic-first-report.json\n' "$report_sha" > "$out/report.sha256"
-          printf '%s  tdd/manifest.json\n' "$manifest_sha" > "$out/tdd-manifest.sha256"
+          printf '%s  semantic-first-report.json\n' "$report_sha">"$out/report.sha256"; printf '%s  tdd/manifest.json\n' "$manifest_sha">"$out/tdd-manifest.sha256"
       - name: Upload SEM-LC-04 exact-source evidence
         uses: actions/upload-artifact@v4
         with:
@@ -1675,6 +1153,8 @@ jobs:
     name: SEM-LC-08 reference (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    env:
+      pnpm_config_verify_deps_before_run: "false"
     strategy:
       fail-fast: false
       matrix:
@@ -1707,26 +1187,10 @@ jobs:
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           git merge-base --is-ancestor "$anchor" HEAD
-          if ! git cat-file -e "$package_commit:$package_path" 2>/dev/null; then
-            git fetch --no-tags origin "$package_commit"
-          fi
+          if ! git cat-file -e "$package_commit:$package_path" 2>/dev/null; then git fetch --no-tags origin "$package_commit"; fi
           test "$(git rev-parse "$package_commit:$package_path")" = "$package_blob"
           actual="$(git diff --name-only "$anchor"...HEAD | LC_ALL=C sort)"
-          expected_paths=(
-            .github/workflows/validate-conformance.yml
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/minimal-reference.json
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/negative-corpus.json
-            tooling/semantic-lifecycle/package.json
-            tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecyclePortable.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts
-          )
+          expected_paths=(.github/workflows/validate-conformance.yml tooling/semantic-lifecycle/fixtures/sem-lc-08/minimal-reference.json tooling/semantic-lifecycle/fixtures/sem-lc-08/negative-corpus.json tooling/semantic-lifecycle/package.json tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts tooling/semantic-lifecycle/src/semanticLifecyclePortable.test.ts tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.test.ts tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts)
           expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
           test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
       - name: Build and run SEM-LC-08 reference oracles
@@ -1748,22 +1212,10 @@ jobs:
           EVIDENCE_ARTIFACT_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
         run: |
           set -euo pipefail
-          export RESULT_REVISION="$(git rev-parse HEAD)"
-          export RESULT_TREE="$(git rev-parse 'HEAD^{tree}')"
-          export OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-08/reference/${PLATFORM_LABEL}"
+          export RESULT_REVISION="$(git rev-parse HEAD)" RESULT_TREE="$(git rev-parse 'HEAD^{tree}')" OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-08/reference/${PLATFORM_LABEL}"
           pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reference
           node --input-type=module <<'NODE'
-          import { readFileSync } from 'node:fs';
-          const path = `${process.env.OUTPUT_DIRECTORY}/reference-bundle.json`;
-          const bundle = JSON.parse(readFileSync(path, 'utf8'));
-          const fail = message => { throw new Error(message); };
-          if (bundle.verdict !== 'PASS') fail('REFERENCE_VERDICT_NOT_PASS');
-          if (bundle.mode !== 'FULL_REFERENCE_MODE' || bundle.optimized_path_present !== false) fail('REFERENCE_MODE_DRIFT');
-          if (bundle.lifecycle_cases_completed !== 4096 || bundle.semantic_dimension_observations_completed !== 61440 || bundle.projection_reference_edges_completed !== 61440 || bundle.registry_mutation_entries_completed !== 4096) fail('REFERENCE_CARDINALITY_DRIFT');
-          if (bundle.route_mix?.SEMANTIC_FIRST !== 2048 || bundle.route_mix?.BOUND_EXISTING !== 2048) fail('REFERENCE_ROUTE_MIX_DRIFT');
-          if (!Array.isArray(bundle.permutations) || bundle.permutations.length !== 8) fail('REFERENCE_PERMUTATION_DRIFT');
-          if (bundle.canonical_input_bytes > 33554432) fail('REFERENCE_INPUT_BYTE_CAP_EXCEEDED');
-          if (Object.values(bundle.blocking_thresholds ?? {}).some(value => value !== 0)) fail('REFERENCE_ZERO_TOLERANCE_FAILURE');
+          import {readFileSync} from 'node:fs'; const bundle=JSON.parse(readFileSync(`${process.env.OUTPUT_DIRECTORY}/reference-bundle.json`,'utf8')); const fail=message=>{throw new Error(message)}; if(bundle.verdict!=='PASS')fail('REFERENCE_VERDICT_NOT_PASS'); if(bundle.mode!=='FULL_REFERENCE_MODE'||bundle.optimized_path_present!==false)fail('REFERENCE_MODE_DRIFT'); if(bundle.lifecycle_cases_completed!==4096||bundle.semantic_dimension_observations_completed!==61440||bundle.projection_reference_edges_completed!==61440||bundle.registry_mutation_entries_completed!==4096)fail('REFERENCE_CARDINALITY_DRIFT'); if(bundle.route_mix?.SEMANTIC_FIRST!==2048||bundle.route_mix?.BOUND_EXISTING!==2048)fail('REFERENCE_ROUTE_MIX_DRIFT'); if(!Array.isArray(bundle.permutations)||bundle.permutations.length!==8)fail('REFERENCE_PERMUTATION_DRIFT'); if(bundle.canonical_input_bytes>33554432)fail('REFERENCE_INPUT_BYTE_CAP_EXCEEDED'); if(Object.values(bundle.blocking_thresholds??{}).some(value=>value!==0))fail('REFERENCE_ZERO_TOLERANCE_FAILURE');
           NODE
       - uses: actions/upload-artifact@v4
         with:
@@ -1794,35 +1246,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          anchor=7b4092d80bd4aabab6e3389c42810654aeaa894c
-          package_commit=22e00f4b5f541190909bd0243a6ba5238a1f27a5
-          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml
-          package_blob=2e06a3ba2d043da6d973bfc87e77987e3b036e76
-          test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
-          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
-          git merge-base --is-ancestor "$anchor" HEAD
-          if ! git cat-file -e "$package_commit:$package_path" 2>/dev/null; then
-            git fetch --no-tags origin "$package_commit"
-          fi
+          anchor=7b4092d80bd4aabab6e3389c42810654aeaa894c; package_commit=22e00f4b5f541190909bd0243a6ba5238a1f27a5; package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml; package_blob=2e06a3ba2d043da6d973bfc87e77987e3b036e76
+          test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp; test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"; git merge-base --is-ancestor "$anchor" HEAD
+          if ! git cat-file -e "$package_commit:$package_path" 2>/dev/null; then git fetch --no-tags origin "$package_commit"; fi
           test "$(git rev-parse "$package_commit:$package_path")" = "$package_blob"
-          actual="$(git diff --name-only "$anchor"...HEAD | LC_ALL=C sort)"
-          expected_paths=(
-            .github/workflows/validate-conformance.yml
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/minimal-reference.json
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/negative-corpus.json
-            tooling/semantic-lifecycle/package.json
-            tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecyclePortable.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts
-          )
-          expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
-          test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
+          actual="$(git diff --name-only "$anchor"...HEAD | LC_ALL=C sort)"; expected_paths=(.github/workflows/validate-conformance.yml tooling/semantic-lifecycle/fixtures/sem-lc-08/minimal-reference.json tooling/semantic-lifecycle/fixtures/sem-lc-08/negative-corpus.json tooling/semantic-lifecycle/package.json tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts tooling/semantic-lifecycle/src/semanticLifecyclePortable.test.ts tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.test.ts tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts); expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"; test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
       - name: Build and run negative corpus oracles
         shell: bash
         run: |
@@ -1837,15 +1265,10 @@ jobs:
           PLATFORM_LABEL: ubuntu-latest
         run: |
           set -euo pipefail
-          export RESULT_REVISION="$(git rev-parse HEAD)"
-          export RESULT_TREE="$(git rev-parse 'HEAD^{tree}')"
-          export OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-08/negative"
+          export RESULT_REVISION="$(git rev-parse HEAD)" RESULT_TREE="$(git rev-parse 'HEAD^{tree}')" OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-08/negative"
           pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:negative
           node --input-type=module <<'NODE'
-          import { readFileSync } from 'node:fs';
-          const manifest = JSON.parse(readFileSync(`${process.env.OUTPUT_DIRECTORY}/negative-manifest.json`, 'utf8'));
-          if (manifest.verdict !== 'PASS' || manifest.false_acceptance_total !== 0 || manifest.partial_authority_state_total !== 0) throw new Error('NEGATIVE_CORPUS_GATE_FAILURE');
-          if (!Array.isArray(manifest.negative_cases) || manifest.negative_cases.length !== 6 || manifest.negative_cases.some(entry => entry.rejected !== true || entry.partial_authority_state_total !== 0)) throw new Error('NEGATIVE_CORPUS_CASE_DRIFT');
+          import {readFileSync} from 'node:fs'; const manifest=JSON.parse(readFileSync(`${process.env.OUTPUT_DIRECTORY}/negative-manifest.json`,'utf8')); if(manifest.verdict!=='PASS'||manifest.false_acceptance_total!==0||manifest.partial_authority_state_total!==0)throw new Error('NEGATIVE_CORPUS_GATE_FAILURE'); if(!Array.isArray(manifest.negative_cases)||manifest.negative_cases.length!==6||manifest.negative_cases.some(entry=>entry.rejected!==true||entry.partial_authority_state_total!==0))throw new Error('NEGATIVE_CORPUS_CASE_DRIFT');
           NODE
       - uses: actions/upload-artifact@v4
         with:
@@ -1876,35 +1299,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          anchor=7b4092d80bd4aabab6e3389c42810654aeaa894c
-          package_commit=22e00f4b5f541190909bd0243a6ba5238a1f27a5
-          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml
-          package_blob=2e06a3ba2d043da6d973bfc87e77987e3b036e76
-          test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
-          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
-          git merge-base --is-ancestor "$anchor" HEAD
-          if ! git cat-file -e "$package_commit:$package_path" 2>/dev/null; then
-            git fetch --no-tags origin "$package_commit"
-          fi
+          anchor=7b4092d80bd4aabab6e3389c42810654aeaa894c; package_commit=22e00f4b5f541190909bd0243a6ba5238a1f27a5; package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml; package_blob=2e06a3ba2d043da6d973bfc87e77987e3b036e76
+          test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp; test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"; git merge-base --is-ancestor "$anchor" HEAD
+          if ! git cat-file -e "$package_commit:$package_path" 2>/dev/null; then git fetch --no-tags origin "$package_commit"; fi
           test "$(git rev-parse "$package_commit:$package_path")" = "$package_blob"
-          actual="$(git diff --name-only "$anchor"...HEAD | LC_ALL=C sort)"
-          expected_paths=(
-            .github/workflows/validate-conformance.yml
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/minimal-reference.json
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/negative-corpus.json
-            tooling/semantic-lifecycle/package.json
-            tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecyclePortable.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts
-          )
-          expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
-          test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
+          actual="$(git diff --name-only "$anchor"...HEAD | LC_ALL=C sort)"; expected_paths=(.github/workflows/validate-conformance.yml tooling/semantic-lifecycle/fixtures/sem-lc-08/minimal-reference.json tooling/semantic-lifecycle/fixtures/sem-lc-08/negative-corpus.json tooling/semantic-lifecycle/package.json tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts tooling/semantic-lifecycle/src/semanticLifecyclePortable.test.ts tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.test.ts tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts); expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"; test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
       - name: Build and run V13 reference-mode oracles
         shell: bash
         run: |
@@ -1919,15 +1318,10 @@ jobs:
           PLATFORM_LABEL: ubuntu-latest
         run: |
           set -euo pipefail
-          export RESULT_REVISION="$(git rev-parse HEAD)"
-          export RESULT_TREE="$(git rev-parse 'HEAD^{tree}')"
-          export OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-08/v13"
+          export RESULT_REVISION="$(git rev-parse HEAD)" RESULT_TREE="$(git rev-parse 'HEAD^{tree}')" OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-08/v13"
           pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:optimized
           node --input-type=module <<'NODE'
-          import { readFileSync } from 'node:fs';
-          const manifest = JSON.parse(readFileSync(`${process.env.OUTPUT_DIRECTORY}/v13-reference-mode-manifest.json`, 'utf8'));
-          if (manifest.verdict !== 'PASS' || manifest.optimized_path_present !== false || manifest.optimized_reference_mismatch_total !== 0 || manifest.full_reference_mode_independently_runnable !== true) throw new Error('V13_REFERENCE_MODE_FAILURE');
-          if (Array.isArray(manifest.optimized_path_name_matches) && manifest.optimized_path_name_matches.length !== 0) throw new Error('V13_OPTIMIZED_PATH_CONFLICT');
+          import {readFileSync} from 'node:fs'; const manifest=JSON.parse(readFileSync(`${process.env.OUTPUT_DIRECTORY}/v13-reference-mode-manifest.json`,'utf8')); if(manifest.verdict!=='PASS'||manifest.optimized_path_present!==false||manifest.optimized_reference_mismatch_total!==0||manifest.full_reference_mode_independently_runnable!==true)throw new Error('V13_REFERENCE_MODE_FAILURE'); if(Array.isArray(manifest.optimized_path_name_matches)&&manifest.optimized_path_name_matches.length!==0)throw new Error('V13_OPTIMIZED_PATH_CONFLICT');
           NODE
       - uses: actions/upload-artifact@v4
         with:
@@ -1972,9 +1366,7 @@ jobs:
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           git merge-base --is-ancestor 7b4092d80bd4aabab6e3389c42810654aeaa894c HEAD
-          if ! git cat-file -e 22e00f4b5f541190909bd0243a6ba5238a1f27a5:.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml 2>/dev/null; then
-            git fetch --no-tags origin 22e00f4b5f541190909bd0243a6ba5238a1f27a5
-          fi
+          if ! git cat-file -e 22e00f4b5f541190909bd0243a6ba5238a1f27a5:.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml 2>/dev/null; then git fetch --no-tags origin 22e00f4b5f541190909bd0243a6ba5238a1f27a5; fi
           test "$(git rev-parse 22e00f4b5f541190909bd0243a6ba5238a1f27a5:.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml)" = 2e06a3ba2d043da6d973bfc87e77987e3b036e76
       - name: Install and build semantic lifecycle
         shell: bash
@@ -1993,23 +1385,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          export RESULT_REVISION="$(git rev-parse HEAD)"
-          export RESULT_TREE="$(git rev-parse 'HEAD^{tree}')"
-          export RECONCILE_INPUT_ROOT="$GITHUB_WORKSPACE/.evidence-input/sem-lc-08"
-          export OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-08/reconcile"
+          export RESULT_REVISION="$(git rev-parse HEAD)" RESULT_TREE="$(git rev-parse 'HEAD^{tree}')" RECONCILE_INPUT_ROOT="$GITHUB_WORKSPACE/.evidence-input/sem-lc-08" OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-08/reconcile"
           pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reconcile
           node --input-type=module <<'NODE'
-          import { readdirSync, readFileSync, statSync } from 'node:fs';
-          import { join } from 'node:path';
-          const gatePath = `${process.env.OUTPUT_DIRECTORY}/gate-bundle.json`;
-          const gate = JSON.parse(readFileSync(gatePath, 'utf8'));
-          if (gate.verification_result !== 'PASS') throw new Error('SEM_LC_08_RECONCILE_NOT_PASS');
-          if (gate.p34_gate_verdict !== 'NOT_ISSUED_BY_P32') throw new Error('P32_GATE_AUTHORITY_VIOLATION');
-          if (gate.lifecycle_cases_completed !== 4096 || gate.semantic_dimension_observations_completed !== 61440 || gate.projection_reference_edges_completed !== 61440 || gate.registry_mutation_entries_completed !== 4096) throw new Error('SEM_LC_08_RECONCILE_CARDINALITY_DRIFT');
-          if (Object.values(gate.blocking_thresholds ?? {}).some(value => value !== 0)) throw new Error('SEM_LC_08_RECONCILE_ZERO_TOLERANCE_FAILURE');
-          const size = root => { let total = 0; const visit = path => { const stat = statSync(path); if (stat.isDirectory()) for (const entry of readdirSync(path)) visit(join(path, entry)); else total += stat.size; }; visit(root); return total; };
-          const evidenceBytes = size(process.env.RECONCILE_INPUT_ROOT) + size(process.env.OUTPUT_DIRECTORY);
-          if (evidenceBytes > 67108864) throw new Error(`SEM_LC_08_EVIDENCE_BYTE_CAP_EXCEEDED:${evidenceBytes}`);
+          import {readdirSync,readFileSync,statSync} from 'node:fs'; import {join} from 'node:path'; const gate=JSON.parse(readFileSync(`${process.env.OUTPUT_DIRECTORY}/gate-bundle.json`,'utf8')); if(gate.verification_result!=='PASS')throw new Error('SEM_LC_08_RECONCILE_NOT_PASS'); if(gate.p34_gate_verdict!=='NOT_ISSUED_BY_P32')throw new Error('P32_GATE_AUTHORITY_VIOLATION'); if(gate.lifecycle_cases_completed!==4096||gate.semantic_dimension_observations_completed!==61440||gate.projection_reference_edges_completed!==61440||gate.registry_mutation_entries_completed!==4096)throw new Error('SEM_LC_08_RECONCILE_CARDINALITY_DRIFT'); if(Object.values(gate.blocking_thresholds??{}).some(value=>value!==0))throw new Error('SEM_LC_08_RECONCILE_ZERO_TOLERANCE_FAILURE'); const size=root=>{let total=0;const visit=path=>{const stat=statSync(path);if(stat.isDirectory())for(const entry of readdirSync(path))visit(join(path,entry));else total+=stat.size};visit(root);return total}; const evidenceBytes=size(process.env.RECONCILE_INPUT_ROOT)+size(process.env.OUTPUT_DIRECTORY); if(evidenceBytes>67108864)throw new Error(`SEM_LC_08_EVIDENCE_BYTE_CAP_EXCEEDED:${evidenceBytes}`);
           NODE
       - uses: actions/upload-artifact@v4
         with:
