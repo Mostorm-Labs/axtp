@@ -94,6 +94,18 @@ export function parseRegistryProspectivePayload(value: CanonicalJsonValue): Regi
   return normalizeMutation(value as unknown as RegistryProspectiveMutationPayload);
 }
 
+export function compareUtf8UnsignedBytes(left: string, right: string): number {
+  const leftBytes = Buffer.from(left, "utf8");
+  const rightBytes = Buffer.from(right, "utf8");
+  const length = Math.min(leftBytes.length, rightBytes.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftByte = leftBytes[index]!;
+    const rightByte = rightBytes[index]!;
+    if (leftByte !== rightByte) return leftByte < rightByte ? -1 : 1;
+  }
+  return leftBytes.length === rightBytes.length ? 0 : leftBytes.length < rightBytes.length ? -1 : 1;
+}
+
 function normalizeMutation(input: RegistryProspectiveMutationInput | RegistryProspectiveMutationPayload): RegistryProspectiveMutationPayload {
   if (!input || typeof input !== "object" || !/^[0-9a-f]{40}$/.test(input.baseProtocolAuthorityRevision)) throw new Error("INVALID_REGISTRY_MUTATION");
   if ("schemaVersion" in input && input.schemaVersion !== 1) throw new Error("INVALID_REGISTRY_MUTATION");
@@ -105,8 +117,8 @@ function normalizeMutation(input: RegistryProspectiveMutationInput | RegistryPro
     const digest = sha256(entry.content);
     if ("sha256" in entry && entry.sha256 !== digest) throw new Error("REGISTRY_CONTENT_DIGEST_MISMATCH");
     return Object.freeze({ path, content: entry.content, sha256: digest });
-  }).sort((left, right) => left.path.localeCompare(right.path));
-  const deletes = input.deletes.map(registryPath).sort();
+  }).sort((left, right) => compareUtf8UnsignedBytes(left.path, right.path));
+  const deletes = input.deletes.map(registryPath).sort(compareUtf8UnsignedBytes);
   const all = [...writes.map((entry) => entry.path), ...deletes];
   if (new Set(all).size !== all.length) throw new Error("REGISTRY_PATH_CONFLICT");
   return Object.freeze({ schemaVersion: 1, kind: "AXTP_REGISTRY_MUTATION", baseProtocolAuthorityRevision: input.baseProtocolAuthorityRevision, writes: Object.freeze(writes), deletes: Object.freeze(deletes) });
@@ -130,5 +142,5 @@ function sha256(value: string): string { return createHash("sha256").update(valu
 function canonicalJson(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  return `{${Object.keys(value as object).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`).join(",")}}`;
+  return `{${Object.keys(value as object).sort(compareUtf8UnsignedBytes).map((key) => `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`).join(",")}}`;
 }
