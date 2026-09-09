@@ -4,8 +4,23 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import * as publicSemanticLifecycle from "./index.js";
 import { FileProtocolAdoptionControlRepository } from "./fileProtocolAdoptionControlRepository.js";
 import { materializeProtocolAdoptionEvidence } from "./protocolAdoptionEvidence.js";
+
+test("supported public entrypoint exposes guarded adoption without a direct Protocol writer", () => {
+  const publicSurface = publicSemanticLifecycle as Record<string, unknown>;
+  assert.equal("FileProtocolAuthorityStore" in publicSurface, false);
+  assert.equal("ProtocolAuthorityMutationPort" in publicSurface, false);
+  assert.deepEqual(
+    Object.entries(publicSurface)
+      .filter(([, value]) => typeof value === "function" && typeof value.prototype?.commit === "function")
+      .map(([name]) => name),
+    []
+  );
+  assert.equal(typeof publicSurface.ProtocolAdoptionGuard, "function");
+  assert.equal(typeof publicSurface.ProtocolAdoptionOrchestrator, "function");
+});
 
 test("durable lifecycle schema contains correlation state but no reusable authorization truth", () => {
   const directory = mkdtempSync(join(tmpdir(), "axtp-schema-"));
