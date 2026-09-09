@@ -3,7 +3,7 @@ import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, re
 import { dirname } from "node:path";
 import { equalBasisRef } from "./basis.js";
 import type { CanonicalJsonValue, ImmutableRevisionRef } from "./model.js";
-import type { ProtocolAuthorityCommitRequest, ProtocolAuthorityCommitResult, ProtocolAuthorityMutationOutcome, ProtocolAuthorityMutationPort, ProtocolAuthorityOutcomeQuery } from "./protocolAuthorityMutationPort.js";
+import { ProtocolMutationOutcomeUnknownError, type ProtocolAuthorityCommitRequest, type ProtocolAuthorityCommitResult, type ProtocolAuthorityMutationOutcome, type ProtocolAuthorityMutationPort, type ProtocolAuthorityOutcomeQuery } from "./protocolAuthorityMutationPort.js";
 
 interface AuthorityEntry { readonly ref: ImmutableRevisionRef; readonly payload: CanonicalJsonValue; }
 interface AppliedOperation { readonly request: ProtocolAuthorityCommitRequest; readonly result: ProtocolAuthorityCommitResult; }
@@ -21,8 +21,12 @@ export interface InitialProtocolAuthority {
   readonly payload: CanonicalJsonValue;
 }
 
+export interface FileProtocolAuthorityStoreOptions {
+  readonly afterReplaceBeforeDirectorySync?: () => void;
+}
+
 export class FileProtocolAuthorityStore implements ProtocolAuthorityMutationPort {
-  constructor(private readonly path: string, initialAuthorities: readonly InitialProtocolAuthority[] = []) { this.initialize(initialAuthorities); }
+  constructor(private readonly path: string, initialAuthorities: readonly InitialProtocolAuthority[] = [], private readonly options: FileProtocolAuthorityStoreOptions = {}) { this.initialize(initialAuthorities); }
 
   initialize(initialAuthorities: readonly InitialProtocolAuthority[] = []): void {
     mkdirSync(dirname(this.path), { recursive: true });
@@ -41,36 +45,41 @@ export class FileProtocolAuthorityStore implements ProtocolAuthorityMutationPort
 
   commit(input: ProtocolAuthorityCommitRequest): ProtocolAuthorityCommitResult {
     const request = normalizeRequest(input);
-    return this.mutate((state) => {
-      const prior = state.operations[request.operationId];
-      if (prior !== undefined) {
-        if (canonicalJson(prior.request) !== canonicalJson(request)) throw new Error("OPERATION_ID_CONFLICT");
-        return { ...clone(prior.result), status: "IDEMPOTENT" as const };
-      }
-      const priorCaseOperation = state.adoptedCases[request.protocolAdoptionCaseId];
-      if (priorCaseOperation !== undefined) throw new Error("PROTOCOL_ADOPTION_ALREADY_APPLIED");
-      const current = state.heads[request.protocolAuthorityKey]?.ref ?? null;
-      if (!sameNullableRef(current, request.expectedProtocolAuthorityHead)) throw new Error("PROTOCOL_AUTHORITY_HEAD_CONFLICT");
-      const digest = createHash("sha256").update(canonicalJson(request)).digest("hex");
-      const resultingProtocolAuthorityRef: ImmutableRevisionRef = {
-        refType: "IMMUTABLE_REVISION",
-        namespace: "protocol-authority",
-        subject: request.protocolAuthorityKey,
-        revision: digest,
-        digest: `sha256:${digest}`
-      };
-      const result: ProtocolAuthorityCommitResult = {
-        status: "APPLIED",
-        resultingProtocolAuthorityRef,
-        prospectiveProtocolBasisRef: request.prospectiveProtocolBasisRef,
-        payload: request.payload
-      };
-      state.heads[request.protocolAuthorityKey] = { ref: resultingProtocolAuthorityRef, payload: request.payload };
-      state.operations[request.operationId] = { request, result };
-      state.adoptedCases[request.protocolAdoptionCaseId] = request.operationId;
-      state.mutationCount += 1;
-      return result;
-    });
+    try {
+      return this.mutate((state) => {
+        const prior = state.operations[request.operationId];
+        if (prior !== undefined) {
+          if (canonicalJson(prior.request) !== canonicalJson(request)) throw new Error("OPERATION_ID_CONFLICT");
+          return { ...clone(prior.result), status: "IDEMPOTENT" as const };
+        }
+        const priorCaseOperation = state.adoptedCases[request.protocolAdoptionCaseId];
+        if (priorCaseOperation !== undefined) throw new Error("PROTOCOL_ADOPTION_ALREADY_APPLIED");
+        const current = state.heads[request.protocolAuthorityKey]?.ref ?? null;
+        if (!sameNullableRef(current, request.expectedProtocolAuthorityHead)) throw new Error("PROTOCOL_AUTHORITY_HEAD_CONFLICT");
+        const digest = createHash("sha256").update(canonicalJson(request)).digest("hex");
+        const resultingProtocolAuthorityRef: ImmutableRevisionRef = {
+          refType: "IMMUTABLE_REVISION",
+          namespace: "protocol-authority",
+          subject: request.protocolAuthorityKey,
+          revision: digest,
+          digest: `sha256:${digest}`
+        };
+        const result: ProtocolAuthorityCommitResult = {
+          status: "APPLIED",
+          resultingProtocolAuthorityRef,
+          prospectiveProtocolBasisRef: request.prospectiveProtocolBasisRef,
+          payload: request.payload
+        };
+        state.heads[request.protocolAuthorityKey] = { ref: resultingProtocolAuthorityRef, payload: request.payload };
+        state.operations[request.operationId] = { request, result };
+        state.adoptedCases[request.protocolAdoptionCaseId] = request.operationId;
+        state.mutationCount += 1;
+        return result;
+      });
+    } catch (error) {
+      if (error instanceof PostReplacementDurabilityError) throw new ProtocolMutationOutcomeUnknownError();
+      throw error;
+    }
   }
 
   queryOutcome(query: ProtocolAuthorityOutcomeQuery): ProtocolAuthorityMutationOutcome {
@@ -103,7 +112,7 @@ export class FileProtocolAuthorityStore implements ProtocolAuthorityMutationPort
     try {
       const state = this.read();
       const result = action(state);
-      writeDurable(this.path, state);
+      writeDurable(this.path, state, this.options);
       return clone(result);
     } finally { closeSync(lock); unlinkSync(lockPath); }
   }
@@ -121,4 +130,24 @@ function sameNullableRef(left: ImmutableRevisionRef | null, right: ImmutableRevi
 function canonicalValue(value: unknown): CanonicalJsonValue { if (value === null || typeof value === "string" || typeof value === "boolean") return value as CanonicalJsonValue; if (typeof value === "number" && Number.isFinite(value)) return Object.is(value, -0) ? 0 : value; if (Array.isArray(value)) return value.map(canonicalValue); if (!value || typeof value !== "object") throw new Error("INVALID_CANONICAL_VALUE"); return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalValue((value as Record<string, unknown>)[key])])) as CanonicalJsonValue; }
 function canonicalJson(value: unknown): string { if (value === null || typeof value !== "object") return JSON.stringify(value); if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`; return `{${Object.keys(value as object).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`).join(",")}}`; }
 function clone<T>(value: T): T { return value === undefined ? value : structuredClone(value); }
-function writeDurable(path: string, state: ProtocolStoreState): void { const temp = `${path}.tmp-${process.pid}`; writeFileSync(temp, `${canonicalJson(state)}\n`, { mode: 0o600 }); const fd = openSync(temp, "r"); try { fsyncSync(fd); } finally { closeSync(fd); } renameSync(temp, path); const dir = openSync(dirname(path), "r"); try { fsyncSync(dir); } finally { closeSync(dir); } }
+class PostReplacementDurabilityError extends Error {
+  constructor(cause: unknown) {
+    super("PROTOCOL_STORE_POST_REPLACEMENT_DURABILITY_FAILURE", { cause });
+    this.name = "PostReplacementDurabilityError";
+  }
+}
+
+function writeDurable(path: string, state: ProtocolStoreState, options: FileProtocolAuthorityStoreOptions): void {
+  const temp = `${path}.tmp-${process.pid}`;
+  writeFileSync(temp, `${canonicalJson(state)}\n`, { mode: 0o600 });
+  const fd = openSync(temp, "r");
+  try { fsyncSync(fd); } finally { closeSync(fd); }
+  renameSync(temp, path);
+  try {
+    options.afterReplaceBeforeDirectorySync?.();
+    const dir = openSync(dirname(path), "r");
+    try { fsyncSync(dir); } finally { closeSync(dir); }
+  } catch (error) {
+    throw new PostReplacementDurabilityError(error);
+  }
+}

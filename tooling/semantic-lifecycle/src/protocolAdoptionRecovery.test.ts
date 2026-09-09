@@ -30,8 +30,72 @@ function setup() {
   const route = new ProtocolAdoptionRoute({ ...base, guard: new ProtocolAdoptionGuard({ ...base, protocolAuthority: protocol }) });
   route.openCase({ operationVersion: 1, operationId: "open", operationKind: "OPEN_PROTOCOL_ADOPTION_CASE", payload: { selection, caseRecord: { schemaVersion: 1, protocolAdoptionCaseId: caseId, status: "OPEN", workingSelectionRef: selectionRef, evidenceRefs: ev } } });
   const command = { operationVersion: 1 as const, operationId: "finalize", operationKind: "FINALIZE_PROTOCOL_ADOPTION" as const, payload: { protocolAdoptionCaseId: caseId, expectedWorkingSelectionRef: selectionRef, protocolAuthorityKey: "axtp", expectedProtocolAuthorityHead: copy(fixture.refs.protocolHead), prospectiveProtocolBasisRef: copy(fixture.refs.proposalA), evidenceRefs: ev } };
-  return { directory, caseId, controlPath, protocolPath, control, protocol, assessments, prospective, semantic, base, route, command };
+  return { directory, caseId, controlPath, protocolPath, control, protocol, assessments, prospective, semantic, base, route, selection, selectionRef, command };
 }
+
+test("post-replacement directory durability failure stays ambiguous until exact reconciliation", () => {
+  const ctx = setup();
+  try {
+    let injectedFaults = 0;
+    const faultingProtocol = new FileProtocolAuthorityStore(ctx.protocolPath, [], {
+      afterReplaceBeforeDirectorySync: () => {
+        injectedFaults += 1;
+        throw new Error("INJECTED_POST_RENAME_DIRECTORY_FSYNC_FAILURE");
+      }
+    });
+    const guard = new ProtocolAdoptionGuard({ ...ctx.base, protocolAuthority: faultingProtocol });
+
+    assert.throws(() => guard.finalize(ctx.command), /AMBIGUOUS_PROTOCOL_COMMIT/);
+    assert.equal(injectedFaults, 1);
+
+    const reopenedControl = new FileProtocolAdoptionControlRepository(ctx.controlPath);
+    const reservation = reopenedControl.getFinalizationReservation(ctx.caseId);
+    assert.equal(reservation?.state, "UNRESOLVED");
+    const reopenedProtocol = new FileProtocolAuthorityStore(ctx.protocolPath);
+    assert.equal(reopenedProtocol.getMutationCount(), 1);
+    assert.equal(reopenedProtocol.queryOutcome({
+      protocolAdoptionCaseId: ctx.caseId,
+      operationId: ctx.command.operationId,
+      commandDigest: reservation!.commandDigest
+    }).status, "APPLIED_EXACT");
+
+    const reopenedBase = { ...ctx.base, control: reopenedControl };
+    const reopenedGuard = new ProtocolAdoptionGuard({ ...reopenedBase, protocolAuthority: reopenedProtocol });
+    const reopenedRoute = new ProtocolAdoptionRoute({ ...reopenedBase, guard: reopenedGuard });
+    assert.throws(() => reopenedRoute.cancelCase({
+      operationVersion: 1,
+      operationId: "cancel-while-ambiguous",
+      operationKind: "CANCEL_PROTOCOL_ADOPTION_CASE",
+      payload: { protocolAdoptionCaseId: ctx.caseId, expectedWorkingSelectionRef: ctx.selectionRef }
+    }), /FINALIZATION_IN_PROGRESS/);
+    assert.throws(() => reopenedRoute.reselectInputs({
+      operationVersion: 1,
+      operationId: "reselect-while-ambiguous",
+      operationKind: "RESELECT_PROTOCOL_ADOPTION_INPUTS",
+      payload: {
+        expectedWorkingSelectionRef: ctx.selectionRef,
+        selection: {
+          ...ctx.selection,
+          selectionRef: { ...ctx.selectionRef, revision: "s2", digest: "sha256:s2" },
+          supersedesSelectionRef: ctx.selectionRef
+        }
+      }
+    }), /FINALIZATION_IN_PROGRESS/);
+    assert.throws(() => reopenedGuard.finalize({ ...ctx.command, operationId: "competing-finalize" }), /FINALIZATION_IN_PROGRESS/);
+
+    assert.equal(reopenedGuard.reconcile({
+      operationVersion: 1,
+      operationId: "reconcile-post-rename",
+      operationKind: "RECONCILE_PROTOCOL_ADOPTION",
+      payload: { protocolAdoptionCaseId: ctx.caseId, originalOperationId: ctx.command.operationId }
+    }).status, "RECONCILED");
+    assert.equal(reopenedProtocol.getMutationCount(), 1);
+    assert.equal(reopenedControl.getCase(ctx.caseId)?.status, "PROTOCOL_ADOPTED");
+    assert.equal(reopenedControl.getFinalizationReservation(ctx.caseId), undefined);
+    assert.equal(reopenedGuard.finalize(ctx.command).status, "APPLIED");
+    assert.equal(reopenedProtocol.getMutationCount(), 1);
+  } finally { rmSync(ctx.directory, { recursive: true, force: true }); }
+});
 
 test("response loss keeps a durable reservation and APPLIED_EXACT reconciliation never writes twice", () => {
   const ctx = setup();
