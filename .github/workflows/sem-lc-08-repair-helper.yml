@@ -1,10 +1,9 @@
 name: SEM-LC-08 one-shot workflow repair helper
 
 on:
-  pull_request:
-    types: [synchronize]
+  push:
     branches:
-      - integration/axtp-next
+      - codex/sem-lc-08-p32-v02
     paths:
       - .github/workflows/sem-lc-08-repair-helper.yml
 
@@ -18,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
