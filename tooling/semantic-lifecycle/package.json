@@ -7,8 +7,15 @@
     "build": "tsc -p tsconfig.json",
     "evidence:protocol-adoption": "node dist/protocolAdoptionEvidence.js",
     "evidence:workflow-lifecycle": "node dist/workflowLifecycleEvidence.js",
+    "evidence:semantic-lifecycle:reference": "node --enable-source-maps dist/semanticLifecycleReferenceEvidence.js",
+    "evidence:semantic-lifecycle:negative": "node --enable-source-maps dist/semanticLifecycleNegativeEvidence.js",
+    "evidence:semantic-lifecycle:optimized": "node --enable-source-maps dist/semanticLifecycleOptimizedEvidence.js",
+    "evidence:semantic-lifecycle:reconcile": "node --enable-source-maps dist/semanticLifecycleReconcileEvidence.js",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "rm -rf .test-dist && tsc --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts && node --test .test-dist/src/*.test.js"
+    "test": "rm -rf .test-dist && tsc --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/*.ts && node --test .test-dist/src/*.test.js",
+    "test:semantic-lifecycle:reference": "node -e \"require('node:fs').rmSync('.test-dist',{recursive:true,force:true})\" && tsc --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/semanticLifecycleReferenceEvidence.test.ts && node --test .test-dist/src/semanticLifecycleReferenceEvidence.test.js",
+    "test:semantic-lifecycle:negative": "node -e \"require('node:fs').rmSync('.test-dist',{recursive:true,force:true})\" && tsc --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/semanticLifecycleNegativeEvidence.test.ts && node --test .test-dist/src/semanticLifecycleNegativeEvidence.test.js",
+    "test:semantic-lifecycle:portable": "node -e \"require('node:fs').rmSync('.test-dist',{recursive:true,force:true})\" && tsc --module NodeNext --moduleResolution NodeNext --target ES2022 --outDir .test-dist --rootDir . --skipLibCheck --noEmitOnError false --resolveJsonModule --esModuleInterop src/semanticLifecyclePortable.test.ts && node --test .test-dist/src/semanticLifecyclePortable.test.js"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
