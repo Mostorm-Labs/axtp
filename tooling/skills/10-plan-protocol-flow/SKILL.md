@@ -7,6 +7,10 @@ description: Stage 10 flow-planning skill for AXTP protocol interactions. Use wh
 
 Stage 10. Turn a business scenario, user story, UI prototype, or end-to-end workflow into a reviewable AXTP protocol interaction plan under `workspace/flows/**`.
 
+## Semantic Lifecycle Boundary
+
+Before routing any result to Stage 20, run the accepted Stage 10 classification capability through `WorkflowLifecycleAdapter`. An `UNRESOLVED` result or a result whose exact Scope or Classification Basis is stale fails closed; it must produce zero Stage 20 entries. This stage records observations and flow gaps only. It cannot synthesize a Candidate, HUMAN review, Semantic Authority, prospective Registry basis, or Protocol mutation.
+
 This skill sits before `draft-business-protocol`: it discovers which existing protocols are needed across the whole story, records what is already adopted or drafted, and identifies gaps that should be handed to `draft-business-protocol`, `amend-adopted-protocol`, or runtime implementation.
 
 ## Boundaries

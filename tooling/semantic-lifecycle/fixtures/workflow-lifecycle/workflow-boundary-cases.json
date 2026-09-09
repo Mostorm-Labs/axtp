@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "stageNumbers": [10, 20, 30, 40, 50, 99],
+  "cases": [
+    { "id": "W7-1", "boundary": "classification-freshness", "expected": "fail-closed-before-stage20" },
+    { "id": "W7-2", "boundary": "semantic-authority", "expected": "proposal-only" },
+    { "id": "W7-3", "boundary": "bound-existing", "expected": "delegate-without-reinterpretation" },
+    { "id": "W7-4", "boundary": "protocol-adoption", "expected": "route-guard-atomic-git-ref" },
+    { "id": "W7-5", "boundary": "amendment", "expected": "reclassify-and-supersede-first" },
+    { "id": "W7-6", "boundary": "generation-routing", "expected": "committed-source-only" }
+  ]
+}

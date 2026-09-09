@@ -8,8 +8,100 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
+  sem-lc-07-evidence:
+    name: SEM-LC-07 workflow lifecycle exact-result evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify v0.2 package binding and exact authorized scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          anchor=74e1153700e07d31cb471c859a7dec5a03163416
+          package_commit=b13664902910723dcfe0b2c50f7d2c1e2fc045a7
+          package_path=.aegis/packages/AXTP-SEM-LC-07-P31-v0.2.yaml
+          test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          git merge-base --is-ancestor "$anchor" HEAD
+          if ! git cat-file -e "$package_commit:$package_path" 2>/dev/null; then
+            git fetch --no-tags origin "$package_commit"
+          fi
+          git cat-file -e "$package_commit:$package_path"
+          test "$(git rev-parse "$package_commit:$package_path")" = c0caec763d8c0c88258832b7eb5e838f31dfd3ce
+          allowed='^(\.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/package\.json|tooling/semantic-lifecycle/src/(index|protocolAdoptionArchitectureBoundary|workflowLifecycleAdapter|workflowLifecycleAdapter\.test|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|registryProspectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider\.test|gitRegistryProtocolAuthorityMutationPort|gitRegistryProtocolAuthorityMutationPort\.test|productionProtocolAdoptionRuntime|productionProtocolAdoptionRuntime\.test)\.ts|tooling/semantic-lifecycle/fixtures/workflow-lifecycle/workflow-boundary-cases\.json|\.evidence/semantic-lifecycle/workflow-lifecycle/.*)$'
+          changed="$(git diff --name-only "$anchor"...HEAD)"
+          test -n "$changed"
+          forbidden="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          if [ -n "$forbidden" ]; then
+            printf 'SEM-LC-07 forbidden changed paths:\n%s\n' "$forbidden" >&2
+            exit 1
+          fi
+      - name: Run W7 and predecessor semantic lifecycle regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+          pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+          pnpm --dir tooling/semantic-lifecycle build
+          pnpm --dir tooling/semantic-lifecycle lint
+          pnpm --dir tooling/semantic-lifecycle test
+      - name: Run generator current-source regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir tooling/generators install --frozen-lockfile
+          pnpm --dir tooling/generators build
+          pnpm --dir tooling/generators test
+          pnpm --dir tooling/generators validate:sources
+          test -z "$(git status --short -- contract/registry contract/protocol contract/generated contract/mcp contract/test-vectors tooling/generators/src/__snapshots__)"
+      - name: Materialize and validate exact-result workflow evidence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TASK_ANCHOR: 74e1153700e07d31cb471c859a7dec5a03163416
+          ACTUAL_STARTING_REVISION: 74e1153700e07d31cb471c859a7dec5a03163416
+          PACKAGE_REF: notion://3d64c57a-590c-8167-b307-d835b472d056/AXTP-SEM-LC-07-P31-v0.2
+          PACKAGE_MATERIALIZATION_COMMIT: b13664902910723dcfe0b2c50f7d2c1e2fc045a7
+          PACKAGE_BLOB_SHA: c0caec763d8c0c88258832b7eb5e838f31dfd3ce
+          EVIDENCE_JOB: sem-lc-07-evidence
+        run: |
+          set -euo pipefail
+          export RESULT_REVISION="$(git rev-parse HEAD)"
+          export RESULT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          export OUTPUT_DIRECTORY="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/workflow-lifecycle"
+          export EVIDENCE_ARTIFACT_NAME="sem-lc-07-evidence-$RESULT_REVISION"
+          export EVIDENCE_ARTIFACT_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
+          jobs_json="$(curl --fail --silent --show-error -H "Authorization: Bearer $GH_TOKEN" -H 'X-GitHub-Api-Version: 2022-11-28' "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100")"
+          export EVIDENCE_JOB_ID="$(jq -r '.jobs[] | select(.name == "SEM-LC-07 workflow lifecycle exact-result evidence") | .id' <<<"$jobs_json")"
+          test -n "$EVIDENCE_JOB_ID"
+          pnpm --dir tooling/semantic-lifecycle evidence:workflow-lifecycle
+          expected=(stage10-classification.json semantic-authority-boundary.json bound-existing-boundary.json stage30-adoption.json stage40-amendment.json stage50-stage99-boundary.json manifest.json)
+          test "$(find "$OUTPUT_DIRECTORY" -maxdepth 1 -type f | wc -l | tr -d ' ')" = 7
+          for name in "${expected[@]}"; do
+            test -s "$OUTPUT_DIRECTORY/$name"
+            test "$(jq -r .resultRevision "$OUTPUT_DIRECTORY/$name")" = "$RESULT_REVISION"
+            test "$(jq -r .resultTree "$OUTPUT_DIRECTORY/$name")" = "$RESULT_TREE"
+            test "$(jq -r .verdict "$OUTPUT_DIRECTORY/$name")" = PASS
+          done
+          test "$(jq '.reports | length' "$OUTPUT_DIRECTORY/manifest.json")" = 6
+          test "$(jq '[.zeroTolerance[]] | unique' "$OUTPUT_DIRECTORY/manifest.json")" = '[0]'
+          git diff --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sem-lc-07-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: .evidence/semantic-lifecycle/workflow-lifecycle
+          if-no-files-found: error
+
   sem-lc-06-evidence:
     name: SEM-LC-06 Protocol adoption exact-result evidence
     runs-on: ubuntu-latest

@@ -7,6 +7,14 @@ description: Stage 40 amendment skill for already-adopted AXTP protocol facts. U
 
 Stage 40. Change a protocol that has already passed adoption and entered YAML/generated artifacts. This workflow is for post-adoption corrections and semantic refinements, such as removing an unnecessary draft schema field, deprecating a stable field, renaming a generated type, or tightening an already-adopted method.
 
+## Semantic Lifecycle Production Boundary
+
+Reclassify against the exact current Scope and Classification Basis before amendment. A true semantic delta requires a reviewed, accepted superseding Semantic Authority before Protocol adoption. Working-tree YAML remains prospective non-authoritative Registry staging and must use the same Stage 30 chain:
+
+`ProtocolAdoptionRoute.finalizeProtocolAdoption -> ProtocolAdoptionGuard -> GitRegistryProtocolAuthorityMutationPort -> atomic Git ref transaction -> committed contract/registry Authority`.
+
+Commit the immutable prospective snapshot bytes. Stage 40 cannot receive a raw writer, commit Registry Authority directly, or detach Guard validation from the write. Reconcile an ambiguous outcome through the route instead of making a second mutation.
+
 ## Hard Boundaries
 
 - Start from existing adopted facts in `workspace/protocol/<domain>/<domain.feature>.md` plus `contract/registry/**/*.yaml` or `contract/registry/domains/**/*.yaml`.
@@ -104,9 +112,9 @@ Specs are governance, not the machine source. Update only when the amendment cha
 
 Do not copy full business prose into specs.
 
-### 6. Patch YAML Sources
+### 6. Prepare Prospective YAML Sources
 
-Patch `contract/registry/**/*.yaml` or `contract/registry/domains/**/*.yaml` with `apply_patch`.
+Patch `contract/registry/**/*.yaml` or `contract/registry/domains/**/*.yaml` with `apply_patch` as a working-tree proposal. Capture exact proposal bytes and finalize through the production boundary above before calling the result adopted.
 
 Rules:
 
