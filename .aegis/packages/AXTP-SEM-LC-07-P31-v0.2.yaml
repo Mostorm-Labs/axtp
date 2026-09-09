@@ -1,0 +1,375 @@
+package_version: 2
+package_id: AXTP-SEM-LC-07-P31-v0.2@74e1153700e07d31cb471c859a7dec5a03163416
+task_id: AXTP-SEM-LC-07
+stage: P31_TASK_PACKAGING_REGENERATION
+state: READY_FOR_P32
+package_ref: notion://3d64c57a-590c-8167-b307-d835b472d056/AXTP-SEM-LC-07-P31-v0.2
+replaces_package_ref: notion://3d64c57a-590c-810d-924e-ccb32a814687/AXTP-SEM-LC-07-P31-v0.1
+regeneration_reason:
+  class: P31_TASK_PACKAGE_DEFECT
+  failed_requirement: RC7-04
+  failed_oracle: W7-4
+  p21_review: 3d64c57a-590c-810a-aff0-f313395163df
+purpose: >-
+  Connect the accepted Semantic Lifecycle capabilities to the AXTP Protocol workflow,
+  including a production Registry-backed Protocol Authority mutation realization,
+  while preserving Guard-only finalization, one adopted Protocol truth source, explicit
+  HUMAN review boundaries, and end-to-end V1-V10 workflow enforcement.
+
+repository:
+  provider: github
+  full_name: Mostorm-Labs/axtp
+  canonical_branch_context: integration/axtp-next
+
+task_anchor:
+  revision: 74e1153700e07d31cb471c859a7dec5a03163416
+  tree: 9158a88fa775173b6a27bdaeeb7440ecf9cc14fc
+  relation: ancestor
+resume_cursor: null
+
+current_authority:
+  master_plan: 3d04c57a-590c-81f5-ad5e-eb6c3f184cac
+  predecessor_sem_lc_06_closure: 3d64c57a-590c-81a5-8721-eeeff4d8484e
+  predecessor_p14: 3d54c57a-590c-816a-a074-c49127e038e8
+  predecessor_p20: 3d54c57a-590c-81bd-902c-e44356195231
+  predecessor_p23: 3d54c57a-590c-819a-b472-c180c8d68c29
+  sem_lc_07_p30_release: 3d64c57a-590c-81df-afc0-e7d1f82873a3
+  p21_package_defect_review: 3d64c57a-590c-810a-aff0-f313395163df
+  p14_trusted: true
+  p20_trusted: true
+  supersession_required: false
+
+verification:
+  gate: VG-SM-07_WORKFLOW_LIFECYCLE_ENFORCEMENT
+  obligation: END_TO_END_V1_V10_AT_WORKFLOW_BOUNDARIES
+  blocking_evidence_policy: >-
+    Evidence is blocking only when its absence leaves a high-impact failure mode
+    without credible independent detection coverage.
+
+production_protocol_authority:
+  adopted_machine_truth: committed contract/registry/**/*.yaml
+  revision_identity:
+    type: git_commit
+    trust_identity: exact_commit_sha
+    locator_only: explicit_target_ref
+    mutable_head_as_trust_identity: forbidden
+    resulting_ref_revision: exact_resulting_git_commit_sha
+    resulting_ref_digest: contract_registry_tree_digest
+  working_tree_registry_state: prospective_non_authoritative
+
+prospective_registry_basis:
+  implementation_file: tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts
+  storage: git_dir_non_authoritative_staging
+  storage_locator: git rev-parse --git-path axtp/prospective-protocol-basis
+  payload_kind: AXTP_REGISTRY_MUTATION
+  payload_schema:
+    schemaVersion: 1
+    baseProtocolAuthorityRevision: exact_commit_sha
+    writes: sorted_unique_complete_utf8_registry_files_with_sha256
+    deletes: sorted_unique_registry_paths
+  allowed_paths: contract/registry/**/*.yaml
+  immutable_ref:
+    namespace: prospective-protocol-basis
+    subject: axtp-registry
+    revision: canonical_payload_digest
+  requirements:
+    - same immutable ref must never resolve to different bytes
+    - commit payload must use exact snapshot bytes and never reread mutable Registry paths
+    - staging must never become a second adopted Protocol truth store
+
+production_mutation_port:
+  implementation_file: tooling/semantic-lifecycle/src/gitRegistryProtocolAuthorityMutationPort.ts
+  class: GitRegistryProtocolAuthorityMutationPort
+  public_export: forbidden
+  construction_owner: tooling/semantic-lifecycle/src/productionProtocolAdoptionRuntime.ts
+  requirements:
+    - require explicit checked-out target ref and exact expected commit SHA
+    - require clean Git index before finalization
+    - re-resolve target ref at mutation boundary and fail on expected-head drift
+    - verify prospective ref, digest, base revision, and Registry-only paths
+    - build temporary Git index and tree from exact expected commit plus exact proposal bytes
+    - create exactly one Git commit with parent equal to exact expected commit
+    - bind caseId operationId commandDigest and prospective basis in deterministic correlation metadata
+    - atomically update target ref and refs/axtp/protocol-adoption/<correlation-key> using expected-old-value CAS
+    - update checked-out index for Registry paths only after successful ref linearization
+    - require working-tree Registry bytes to equal exact proposal at finalization
+    - return exact resulting commit and Registry tree identity
+  reconciliation:
+    NOT_APPLIED: correlation ref absent after atomic transaction boundary
+    APPLIED_EXACT: exact correlated commit and lineage match
+    APPLIED_CONFLICT: existing correlation has mismatched lineage or digest
+    UNKNOWN_OR_UNAVAILABLE: repository/ref/commit state cannot be safely resolved
+    duplicate_commit_after_response_loss: forbidden
+
+production_composition:
+  implementation_file: tooling/semantic-lifecycle/src/productionProtocolAdoptionRuntime.ts
+  required_edge:
+    - Stage30_or_Stage40_workflow
+    - production_Protocol_adoption_composition
+    - ProtocolAdoptionRoute.finalizeProtocolAdoption
+    - ProtocolAdoptionGuard
+    - GitRegistryProtocolAuthorityMutationPort
+    - atomic_Git_ref_transaction
+    - committed_contract_registry_Authority
+  forbidden_edges:
+    - WorkflowLifecycleAdapter_to_ProtocolAuthorityMutationPort
+    - Stage30_or_Stage40_to_raw_GitRegistryProtocolAuthorityMutationPort
+    - Stage30_or_Stage40_direct_registry_git_commit_outside_Guard
+    - detached_Guard_check_then_direct_apply_patch_or_commit
+
+stage_contract:
+  stage10: classify first; unresolved or stale fails closed before Stage20
+  stage20: proposal/review only; may prepare immutable prospective Registry basis; no adoption
+  stage30: >-
+    working-tree YAML edits are prospective staging only; final adoption must use the guarded
+    production composition; direct Registry Authority git commit is forbidden
+  stage40: >-
+    reclassify first; true semantic delta requires accepted superseding Semantic Authority;
+    final Protocol mutation uses the same guarded production Registry writer
+  stage50: >-
+    derived-only generation from committed Registry source; staged or unstaged
+    contract/registry drift at generation time is forbidden
+  stage99: lifecycle-aware routing only; no copied lifecycle truth or writer capability
+
+authorized_scope:
+  may_modify:
+    - tooling/skills/10-plan-protocol-flow/SKILL.md
+    - tooling/skills/20-draft-business-protocol/SKILL.md
+    - tooling/skills/30-adopt-protocol-draft/SKILL.md
+    - tooling/skills/40-amend-adopted-protocol/SKILL.md
+    - tooling/skills/50-generate-axtp-protocol/SKILL.md
+    - tooling/skills/99-axtp-protocol-workflow/SKILL.md
+    - tooling/semantic-lifecycle/src/index.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionArchitectureBoundary.test.ts
+    - tooling/semantic-lifecycle/package.json
+    - .github/workflows/validate-conformance.yml
+  may_create:
+    - tooling/semantic-lifecycle/src/workflowLifecycleAdapter.ts
+    - tooling/semantic-lifecycle/src/workflowLifecycleAdapter.test.ts
+    - tooling/semantic-lifecycle/src/workflowLifecycleArchitectureBoundary.test.ts
+    - tooling/semantic-lifecycle/src/workflowLifecycleEvidence.ts
+    - tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts
+    - tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.test.ts
+    - tooling/semantic-lifecycle/src/gitRegistryProtocolAuthorityMutationPort.ts
+    - tooling/semantic-lifecycle/src/gitRegistryProtocolAuthorityMutationPort.test.ts
+    - tooling/semantic-lifecycle/src/productionProtocolAdoptionRuntime.ts
+    - tooling/semantic-lifecycle/src/productionProtocolAdoptionRuntime.test.ts
+    - tooling/semantic-lifecycle/fixtures/workflow-lifecycle/workflow-boundary-cases.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/**
+  predecessor_read_call_only:
+    - tooling/semantic-lifecycle/src/model.ts
+    - tooling/semantic-lifecycle/src/protocolAuthorityMutationPort.ts
+    - tooling/semantic-lifecycle/src/fileProtocolAuthorityStore.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionGuard.ts
+    - tooling/semantic-lifecycle/src/protocolAdoptionControlRepository.ts
+    - tooling/semantic-lifecycle/src/fileProtocolAdoptionControlRepository.ts
+    - tooling/semantic-lifecycle/src/assessmentFreshnessBoundary.ts
+    - tooling/semantic-lifecycle/src/prospectiveProtocolBasisProvider.ts
+    - tooling/semantic-lifecycle/src/semanticAuthorityReadBoundary.ts
+  forbidden_substantive_paths:
+    - contract/registry/**
+    - contract/protocol/**
+    - contract/generated/**
+    - contract/mcp/**
+    - contract/test-vectors/**
+    - specs/**
+    - workspace/business/**
+    - workspace/flows/**
+    - workspace/protocol/**
+    - tooling/skills/00-business-intake/**
+    - tooling/skills/60-release-axtp-spec/**
+    - .aegis/project.json
+  scope_extension_without_new_package: forbidden
+
+required_changes:
+  - id: RC7-01
+    requirement: add stateless WorkflowLifecycleAdapter using accepted high-level lifecycle capabilities only
+  - id: RC7-02
+    requirement: enforce Stage10 classification and exact freshness before Stage20
+  - id: RC7-03
+    requirement: preserve Stage20 proposal versus Semantic Authority boundary
+  - id: RC7-04
+    requirement: linearize Stage30 production adoption only through Route -> Guard -> GitRegistryProtocolAuthorityMutationPort -> atomic Git ref transaction
+  - id: RC7-04A
+    requirement: add immutable production Registry prospective-basis provider; exact snapshot bytes are commit content
+  - id: RC7-04B
+    requirement: add production composition root that hides raw writer and injects it only into Guard
+  - id: RC7-05
+    requirement: enforce Stage40 reclassification and supersession-before-amendment using same guarded writer
+  - id: RC7-06
+    requirement: keep Stage50 committed-source and derived-only
+  - id: RC7-07
+    requirement: keep Stage99 lifecycle-aware routing without duplicate lifecycle logic
+  - id: RC7-08
+    requirement: preserve stage numbering, predecessor semantics, and one Protocol truth source
+  - id: RC7-09
+    requirement: add deterministic workflow-boundary evidence and sem-lc-07-evidence job to existing workflow
+
+tests:
+  required:
+    - id: W7-1
+      oracle: Stage10 classification plus exact freshness; unresolved or stale Stage20 entry count equals zero
+    - id: W7-2
+      oracle: workflow cannot synthesize Candidate, HUMAN review, or Semantic Authority and semantic-delta draft requires current accepted projection basis
+    - id: W7-3
+      oracle: BOUND_EXISTING delegates without reinterpretation or Protocol mutation
+    - id: W7-4
+      oracle: production guarded Registry mutation and reconciliation
+      cases:
+        - raw writer absent from public surface
+        - only production composition constructs/imports GitRegistryProtocolAuthorityMutationPort
+        - Stage30 and Stage40 contain no Authority publication bypass
+        - positive path in temporary real Git repository commits exact prospective Registry bytes and returns exact commit/tree
+        - prospective snapshot change after selection cannot alter committed bytes
+        - target-ref head drift before ref transaction yields zero stale adoption commit
+        - direct Registry commit bypass is rejected by architecture oracle
+        - response loss after atomic ref transaction reconciles APPLIED_EXACT and creates no second commit
+        - pre-transaction failure has no applied correlation ref and reconciles NOT_APPLIED
+        - correlation conflict never performs a second mutation
+        - working-tree Registry bytes differing from exact prospective payload fail closed
+        - dirty index fails closed
+    - id: W7-5
+      oracle: Stage40 semantic delta requires superseding Semantic Authority and finalizes through same guarded production Registry writer
+    - id: W7-6
+      oracle: Stage50 rejects staged or unstaged Registry drift; Stage99 owns no writer/lifecycle truth; stage numbers remain 10/20/30/40/50/99
+    - id: predecessor_semantic_lifecycle_regression
+      oracle: all existing tooling/semantic-lifecycle tests pass
+    - id: generator_current_source_regression
+      oracle: generator build/test/validate:sources pass without Registry source mutation
+  zero_tolerance:
+    unguarded_protocol_authority_mutation_total: 0
+    post_guard_drift_acceptance_total: 0
+    machine_only_adoption_authorization_total: 0
+    unauthorized_protocol_writer_edges: 0
+    registry_payload_mutable_reread_total: 0
+    protocol_ref_transaction_split_total: 0
+    reconcile_duplicate_registry_commit_total: 0
+
+verification_commands:
+  - corepack enable
+  - corepack prepare pnpm@11.3.0 --activate
+  - pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+  - pnpm --dir tooling/semantic-lifecycle build
+  - pnpm --dir tooling/semantic-lifecycle lint
+  - pnpm --dir tooling/semantic-lifecycle test
+  - pnpm --dir tooling/semantic-lifecycle evidence:workflow-lifecycle
+  - pnpm --dir tooling/generators build
+  - pnpm --dir tooling/generators test
+  - pnpm --dir tooling/generators validate:sources
+  - git diff --check
+
+hosted_verification:
+  required:
+    - workflow: .github/workflows/validate-conformance.yml
+      job: sem-lc-07-evidence
+      requirements:
+        - task-anchor ancestry
+        - immutable P31 v0.2 same-repository package binding
+        - exact authorized path set
+        - semantic lifecycle build/lint/test/evidence
+        - temporary-real-Git production writer integration tests
+        - generator build/test/validate:sources regression
+        - exact result revision and tree
+        - reviewer-accessible workflow-lifecycle artifact
+  forbidden_new_workflow: true
+
+evidence:
+  blocking_reports:
+    - .evidence/semantic-lifecycle/workflow-lifecycle/stage10-classification.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/semantic-authority-boundary.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/bound-existing-boundary.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/stage30-adoption.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/stage40-amendment.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/stage50-stage99-boundary.json
+    - .evidence/semantic-lifecycle/workflow-lifecycle/manifest.json
+  stage30_report_owns:
+    - production writer edge
+    - expected-head CAS
+    - exact payload binding
+    - atomic ref transaction
+    - response-loss reconciliation
+  corroborative_only:
+    - duplicate local logs
+    - duplicate evidence archives
+    - RED_GREEN transcripts unless independently needed
+
+EXECUTION_CLOSURE_CONTRACT:
+  implementation:
+    required_changes:
+      - RC7-01
+      - RC7-02
+      - RC7-03
+      - RC7-04
+      - RC7-04A
+      - RC7-04B
+      - RC7-05
+      - RC7-06
+      - RC7-07
+      - RC7-08
+      - RC7-09
+    forbidden_changes:
+      - any path outside exact authorized scope
+      - real contract/registry Authority mutation in this implementation occurrence
+      - raw ProtocolAuthorityMutationPort exposure to workflow or public surface
+      - direct Stage30 or Stage40 Registry Authority commit outside Guard
+      - second adopted Protocol truth store
+      - predecessor contract modification
+      - stage renumbering or unrelated workflow redesign
+  tests:
+    required:
+      - W7-1
+      - W7-2
+      - W7-3
+      - W7-4
+      - W7-5
+      - W7-6
+      - predecessor_semantic_lifecycle_regression
+      - generator_current_source_regression
+  hosted_verification:
+    required:
+      - sem-lc-07-evidence_on_exact_result_revision
+    optional: []
+  evidence:
+    blocking:
+      - six owned workflow-boundary reports plus manifest
+      - exact package and scope binding
+      - exact result revision and tree
+      - production-selected Stage30 writer-edge proof inside stage30-adoption report
+    corroborative:
+      - duplicate local logs
+      - RED_GREEN transcripts unless independently needed
+      - duplicate evidence archives
+  terminal_success:
+    all_of:
+      - PackageBindingPreflight PASS
+      - EvidenceContractPreflight PASS
+      - all required RC7 changes implemented inside scope
+      - W7-1 through W7-6 plus predecessor and generator regressions PASS
+      - all zero-tolerance counters equal zero
+      - production Stage30 and Stage40 writer path demonstrably Guard-linearized
+      - exact-result evidence reviewer-accessible from hosted CI
+      - no official P34 PASS emitted
+  terminal_blockers:
+    explicit_classes:
+      - BLOCKED_REPOSITORY_IDENTITY
+      - BLOCKED_AUTHORITY
+      - BLOCKED_SCOPE
+      - BLOCKED_PREDECESSOR_DEFECT
+      - BLOCKED_IMPLEMENTATION
+      - BLOCKED_VERIFICATION
+      - BLOCKED_EVIDENCE
+  return_policy:
+    continue_until_terminal_state: true
+
+non_goals:
+  - no real Protocol adoption or Registry fact change
+  - no P14, P20, or P23 replacement
+  - no SEM-LC-08 release
+  - no P34 Gate verdict
+  - no generated output promoted to Authority
+  - no persisted reusable eligible, guardPassed, fresh, or authorized truth
+
+p32_authorized: true
+p32_started: false
+canonical_modified: false
+sem_lc_08_released: false
