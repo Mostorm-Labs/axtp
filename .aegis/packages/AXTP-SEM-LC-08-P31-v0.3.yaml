@@ -1,0 +1,330 @@
+package_version: 2
+
+package_id: AXTP-SEM-LC-08-P31-v0.3@95b5485913bfcb0b63d44d55e45d6f0f514c2ba9
+
+task_id: AXTP-SEM-LC-08
+stage: P31_TASK_PACKAGING
+occurrence: PACKAGE_SCOPE_RECONCILIATION
+state: READY_FOR_P32_AFTER_MATERIALIZATION_VERIFICATION
+
+package_ref: notion://3d74c57a-590c-818b-9371-d7914ab9bbc2/AXTP-SEM-LC-08-P31-v0.3
+
+replaces_package_ref: notion://3d64c57a-590c-8158-a930-ec076569ee92/AXTP-SEM-LC-08-P31-v0.2
+
+replacement_reason: >-
+  P36 discovered that frozen P31 v0.2 did not authorize sufficient real
+  production execution seams to prove P34-B1 / RC8-04 / V12-FM04 for
+  candidate_leak, commit_interruption, and idempotency_collision without
+  substituting fixture stubs. P20 Verification and P18 Engineering remain
+  trusted. v0.3 reconciles execution scope only.
+
+repository:
+  provider: github
+  full_name: Mostorm-Labs/axtp
+  repository_id: 1247966949
+  canonical_branch_context: integration/axtp-next
+  preserved_implementation_branch: codex/sem-lc-08-p32-v02
+  preserved_pr: 37
+
+task_anchor:
+  revision: 95b5485913bfcb0b63d44d55e45d6f0f514c2ba9
+  tree: fbd5aa9f6e68307f9471712c9b24bf7e452f52bb
+  relation: accepted_execution_state_and_required_ancestor
+
+resume_cursor: null
+
+package_materialization_policy:
+  artifact_path: .aegis/packages/AXTP-SEM-LC-08-P31-v0.3.yaml
+  relation: PACKAGE_ONLY_EXACTLY_ONE_COMMIT_ABOVE_TASK_ANCHOR
+  implementation_consumption: READ_ONLY_NO_MERGE_NO_CHERRY_PICK
+  p32_execution_base: task_anchor_revision
+  materialization_commit_identity: bound_in_normative_notion_package_after_commit
+
+current_authority:
+  p18_engineering_current: notion://3d64c57a-590c-8155-abbf-f3ef08ed4658/AXTP-SEM-LC-08-P18-v0.2
+  p20_verification_current: notion://3d64c57a-590c-81ce-bfd1-e9a14bd0a92d/AXTP-SEM-LC-08-P20-v0.2
+  p34_gate_current: notion://3d74c57a-590c-81c4-9a87-ee6ce4366009/AXTP-SEM-LC-08-P34-REREVIEW-v0.3
+  p36_terminal: notion://3d74c57a-590c-8175-b9bd-ffe5c1bbc380/AXTP-SEM-LC-08-P36-v0.1
+  central_routing: notion://3d74c57a-590c-8188-8ca2-edef3d8ef473/AXTP-SEM-LC-08-AEGIS-ROUTING-v0.4
+  authority_reopen_required: false
+  verification_redesign_required: false
+
+verification:
+  gate: VG-SM-08_DETERMINISM_PORTABILITY_REFERENCE_PARITY
+  blocking_finding: P34-B1
+  required_change: RC8-04
+  verification_obligation: V12-FM04
+  B1_status: OPEN
+  B2_status: PRESERVED_CLOSED
+
+frozen_negative_cases:
+  - failure_class: invalid_semantic_or_projection_reference
+    expected_classification: INVALID_SEMANTIC_OR_PROJECTION_REFERENCE
+
+  - failure_class: projection_gap_or_incomplete_coverage
+    expected_classification: PROJECTION_COVERAGE_INCOMPLETE
+
+  - failure_class: candidate_leak
+    expected_classification: CANDIDATE_LEAK_REJECTED
+
+  - failure_class: stale_prospective_or_repository_basis
+    expected_classification: STALE_PROSPECTIVE_OR_REPOSITORY_BASIS
+
+  - failure_class: simulated_mid_commit_interruption_no_partial_authority
+    expected_classification: MID_COMMIT_INTERRUPTION_ROLLED_BACK
+
+  - failure_class: idempotency_key_collision_non_identical_mutation
+    expected_classification: IDEMPOTENCY_KEY_COLLISION
+
+mechanism_binding_contract:
+  invalid_ref:
+    requirement: >-
+      Consume the canonical missing semantic/projection references through
+      real ProtocolAdoptionGuard semantic/projection validation. Generic
+      INVALID_OPERATION from openCase(null) is forbidden as proof.
+
+  projection_gap:
+    requirement: >-
+      Use a real SEMANTIC_DELTA adoption path whose missing/incomplete
+      projection causes the production projection-required or lineage
+      invariant to reject. NO_DELTA substitution is forbidden.
+
+  candidate_leak:
+    requirement: >-
+      Exercise the concrete internal Git Registry Protocol Authority writer
+      with the canonical candidate-shaped payload as the attempted Protocol
+      Authority mutation payload. Production Registry prospective-mutation
+      validation must reject it before target/correlation refs change.
+      Public/workflow access to the writer must remain forbidden.
+
+  stale_basis:
+    requirement: >-
+      Preserve the already mechanism-consistent real prospective-basis
+      mismatch producing the stale-basis rejection.
+
+  commit_interruption:
+    requirement: >-
+      Use real ProtocolAdoptionGuard plus
+      GitRegistryProtocolAuthorityMutationPort with controlled
+      afterRefTransaction interruption. Observe AMBIGUOUS_PROTOCOL_COMMIT,
+      atomic target/correlation ref state, durable unresolved reservation,
+      APPLIED_EXACT reconciliation, and zero duplicate Registry commit.
+
+  idempotency_collision:
+    requirement: >-
+      Use the two non-identical canonical mutation digests with the real Git
+      writer correlation identity. First application may succeed; second
+      mutation must resolve APPLIED_CONFLICT /
+      PROTOCOL_ADOPTION_OUTCOME_CONFLICT and must not create a duplicate
+      Registry commit.
+
+classification_rule: >-
+  The frozen classification label may be emitted only after the specified
+  canonical fault was actually consumed by the specified production
+  mechanism and the actual production error/outcome was observed.
+  Unknown or unrelated production exceptions fail closed.
+
+authorized_scope:
+  may_modify:
+    - tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
+    - tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
+    - tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
+    - .github/workflows/validate-conformance.yml
+
+  may_generate:
+    - .evidence/semantic-lifecycle/sem-lc-08/**
+
+  semanticLifecycleEvidenceCore_constraint: >-
+    Only package/task-anchor/materialization provenance constants may change.
+    E4096 generation logic, canonicalization, route behavior, counts,
+    permutations, B2 semantics, and reference behavior are read-only.
+
+  workflow_constraint: >-
+    validate-conformance.yml may change only as required to bind the new P31
+    package/task-anchor/materialization identities and assert repaired
+    SEM-LC-08 negative evidence. No new workflow is authorized.
+
+production_read_call_only:
+  - tooling/semantic-lifecycle/src/model.ts
+  - tooling/semantic-lifecycle/src/basis.ts
+  - tooling/semantic-lifecycle/src/protocolAdoptionGuard.ts
+  - tooling/semantic-lifecycle/src/protocolAdoptionControlRepository.ts
+  - tooling/semantic-lifecycle/src/fileProtocolAdoptionControlRepository.ts
+  - tooling/semantic-lifecycle/src/assessmentFreshnessBoundary.ts
+  - tooling/semantic-lifecycle/src/prospectiveProtocolBasisProvider.ts
+  - tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts
+  - tooling/semantic-lifecycle/src/semanticAuthorityReadBoundary.ts
+  - tooling/semantic-lifecycle/src/protocolAuthorityMutationPort.ts
+  - tooling/semantic-lifecycle/src/gitRegistryProtocolAuthorityMutationPort.ts
+  - tooling/semantic-lifecycle/src/productionProtocolAdoptionRuntime.ts
+  - tooling/semantic-lifecycle/src/workflowLifecycleAdapter.ts
+  - tooling/semantic-lifecycle/src/workflowLifecycleArchitectureBoundary.test.ts
+  - tooling/semantic-lifecycle/src/protocolAdoptionRecovery.test.ts
+  - tooling/semantic-lifecycle/src/gitRegistryProtocolAuthorityMutationPort.test.ts
+  - tooling/semantic-lifecycle/fixtures/protocol-adoption/cases.json
+  - tooling/semantic-lifecycle/fixtures/sem-lc-08/negative-corpus.json
+
+forbidden_changes:
+  - any substantive modification to production_read_call_only paths
+  - contract/semantic/**
+  - contract/registry/**
+  - contract/protocol/**
+  - contract/generated/**
+  - contract/mcp/**
+  - contract/test-vectors/**
+  - specs/**
+  - workspace/**
+  - .aegis/project.json
+  - P18/P20/P23 Authority mutation
+  - six frozen failure-class or expected-classification changes
+  - public export of GitRegistryProtocolAuthorityMutationPort
+  - workflow/public direct access to Protocol Authority writer
+  - Protocol Authority writer-boundary redesign
+  - E4096 cardinality reduction
+  - eight-permutation reduction
+  - three-platform reduction
+  - zero-threshold weakening
+  - V13 weakening
+  - SEM-LC-09 work
+
+preserved_closed:
+  P34_B2_RC8_05_V12_FM06:
+    status: PRESERVED_CLOSED
+    workflow_adapter_invocations: 4096
+    semantic_first: 2048
+    bound_existing: 2048
+    mutation_allowed: false
+
+  E4096:
+    lifecycle_cases: 4096
+    semantic_dimension_observations: 61440
+    projection_reference_edges: 61440
+    registry_mutation_entries: 4096
+    canonical_input_permutations: 8
+    hosted_platforms:
+      - ubuntu-latest
+      - macos-latest
+      - windows-latest
+
+tests:
+  required:
+    - corepack enable
+    - corepack prepare pnpm@11.3.0 --activate
+    - pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+    - pnpm --dir tooling/semantic-lifecycle build
+    - pnpm --dir tooling/semantic-lifecycle lint
+    - pnpm --dir tooling/semantic-lifecycle test
+    - pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:reference
+    - pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:negative
+    - pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:portable
+    - pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reference
+    - pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:negative
+    - pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:optimized
+    - git diff --check
+
+hosted_verification:
+  workflow: .github/workflows/validate-conformance.yml
+  required:
+    - sem_lc_08_reference
+    - sem_lc_08_negative
+    - sem_lc_08_v13_reference_mode
+    - sem_lc_08_reconcile
+  new_workflow_forbidden: true
+
+evidence:
+  blocking:
+    - six_of_six_negative_fixtures_bound_to_actual_production_mechanisms
+    - false_acceptance_total_equals_zero
+    - partial_authority_state_total_equals_zero
+    - exact_package_task_anchor_result_revision_binding
+    - actual_fault_consumption_and_production_outcome_details
+    - hosted_sem_lc_08_negative_pass_on_exact_result_revision
+    - required_hosted_sem_lc_08_regression_jobs_green
+
+  corroborative:
+    - S16384
+    - wall_clock
+    - peak_rss
+    - performance_charts
+    - duplicate_logs
+    - duplicate_archives
+    - proof_of_proof_hardening_without_unique_failure_coverage
+
+EXECUTION_CLOSURE_CONTRACT:
+  state: FROZEN
+
+  implementation:
+    required_changes:
+      - repair P34-B1 / RC8-04 / V12-FM04 fixture-to-production-mechanism binding
+      - preserve all six frozen expected classifications
+      - preserve B2 and all previously closed E4096/V13 obligations
+
+    forbidden_changes:
+      - any modification outside authorized_scope
+      - any substantive production seam modification
+      - any Authority redesign or Verification weakening
+
+  tests:
+    required:
+      - full semantic-lifecycle build/lint/regression
+      - reference test
+      - negative test
+      - portable test
+      - negative evidence materialization
+      - git diff --check
+
+  hosted_verification:
+    required:
+      - existing SEM-LC-08 reference jobs
+      - existing SEM-LC-08 negative job
+      - existing SEM-LC-08 V13 job
+      - existing SEM-LC-08 reconcile job
+    optional: []
+
+  evidence:
+    blocking:
+      - V12-FM04 repaired negative manifest
+      - exact package/result identity
+      - reviewer-accessible hosted artifacts
+    corroborative:
+      - performance and duplicate diagnostic evidence
+
+  terminal_success:
+    all_of:
+      - PackageBindingPreflight PASS
+      - EvidenceContractPreflight PASS
+      - task anchor remains valid ancestor
+      - only authorized files modified
+      - production read/call-only paths unchanged
+      - all six canonical faults exercise their specified real mechanisms
+      - six expected classifications PASS
+      - false_acceptance_total = 0
+      - partial_authority_state_total = 0
+      - candidate leak changes no target/correlation Authority refs
+      - commit interruption proves atomic ref transaction and exact reconciliation without duplicate commit
+      - idempotency collision proves real conflict and no duplicate commit
+      - B2 remains preserved closed
+      - E4096 counts unchanged
+      - all eight permutations unchanged
+      - three-platform requirement unchanged
+      - V13 unchanged
+      - required local verification PASS
+      - required hosted verification PASS on exact result revision
+      - blocking artifacts reviewer-accessible and identity-bound
+
+  terminal_blockers:
+    explicit_classes:
+      - BLOCKED_REPOSITORY_IDENTITY
+      - TASK_ANCHOR_STALE_REQUIRES_P31_RECONCILIATION
+      - PACKAGE_MATERIALIZATION_IDENTITY_MISMATCH
+      - CURRENT_AUTHORITY_OR_P20_DRIFT
+      - PRODUCTION_MECHANISM_NOT_REACHABLE_WITH_READ_CALL_ONLY_SCOPE
+      - REQUIRED_CHANGE_OUTSIDE_AUTHORIZED_SCOPE
+      - FROZEN_FIXTURE_REQUIRES_PRODUCTION_BEHAVIOR_OR_AUTHORITY_CHANGE
+      - B2_OR_OTHER_CLOSED_GATE_SEMANTICS_WOULD_BE_REOPENED
+      - HOSTED_PROOF_CANNOT_COMPLETE_WITHIN_FROZEN_ENVELOPE
+      - ENVIRONMENT_OR_PLATFORM_BLOCKER_WITHOUT_SAFE_IN_SCOPE_REPAIR
+      - NEW_HIGH_IMPACT_FAILURE_MODE
+
+  return_policy:
+    continue_until_terminal_state: true
