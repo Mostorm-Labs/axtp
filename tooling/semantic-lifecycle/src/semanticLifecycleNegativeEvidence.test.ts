@@ -17,7 +17,32 @@ test("all six negative classes reject deterministically with zero partial Author
   const second = cases.map((entry) => evaluateNegativeCase(entry));
   assert.equal(first.length, 6);
   assert.equal(canonicalJson(first), canonicalJson(second));
-  assert.ok(first.every((entry) => entry.rejected && entry.partial_authority_state_total === 0 && entry.observed_error === entry.expected_error));
+  assert.ok(first.every((entry) => entry.rejected && entry.partial_authority_state_total === 0 && entry.observed_classification === entry.expected_error));
+  assert.ok(first.every((entry) => entry.fault_fields_consumed.length > 0));
+  assert.ok(first.every((entry) => entry.authority_state_before !== null && entry.authority_state_after !== null));
+});
+
+test("invalid-reference consumes both canonical refs through Guard validation", () => {
+  const result = evaluateNegativeCase(cases[0]!);
+  assert.deepEqual(result.fault_fields_consumed, ["semanticReference", "projectionReference"]);
+  assert.equal(result.actual_error_code, "STALE_SEMANTIC_AUTHORITY+PROJECTION_REQUIRED");
+  assert.equal(result.actual_outcome_kind, "BOTH_REFERENCES_REJECTED");
+});
+
+test("commit interruption retains a durable reservation and reconciles APPLIED_EXACT once", () => {
+  const result = evaluateNegativeCase(cases[4]!);
+  assert.equal(result.actual_error_code, "AMBIGUOUS_PROTOCOL_COMMIT");
+  assert.equal(result.actual_outcome_kind, "APPLIED_EXACT_RECONCILED");
+  assert.deepEqual((result.authority_state_after as Record<string, unknown>).reservation_after_reconcile, null);
+  assert.equal((result.authority_state_after as Record<string, unknown>).duplicate_commit_total, 0);
+});
+
+test("idempotency collision reaches Guard conflict reconciliation without a duplicate commit", () => {
+  const result = evaluateNegativeCase(cases[5]!);
+  assert.equal(result.actual_error_code, "PROTOCOL_ADOPTION_OUTCOME_CONFLICT");
+  assert.equal(result.actual_outcome_kind, "APPLIED_CONFLICT");
+  assert.equal((result.authority_state_after as Record<string, unknown>).duplicate_commit_total, 0);
+  assert.equal((result.authority_state_after as Record<string, unknown>).guard_reconcile_error, "PROTOCOL_ADOPTION_OUTCOME_CONFLICT");
 });
 
 test("negative corpus expectation drift fails closed", () => {

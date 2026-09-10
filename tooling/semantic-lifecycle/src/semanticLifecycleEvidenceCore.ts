@@ -8,13 +8,13 @@ import { WorkflowLifecycleAdapter } from "./workflowLifecycleAdapter.js";
 
 export { compareUtf8UnsignedBytes };
 
-export const SEM_LC_08_TASK_ANCHOR = "7b4092d80bd4aabab6e3389c42810654aeaa894c";
-export const SEM_LC_08_TASK_TREE = "f23ece9893783d4d844306e1a4e2fbf1026f3f69";
+export const SEM_LC_08_TASK_ANCHOR = "95b5485913bfcb0b63d44d55e45d6f0f514c2ba9";
+export const SEM_LC_08_TASK_TREE = "fbd5aa9f6e68307f9471712c9b24bf7e452f52bb";
 export const SEM_LC_08_P18_REF = "notion://3d64c57a-590c-8155-abbf-f3ef08ed4658/AXTP-SEM-LC-08-P18-v0.2";
 export const SEM_LC_08_P20_REF = "notion://3d64c57a-590c-81ce-bfd1-e9a14bd0a92d/AXTP-SEM-LC-08-P20-v0.2";
-export const SEM_LC_08_PACKAGE_REF = "notion://3d64c57a-590c-8158-a930-ec076569ee92/AXTP-SEM-LC-08-P31-v0.2";
-export const SEM_LC_08_PACKAGE_MATERIALIZATION_COMMIT = "22e00f4b5f541190909bd0243a6ba5238a1f27a5";
-export const SEM_LC_08_PACKAGE_BLOB_SHA = "2e06a3ba2d043da6d973bfc87e77987e3b036e76";
+export const SEM_LC_08_PACKAGE_REF = "notion://3d74c57a-590c-818b-9371-d7914ab9bbc2/AXTP-SEM-LC-08-P31-v0.3";
+export const SEM_LC_08_PACKAGE_MATERIALIZATION_COMMIT = "e2b54974f020bbdab1479525803b30cc1cab3040";
+export const SEM_LC_08_PACKAGE_BLOB_SHA = "33dcfd4d8ee3b97c866f2347a1dd050d7715fd3b";
 export const SEM_LC_08_ENVELOPE_ID = "SEM-LC-08-E4096";
 export const SEM_LC_08_GATE = "VG-SM-08_DETERMINISM_PORTABILITY_REFERENCE_PARITY";
 export const FULL_REFERENCE_MODE = "FULL_REFERENCE_MODE" as const;

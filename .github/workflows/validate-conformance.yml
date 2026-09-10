@@ -1700,10 +1700,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          anchor=7b4092d80bd4aabab6e3389c42810654aeaa894c
-          package_commit=22e00f4b5f541190909bd0243a6ba5238a1f27a5
-          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml
-          package_blob=2e06a3ba2d043da6d973bfc87e77987e3b036e76
+          anchor=95b5485913bfcb0b63d44d55e45d6f0f514c2ba9
+          package_commit=e2b54974f020bbdab1479525803b30cc1cab3040
+          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.3.yaml
+          package_blob=33dcfd4d8ee3b97c866f2347a1dd050d7715fd3b
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           git merge-base --is-ancestor "$anchor" HEAD
@@ -1714,18 +1714,9 @@ jobs:
           actual="$(git diff --name-only "$anchor"...HEAD | LC_ALL=C sort)"
           expected_paths=(
             .github/workflows/validate-conformance.yml
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/minimal-reference.json
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/negative-corpus.json
-            tooling/semantic-lifecycle/package.json
-            tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts
             tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecyclePortable.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts
           )
           expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
           test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
@@ -1799,10 +1790,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          anchor=7b4092d80bd4aabab6e3389c42810654aeaa894c
-          package_commit=22e00f4b5f541190909bd0243a6ba5238a1f27a5
-          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml
-          package_blob=2e06a3ba2d043da6d973bfc87e77987e3b036e76
+          anchor=95b5485913bfcb0b63d44d55e45d6f0f514c2ba9
+          package_commit=e2b54974f020bbdab1479525803b30cc1cab3040
+          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.3.yaml
+          package_blob=33dcfd4d8ee3b97c866f2347a1dd050d7715fd3b
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           git merge-base --is-ancestor "$anchor" HEAD
@@ -1813,18 +1804,9 @@ jobs:
           actual="$(git diff --name-only "$anchor"...HEAD | LC_ALL=C sort)"
           expected_paths=(
             .github/workflows/validate-conformance.yml
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/minimal-reference.json
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/negative-corpus.json
-            tooling/semantic-lifecycle/package.json
-            tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts
             tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecyclePortable.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts
           )
           expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
           test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
@@ -1851,7 +1833,7 @@ jobs:
           const manifest = JSON.parse(readFileSync(`${process.env.OUTPUT_DIRECTORY}/negative-manifest.json`, 'utf8'));
           if (manifest.verdict !== 'PASS' || manifest.false_acceptance_total !== 0 || manifest.partial_authority_state_total !== 0) throw new Error('NEGATIVE_CORPUS_GATE_FAILURE');
           if (manifest.unrelated_exception_false_pass_total !== 0 || manifest.actual_production_outcome_bound_for_all_cases !== true || manifest.canonical_input_identity_bound !== true) throw new Error('NEGATIVE_CORPUS_MECHANISM_BINDING_DRIFT');
-          if (!Array.isArray(manifest.negative_cases) || manifest.negative_cases.length !== 6 || manifest.negative_cases.some(entry => entry.rejected !== true || entry.partial_authority_state_total !== 0 || typeof entry.canonical_input_sha256 !== 'string' || typeof entry.expected_classification !== 'string' || typeof entry.observed_classification !== 'string' || typeof entry.mechanism_identity !== 'string' || typeof entry.actual_error_code !== 'string' || typeof entry.actual_outcome_kind !== 'string' || entry.expected_classification !== entry.observed_classification)) throw new Error('NEGATIVE_CORPUS_CASE_DRIFT');
+          if (!Array.isArray(manifest.negative_cases) || manifest.negative_cases.length !== 6 || manifest.negative_cases.some(entry => entry.rejected !== true || entry.partial_authority_state_total !== 0 || typeof entry.canonical_input_sha256 !== 'string' || typeof entry.expected_classification !== 'string' || typeof entry.observed_classification !== 'string' || typeof entry.mechanism_identity !== 'string' || typeof entry.actual_error_code !== 'string' || typeof entry.actual_outcome_kind !== 'string' || !Array.isArray(entry.fault_fields_consumed) || entry.fault_fields_consumed.length === 0 || entry.authority_state_before === null || entry.authority_state_after === null || entry.expected_classification !== entry.observed_classification)) throw new Error('NEGATIVE_CORPUS_CASE_DRIFT');
           NODE
       - uses: actions/upload-artifact@v4
         with:
@@ -1882,10 +1864,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          anchor=7b4092d80bd4aabab6e3389c42810654aeaa894c
-          package_commit=22e00f4b5f541190909bd0243a6ba5238a1f27a5
-          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml
-          package_blob=2e06a3ba2d043da6d973bfc87e77987e3b036e76
+          anchor=95b5485913bfcb0b63d44d55e45d6f0f514c2ba9
+          package_commit=e2b54974f020bbdab1479525803b30cc1cab3040
+          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.3.yaml
+          package_blob=33dcfd4d8ee3b97c866f2347a1dd050d7715fd3b
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           git merge-base --is-ancestor "$anchor" HEAD
@@ -1896,18 +1878,9 @@ jobs:
           actual="$(git diff --name-only "$anchor"...HEAD | LC_ALL=C sort)"
           expected_paths=(
             .github/workflows/validate-conformance.yml
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/minimal-reference.json
-            tooling/semantic-lifecycle/fixtures/sem-lc-08/negative-corpus.json
-            tooling/semantic-lifecycle/package.json
-            tooling/semantic-lifecycle/src/registryProspectiveProtocolBasisProvider.ts
             tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecyclePortable.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts
           )
           expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
           test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
@@ -1977,11 +1950,11 @@ jobs:
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
-          git merge-base --is-ancestor 7b4092d80bd4aabab6e3389c42810654aeaa894c HEAD
-          if ! git cat-file -e 22e00f4b5f541190909bd0243a6ba5238a1f27a5:.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml 2>/dev/null; then
-            git fetch --no-tags origin 22e00f4b5f541190909bd0243a6ba5238a1f27a5
+          git merge-base --is-ancestor 95b5485913bfcb0b63d44d55e45d6f0f514c2ba9 HEAD
+          if ! git cat-file -e e2b54974f020bbdab1479525803b30cc1cab3040:.aegis/packages/AXTP-SEM-LC-08-P31-v0.3.yaml 2>/dev/null; then
+            git fetch --no-tags origin e2b54974f020bbdab1479525803b30cc1cab3040
           fi
-          test "$(git rev-parse 22e00f4b5f541190909bd0243a6ba5238a1f27a5:.aegis/packages/AXTP-SEM-LC-08-P31-v0.2.yaml)" = 2e06a3ba2d043da6d973bfc87e77987e3b036e76
+          test "$(git rev-parse e2b54974f020bbdab1479525803b30cc1cab3040:.aegis/packages/AXTP-SEM-LC-08-P31-v0.3.yaml)" = 33dcfd4d8ee3b97c866f2347a1dd050d7715fd3b
       - name: Install and build semantic lifecycle
         shell: bash
         run: |
