@@ -1,0 +1,329 @@
+package_version: 2
+
+package_id: AXTP-SEM-LC-08-P31-v0.4@95b5485913bfcb0b63d44d55e45d6f0f514c2ba9
+
+task_id: AXTP-SEM-LC-08
+stage: P31_TASK_PACKAGING
+occurrence: V13_ORACLE_SCOPE_RECONCILIATION
+state: READY_FOR_P33_AFTER_MATERIALIZATION_VERIFICATION
+
+package_ref: notion://3d74c57a-590c-8178-a4f6-d47f47a513c9/AXTP-SEM-LC-08-P31-v0.4
+
+replaces_package_ref: notion://3d74c57a-590c-818b-9371-d7914ab9bbc2/AXTP-SEM-LC-08-P31-v0.3
+
+replacement_reason: >-
+  The accepted P32 result closed the frozen V12 negative-mechanism repair and
+  passed local verification, hosted negative evidence, and three-platform
+  reference evidence, but hosted V13 failed because the v0.3 package did not
+  authorize repair of the V13 evidence helper. That helper scanned every
+  filename under tooling/semantic-lifecycle/src and matched its own
+  semanticLifecycleOptimizedEvidence.ts filename as an optimized production
+  path. P20 V13 remains trusted; this package reconciles only execution and
+  evidence-harness scope while preserving accepted P32 work.
+
+repository:
+  provider: github
+  full_name: Mostorm-Labs/axtp
+  repository_id: 1247966949
+  canonical_branch_context: integration/axtp-next
+  implementation_branch: codex/sem-lc-08-p32-v02
+  preserved_pr: 37
+
+task_anchor:
+  revision: 95b5485913bfcb0b63d44d55e45d6f0f514c2ba9
+  tree: fbd5aa9f6e68307f9471712c9b24bf7e452f52bb
+  relation: ancestor_of_resume_cursor_and_result
+
+resume_cursor:
+  execution_ref: codex/sem-lc-08-p32-v02
+  accepted_revision: dbc1b727dff3faf680193966e0d2f428d1b3a072
+  accepted_tree: 0c73c6c3f2a9985fdf4904077b851a7debd4c6d3
+  classification: DESCENDANT_CURSOR
+  completed_through:
+    - P31_v0_3_preflights
+    - authorized_negative_mechanism_repair
+    - local_full_verification
+    - hosted_negative_corpus_PASS
+    - hosted_three_platform_reference_PASS
+  next_action: repair_V13_FM04_source_inspection_boundary_and_complete_exact_result_hosted_verification
+
+package_materialization_policy:
+  artifact_path: .aegis/packages/AXTP-SEM-LC-08-P31-v0.4.yaml
+  preferred_branch: codex/sem-lc-08-p31-v04-package
+  relation: PACKAGE_ONLY_EXACTLY_ONE_COMMIT_ABOVE_RESUME_CURSOR
+  implementation_consumption: READ_ONLY_NO_MERGE_NO_CHERRY_PICK
+  p33_execution_base: resume_cursor.accepted_revision
+  materialization_commit_identity: bound_in_normative_notion_package_after_commit
+
+current_authority:
+  p18_engineering_current: notion://3d64c57a-590c-8155-abbf-f3ef08ed4658/AXTP-SEM-LC-08-P18-v0.2
+  p20_verification_current: notion://3d64c57a-590c-81ce-bfd1-e9a14bd0a92d/AXTP-SEM-LC-08-P20-v0.2
+  p32_blocked_return: notion://3d74c57a-590c-8111-97e5-dae33d1d7f3b/AXTP-SEM-LC-08-P32-v0.3
+  central_routing: notion://3d74c57a-590c-8142-b5e4-eb728ecb3afa/AXTP-SEM-LC-08-AEGIS-ROUTING-v0.5
+  authority_reopen_required: false
+  verification_redesign_required: false
+
+verification:
+  gate: VG-SM-08_DETERMINISM_PORTABILITY_REFERENCE_PARITY
+  v12_b1_status: IMPLEMENTED_AT_RESUME_CURSOR_PENDING_FINAL_EXACT_RESULT_REGRESSION
+  v12_b2_status: PRESERVED_CLOSED
+  v13_branch: V13-FM04_NO_OPTIMIZED_PATH
+  full_reference_mode_is_correctness_authority: true
+
+preserved_execution_evidence:
+  result_revision: dbc1b727dff3faf680193966e0d2f428d1b3a072
+  hosted_run_id: 34436247981
+  hosted_negative_job_id: 102741802351
+  hosted_negative_artifact_id: 10136263171
+  hosted_v13_job_id: 102741802457
+  status: HISTORICAL_CORROBORATIVE_FOR_RESUME_NOT_FINAL_EXACT_RESULT_PROOF
+
+v13_source_inspection_contract:
+  task_anchor_search_root: tooling/semantic-lifecycle/src
+  source_kind: typescript
+  candidate_name_pattern: optimized|optimization|cache|incremental
+
+  production_execution_boundary:
+    include: >-
+      TypeScript source files under tooling/semantic-lifecycle/src after
+      deterministic exclusion of test files and the exact evidence-only
+      materialization modules listed below.
+    exclude_globs:
+      - tooling/semantic-lifecycle/src/*.test.ts
+    exclude_exact_paths:
+      - tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
+      - tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts
+      - tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
+      - tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
+      - tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts
+      - tooling/semantic-lifecycle/src/protocolAdoptionEvidence.ts
+      - tooling/semantic-lifecycle/src/workflowLifecycleEvidence.ts
+
+  rules:
+    - evidence_test_or_helper_names_must_not_count_as_optimized_production_paths
+    - candidate_matching_occurs_only_after_production_execution_boundary_classification
+    - same_boundary_classifier_applies_to_task_anchor_and_result_changed_paths
+    - real_production_candidate_at_anchor_fails_closed_and_requires_V13_FM01_FM03_packaging
+    - newly_created_production_candidate_after_anchor_fails_closed
+    - optimized_path_present_false_must_be_derived_from_inspection_not_hardcoded_independently
+
+  required_manifest_fields:
+    - search_root
+    - source_inspection_policy
+    - production_execution_source_path_count
+    - production_execution_source_paths_sha256
+    - excluded_nonproduction_source_path_count
+    - excluded_nonproduction_source_paths_sha256
+    - optimized_path_name_matches
+    - optimized_path_present
+    - full_reference_mode_independently_runnable
+    - task_anchor
+    - task_tree
+    - result_revision
+    - result_tree
+    - p18_ref
+    - p20_ref
+    - package_ref
+    - package_materialization_commit
+    - package_blob_sha
+
+  current_anchor_expected_oracle:
+    optimized_path_present: false
+    optimized_path_name_matches: []
+    full_reference_mode_independently_runnable: true
+
+accepted_preserved_delta:
+  - .github/workflows/validate-conformance.yml
+  - tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
+  - tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
+  - tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
+
+continuation_authorized_scope:
+  may_modify:
+    - tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
+    - tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.test.ts
+    - tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
+    - .github/workflows/validate-conformance.yml
+
+  may_generate:
+    - .evidence/semantic-lifecycle/sem-lc-08/**
+
+  semanticLifecycleOptimizedEvidence_constraint: >-
+    Modify only V13 source-boundary inspection, V13-FM04 manifest identity,
+    and fail-closed optimized-production candidate detection. Do not change
+    FULL_REFERENCE_MODE semantic truth or production execution behavior.
+
+  semanticLifecycleOptimizedEvidence_test_constraint: >-
+    May be created only for deterministic V13 boundary/oracle regression,
+    including evidence/test self-exclusion and synthetic real-production
+    optimized/cache/incremental candidate detection.
+
+  semanticLifecycleEvidenceCore_constraint: >-
+    Only P31 v0.4 package/materialization/provenance constants may change.
+    E4096 generation, canonicalization, routes, counts, permutations, B2,
+    V12 mechanisms, and reference semantics are read-only.
+
+  workflow_constraint: >-
+    validate-conformance.yml may change only for P31 v0.4 exact package
+    binding, six-path final scope accounting, and V13-FM04 manifest
+    assertions. No new workflow or semantic weakening is authorized.
+
+final_allowed_pr_delta_from_task_anchor:
+  - .github/workflows/validate-conformance.yml
+  - tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
+  - tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
+  - tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
+  - tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
+  - tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.test.ts
+
+forbidden_changes:
+  - any product or runtime production source mutation
+  - contract/**
+  - specs/**
+  - workspace/**
+  - .aegis/project.json
+  - P18/P20/P23 Authority mutation
+  - V12 failure-class or expected-classification mutation
+  - V12 mechanism weakening or replay-by-stub
+  - V13 semantic or threshold weakening
+  - creation of an optimization implementation to satisfy V13
+  - E4096 cardinality reduction
+  - eight-permutation reduction
+  - three-platform reduction
+  - zero-threshold weakening
+  - B2 reopening
+  - new workflow
+  - SEM-LC-09 work
+
+preserved_closed:
+  P34_B2_RC8_05_V12_FM06:
+    status: PRESERVED_CLOSED
+    workflow_adapter_invocations: 4096
+    semantic_first: 2048
+    bound_existing: 2048
+    mutation_allowed: false
+
+  E4096:
+    lifecycle_cases: 4096
+    semantic_dimension_observations: 61440
+    projection_reference_edges: 61440
+    registry_mutation_entries: 4096
+    canonical_input_permutations: 8
+    hosted_platforms:
+      - ubuntu-latest
+      - macos-latest
+      - windows-latest
+
+local_verification:
+  required:
+    - corepack enable
+    - corepack prepare pnpm@11.3.0 --activate
+    - pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+    - pnpm --dir tooling/semantic-lifecycle build
+    - pnpm --dir tooling/semantic-lifecycle lint
+    - pnpm --dir tooling/semantic-lifecycle test
+    - pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:reference
+    - pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:negative
+    - pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:portable
+    - pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reference
+    - pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:negative
+    - pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:optimized
+    - git diff --check
+    - exact_final_six_path_scope_check
+
+hosted_verification:
+  workflow: .github/workflows/validate-conformance.yml
+  required:
+    - sem_lc_08_reference_three_platforms
+    - sem_lc_08_negative
+    - sem_lc_08_v13_reference_mode
+    - sem_lc_08_reconcile
+  new_workflow_forbidden: true
+
+EXECUTION_CLOSURE_CONTRACT:
+  state: FROZEN
+
+  implementation:
+    required_changes:
+      - repair V13-FM04 source inspection to classify production execution source before candidate name matching
+      - add focused V13 source-boundary regression tests
+      - rebind provenance and existing workflow checks to P31 v0.4
+      - preserve accepted dbc1b727 V12/B1 repair except unavoidable package provenance binding
+    forbidden_changes:
+      - any change outside continuation_authorized_scope
+      - product/runtime production source mutation
+      - Authority or Verification redesign
+      - V12 or V13 semantic weakening
+
+  tests:
+    required:
+      - full semantic-lifecycle build lint and regression
+      - reference focused test
+      - negative focused test
+      - portable focused test
+      - V13 source-boundary tests
+      - reference negative and optimized evidence materialization
+      - git diff --check
+      - exact six-path final scope check
+
+  hosted_verification:
+    required:
+      - existing three-platform SEM-LC-08 reference jobs
+      - existing SEM-LC-08 negative job
+      - existing SEM-LC-08 V13 reference-mode job
+      - existing SEM-LC-08 reconcile job
+    optional: []
+
+  evidence:
+    blocking:
+      - exact P31 v0.4 package resume-cursor and result-revision binding
+      - V13-FM04 repository-scope manifest with deterministic production-boundary identity
+      - zero optimized production candidates at the frozen task anchor
+      - FULL_REFERENCE_MODE independently runnable
+      - exact-result hosted V13 PASS
+      - exact-result hosted reconciliation PASS
+      - exact-result hosted negative and three-platform reference regressions PASS
+    corroborative:
+      - run 34436247981 and artifact 10136263171
+      - wall-clock RSS charts and duplicate summaries
+
+  terminal_success:
+    all_of:
+      - PackageBindingPreflight PASS
+      - EvidenceContractPreflight PASS
+      - resume cursor ancestry accepted
+      - accepted V12/B1 repair remains valid
+      - only final_allowed_pr_delta_from_task_anchor paths differ from original task anchor
+      - V13 evidence helper and its focused test are the only newly substantive source surfaces
+      - evidence test and helper filenames do not count as optimized production paths
+      - synthetic real production optimized cache or incremental candidate is detected fail-closed
+      - current exact task anchor yields optimized_path_present false from production-boundary inspection
+      - P20 V13 semantics and FULL_REFERENCE_MODE remain unchanged
+      - local required verification PASS
+      - required hosted verification PASS on the exact new result revision
+      - reviewer-accessible V13 reconcile negative and reference evidence is identity-bound
+
+  terminal_blockers:
+    explicit_classes:
+      - BLOCKED_REPOSITORY_IDENTITY
+      - PACKAGE_MATERIALIZATION_IDENTITY_MISMATCH
+      - BLOCKED_EXECUTION_DIVERGENCE
+      - CURRENT_AUTHORITY_OR_P20_DRIFT
+      - REAL_OPTIMIZED_PRODUCTION_PATH_PRESENT_REQUIRES_V13_FM01_FM03_PACKAGE
+      - REQUIRED_CHANGE_OUTSIDE_AUTHORIZED_SCOPE
+      - B2_OR_OTHER_CLOSED_GATE_SEMANTICS_WOULD_BE_REOPENED
+      - HOSTED_PROOF_CANNOT_COMPLETE_WITHIN_FROZEN_ENVELOPE
+      - ENVIRONMENT_OR_PLATFORM_BLOCKER_WITHOUT_SAFE_IN_SCOPE_REPAIR
+      - NEW_HIGH_IMPACT_FAILURE_MODE
+
+  return_policy:
+    continue_until_terminal_state: true
+
+handoff:
+  next_owner: aegis-implementation
+  next_stage: P33_RESUME_INTERRUPTED_WORK
+  start_from_resume_cursor: true
+  p33_started_by_p31: false
+  p34_started: false
+  p24_authorized: false
+  merge_authorized: false
