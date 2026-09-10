@@ -37,7 +37,7 @@ jobs:
           fi
           git cat-file -e "$package_commit:$package_path"
           test "$(git rev-parse "$package_commit:$package_path")" = c0caec763d8c0c88258832b7eb5e838f31dfd3ce
-          allowed='^(\.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/package\.json|tooling/semantic-lifecycle/src/(index|protocolAdoptionArchitectureBoundary\.test|workflowLifecycleAdapter|workflowLifecycleAdapter\.test|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|registryProspectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider\.test|gitRegistryProtocolAuthorityMutationPort|gitRegistryProtocolAuthorityMutationPort\.test|productionProtocolAdoptionRuntime|productionProtocolAdoptionRuntime\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts|tooling/semantic-lifecycle/fixtures/workflow-lifecycle/workflow-boundary-cases\.json|tooling/semantic-lifecycle/fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|\.evidence/semantic-lifecycle/workflow-lifecycle/.*)$'
+          allowed='^(\.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/package\.json|tooling/semantic-lifecycle/src/(index|protocolAdoptionArchitectureBoundary\.test|workflowLifecycleAdapter|workflowLifecycleAdapter\.test|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|registryProspectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider\.test|gitRegistryProtocolAuthorityMutationPort|gitRegistryProtocolAuthorityMutationPort\.test|productionProtocolAdoptionRuntime|productionProtocolAdoptionRuntime\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence(\.test)?|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts|tooling/semantic-lifecycle/fixtures/workflow-lifecycle/workflow-boundary-cases\.json|tooling/semantic-lifecycle/fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|\.evidence/semantic-lifecycle/workflow-lifecycle/.*)$'
           changed="$(git diff --name-only "$anchor"...HEAD)"
           test -n "$changed"
           forbidden="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
@@ -121,7 +121,7 @@ jobs:
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
           git merge-base --is-ancestor "$anchor" HEAD
           git cat-file -e 0b4501ce5fed58aef276a691df8eac05a1ce8daf:.aegis/packages/AXTP-SEM-LC-06-P31-v0.1.yaml
-          allowed='^(\.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/package\.json|tooling/semantic-lifecycle/src/(model|authorityRepository|index|protocolAdoptionControlRepository|fileProtocolAdoptionControlRepository|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider(\.test)?|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAuthorityStore|gitRegistryProtocolAuthorityMutationPort(\.test)?|productionProtocolAdoptionRuntime(\.test)?|workflowLifecycleAdapter(\.test)?|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|protocolAdoptionGuard|protocolAdoptionEvidence|protocolAdoptionGuard\.test|protocolAdoptionToctou\.test|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionArchitectureBoundary\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts|tooling/semantic-lifecycle/fixtures/(protocol-adoption|workflow-lifecycle)/.*|tooling/semantic-lifecycle/fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|\.evidence/semantic-lifecycle/(protocol-adoption|workflow-lifecycle)/.*)$'
+          allowed='^(\.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/package\.json|tooling/semantic-lifecycle/src/(model|authorityRepository|index|protocolAdoptionControlRepository|fileProtocolAdoptionControlRepository|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider(\.test)?|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAuthorityStore|gitRegistryProtocolAuthorityMutationPort(\.test)?|productionProtocolAdoptionRuntime(\.test)?|workflowLifecycleAdapter(\.test)?|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|protocolAdoptionGuard|protocolAdoptionEvidence|protocolAdoptionGuard\.test|protocolAdoptionToctou\.test|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionArchitectureBoundary\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence(\.test)?|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts|tooling/semantic-lifecycle/fixtures/(protocol-adoption|workflow-lifecycle)/.*|tooling/semantic-lifecycle/fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|\.evidence/semantic-lifecycle/(protocol-adoption|workflow-lifecycle)/.*)$'
           changed="$(git diff --name-only "$anchor"...HEAD)"
           test -n "$changed"
           forbidden="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
@@ -1056,7 +1056,7 @@ jobs:
           # The SEM-LC-06 repair is an authorized successor that touches a
           # small set of shared lifecycle files. Keep the predecessor guard
           # exact while explicitly enumerating that bounded exception.
-          allow='^(.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/(package\.json|fixtures/(authority/(authority-cases|concurrency-cases)|semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|fixtures/(protocol-adoption|workflow-lifecycle)/.*|fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|src/(authorityIdentity(\.test)?|authorityRepository(\.test)?|authorityCommitter(\.test)?|authorityConcurrency\.test|authorityArchitectureBoundary\.test|authorityReport(\.test)?|semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|model|index|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider(\.test)?|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAdoptionControlRepository|fileProtocolAuthorityStore|gitRegistryProtocolAuthorityMutationPort(\.test)?|productionProtocolAdoptionRuntime(\.test)?|workflowLifecycleAdapter(\.test)?|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|protocolAdoptionControlRepository|protocolAdoptionEvidence|protocolAdoptionGuard(\.test)?|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionToctou\.test|protocolAdoptionArchitectureBoundary\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts))$'
+          allow='^(.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/(package\.json|fixtures/(authority/(authority-cases|concurrency-cases)|semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|fixtures/(protocol-adoption|workflow-lifecycle)/.*|fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|src/(authorityIdentity(\.test)?|authorityRepository(\.test)?|authorityCommitter(\.test)?|authorityConcurrency\.test|authorityArchitectureBoundary\.test|authorityReport(\.test)?|semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|model|index|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider(\.test)?|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAdoptionControlRepository|fileProtocolAuthorityStore|gitRegistryProtocolAuthorityMutationPort(\.test)?|productionProtocolAdoptionRuntime(\.test)?|workflowLifecycleAdapter(\.test)?|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|protocolAdoptionControlRepository|protocolAdoptionEvidence|protocolAdoptionGuard(\.test)?|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionToctou\.test|protocolAdoptionArchitectureBoundary\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence(\.test)?|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts))$'
           while IFS= read -r path; do
             [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-02 successor changed predecessor-owned path: $path" >&2; exit 1; }
           done < <(git -C "$root" diff --name-only "$SEM_LC_02_CLOSURE"...HEAD)
@@ -1194,7 +1194,7 @@ jobs:
           # SEM-LC-06 is a bounded successor repair. Its authorized shared
           # lifecycle files are admitted explicitly; all other paths remain
           # rejected by this predecessor regression boundary.
-          allow='^(.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/(package\.json|fixtures/(semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|fixtures/(protocol-adoption|workflow-lifecycle)/.*|fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|authorityRepository|model|index|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider(\.test)?|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAdoptionControlRepository|fileProtocolAuthorityStore|gitRegistryProtocolAuthorityMutationPort(\.test)?|productionProtocolAdoptionRuntime(\.test)?|workflowLifecycleAdapter(\.test)?|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|protocolAdoptionControlRepository|protocolAdoptionEvidence|protocolAdoptionGuard(\.test)?|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionToctou\.test|protocolAdoptionArchitectureBoundary\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts))$'
+          allow='^(.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/(package\.json|fixtures/(semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|fixtures/(protocol-adoption|workflow-lifecycle)/.*|fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|authorityRepository|model|index|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider(\.test)?|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAdoptionControlRepository|fileProtocolAuthorityStore|gitRegistryProtocolAuthorityMutationPort(\.test)?|productionProtocolAdoptionRuntime(\.test)?|workflowLifecycleAdapter(\.test)?|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|protocolAdoptionControlRepository|protocolAdoptionEvidence|protocolAdoptionGuard(\.test)?|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionToctou\.test|protocolAdoptionArchitectureBoundary\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence(\.test)?|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts))$'
           changed="$(git -C "$root" diff --name-only "$SEM_LC_03_CLOSURE"...HEAD)"
           while IFS= read -r path; do
             [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-03 successor changed predecessor-owned path: $path" >&2; exit 1; }
@@ -1701,9 +1701,9 @@ jobs:
         run: |
           set -euo pipefail
           anchor=95b5485913bfcb0b63d44d55e45d6f0f514c2ba9
-          package_commit=e2b54974f020bbdab1479525803b30cc1cab3040
-          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.3.yaml
-          package_blob=33dcfd4d8ee3b97c866f2347a1dd050d7715fd3b
+          package_commit=90d7bef8f4db92cc8b5e58f0e2898712b5800242
+          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.4.yaml
+          package_blob=bcd489fc9163bb6fea33ce9d50dbc7640576528d
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           git merge-base --is-ancestor "$anchor" HEAD
@@ -1717,6 +1717,8 @@ jobs:
             tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
+            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.test.ts
+            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
           )
           expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
           test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
@@ -1791,9 +1793,9 @@ jobs:
         run: |
           set -euo pipefail
           anchor=95b5485913bfcb0b63d44d55e45d6f0f514c2ba9
-          package_commit=e2b54974f020bbdab1479525803b30cc1cab3040
-          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.3.yaml
-          package_blob=33dcfd4d8ee3b97c866f2347a1dd050d7715fd3b
+          package_commit=90d7bef8f4db92cc8b5e58f0e2898712b5800242
+          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.4.yaml
+          package_blob=bcd489fc9163bb6fea33ce9d50dbc7640576528d
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           git merge-base --is-ancestor "$anchor" HEAD
@@ -1807,6 +1809,8 @@ jobs:
             tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
+            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.test.ts
+            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
           )
           expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
           test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
@@ -1865,9 +1869,9 @@ jobs:
         run: |
           set -euo pipefail
           anchor=95b5485913bfcb0b63d44d55e45d6f0f514c2ba9
-          package_commit=e2b54974f020bbdab1479525803b30cc1cab3040
-          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.3.yaml
-          package_blob=33dcfd4d8ee3b97c866f2347a1dd050d7715fd3b
+          package_commit=90d7bef8f4db92cc8b5e58f0e2898712b5800242
+          package_path=.aegis/packages/AXTP-SEM-LC-08-P31-v0.4.yaml
+          package_blob=bcd489fc9163bb6fea33ce9d50dbc7640576528d
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           git merge-base --is-ancestor "$anchor" HEAD
@@ -1881,6 +1885,8 @@ jobs:
             tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
             tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
+            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.test.ts
+            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
           )
           expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
           test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
@@ -1892,6 +1898,7 @@ jobs:
           pnpm --dir tooling/semantic-lifecycle build
           pnpm --dir tooling/semantic-lifecycle lint
           pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:reference
+          pnpm --dir tooling/semantic-lifecycle test
       - name: Inspect task anchor and materialize V13 evidence
         shell: bash
         env:
@@ -1906,7 +1913,10 @@ jobs:
           import { readFileSync } from 'node:fs';
           const manifest = JSON.parse(readFileSync(`${process.env.OUTPUT_DIRECTORY}/v13-reference-mode-manifest.json`, 'utf8'));
           if (manifest.verdict !== 'PASS' || manifest.optimized_path_present !== false || manifest.optimized_reference_mismatch_total !== 0 || manifest.full_reference_mode_independently_runnable !== true) throw new Error('V13_REFERENCE_MODE_FAILURE');
-          if (Array.isArray(manifest.optimized_path_name_matches) && manifest.optimized_path_name_matches.length !== 0) throw new Error('V13_OPTIMIZED_PATH_CONFLICT');
+          if (!Array.isArray(manifest.optimized_path_name_matches) || manifest.optimized_path_name_matches.length !== 0) throw new Error('V13_OPTIMIZED_PATH_CONFLICT');
+          if (manifest.search_root !== 'tooling/semantic-lifecycle/src' || manifest.production_execution_source_path_count <= 0 || manifest.excluded_nonproduction_source_path_count <= 0) throw new Error('V13_SOURCE_BOUNDARY_MISSING');
+          if (typeof manifest.production_execution_source_paths_sha256 !== 'string' || typeof manifest.excluded_nonproduction_source_paths_sha256 !== 'string') throw new Error('V13_SOURCE_BOUNDARY_IDENTITY_MISSING');
+          if (manifest.source_inspection_policy?.excluded_test_glob !== 'tooling/semantic-lifecycle/src/*.test.ts' || !Array.isArray(manifest.source_inspection_policy?.excluded_exact_paths)) throw new Error('V13_SOURCE_INSPECTION_POLICY_DRIFT');
           NODE
       - uses: actions/upload-artifact@v4
         with:
@@ -1951,10 +1961,10 @@ jobs:
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           git merge-base --is-ancestor 95b5485913bfcb0b63d44d55e45d6f0f514c2ba9 HEAD
-          if ! git cat-file -e e2b54974f020bbdab1479525803b30cc1cab3040:.aegis/packages/AXTP-SEM-LC-08-P31-v0.3.yaml 2>/dev/null; then
-            git fetch --no-tags origin e2b54974f020bbdab1479525803b30cc1cab3040
+          if ! git cat-file -e 90d7bef8f4db92cc8b5e58f0e2898712b5800242:.aegis/packages/AXTP-SEM-LC-08-P31-v0.4.yaml 2>/dev/null; then
+            git fetch --no-tags origin 90d7bef8f4db92cc8b5e58f0e2898712b5800242
           fi
-          test "$(git rev-parse e2b54974f020bbdab1479525803b30cc1cab3040:.aegis/packages/AXTP-SEM-LC-08-P31-v0.3.yaml)" = 33dcfd4d8ee3b97c866f2347a1dd050d7715fd3b
+          test "$(git rev-parse 90d7bef8f4db92cc8b5e58f0e2898712b5800242:.aegis/packages/AXTP-SEM-LC-08-P31-v0.4.yaml)" = bcd489fc9163bb6fea33ce9d50dbc7640576528d
       - name: Install and build semantic lifecycle
         shell: bash
         run: |

@@ -23,16 +23,42 @@ export function optimizedPathNameMatches(paths: readonly string[]): readonly str
   return Object.freeze(paths.filter((path) => /(?:^|\/)(?:[^/]*(?:optimized|optimization|cache|incremental)[^/]*)$/i.test(path)).sort(compareUtf8UnsignedBytes));
 }
 
+const evidenceOnlySourcePaths = new Set([
+  "tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts",
+  "tooling/semantic-lifecycle/src/semanticLifecycleReferenceEvidence.ts",
+  "tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts",
+  "tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts",
+  "tooling/semantic-lifecycle/src/semanticLifecycleReconcileEvidence.ts",
+  "tooling/semantic-lifecycle/src/protocolAdoptionEvidence.ts",
+  "tooling/semantic-lifecycle/src/workflowLifecycleEvidence.ts"
+]);
+
+export function classifyProductionExecutionSources(paths: readonly string[]): Readonly<{
+  production: readonly string[];
+  excluded: readonly string[];
+}> {
+  const production: string[] = [];
+  const excluded: string[] = [];
+  for (const path of [...paths].sort(compareUtf8UnsignedBytes)) {
+    if (evidenceOnlySourcePaths.has(path) || /\/[^/]+\.test\.ts$/.test(path)) excluded.push(path);
+    else production.push(path);
+  }
+  return Object.freeze({ production: Object.freeze(production), excluded: Object.freeze(excluded) });
+}
+
 export function buildV13ReferenceModeManifest(input: { readonly repositoryPath: string; readonly resultRevision: string; readonly resultTree: string; readonly platform: string }) {
+  const repositoryPath = git(input.repositoryPath, ["rev-parse", "--show-toplevel"]);
   const reference = buildReferenceBundle({ resultRevision: input.resultRevision, resultTree: input.resultTree, platform: input.platform });
-  const taskTree = git(input.repositoryPath, ["rev-parse", `${SEM_LC_08_TASK_ANCHOR}^{tree}`]);
+  const taskTree = git(repositoryPath, ["rev-parse", `${SEM_LC_08_TASK_ANCHOR}^{tree}`]);
   if (taskTree !== SEM_LC_08_TASK_TREE) throw new Error("TASK_ANCHOR_TREE_DRIFT");
-  const sourcePaths = git(input.repositoryPath, ["ls-tree", "-r", "--name-only", SEM_LC_08_TASK_ANCHOR, "--", "tooling/semantic-lifecycle/src"])
+  const sourcePaths = git(repositoryPath, ["ls-tree", "-r", "--name-only", SEM_LC_08_TASK_ANCHOR, "--", "tooling/semantic-lifecycle/src"])
     .split("\n").filter(Boolean).sort(compareUtf8UnsignedBytes);
-  const matches = optimizedPathNameMatches(sourcePaths);
+  const classifiedAnchor = classifyProductionExecutionSources(sourcePaths);
+  const matches = optimizedPathNameMatches(classifiedAnchor.production);
   if (matches.length !== 0) throw new Error(`PACKAGE_SOURCE_INSPECTION_CONFLICT:${matches.join(",")}`);
-  const changed = git(input.repositoryPath, ["diff", "--name-only", `${SEM_LC_08_TASK_ANCHOR}...${input.resultRevision}`]).split("\n").filter(Boolean).sort(compareUtf8UnsignedBytes);
-  const createdOptimizedProductionPaths = optimizedPathNameMatches(changed.filter((path) => !/^tooling\/semantic-lifecycle\/src\/semanticLifecycle(?:EvidenceCore|ReferenceEvidence|NegativeEvidence|OptimizedEvidence|ReconcileEvidence|ReferenceEvidence\.test|NegativeEvidence\.test|Portable\.test)\.ts$/.test(path)));
+  const changed = git(repositoryPath, ["diff", "--name-only", `${SEM_LC_08_TASK_ANCHOR}...${input.resultRevision}`]).split("\n").filter(Boolean).sort(compareUtf8UnsignedBytes);
+  const changedSourcePaths = changed.filter((path) => path.startsWith("tooling/semantic-lifecycle/src/") && path.endsWith(".ts"));
+  const createdOptimizedProductionPaths = optimizedPathNameMatches(classifyProductionExecutionSources(changedSourcePaths).production);
   if (createdOptimizedProductionPaths.length !== 0) throw new Error(`OPTIMIZED_PRODUCTION_PATH_CREATED:${createdOptimizedProductionPaths.join(",")}`);
   return Object.freeze({
     schema_version: 1,
@@ -59,6 +85,16 @@ export function buildV13ReferenceModeManifest(input: { readonly repositoryPath: 
     canonical_report_sha256: reference.canonical_report_sha256,
     canonical_input_bytes: reference.canonical_input_bytes,
     canonical_output_bytes: reference.canonical_output_bytes,
+    search_root: "tooling/semantic-lifecycle/src",
+    source_inspection_policy: Object.freeze({
+      production_boundary: "exclude evidence-only modules and test files before candidate matching",
+      excluded_exact_paths: Object.freeze([...evidenceOnlySourcePaths].sort(compareUtf8UnsignedBytes)),
+      excluded_test_glob: "tooling/semantic-lifecycle/src/*.test.ts"
+    }),
+    production_execution_source_path_count: classifiedAnchor.production.length,
+    production_execution_source_paths_sha256: sha256(`${classifiedAnchor.production.join("\n")}\n`),
+    excluded_nonproduction_source_path_count: classifiedAnchor.excluded.length,
+    excluded_nonproduction_source_paths_sha256: sha256(`${classifiedAnchor.excluded.join("\n")}\n`),
     task_anchor_source_paths_sha256: sha256(`${sourcePaths.join("\n")}\n`),
     optimized_path_name_matches: matches,
     changed_paths: Object.freeze(changed),
