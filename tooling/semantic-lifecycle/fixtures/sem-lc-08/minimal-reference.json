@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "semantic_dimensions": [
+    "RESOURCE_EXISTENCE",
+    "RESOURCE_IDENTITY",
+    "LIFETIME",
+    "STATE_OWNERSHIP",
+    "FIELD_MEANING",
+    "DEFAULT_EMPTY_SEMANTICS",
+    "READ_WRITE_SEMANTICS",
+    "DERIVED_STATE",
+    "OPERATION_SEMANTICS",
+    "OPERATION_KIND_MODE",
+    "LIFECYCLE_SEMANTICS",
+    "OPERATION_LEGALITY",
+    "INVARIANTS",
+    "COMPATIBILITY_MEANING",
+    "SEMANTIC_PROTOCOL_BINDING"
+  ],
+  "routes": ["SEMANTIC_FIRST", "BOUND_EXISTING"],
+  "utf8_path_order_sample": [
+    "contract/registry/é.yaml",
+    "contract/registry/z.yaml",
+    "contract/registry/ä.yaml",
+    "contract/registry/é.yaml"
+  ]
+}
