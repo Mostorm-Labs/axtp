@@ -29,6 +29,23 @@ test("invalid-reference consumes both canonical refs through Guard validation", 
   assert.equal(result.actual_outcome_kind, "BOTH_REFERENCES_REJECTED");
 });
 
+test("invalid-reference canonical values are bound to the observed Guard inputs", () => {
+  const first = evaluateNegativeCase(cases[0]!);
+  const second = evaluateNegativeCase(cases[0]!, undefined, {
+    semanticReference: "missing://semantic-mutated",
+    projectionReference: "missing://projection"
+  });
+  assert.notEqual(first.mechanism_input_sha256, second.mechanism_input_sha256);
+  assert.equal((second.fault_values_consumed as Record<string, unknown>).semanticReference, "missing://semantic-mutated");
+});
+
+test("projection-gap canonical coverage drives the production projection requirement", () => {
+  assert.throws(() => evaluateNegativeCase(cases[1]!, undefined, {
+    projectionEdges: ["projection://required"],
+    requiredEdges: ["projection://required"]
+  }), /NEGATIVE_FALSE_ACCEPTANCE/);
+});
+
 test("commit interruption retains a durable reservation and reconciles APPLIED_EXACT once", () => {
   const result = evaluateNegativeCase(cases[4]!);
   assert.equal(result.actual_error_code, "AMBIGUOUS_PROTOCOL_COMMIT");
@@ -37,12 +54,32 @@ test("commit interruption retains a durable reservation and reconciles APPLIED_E
   assert.equal((result.authority_state_after as Record<string, unknown>).duplicate_commit_total, 0);
 });
 
+test("commit interruption canonical hook controls whether the writer becomes ambiguous", () => {
+  assert.throws(() => evaluateNegativeCase(cases[4]!, undefined, {
+    interruption: "disabled",
+    expectedPartialAuthorityStateTotal: 0
+  }), /NEGATIVE_FALSE_ACCEPTANCE/);
+});
+
 test("idempotency collision reaches Guard conflict reconciliation without a duplicate commit", () => {
   const result = evaluateNegativeCase(cases[5]!);
   assert.equal(result.actual_error_code, "PROTOCOL_ADOPTION_OUTCOME_CONFLICT");
   assert.equal(result.actual_outcome_kind, "APPLIED_CONFLICT");
   assert.equal((result.authority_state_after as Record<string, unknown>).duplicate_commit_total, 0);
   assert.equal((result.authority_state_after as Record<string, unknown>).guard_reconcile_error, "PROTOCOL_ADOPTION_OUTCOME_CONFLICT");
+});
+
+test("idempotency collision binds both canonical mutation digests into writer correlation identity", () => {
+  const first = evaluateNegativeCase(cases[5]!);
+  const second = evaluateNegativeCase(cases[5]!, undefined, {
+    idempotencyKey: "collision",
+    firstMutationDigest: "sha256:" + "2".repeat(64),
+    secondMutationDigest: "sha256:" + "3".repeat(64)
+  });
+  assert.notEqual(first.mechanism_input_sha256, second.mechanism_input_sha256);
+  assert.equal((second.fault_values_consumed as Record<string, unknown>).firstMutationDigest, "sha256:" + "2".repeat(64));
+  assert.equal((second.fault_values_consumed as Record<string, unknown>).secondMutationDigest, "sha256:" + "3".repeat(64));
+  assert.equal((second.authority_state_after as Record<string, unknown>).duplicate_commit_total, 0);
 });
 
 test("negative corpus expectation drift fails closed", () => {

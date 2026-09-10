@@ -20,9 +20,9 @@ import { ProtocolMutationOutcomeUnknownError } from "./protocolAuthorityMutation
 export type FailureClass = "invalid_semantic_or_projection_reference" | "projection_gap_or_incomplete_coverage" | "candidate_leak" | "stale_prospective_or_repository_basis" | "simulated_mid_commit_interruption_no_partial_authority" | "idempotency_key_collision_non_identical_mutation";
 export interface NegativeCase { readonly case_id: string; readonly failure_class: FailureClass; readonly expected_error: string }
 export interface NegativeMechanismInput { readonly caseId: string; readonly failureClass: FailureClass; readonly canonicalInput: Readonly<Record<string, unknown>> }
-export interface NegativeMechanismObservation { readonly classification: string; readonly rejected: boolean; readonly partialAuthorityStateTotal: number; readonly actualErrorCode: string; readonly actualOutcomeKind: string; readonly input?: unknown; readonly authorityStateBefore?: unknown; readonly authorityStateAfter?: unknown; readonly faultConsumed?: readonly string[] }
+export interface NegativeMechanismObservation { readonly classification: string; readonly rejected: boolean; readonly partialAuthorityStateTotal: number; readonly actualErrorCode: string; readonly actualOutcomeKind: string; readonly input?: unknown; readonly authorityStateBefore?: unknown; readonly authorityStateAfter?: unknown; readonly faultConsumed?: readonly string[]; readonly faultValuesConsumed?: Readonly<Record<string, unknown>> }
 export interface NegativeMechanism { readonly identity: string; execute(input: NegativeMechanismInput): NegativeMechanismObservation }
-export interface NegativeCaseResult extends NegativeCase { readonly canonical_input_sha256: string; readonly expected_classification: string; readonly observed_classification: string; readonly mechanism: string; readonly mechanism_identity: string; readonly actual_error_code: string; readonly actual_outcome_kind: string; readonly observed_error: string; readonly rejected: boolean; readonly partial_authority_state_total: number; readonly fault_fields_consumed: readonly string[]; readonly authority_state_before: unknown; readonly authority_state_after: unknown }
+export interface NegativeCaseResult extends NegativeCase { readonly canonical_input_sha256: string; readonly mechanism_input_sha256: string; readonly expected_classification: string; readonly observed_classification: string; readonly mechanism: string; readonly mechanism_identity: string; readonly actual_error_code: string; readonly actual_outcome_kind: string; readonly observed_error: string; readonly rejected: boolean; readonly partial_authority_state_total: number; readonly fault_fields_consumed: readonly string[]; readonly fault_values_consumed: Readonly<Record<string, unknown>>; readonly authority_state_before: unknown; readonly authority_state_after: unknown }
 
 const expectedErrors: Readonly<Record<FailureClass, string>> = Object.freeze({
   invalid_semantic_or_projection_reference: "INVALID_SEMANTIC_OR_PROJECTION_REFERENCE",
@@ -41,21 +41,23 @@ const oracleTests: Readonly<Record<FailureClass, readonly string[]>> = Object.fr
   idempotency_key_collision_non_identical_mutation: ["src/semanticLifecycleNegativeEvidence.test.ts", "src/gitRegistryProtocolAuthorityMutationPort.test.ts"]
 });
 
-export function evaluateNegativeCase(input: NegativeCase, mechanism: NegativeMechanism = productionNegativeMechanism): NegativeCaseResult {
+export function evaluateNegativeCase(input: NegativeCase, mechanism: NegativeMechanism = productionNegativeMechanism, faultOverride?: Readonly<Record<string, unknown>>): NegativeCaseResult {
   const expected = expectedErrors[input.failure_class];
   if (!expected || input.expected_error !== expected) throw new Error("NEGATIVE_CORPUS_EXPECTATION_DRIFT");
-  const canonicalInput = Object.freeze({ case_id: input.case_id, failure_class: input.failure_class, fault: faultInput(input.failure_class) });
+  const canonicalInput = Object.freeze({ case_id: input.case_id, failure_class: input.failure_class, fault: Object.freeze(faultOverride ?? faultInput(input.failure_class)) });
   let observation: NegativeMechanismObservation;
   try { observation = mechanism.execute({ caseId: input.case_id, failureClass: input.failure_class, canonicalInput }); } catch { throw new Error("NEGATIVE_UNEXPECTED_PRODUCTION_ERROR"); }
   if (!observation.rejected) throw new Error("NEGATIVE_FALSE_ACCEPTANCE");
   if (!observation.actualErrorCode?.trim() || !observation.actualOutcomeKind?.trim()) throw new Error("NEGATIVE_UNEXPECTED_PRODUCTION_ERROR");
   if (observation.classification !== expected) throw new Error("NEGATIVE_CLASSIFICATION_MISMATCH");
   if (observation.partialAuthorityStateTotal !== 0) throw new Error("NEGATIVE_PARTIAL_AUTHORITY_STATE");
-  if (mechanism === productionNegativeMechanism && !observation.faultConsumed?.length) throw new Error("NEGATIVE_UNEXPECTED_PRODUCTION_ERROR");
-  return Object.freeze({ ...input, canonical_input_sha256: sha256(canonicalJson(canonicalInput)), expected_classification: expected, observed_classification: observation.classification, mechanism: mechanism.identity, mechanism_identity: mechanism.identity, actual_error_code: observation.actualErrorCode, actual_outcome_kind: observation.actualOutcomeKind, observed_error: observation.actualErrorCode, rejected: observation.rejected, partial_authority_state_total: observation.partialAuthorityStateTotal, fault_fields_consumed: observation.faultConsumed ?? [], authority_state_before: observation.authorityStateBefore ?? null, authority_state_after: observation.authorityStateAfter ?? null });
+  if (mechanism === productionNegativeMechanism && (!observation.faultConsumed?.length || !observation.faultValuesConsumed)) throw new Error("NEGATIVE_UNEXPECTED_PRODUCTION_ERROR");
+  const faultValuesConsumed = observation.faultValuesConsumed ?? {};
+  if (mechanism === productionNegativeMechanism && canonicalJson(faultValuesConsumed) !== canonicalJson(canonicalInput.fault)) throw new Error("NEGATIVE_CANONICAL_INPUT_NOT_CONSUMED");
+  return Object.freeze({ ...input, canonical_input_sha256: sha256(canonicalJson(canonicalInput)), mechanism_input_sha256: sha256(canonicalJson(faultValuesConsumed)), expected_classification: expected, observed_classification: observation.classification, mechanism: mechanism.identity, mechanism_identity: mechanism.identity, actual_error_code: observation.actualErrorCode, actual_outcome_kind: observation.actualOutcomeKind, observed_error: observation.actualErrorCode, rejected: observation.rejected, partial_authority_state_total: observation.partialAuthorityStateTotal, fault_fields_consumed: observation.faultConsumed ?? [], fault_values_consumed: faultValuesConsumed, authority_state_before: observation.authorityStateBefore ?? null, authority_state_after: observation.authorityStateAfter ?? null });
 }
 
-const productionNegativeMechanism: NegativeMechanism = Object.freeze({ identity: "P31-v0.3-real-production-mechanisms", execute(input: NegativeMechanismInput): NegativeMechanismObservation {
+const productionNegativeMechanism: NegativeMechanism = Object.freeze({ identity: "P36-fixture-bound-production-mechanisms", execute(input: NegativeMechanismInput): NegativeMechanismObservation {
   switch (input.failureClass) {
     case "candidate_leak": return executeCandidateLeak(input);
     case "simulated_mid_commit_interruption_no_partial_authority": return executeGitCase(input, true);
@@ -66,53 +68,65 @@ const productionNegativeMechanism: NegativeMechanism = Object.freeze({ identity:
   }
 } });
 
-function executeInvalidReference(_input: NegativeMechanismInput): NegativeMechanismObservation {
+function executeInvalidReference(input: NegativeMechanismInput): NegativeMechanismObservation {
+  const fault = consumeFault(input, ["semanticReference", "projectionReference"]);
   const fixture = semanticRouteFixture();
   let semanticError = "UNKNOWN";
   try {
-    fixture.route.reselectInputs({ operationVersion: 1, operationId: "invalid-reference-reselect", operationKind: "RESELECT_PROTOCOL_ADOPTION_INPUTS", payload: { expectedWorkingSelectionRef: fixture.selection.selectionRef, selection: { ...fixture.selection, selectionRef: { ...fixture.selection.selectionRef, revision: "invalid-selection", digest: "sha256:invalid-selection" }, supersedesSelectionRef: fixture.selection.selectionRef, semanticAuthorityRef: { refType: "BROKEN" } } } } as any);
+    fixture.route.reselectInputs({ operationVersion: 1, operationId: "invalid-reference-reselect", operationKind: "RESELECT_PROTOCOL_ADOPTION_INPUTS", payload: { expectedWorkingSelectionRef: fixture.selection.selectionRef, selection: { ...fixture.selection, selectionRef: { ...fixture.selection.selectionRef, revision: "invalid-selection", digest: "sha256:invalid-selection" }, supersedesSelectionRef: fixture.selection.selectionRef, semanticAuthorityRef: immutableFixtureRef("semantic-authority", "semantic-main", fault.semanticReference) } } } as any);
   } catch (e) { semanticError = e instanceof Error ? e.message : String(e); }
   let projectionError = "UNKNOWN";
   try {
-    fixture.guard.finalize({ operationVersion: 1, operationId: "invalid-reference-projection", operationKind: "FINALIZE_PROTOCOL_ADOPTION", payload: { protocolAdoptionCaseId: fixture.selection.protocolAdoptionCaseId, expectedWorkingSelectionRef: fixture.selection.selectionRef, protocolAuthorityKey: "axtp-registry", expectedProtocolAuthorityHead: null, prospectiveProtocolBasisRef: fixture.selection.prospectiveProtocolBasisRef, semanticAuthorityRef: fixture.selection.semanticAuthorityRef, evidenceRefs: [] } } as any);
+    fixture.guard.finalize({ operationVersion: 1, operationId: "invalid-reference-projection", operationKind: "FINALIZE_PROTOCOL_ADOPTION", payload: { protocolAdoptionCaseId: fixture.selection.protocolAdoptionCaseId, expectedWorkingSelectionRef: fixture.selection.selectionRef, protocolAuthorityKey: "axtp-registry", expectedProtocolAuthorityHead: null, prospectiveProtocolBasisRef: fixture.selection.prospectiveProtocolBasisRef, semanticAuthorityRef: fixture.selection.semanticAuthorityRef, projectionRef: immutableFixtureRef("protocol-projection", "projection-gap", fault.projectionReference), evidenceRefs: [] } } as any);
   } catch (e) { projectionError = e instanceof Error ? e.message : String(e); }
   fixture.cleanup();
   const actualErrorCode = `${semanticError}+${projectionError}`;
-  return observed("INVALID_SEMANTIC_OR_PROJECTION_REFERENCE", actualErrorCode, semanticError === "STALE_SEMANTIC_AUTHORITY" && projectionError === "PROJECTION_REQUIRED", ["semanticReference", "projectionReference"], { semantic: "unresolved", projection: "unresolved" }, { semantic: semanticError, projection: projectionError }, "BOTH_REFERENCES_REJECTED");
+  return observed("INVALID_SEMANTIC_OR_PROJECTION_REFERENCE", actualErrorCode, semanticError === "STALE_SEMANTIC_AUTHORITY" && projectionError === "PROJECTION_REQUIRED", fault, { semantic: "unresolved", projection: "unresolved" }, { semantic: semanticError, projection: projectionError }, "BOTH_REFERENCES_REJECTED");
 }
 
-function executeProjectionGap(_input: NegativeMechanismInput): NegativeMechanismObservation {
+function executeProjectionGap(input: NegativeMechanismInput): NegativeMechanismObservation {
+  const fault = consumeFault(input, ["projectionEdges", "requiredEdges"]);
   const { route, guard, selection, cleanup } = semanticRouteFixture();
   let error = "UNKNOWN";
-  try { guard.finalize({ operationVersion: 1, operationId: "projection-gap-finalize", operationKind: "FINALIZE_PROTOCOL_ADOPTION", payload: { protocolAdoptionCaseId: selection.protocolAdoptionCaseId, expectedWorkingSelectionRef: selection.selectionRef, protocolAuthorityKey: "axtp-registry", expectedProtocolAuthorityHead: null, prospectiveProtocolBasisRef: selection.prospectiveProtocolBasisRef, semanticAuthorityRef: selection.semanticAuthorityRef, evidenceRefs: [] } } as any); } catch (e) { error = e instanceof Error ? e.message : String(e); } finally { cleanup(); }
-  return observed("PROJECTION_COVERAGE_INCOMPLETE", error, error === "PROJECTION_REQUIRED", ["projectionEdges", "requiredEdges"], { projectionRef: null }, { projectionRef: null });
+  const missing = (fault.requiredEdges as unknown[]).filter((edge) => !(fault.projectionEdges as unknown[]).includes(edge));
+  try {
+    guard.finalize({ operationVersion: 1, operationId: "projection-gap-finalize", operationKind: "FINALIZE_PROTOCOL_ADOPTION", payload: { protocolAdoptionCaseId: selection.protocolAdoptionCaseId, expectedWorkingSelectionRef: selection.selectionRef, protocolAuthorityKey: "axtp-registry", expectedProtocolAuthorityHead: null, prospectiveProtocolBasisRef: selection.prospectiveProtocolBasisRef, semanticAuthorityRef: selection.semanticAuthorityRef, ...(missing.length === 0 ? { projectionRef: immutableFixtureRef("protocol-projection", "projection-gap", canonicalJson(fault.projectionEdges)) } : {}), evidenceRefs: [] } } as any);
+  } catch (e) { error = e instanceof Error ? e.message : String(e); } finally { cleanup(); }
+  return observed("PROJECTION_COVERAGE_INCOMPLETE", error, missing.length > 0 && error === "PROJECTION_REQUIRED", fault, { projectionEdges: fault.projectionEdges }, { missingProjectionEdges: missing });
 }
 
-function executeStaleBasis(_input: NegativeMechanismInput): NegativeMechanismObservation {
-  const current = ref("1"); const stale = ref("2");
-  const prospective = new InMemoryProspectiveProtocolBasisProvider([{ ref: current, payload: { schemaVersion: 1, kind: "AXTP_REGISTRY_MUTATION", baseProtocolAuthorityRevision: "1".repeat(40), writes: [{ path: "contract/registry/x.yaml", content: "x\n", sha256: sha256("x\n") }], deletes: [] } }], current);
+function executeStaleBasis(input: NegativeMechanismInput): NegativeMechanismObservation {
+  const fault = consumeFault(input, ["expectedBasis", "observedBasis"]);
+  const current = ref(String(fault.expectedBasis)); const stale = ref(String(fault.observedBasis));
+  const snapshot = { schemaVersion: 1, kind: "AXTP_REGISTRY_MUTATION", baseProtocolAuthorityRevision: "1".repeat(40), writes: [{ path: "contract/registry/x.yaml", content: "x\n", sha256: sha256("x\n") }], deletes: [] };
+  const prospective = new InMemoryProspectiveProtocolBasisProvider([{ ref: current, payload: snapshot }, { ref: stale, payload: snapshot }], stale);
   const deps = minimalRouteDeps(); (deps as any).prospective = prospective;
-  let error = "UNKNOWN"; try { prospective.setCurrent(stale); } catch (e) { error = e instanceof Error ? e.message : String(e); }
-  if (error === "UNKNOWN") error = "STALE_PROSPECTIVE_PROTOCOL_BASIS";
-  return observed("STALE_PROSPECTIVE_OR_REPOSITORY_BASIS", error, true, ["expectedBasis", "observedBasis"], current, current);
+  const route = new ProtocolAdoptionRoute(deps);
+  let error = "UNKNOWN";
+  try { route.openCase({ operationVersion: 1, operationId: "stale-basis-open", operationKind: "OPEN_PROTOCOL_ADOPTION_CASE", payload: { selection: { schemaVersion: 1, protocolAdoptionCaseId: input.caseId, selectionRef: immutableFixtureRef("protocol-adoption-selection", input.caseId, input.caseId), route: "NO_DELTA", assessmentId: "stale-basis-assessment", scopeRef: immutableFixtureRef("semantic-scope", input.caseId, input.caseId), classificationBasisRef: immutableFixtureRef("classification-basis", "semantic", input.caseId), prospectiveProtocolBasisRef: current, evidenceRefs: [] }, caseRecord: { schemaVersion: 1, protocolAdoptionCaseId: input.caseId, status: "OPEN", workingSelectionRef: immutableFixtureRef("protocol-adoption-selection", input.caseId, input.caseId), evidenceRefs: [] } } } as any); } catch (e) { error = e instanceof Error ? e.message : String(e); }
+  return observed("STALE_PROSPECTIVE_OR_REPOSITORY_BASIS", error, error === "STALE_PROSPECTIVE_PROTOCOL_BASIS", fault, current, stale);
 }
 
 function executeCandidateLeak(input: NegativeMechanismInput): NegativeMechanismObservation {
+  const fault = consumeFault(input, ["candidateRecord", "target"]);
   const repo = gitRepo();
   try {
     const base = git(repo, "rev-parse", "HEAD");
     const provider = new RegistryProspectiveProtocolBasisProvider(repo);
-    const payload = { schemaVersion: 1, kind: "AXTP_REGISTRY_MUTATION", baseProtocolAuthorityRevision: base, writes: [{ path: "contract/registry/x.yaml", content: JSON.stringify({ candidate: input.canonicalInput }) + "\n" }], deletes: [] };
+    const payload = { schemaVersion: 1, kind: "AXTP_REGISTRY_MUTATION", baseProtocolAuthorityRevision: base, writes: [{ path: "contract/registry/x.yaml", content: JSON.stringify({ candidateRecord: fault.candidateRecord, target: fault.target }) + "\n" }], deletes: [] };
     const ref = provider.stage(payload as any); writeFileSync(join(repo, "contract/registry/x.yaml"), payload.writes[0].content);
     const port = new GitRegistryProtocolAuthorityMutationPort({ repositoryPath: repo, targetRef: "refs/heads/main" });
-    const request: any = { protocolAuthorityKey: "axtp-registry", protocolAdoptionCaseId: input.caseId, operationId: "candidate-leak", commandDigest: "sha256:" + "1".repeat(64), expectedProtocolAuthorityHead: { refType: "IMMUTABLE_REVISION", namespace: "protocol-authority", subject: "axtp-registry", revision: base }, prospectiveProtocolBasisRef: ref, payload: { ...payload, candidate: input.canonicalInput } };
+    const request: any = { protocolAuthorityKey: "axtp-registry", protocolAdoptionCaseId: input.caseId, operationId: "candidate-leak", commandDigest: "sha256:" + sha256(canonicalJson(fault)), expectedProtocolAuthorityHead: { refType: "IMMUTABLE_REVISION", namespace: "protocol-authority", subject: "axtp-registry", revision: base }, prospectiveProtocolBasisRef: ref, payload: { ...payload, candidateRecord: fault.candidateRecord, target: fault.target } };
     let error = "UNKNOWN"; try { port.commit(request); } catch (e) { error = e instanceof Error ? e.message : String(e); }
     const after = git(repo, "rev-parse", "HEAD");
-    return observed("CANDIDATE_LEAK_REJECTED", "PROSPECTIVE_PROTOCOL_BASIS_MISMATCH", error === "PROSPECTIVE_PROTOCOL_BASIS_MISMATCH", ["candidateRecord", "target"], { head: base }, { head: after });
+    return observed("CANDIDATE_LEAK_REJECTED", error, error === "PROSPECTIVE_PROTOCOL_BASIS_MISMATCH", fault, { head: base }, { head: after });
   } finally { rmSync(repo, { recursive: true, force: true }); }
 }
 
 function executeGitCase(input: NegativeMechanismInput, interruption: boolean): NegativeMechanismObservation {
+  const fault = interruption
+    ? consumeFault(input, ["interruption", "expectedPartialAuthorityStateTotal"])
+    : consumeFault(input, ["idempotencyKey", "firstMutationDigest", "secondMutationDigest"]);
   const repo = gitRepo();
   try {
     const base = git(repo, "rev-parse", "HEAD");
@@ -127,7 +141,7 @@ function executeGitCase(input: NegativeMechanismInput, interruption: boolean): N
     const controlPath = join(repo, "control.json");
     const control = new FileProtocolAdoptionControlRepository(controlPath);
     const protocolOptions: any = { repositoryPath: repo, targetRef: "refs/heads/main" };
-    if (interruption) protocolOptions.afterRefTransaction = () => { throw new Error("response lost"); };
+    if (interruption && fault.interruption === "after-ref-transaction") protocolOptions.afterRefTransaction = () => { throw new Error("response lost"); };
     const protocol = new GitRegistryProtocolAuthorityMutationPort(protocolOptions);
     const selectionRef = { refType: "IMMUTABLE_REVISION" as const, namespace: "protocol-adoption-selection", subject: input.caseId, revision: "selection-1", digest: "sha256:selection-1" };
     const selection = { schemaVersion: 1 as const, protocolAdoptionCaseId: input.caseId, selectionRef, route: "NO_DELTA" as const, assessmentId: assessment.assessmentId, scopeRef: scope, classificationBasisRef: classification, prospectiveProtocolBasisRef: payload, evidenceRefs: [] };
@@ -141,7 +155,7 @@ function executeGitCase(input: NegativeMechanismInput, interruption: boolean): N
     if (interruption) {
       try { route.finalizeProtocolAdoption(command); } catch (e) { error = e instanceof Error ? e.message : String(e); }
     }
-    if (interruption) {
+    if (interruption && error === "AMBIGUOUS_PROTOCOL_COMMIT") {
       const reopenedControl = new FileProtocolAdoptionControlRepository(controlPath);
       const reservation = reopenedControl.getFinalizationReservation(input.caseId);
       const reopenedProtocol = new GitRegistryProtocolAuthorityMutationPort({ repositoryPath: repo, targetRef: "refs/heads/main" });
@@ -149,21 +163,24 @@ function executeGitCase(input: NegativeMechanismInput, interruption: boolean): N
       const reconciler = new ProtocolAdoptionGuard({ control: reopenedControl, assessments, prospective: provider, semanticAuthorities: baseDeps.semanticAuthorities, protocolAuthority: reopenedProtocol });
       const reconciled = new ProtocolAdoptionRoute({ ...baseDeps, control: reopenedControl, guard: reconciler }).reconcileProtocolAdoption({ operationVersion: 1, operationId: `${input.caseId}-reconcile`, operationKind: "RECONCILE_PROTOCOL_ADOPTION", payload: { protocolAdoptionCaseId: input.caseId, originalOperationId: command.operationId } });
       const commit = git(repo, "rev-parse", "HEAD");
-      return observed("MID_COMMIT_INTERRUPTION_ROLLED_BACK", error, error === "AMBIGUOUS_PROTOCOL_COMMIT" && reservation?.state === "UNRESOLVED" && outcome.status === "APPLIED_EXACT" && reconciled.status === "RECONCILED", ["interruption", "targetRef", "correlationRef", "durableReservation", "reconcileOutcome"], before, { target: commit, correlation: commit, reservation_before_reconcile: reservation?.state, reservation_after_reconcile: reopenedControl.getFinalizationReservation(input.caseId) ?? null, reconcile: outcome.status, completion: reconciled.status, duplicate_commit_total: 0 }, "APPLIED_EXACT_RECONCILED");
+      return observed("MID_COMMIT_INTERRUPTION_ROLLED_BACK", error, error === "AMBIGUOUS_PROTOCOL_COMMIT" && reservation?.state === "UNRESOLVED" && outcome.status === "APPLIED_EXACT" && reconciled.status === "RECONCILED" && fault.expectedPartialAuthorityStateTotal === 0, fault, before, { target: commit, correlation: commit, reservation_before_reconcile: reservation?.state, reservation_after_reconcile: reopenedControl.getFinalizationReservation(input.caseId) ?? null, reconcile: outcome.status, completion: reconciled.status, duplicate_commit_total: 0 }, "APPLIED_EXACT_RECONCILED");
     }
+    if (interruption) return observed("MID_COMMIT_INTERRUPTION_ROLLED_BACK", error, false, fault, before, { target: git(repo, "rev-parse", "HEAD") }, "NOT_INTERRUPTED");
     const collisionOperationId = `${command.operationId}-collision`;
-    const firstRequest: any = { protocolAuthorityKey: "axtp-registry", protocolAdoptionCaseId: input.caseId, operationId: collisionOperationId, commandDigest: "sha256:" + "4".repeat(64), expectedProtocolAuthorityHead: command.payload.expectedProtocolAuthorityHead, prospectiveProtocolBasisRef: payload, payload: provider.resolve(payload).payload };
+    const firstMutationDigest = requireDigest(fault.firstMutationDigest, "firstMutationDigest");
+    const secondMutationDigest = requireDigest(fault.secondMutationDigest, "secondMutationDigest");
+    const firstRequest: any = { protocolAuthorityKey: "axtp-registry", protocolAdoptionCaseId: input.caseId, operationId: String(fault.idempotencyKey), commandDigest: firstMutationDigest, expectedProtocolAuthorityHead: command.payload.expectedProtocolAuthorityHead, prospectiveProtocolBasisRef: payload, payload: provider.resolve(payload).payload };
     const collisionControl = new FileProtocolAdoptionControlRepository(controlPath);
     const firstResult = protocol.commit(firstRequest);
     const firstCommit = git(repo, "rev-parse", "HEAD");
     const collisionGuard = new ProtocolAdoptionGuard({ ...baseDeps, control: collisionControl, protocolAuthority: protocol });
     const collisionRoute = new ProtocolAdoptionRoute({ ...baseDeps, control: collisionControl, guard: collisionGuard });
-    const collisionCommand: FinalizeCommand = { ...command, operationId: collisionOperationId, payload: { ...command.payload, expectedProtocolAuthorityHead: firstResult.resultingProtocolAuthorityRef, evidenceRefs: [{ refType: "EVIDENCE", id: "collision-second" }] } };
-    collisionControl.acquireFinalizationReservation({ schemaVersion: 1, protocolAdoptionCaseId: input.caseId, operationId: collisionOperationId, commandDigest: "sha256:" + "5".repeat(64), selectionRef, correlationId: `${input.caseId}:${collisionOperationId}:sha256:${"5".repeat(64)}`, state: "UNRESOLVED", finalizationCommand: collisionCommand } as any);
-    let conflictError = "UNKNOWN"; try { collisionRoute.reconcileProtocolAdoption({ operationVersion: 1, operationId: `${input.caseId}-reconcile`, operationKind: "RECONCILE_PROTOCOL_ADOPTION", payload: { protocolAdoptionCaseId: input.caseId, originalOperationId: collisionOperationId } }); } catch (e) { conflictError = e instanceof Error ? e.message : String(e); }
+    const collisionCommand: FinalizeCommand = { ...command, operationId: String(fault.idempotencyKey), payload: { ...command.payload, expectedProtocolAuthorityHead: firstResult.resultingProtocolAuthorityRef, evidenceRefs: [{ refType: "EVIDENCE", id: "collision-second" }] } };
+    collisionControl.acquireFinalizationReservation({ schemaVersion: 1, protocolAdoptionCaseId: input.caseId, operationId: String(fault.idempotencyKey), commandDigest: secondMutationDigest, selectionRef, correlationId: `${input.caseId}:${String(fault.idempotencyKey)}:${secondMutationDigest}`, state: "UNRESOLVED", finalizationCommand: collisionCommand } as any);
+    let conflictError = "UNKNOWN"; try { collisionRoute.reconcileProtocolAdoption({ operationVersion: 1, operationId: `${input.caseId}-reconcile`, operationKind: "RECONCILE_PROTOCOL_ADOPTION", payload: { protocolAdoptionCaseId: input.caseId, originalOperationId: String(fault.idempotencyKey) } }); } catch (e) { conflictError = e instanceof Error ? e.message : String(e); }
     const after = git(repo, "rev-parse", "HEAD");
-    const outcome = protocol.queryOutcome({ protocolAdoptionCaseId: input.caseId, operationId: collisionOperationId, commandDigest: "sha256:" + "5".repeat(64) });
-    return observed("IDEMPOTENCY_KEY_COLLISION", conflictError, conflictError === "PROTOCOL_ADOPTION_OUTCOME_CONFLICT" && after === firstCommit && outcome.status === "APPLIED_CONFLICT", ["idempotencyKey", "firstMutationDigest", "secondMutationDigest", "correlationRef"], { commits: 1, first: firstCommit }, { commits: 1, second: after, outcome: outcome.status, duplicate_commit_total: 0, guard_reconcile_error: conflictError }, "APPLIED_CONFLICT");
+    const outcome = protocol.queryOutcome({ protocolAdoptionCaseId: input.caseId, operationId: String(fault.idempotencyKey), commandDigest: secondMutationDigest });
+    return observed("IDEMPOTENCY_KEY_COLLISION", conflictError, conflictError === "PROTOCOL_ADOPTION_OUTCOME_CONFLICT" && after === firstCommit && outcome.status === "APPLIED_CONFLICT", fault, { commits: 1, first: firstCommit, first_outcome: protocol.queryOutcome({ protocolAdoptionCaseId: input.caseId, operationId: String(fault.idempotencyKey), commandDigest: firstMutationDigest }).status }, { commits: 1, second: after, outcome: outcome.status, duplicate_commit_total: 0, guard_reconcile_error: conflictError }, "APPLIED_CONFLICT");
   } finally { rmSync(repo, { recursive: true, force: true }); }
 }
 
@@ -187,7 +204,26 @@ function semanticRouteFixture(): { route: ProtocolAdoptionRoute; guard: Protocol
   return { route, guard, selection, cleanup: () => rmSync(root, { recursive: true, force: true }) };
 }
 
-function observed(classification: string, actualErrorCode: string, rejected: boolean, consumed: readonly string[], before: unknown, after: unknown, actualOutcomeKind?: string): NegativeMechanismObservation { return { classification, rejected, partialAuthorityStateTotal: 0, actualErrorCode, actualOutcomeKind: actualOutcomeKind ?? (rejected ? "REJECTED" : "UNEXPECTED"), faultConsumed: consumed, authorityStateBefore: before, authorityStateAfter: after }; }
+function observed(classification: string, actualErrorCode: string, rejected: boolean, consumed: Readonly<Record<string, unknown>>, before: unknown, after: unknown, actualOutcomeKind?: string): NegativeMechanismObservation { return { classification, rejected, partialAuthorityStateTotal: 0, actualErrorCode, actualOutcomeKind: actualOutcomeKind ?? (rejected ? "REJECTED" : "UNEXPECTED"), faultConsumed: Object.keys(consumed), faultValuesConsumed: consumed, authorityStateBefore: before, authorityStateAfter: after }; }
+function consumeFault(input: NegativeMechanismInput, fields: readonly string[]): Readonly<Record<string, any>> {
+  const fault = input.canonicalInput.fault;
+  if (!fault || typeof fault !== "object" || Array.isArray(fault)) throw new Error("NEGATIVE_CANONICAL_FAULT_INVALID");
+  const record = fault as Record<string, unknown>;
+  const consumed: Record<string, unknown> = {};
+  for (const field of fields) {
+    if (!(field in record)) throw new Error(`NEGATIVE_CANONICAL_FAULT_MISSING:${field}`);
+    consumed[field] = record[field];
+  }
+  return Object.freeze(consumed);
+}
+function immutableFixtureRef(namespace: string, subject: string, value: unknown): any {
+  const revision = sha256(canonicalJson(value));
+  return { refType: "IMMUTABLE_REVISION", namespace, subject, revision, digest: `sha256:${revision}` };
+}
+function requireDigest(value: unknown, field: string): string {
+  if (typeof value !== "string" || !/^sha256:[0-9a-f]{64}$/.test(value)) throw new Error(`NEGATIVE_CANONICAL_FAULT_INVALID:${field}`);
+  return value;
+}
 function minimalRouteDeps(): any { return { control: { replayOperation: () => undefined, openCase: () => ({}) }, assessments: { assertFresh: () => undefined }, prospective: { getCurrentRef: () => ref("1"), resolve: () => ({ ref: ref("1"), payload: {} }), withCurrentFence: (_: any, fn: any) => fn({ ref: ref("1"), payload: {} }) }, semanticAuthorities: { assertCurrent: () => undefined, withPublicationFence: (_: any, fn: any) => fn() }, guard: { finalize: () => { throw new Error("PROTOCOL_REQUIRED"); } } }; }
 function ref(revision: string): any { return { refType: "IMMUTABLE_REVISION", namespace: "prospective-protocol-basis", subject: "axtp-registry", revision, digest: `sha256:${revision}` }; }
 function gitRepo(): string { const root = mkdtempSync(join(process.env.TMPDIR ?? "/tmp", "axtp-negative-git-")); process.env.GIT_AUTHOR_DATE = "@0 +0000"; process.env.GIT_COMMITTER_DATE = "@0 +0000"; execFileSync("git", ["init", "-q", "-b", "main"], { cwd: root }); execFileSync("git", ["config", "user.email", "test@example.invalid"], { cwd: root }); execFileSync("git", ["config", "user.name", "AXTP test"], { cwd: root }); mkdirSync(join(root, "contract/registry"), { recursive: true }); writeFileSync(join(root, "contract/registry/x.yaml"), "version: 1\n"); git(root, "add", "."); git(root, "commit", "-qm", "base"); return root; }
