@@ -1,14 +1,29 @@
 verification_binding:
   package_id: SEM-LC-12-P31-001
 
-  required_inputs:
+  authority_refs:
     verification_design:
-      SEM-LC-11
-    failure_modes:
+      lifecycle: SEM-LC-11
+      status: REQUIRED_IMMUTABLE_REF
+
+    semantic_basis:
+      lifecycle: SEM-LC-09
+      status: REQUIRED_IMMUTABLE_REF
+
+    architecture_basis:
+      lifecycle: SEM-LC-10
+      status: REQUIRED_IMMUTABLE_REF
+
+  required_inputs:
+    verification_spec:
       required: true
-    acceptance_invariants:
+    obligation_set:
       required: true
-    evidence_strategy:
+    trusted_basis:
+      required: true
+    acceptance_oracles:
+      required: true
+    evidence_compilation:
       required: true
 
   evidence_classes:
