@@ -1,0 +1,30 @@
+authority_snapshot:
+  lifecycle: SEM-LC-09
+  authority_type: semantic
+
+status:
+  snapshot_materialization: CREATED
+  binding: INCOMPLETE
+
+purpose:
+  Materialize established semantic authority into repository-referenceable snapshot.
+
+scope:
+  includes:
+    - Product Object Model
+    - Interaction Model
+    - Semantic Schema
+    - Operation Model
+
+bindings:
+  source_document:
+    status: REQUIRED
+  source_revision:
+    status: REQUIRED
+  content_hash:
+    status: REQUIRED
+  materialized_revision:
+    status: REQUIRED
+
+p31_dependency:
+  SEM-LC-12-P31-001
