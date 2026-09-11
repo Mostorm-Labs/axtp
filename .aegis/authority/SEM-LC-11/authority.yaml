@@ -1,0 +1,30 @@
+authority_ref:
+  lifecycle: SEM-LC-11
+  authority_type: verification
+
+status:
+  materialization: IN_PROGRESS
+  binding: NOT_YET_COMPLETE
+
+purpose:
+  Convert established verification authority into immutable repository-referenceable authority.
+
+required_bindings:
+  - verification_spec
+  - obligation_set
+  - trusted_basis
+  - acceptance_oracles
+  - evidence_compilation
+  - source_revision
+  - content_hash
+  - materialized_revision
+
+scope:
+  includes:
+    - Verification Design
+    - Failure Mode Catalog
+    - Requirement Invariant Mapping
+    - Evidence Strategy
+
+p31_dependency:
+  SEM-LC-12-P31-001
