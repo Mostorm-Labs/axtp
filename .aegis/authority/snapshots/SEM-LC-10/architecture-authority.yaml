@@ -1,0 +1,31 @@
+authority_snapshot:
+  lifecycle: SEM-LC-10
+  authority_type: architecture
+
+status:
+  snapshot_materialization: CREATED
+  binding: INCOMPLETE
+
+purpose:
+  Materialize established architecture authority into repository-referenceable snapshot.
+
+scope:
+  includes:
+    - System Architecture
+    - Module Design
+    - Runtime Data Flow
+    - Platform Contract
+    - Engineering Constraints
+
+bindings:
+  source_document:
+    status: REQUIRED
+  source_revision:
+    status: REQUIRED
+  content_hash:
+    status: REQUIRED
+  materialized_revision:
+    status: REQUIRED
+
+p31_dependency:
+  SEM-LC-12-P31-001
