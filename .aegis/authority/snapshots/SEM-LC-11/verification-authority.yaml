@@ -1,0 +1,39 @@
+authority_snapshot:
+  lifecycle: SEM-LC-11
+  authority_type: verification
+
+status:
+  snapshot_materialization: CREATED
+  binding: INCOMPLETE
+
+purpose:
+  Materialize established verification authority into repository-referenceable snapshot.
+
+scope:
+  includes:
+    - Verification Design
+    - Failure Mode Catalog
+    - Requirement Invariant Mapping
+    - Evidence Strategy
+
+bindings:
+  verification_spec:
+    status: REQUIRED
+  obligation_set:
+    status: REQUIRED
+  trusted_basis:
+    status: REQUIRED
+  acceptance_oracles:
+    status: REQUIRED
+  evidence_compilation:
+    status: REQUIRED
+
+  source_revision:
+    status: REQUIRED
+  content_hash:
+    status: REQUIRED
+  materialized_revision:
+    status: REQUIRED
+
+p31_dependency:
+  SEM-LC-12-P31-001
