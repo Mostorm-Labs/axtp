@@ -1,0 +1,117 @@
+authority_source_map:
+
+  lifecycle:
+    SEM-LC-12
+
+  purpose:
+    Map established lifecycle authorities to immutable repository materialization references.
+
+  status:
+    source_mapping: IN_PROGRESS
+
+  SEM-LC-09:
+
+    authority_type:
+      semantic
+
+    required_sources:
+
+      product_object_model:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+      interaction_model:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+      semantic_schema:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+      operation_model:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+
+  SEM-LC-10:
+
+    authority_type:
+      architecture
+
+    required_sources:
+
+      system_architecture:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+      module_design:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+      runtime_data_flow:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+      platform_contract:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+      engineering_constraints:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+
+  SEM-LC-11:
+
+    authority_type:
+      verification
+
+    required_sources:
+
+      verification_spec:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+      obligation_set:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+      trusted_basis:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+      acceptance_oracles:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
+
+      evidence_compilation:
+        source_document: REQUIRED
+        source_revision: REQUIRED
+        content_hash: REQUIRED
+        materialized_revision: REQUIRED
