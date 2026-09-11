@@ -31,10 +31,12 @@ execution_target:
   execution_mode: CODE_EXECUTION
 
 materialization:
+  status: MATERIALIZED
   repository: Mostorm-Labs/axtp
   branch: integration/axtp-next
   package_path: .aegis/packages/SEM-LC-12-P31-001/
 
 status:
   package_definition: COMPLETE
-  materialization: PENDING_COMMIT
+  materialization: MATERIALIZED
+  binding: REQUIRES_FINAL_PREFLIGHT
