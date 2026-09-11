@@ -1,6 +1,15 @@
 execution_closure_contract:
   package_id: SEM-LC-12-P31-001
 
+  authorized_scope:
+    modules:
+      - frozen_semantic_runtime_modules
+      - frozen_architecture_integration_modules
+      - verification_instrumentation_modules
+
+    tests:
+      - required_verification_tests
+
   allowed_changes:
     - implement approved semantic runtime
     - implement approved architecture modules
@@ -15,6 +24,33 @@ execution_closure_contract:
     - module ownership changes
     - verification strategy changes
     - capability scope expansion
+
+  validation:
+    required_tests:
+      - semantic_contract_validation
+      - runtime_behavior_validation
+      - module_integration_validation
+      - invariant_verification
+
+    acceptance_oracles:
+      - semantic_invariant_oracle
+      - runtime_consistency_oracle
+
+  hosted_ci:
+    provider:
+      GitHub Actions
+    required_status:
+      - configured_validation_workflows
+
+  evidence_contract:
+    blocking:
+      - implementation_correctness_evidence
+      - invariant_validation_evidence
+      - required_integration_evidence
+
+    corroborative:
+      - performance_metrics
+      - diagnostics
 
   execution_constraints:
     continue_until_terminal_state: true
