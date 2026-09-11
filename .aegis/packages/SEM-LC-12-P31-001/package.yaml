@@ -1,0 +1,40 @@
+package_id: SEM-LC-12-P31-001
+
+project:
+  AXTP
+
+lifecycle:
+  SEM-LC-12
+
+stage:
+  P31
+
+owner:
+  aegis-implementation
+
+purpose:
+  establish implementation execution boundary from semantic, architecture and verification authority
+
+authority_inputs:
+  semantic:
+    source: SEM-LC-09
+    status: ESTABLISHED
+  architecture:
+    source: SEM-LC-10
+    status: ESTABLISHED
+  verification:
+    source: SEM-LC-11
+    status: ESTABLISHED
+
+execution_target:
+  next_stage: P32
+  execution_mode: CODE_EXECUTION
+
+materialization:
+  repository: Mostorm-Labs/axtp
+  branch: integration/axtp-next
+  package_path: .aegis/packages/SEM-LC-12-P31-001/
+
+status:
+  package_definition: COMPLETE
+  materialization: PENDING_COMMIT
