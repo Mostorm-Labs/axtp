@@ -1,0 +1,29 @@
+verification_binding:
+  package_id: SEM-LC-12-P31-001
+
+  required_inputs:
+    verification_design:
+      SEM-LC-11
+    failure_modes:
+      required: true
+    acceptance_invariants:
+      required: true
+    evidence_strategy:
+      required: true
+
+  evidence_classes:
+    blocking:
+      - implementation_correctness
+      - invariant_validation
+      - required_integration_validation
+
+    corroborative:
+      - performance_metrics
+      - diagnostics
+      - supplementary_observations
+
+  execution_output_required:
+    - changed_files
+    - validation_results
+    - result_revision
+    - evidence_references
