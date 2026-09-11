@@ -1,0 +1,26 @@
+authority_ref:
+  lifecycle: SEM-LC-09
+  authority_type: semantic
+
+status:
+  materialization: IN_PROGRESS
+  binding: NOT_YET_COMPLETE
+
+purpose:
+  Convert established semantic authority into immutable repository-referenceable authority.
+
+required_bindings:
+  - source_documents
+  - source_revision
+  - content_hash
+  - materialized_revision
+
+scope:
+  includes:
+    - Product Object Model
+    - Interaction Model
+    - Semantic Schema
+    - Operation Model
+
+p31_dependency:
+  SEM-LC-12-P31-001
