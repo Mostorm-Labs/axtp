@@ -1,0 +1,27 @@
+authority_ref:
+  lifecycle: SEM-LC-10
+  authority_type: architecture
+
+status:
+  materialization: IN_PROGRESS
+  binding: NOT_YET_COMPLETE
+
+purpose:
+  Convert established architecture authority into immutable repository-referenceable authority.
+
+required_bindings:
+  - source_documents
+  - source_revision
+  - content_hash
+  - materialized_revision
+
+scope:
+  includes:
+    - System Architecture
+    - Module Design
+    - Runtime Data Flow
+    - Platform Contract
+    - Engineering Constraints
+
+p31_dependency:
+  SEM-LC-12-P31-001
