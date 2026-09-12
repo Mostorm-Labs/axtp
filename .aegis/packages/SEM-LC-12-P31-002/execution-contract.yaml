@@ -1,0 +1,61 @@
+execution_closure_contract:
+  package_id: SEM-LC-12-P31-002
+  authorized_scope_manifest: scope-manifest.txt
+  authorized_scope_sha256: 162c63ee6feaa7d9ba2fd391f2fb8ea619b85af1e5a35ba10ee6febe83e2b7a6
+  allowed_changes:
+    - implement approved modules and tests within exact manifest
+    - connect approved runtime flows
+    - add verification instrumentation
+  forbidden_changes:
+    - any path outside exact manifest
+    - semantic redesign
+    - schema modification
+    - operation model modification
+    - architecture redesign
+    - module ownership changes
+    - verification strategy changes
+    - capability scope expansion
+  validation:
+    command_manifest: command-manifest.txt
+    command_manifest_sha256: 788c5fb253fba153a0f88206169fca5126d90a7b51fc497ca265b9b8b4d4f749
+    acceptance_oracles:
+      - semantic_invariant_oracle
+      - runtime_consistency_oracle
+      - exact_source_identity_oracle
+  evidence_contract:
+    blocking:
+      - implementation_correctness_evidence
+      - invariant_validation_evidence
+      - required_integration_evidence
+      - exact_source_identity
+      - reviewer_accessible_immutable_artifact
+    corroborative:
+      - performance_metrics
+      - diagnostics
+  hosted_ci:
+    workflow_file: .github/workflows/validate-conformance.yml
+    required_job: sem-lc-12-evidence
+    artifact_fields:
+      - run_id
+      - run_attempt
+      - job_id
+      - artifact_id
+      - artifact_digest
+      - result_revision
+      - result_tree
+      - package_ref
+      - package_materialization_ref
+      - authority_refs
+      - evidence_input_refs
+  terminal_success:
+    - implementation_complete
+    - validation_complete
+    - evidence_produced
+    - exact_source_hosted_ci_success
+    - immutable_artifact_materialized
+  terminal_blockers:
+    - BLOCKED_AUTHORITY
+    - BLOCKED_PACKAGE_BINDING
+    - BLOCKED_REPOSITORY_IDENTITY
+    - BLOCKED_VERIFICATION
+    - BLOCKED_EXECUTION_DIVERGENCE

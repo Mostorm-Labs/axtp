@@ -1,0 +1,14 @@
+corepack enable
+corepack prepare pnpm@11.3.0 --activate
+pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+pnpm --dir tooling/semantic-lifecycle build
+pnpm --dir tooling/semantic-lifecycle lint
+pnpm --dir tooling/semantic-lifecycle test
+pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:reference
+pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:negative
+pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:portable
+pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reference
+pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:negative
+pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:optimized
+pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reconcile
+git diff --check

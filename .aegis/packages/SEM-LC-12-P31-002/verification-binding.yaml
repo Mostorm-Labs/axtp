@@ -1,0 +1,21 @@
+verification_binding:
+  package_id: SEM-LC-12-P31-002
+  authority_refs:
+    semantic: https://app.notion.com/p/3d84c57a590c81e885b9f428da4ca3af
+    architecture: https://app.notion.com/p/3d94c57a590c81ebbdadf882be89a173
+    verification: https://app.notion.com/p/3d94c57a590c813fb3aded3d33f69fb5
+    verification_design: https://app.notion.com/p/3d94c57a590c818ebd6ec6d5779a3921
+  package_ref: https://app.notion.com/p/3d94c57a590c81489539ea1f8674d420
+  required_inputs:
+    verification_spec: true
+    obligation_set: true
+    trusted_basis: true
+    acceptance_oracles: true
+    evidence_compilation: true
+  fixture_hash_manifest: fixture-hashes.txt
+  evidence_input_refs:
+    immutable_fixture_hashes: required
+    command_manifest_sha256: 788c5fb253fba153a0f88206169fca5126d90a7b51fc497ca265b9b8b4d4f749
+    authority_snapshot_sha256: 134e30a25cf5a994b9ca975034fbe920be8e27f7542ce9339bee2be010e1ac06
+    exact_source_revision_and_tree: required
+    workflow_run_attempt_job_artifact: required

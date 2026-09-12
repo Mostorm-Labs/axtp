@@ -1,0 +1,69 @@
+package_id: SEM-LC-12-P31-002
+supersedes: SEM-LC-12-P31-001
+project: AXTP
+lifecycle: SEM-LC-12
+stage: P31
+owner: aegis-implementation
+status: REVISED_MATERIALIZED_REQUIRES_PREFLIGHT
+purpose: establish an exact implementation execution boundary from established semantic, architecture, and verification authority
+authority_inputs:
+  semantic:
+    source: SEM-LC-09
+    status: ESTABLISHED
+    immutable_snapshot_sha256: 134e30a25cf5a994b9ca975034fbe920be8e27f7542ce9339bee2be010e1ac06
+  architecture:
+    source: SEM-LC-10
+    status: ESTABLISHED
+    immutable_snapshot_sha256: 134e30a25cf5a994b9ca975034fbe920be8e27f7542ce9339bee2be010e1ac06
+  verification:
+    source: SEM-LC-11
+    status: ESTABLISHED
+    immutable_snapshot_sha256: 134e30a25cf5a994b9ca975034fbe920be8e27f7542ce9339bee2be010e1ac06
+repository:
+  provider: GitHub
+  full_name: Mostorm-Labs/axtp
+  remote: https://github.com/Mostorm-Labs/axtp.git
+  branch: integration/axtp-next
+  task_anchor:
+    revision: ca7e115cfa3c3a4ab4b2deb3ddcaef3af09b8392
+    tree: 5a58eeb9d7caa4bc900a0e59b98c0e0796c2752a
+    relation: baseline_HEAD
+scope:
+  authorized_manifest_sha256: 162c63ee6feaa7d9ba2fd391f2fb8ea619b85af1e5a35ba10ee6febe83e2b7a6
+  authorized_path_count: 107
+  authorized_paths_manifest: ./scope-manifest.txt
+  generated_evidence_root: .evidence/semantic-lifecycle/sem-lc-12/**
+  forbidden_paths: all repository paths not in scope-manifest.txt
+verification:
+  command_manifest_sha256: 788c5fb253fba153a0f88206169fca5126d90a7b51fc497ca265b9b8b4d4f749
+  command_manifest: ./command-manifest.txt
+  fixture_count: 17
+  fixture_hashes: ./fixture-hashes.txt
+  preflights:
+    - PackageBindingPreflight
+    - EvidenceContractPreflight
+hosted_ci:
+  workflow_file: .github/workflows/validate-conformance.yml
+  job: sem-lc-12-evidence
+  display_name: SEM-LC-12 exact-source implementation evidence
+  artifact_name: sem-lc-12-evidence-${RESULT_REVISION}
+  exact_source_required: true
+execution_target:
+  next_stage: P32
+  execution_mode: CODE_EXECUTION
+  p32_authorized: false
+  authorization_condition: independent_review_and_final_preflight_and_immutable_materialization
+constraints:
+  continue_until_terminal_state: true
+  forbidden:
+    - semantic redesign
+    - schema or operation modification
+    - architecture redesign
+    - verification strategy change
+    - capability expansion
+terminal_blockers:
+  - BLOCKED_AUTHORITY
+  - BLOCKED_PACKAGE_BINDING
+  - BLOCKED_REPOSITORY_IDENTITY
+  - BLOCKED_VERIFICATION
+  - BLOCKED_EXECUTION_DIVERGENCE
