@@ -2006,3 +2006,109 @@ jobs:
           path: .evidence/semantic-lifecycle/sem-lc-08/reconcile
           if-no-files-found: error
           retention-days: 90
+
+  sem-lc-12-evidence:
+    name: SEM-LC-12 exact-source implementation evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify SEM-LC-12 package binding and exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          git merge-base --is-ancestor ca7e115cfa3c3a4ab4b2deb3ddcaef3af09b8392 HEAD
+          package=.aegis/packages/SEM-LC-12-P31-002
+          test -s "$package/package.yaml"
+          test -s "$package/execution-contract.yaml"
+          test -s "$package/verification-binding.yaml"
+          test -s "$package/scope-manifest.txt"
+          test "$(wc -l < "$package/scope-manifest.txt" | tr -d ' ')" = 107
+          test "$(sha256sum "$package/scope-manifest.txt" | awk '{print $1}')" = 162c63ee6feaa7d9ba2fd391f2fb8ea619b85af1e5a35ba10ee6febe83e2b7a6
+          test "$(sha256sum "$package/command-manifest.txt" | awk '{print $1}')" = 788c5fb253fba153a0f88206169fca5126d90a7b51fc497ca265b9b8b4d4f749
+          test "$(git diff --name-only ca7e115cfa3c3a4ab4b2deb3ddcaef3af09b8392...HEAD | grep -Ev '^\.aegis/packages/SEM-LC-12-P31-002/' | grep -Ev '^(\.github/workflows/validate-conformance\.yml|tooling/semantic-lifecycle/)' | wc -l | tr -d ' ')" = 0
+      - name: Install and run SEM-LC-12 required validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+          pnpm --dir tooling/semantic-lifecycle install --lockfile=false
+          pnpm --dir tooling/semantic-lifecycle build
+          pnpm --dir tooling/semantic-lifecycle lint
+          pnpm --dir tooling/semantic-lifecycle test
+          pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:reference
+          pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:negative
+          pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:portable
+          evidence_root="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-12"
+          result_revision="$(git rev-parse HEAD)"
+          result_tree="$(git rev-parse 'HEAD^{tree}')"
+          export RESULT_REVISION="$result_revision"
+          export RESULT_TREE="$result_tree"
+          export EVIDENCE_JOB="sem-lc-12-evidence"
+          export EVIDENCE_ARTIFACT_NAME="sem-lc-12-evidence-$result_revision"
+          for platform in ubuntu-latest macos-latest windows-latest; do
+            export PLATFORM_LABEL="$platform"
+            export RUNNER_NAME="GitHub Actions ($platform reference oracle)"
+            export OUTPUT_DIRECTORY="$evidence_root/reference/$platform"
+            pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reference
+          done
+          export OUTPUT_DIRECTORY="$evidence_root/negative"
+          pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:negative
+          export OUTPUT_DIRECTORY="$evidence_root/optimized"
+          pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:optimized
+          export RECONCILE_INPUT_ROOT="$evidence_root"
+          export OUTPUT_DIRECTORY="$evidence_root/reconcile"
+          pnpm --dir tooling/semantic-lifecycle evidence:semantic-lifecycle:reconcile
+          git diff --check
+      - name: Materialize exact-source SEM-LC-12 evidence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_REF: https://app.notion.com/p/3d94c57a590c81489539ea1f8674d420
+          PACKAGE_MATERIALIZATION_REF: https://github.com/Mostorm-Labs/axtp/tree/81bfc9dcdc17d303bcb040d294adc32f9e8bbc2a/.aegis/packages/SEM-LC-12-P31-002
+          AUTHORITY_REFS: https://app.notion.com/p/3d84c57a590c81e885b9f428da4ca3af,https://app.notion.com/p/3d94c57a590c81ebbdadf882be89a173,https://app.notion.com/p/3d94c57a590c813fb3aded3d33f69fb5
+        run: |
+          set -euo pipefail
+          out="$GITHUB_WORKSPACE/.evidence/semantic-lifecycle/sem-lc-12"
+          mkdir -p "$out"
+          result_revision="$(git rev-parse HEAD)"
+          result_tree="$(git rev-parse 'HEAD^{tree}')"
+          jobs_json="$(curl --fail --silent --show-error -H "Authorization: Bearer $GH_TOKEN" -H 'X-GitHub-Api-Version: 2022-11-28' "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100")"
+          job_id="$(jq -r '.jobs[] | select(.name == "SEM-LC-12 exact-source implementation evidence") | .id' <<<"$jobs_json")"
+          test -n "$job_id" -a "$job_id" != null
+          cat >"$out/exact-source-evidence.json" <<JSON
+          {
+            "evidenceVersion": "sem-lc-12-exact-source-evidence/v1",
+            "result_revision": "$result_revision",
+            "result_tree": "$result_tree",
+            "package_ref": "$PACKAGE_REF",
+            "package_materialization_ref": "$PACKAGE_MATERIALIZATION_REF",
+            "authority_refs": ["${AUTHORITY_REFS//,/\",\"}"],
+            "evidence_input_refs": {
+              "scope_manifest_sha256": "162c63ee6feaa7d9ba2fd391f2fb8ea619b85af1e5a35ba10ee6febe83e2b7a6",
+              "command_manifest_sha256": "788c5fb253fba153a0f88206169fca5126d90a7b51fc497ca265b9b8b4d4f749"
+            },
+            "run_id": "$GITHUB_RUN_ID",
+            "run_attempt": "$GITHUB_RUN_ATTEMPT",
+            "job_id": "$job_id",
+            "artifact_name": "sem-lc-12-evidence-$result_revision"
+          }
+          JSON
+          sha256sum "$out/exact-source-evidence.json" > "$out/exact-source-evidence.sha256"
+          test "$(jq -r .result_revision "$out/exact-source-evidence.json")" = "$result_revision"
+          test "$(jq -r .result_tree "$out/exact-source-evidence.json")" = "$result_tree"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sem-lc-12-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: .evidence/semantic-lifecycle/sem-lc-12
+          if-no-files-found: error
+          retention-days: 90
