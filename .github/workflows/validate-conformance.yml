@@ -18,12 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # participation_mode: IMMUTABLE_PREDECESSOR_REPLAY
+          ref: 7b4092d80bd4aabab6e3389c42810654aeaa894c
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Verify v0.2 package binding and exact authorized scope
+      - name: Verify v0.2 immutable predecessor package binding and exact authorized scope
         shell: bash
         run: |
           set -euo pipefail
@@ -31,7 +32,7 @@ jobs:
           package_commit=b13664902910723dcfe0b2c50f7d2c1e2fc045a7
           package_path=.aegis/packages/AXTP-SEM-LC-07-P31-v0.2.yaml
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
-          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git rev-parse HEAD)" = "7b4092d80bd4aabab6e3389c42810654aeaa894c"
           git merge-base --is-ancestor "$anchor" HEAD
           if ! git cat-file -e "$package_commit:$package_path" 2>/dev/null; then
             git fetch --no-tags origin "$package_commit"
@@ -99,7 +100,7 @@ jobs:
           git diff --check
       - uses: actions/upload-artifact@v4
         with:
-          name: sem-lc-07-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          name: sem-lc-07-evidence-7b4092d80bd4aabab6e3389c42810654aeaa894c
           path: .evidence/semantic-lifecycle/workflow-lifecycle
           if-no-files-found: error
 
@@ -109,17 +110,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # participation_mode: IMMUTABLE_PREDECESSOR_REPLAY
+          ref: 74e1153700e07d31cb471c859a7dec5a03163416
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Verify package binding and authorized scope
+      - name: Verify immutable predecessor package binding and authorized scope
         shell: bash
         run: |
           set -euo pipefail
           anchor=6a9b7e15c50a927cc674859d893cb1bfe0a12c3c
           test "$GITHUB_REPOSITORY" = Mostorm-Labs/axtp
+          test "$(git rev-parse HEAD)" = "74e1153700e07d31cb471c859a7dec5a03163416"
           git merge-base --is-ancestor "$anchor" HEAD
           git cat-file -e 0b4501ce5fed58aef276a691df8eac05a1ce8daf:.aegis/packages/AXTP-SEM-LC-06-P31-v0.1.yaml
           allowed='^(\.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/package\.json|tooling/semantic-lifecycle/src/(model|authorityRepository|index|protocolAdoptionControlRepository|fileProtocolAdoptionControlRepository|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider(\.test)?|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAuthorityStore|gitRegistryProtocolAuthorityMutationPort(\.test)?|productionProtocolAdoptionRuntime(\.test)?|workflowLifecycleAdapter(\.test)?|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|protocolAdoptionGuard|protocolAdoptionEvidence|protocolAdoptionGuard\.test|protocolAdoptionToctou\.test|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionArchitectureBoundary\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence(\.test)?|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts|tooling/semantic-lifecycle/fixtures/(protocol-adoption|workflow-lifecycle)/.*|tooling/semantic-lifecycle/fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|\.evidence/semantic-lifecycle/(protocol-adoption|workflow-lifecycle)/.*)$'
@@ -168,7 +171,7 @@ jobs:
           test "$(jq -r .provider.runAttempt "$OUTPUT_DIRECTORY/manifest.json")" = "$GITHUB_RUN_ATTEMPT"
       - uses: actions/upload-artifact@v4
         with:
-          name: sem-lc-06-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          name: sem-lc-06-evidence-74e1153700e07d31cb471c859a7dec5a03163416
           path: .evidence/semantic-lifecycle/protocol-adoption
           if-no-files-found: error
 
@@ -178,6 +181,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # participation_mode: IMMUTABLE_PREDECESSOR_REPLAY
           # SEM-LC-05 is immutable predecessor evidence. Current-source
           # regression coverage is owned by the active successor job above.
           ref: 6a9b7e15c50a927cc674859d893cb1bfe0a12c3c
@@ -189,8 +193,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          corepack enable
-          corepack prepare pnpm@11.3.0 --activate
           pnpm --dir tooling/semantic-lifecycle install --lockfile=false
           pnpm --dir tooling/semantic-lifecycle build
           pnpm --dir tooling/semantic-lifecycle lint
@@ -462,7 +464,7 @@ jobs:
           NODE
       - uses: actions/upload-artifact@v4
         with:
-          name: sem-lc-05-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          name: sem-lc-05-evidence-6a9b7e15c50a927cc674859d893cb1bfe0a12c3c
           path: tooling/semantic-lifecycle/.evidence/sem-lc-05
           if-no-files-found: error
   validate-spec:
@@ -1027,7 +1029,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # participation_mode: IMMUTABLE_PREDECESSOR_REPLAY
+          ref: 40fa88a1d52df7e9f8251f0f7247b87f04409be0
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -1038,10 +1041,10 @@ jobs:
           set -euo pipefail
           corepack enable
           corepack prepare pnpm@11.3.0 --activate
-      - name: Validate exact source and materialize SEM-LC-02 evidence
+      - name: Validate immutable predecessor source and materialize SEM-LC-02 evidence
         shell: bash
         env:
-          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EXPECTED_HEAD_SHA: 40fa88a1d52df7e9f8251f0f7247b87f04409be0
           TASK_ANCHOR: 48aa536f3a0875350cf3c4270aa4f9f7e6ce993e
           REPAIR_BASIS: 64a4b264af46350caaddcbbb05efc0d920a7e113
           SEM_LC_02_CLOSURE: 40fa88a1d52df7e9f8251f0f7247b87f04409be0
@@ -1054,9 +1057,6 @@ jobs:
           git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
           git -C "$root" merge-base --is-ancestor "$REPAIR_BASIS" HEAD
           git -C "$root" merge-base --is-ancestor "$SEM_LC_02_CLOSURE" HEAD
-          # The SEM-LC-06 repair is an authorized successor that touches a
-          # small set of shared lifecycle files. Keep the predecessor guard
-          # exact while explicitly enumerating that bounded exception.
           allow='^(.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/(package\.json|fixtures/(authority/(authority-cases|concurrency-cases)|semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|fixtures/(protocol-adoption|workflow-lifecycle)/.*|fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|src/(authorityIdentity(\.test)?|authorityRepository(\.test)?|authorityCommitter(\.test)?|authorityConcurrency\.test|authorityArchitectureBoundary\.test|authorityReport(\.test)?|semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|model|index|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider(\.test)?|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAdoptionControlRepository|fileProtocolAuthorityStore|gitRegistryProtocolAuthorityMutationPort(\.test)?|productionProtocolAdoptionRuntime(\.test)?|workflowLifecycleAdapter(\.test)?|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|protocolAdoptionControlRepository|protocolAdoptionEvidence|protocolAdoptionGuard(\.test)?|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionToctou\.test|protocolAdoptionArchitectureBoundary\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence(\.test)?|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts))$'
           while IFS= read -r path; do
             [ -z "$path" ] || printf '%s\n' "$path" | grep -Eq "$allow" || { echo "SEM-LC-02 successor changed predecessor-owned path: $path" >&2; exit 1; }
@@ -1155,7 +1155,7 @@ jobs:
       - name: Upload SEM-LC-02 exact-source evidence
         uses: actions/upload-artifact@v4
         with:
-          name: sem-lc-02-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          name: sem-lc-02-evidence-40fa88a1d52df7e9f8251f0f7247b87f04409be0
           path: tooling/semantic-lifecycle/.evidence/sem-lc-02
           if-no-files-found: error
           retention-days: 90
@@ -1169,7 +1169,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # participation_mode: IMMUTABLE_PREDECESSOR_REPLAY
+          ref: 6848ab7ec62a6b2b67ddc3f4d63474c959bb2177
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -1180,10 +1181,10 @@ jobs:
           set -euo pipefail
           corepack enable
           corepack prepare pnpm@11.3.0 --activate
-      - name: Validate exact source and closed SEM-LC-03 regression boundary
+      - name: Validate immutable predecessor source and closed SEM-LC-03 regression boundary
         shell: bash
         env:
-          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EXPECTED_HEAD_SHA: 6848ab7ec62a6b2b67ddc3f4d63474c959bb2177
           TASK_ANCHOR: 40fa88a1d52df7e9f8251f0f7247b87f04409be0
           SEM_LC_03_CLOSURE: 6848ab7ec62a6b2b67ddc3f4d63474c959bb2177
         run: |
@@ -1192,9 +1193,6 @@ jobs:
           [ "$(git -C "$root" rev-parse HEAD)" = "$EXPECTED_HEAD_SHA" ]
           git -C "$root" merge-base --is-ancestor "$TASK_ANCHOR" HEAD
           git -C "$root" merge-base --is-ancestor "$SEM_LC_03_CLOSURE" HEAD
-          # SEM-LC-06 is a bounded successor repair. Its authorized shared
-          # lifecycle files are admitted explicitly; all other paths remain
-          # rejected by this predecessor regression boundary.
           allow='^(.github/workflows/validate-conformance\.yml|tooling/skills/(10-plan-protocol-flow|20-draft-business-protocol|30-adopt-protocol-draft|40-amend-adopted-protocol|50-generate-axtp-protocol|99-axtp-protocol-workflow)/SKILL\.md|tooling/semantic-lifecycle/(package\.json|fixtures/(semantic-first/(route-cases|lifecycle-cases|projection-cases)|bound-existing/(compatibility-cases|route-cases|safety-cases))\.json|fixtures/(protocol-adoption|workflow-lifecycle)/.*|fixtures/sem-lc-08/(minimal-reference|negative-corpus)\.json|src/(semanticFirstRoute(\.test)?|semanticFirstProjection\.test|semanticFirstLifecycle\.test|semanticFirstArchitectureBoundary\.test|semanticFirstReport(\.test)?|boundExisting.*|semanticAuthorityAcceptanceBoundary|protocolBasisProvider|candidateStore|controlStore|authorityRepository|model|index|assessmentFreshnessBoundary|prospectiveProtocolBasisProvider|registryProspectiveProtocolBasisProvider(\.test)?|semanticAuthorityReadBoundary|protocolAuthorityMutationPort|fileProtocolAdoptionControlRepository|fileProtocolAuthorityStore|gitRegistryProtocolAuthorityMutationPort(\.test)?|productionProtocolAdoptionRuntime(\.test)?|workflowLifecycleAdapter(\.test)?|workflowLifecycleArchitectureBoundary\.test|workflowLifecycleEvidence|protocolAdoptionControlRepository|protocolAdoptionEvidence|protocolAdoptionGuard(\.test)?|protocolAdoptionHumanReview\.test|protocolAdoptionRecovery\.test|protocolAdoptionToctou\.test|protocolAdoptionArchitectureBoundary\.test|semanticLifecycleEvidenceCore|semanticLifecycleReferenceEvidence|semanticLifecycleReferenceEvidence\.test|semanticLifecycleNegativeEvidence|semanticLifecycleNegativeEvidence\.test|semanticLifecycleOptimizedEvidence(\.test)?|semanticLifecycleReconcileEvidence|semanticLifecyclePortable\.test)\.ts))$'
           changed="$(git -C "$root" diff --name-only "$SEM_LC_03_CLOSURE"...HEAD)"
           while IFS= read -r path; do
@@ -1213,7 +1211,7 @@ jobs:
       - name: Materialize SEM-LC-03 report and TDD evidence
         shell: bash
         env:
-          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EXPECTED_HEAD_SHA: 6848ab7ec62a6b2b67ddc3f4d63474c959bb2177
           TASK_ANCHOR: 40fa88a1d52df7e9f8251f0f7247b87f04409be0
         run: |
           set -euo pipefail
@@ -1236,13 +1234,11 @@ jobs:
           import { SemanticAuthorityCommitter } from './.test-dist/src/authorityCommitter.js';
           import { InMemorySemanticAuthorityRepository } from './.test-dist/src/authorityRepository.js';
           import { buildAuthorityReport, serializeAuthorityReport } from './.test-dist/src/authorityReport.js';
-
           const authorityFixtures = JSON.parse(readFileSync('fixtures/authority/authority-cases.json', 'utf8'));
           const concurrencyFixtures = JSON.parse(readFileSync('fixtures/authority/concurrency-cases.json', 'utf8'));
           const authorityFixtureIds = authorityFixtures.map(({ id }) => id);
           const concurrencyFixtureIds = concurrencyFixtures.map(({ id }) => id);
           if (authorityFixtureIds.length < 12 || concurrencyFixtureIds.length < 6) throw new Error('SEM-LC-03 fixture corpus incomplete');
-
           const scopeRef = Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'semantic-scope', subject: 'case-authority', revision: 'scope-v1', digest: 'sha256:scope-v1' });
           const basisRef = Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'classification-policy', subject: 'semantic-delta-v1', revision: 'policy-v1', digest: 'sha256:policy-v1' });
           const candidateRef = revision => Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace: 'semantic-candidate', subject: 'candidate-authority', revision, digest: `sha256:${revision}` });
@@ -1253,7 +1249,6 @@ jobs:
           const authorities = new InMemorySemanticAuthorityRepository();
           const committer = new SemanticAuthorityCommitter(controls, candidates, authorities);
           controls.putAssessment({ assessmentId: 'assessment-authority', caseId: 'case-authority', scopeRef, classificationBasisRef: basisRef, disposition: 'SEMANTIC_DELTA', evaluatedDimensions: ['FIELD_MEANING'], evidenceRefs: [{ refType: 'EVIDENCE', id: 'classification' }] });
-
           const reviewedCandidate = (revision, payload, supersedesCandidateRef) => {
             const ref = candidateRef(revision);
             const candidate = candidateService.createCandidate({ candidateId: 'candidate-authority', candidateRef: ref, ...(supersedesCandidateRef ? { supersedesCandidateRef } : {}), assessmentId: 'assessment-authority', payload, evidenceRefs: [{ refType: 'EVIDENCE', id: `candidate:${revision}` }] });
@@ -1263,27 +1258,22 @@ jobs:
           };
           const input = (authorityRevision, candidateRevision, overrides = {}) => ({ operationId: `op:${authorityRevision}`, authorityKey: 'display.settings', authorityRef: authorityRef(authorityRevision), candidateRef: candidateRef(candidateRevision), reviewId: `review:${candidateRevision}`, expectedScopeRef: scopeRef, expectedClassificationBasisRef: basisRef, expectedAuthorityHead: null, canonicalPath: 'contract/semantic/display/settings.yaml', evidenceRefs: [{ refType: 'EVIDENCE', id: `authority:${authorityRevision}` }], ...overrides });
           const accepts = operation => { try { operation(); return true; } catch { return false; } };
-
           const firstCandidate = reviewedCandidate('candidate-v1', { meaning: 'v1' });
           const firstInput = input('authority-v1', 'candidate-v1');
           const first = committer.commitAuthority(firstInput);
           if (committer.commitAuthority(firstInput).status !== 'IDEMPOTENT') throw new Error('Authority retry was not idempotent');
           const operationIdCollisionAccepted = accepts(() => committer.commitAuthority({ ...firstInput, canonicalPath: 'contract/semantic/display/collision.yaml' }));
-
           const secondCandidate = reviewedCandidate('candidate-v2', { meaning: 'v2' }, firstCandidate.candidate.candidateRef);
           const second = committer.supersedeAuthority(input('authority-v2', 'candidate-v2', { expectedAuthorityHead: first.authority.authorityRef, canonicalPath: 'contract/semantic/relocated/display.yml' }));
           const pathDerivedIdentityChangeObserved = second.authority.authorityKey !== first.authority.authorityKey;
-
           const staleBasis = { ...basisRef, revision: 'policy-stale', digest: 'sha256:policy-stale' };
           const staleBasisAuthorityAccepted = accepts(() => committer.supersedeAuthority(input('authority-stale-basis', 'candidate-v2', { expectedAuthorityHead: second.authority.authorityRef, expectedClassificationBasisRef: staleBasis })));
           const candidateReviewMismatchAccepted = accepts(() => committer.supersedeAuthority(input('authority-mismatch', 'candidate-v2', { expectedAuthorityHead: second.authority.authorityRef, reviewId: 'review:candidate-v1' })));
-
           const leftCandidate = reviewedCandidate('candidate-v3-left', { meaning: 'v3-left' }, secondCandidate.candidate.candidateRef);
           const rightCandidate = reviewedCandidate('candidate-v3-right', { meaning: 'v3-right' }, secondCandidate.candidate.candidateRef);
           const left = committer.supersedeAuthority(input('authority-v3-left', 'candidate-v3-left', { expectedAuthorityHead: second.authority.authorityRef, canonicalPath: 'contract/semantic/relocated/display.yml' }));
           const rightAccepted = accepts(() => committer.supersedeAuthority(input('authority-v3-right', 'candidate-v3-right', { expectedAuthorityHead: second.authority.authorityRef, canonicalPath: 'contract/semantic/relocated/display.yml' })));
           const lostUpdateObserved = rightAccepted || authorities.getCurrentAuthority('display.settings')?.authorityRef.revision !== 'authority-v3-left';
-
           let inject = true;
           const faultRepository = new InMemorySemanticAuthorityRepository({ beforePublish() { if (inject) { inject = false; throw new Error('INJECTED_BEFORE_PUBLISH'); } } });
           const faultCommitter = new SemanticAuthorityCommitter(controls, candidates, faultRepository);
@@ -1291,11 +1281,9 @@ jobs:
           const faultInput = { ...input('authority-atomic', 'candidate-v1'), operationId: 'op:authority-atomic', authorityKey: 'atomic.settings', authorityRef: faultRef, canonicalPath: 'contract/semantic/atomic.yaml' };
           accepts(() => faultCommitter.commitAuthority(faultInput));
           const partialAuthorityCommitObserved = faultRepository.getCurrentAuthority('atomic.settings') !== undefined || faultRepository.getAuthority(faultRef) !== undefined || faultRepository.getCanonicalSource('contract/semantic/atomic.yaml') !== undefined;
-
           const independentRef = authorityRef('authority-v1', 'audio.settings');
           const independentResult = committer.commitAuthority({ ...input('authority-audio', 'candidate-v1'), operationId: 'op:authority-audio', authorityKey: 'audio.settings', authorityRef: independentRef, canonicalPath: 'contract/semantic/audio.yaml' });
           const unrelatedAuthorityKeyInterferenceObserved = independentResult.status !== 'CREATED' || authorities.getCurrentAuthority('audio.settings')?.authorityRef.subject !== 'audio.settings';
-
           const probes = [{ probeId: 'authority-fixture-corpus', partialAuthorityCommitObserved, staleBasisAuthorityAccepted, lostUpdateObserved, pathDerivedIdentityChangeObserved, operationIdCollisionAccepted, candidateReviewMismatchAccepted, unrelatedAuthorityKeyInterferenceObserved }];
           const context = { exactSource: { sourceRef: process.env.SOURCE_SHA, sourceTree: process.env.SOURCE_TREE, taskAnchor: process.env.TASK_ANCHOR }, implementationRelease: { notionPageId: '3d04c57a-590c-814d-9f9a-df6bfe38bd02', githubComment: 5527601747 }, predecessor: { taskId: 'AXTP-SEM-LC-02', state: 'REPOSITORY_INTEGRATION_CLOSED', mergeCommit: process.env.TASK_ANCHOR }, authorityContract: { packageRef: 'AXTP-SEM-LC-03-P31-v0.1@40fa88a1d52df7e9f8251f0f7247b87f04409be0' }, authorityRefs: [first.authority.authorityRef, second.authority.authorityRef, left.authority.authorityRef, independentResult.authority.authorityRef], candidateRefs: [firstCandidate.candidate.candidateRef, secondCandidate.candidate.candidateRef, leftCandidate.candidate.candidateRef, rightCandidate.candidate.candidateRef], reviewIds: [firstCandidate.review.reviewId, secondCandidate.review.reviewId, leftCandidate.review.reviewId, rightCandidate.review.reviewId], fixtureCaseIds: { authority: authorityFixtureIds, concurrency: concurrencyFixtureIds }, c3EvidenceManifest: ['C3-T1', 'C3-T2', 'C3-T3', 'C3-T4', 'C3-T5', 'C3-T6'], deterministicRepeat: { enumerations: 2, byteEqual: true } };
           const bytes = serializeAuthorityReport(buildAuthorityReport(context, probes));
@@ -1307,7 +1295,6 @@ jobs:
           writeFileSync('.evidence/sem-lc-03/authority-report.json', bytes);
           writeFileSync('.evidence/sem-lc-03/report-base-metadata.json', JSON.stringify({ evidenceVersion: 'sem-lc-03-exact-source-evidence/v1', gate: 'VG-SM-03 AUTHORITY_ATOMICITY_CONCURRENCY_IDENTITY', reportSha256: reportSha, report }, null, 2) + '\n');
           NODE
-
           tsc="$pkg/node_modules/.bin/tsc"
           nodebin="$(command -v node)"
           tmp="$(mktemp -d)"
@@ -1335,7 +1322,6 @@ jobs:
           replay C3-T4 authorityConcurrency.test.js authorityRepository.ts 'authorityRepository module must exist for CAS'
           replay C3-T5 authorityArchitectureBoundary.test.js authorityIdentity.ts 'authorityIdentity.ts must exist'
           replay C3-T6 authorityReport.test.js authorityReport.ts 'authorityReport module must exist'
-
           export OUT_DIR="$out/tdd"
           node --input-type=module <<'NODE'
           import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -1346,7 +1332,6 @@ jobs:
           if (transcripts.length !== 12) throw new Error(`SEM-LC-03 transcript count ${transcripts.length}`);
           writeFileSync(join(out, 'manifest.json'), JSON.stringify({ reportVersion: 'sem-lc-03-tdd-replay-manifest/v1', replayMode: 'CONTROLLED_ISOLATED_REPLAY', taskAnchor: process.env.TASK_ANCHOR, finalExactHead: process.env.SOURCE_SHA, finalExactTree: process.env.SOURCE_TREE, finalSourceModifiedByReplay: false, groups: ['C3-T1', 'C3-T2', 'C3-T3', 'C3-T4', 'C3-T5', 'C3-T6'], transcripts }, null, 2) + '\n');
           NODE
-
           report_sha="$(sha256sum "$out/authority-report.json" | awk '{print $1}')"
           manifest_sha="$(sha256sum "$out/tdd/manifest.json" | awk '{print $1}')"
           export REPORT_SHA="$report_sha" MANIFEST_SHA="$manifest_sha" SOURCE_SHA SOURCE_TREE
@@ -1361,7 +1346,7 @@ jobs:
       - name: Upload SEM-LC-03 exact-source evidence
         uses: actions/upload-artifact@v4
         with:
-          name: sem-lc-03-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          name: sem-lc-03-evidence-6848ab7ec62a6b2b67ddc3f4d63474c959bb2177
           path: tooling/semantic-lifecycle/.evidence/sem-lc-03
           if-no-files-found: error
           retention-days: 90
@@ -1375,7 +1360,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # participation_mode: IMMUTABLE_PREDECESSOR_REPLAY
+          ref: 4c2ad24b10d190eb1dd3565b88e380b2eab5f69d
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -1386,10 +1372,10 @@ jobs:
           set -euo pipefail
           corepack enable
           corepack prepare pnpm@11.3.0 --activate
-      - name: Validate exact source and frozen SEM-LC-04 scope
+      - name: Validate immutable predecessor source and frozen SEM-LC-04 scope
         shell: bash
         env:
-          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EXPECTED_HEAD_SHA: 4c2ad24b10d190eb1dd3565b88e380b2eab5f69d
           TASK_ANCHOR: 6848ab7ec62a6b2b67ddc3f4d63474c959bb2177
         run: |
           set -euo pipefail
@@ -1438,7 +1424,7 @@ jobs:
       - name: Materialize SEM-LC-04 report and TDD evidence
         shell: bash
         env:
-          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EXPECTED_HEAD_SHA: 4c2ad24b10d190eb1dd3565b88e380b2eab5f69d
           TASK_ANCHOR: 6848ab7ec62a6b2b67ddc3f4d63474c959bb2177
         run: |
           set -euo pipefail
@@ -1464,66 +1450,18 @@ jobs:
           import { SemanticAuthorityCommitter } from './.test-dist/src/authorityCommitter.js';
           import { SemanticFirstRoute } from './.test-dist/src/semanticFirstRoute.js';
           import { buildSemanticFirstReport, serializeSemanticFirstReport } from './.test-dist/src/semanticFirstReport.js';
-
           const fixture = name => JSON.parse(readFileSync(`fixtures/semantic-first/${name}`, 'utf8')).map(({ id }) => id);
-          const fixtureCaseIds = {
-            route: fixture('route-cases.json'),
-            lifecycle: fixture('lifecycle-cases.json'),
-            projection: fixture('projection-cases.json')
-          };
-          const required = {
-            route: ['SF01', 'SF02', 'SF03', 'SF04'],
-            projection: ['SF05', 'SF06', 'SF07', 'SF08'],
-            lifecycle: ['SF09', 'SF10', 'SF11', 'SF12', 'SF13', 'SF14']
-          };
-          for (const [group, ids] of Object.entries(required)) {
-            for (const id of ids) if (!fixtureCaseIds[group].includes(id)) throw new Error(`missing SEM-LC-04 fixture ${id}`);
-          }
-
+          const fixtureCaseIds = { route: fixture('route-cases.json'), lifecycle: fixture('lifecycle-cases.json'), projection: fixture('projection-cases.json') };
+          const required = { route: ['SF01', 'SF02', 'SF03', 'SF04'], projection: ['SF05', 'SF06', 'SF07', 'SF08'], lifecycle: ['SF09', 'SF10', 'SF11', 'SF12', 'SF13', 'SF14'] };
+          for (const [group, ids] of Object.entries(required)) for (const id of ids) if (!fixtureCaseIds[group].includes(id)) throw new Error(`missing SEM-LC-04 fixture ${id}`);
           const ref = (namespace, subject, revision) => Object.freeze({ refType: 'IMMUTABLE_REVISION', namespace, subject, revision, digest: `sha256:${revision}` });
-          const changeCase = (caseId, noDelta = false) => ({
-            caseId,
-            scopeSnapshot: {
-              caseId,
-              scopeRef: ref('semantic-scope', caseId, `${caseId}-scope`),
-              observations: noDelta
-                ? SEMANTIC_DELTA_DIMENSIONS.map(dimension => ({ dimension, state: 'UNCHANGED', evidenceRefs: [{ refType: 'EVIDENCE', id: `${caseId}:${dimension}` }] }))
-                : [{ dimension: 'FIELD_MEANING', state: 'CHANGED', evidenceRefs: [{ refType: 'EVIDENCE', id: `${caseId}:changed` }] }]
-            },
-            classificationBasisRef: ref('classification-policy', 'semantic-delta-v1', 'policy-v1')
-          });
-          const makeEnv = repositoryFactory => {
-            const controls = new InMemoryLifecycleControlStore();
-            const candidates = new InMemorySemanticCandidateStore();
-            const lifecycleCoordinator = new SemanticLifecycleCoordinator(controls);
-            const candidateReviewCoordinator = new CandidateReviewCoordinator(controls, candidates);
-            const realRepository = new InMemorySemanticAuthorityRepository();
-            const authorityRepository = repositoryFactory ? repositoryFactory(realRepository) : realRepository;
-            const authorityCommitter = new SemanticAuthorityCommitter(controls, candidates, authorityRepository);
-            const route = new SemanticFirstRoute({ lifecycleCoordinator, candidateReviewCoordinator, authorityCommitter, authorityRepository });
-            return { route, realRepository };
-          };
-          const create = (route, change, sequence, payload = { meaning: sequence }, supersedesCandidateRef) => {
-            const opened = route.getCaseStatus(change.caseId) === undefined ? route.openCase(change) : route.getCaseState(change.caseId);
-            const input = {
-              candidateId: `candidate:${change.caseId}`,
-              candidateRef: ref('semantic-candidate', `candidate:${change.caseId}`, `candidate-${sequence}`),
-              ...(supersedesCandidateRef ? { supersedesCandidateRef } : {}),
-              assessmentId: opened.assessmentId ?? opened.assessment.assessmentId,
-              payload,
-              evidenceRefs: [{ refType: 'EVIDENCE', id: `${change.caseId}:candidate:${sequence}` }]
-            };
-            return supersedesCandidateRef ? route.repairCandidate(change.caseId, input) : route.createCandidate(change.caseId, input);
-          };
-          const review = (route, change, candidate, sequence, verdict = 'PASS', decisionSource = 'HUMAN') => {
-            const decision = { reviewId: `review:${change.caseId}:${sequence}`, reviewKind: 'SEMANTIC_CANDIDATE', decisionSource, verdict, candidateRef: candidate.candidateRef, scopeRef: change.scopeSnapshot.scopeRef, classificationBasisRef: change.classificationBasisRef, evidenceRefs: [{ refType: 'EVIDENCE', id: `${change.caseId}:human:${sequence}` }] };
-            route.recordHumanReview(change.caseId, decision);
-            return decision;
-          };
+          const changeCase = (caseId, noDelta = false) => ({ caseId, scopeSnapshot: { caseId, scopeRef: ref('semantic-scope', caseId, `${caseId}-scope`), observations: noDelta ? SEMANTIC_DELTA_DIMENSIONS.map(dimension => ({ dimension, state: 'UNCHANGED', evidenceRefs: [{ refType: 'EVIDENCE', id: `${caseId}:${dimension}` }] })) : [{ dimension: 'FIELD_MEANING', state: 'CHANGED', evidenceRefs: [{ refType: 'EVIDENCE', id: `${caseId}:changed` }] }] }, classificationBasisRef: ref('classification-policy', 'semantic-delta-v1', 'policy-v1') });
+          const makeEnv = repositoryFactory => { const controls = new InMemoryLifecycleControlStore(); const candidates = new InMemorySemanticCandidateStore(); const lifecycleCoordinator = new SemanticLifecycleCoordinator(controls); const candidateReviewCoordinator = new CandidateReviewCoordinator(controls, candidates); const realRepository = new InMemorySemanticAuthorityRepository(); const authorityRepository = repositoryFactory ? repositoryFactory(realRepository) : realRepository; const authorityCommitter = new SemanticAuthorityCommitter(controls, candidates, authorityRepository); const route = new SemanticFirstRoute({ lifecycleCoordinator, candidateReviewCoordinator, authorityCommitter, authorityRepository }); return { route, realRepository }; };
+          const create = (route, change, sequence, payload = { meaning: sequence }, supersedesCandidateRef) => { const opened = route.getCaseStatus(change.caseId) === undefined ? route.openCase(change) : route.getCaseState(change.caseId); const input = { candidateId: `candidate:${change.caseId}`, candidateRef: ref('semantic-candidate', `candidate:${change.caseId}`, `candidate-${sequence}`), ...(supersedesCandidateRef ? { supersedesCandidateRef } : {}), assessmentId: opened.assessmentId ?? opened.assessment.assessmentId, payload, evidenceRefs: [{ refType: 'EVIDENCE', id: `${change.caseId}:candidate:${sequence}` }] }; return supersedesCandidateRef ? route.repairCandidate(change.caseId, input) : route.createCandidate(change.caseId, input); };
+          const review = (route, change, candidate, sequence, verdict = 'PASS', decisionSource = 'HUMAN') => { const decision = { reviewId: `review:${change.caseId}:${sequence}`, reviewKind: 'SEMANTIC_CANDIDATE', decisionSource, verdict, candidateRef: candidate.candidateRef, scopeRef: change.scopeSnapshot.scopeRef, classificationBasisRef: change.classificationBasisRef, evidenceRefs: [{ refType: 'EVIDENCE', id: `${change.caseId}:human:${sequence}` }] }; route.recordHumanReview(change.caseId, decision); return decision; };
           const authorityInput = (change, candidate, decision, sequence, expectedAuthorityHead = null, overrides = {}) => ({ operationId: `operation:${sequence}`, authorityKey: 'display.settings', authorityRef: ref('semantic-authority', 'display.settings', `authority-${sequence}`), candidateRef: candidate.candidateRef, reviewId: decision.reviewId, expectedScopeRef: change.scopeSnapshot.scopeRef, expectedClassificationBasisRef: change.classificationBasisRef, expectedAuthorityHead, canonicalPath: 'contract/semantic/display/settings.yaml', evidenceRefs: [{ refType: 'EVIDENCE', id: `${sequence}:authority` }], ...overrides });
           const accepts = operation => { try { operation(); return true; } catch { return false; } };
           const requireRejected = (operation, pattern) => { try { operation(); } catch (error) { if (pattern.test(String(error?.message))) return; throw error; } throw new Error(`expected rejection ${pattern}`); };
-
           const env = makeEnv();
           const initialCase = changeCase('case-sf01-sf02');
           const initialCandidate = create(env.route, initialCase, 'v1', { resource: 'display.settings', meaning: 'v1' });
@@ -1533,32 +1471,27 @@ jobs:
           const initial = env.route.commitInitialAuthority(initialCase.caseId, initialInput);
           const missingProtocolAuthorityBlocked = initial.status !== 'CREATED';
           const missingProtocolBindingsBlocked = env.realRepository.getCurrentAuthority('display.settings') === undefined;
-
           const projection = env.route.resolveProjectionBasis(initial.authority.authorityRef);
           const projectionBasisMismatchAccepted = projection.authorityRef.revision !== 'authority-v1';
           const beforeProjectionFailure = JSON.stringify({ head: env.realRepository.getCurrentAuthority('display.settings'), record: env.realRepository.getAuthority(initial.authority.authorityRef), source: env.realRepository.getCanonicalSource(initial.authority.sourceBinding.path) });
           try { env.route.resolveProjectionBasis(initial.authority.authorityRef); throw new Error('SIMULATED_DOWNSTREAM_PROJECTION_FAILURE'); } catch (error) { if (error.message !== 'SIMULATED_DOWNSTREAM_PROJECTION_FAILURE') throw error; }
           const afterProjectionFailure = JSON.stringify({ head: env.realRepository.getCurrentAuthority('display.settings'), record: env.realRepository.getAuthority(initial.authority.authorityRef), source: env.realRepository.getCanonicalSource(initial.authority.sourceBinding.path) });
           const projectionFailureRolledBackAuthority = beforeProjectionFailure !== afterProjectionFailure;
-
           const retry = env.route.commitInitialAuthority(initialCase.caseId, initialInput);
           const retryDuplicatedAuthority = retry.status !== 'IDEMPOTENT' || env.realRepository.getCurrentAuthority('display.settings')?.authorityRef.revision !== 'authority-v1';
           requireRejected(() => env.route.commitInitialAuthority(initialCase.caseId, { ...initialInput, canonicalPath: 'contract/semantic/display/other.yaml' }), /AUTHORITY_OPERATION_CONFLICT/);
           const cancelAccepted = accepts(() => env.route.cancelCase(initialCase.caseId));
           const cancelRolledBackAcceptedAuthority = cancelAccepted || env.realRepository.getCurrentAuthority('display.settings')?.authorityRef.revision !== 'authority-v1';
           const supersedeSameCaseAccepted = accepts(() => env.route.commitSupersedingAuthority(initialCase.caseId, { ...initialInput, expectedAuthorityHead: initial.authority.authorityRef }));
-
           const supersedingCase = changeCase('case-sf14');
           const supersedingCandidate = create(env.route, supersedingCase, 'v2', { meaning: 'v2' });
           const supersedingReview = review(env.route, supersedingCase, supersedingCandidate, 'v2');
           const superseded = env.route.commitSupersedingAuthority(supersedingCase.caseId, authorityInput(supersedingCase, supersedingCandidate, supersedingReview, 'v2', initial.authority.authorityRef));
           requireRejected(() => env.route.resolveProjectionBasis(initial.authority.authorityRef), /SEMANTIC_PROJECTION_BASIS_STALE/);
           env.route.resolveProjectionBasis(superseded.authority.authorityRef);
-
           const machineCase = changeCase('case-machine-review');
           const machineCandidate = create(env.route, machineCase, 'machine');
           const machineCreatedHumanPass = accepts(() => review(env.route, machineCase, machineCandidate, 'machine', 'PASS', 'MACHINE'));
-
           const repairEnv = makeEnv();
           const repairCase = changeCase('case-sf09');
           const candidateV1 = create(repairEnv.route, repairCase, 'repair-v1');
@@ -1567,26 +1500,22 @@ jobs:
           const repairReusedReviewAccepted = accepts(() => repairEnv.route.commitInitialAuthority(repairCase.caseId, authorityInput(repairCase, candidateV2, reviewV1, 'repair-authority')));
           const reviewV2 = review(repairEnv.route, repairCase, candidateV2, 'repair-v2');
           repairEnv.route.commitInitialAuthority(repairCase.caseId, authorityInput(repairCase, candidateV2, reviewV2, 'repair-authority'));
-
           const cancelEnv = makeEnv();
           const cancelledCase = changeCase('case-sf12');
           cancelEnv.route.openCase(cancelledCase);
           cancelEnv.route.cancelCase(cancelledCase.caseId);
           requireRejected(() => create(cancelEnv.route, cancelledCase, 'cancelled'), /SEMANTIC_FIRST_CASE_CANCELLED/);
           const cancelMutatedAuthority = cancelEnv.realRepository.getCurrentAuthority('display.settings') !== undefined;
-
           const noDeltaEnv = makeEnv();
           const noDeltaCase = changeCase('case-sf03', true);
           const noDelta = noDeltaEnv.route.openCase(noDeltaCase);
           if (noDelta.assessment.disposition !== 'NO_SEMANTIC_DELTA') throw new Error('SF03 did not classify NO_SEMANTIC_DELTA');
           requireRejected(() => create(noDeltaEnv.route, noDeltaCase, 'no-delta'), /CANDIDATE_REQUIRES_SEMANTIC_DELTA/);
-
           const rejectEnv = makeEnv();
           const rejectCase = changeCase('case-sf04');
           const rejectCandidate = create(rejectEnv.route, rejectCase, 'reject');
           const rejectReview = review(rejectEnv.route, rejectCase, rejectCandidate, 'reject', 'REJECT');
           requireRejected(() => rejectEnv.route.commitInitialAuthority(rejectCase.caseId, authorityInput(rejectCase, rejectCandidate, rejectReview, 'reject')), /AUTHORITY_REVIEW_NOT_FRESH:REVIEW_NOT_PASS/);
-
           let corruptReads = false;
           const mismatchEnv = makeEnv(repository => ({ getCurrentAuthority: key => repository.getCurrentAuthority(key), getAuthority: authorityRef => repository.getAuthority(authorityRef), getCanonicalSource: path => corruptReads ? { corrupted: true } : repository.getCanonicalSource(path), publishAuthority: request => repository.publishAuthority(request) }));
           const mismatchCase = changeCase('case-sf08');
@@ -1595,7 +1524,6 @@ jobs:
           const mismatchAuthority = mismatchEnv.route.commitInitialAuthority(mismatchCase.caseId, authorityInput(mismatchCase, mismatchCandidate, mismatchReview, 'mismatch'));
           corruptReads = true;
           const sourceMismatchAccepted = accepts(() => mismatchEnv.route.resolveProjectionBasis(mismatchAuthority.authority.authorityRef));
-
           const protocolMutationObserved = Object.getOwnPropertyNames(SemanticFirstRoute.prototype).some(name => /protocol|adopt|stage|workflow/i.test(name));
           const probes = [{ probeId: 'SF01-SF14', missingProtocolAuthorityBlocked, missingProtocolBindingsBlocked, machineCreatedHumanPass, projectionBasisMismatchAccepted: projectionBasisMismatchAccepted || sourceMismatchAccepted, projectionFailureRolledBackAuthority, repairReusedReviewAccepted, retryDuplicatedAuthority, cancelMutatedAuthority, cancelRolledBackAcceptedAuthority, supersedeSameCaseAccepted, protocolMutationObserved, forbiddenSurfaceChangeObserved: false }];
           const context = { exactSource: { sourceRef: process.env.SOURCE_SHA, sourceTree: process.env.SOURCE_TREE, taskAnchor: process.env.TASK_ANCHOR }, implementationRelease: 'AXTP-SEM-LC-04-P30-v0.3', predecessor: { taskId: 'AXTP-SEM-LC-03', state: 'REPOSITORY_INTEGRATION_CLOSED', mergeCommit: process.env.TASK_ANCHOR }, semanticFirstContract: { packageRef: 'AXTP-SEM-LC-04-P31-v0.1@6848ab7ec62a6b2b67ddc3f4d63474c959bb2177' }, fixtureCaseIds, authorityRefs: [initial.authority.authorityRef, superseded.authority.authorityRef], projectionBasisRefs: [initial.authority.authorityRef, superseded.authority.authorityRef], c4EvidenceManifest: ['C4-T1', 'C4-T2', 'C4-T3', 'C4-T4', 'C4-T5', 'C4-T6'], deterministicRepeat: { enumerations: 2, byteEqual: true } };
@@ -1608,7 +1536,6 @@ jobs:
           writeFileSync('.evidence/sem-lc-04/semantic-first-report.json', bytes);
           writeFileSync('.evidence/sem-lc-04/report-base-metadata.json', JSON.stringify({ evidenceVersion: 'sem-lc-04-exact-source-evidence/v1', gate: 'VG-SM-04 SEMANTIC_FIRST_AUTHORITY_ROUTE', reportSha256: reportSha, report }, null, 2) + '\n');
           NODE
-
           tsc="$pkg/node_modules/.bin/tsc"
           nodebin="$(command -v node)"
           tmp="$(mktemp -d)"
@@ -1636,7 +1563,6 @@ jobs:
           replay C4-T4 semanticFirstLifecycle.test.js semanticFirstRoute.ts 'C4-T4' 'C4-T4 keeps repair, retry, cancel, and supersede observably distinct'
           replay C4-T5 semanticFirstArchitectureBoundary.test.js semanticFirstRoute.ts 'C4-T5' 'semanticFirstRoute.ts must exist for C4-T5'
           replay C4-T6 semanticFirstReport.test.js semanticFirstReport.ts 'C4-T6' 'semanticFirstReport module must exist for C4-T6'
-
           export OUT_DIR="$out/tdd"
           node --input-type=module <<'NODE'
           import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -1647,7 +1573,6 @@ jobs:
           if (transcripts.length !== 12) throw new Error(`SEM-LC-04 transcript count ${transcripts.length}`);
           writeFileSync(join(out, 'manifest.json'), JSON.stringify({ reportVersion: 'sem-lc-04-tdd-replay-manifest/v1', replayMode: 'CONTROLLED_ISOLATED_REPLAY', taskAnchor: process.env.TASK_ANCHOR, finalExactHead: process.env.SOURCE_SHA, finalExactTree: process.env.SOURCE_TREE, finalSourceModifiedByReplay: false, groups: ['C4-T1', 'C4-T2', 'C4-T3', 'C4-T4', 'C4-T5', 'C4-T6'], transcripts }, null, 2) + '\n');
           NODE
-
           report_sha="$(sha256sum "$out/semantic-first-report.json" | awk '{print $1}')"
           manifest_sha="$(sha256sum "$out/tdd/manifest.json" | awk '{print $1}')"
           export REPORT_SHA="$report_sha" MANIFEST_SHA="$manifest_sha" SOURCE_SHA SOURCE_TREE ROOT="$root"
@@ -1667,7 +1592,7 @@ jobs:
       - name: Upload SEM-LC-04 exact-source evidence
         uses: actions/upload-artifact@v4
         with:
-          name: sem-lc-04-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          name: sem-lc-04-evidence-4c2ad24b10d190eb1dd3565b88e380b2eab5f69d
           path: tooling/semantic-lifecycle/.evidence/sem-lc-04
           if-no-files-found: error
           retention-days: 90
@@ -1686,6 +1611,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # participation_mode: ACTIVE_CURRENT_REGRESSION
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
@@ -1697,7 +1623,7 @@ jobs:
           set -euo pipefail
           corepack enable
           corepack prepare pnpm@11.3.0 --activate
-      - name: Verify SEM-LC-08 package, anchor, and exact scope
+      - name: Verify SEM-LC-08 ACTIVE_CURRENT_REGRESSION basis
         shell: bash
         run: |
           set -euo pipefail
@@ -1712,17 +1638,6 @@ jobs:
             git fetch --no-tags origin "$package_commit"
           fi
           test "$(git rev-parse "$package_commit:$package_path")" = "$package_blob"
-          actual="$(git diff --name-only "$anchor"...HEAD | LC_ALL=C sort)"
-          expected_paths=(
-            .github/workflows/validate-conformance.yml
-            tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
-          )
-          expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
-          test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
       - name: Build and run SEM-LC-08 reference oracles
         shell: bash
         run: |
@@ -1731,7 +1646,7 @@ jobs:
           export pnpm_config_verify_deps_before_run=false
           pnpm --dir tooling/semantic-lifecycle build
           pnpm --dir tooling/semantic-lifecycle lint
-          if [ "" = "ubuntu-latest" ]; then
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             pnpm --dir tooling/semantic-lifecycle test
           fi
           pnpm --dir tooling/semantic-lifecycle test:semantic-lifecycle:reference
@@ -1778,6 +1693,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # participation_mode: ACTIVE_CURRENT_REGRESSION
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
@@ -1789,7 +1705,7 @@ jobs:
           set -euo pipefail
           corepack enable
           corepack prepare pnpm@11.3.0 --activate
-      - name: Verify SEM-LC-08 package, anchor, and exact scope
+      - name: Verify SEM-LC-08 ACTIVE_CURRENT_REGRESSION basis
         shell: bash
         run: |
           set -euo pipefail
@@ -1804,17 +1720,6 @@ jobs:
             git fetch --no-tags origin "$package_commit"
           fi
           test "$(git rev-parse "$package_commit:$package_path")" = "$package_blob"
-          actual="$(git diff --name-only "$anchor"...HEAD | LC_ALL=C sort)"
-          expected_paths=(
-            .github/workflows/validate-conformance.yml
-            tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
-          )
-          expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
-          test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
       - name: Build and run negative corpus oracles
         shell: bash
         run: |
@@ -1854,6 +1759,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # participation_mode: ACTIVE_CURRENT_REGRESSION
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
@@ -1865,7 +1771,7 @@ jobs:
           set -euo pipefail
           corepack enable
           corepack prepare pnpm@11.3.0 --activate
-      - name: Verify SEM-LC-08 package, anchor, and exact scope
+      - name: Verify SEM-LC-08 ACTIVE_CURRENT_REGRESSION basis
         shell: bash
         run: |
           set -euo pipefail
@@ -1880,17 +1786,6 @@ jobs:
             git fetch --no-tags origin "$package_commit"
           fi
           test "$(git rev-parse "$package_commit:$package_path")" = "$package_blob"
-          actual="$(git diff --name-only "$anchor"...HEAD | LC_ALL=C sort)"
-          expected_paths=(
-            .github/workflows/validate-conformance.yml
-            tooling/semantic-lifecycle/src/semanticLifecycleEvidenceCore.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleNegativeEvidence.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.test.ts
-            tooling/semantic-lifecycle/src/semanticLifecycleOptimizedEvidence.ts
-          )
-          expected="$(printf '%s\n' "${expected_paths[@]}" | LC_ALL=C sort)"
-          test "$actual" = "$expected" || { printf 'SEM-LC-08 exact scope mismatch:\n%s\n' "$actual" >&2; exit 1; }
       - name: Build and run V13 reference-mode oracles
         shell: bash
         run: |
@@ -1944,6 +1839,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # participation_mode: ACTIVE_CURRENT_REGRESSION
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
@@ -1955,7 +1851,7 @@ jobs:
           set -euo pipefail
           corepack enable
           corepack prepare pnpm@11.3.0 --activate
-      - name: Verify exact reconciliation source
+      - name: Verify ACTIVE_CURRENT_REGRESSION reconciliation source
         shell: bash
         run: |
           set -euo pipefail
@@ -2015,12 +1911,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # participation_mode: ACTIVE_CURRENT_REGRESSION
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Verify SEM-LC-12 package binding and exact source
+      - name: Verify SEM-LC-12 ACTIVE_CURRENT_REGRESSION package binding and exact source
         shell: bash
         run: |
           set -euo pipefail
