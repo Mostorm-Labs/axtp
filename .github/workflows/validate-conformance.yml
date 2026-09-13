@@ -390,7 +390,7 @@ jobs:
             const after = digest(snapshot(store, candidates));
             return { caseId, accepted: attempt.accepted, splitBrain: attempt.accepted && before !== after, duplicatePublication: false, mutationObserved: before !== after, atomic: before === after, error: attempt.error, fixtureFailure: attempt.accepted || before !== after };
           });
-          const concurrency = (() => { const { store, route, candidates } = routeHarness(); const first = route.registerMigrationBasis({ operationId: 'replay', record: structuredClone(fixture.migration) }); const replay = route.registerMigrationBasis({ operationId: 'replay', record: structuredClone(fixture.migration) }); const before = digest(snapshot(store, candidates)); const conflict = run(() => route.registerMigrationBasis({ operationId: 'replay', record: { ...structuredClone(fixture.migration), payload: { changed: true } })); const after = digest(snapshot(store, candidates)); return [{ caseId: 'replay-idempotence', firstStatus: first.status, replayStatus: replay.status, doubleWinner: false, operationConflictWithMutation: false, mutationObserved: before !== after, fixtureFailure: first.status !== 'IDEMPOTENT' && first.status !== 'CREATED' || replay.status !== 'IDEMPOTENT' }, { caseId: 'operation-id-conflict', firstStatus: first.status, replayStatus: conflict.accepted ? 'ACCEPTED' : 'CONFLICT_REJECTED', doubleWinner: false, operationConflictWithMutation: conflict.accepted || before !== after, mutationObserved: before !== after, error: conflict.error, fixtureFailure: conflict.accepted || before !== after }]; })();
+          const concurrency = (() => { const { store, route, candidates } = routeHarness(); const first = route.registerMigrationBasis({ operationId: 'replay', record: structuredClone(fixture.migration) }); const replay = route.registerMigrationBasis({ operationId: 'replay', record: structuredClone(fixture.migration) }); const before = digest(snapshot(store, candidates)); const conflict = run(() => route.registerMigrationBasis({ operationId: 'replay', record: { ...structuredClone(fixture.migration), payload: { changed: true } } })); const after = digest(snapshot(store, candidates)); return [{ caseId: 'replay-idempotence', firstStatus: first.status, replayStatus: replay.status, doubleWinner: false, operationConflictWithMutation: false, mutationObserved: before !== after, fixtureFailure: first.status !== 'IDEMPOTENT' && first.status !== 'CREATED' || replay.status !== 'IDEMPOTENT' }, { caseId: 'operation-id-conflict', firstStatus: first.status, replayStatus: conflict.accepted ? 'ACCEPTED' : 'CONFLICT_REJECTED', doubleWinner: false, operationConflictWithMutation: conflict.accepted || before !== after, mutationObserved: before !== after, error: conflict.error, fixtureFailure: conflict.accepted || before !== after }]; })();
           const reviewLineage = [];
           const lineageCases = ['missing-proof','wrong-candidate','wrong-basis','stale-after-reselection'];
           for (const caseId of lineageCases) {
@@ -579,7 +579,7 @@ jobs:
           with zipfile.ZipFile(archive_path) as archive:
               actual = archive.read(member)
           if actual != expected:
-            raise SystemExit("release semantic.json bytes differ from committed canonical artifact")
+              raise SystemExit("release semantic.json bytes differ from committed canonical artifact")
           PY
 
           backup="$(mktemp "${TMPDIR:-/tmp}/axtp-release-semantic-backup.XXXXXX")"
