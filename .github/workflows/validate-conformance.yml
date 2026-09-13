@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - integration/axtp-next
 
 permissions:
   contents: read
