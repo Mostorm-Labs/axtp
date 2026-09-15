@@ -5,12 +5,12 @@ generated: true
 domain: signage
 feature: signage.playlist
 registry: ../../../../contract/registry/domains/signage/domain.yaml
-lastReviewed: 2026-06-16
+lastReviewed: 2026-09-15
 ---
 
 # AXTP signage.playlist 协议草案
 
-版本：v1.4（已采纳）
+版本：v1.5（已采纳）
 
 归属域：`signage`（DomainId `0x0D`）
 
@@ -87,9 +87,14 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 | `PlaylistConfigChangedEvent` | `SignagePlaylistConfigChangedEvent` |
 | `Playlist` | `SignagePlaylist` |
 | `PlaylistItem` | `SignagePlaylistItem` |
-| `PlaylistItemSettings` | `SignagePlaylistItemSettings` |
+| `ImageItemSettings` | `SignageImageItemSettings` |
+| `VideoItemSettings` | `SignageVideoItemSettings` |
+| `WebsiteItemSettings` | `SignageWebsiteItemSettings` |
+| `ClockItemSettings` | `SignageClockItemSettings` |
+| `UnsplashItemSettings` | `SignageUnsplashItemSettings` |
 | `ClockEntry` | `SignagePlaylistClockEntry` |
 | `UnsplashPhoto` | `SignagePlaylistUnsplashPhoto` |
+| `UnsplashUser` | `SignagePlaylistUnsplashUser` |
 
 ### 命名与附录差异说明
 
@@ -103,8 +108,72 @@ registry YAML 中 schema 名加 `Signage`/`Playlist` 前缀以保证全局唯一
 
 ---
 
+## Amendment History（修订记录）
+
+本节记录 Stage 40 `40-amend-adopted-protocol` 阶段对已采纳事实的修订。machine 事实源为 `registry/domains/signage/domain.yaml`，修订均先改本草案、再同步 YAML、最后由 `50-generate-axtp-protocol` 重跑 generated 产物。
+
+### A1 2026-09-15 · 补充枚举声明（枚举类型说明）
+
+- **变更**：registry YAML 中 4 个 `type: enum` 字段补充正式 `enum:` 列表（此前枚举值仅存于 description 散文）：
+  - `SignagePlaylistItem.type` → `[image, website, video, clock, unsplash]`
+  - `SignagePlaylist.type` → `[default, scheduled]`
+  - `SignagePlaylistConfigChangedEvent.reason` → `[set_config, reset_config]`
+  - `SignageGetPlaylistItemUrlResult.type` → `[image, video, website, unsplash]`
+- **同步**：2 处 `supportedItemTypes`（`SignagePlaylistCapabilitiesResult` / `SignagePlaylistCapability`）description 措辞对齐为「`SignagePlaylistItem.type` 枚举值的子集」。
+- **理由**：specs/40-codec.md 规定 enum「合法值 MUST 已声明」；`enum:` 列表为仓库既有机制（sport/cast/stream/video 域在用），补齐后 generated protocol.md 的 Value Restrictions 列与 MCP schema JSON 才能携带枚举事实。
+- **兼容性**：非破坏——仅补充声明，wire 语义不变。
+- **YAML target**：`contract/registry/domains/signage/domain.yaml`。
+
+### A2 2026-09-15 · 拆分 PlaylistItemSettings + variants 判别机制
+
+- **变更 1（拆分）**：聚合类型 `PlaylistItemSettings`（registry `SignagePlaylistItemSettings`，9 字段平铺、全 optional）拆分为 5 个 per-type 独立 schema，每类型内 required 语义恢复：
+
+  | 草案类型 | registry 类型 | 字段（粗体 = 该类型内必填） |
+  |---|---|---|
+  | `ImageItemSettings` | `SignageImageItemSettings` | **urls**, **delaySeconds**, expiresAt |
+  | `VideoItemSettings` | `SignageVideoItemSettings` | **url**, expiresAt, muted |
+  | `WebsiteItemSettings` | `SignageWebsiteItemSettings` | **url**, ignoreCertificateError, refreshIntervalSecs |
+  | `ClockItemSettings` | `SignageClockItemSettings` | **clocks** |
+  | `UnsplashItemSettings` | `SignageUnsplashItemSettings` | **photos**, **delaySeconds**, expiresAt |
+
+- **变更 2（新机制）**：`PlaylistItem.settings` 与 `GetPlaylistItemUrlResult.settings` 字段改为 `type: object` + `variants: { discriminator: type, mapping: { <枚举值>: <settings schema> } }`，判别绑定成为机器事实（generator 校验：discriminator 必须为同 schema 内已声明枚举值的兄弟字段、mapping 全覆盖枚举值、value 必须为已注册 schema）。`GetPlaylistItemUrlResult` 的 mapping 不含 `clock`。specs/40-codec.md 新增规范性条款。
+- **变更 3（删除）**：聚合类型 `SignagePlaylistItemSettings` 自 registry YAML 删除。
+- **fieldId 重排**：settings 内字段 ID 由聚合布局改为每类型从 0x01 连续，新旧映射：
+
+  | 聚合旧 ID | 字段 | image | video | website | clock | unsplash |
+  |---|---|---|---|---|---|---|
+  | 0x01 | urls | 0x01 | — | — | — | — |
+  | 0x02 | delaySeconds | 0x02 | — | — | — | 0x02 |
+  | 0x03 | expiresAt | 0x03 | 0x02 | — | — | 0x03 |
+  | 0x04 | url | — | 0x01 | 0x01 | — | — |
+  | 0x05 | muted | — | 0x03 | — | — | — |
+  | 0x06 | ignoreCertificateError | — | — | 0x02 | — | — |
+  | 0x07 | refreshIntervalSecs | — | — | 0x03 | — | — |
+  | 0x08 | clocks | — | — | — | 0x01 | — |
+  | 0x09 | photos | — | — | — | — | 0x01 |
+
+- **兼容性判定**：draft 阶段 breaking correction。依据：本 capability 全部事实 status 为 `draft`（未达 stable/mvp）；零设备实现（Drafted only）；无 signage conformance/test vectors；无 SDK 消费者。spec/v0.10.0–v0.16.0 各 tag 的 generated 产物曾包含聚合类型，本修订后不再包含——历史 tag 不受影响。
+- **不变量**：method/event/capability ID 与 bitOffset、全部 method/event schema 名、父级字段 ID（`SignagePlaylistItem.settings`=0x05、`SignageGetPlaylistItemUrlResult.settings`=0x02）、`SignagePlaylist` / `SignagePlaylistItem` / `SignagePlaylistClockEntry` 全部字段及 ID、`SignagePlaylistUnsplashPhoto` 类型名（其字段结构变更见 A3）、错误码决策均不变。
+- **YAML target**：`contract/registry/domains/signage/domain.yaml`；机制实现于 `tooling/generators/src/`（variants 穿透 + 校验 + protocol.md 渲染）。
+
+### A3 2026-09-15 · UnsplashPhoto user 嵌套对齐
+
+- **变更**：`SignagePlaylistUnsplashPhoto` 的扁平字段 `userName`（0x02）/ `userLink`（0x03）改为嵌套对象字段 `user`（0x02，类型 `SignagePlaylistUnsplashUser`）；新类型 `SignagePlaylistUnsplashUser`（草案名 `UnsplashUser`）：`name`=0x01（max_length 128）、`link`=0x02（max_length 2048），约束从旧扁平字段平移。
+- **性质**：采纳时草案↔registry 的结构偏差修正——草案 v0.3 引入 `unsplash` 起全部 JSON 示例即为嵌套 `user: { name, link }` 写法，v1.4 采纳时 registry 误写为扁平。本修订以草案嵌套语义为准（registry 向草案对齐），草案 JSON 示例零改动。
+- **兼容性判定**：draft 阶段 breaking correction（同 A2 依据：零实现、无 conformance vectors、无 SDK 消费者）。fieldId 影响：photo 层 `userName`=0x02 / `userLink`=0x03 → `user`=0x02（类型内 `name`=0x01、`link`=0x02）。
+- **不变量**：`photo.url`=0x01、`SignagePlaylistUnsplashPhoto` 类型名、`UnsplashItemSettings.photos` 引用及其余全部字段不变。
+- **YAML target**：`contract/registry/domains/signage/domain.yaml`。
+
+### Follow-up 登记（非本次范围）
+
+- 全仓库约 130 个 `type: enum` 字段缺 `enum:` 列表（audio 37 / network 37 / video 25 / device 14 / firmware 8 / software 5），generator 已加警告级报告；后续全域补全后再将硬校验写入 50-tooling validate-sources MUST 清单。
+- `switch:`（按枚举值条件约束任意字段）if-then 机制登记为未来扩展（可将 `Playlist` 的 scheduled 条件必填从 prose 升级为结构化）。
+
+---
+
 **变更历史：**
 
+- **v1.5** — Stage 40 `40-amend-adopted-protocol` 修订（见「Amendment History」A1/A2/A3）：(1) A1——registry YAML 4 个 enum 字段补正式 `enum:` 列表（`PlaylistItem.type` / `Playlist.type` / 事件 `reason` / `GetPlaylistItemUrlResult.type`），2 处 `supportedItemTypes` 措辞对齐；(2) A2——聚合类型 `PlaylistItemSettings` 拆分为 5 个 per-type settings schema（`ImageItemSettings` 等，每类型内 required 语义恢复、fieldId 从 0x01 连续重排），`settings` 字段新增 `variants: {discriminator: type, mapping}` 判别绑定机制（generator 新机制 + specs/40-codec.md 规范性条款），聚合类型删除；(3) A3——`UnsplashPhoto` 的扁平 `userName`/`userLink` 对齐为嵌套 `user` 对象（新类型 `UnsplashUser`），修正采纳时草案↔registry 结构偏差；(4) 兼容性判定为 draft 阶段 breaking correction（零实现、无 conformance vectors）；method/event/capability ID、bitOffset、父级字段 ID 全部不变；(5) generated 产物由 `50-generate-axtp-protocol` 重跑生效。
 - **v1.4** — Stage 30 adopt-protocol-draft 采纳冻结（业务语义、schema、错误码、legacy 映射均不变）：(1) 新增 `## 采纳记录 (Adoption)` 节，记录已分配 ID（capability `0x0D01` / methods `0x0D01-0x0D05` / event `0x0D01`）、schema 名映射、命名与附录差异说明、后续约束；(2) 错误码决策——候选业务码 `SIGNAGE_PLAYLIST_*` 不新增，统一复用 common（`INVALID_ARGUMENT` / `NOT_FOUND`），signage 错误区段 `0x0D00-0x0DFF` 保持空；(3) 固化 `playlists` 可选、`sort` 同 playlist 内唯一、`duration > 0`、reset 无参；(4) 方法/事件速览表补 methodId/eventId 列并标记 `[REVIEW-ADOPTED]`，§8 错误表、§0/§10 readiness 同步更新；(5) registry YAML 已写入 `registry/domains/signage/domain.yaml`，generated 产物待 `50-generate-axtp-protocol` 重跑。
 - **v1.3** — 对齐 20-draft-business-protocol skill 与 `system.lifecycle.md` 范式（业务语义、schema、错误码、legacy 映射均不变）：(1) 在 §0 速读结论后新增 `## JSON 示例约定` 节（RPC envelope 速查 + op=6/7/8 表）；(2) 将原集中式第 7 节 14 个 JSON 示例迁移到各 method/event 小节，每个 method 补齐 Request / Success Response / Error Response `d block` 内联示例 + 错误表 + 规则，每个 event 补齐 Event `d block` 示例 + 客户端处理建议表 + 规则；(3) 第 7 节改为 `## 7. 交互流程示例 Flow Examples`，只保留端到端 flow；(4) method/event 子标题改为带编号风格（`3.x.1`…`4.1.1`…）。Item 标题统一标注 `op=7` / `op=8` / `op=6`。
 - **v1.2** — 格式修复与 per-method 结构补全：(1) 修复变更历史版本号顺序错乱，统一为倒序（原 v0.2–v0.7 为正序、v0.9/v0.8 为倒序，与顶部 v1.1/v1.0 倒序不一致）；(2) 为 `setPlaylistConfig` / `resetPlaylistConfig` 补 per-method「可能触发的事件」明细表，对齐标准 per-method 结构；(3) 统一 `setPlaylistConfig` 的 Result Schema 表述为「无 result body，仅返回标准 success status」。
@@ -770,17 +839,17 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `type` | enum | yes | `image`, `video`, `website`, `unsplash` | none | 播放项类型。用于判别 `settings` 的内部结构。`clock` 类型不涉及 URL 资源刷新。 |
-| `settings` | `PlaylistItemSettings` | yes | see `PlaylistItemSettings` | none | 刷新后的完整设置。设备可直接用此值替换本地缓存的 `settings`。 |
+| `type` | enum | yes | `image`, `video`, `website`, `unsplash` | none | 播放项类型。判别 `settings` 的 variant schema。`clock` 类型不涉及 URL 资源刷新。 |
+| `settings` | per-type settings | yes | 由 `type` 经 `variants` 判别 | none | 刷新后的完整设置。设备可直接用此值替换本地缓存的 `settings`。 |
 
-`settings` 按 `type` 值对应 `PlaylistItemSettings` 的各类型子集：
+`settings` 字段携带 `variants: { discriminator: type, mapping: {...} }`，按 `type` 值对应 settings schema（见 §6.5）：
 
-| `type` | `settings` 包含字段 |
+| `type` | settings schema |
 |---|---|
-| `image` | `urls`, `delaySeconds`, `expiresAt` |
-| `video` | `url`, `expiresAt`, `muted` |
-| `website` | `url`, `ignoreCertificateError`, `refreshIntervalSecs` |
-| `unsplash` | `photos`, `delaySeconds`, `expiresAt` |
+| `image` | `ImageItemSettings`（registry `SignageImageItemSettings`） |
+| `video` | `VideoItemSettings`（registry `SignageVideoItemSettings`） |
+| `website` | `WebsiteItemSettings`（registry `SignageWebsiteItemSettings`） |
+| `unsplash` | `UnsplashItemSettings`（registry `SignageUnsplashItemSettings`） |
 
 #### 3.5.3 d block 示例
 
@@ -1053,7 +1122,10 @@ Capability name: `signage.playlist`。
   PlaylistConfigChangedEvent  ← playlistConfigChanged
 
 共享对象:
-  Playlist, PlaylistItem, PlaylistItemSettings, ClockEntry, UnsplashPhoto
+  Playlist, PlaylistItem
+  ImageItemSettings, VideoItemSettings, WebsiteItemSettings, ClockItemSettings, UnsplashItemSettings
+    （PlaylistItem.settings / GetPlaylistItemUrlResult.settings 经 variants 按 type 判别）
+  ClockEntry, UnsplashPhoto, UnsplashUser
 ```
 
 ### 6.2 请求 Schemas
@@ -1095,8 +1167,8 @@ Capability name: `signage.playlist`。
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `type` | enum | yes | `image`, `video`, `website`, `unsplash` | none | 播放项类型。用于判别 `settings` 内部结构。 |
-| `settings` | `PlaylistItemSettings` | yes | see `PlaylistItemSettings` | none | 刷新后的完整设置。按 `type` 对应不同内部字段。 |
+| `type` | enum | yes | `image`, `video`, `website`, `unsplash` | none | 播放项类型。判别 `settings` 的 variant schema。 |
+| `settings` | per-type settings | yes | 由 `type` 经 `variants` 判别 | none | 刷新后的完整设置。按 `type` 对应 §6.5 的 per-type settings schema。 |
 
 ### 6.4 事件 Payload Schemas
 
@@ -1131,14 +1203,14 @@ Capability name: `signage.playlist`。
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `id` | string (UUID) | yes | UUID format | none | 播放项唯一标识。 |
-| `type` | enum | yes | `image`, `website`, `video`, `clock`, `unsplash` | none | 播放项类型。 |
+| `type` | enum | yes | `image`, `website`, `video`, `clock`, `unsplash` | none | 播放项类型。该值经 `settings` 的 `variants` 判别选择对应 settings schema。 |
 | `duration` | uint32 | yes | 0-86400（`0` 语义见说明） | 60 | 单次播放时长（秒）。`0` 语义未定义——推荐禁止 `0`（要求 `> 0`），或允许 `0` 表示「直到下一次列表循环或切换」。`[REVIEW-ASK]` 采纳前确认。 |
 | `sort` | uint32 | yes | 非负整数 | 0 | 播放顺序，按 `sort` 升序排列。相同 `sort` 值时的相对顺序未定义——建议按 `PlaylistItem.id` 稳定排序。`[REVIEW-ASK]` 采纳前确认。 |
-| `settings` | `PlaylistItemSettings` | yes | see `PlaylistItemSettings` | none | 播放项设置。按 `type` 不同结构不同。 |
+| `settings` | per-type settings | yes | 由 `type` 经 `variants` 判别 | none | 播放项设置。字段携带 `variants: { discriminator: type, mapping: { image: ImageItemSettings, website: WebsiteItemSettings, video: VideoItemSettings, clock: ClockItemSettings, unsplash: UnsplashItemSettings } }`（registry 名加 `Signage` 前缀）。 |
 
-#### `PlaylistItemSettings`（按 type 区分）
+#### `ImageItemSettings`
 
-**image 类型：**
+> registry 名：`SignageImageItemSettings`。`image` 类型播放项的 settings schema（经 `PlaylistItem.settings` 的 `variants` 判别）。fieldId 从 0x01 连续重排（见 Amendment History A2）。
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -1146,7 +1218,9 @@ Capability name: `signage.playlist`。
 | `delaySeconds` | uint32 | yes | > 0 | 5 | 每个图片显示时长（秒）。 |
 | `expiresAt` | uint64 | no | Unix timestamp | `null` | URL 过期时间。`null` 表示永不过期。 |
 
-**video 类型：**
+#### `VideoItemSettings`
+
+> registry 名：`SignageVideoItemSettings`。`video` 类型播放项的 settings schema。fieldId 从 0x01 连续重排（见 Amendment History A2）。
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -1154,7 +1228,9 @@ Capability name: `signage.playlist`。
 | `expiresAt` | uint64 | no | Unix timestamp | `null` | URL 过期时间。`null` 表示永不过期。 |
 | `muted` | boolean | no | `true`, `false` | `false` | 是否静音播放。 |
 
-**website 类型：**
+#### `WebsiteItemSettings`
+
+> registry 名：`SignageWebsiteItemSettings`。`website` 类型播放项的 settings schema。fieldId 从 0x01 连续重排（见 Amendment History A2）。
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -1162,7 +1238,9 @@ Capability name: `signage.playlist`。
 | `ignoreCertificateError` | boolean | no | `true`, `false` | `false` | 忽略 TLS 证书错误。`[REVIEW-ASK]` 安全敏感字段——允许跳过证书校验有中间人风险，需明确何时允许、调用方权限要求与默认策略；采纳前由安全/架构确认。 |
 | `refreshIntervalSecs` | uint32 | no | > 0 | `null` | 刷新间隔秒数。`null` 表示不刷新。 |
 
-**clock 类型：**
+#### `ClockItemSettings`
+
+> registry 名：`SignageClockItemSettings`。`clock` 类型播放项的 settings schema。fieldId 从 0x01 连续重排（见 Amendment History A2）。
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -1175,7 +1253,9 @@ Capability name: `signage.playlist`。
 | `timezone` | string (IANA) | yes | IANA timezone | none | 时区标识。 |
 | `label` | string | yes | non-empty | none | 城市标签。 |
 
-**unsplash 类型：**
+#### `UnsplashItemSettings`
+
+> registry 名：`SignageUnsplashItemSettings`。`unsplash` 类型播放项的 settings schema。fieldId 从 0x01 连续重排（见 Amendment History A2）。
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -1188,9 +1268,16 @@ Capability name: `signage.playlist`。
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `url` | string | yes | valid URL | none | 图片 URL。 |
-| `user` | object | yes | see below | none | 摄影师信息。 |
-| `user.name` | string | yes | non-empty | none | 摄影师名称。 |
-| `user.link` | string | yes | valid URL | none | 摄影师 Unsplash 主页链接。 |
+| `user` | `UnsplashUser` | yes | see `UnsplashUser` | none | 摄影师信息（嵌套对象，registry 名 `SignagePlaylistUnsplashUser`）。 |
+
+#### `UnsplashUser`
+
+> registry 名：`SignagePlaylistUnsplashUser`。Unsplash 照片的摄影师署名对象（v1.5 A3 由扁平 `userName`/`userLink` 对齐为嵌套，见 Amendment History A3）。
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `name` | string | yes | non-empty | none | 摄影师名称。 |
+| `link` | string | yes | valid URL | none | 摄影师 Unsplash 主页链接。 |
 
 ---
 
@@ -1385,10 +1472,10 @@ Legacy Server → Device，请求 `{ playlists: [...] }`，响应 `{ ok: true }`
 | `playlists[].items[].type` | String (`image`/`slideshow`/`website`/`video`/`clock`) | `type` | enum | AXTP 新增 `unsplash`，废弃 `slideshow`。Legacy `slideshow` 由 adapter 映射为 `image`。 |
 | `playlists[].items[].duration` | Number | `duration` | uint32 | 直传。默认 60，范围 0-86400。 |
 | `playlists[].items[].sort` | Number | `sort` | uint32 | 直传。默认 0。 |
-| `playlists[].items[].settings` | Object | `settings` | `PlaylistItemSettings` | 按 `type` 区分结构。字段 1:1 映射。 |
+| `playlists[].items[].settings` | Object | `settings` | per-type settings（`ImageItemSettings` 等 5 种，由 `type` 经 `variants` 判别） | 按 `type` 区分结构。字段 1:1 映射。 |
 | *(none)* | — | *(AXTP 无额外字段)* | — | — |
 
-**Legacy `slideshow` 类型废弃说明** `[REVIEW-RESOLVED]`：AXTP 不保留 `slideshow` 播放项类型。Legacy `slideshow` 由 Adapter 映射为 AXTP `image` 类型。以下子表展示 `settings` 字段级转换：
+**Legacy `slideshow` 类型废弃说明** `[REVIEW-RESOLVED]`：AXTP 不保留 `slideshow` 播放项类型。Legacy `slideshow` 由 Adapter 映射为 AXTP `image` 类型（settings schema 为 `ImageItemSettings`）。以下子表展示 `settings` 字段级转换：
 
 | Legacy `slideshow` 字段 | 类型 | AXTP `image` 字段 | 类型 | 转换规则 |
 |---|---|---|---|---|
@@ -1444,11 +1531,11 @@ Legacy Device → Server，请求 `{ itemId }`，响应 `{ url / urls, expiresAt
 | *(none)* | — | `type` | enum | AXTP 新增。Legacy 响应无 `type` 字段，Adapter 必须从当前播放列表配置中查找 `itemId` 对应的 `type` 并填充。 |
 | *(none)* | — | `type: "unsplash"` + `settings.photos` / `settings.delaySeconds` / `settings.expiresAt` | enum + `UnsplashPhoto[]` + uint32 + uint64 | **AXTP-only**。Legacy `GetPlaylistItemUrl` 无 `unsplash` 类型响应。AXTP 新增此类型，Adapter 不需处理。 |
 
-> **Adapter 说明**：这是三个 legacy 命令中**结构变化最大**的。v0.4 将响应从顶层互斥字段（`url` / `urls` / `expiresAt`）重构为 `type` + `settings` 显式类型判别模式。Adapter 需要：(1) 从设备当前播放列表配置中查找 `itemId` 对应的播放项 `type`；(2) 将旧顶层字段按类型移入 `settings` 子对象：
-> - **image**：顶层 `urls[]` + `expiresAt` → `settings.urls` + `settings.expiresAt`；`delaySeconds` 取设备当前配置原值（legacy 刷新响应不含此字段）。
-> - **video / website**：顶层 `url` + `expiresAt` → `settings.url` + `settings.expiresAt`（website 保留 `ignoreCertificateError` / `refreshIntervalSecs`，video 保留 `muted`）。
-> - **slideshow**：legacy `GetPlaylistItemUrl` 响应 `url`（String）按 `image` 策略包装为 `settings.urls`（单元素数组 `["<url>"]`），补充 `settings.delaySeconds`（默认 `5`）和 `settings.expiresAt`（从响应顶层 `expiresAt` 移入）。Adapter 还需将推断的 `type` 从 `"slideshow"` 替换为 `"image"`。
-> - **unsplash**：Legacy 无此类型。AXTP 直接返回 `type: "unsplash"` + `settings`。Adapter 不需处理。
+> **Adapter 说明**：这是三个 legacy 命令中**结构变化最大**的。v0.4 将响应从顶层互斥字段（`url` / `urls` / `expiresAt`）重构为 `type` + `settings` 显式类型判别模式（v1.5 起判别由 `variants` 机制承载，见 Amendment History A2）。Adapter 需要：(1) 从设备当前播放列表配置中查找 `itemId` 对应的播放项 `type`；(2) 将旧顶层字段按类型移入 `settings` 子对象：
+> - **image**（`ImageItemSettings`）：顶层 `urls[]` + `expiresAt` → `settings.urls` + `settings.expiresAt`；`delaySeconds` 取设备当前配置原值（legacy 刷新响应不含此字段）。
+> - **video**（`VideoItemSettings`）/ **website**（`WebsiteItemSettings`）：顶层 `url` + `expiresAt` → `settings.url` + `settings.expiresAt`（website 保留 `ignoreCertificateError` / `refreshIntervalSecs`，video 保留 `muted`）。
+> - **slideshow**：legacy `GetPlaylistItemUrl` 响应 `url`（String）按 `image` 策略包装为 `ImageItemSettings.urls`（单元素数组 `["<url>"]`），补充 `delaySeconds`（默认 `5`）和 `expiresAt`（从响应顶层 `expiresAt` 移入）。Adapter 还需将推断的 `type` 从 `"slideshow"` 替换为 `"image"`。
+> - **unsplash**（`UnsplashItemSettings`）：Legacy 无此类型。AXTP 直接返回 `type: "unsplash"` + `settings`。Adapter 不需处理。
 > - **clock**：不涉及刷新，设备不应调用 `getPlaylistItemUrl`。
 
 ### 9.4 Adapter 通用转换模式

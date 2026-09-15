@@ -57,6 +57,7 @@ Schema 规则：
 5. Array fields MUST 声明 item type，并在适用时声明 item schema。
 6. Empty request/response 使用已注册的 Empty schema。
 7. 生成 SDK SHOULD 区分 wire types 和 host-language types。
+8. Object field MAY 声明 `variants: { discriminator, mapping }` variant 绑定：`discriminator` MUST 指向同一 object schema 内 type 为 `enum` 且已声明合法值的字段；`mapping` 的 key MUST 与该 enum 的合法值一致（全覆盖），value MUST 是已注册 object schema。带 `variants` 的字段 type MUST 为 `object`；编码时由 discriminator 的运行时值选择应用哪个 variant schema；未声明的 enum 值遵循 unknown-enum policy。
 
 ## Capability 模型
 
@@ -150,6 +151,7 @@ Schema field id 规则：
 | 新增 optional field | 兼容。 |
 | 新增 required field | 通常 breaking。 |
 | 新增 enum/bitmap value | 只有定义 unknown-value policy 时兼容。 |
+| 新增 variant（新 enum 值 + mapping 项） | 需要 discriminator 字段的 unknown-value policy 配合。 |
 | 修改 type/unit/range/requiredness | 通常 breaking。 |
 | 复用已移除的 field id | 对 stable contracts 禁止。 |
 

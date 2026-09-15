@@ -8573,7 +8573,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash."
+          "description": "Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash)."
         },
         {
           "fieldId": 2,
@@ -8668,21 +8668,36 @@
     {
       "name": "SignageGetPlaylistItemUrlResult",
       "kind": "object",
-      "description": "Refreshed playlist item URL result. The internal structure of settings depends on type.",
+      "description": "Refreshed playlist item URL result; the type field value selects the settings variant schema.",
       "fields": [
         {
           "fieldId": 1,
           "name": "type",
           "type": "enum",
           "required": true,
-          "description": "Playlist item type used to discriminate the settings structure; candidate values include image, video, website, and unsplash. Clock is excluded from URL refresh."
+          "enumValues": [
+            "image",
+            "video",
+            "website",
+            "unsplash"
+          ],
+          "description": "Playlist item type used to discriminate the settings structure; clock is excluded from URL refresh and returns NOT_SUPPORTED."
         },
         {
           "fieldId": 2,
           "name": "settings",
-          "type": "SignagePlaylistItemSettings",
+          "type": "object",
           "required": true,
-          "description": "Refreshed complete settings; the device may replace the locally cached settings with this value."
+          "variants": {
+            "discriminator": "type",
+            "mapping": {
+              "image": "SignageImageItemSettings",
+              "video": "SignageVideoItemSettings",
+              "website": "SignageWebsiteItemSettings",
+              "unsplash": "SignageUnsplashItemSettings"
+            }
+          },
+          "description": "Refreshed complete settings; the device may replace the locally cached settings with this value. The type field value selects the variant schema."
         }
       ]
     },
@@ -8696,7 +8711,11 @@
           "name": "reason",
           "type": "enum",
           "required": true,
-          "description": "Change reason; candidate values include set_config (triggered by setPlaylistConfig) and reset_config (triggered by resetPlaylistConfig)."
+          "enumValues": [
+            "set_config",
+            "reset_config"
+          ],
+          "description": "Change reason; set_config (configuration replaced via signage.setPlaylistConfig) and reset_config (configuration restored to factory default via signage.resetPlaylistConfig)."
         },
         {
           "fieldId": 2,
@@ -8730,7 +8749,11 @@
           "name": "type",
           "type": "enum",
           "required": true,
-          "description": "Playlist type; candidate values include default (always-on default playlist) and scheduled (time-windowed playlist)."
+          "enumValues": [
+            "default",
+            "scheduled"
+          ],
+          "description": "Playlist type; default (always-on default playlist) and scheduled (time-windowed playlist; startDate, endDate, startTime, endTime, and days are required, see each field for ordering constraints)."
         },
         {
           "fieldId": 3,
@@ -8806,7 +8829,14 @@
           "name": "type",
           "type": "enum",
           "required": true,
-          "description": "Playlist item type; candidate values include image, website, video, clock, and unsplash."
+          "enumValues": [
+            "image",
+            "website",
+            "video",
+            "clock",
+            "unsplash"
+          ],
+          "description": "Playlist item type; image (rotating image set), website (embedded web page), video (video media URL), clock (clock face list), and unsplash (Unsplash photo set). The value selects the settings variant schema."
         },
         {
           "fieldId": 3,
@@ -8829,98 +8859,167 @@
         {
           "fieldId": 5,
           "name": "settings",
-          "type": "SignagePlaylistItemSettings",
+          "type": "object",
           "required": true,
-          "description": "Playlist item settings; structure varies by type."
+          "variants": {
+            "discriminator": "type",
+            "mapping": {
+              "image": "SignageImageItemSettings",
+              "website": "SignageWebsiteItemSettings",
+              "video": "SignageVideoItemSettings",
+              "clock": "SignageClockItemSettings",
+              "unsplash": "SignageUnsplashItemSettings"
+            }
+          },
+          "description": "Per-type playlist item settings; the type field value selects the variant schema applied to this field."
         }
       ]
     },
     {
-      "name": "SignagePlaylistItemSettings",
+      "name": "SignageImageItemSettings",
       "kind": "object",
-      "description": "Aggregated playlist item settings spanning all item types. Only the subset matching the enclosing item type is meaningful; see the per-type rules in the signage.playlist draft.",
+      "description": "Settings for the image playlist item type; selected via PlaylistItem.settings variants when type is image.",
       "fields": [
         {
           "fieldId": 1,
           "name": "urls",
           "type": "array",
-          "required": false,
+          "required": true,
           "array": {
             "itemType": "string"
           },
-          "description": "image type: non-empty image URLs."
+          "description": "Non-empty image URL list."
         },
         {
           "fieldId": 2,
           "name": "delaySeconds",
           "type": "uint32",
-          "required": false,
+          "required": true,
           "min": 1,
           "default": 5,
-          "description": "image and unsplash types: per-image display interval in seconds."
+          "description": "Per-image display interval in seconds."
         },
         {
           "fieldId": 3,
           "name": "expiresAt",
           "type": "uint64",
           "required": false,
-          "description": "image, video, and unsplash types: Unix timestamp URL expiry. 0 or absent means never expires."
-        },
+          "description": "Unix timestamp URL expiry. 0 or absent means never expires."
+        }
+      ]
+    },
+    {
+      "name": "SignageVideoItemSettings",
+      "kind": "object",
+      "description": "Settings for the video playlist item type; selected via PlaylistItem.settings variants when type is video.",
+      "fields": [
         {
-          "fieldId": 4,
+          "fieldId": 1,
           "name": "url",
           "type": "string",
-          "required": false,
+          "required": true,
           "maxLength": 2048,
-          "description": "video and website types: media or page URL."
+          "description": "Video media URL."
         },
         {
-          "fieldId": 5,
+          "fieldId": 2,
+          "name": "expiresAt",
+          "type": "uint64",
+          "required": false,
+          "description": "Unix timestamp URL expiry. 0 or absent means never expires."
+        },
+        {
+          "fieldId": 3,
           "name": "muted",
           "type": "bool",
           "required": false,
           "default": false,
-          "description": "video type: whether to play muted."
+          "description": "Whether to play muted."
+        }
+      ]
+    },
+    {
+      "name": "SignageWebsiteItemSettings",
+      "kind": "object",
+      "description": "Settings for the website playlist item type; selected via PlaylistItem.settings variants when type is website.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "url",
+          "type": "string",
+          "required": true,
+          "maxLength": 2048,
+          "description": "Web page URL."
         },
         {
-          "fieldId": 6,
+          "fieldId": 2,
           "name": "ignoreCertificateError",
           "type": "bool",
           "required": false,
           "default": false,
-          "description": "website type: whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined."
+          "description": "Whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined."
         },
         {
-          "fieldId": 7,
+          "fieldId": 3,
           "name": "refreshIntervalSecs",
           "type": "uint32",
           "required": false,
           "min": 1,
-          "description": "website type: page refresh interval in seconds. 0 or absent means no refresh."
-        },
+          "description": "Page refresh interval in seconds. 0 or absent means no refresh."
+        }
+      ]
+    },
+    {
+      "name": "SignageClockItemSettings",
+      "kind": "object",
+      "description": "Settings for the clock playlist item type; selected via PlaylistItem.settings variants when type is clock.",
+      "fields": [
         {
-          "fieldId": 8,
+          "fieldId": 1,
           "name": "clocks",
           "type": "array",
-          "required": false,
+          "required": true,
           "schema": "SignagePlaylistClockEntry",
           "array": {
             "itemType": "SignagePlaylistClockEntry",
             "itemSchema": "SignagePlaylistClockEntry"
           },
-          "description": "clock type: non-empty playlist clock entry objects."
-        },
+          "description": "Non-empty clock entries."
+        }
+      ]
+    },
+    {
+      "name": "SignageUnsplashItemSettings",
+      "kind": "object",
+      "description": "Settings for the unsplash playlist item type; selected via PlaylistItem.settings variants when type is unsplash.",
+      "fields": [
         {
-          "fieldId": 9,
+          "fieldId": 1,
           "name": "photos",
           "type": "array",
-          "required": false,
+          "required": true,
           "schema": "SignagePlaylistUnsplashPhoto",
           "array": {
             "itemType": "SignagePlaylistUnsplashPhoto",
             "itemSchema": "SignagePlaylistUnsplashPhoto"
           },
-          "description": "unsplash type: non-empty playlist unsplash photo objects."
+          "description": "Non-empty Unsplash photo entries with photographer attribution."
+        },
+        {
+          "fieldId": 2,
+          "name": "delaySeconds",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "default": 5,
+          "description": "Per-photo display interval in seconds."
+        },
+        {
+          "fieldId": 3,
+          "name": "expiresAt",
+          "type": "uint64",
+          "required": false,
+          "description": "Unix timestamp URL expiry. 0 or absent means never expires."
         }
       ]
     },
@@ -8962,15 +9061,29 @@
         },
         {
           "fieldId": 2,
-          "name": "userName",
+          "name": "user",
+          "type": "SignagePlaylistUnsplashUser",
+          "required": true,
+          "description": "Photographer attribution."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistUnsplashUser",
+      "kind": "object",
+      "description": "Photographer attribution for an Unsplash photo.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "name",
           "type": "string",
           "required": true,
           "maxLength": 128,
           "description": "Photographer name."
         },
         {
-          "fieldId": 3,
-          "name": "userLink",
+          "fieldId": 2,
+          "name": "link",
           "type": "string",
           "required": true,
           "maxLength": 2048,
@@ -8991,7 +9104,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash."
+          "description": "Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash)."
         },
         {
           "fieldId": 2,
