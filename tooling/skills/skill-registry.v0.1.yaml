@@ -7,9 +7,18 @@ macro_phases:
   - phase_id: discovery
     skill_id: axtp-discovery
     owner: aegis-router-plus-axtp-intake
+    prompt_template: >-
+      Given {{business_request}} and available {{project_context}}, produce a
+      reviewed DiscoveryBundle covering business intent, P02 requirements, P03
+      capability traceability, protocol impact, and open questions. Do not invent
+      downstream semantic, architecture, verification, or implementation facts.
+    input_schema:
+      required: [business_request]
+      optional: [project_context, existing_business_docs, existing_protocol_context]
+    output_schema:
+      type: DiscoveryBundle
+      required_fields: [business_intent_ref, requirement_authority_ref, capability_traceability_ref, protocol_impact, status, next_dependency]
     aegis_stages: [P00, P01, P02, P03]
-    input_artifacts: [NaturalLanguageBusinessRequest, ExistingProjectContext]
-    output_artifacts: [DiscoveryBundle]
     authority_effect: establishes reviewed business requirement and capability traceability basis
     human_review_required: true
     automation_level: ASSISTED
@@ -22,9 +31,19 @@ macro_phases:
   - phase_id: semantic_contract
     skill_id: axtp-semantic-modeling
     owner: aegis-modeling
+    prompt_template: >-
+      Given an approved {{discovery_bundle}} and current semantic/protocol
+      authority, model P10-P13 product objects, behavior, semantic schema, and
+      operation/mutation contracts. When AXTP protocol semantics change, prepare
+      a reviewable draft and only adopt/generate after explicit human approval.
+    input_schema:
+      required: [discovery_bundle]
+      optional: [current_semantic_authority, current_protocol_authority, generated_protocol]
+    output_schema:
+      type: SemanticAuthorityBundle
+      required_fields: [object_model_ref, behavior_ref, semantic_schema_ref, operation_contract_ref, semantic_change_class, status, next_dependency]
+      optional_fields: [protocol_proposal_ref, protocol_authority_ref, generated_protocol_ref]
     aegis_stages: [P10, P11, P12, P13]
-    input_artifacts: [DiscoveryBundle]
-    output_artifacts: [SemanticAuthorityBundle]
     authority_effect: establishes semantic authority and, when required, adopted/generated AXTP protocol authority
     human_review_required: true
     automation_level: SEMI_AUTOMATIC
@@ -39,9 +58,17 @@ macro_phases:
   - phase_id: architecture
     skill_id: axtp-architecture-design
     owner: aegis-architecture
+    prompt_template: >-
+      Given the established {{semantic_authority_bundle}}, design P14-P18 system
+      architecture, module ownership, runtime data flow, platform contracts, and
+      engineering boundaries without redefining upstream semantic truth.
+    input_schema:
+      required: [semantic_authority_bundle]
+      optional: [capability_traceability_ref, repository_context, platform_constraints]
+    output_schema:
+      type: ArchitectureAuthorityBundle
+      required_fields: [system_architecture_ref, module_contract_ref, runtime_flow_ref, platform_contract_ref, engineering_plan_ref, status, next_dependency]
     aegis_stages: [P14, P15, P16, P17, P18]
-    input_artifacts: [SemanticAuthorityBundle]
-    output_artifacts: [ArchitectureAuthorityBundle]
     authority_effect: establishes implementation architecture basis
     human_review_required: true
     automation_level: ASSISTED
@@ -51,9 +78,18 @@ macro_phases:
   - phase_id: verification
     skill_id: axtp-verification-design
     owner: aegis-verification
+    prompt_template: >-
+      Given trusted discovery, semantic, and architecture authorities, define P20
+      failure-mode-first proof obligations, independent oracles, fixtures,
+      evidence artifacts, hosted-CI requirements, and Gate criteria; materialize
+      Verification Authority before implementation packaging.
+    input_schema:
+      required: [discovery_bundle, semantic_authority_bundle, architecture_authority_bundle]
+      optional: [existing_tests, existing_ci, benchmark_context]
+    output_schema:
+      type: VerificationAuthorityBundle
+      required_fields: [verification_spec_ref, obligation_set_ref, trusted_basis_ref, acceptance_oracle_refs, evidence_compilation_ref, blocking_evidence, corroborative_evidence, gate_criteria_ref, status, next_dependency]
     aegis_stages: [P20, P21, P22, P23, P24]
-    input_artifacts: [DiscoveryBundle, SemanticAuthorityBundle, ArchitectureAuthorityBundle]
-    output_artifacts: [VerificationAuthorityBundle]
     authority_effect: freezes proof obligations and Gate criteria before implementation
     human_review_required: true
     automation_level: ASSISTED
@@ -63,9 +99,19 @@ macro_phases:
   - phase_id: implementation_delivery
     skill_id: axtp-implementation-delivery
     owner: aegis-implementation
+    prompt_template: >-
+      Given established semantic, architecture, and verification authorities plus
+      exact {{repository_state}}, create P30/P31 execution authority, obtain package
+      approval, execute P32/P33 to terminal state on the code surface, and
+      materialize reviewer-accessible exact result and evidence without issuing a
+      Gate verdict.
+    input_schema:
+      required: [semantic_authority_bundle, architecture_authority_bundle, verification_authority_bundle, repository_state]
+      optional: [resume_cursor]
+    output_schema:
+      type: ImplementationDeliveryBundle
+      required_fields: [implementation_plan_ref, package_ref, package_materialization_ref, result_revision, result_tree, evidence_refs, hosted_run_refs, status, next_dependency]
     aegis_stages: [P30, P31, P32, P33]
-    input_artifacts: [SemanticAuthorityBundle, ArchitectureAuthorityBundle, VerificationAuthorityBundle, RepositoryState]
-    output_artifacts: [ImplementationDeliveryBundle]
     authority_effect: freezes implementation scope and produces exact result/evidence; does not issue Gate truth
     human_review_required: true
     automation_level: HIGH_AFTER_APPROVAL
@@ -75,9 +121,19 @@ macro_phases:
   - phase_id: gate_integration
     skill_id: axtp-gate-integration
     owner: aegis-gate-review
+    prompt_template: >-
+      Given {{implementation_delivery_bundle}} and fresh repository reality,
+      independently execute P34-P36 Gate logic, classify defects by owning layer,
+      and on PASS choose an explicit development-baseline, integration, release,
+      or defer disposition. Never merge or release without explicit authorization.
+    input_schema:
+      required: [implementation_delivery_bundle, repository_state]
+      optional: [integration_target, release_intent]
+    output_schema:
+      type: GateIntegrationBundle
+      required_fields: [gate_decision_ref, verdict, exact_result_revision, blocking_findings, non_blocking_findings, integration_disposition, status, next_dependency]
+      optional_fields: [baseline_ref, release_ref]
     aegis_stages: [P34, P35, P36]
-    input_artifacts: [ImplementationDeliveryBundle, RepositoryState]
-    output_artifacts: [GateIntegrationBundle]
     authority_effect: issues independent Gate decision and explicit integration/release disposition
     human_review_required: true
     automation_level: CONTROLLED
