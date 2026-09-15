@@ -18,11 +18,28 @@ AXTP 协议相关 skill 目录使用阶段编号，方便人工按生命周期�
 | 60 | [60-release-axtp-spec](60-release-axtp-spec/SKILL.md) | `release-axtp-spec` | 用户要求发布 AXTP Spec tag，例如“发布spec v0.3.0” | release metadata、annotated tag、可选 GitHub Release | 通知 runtime 更新 spec lock |
 | 99 | [99-axtp-protocol-workflow](99-axtp-protocol-workflow/SKILL.md) | `axtp-protocol-workflow` | 统筹路由；用户还没指定生命周期阶段，或请求横跨多个阶段 | 只做路由判断，除非窄范围治理维护 | 00/10/20/30/40/50/60 之一，或 runtime 实现 |
 
+## Business-to-Code 宏观阶段
+
+面向人工操作和未来 AXTP Studio，只暴露 6 个宏观阶段；P-stage 与现有 protocol skills 保留为内部控制边界。不要删除或重命名现有 00-60/99 skills。
+
+| 宏观阶段 | Skill | 内部 Aegis 范围 | 复用组件 | 主要输出 |
+|---|---|---|---|---|
+| 1 Business & Capability | [axtp-discovery](stages/axtp-discovery/SKILL.md) | P00-P03 | `business-intake`, `plan-protocol-flow`, `aegis` | `DiscoveryBundle` |
+| 2 Semantic Contract | [axtp-semantic-modeling](stages/axtp-semantic-modeling/SKILL.md) | P10-P13 | `aegis-modeling`, 20/30/40/50 protocol skills | `SemanticAuthorityBundle` |
+| 3 Engineering Architecture | [axtp-architecture-design](stages/axtp-architecture-design/SKILL.md) | P14-P18 | `aegis-architecture` | `ArchitectureAuthorityBundle` |
+| 4 Verification Authority | [axtp-verification-design](stages/axtp-verification-design/SKILL.md) | P20-P24 | `aegis-verification`, review/materialization | `VerificationAuthorityBundle` |
+| 5 Implementation Delivery | [axtp-implementation-delivery](stages/axtp-implementation-delivery/SKILL.md) | P30-P33 | `aegis-implementation`, Codex, GitHub CI | `ImplementationDeliveryBundle` |
+| 6 Gate & Integration | [axtp-gate-integration](stages/axtp-gate-integration/SKILL.md) | P34-P36 | `aegis-gate-review`, GitHub, release skill | `GateIntegrationBundle` |
+
+顶层手工/Studio 路由使用 [axtp-business-to-code](workflows/axtp-business-to-code/SKILL.md)。冻结的组件依赖和 Artifact 接口见 [skill-registry.v0.1.yaml](skill-registry.v0.1.yaml)。
+
 ## 编号规则
 
 - `00` 固定作为 business intake，用于把粗略产品/架构/客户/legacy/UI 意图沉淀到 `workspace/business/**`。
 - `10-50` 是当前协议生命周期的主要阶段。
-- `99` 固定作为总控路由，用于阶段不明确或横跨多个阶段的请求。
+- `99` 固定作为协议总控路由，用于阶段不明确或横跨多个协议阶段的请求。
+- `stages/**` 是 Business-to-Code 宏观阶段 Skill，不与 00-60 的 protocol lifecycle 编号竞争。
+- `workflows/**` 是跨阶段编排 Skill。
 - 预留空档给后续拆分，例如 `05-*` 可用于产品评审模板，`15-*` 可用于 legacy 迁移规划，`25-*` 可用于草案评审，`35-*` 可用于采纳校验。
 - 除非刻意改变触发契约，否则不要给 `SKILL.md` 的 `name:` 增加数字前缀。
 

@@ -1,0 +1,104 @@
+registry_version: axtp-skill-registry/v0.1
+purpose: >-
+  Freeze the user-facing AXTP business-to-code macro workflow while reusing
+  existing protocol lifecycle skills and Aegis stage-family owners.
+
+macro_phases:
+  - phase_id: discovery
+    skill_id: axtp-discovery
+    owner: aegis-router-plus-axtp-intake
+    aegis_stages: [P00, P01, P02, P03]
+    input_artifacts: [NaturalLanguageBusinessRequest, ExistingProjectContext]
+    output_artifacts: [DiscoveryBundle]
+    authority_effect: establishes reviewed business requirement and capability traceability basis
+    human_review_required: true
+    automation_level: ASSISTED
+    components:
+      - tooling/skills/00-business-intake
+      - tooling/skills/10-plan-protocol-flow
+      - aegis
+    next_dependency: axtp-semantic-modeling
+
+  - phase_id: semantic_contract
+    skill_id: axtp-semantic-modeling
+    owner: aegis-modeling
+    aegis_stages: [P10, P11, P12, P13]
+    input_artifacts: [DiscoveryBundle]
+    output_artifacts: [SemanticAuthorityBundle]
+    authority_effect: establishes semantic authority and, when required, adopted/generated AXTP protocol authority
+    human_review_required: true
+    automation_level: SEMI_AUTOMATIC
+    components:
+      - aegis-modeling
+      - tooling/skills/20-draft-business-protocol
+      - tooling/skills/30-adopt-protocol-draft
+      - tooling/skills/40-amend-adopted-protocol
+      - tooling/skills/50-generate-axtp-protocol
+    next_dependency: axtp-architecture-design
+
+  - phase_id: architecture
+    skill_id: axtp-architecture-design
+    owner: aegis-architecture
+    aegis_stages: [P14, P15, P16, P17, P18]
+    input_artifacts: [SemanticAuthorityBundle]
+    output_artifacts: [ArchitectureAuthorityBundle]
+    authority_effect: establishes implementation architecture basis
+    human_review_required: true
+    automation_level: ASSISTED
+    components: [aegis-architecture]
+    next_dependency: axtp-verification-design
+
+  - phase_id: verification
+    skill_id: axtp-verification-design
+    owner: aegis-verification
+    aegis_stages: [P20, P21, P22, P23, P24]
+    input_artifacts: [DiscoveryBundle, SemanticAuthorityBundle, ArchitectureAuthorityBundle]
+    output_artifacts: [VerificationAuthorityBundle]
+    authority_effect: freezes proof obligations and Gate criteria before implementation
+    human_review_required: true
+    automation_level: ASSISTED
+    components: [aegis-verification, aegis-gate-review, aegis]
+    next_dependency: axtp-implementation-delivery
+
+  - phase_id: implementation_delivery
+    skill_id: axtp-implementation-delivery
+    owner: aegis-implementation
+    aegis_stages: [P30, P31, P32, P33]
+    input_artifacts: [SemanticAuthorityBundle, ArchitectureAuthorityBundle, VerificationAuthorityBundle, RepositoryState]
+    output_artifacts: [ImplementationDeliveryBundle]
+    authority_effect: freezes implementation scope and produces exact result/evidence; does not issue Gate truth
+    human_review_required: true
+    automation_level: HIGH_AFTER_APPROVAL
+    components: [aegis-implementation, Codex, GitHub, CI]
+    next_dependency: axtp-gate-integration
+
+  - phase_id: gate_integration
+    skill_id: axtp-gate-integration
+    owner: aegis-gate-review
+    aegis_stages: [P34, P35, P36]
+    input_artifacts: [ImplementationDeliveryBundle, RepositoryState]
+    output_artifacts: [GateIntegrationBundle]
+    authority_effect: issues independent Gate decision and explicit integration/release disposition
+    human_review_required: true
+    automation_level: CONTROLLED
+    components:
+      - aegis-gate-review
+      - aegis
+      - tooling/skills/60-release-axtp-spec
+      - GitHub
+      - CI
+    next_dependency: feedback_or_new_business_input
+
+primitive_skills_reused:
+  - business-intake
+  - plan-protocol-flow
+  - draft-business-protocol
+  - adopt-protocol-draft
+  - amend-adopted-protocol
+  - generate-axtp-protocol
+  - release-axtp-spec
+  - axtp-protocol-workflow
+
+compression_rule: >-
+  The UI/manual workflow exposes six macro phases. P-stages remain internal control
+  boundaries and are surfaced only for review, defect routing, or explicit expert use.
