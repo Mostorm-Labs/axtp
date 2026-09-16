@@ -1060,7 +1060,7 @@
       "name": "signage.getPlaylistItemUrl",
       "domain": "signage",
       "status": "draft",
-      "description": "Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and return NOT_SUPPORTED.",
+      "description": "Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and powerbi items carry a non-URL embed-token resource; both return NOT_SUPPORTED (powerbi refresh MUST use signage.getPlaylistItem).",
       "since": "1.0.0",
       "deprecated": false,
       "rpcOp": "request_response",
@@ -1081,6 +1081,34 @@
         "INTERNAL_ERROR"
       ],
       "idHex": "0x0D05"
+    },
+    {
+      "id": 3334,
+      "bitOffset": 5,
+      "name": "signage.getPlaylistItem",
+      "domain": "signage",
+      "status": "draft",
+      "description": "Fetch the complete playlist item by itemId (item refresh). The device calls this proactively when settings.expiresAt is near expiry and replaces the local playlist item with the returned one. Non-URL resource types (powerbi) MUST use this method; URL resource types MAY use this or signage.getPlaylistItemUrl.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "SignageGetPlaylistItemParams",
+      "responseSchema": "SignageGetPlaylistItemResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "INTERNAL_ERROR"
+      ],
+      "idHex": "0x0D06"
     },
     {
       "id": 3586,

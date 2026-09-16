@@ -9095,7 +9095,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash."
+          "description": "Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash, powerbi)."
         },
         {
           "id": 2,
@@ -9190,7 +9190,7 @@
     {
       "name": "SignageGetPlaylistItemUrlResult",
       "type": "object",
-      "description": "Refreshed playlist item URL result. The internal structure of settings depends on type.",
+      "description": "Refreshed playlist item URL result; the type field value selects the settings variant schema.",
       "fields": [
         {
           "id": 1,
@@ -9198,15 +9198,61 @@
           "type": "enum",
           "required": true,
           "deprecated": false,
-          "description": "Playlist item type used to discriminate the settings structure; candidate values include image, video, website, and unsplash. Clock is excluded from URL refresh."
+          "enum": [
+            "image",
+            "video",
+            "website",
+            "unsplash"
+          ],
+          "description": "Playlist item type used to discriminate the settings structure; clock and powerbi are excluded from URL refresh and return NOT_SUPPORTED (powerbi refresh uses signage.getPlaylistItem)."
         },
         {
           "id": 2,
           "name": "settings",
-          "type": "SignagePlaylistItemSettings",
+          "type": "object",
           "required": true,
           "deprecated": false,
-          "description": "Refreshed complete settings; the device may replace the locally cached settings with this value."
+          "variants": {
+            "discriminator": "type",
+            "mapping": {
+              "image": "SignageImageItemSettings",
+              "video": "SignageVideoItemSettings",
+              "website": "SignageWebsiteItemSettings",
+              "unsplash": "SignageUnsplashItemSettings"
+            }
+          },
+          "description": "Refreshed complete settings; the device may replace the locally cached settings with this value. The type field value selects the variant schema."
+        }
+      ]
+    },
+    {
+      "name": "SignageGetPlaylistItemParams",
+      "type": "object",
+      "description": "Request to refresh a complete playlist item by itemId.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "itemId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "Playlist item unique identifier (UUID); same identifier space as signage.getPlaylistItemUrl."
+        }
+      ]
+    },
+    {
+      "name": "SignageGetPlaylistItemResult",
+      "type": "object",
+      "description": "Refreshed complete playlist item; structurally identical to the SignagePlaylistItem elements carried in setPlaylistConfig / getPlaylistConfig payloads.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "item",
+          "type": "SignagePlaylistItem",
+          "required": true,
+          "deprecated": false,
+          "description": "Complete playlist item (id, type, duration, sort, settings). The device replaces the locally cached item with this value."
         }
       ]
     },
@@ -9221,7 +9267,11 @@
           "type": "enum",
           "required": true,
           "deprecated": false,
-          "description": "Change reason; candidate values include set_config (triggered by setPlaylistConfig) and reset_config (triggered by resetPlaylistConfig)."
+          "enum": [
+            "set_config",
+            "reset_config"
+          ],
+          "description": "Change reason; set_config (configuration replaced via signage.setPlaylistConfig) and reset_config (configuration restored to factory default via signage.resetPlaylistConfig)."
         },
         {
           "id": 2,
@@ -9254,7 +9304,11 @@
           "type": "enum",
           "required": true,
           "deprecated": false,
-          "description": "Playlist type; candidate values include default (always-on default playlist) and scheduled (time-windowed playlist)."
+          "enum": [
+            "default",
+            "scheduled"
+          ],
+          "description": "Playlist type; default (always-on default playlist) and scheduled (time-windowed playlist; startDate, endDate, startTime, endTime, and days are required, see each field for ordering constraints)."
         },
         {
           "id": 3,
@@ -9334,7 +9388,15 @@
           "type": "enum",
           "required": true,
           "deprecated": false,
-          "description": "Playlist item type; candidate values include image, website, video, clock, and unsplash."
+          "enum": [
+            "image",
+            "website",
+            "video",
+            "clock",
+            "unsplash",
+            "powerbi"
+          ],
+          "description": "Playlist item type; image (rotating image set), website (embedded web page), video (video media URL), clock (clock face list), unsplash (Unsplash photo set), and powerbi (embedded PowerBI dashboard). The value selects the settings variant schema."
         },
         {
           "id": 3,
@@ -9359,38 +9421,49 @@
         {
           "id": 5,
           "name": "settings",
-          "type": "SignagePlaylistItemSettings",
+          "type": "object",
           "required": true,
           "deprecated": false,
-          "description": "Playlist item settings; structure varies by type."
+          "variants": {
+            "discriminator": "type",
+            "mapping": {
+              "image": "SignageImageItemSettings",
+              "website": "SignageWebsiteItemSettings",
+              "video": "SignageVideoItemSettings",
+              "clock": "SignageClockItemSettings",
+              "unsplash": "SignageUnsplashItemSettings",
+              "powerbi": "SignagePowerBiItemSettings"
+            }
+          },
+          "description": "Per-type playlist item settings; the type field value selects the variant schema applied to this field."
         }
       ]
     },
     {
-      "name": "SignagePlaylistItemSettings",
+      "name": "SignageImageItemSettings",
       "type": "object",
-      "description": "Aggregated playlist item settings spanning all item types. Only the subset matching the enclosing item type is meaningful; see the per-type rules in the signage.playlist draft.",
+      "description": "Settings for the image playlist item type; selected via PlaylistItem.settings variants when type is image.",
       "fields": [
         {
           "id": 1,
           "name": "urls",
           "type": "array",
-          "required": false,
+          "required": true,
           "deprecated": false,
           "array": {
             "itemType": "string"
           },
-          "description": "image type: non-empty image URLs."
+          "description": "Non-empty image URL list."
         },
         {
           "id": 2,
           "name": "delaySeconds",
           "type": "uint32",
-          "required": false,
+          "required": true,
           "deprecated": false,
           "min": 1,
           "default": 5,
-          "description": "image and unsplash types: per-image display interval in seconds."
+          "description": "Per-image display interval in seconds."
         },
         {
           "id": 3,
@@ -9398,61 +9471,176 @@
           "type": "uint64",
           "required": false,
           "deprecated": false,
-          "description": "image, video, and unsplash types: Unix timestamp URL expiry. 0 or absent means never expires."
-        },
+          "description": "Unix timestamp URL expiry. 0 or absent means never expires."
+        }
+      ]
+    },
+    {
+      "name": "SignageVideoItemSettings",
+      "type": "object",
+      "description": "Settings for the video playlist item type; selected via PlaylistItem.settings variants when type is video.",
+      "fields": [
         {
-          "id": 4,
+          "id": 1,
           "name": "url",
           "type": "string",
-          "required": false,
+          "required": true,
           "deprecated": false,
           "maxLength": 2048,
-          "description": "video and website types: media or page URL."
+          "description": "Video media URL."
         },
         {
-          "id": 5,
+          "id": 2,
+          "name": "expiresAt",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "Unix timestamp URL expiry. 0 or absent means never expires."
+        },
+        {
+          "id": 3,
           "name": "muted",
           "type": "bool",
           "required": false,
           "deprecated": false,
           "default": false,
-          "description": "video type: whether to play muted."
+          "description": "Whether to play muted."
+        }
+      ]
+    },
+    {
+      "name": "SignageWebsiteItemSettings",
+      "type": "object",
+      "description": "Settings for the website playlist item type; selected via PlaylistItem.settings variants when type is website.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "url",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 2048,
+          "description": "Web page URL."
         },
         {
-          "id": 6,
+          "id": 2,
           "name": "ignoreCertificateError",
           "type": "bool",
           "required": false,
           "deprecated": false,
           "default": false,
-          "description": "website type: whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined."
+          "description": "Whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined."
         },
         {
-          "id": 7,
+          "id": 3,
           "name": "refreshIntervalSecs",
           "type": "uint32",
           "required": false,
           "deprecated": false,
           "min": 1,
-          "description": "website type: page refresh interval in seconds. 0 or absent means no refresh."
-        },
+          "description": "Page refresh interval in seconds. 0 or absent means no refresh."
+        }
+      ]
+    },
+    {
+      "name": "SignageClockItemSettings",
+      "type": "object",
+      "description": "Settings for the clock playlist item type; selected via PlaylistItem.settings variants when type is clock.",
+      "fields": [
         {
-          "id": 8,
+          "id": 1,
           "name": "clocks",
           "type": "array",
-          "required": false,
+          "required": true,
           "deprecated": false,
           "schema": "SignagePlaylistClockEntry",
-          "description": "clock type: non-empty playlist clock entry objects."
-        },
+          "description": "Non-empty clock entries."
+        }
+      ]
+    },
+    {
+      "name": "SignageUnsplashItemSettings",
+      "type": "object",
+      "description": "Settings for the unsplash playlist item type; selected via PlaylistItem.settings variants when type is unsplash.",
+      "fields": [
         {
-          "id": 9,
+          "id": 1,
           "name": "photos",
           "type": "array",
-          "required": false,
+          "required": true,
           "deprecated": false,
           "schema": "SignagePlaylistUnsplashPhoto",
-          "description": "unsplash type: non-empty playlist unsplash photo objects."
+          "description": "Non-empty Unsplash photo entries with photographer attribution."
+        },
+        {
+          "id": 2,
+          "name": "delaySeconds",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "min": 1,
+          "default": 5,
+          "description": "Per-photo display interval in seconds."
+        },
+        {
+          "id": 3,
+          "name": "expiresAt",
+          "type": "uint64",
+          "required": false,
+          "deprecated": false,
+          "description": "Unix timestamp URL expiry. 0 or absent means never expires."
+        }
+      ]
+    },
+    {
+      "name": "SignagePowerBiItemSettings",
+      "type": "object",
+      "description": "Settings for the powerbi playlist item type; selected via PlaylistItem.settings variants when type is powerbi. All fields are required.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "groupId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "PowerBI workspace (group) identifier (GUID)."
+        },
+        {
+          "id": 2,
+          "name": "dashboardId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "PowerBI dashboard identifier (GUID)."
+        },
+        {
+          "id": 3,
+          "name": "embedUrl",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 2048,
+          "description": "Dashboard embed URL; stable across token refreshes. The device SHOULD cache and reuse it."
+        },
+        {
+          "id": 4,
+          "name": "token",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 8192,
+          "description": "AAD access token for the PowerBI audience (https://analysis.windows.net/powerbi/api; tokenType=Aad embedding; typically ~60 minutes). Tenants with many group/role claims issue JWTs of 5-8 KB, hence the generous bound. Sensitive credential transported only via the RPC channel; never embedded in resource URLs and not to be logged."
+        },
+        {
+          "id": 5,
+          "name": "expiresAt",
+          "type": "uint64",
+          "required": true,
+          "deprecated": false,
+          "min": 1,
+          "description": "Unix timestamp token expiry; MUST be greater than 0 (0 is invalid for powerbi, unlike the 0-equals-never-expires convention of URL-based item types). Always present for powerbi items; drives the device-side signage.getPlaylistItem refresh."
         }
       ]
     },
@@ -9497,7 +9685,22 @@
         },
         {
           "id": 2,
-          "name": "userName",
+          "name": "user",
+          "type": "SignagePlaylistUnsplashUser",
+          "required": true,
+          "deprecated": false,
+          "description": "Photographer attribution."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistUnsplashUser",
+      "type": "object",
+      "description": "Photographer attribution for an Unsplash photo.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "name",
           "type": "string",
           "required": true,
           "deprecated": false,
@@ -9505,8 +9708,8 @@
           "description": "Photographer name."
         },
         {
-          "id": 3,
-          "name": "userLink",
+          "id": 2,
+          "name": "link",
           "type": "string",
           "required": true,
           "deprecated": false,
@@ -9529,7 +9732,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash."
+          "description": "Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash, powerbi)."
         },
         {
           "id": 2,
