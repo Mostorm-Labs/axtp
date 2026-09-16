@@ -6175,7 +6175,7 @@ schemas:
         array:
           itemType: string
         description: Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website,
-          video, clock, unsplash).
+          video, clock, unsplash, powerbi).
       - fieldId: 2
         name: maxPlaylists
         type: uint32
@@ -6250,8 +6250,8 @@ schemas:
           - video
           - website
           - unsplash
-        description: Playlist item type used to discriminate the settings structure; clock is excluded from URL refresh and
-          returns NOT_SUPPORTED.
+        description: Playlist item type used to discriminate the settings structure; clock and powerbi are excluded from URL
+          refresh and return NOT_SUPPORTED (powerbi refresh uses signage.getPlaylistItem).
       - fieldId: 2
         name: settings
         type: object
@@ -6265,6 +6265,27 @@ schemas:
             unsplash: SignageUnsplashItemSettings
         description: Refreshed complete settings; the device may replace the locally cached settings with this value. The type
           field value selects the variant schema.
+  SignageGetPlaylistItemParams:
+    kind: object
+    description: Request to refresh a complete playlist item by itemId.
+    fields:
+      - fieldId: 1
+        name: itemId
+        type: string
+        required: true
+        maxLength: 64
+        description: Playlist item unique identifier (UUID); same identifier space as signage.getPlaylistItemUrl.
+  SignageGetPlaylistItemResult:
+    kind: object
+    description: Refreshed complete playlist item; structurally identical to the SignagePlaylistItem elements carried in
+      setPlaylistConfig / getPlaylistConfig payloads.
+    fields:
+      - fieldId: 1
+        name: item
+        type: SignagePlaylistItem
+        required: true
+        description: Complete playlist item (id, type, duration, sort, settings). The device replaces the locally cached item
+          with this value.
   SignagePlaylistConfigChangedEvent:
     kind: object
     description: Event payload emitted when the playlist configuration changes.
@@ -6369,8 +6390,10 @@ schemas:
           - video
           - clock
           - unsplash
+          - powerbi
         description: Playlist item type; image (rotating image set), website (embedded web page), video (video media URL), clock
-          (clock face list), and unsplash (Unsplash photo set). The value selects the settings variant schema.
+          (clock face list), unsplash (Unsplash photo set), and powerbi (embedded PowerBI dashboard). The value selects
+          the settings variant schema.
       - fieldId: 3
         name: duration
         type: uint32
@@ -6398,6 +6421,7 @@ schemas:
             video: SignageVideoItemSettings
             clock: SignageClockItemSettings
             unsplash: SignageUnsplashItemSettings
+            powerbi: SignagePowerBiItemSettings
         description: Per-type playlist item settings; the type field value selects the variant schema applied to this field.
   SignageImageItemSettings:
     kind: object
@@ -6504,6 +6528,46 @@ schemas:
         type: uint64
         required: false
         description: Unix timestamp URL expiry. 0 or absent means never expires.
+  SignagePowerBiItemSettings:
+    kind: object
+    description: Settings for the powerbi playlist item type; selected via PlaylistItem.settings variants when type is
+      powerbi. All fields are required.
+    fields:
+      - fieldId: 1
+        name: groupId
+        type: string
+        required: true
+        maxLength: 64
+        description: PowerBI workspace (group) identifier (GUID).
+      - fieldId: 2
+        name: dashboardId
+        type: string
+        required: true
+        maxLength: 64
+        description: PowerBI dashboard identifier (GUID).
+      - fieldId: 3
+        name: embedUrl
+        type: string
+        required: true
+        maxLength: 2048
+        description: Dashboard embed URL; stable across token refreshes. The device SHOULD cache and reuse it.
+      - fieldId: 4
+        name: token
+        type: string
+        required: true
+        maxLength: 8192
+        description: AAD access token for the PowerBI audience (https://analysis.windows.net/powerbi/api; tokenType=Aad
+          embedding; typically ~60 minutes). Tenants with many group/role claims issue JWTs of 5-8 KB, hence the
+          generous bound. Sensitive credential transported only via the RPC channel; never embedded in resource URLs and
+          not to be logged.
+      - fieldId: 5
+        name: expiresAt
+        type: uint64
+        required: true
+        min: 1
+        description: Unix timestamp token expiry; MUST be greater than 0 (0 is invalid for powerbi, unlike the
+          0-equals-never-expires convention of URL-based item types). Always present for powerbi items; drives the
+          device-side signage.getPlaylistItem refresh.
   SignagePlaylistClockEntry:
     kind: object
     description: One clock entry for the clock item type.
@@ -6562,7 +6626,7 @@ schemas:
         array:
           itemType: string
         description: Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website,
-          video, clock, unsplash).
+          video, clock, unsplash, powerbi).
       - fieldId: 2
         name: maxPlaylists
         type: uint32
@@ -10022,7 +10086,8 @@ methods:
       - INTERNAL_ERROR
   - name: signage.getPlaylistItemUrl
     description: Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this
-      proactively when an item URL is about to expire. Clock items have no URL resource and return NOT_SUPPORTED.
+      proactively when an item URL is about to expire. Clock items have no URL resource and powerbi items carry a
+      non-URL embed-token resource; both return NOT_SUPPORTED (powerbi refresh MUST use signage.getPlaylistItem).
     methodId: 3333
     bitOffset: 4
     domain: signage
@@ -10032,6 +10097,30 @@ methods:
       type: SignageGetPlaylistItemUrlParams
     response:
       type: SignageGetPlaylistItemUrlResult
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - signage.playlist
+    events: []
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - NOT_FOUND
+      - INTERNAL_ERROR
+  - name: signage.getPlaylistItem
+    description: Fetch the complete playlist item by itemId (item refresh). The device calls this proactively when
+      settings.expiresAt is near expiry and replaces the local playlist item with the returned one. Non-URL resource
+      types (powerbi) MUST use this method; URL resource types MAY use this or signage.getPlaylistItemUrl.
+    methodId: 3334
+    bitOffset: 5
+    domain: signage
+    since: 1.0.0
+    status: draft
+    request:
+      type: SignageGetPlaylistItemParams
+    response:
+      type: SignageGetPlaylistItemResult
     encodings:
       - json
       - tlv
@@ -12748,8 +12837,8 @@ capabilities:
     type: object
     schema: NetworkApCapabilities
   - name: signage.playlist
-    description: Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, and playlist
-      config change notification.
+    description: Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, playlist item
+      refresh, and playlist config change notification.
     capabilityId: 3329
     domain: signage
     since: 1.0.0

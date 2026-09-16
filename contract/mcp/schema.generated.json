@@ -9095,7 +9095,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash)."
+          "description": "Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash, powerbi)."
         },
         {
           "id": 2,
@@ -9204,7 +9204,7 @@
             "website",
             "unsplash"
           ],
-          "description": "Playlist item type used to discriminate the settings structure; clock is excluded from URL refresh and returns NOT_SUPPORTED."
+          "description": "Playlist item type used to discriminate the settings structure; clock and powerbi are excluded from URL refresh and return NOT_SUPPORTED (powerbi refresh uses signage.getPlaylistItem)."
         },
         {
           "id": 2,
@@ -9222,6 +9222,37 @@
             }
           },
           "description": "Refreshed complete settings; the device may replace the locally cached settings with this value. The type field value selects the variant schema."
+        }
+      ]
+    },
+    {
+      "name": "SignageGetPlaylistItemParams",
+      "type": "object",
+      "description": "Request to refresh a complete playlist item by itemId.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "itemId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "Playlist item unique identifier (UUID); same identifier space as signage.getPlaylistItemUrl."
+        }
+      ]
+    },
+    {
+      "name": "SignageGetPlaylistItemResult",
+      "type": "object",
+      "description": "Refreshed complete playlist item; structurally identical to the SignagePlaylistItem elements carried in setPlaylistConfig / getPlaylistConfig payloads.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "item",
+          "type": "SignagePlaylistItem",
+          "required": true,
+          "deprecated": false,
+          "description": "Complete playlist item (id, type, duration, sort, settings). The device replaces the locally cached item with this value."
         }
       ]
     },
@@ -9362,9 +9393,10 @@
             "website",
             "video",
             "clock",
-            "unsplash"
+            "unsplash",
+            "powerbi"
           ],
-          "description": "Playlist item type; image (rotating image set), website (embedded web page), video (video media URL), clock (clock face list), and unsplash (Unsplash photo set). The value selects the settings variant schema."
+          "description": "Playlist item type; image (rotating image set), website (embedded web page), video (video media URL), clock (clock face list), unsplash (Unsplash photo set), and powerbi (embedded PowerBI dashboard). The value selects the settings variant schema."
         },
         {
           "id": 3,
@@ -9399,7 +9431,8 @@
               "website": "SignageWebsiteItemSettings",
               "video": "SignageVideoItemSettings",
               "clock": "SignageClockItemSettings",
-              "unsplash": "SignageUnsplashItemSettings"
+              "unsplash": "SignageUnsplashItemSettings",
+              "powerbi": "SignagePowerBiItemSettings"
             }
           },
           "description": "Per-type playlist item settings; the type field value selects the variant schema applied to this field."
@@ -9560,6 +9593,58 @@
       ]
     },
     {
+      "name": "SignagePowerBiItemSettings",
+      "type": "object",
+      "description": "Settings for the powerbi playlist item type; selected via PlaylistItem.settings variants when type is powerbi. All fields are required.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "groupId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "PowerBI workspace (group) identifier (GUID)."
+        },
+        {
+          "id": 2,
+          "name": "dashboardId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "PowerBI dashboard identifier (GUID)."
+        },
+        {
+          "id": 3,
+          "name": "embedUrl",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 2048,
+          "description": "Dashboard embed URL; stable across token refreshes. The device SHOULD cache and reuse it."
+        },
+        {
+          "id": 4,
+          "name": "token",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 8192,
+          "description": "AAD access token for the PowerBI audience (https://analysis.windows.net/powerbi/api; tokenType=Aad embedding; typically ~60 minutes). Tenants with many group/role claims issue JWTs of 5-8 KB, hence the generous bound. Sensitive credential transported only via the RPC channel; never embedded in resource URLs and not to be logged."
+        },
+        {
+          "id": 5,
+          "name": "expiresAt",
+          "type": "uint64",
+          "required": true,
+          "deprecated": false,
+          "min": 1,
+          "description": "Unix timestamp token expiry; MUST be greater than 0 (0 is invalid for powerbi, unlike the 0-equals-never-expires convention of URL-based item types). Always present for powerbi items; drives the device-side signage.getPlaylistItem refresh."
+        }
+      ]
+    },
+    {
       "name": "SignagePlaylistClockEntry",
       "type": "object",
       "description": "One clock entry for the clock item type.",
@@ -9647,7 +9732,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash)."
+          "description": "Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash, powerbi)."
         },
         {
           "id": 2,

@@ -45,7 +45,7 @@
 | device | 4 | 1 |
 | firmware | 4 | 2 |
 | network | 18 | 8 |
-| signage | 5 | 1 |
+| signage | 6 | 1 |
 | software | 6 | 2 |
 | sport | 7 | 2 |
 | stream | 8 | 4 |
@@ -201,7 +201,7 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x0801 | video.stream | video | draft | object | VideoStreamCapabilities | Device supports real-time video STREAM setup, close, state, source state, key frame requests, and stats events. |
 | 0x0901 | audio.algorithm | audio | stable | object | AudioAlgorithmCapability | Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification. |
 | 0x0902 | audio.stream | audio | draft | object | AudioStreamCapabilities | Device supports real-time audio STREAM setup, close, state, source state, and stats events. |
-| 0x0D01 | signage.playlist | signage | draft | object | SignagePlaylistCapability | Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, and playlist config change notification. |
+| 0x0D01 | signage.playlist | signage | draft | object | SignagePlaylistCapability | Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, playlist item refresh, and playlist config change notification. |
 | 0x0E01 | network.interface | network | draft | object | NetworkInterfaceCapability | Device supports network interface enumeration and state observation. |
 | 0x0E02 | network.ip | network | draft | object | NetworkIpCapability | Device supports IP configuration query, update, and change notification. |
 | 0x0E03 | network.wifi | network | draft | object | NetworkWifiCapabilities | Device supports Wi-Fi station profile, scan, connection, and state operations. |
@@ -229,7 +229,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
-| signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl |
+| signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl<br>5: signage.getPlaylistItem |
 | software | 0: software.getConfig<br>1: software.setConfig<br>2: software.resetConfig<br>3: software.getUpdatePolicy<br>4: software.setUpdatePolicy<br>5: software.resetUpdatePolicy |
 | sport | 0: sport.getEventDetectionCapabilities<br>1: sport.getEventDetectionConfig<br>2: sport.setEventDetectionConfig<br>3: sport.getGoalShotWatermarkConfig<br>4: sport.setGoalShotWatermarkConfig<br>5: sport.getEventClipConfig<br>6: sport.setEventClipConfig |
 | stream | 0: stream.getCapabilities<br>1: stream.getState<br>2: stream.getStats<br>3: stream.ack<br>4: stream.windowUpdate<br>5: stream.pause<br>6: stream.resume<br>7: stream.abort |
@@ -2502,6 +2502,7 @@ Type: `NetworkApClients`
 - [signage.setPlaylistConfig](#signagesetplaylistconfig)
 - [signage.resetPlaylistConfig](#signageresetplaylistconfig)
 - [signage.getPlaylistItemUrl](#signagegetplaylistitemurl)
+- [signage.getPlaylistItem](#signagegetplaylistitem)
 
 ---
 
@@ -2531,7 +2532,7 @@ Type: `SignagePlaylistCapabilitiesResult`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| supportedItemTypes | Array<String> | 0x01 | Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash). | array.itemType=string | N/A |
+| supportedItemTypes | Array<String> | 0x01 | Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash, powerbi). | array.itemType=string | N/A |
 | ?maxPlaylists | UInt32 | 0x02 | Maximum number of playlists; product-defined. | None | Omit if not used. |
 | ?maxItemsPerPlaylist | UInt32 | 0x03 | Maximum number of playlist items per playlist; product-defined. | None | Omit if not used. |
 | supportsScheduledPlaylist | Boolean | 0x04 | Whether scheduled playlists are supported. | None | N/A |
@@ -2632,7 +2633,7 @@ Type: `SignagePlaylistConfigResult`
 
 ### signage.getPlaylistItemUrl
 
-Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and return NOT_SUPPORTED.
+Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and powerbi items carry a non-URL embed-token resource; both return NOT_SUPPORTED (powerbi refresh MUST use signage.getPlaylistItem).
 
 - Method ID: `0x0D05`
 - Domain: `signage`
@@ -2658,8 +2659,40 @@ Type: `SignageGetPlaylistItemUrlResult`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| type | Enum | 0x01 | Playlist item type used to discriminate the settings structure; clock is excluded from URL refresh and returns NOT_SUPPORTED. | enum=image/video/website/unsplash | N/A |
+| type | Enum | 0x01 | Playlist item type used to discriminate the settings structure; clock and powerbi are excluded from URL refresh and return NOT_SUPPORTED (powerbi refresh uses signage.getPlaylistItem). | enum=image/video/website/unsplash | N/A |
 | settings | Object | 0x02 | Refreshed complete settings; the device may replace the locally cached settings with this value. The type field value selects the variant schema. | variants=type->image=SignageImageItemSettings,video=SignageVideoItemSettings,website=SignageWebsiteItemSettings,unsplash=SignageUnsplashItemSettings | N/A |
+
+---
+
+### signage.getPlaylistItem
+
+Fetch the complete playlist item by itemId (item refresh). The device calls this proactively when settings.expiresAt is near expiry and replaces the local playlist item with the returned one. Non-URL resource types (powerbi) MUST use this method; URL resource types MAY use this or signage.getPlaylistItemUrl.
+
+- Method ID: `0x0D06`
+- Domain: `signage`
+- bitOffset: `5`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `NOT_FOUND`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `SignageGetPlaylistItemParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| itemId | String | 0x01 | Playlist item unique identifier (UUID); same identifier space as signage.getPlaylistItemUrl. | maxLength=64 | N/A |
+
+#### Response Fields
+
+Type: `SignageGetPlaylistItemResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| item | SignagePlaylistItem | 0x01 | Complete playlist item (id, type, duration, sort, settings). The device replaces the locally cached item with this value. | None | N/A |
 
 ---
 
@@ -5639,10 +5672,10 @@ One playlist item.
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | id | String | 0x01 | Playlist item unique identifier (UUID). | maxLength=64 | N/A |
-| type | Enum | 0x02 | Playlist item type; image (rotating image set), website (embedded web page), video (video media URL), clock (clock face list), and unsplash (Unsplash photo set). The value selects the settings variant schema. | enum=image/website/video/clock/unsplash | N/A |
+| type | Enum | 0x02 | Playlist item type; image (rotating image set), website (embedded web page), video (video media URL), clock (clock face list), unsplash (Unsplash photo set), and powerbi (embedded PowerBI dashboard). The value selects the settings variant schema. | enum=image/website/video/clock/unsplash/powerbi | N/A |
 | duration | UInt32 | 0x03 | Single playback duration in seconds; MUST be greater than 0. | min=1, max=86400 | Default: 60 |
 | sort | UInt32 | 0x04 | Playback order, ascending by sort. The sort value MUST be unique within the same playlist; duplicate sort values return INVALID_ARGUMENT. | None | Default: 0 |
-| settings | Object | 0x05 | Per-type playlist item settings; the type field value selects the variant schema applied to this field. | variants=type->image=SignageImageItemSettings,website=SignageWebsiteItemSettings,video=SignageVideoItemSettings,clock=SignageClockItemSettings,unsplash=SignageUnsplashItemSettings | N/A |
+| settings | Object | 0x05 | Per-type playlist item settings; the type field value selects the variant schema applied to this field. | variants=type->image=SignageImageItemSettings,website=SignageWebsiteItemSettings,video=SignageVideoItemSettings,clock=SignageClockItemSettings,unsplash=SignageUnsplashItemSettings,powerbi=SignagePowerBiItemSettings | N/A |
 
 ---
 
@@ -5665,6 +5698,20 @@ Photographer attribution for an Unsplash photo.
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | name | String | 0x01 | Photographer name. | maxLength=128 | N/A |
 | link | String | 0x02 | Photographer Unsplash profile link. | maxLength=2048 | N/A |
+
+---
+
+## SignagePowerBiItemSettings
+
+Settings for the powerbi playlist item type; selected via PlaylistItem.settings variants when type is powerbi. All fields are required.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| groupId | String | 0x01 | PowerBI workspace (group) identifier (GUID). | maxLength=64 | N/A |
+| dashboardId | String | 0x02 | PowerBI dashboard identifier (GUID). | maxLength=64 | N/A |
+| embedUrl | String | 0x03 | Dashboard embed URL; stable across token refreshes. The device SHOULD cache and reuse it. | maxLength=2048 | N/A |
+| token | String | 0x04 | AAD access token for the PowerBI audience (https://analysis.windows.net/powerbi/api; tokenType=Aad embedding; typically ~60 minutes). Tenants with many group/role claims issue JWTs of 5-8 KB, hence the generous bound. Sensitive credential transported only via the RPC channel; never embedded in resource URLs and not to be logged. | maxLength=8192 | N/A |
+| expiresAt | UInt64 | 0x05 | Unix timestamp token expiry; MUST be greater than 0 (0 is invalid for powerbi, unlike the 0-equals-never-expires convention of URL-based item types). Always present for powerbi items; drives the device-side signage.getPlaylistItem refresh. | min=1 | N/A |
 
 ---
 
