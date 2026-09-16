@@ -17,11 +17,11 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 |---|---:|
 | 草案文件 | 112 |
 | 已生成草案文件 | 23 |
-| 已生成 method/event 事实 | 126 |
-| Method 小节 | 449 |
-| 紧凑 method 示例 | 449 |
+| 已生成 method/event 事实 | 127 |
+| Method 小节 | 450 |
+| 紧凑 method 示例 | 450 |
 | Method 示例缺口 | 0 |
-| JSON 示例 | 1221 |
+| JSON 示例 | 1227 |
 | 无效 JSON 示例 | 0 |
 | 模板化示例提示 | 0 |
 | 模板化开放问题 | 0 |
@@ -30,7 +30,7 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | REVIEW-DRAFT | 139 |
 | REVIEW-FIX | 1 |
 | REVIEW-BLOCKER | 0 |
-| 采纳后占位残留 | 27 |
+| 采纳后占位残留 | 25 |
 
 ## 领域健康矩阵
 
@@ -52,7 +52,7 @@ node tooling/scripts/report-protocol-draft-health.mjs --check docs/product/proto
 | output | P2b | 1 | 0 | 0 | 3 | 3/3 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | privacy | 待排期 | 3 | 0 | 0 | 10 | 10/10 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
 | room | P7 | 5 | 0 | 0 | 20 | 20/20 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |
-| signage | P7 | 2 | 1 | 6 | 9 | 9/9 | ASK 12 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
+| signage | P7 | 2 | 1 | 7 | 10 | 10/10 | ASK 12 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 确认 REVIEW-ASK |
 | software | P7 | 2 | 2 | 8 | 6 | 6/6 | ASK 37 / DRAFT 24 / FIX 1 / BLOCKER 0 | 0 | 0 | 先处理 blocker/fix |
 | sport | P2 | 2 | 2 | 9 | 7 | 7/7 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 维护 generated 合同 |
 | storage | 待排期 | 6 | 0 | 0 | 24 | 24/24 | ASK 0 / DRAFT 0 / FIX 0 / BLOCKER 0 | 0 | 0 | 可排采纳评审 |

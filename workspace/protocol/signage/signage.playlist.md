@@ -1101,7 +1101,9 @@ request:
 }
 ```
 
-success（`powerbi` 整项刷新——返回含新 token 的完整播放项）：
+success:
+
+主示例（`powerbi` 整项刷新——返回含新 token 的完整播放项）：
 
 ```json
 {
