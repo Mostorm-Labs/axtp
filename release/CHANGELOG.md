@@ -4,6 +4,42 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.17.0
+
+Signage playlist item typed settings, PowerBI item support, and full playlist item refresh, merged through PR #39.
+
+### Protocol
+
+- Declares the `SignagePlaylistItem.type` enum (image, website, video, clock, unsplash, powerbi) and splits playlist item settings into per-type `SignageImageItemSettings`, `SignageVideoItemSettings`, `SignageWebsiteItemSettings`, `SignageClockItemSettings`, `SignageUnsplashItemSettings`, and `SignagePowerBiItemSettings`, selected through the new `variants` discriminator binding on `PlaylistItem.settings`.
+- Adds `signage.getPlaylistItem` to fetch the complete playlist item by `itemId`; the device calls it proactively when `settings.expiresAt` approaches expiry and replaces the local playlist item with the returned one.
+- Non-URL resource types (`powerbi`) must use `signage.getPlaylistItem`; URL resource types may use it or `signage.getPlaylistItemUrl`, while `clock` and `powerbi` return `NOT_SUPPORTED` from URL refresh.
+
+### Registry
+
+- Registers `signage.getPlaylistItem` as `0x0D06` with method bit offset `5` in the signage domain.
+- Updates the `signage.playlist` capability description to cover playlist item refresh alongside URL refresh; existing method, event, capability, error, and schema IDs are preserved.
+
+### Schemas
+
+- Adds `SignageGetPlaylistItemParams` (itemId selector) and `SignageGetPlaylistItemResult` (complete refreshed `SignagePlaylistItem`).
+- Adds the `SignagePlaylistItem.type` enum and the six per-type settings schemas, replacing the merged settings object with a variant-selected structure.
+- Extends the codec specification with the object-field `variants: { discriminator, mapping }` binding rule and its compatibility entry for adding a variant (new enum value plus mapping entry).
+
+### Conformance
+
+- Does not add conformance cases; the shared conformance manifest count is unchanged.
+- Extends generator source and protocol validation with variant-binding consistency checks (discriminator resolves to a declared enum field in the same schema, mapping covers all enum values, and mapped values resolve to registered object schemas), covered by new unit tests.
+
+### Migration
+
+- Playlist item settings consumers must read the `type` discriminator and decode the matching settings variant instead of assuming a single merged settings layout; `powerbi` items require `signage.getPlaylistItem` for refresh.
+- Existing runtimes that only implement URL refresh remain compatible for URL-capable item types; `clock` and `powerbi` items now explicitly return `NOT_SUPPORTED` from `signage.getPlaylistItemUrl`.
+
+### Runtime Impact
+
+- Runtime and SDK teams should bind to `spec/v0.17.0`, regenerate protocol metadata, and implement `signage.getPlaylistItem` with the per-type settings variants.
+- No npm, pub, PyPI, Docker, or runtime package registry publish is part of this Spec release.
+
 ## spec/v0.16.0
 
 Basketball device configuration controls for watermark display and event clip time windows.
