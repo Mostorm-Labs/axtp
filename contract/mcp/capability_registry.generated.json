@@ -317,6 +317,18 @@
       "idHex": "0x160B"
     },
     {
+      "id": 5644,
+      "name": "cast.webcastBackend",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Optional secret-free WebCast cloud/local backend state query and independent full-state changes.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "CastWebCastBackendCapability",
+      "idHex": "0x160C"
+    },
+    {
       "id": 5889,
       "name": "software.config",
       "domain": "software",

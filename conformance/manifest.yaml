@@ -112,3 +112,8 @@ levels:
       - stream.stream_open
       - stream.stream_data
       - stream.stream_close
+
+  cast-webcast-backend:
+    description: Optional independent WebCast backend state and replacement event cursor.
+    required_cases:
+      - castwebcastbackend.wb01_state_event

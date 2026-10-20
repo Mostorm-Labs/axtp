@@ -5729,6 +5729,14 @@
           "required": false,
           "deprecated": false,
           "description": "Required only when P1 is supported and explicitly requested; combined P0/P1 capture shares one host commit boundary and keeps independent event barriers."
+        },
+        {
+          "id": 16,
+          "name": "webcastBackend",
+          "type": "CastWebCastBackendSnapshot",
+          "required": false,
+          "deprecated": false,
+          "description": "Explicit optional backend snapshot with its own barrier; not implied by unifiedControl or settings."
         }
       ]
     },
@@ -6423,6 +6431,14 @@
           "required": false,
           "deprecated": false,
           "description": "Required iff P1 is supported together with its method/event/status section; absence does not imply support."
+        },
+        {
+          "id": 11,
+          "name": "webcastBackend",
+          "type": "CastWebCastBackendCapability",
+          "required": false,
+          "deprecated": false,
+          "description": "Required iff this independent backend method/event/status section is supported."
         }
       ]
     },
@@ -8153,6 +8169,311 @@
           "required": true,
           "deprecated": false,
           "description": "One admitted queued or terminal operation record."
+        }
+      ]
+    },
+    {
+      "name": "CastGetWebCastBackendStateParams",
+      "type": "object",
+      "description": "Explicit supported control version for the optional WebCast backend snapshot.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Supported control version; this feature uses 1."
+        }
+      ]
+    },
+    {
+      "name": "CastWebCastBackendContext",
+      "type": "object",
+      "description": "Independent full-state event cursor; not part of P0 control or P1 settings sequences.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Selected supported control version; uses 1."
+        },
+        {
+          "id": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 36,
+          "description": "Canonical lower-case host UUID; changes at restart and equals the advertised control epoch."
+        },
+        {
+          "id": 3,
+          "name": "backendRevision",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 independent backend-state revision."
+        },
+        {
+          "id": 4,
+          "name": "backendEventSequence",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 barrier covering complete backend replacement events through this snapshot."
+        }
+      ]
+    },
+    {
+      "name": "CastWebCastSignalingState",
+      "type": "object",
+      "description": "Current room signaling availability and retained native peer connectivity; no media-quality claim or secret material.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "disabled",
+            "offline",
+            "creatingRoom",
+            "awaitingRestore",
+            "ready",
+            "failed",
+            "stopped"
+          ],
+          "description": "Ready requires an authoritative usable room and code; transport-open alone is insufficient."
+        },
+        {
+          "id": 2,
+          "name": "transportConnected",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Current signaling transport connectivity independent of existing P2P media."
+        },
+        {
+          "id": 3,
+          "name": "retainedPeerCount",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Native peers retained by this backend including peers still negotiating."
+        },
+        {
+          "id": 4,
+          "name": "connectedPeerCount",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Retained peers with an open data/control channel; never proof of presented video or audible output."
+        },
+        {
+          "id": 5,
+          "name": "lastNetworkError",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Historical sanitized transport error code; not an override of current state."
+        }
+      ]
+    },
+    {
+      "name": "CastWebCastLocalBackendState",
+      "type": "object",
+      "description": "Receiver-owned optional local signaling listener and its independent room.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "fallbackEnabled",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether local fallback is enabled in the active receiver instance."
+        },
+        {
+          "id": 2,
+          "name": "serviceState",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "disabled",
+            "dormant",
+            "running",
+            "failed",
+            "stopped"
+          ],
+          "description": "Local listener lifecycle; dormant means permitted but not yet started."
+        },
+        {
+          "id": 3,
+          "name": "servicePort",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "min": 1,
+          "max": 65535,
+          "description": "Actual owned listener port in 1..65535; present iff serviceState is running."
+        },
+        {
+          "id": 4,
+          "name": "startAttempts",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 local-start attempts for this host lifetime."
+        },
+        {
+          "id": 5,
+          "name": "lastStartError",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Sanitized last local startup error code; no path or exception text."
+        },
+        {
+          "id": 6,
+          "name": "signaling",
+          "type": "CastWebCastSignalingState",
+          "required": true,
+          "deprecated": false,
+          "description": "Local room signaling and peer connectivity independent of cloud recovery."
+        }
+      ]
+    },
+    {
+      "name": "CastWebCastBackendState",
+      "type": "object",
+      "description": "Actual WebCast signaling backend selection and independent cloud/local observations; no automatic migration or recovery policy is mandated.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether WebCast was enabled for this host instance; false is reported explicitly."
+        },
+        {
+          "id": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "disabled",
+            "starting",
+            "ready",
+            "failed",
+            "stopped"
+          ],
+          "description": "Current ability to admit a new WebCast join; does not describe existing media quality."
+        },
+        {
+          "id": 3,
+          "name": "selectedBackend",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "none",
+            "cloud",
+            "local"
+          ],
+          "description": "Authoritative backend currently offered for new joins; none when no usable room exists. Existing peers may belong to the other backend."
+        },
+        {
+          "id": 4,
+          "name": "cloud",
+          "type": "CastWebCastSignalingState",
+          "required": true,
+          "deprecated": false,
+          "description": "Cloud room and peer observations."
+        },
+        {
+          "id": 5,
+          "name": "local",
+          "type": "CastWebCastLocalBackendState",
+          "required": true,
+          "deprecated": false,
+          "description": "Local listener and room observations; retained local peers need not migrate when cloud returns."
+        }
+      ]
+    },
+    {
+      "name": "CastWebCastBackendSnapshot",
+      "type": "object",
+      "description": "Atomic complete WebCast backend replacement shared by query, optional status section and change event.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "backendContext",
+          "type": "CastWebCastBackendContext",
+          "required": true,
+          "deprecated": false,
+          "description": "Epoch and independent revision/event barrier committed with this state."
+        },
+        {
+          "id": 2,
+          "name": "state",
+          "type": "CastWebCastBackendState",
+          "required": true,
+          "deprecated": false,
+          "description": "Complete safe backend state rather than a delta."
+        }
+      ]
+    },
+    {
+      "name": "CastWebCastBackendCapability",
+      "type": "object",
+      "description": "Explicit optional WebCast backend snapshot and independent event discovery; absence never implies support.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "supportsSnapshot",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "True for this complete feature."
+        },
+        {
+          "id": 2,
+          "name": "supportsEvents",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "True for complete independent full-state events."
+        },
+        {
+          "id": 3,
+          "name": "backendTypes",
+          "type": "array",
+          "required": true,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported identifiers from cloud and local; current selection is reported separately."
+        },
+        {
+          "id": 4,
+          "name": "sequenceModel",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "independent-full-state"
+          ],
+          "description": "Backend events do not change P0 batch membership or P1 sequence."
         }
       ]
     },

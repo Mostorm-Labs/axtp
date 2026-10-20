@@ -367,6 +367,20 @@ methods:
     events: [cast.presentationSettingsChanged, cast.presentationChanged, cast.audioPolicyChanged]
     errors: [SUCCESS, NOT_SUPPORTED, INVALID_ARGUMENT, INVALID_STATE, OUT_OF_RANGE, BUSY, UNAVAILABLE, INTERNAL_ERROR]
 
+  - id: 0x161A
+    name: cast.getWebCastBackendState
+    domain: cast
+    status: draft
+    bitOffset: 25
+    since: 1.0.0
+    description: Read a secret-free WebCast signaling backend snapshot and independent event barrier; selection for new joins is separate from retained peers.
+    rpc_op: request_response
+    request_schema: CastGetWebCastBackendStateParams
+    response_schema: CastWebCastBackendSnapshot
+    recommended_encoding: [json, tlv]
+    capabilities: [cast.webcastBackend]
+    errors: [SUCCESS, NOT_SUPPORTED, INVALID_ARGUMENT, UNAVAILABLE]
+
 events:
   - id: 0x1601
     name: cast.sessionIncoming
@@ -583,6 +597,18 @@ events:
     severity: info
     trigger: [desired setting committed, adopted policy changed, storage observation changed, settings issue or lock changed]
     capabilities: [cast.presentationSettings]
+
+  - id: 0x1613
+    name: cast.webcastBackendChanged
+    domain: cast
+    status: draft
+    bitOffset: 18
+    since: 1.0.0
+    description: Replace complete WebCast backend state using independent backendContext; never consumes P0 or settings event sequences.
+    event_schema: CastWebCastBackendSnapshot
+    severity: info
+    trigger: [join backend selection changed, signaling availability changed, local listener lifecycle changed, peer connectivity changed, backend error changed]
+    capabilities: [cast.webcastBackend]
 
 types:
   CastSourceSummary:
@@ -2514,6 +2540,8 @@ types:
         required: false
         description: Required only when P1 is supported and explicitly requested; combined P0/P1 capture shares one host commit boundary and keeps independent event barriers.
 
+      - { id: 0x10, name: webcastBackend, type: CastWebCastBackendSnapshot, required: false, description: Explicit optional backend snapshot with its own barrier; not implied by unifiedControl or settings. }
+
   CastSessionCapability:
     kind: object
     description: Capability descriptor for cast.session.
@@ -2839,6 +2867,8 @@ types:
       - { id: 0x09, name: profileHints, type: array, array: { item_type: string }, required: false, description: Non-secret host profile hints; not media profiles or implicit defaults. }
       - { id: 0x0A, name: presentationSettings, type: CastPresentationSettingsCapability, required: false, description: Required iff P1 is supported together with its method/event/status section; absence does not imply support. }
 
+      - { id: 0x0B, name: webcastBackend, type: CastWebCastBackendCapability, required: false, description: Required iff this independent backend method/event/status section is supported. }
+
   CastPresentationCapability:
     kind: object
     description: Supported presentation protocols and logical capture/target guarantees; no product layout algorithm.
@@ -3138,6 +3168,69 @@ types:
       - { id: 0x01, name: context, type: CastControlEventContext, required: true, description: Required v1 commit context; may be an operation-only group. }
       - { id: 0x02, name: operation, type: CastControlOperation, required: true, description: One admitted queued or terminal operation record. }
 
+  CastGetWebCastBackendStateParams:
+    kind: object
+    description: Explicit supported control version for the optional WebCast backend snapshot.
+    fields:
+      - { id: 0x01, name: controlVersion, type: uint32, required: true, description: Supported control version; this feature uses 1. }
+
+  CastWebCastBackendContext:
+    kind: object
+    description: Independent full-state event cursor; not part of P0 control or P1 settings sequences.
+    fields:
+      - { id: 0x01, name: controlVersion, type: uint32, required: true, description: Selected supported control version; uses 1. }
+      - { id: 0x02, name: runtimeInstanceId, type: string, required: true, max_length: 36, description: Canonical lower-case host UUID; changes at restart and equals the advertised control epoch. }
+      - { id: 0x03, name: backendRevision, type: string, required: true, max_length: 20, description: Canonical decimal uint64 independent backend-state revision. }
+      - { id: 0x04, name: backendEventSequence, type: string, required: true, max_length: 20, description: Canonical decimal uint64 barrier covering complete backend replacement events through this snapshot. }
+
+  CastWebCastSignalingState:
+    kind: object
+    description: Current room signaling availability and retained native peer connectivity; no media-quality claim or secret material.
+    fields:
+      - { id: 0x01, name: state, type: enum, enum: [disabled, offline, creatingRoom, awaitingRestore, ready, failed, stopped], required: true, description: Ready requires an authoritative usable room and code; transport-open alone is insufficient. }
+      - { id: 0x02, name: transportConnected, type: bool, required: true, description: Current signaling transport connectivity independent of existing P2P media. }
+      - { id: 0x03, name: retainedPeerCount, type: uint32, required: true, description: Native peers retained by this backend including peers still negotiating. }
+      - { id: 0x04, name: connectedPeerCount, type: uint32, required: true, description: Retained peers with an open data/control channel; never proof of presented video or audible output. }
+      - { id: 0x05, name: lastNetworkError, type: uint32, required: false, description: Historical sanitized transport error code; not an override of current state. }
+
+  CastWebCastLocalBackendState:
+    kind: object
+    description: Receiver-owned optional local signaling listener and its independent room.
+    fields:
+      - { id: 0x01, name: fallbackEnabled, type: bool, required: true, description: Whether local fallback is enabled in the active receiver instance. }
+      - { id: 0x02, name: serviceState, type: enum, enum: [disabled, dormant, running, failed, stopped], required: true, description: Local listener lifecycle; dormant means permitted but not yet started. }
+      - { id: 0x03, name: servicePort, type: uint32, required: false, min: 1, max: 65535, description: Actual owned listener port in 1..65535; present iff serviceState is running. }
+      - { id: 0x04, name: startAttempts, type: string, required: true, max_length: 20, description: Canonical decimal uint64 local-start attempts for this host lifetime. }
+      - { id: 0x05, name: lastStartError, type: uint32, required: false, description: Sanitized last local startup error code; no path or exception text. }
+      - { id: 0x06, name: signaling, type: CastWebCastSignalingState, required: true, description: Local room signaling and peer connectivity independent of cloud recovery. }
+
+  CastWebCastBackendState:
+    kind: object
+    description: Actual WebCast signaling backend selection and independent cloud/local observations; no automatic migration or recovery policy is mandated.
+    fields:
+      - { id: 0x01, name: enabled, type: bool, required: true, description: Whether WebCast was enabled for this host instance; false is reported explicitly. }
+      - { id: 0x02, name: state, type: enum, enum: [disabled, starting, ready, failed, stopped], required: true, description: Current ability to admit a new WebCast join; does not describe existing media quality. }
+      - { id: 0x03, name: selectedBackend, type: enum, enum: [none, cloud, local], required: true, description: Authoritative backend currently offered for new joins; none when no usable room exists. Existing peers may belong to the other backend. }
+      - { id: 0x04, name: cloud, type: CastWebCastSignalingState, required: true, description: Cloud room and peer observations. }
+      - { id: 0x05, name: local, type: CastWebCastLocalBackendState, required: true, description: Local listener and room observations; retained local peers need not migrate when cloud returns. }
+
+  CastWebCastBackendSnapshot:
+    kind: object
+    description: Atomic complete WebCast backend replacement shared by query, optional status section and change event.
+    fields:
+      - { id: 0x01, name: backendContext, type: CastWebCastBackendContext, required: true, description: Epoch and independent revision/event barrier committed with this state. }
+      - { id: 0x02, name: state, type: CastWebCastBackendState, required: true, description: Complete safe backend state rather than a delta. }
+
+  CastWebCastBackendCapability:
+    kind: object
+    description: Explicit optional WebCast backend snapshot and independent event discovery; absence never implies support.
+    fields:
+      - { id: 0x01, name: supportsSnapshot, type: bool, required: true, description: True for this complete feature. }
+      - { id: 0x02, name: supportsEvents, type: bool, required: true, description: True for complete independent full-state events. }
+      - { id: 0x03, name: backendTypes, type: array, array: { item_type: string }, required: true, description: Supported identifiers from cloud and local; current selection is reported separately. }
+      - { id: 0x04, name: sequenceModel, type: enum, enum: [independent-full-state], required: true, description: Backend events do not change P0 batch membership or P1 sequence. }
+
+
 capabilities:
   - id: 0x1601
     name: cast.session
@@ -3237,3 +3330,12 @@ capabilities:
     description: Optional one-field host settings with declared live/restart behavior, independent synchronization and truthful field-only persistence/application results.
     type: object
     schema: CastPresentationSettingsCapability
+
+  - id: 0x160C
+    name: cast.webcastBackend
+    domain: cast
+    status: draft
+    since: 1.0.0
+    description: Optional secret-free WebCast cloud/local backend state query and independent full-state changes.
+    type: object
+    schema: CastWebCastBackendCapability

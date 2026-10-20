@@ -2416,6 +2416,34 @@
       "idHex": "0x1619"
     },
     {
+      "id": 5658,
+      "bitOffset": 25,
+      "name": "cast.getWebCastBackendState",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Read a secret-free WebCast signaling backend snapshot and independent event barrier; selection for new joins is separate from retained peers.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastGetWebCastBackendStateParams",
+      "responseSchema": "CastWebCastBackendSnapshot",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.webcastBackend"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x161A"
+    },
+    {
       "id": 5889,
       "bitOffset": 0,
       "name": "software.getConfig",

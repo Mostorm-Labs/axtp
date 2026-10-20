@@ -869,6 +869,29 @@
       "idHex": "0x1612"
     },
     {
+      "id": 5651,
+      "bitOffset": 18,
+      "name": "cast.webcastBackendChanged",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Replace complete WebCast backend state using independent backendContext; never consumes P0 or settings event sequences.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "eventSchema": "CastWebCastBackendSnapshot",
+      "severity": "info",
+      "trigger": [
+        "join backend selection changed",
+        "signaling availability changed",
+        "local listener lifecycle changed",
+        "peer connectivity changed",
+        "backend error changed"
+      ],
+      "capabilities": [
+        "cast.webcastBackend"
+      ],
+      "idHex": "0x1613"
+    },
+    {
       "id": 5889,
       "bitOffset": 0,
       "name": "software.configChanged",

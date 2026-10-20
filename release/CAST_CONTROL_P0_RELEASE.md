@@ -1,5 +1,10 @@
 # Cast control P0/P1 release preparation
 
+The locally adopted [optional WebCast backend feature](../specs/47-cast-webcast-backend.md)
+adds a separate query/event/capability and independent cursor. It does not alter
+P0 batches, P1 settings sequences or legacy backend contracts. Publication remains
+a separate release-owner action; implementation checkpoints are not release tags.
+
 Change baseline: `a2a550313bcf570361f1bfe9872851141b847520` (spec/v0.17.0).
 Proposed target: next additive minor `spec/v0.18.0`, subject to release-owner
 publication. No tag is created by this change. New business facts remain draft;
