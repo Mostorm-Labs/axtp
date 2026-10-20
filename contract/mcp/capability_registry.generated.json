@@ -269,6 +269,54 @@
       "idHex": "0x1607"
     },
     {
+      "id": 5640,
+      "name": "cast.presentation",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Optional concurrent receiver/session projection, atomic snapshots and exact presentation targets.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "CastPresentationCapability",
+      "idHex": "0x1608"
+    },
+    {
+      "id": 5641,
+      "name": "cast.audioPolicy",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Optional explicit per-session audio intent and separate effective participation reporting.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "CastAudioPolicyCapability",
+      "idHex": "0x1609"
+    },
+    {
+      "id": 5642,
+      "name": "cast.controlOperations",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Optional asynchronous operation query and bounded same-intent deduplication/retention guarantees.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "CastControlOperationsCapability",
+      "idHex": "0x160A"
+    },
+    {
+      "id": 5643,
+      "name": "cast.presentationSettings",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Optional one-field host settings with declared live/restart behavior, independent synchronization and truthful field-only persistence/application results.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "CastPresentationSettingsCapability",
+      "idHex": "0x160B"
+    },
+    {
       "id": 5889,
       "name": "software.config",
       "domain": "software",

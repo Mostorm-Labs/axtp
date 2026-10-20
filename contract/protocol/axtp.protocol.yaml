@@ -3098,6 +3098,11 @@ schemas:
         required: false
         maxLength: 64
         description: Timestamp for this event.
+      - fieldId: 5
+        name: controlContext
+        type: CastControlEventContext
+        required: false
+        description: Optional v1 commit context; absent legacy events do not advance the multi-control sequence.
   CastGetBackendStatusParams:
     kind: object
     description: Selector for cast backend status.
@@ -3746,6 +3751,12 @@ schemas:
         required: false
         default: false
         description: Whether authorized callers request sensitive summary fields.
+      - fieldId: 3
+        name: controlVersion
+        type: uint32
+        required: false
+        description: Explicit multi-control version; v1 unifiedControl requires a complete atomic six-section projection.
+          Unknown versions return NOT_SUPPORTED.
   CastReceiverSummary:
     kind: object
     description: Snapshot receiver role and protocol-neutral phase summary.
@@ -3942,6 +3953,41 @@ schemas:
         type: bool
         required: false
         description: Whether any sensitive snapshot fields were withheld.
+      - fieldId: 10
+        name: controlSync
+        type: CastControlSnapshotCursor
+        required: false
+        description: Required with requested v1 sections; atomic capture revision and published event barrier in one runtime epoch.
+      - fieldId: 11
+        name: receivers
+        type: array
+        required: false
+        array:
+          itemType: CastReceiverState
+        description: Required in v1 unifiedControl; full bounded receiver set including disabled and failed receivers.
+      - fieldId: 12
+        name: sessions
+        type: array
+        required: false
+        array:
+          itemType: CastMultiSessionState
+        description: Required in v1 unifiedControl; full bounded current session set, possibly empty, captured with slots and audio.
+      - fieldId: 13
+        name: presentation
+        type: CastPresentationState
+        required: false
+        description: Required in v1 unifiedControl; does not replace old single-source summaries.
+      - fieldId: 14
+        name: audioPolicy
+        type: CastAudioPolicyState
+        required: false
+        description: Required in v1 unifiedControl; selected intent and effective participation are separate from legacy audio.
+      - fieldId: 15
+        name: presentationSettings
+        type: CastPresentationSettingsState
+        required: false
+        description: Required only when P1 is supported and explicitly requested; combined P0/P1 capture shares one host commit
+          boundary and keeps independent event barriers.
   CastSessionCapability:
     kind: object
     description: Capability descriptor for cast.session.
@@ -4194,13 +4240,1345 @@ schemas:
         required: true
         array:
           itemType: string
-        description: Status snapshot sections the receiver can report.
+        description: Status snapshot sections the receiver can report; v1 adds unifiedControl, controlSync, receivers, sessions,
+          presentation and audioPolicy and reuses window; P1 adds explicitly requested presentationSettings.
       - fieldId: 2
         name: supportsSensitiveRedaction
         type: bool
         required: false
         default: true
         description: Whether sensitive status fields can be withheld and marked redacted.
+      - fieldId: 3
+        name: supportedControlVersions
+        type: array
+        required: false
+        array:
+          itemType: uint32
+        description: Explicit supported multi-control versions; absence is unknown rather than v1 support.
+      - fieldId: 4
+        name: supportsAtomicUnifiedSnapshot
+        type: bool
+        required: false
+        description: Whether unifiedControl is captured atomically in full; absence is not a verified false or true value.
+  CastSessionRef:
+    kind: object
+    description: Shared runtime session identity, distinct from a protocol-local legacy sessionId.
+    fields:
+      - fieldId: 1
+        name: id
+        type: string
+        required: true
+        maxLength: 128
+        description: Nonempty opaque shared runtime session ID.
+      - fieldId: 2
+        name: generation
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 string (0 or nonzero-leading digits, at most 18446744073709551615); encoded as
+          UTF-8 in TLV.
+  CastControlTarget:
+    kind: object
+    description: Exact presentation fences; params.runtimeInstanceId completes the target and all fences are rechecked
+      atomically at mutation.
+    fields:
+      - fieldId: 1
+        name: session
+        type: CastSessionRef
+        required: true
+        description: Shared runtime session and generation.
+      - fieldId: 2
+        name: slotId
+        type: uint32
+        required: true
+        description: Opaque slot identifier; never an array index.
+      - fieldId: 3
+        name: bindingGeneration
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 string fencing slot reuse.
+      - fieldId: 4
+        name: lifecycleGeneration
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 string fencing presentation lifecycle replacement.
+  CastControlSnapshotCursor:
+    kind: object
+    description: One atomic logical capture and its complete published-event barrier; counters never wrap within an epoch.
+    fields:
+      - fieldId: 1
+        name: controlVersion
+        type: uint32
+        required: true
+        description: Selected control version; P0 uses 1.
+      - fieldId: 2
+        name: runtimeInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case UUID text; fresh for each host start.
+      - fieldId: 3
+        name: revision
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 logical control revision.
+      - fieldId: 4
+        name: eventSequence
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 string; snapshot includes every complete published batch through this barrier.
+  CastControlEventContext:
+    kind: object
+    description: Atomic feature commit group context; all parts share epoch/version/revision/batchId/partCount.
+    fields:
+      - fieldId: 1
+        name: controlVersion
+        type: uint32
+        required: true
+        description: Selected control version; P0 uses 1.
+      - fieldId: 2
+        name: runtimeInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case UUID identifying the current host epoch.
+      - fieldId: 3
+        name: revision
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 control revision; operation-only batches may retain the current revision.
+      - fieldId: 4
+        name: eventSequence
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 string equal to batchId plus partIndex.
+      - fieldId: 5
+        name: batchId
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 string equal to the first eventSequence of the group.
+      - fieldId: 6
+        name: partIndex
+        type: uint32
+        required: true
+        description: Zero-based part index strictly less than partCount.
+      - fieldId: 7
+        name: partCount
+        type: uint32
+        required: true
+        min: 1
+        description: Positive complete group size; clients apply only after every part is present.
+  CastControlCapabilities:
+    kind: object
+    description: Dynamic optional multi-control surface; partial descriptors do not imply complete v1 support. No secrets.
+    fields:
+      - fieldId: 1
+        name: supportedControlVersions
+        type: array
+        required: true
+        array:
+          itemType: uint32
+        description: Explicit supported control versions.
+      - fieldId: 2
+        name: runtimeInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case UUID for this host lifetime.
+      - fieldId: 3
+        name: methods
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Actual registered method names supported by this instance.
+      - fieldId: 4
+        name: events
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Actual feature event names supported by this instance.
+      - fieldId: 5
+        name: statusSections
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Actual supported status section names.
+      - fieldId: 6
+        name: presentation
+        type: CastPresentationCapability
+        required: false
+        description: Required when cast.presentation is supported.
+      - fieldId: 7
+        name: audioPolicy
+        type: CastAudioPolicyCapability
+        required: false
+        description: Required when cast.audioPolicy is supported.
+      - fieldId: 8
+        name: operations
+        type: CastControlOperationsCapability
+        required: false
+        description: Required when cast.controlOperations is supported.
+      - fieldId: 9
+        name: profileHints
+        type: array
+        required: false
+        array:
+          itemType: string
+        description: Non-secret host profile hints; not media profiles or implicit defaults.
+      - fieldId: 10
+        name: presentationSettings
+        type: CastPresentationSettingsCapability
+        required: false
+        description: Required iff P1 is supported together with its method/event/status section; absence does not imply support.
+  CastPresentationCapability:
+    kind: object
+    description: Supported presentation protocols and logical capture/target guarantees; no product layout algorithm.
+    fields:
+      - fieldId: 1
+        name: protocols
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Supported subset of hid/airplay/webcast; unknown is not a supported protocol.
+      - fieldId: 2
+        name: supportsAtomicSnapshot
+        type: bool
+        required: true
+        description: Must be true for a complete v1 unifiedControl implementation.
+      - fieldId: 3
+        name: supportsStrictTargets
+        type: bool
+        required: true
+        description: Must be true for exact per-presentation writes.
+      - fieldId: 4
+        name: maxPresentationCapacity
+        type: uint32
+        required: true
+        min: 1
+        description: Positive host-specific presentation capacity bound.
+      - fieldId: 5
+        name: capacityChoices
+        type: array
+        required: false
+        array:
+          itemType: uint32
+        description: Positive supported capacities no greater than maxPresentationCapacity.
+      - fieldId: 6
+        name: layoutModes
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Supported layout identifiers; geometry remains host-owned.
+  CastAudioPolicyCapability:
+    kind: object
+    description: Audio intent and effective-set reporting guarantees.
+    fields:
+      - fieldId: 1
+        name: controlModes
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Supported subset of automatic/manual.
+      - fieldId: 2
+        name: mixModes
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Supported subset of exclusive/mix.
+      - fieldId: 3
+        name: supportsPerSessionEnable
+        type: bool
+        required: true
+        description: Whether explicit per-session enabled intent is available.
+      - fieldId: 4
+        name: reportsEffectiveSet
+        type: bool
+        required: true
+        description: Whether effective participants are reported separately from selected intent.
+  CastControlOperationsCapability:
+    kind: object
+    description: Query and deduplication guarantees bounded by declared limits.
+    fields:
+      - fieldId: 1
+        name: supportsQuery
+        type: bool
+        required: true
+        description: Whether original command results can be queried.
+      - fieldId: 2
+        name: supportsDedup
+        type: bool
+        required: true
+        description: Whether same-key same-value commands return the original operation.
+      - fieldId: 3
+        name: limits
+        type: CastControlLimits
+        required: true
+        description: Nonzero finite bounds; guaranteed records cannot be silently evicted.
+  CastControlLimits:
+    kind: object
+    description: Instance-specific positive uint32 limits; admission reserves result storage and returns BUSY on saturation.
+    fields:
+      - fieldId: 1
+        name: maxPendingOperations
+        type: uint32
+        required: true
+        min: 1
+        description: Maximum globally pending admitted operations.
+      - fieldId: 2
+        name: maxPendingPerClient
+        type: uint32
+        required: true
+        min: 1
+        description: Maximum pending operations for one client instance.
+      - fieldId: 3
+        name: maxRetainedResults
+        type: uint32
+        required: true
+        min: 1
+        description: Maximum retained records including reserved pending results.
+      - fieldId: 4
+        name: replayWindowMs
+        type: uint32
+        required: true
+        min: 1
+        description: Guaranteed dedup/result window from admission using host monotonic time; pending records survive until
+          terminal.
+      - fieldId: 5
+        name: maxEventBufferEvents
+        type: uint32
+        required: true
+        min: 1
+        description: Bounded event count used for initial sync and slow-client handling.
+      - fieldId: 6
+        name: maxEventBufferBytes
+        type: uint32
+        required: true
+        min: 1
+        description: Bounded buffered event bytes.
+      - fieldId: 7
+        name: maxRequestBytes
+        type: uint32
+        required: true
+        min: 1
+        description: Maximum admitted request bytes.
+      - fieldId: 8
+        name: maxSnapshotBytes
+        type: uint32
+        required: true
+        min: 1
+        description: Maximum atomic snapshot bytes including bounded collections.
+  CastReceiverState:
+    kind: object
+    description: Real receiver availability; historical lastError does not override current state. No secrets.
+    fields:
+      - fieldId: 1
+        name: receiverId
+        type: string
+        required: true
+        maxLength: 128
+        description: Nonempty opaque receiver identity.
+      - fieldId: 2
+        name: protocol
+        type: enum
+        required: true
+        enumValues:
+          - hid
+          - airplay
+          - webcast
+          - unknown
+        description: Actual receiver protocol; unknown is not a supported-path alias.
+      - fieldId: 3
+        name: state
+        type: enum
+        required: true
+        enumValues:
+          - disabled
+          - starting
+          - ready
+          - degraded
+          - stopping
+          - failed
+        description: Current receiver availability independent of session media.
+      - fieldId: 4
+        name: observedAt
+        type: string
+        required: true
+        maxLength: 64
+        description: UTC RFC3339 observation time for display only.
+      - fieldId: 5
+        name: displayName
+        type: string
+        required: false
+        maxLength: 128
+        description: Safe user-visible name; not identity or secret material.
+      - fieldId: 6
+        name: lastError
+        type: CastLastError
+        required: false
+        description: Historical redacted error summary; never passwords/tokens/SDP/ICE/private keys.
+  CastMultiSessionState:
+    kind: object
+    description: Current shared runtime session with independent connection, eligibility and media facts.
+    fields:
+      - fieldId: 1
+        name: session
+        type: CastSessionRef
+        required: true
+        description: Shared runtime session reference.
+      - fieldId: 2
+        name: receiverId
+        type: string
+        required: true
+        maxLength: 128
+        description: Nonempty reference to a receiver in the same projection.
+      - fieldId: 3
+        name: protocol
+        type: enum
+        required: true
+        enumValues:
+          - hid
+          - airplay
+          - webcast
+          - unknown
+        description: Actual session protocol; legacy enums remain unchanged.
+      - fieldId: 4
+        name: receiverState
+        type: enum
+        required: true
+        enumValues:
+          - opening
+          - open
+          - mediaStarting
+          - mediaActive
+          - stopping
+          - closed
+          - failed
+        description: Protocol receiver session state; no frames does not imply disconnection.
+      - fieldId: 5
+        name: presentationEligibility
+        type: enum
+        required: true
+        enumValues:
+          - notEligible
+          - priming
+          - mediaReady
+          - presented
+          - withdrawing
+          - notPresented
+        description: Presentation eligibility distinct from authentication and connection.
+      - fieldId: 6
+        name: videoTrackOpen
+        type: bool
+        required: true
+        description: Whether the video track is open; not proof of rendered frames.
+      - fieldId: 7
+        name: audioTrackOpen
+        type: bool
+        required: true
+        description: Whether the audio track is open; not proof of audible output.
+      - fieldId: 8
+        name: audioReadiness
+        type: enum
+        required: false
+        enumValues:
+          - unknown
+          - absent
+          - priming
+          - ready
+          - recovering
+        description: Audio readiness when observed.
+      - fieldId: 9
+        name: displayName
+        type: string
+        required: false
+        maxLength: 128
+        description: Safe user-visible name; not a target identity.
+  CastPresentationSlotState:
+    kind: object
+    description: Current slot binding; target is required iff occupied and must match this slot and current lifecycle.
+    fields:
+      - fieldId: 1
+        name: slotId
+        type: uint32
+        required: true
+        description: Unique slot identifier within the presentation.
+      - fieldId: 2
+        name: bindingGeneration
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 slot-binding generation.
+      - fieldId: 3
+        name: occupied
+        type: bool
+        required: true
+        description: Whether the slot currently has an exact target.
+      - fieldId: 4
+        name: target
+        type: CastControlTarget
+        required: false
+        description: Required iff occupied; omitted otherwise; null is invalid.
+  CastPresentationState:
+    kind: object
+    description: Atomically captured presentation lifecycle, capacity and slots; zero effective/applied capacity does not
+      imply no media.
+    fields:
+      - fieldId: 1
+        name: started
+        type: bool
+        required: true
+        description: Whether the presentation lifecycle is started.
+      - fieldId: 2
+        name: lifecycleGeneration
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 lifecycle generation.
+      - fieldId: 3
+        name: configuredCapacity
+        type: uint32
+        required: true
+        min: 1
+        description: Positive configured capacity.
+      - fieldId: 4
+        name: validationAvailable
+        type: bool
+        required: true
+        description: Whether validatedCapacity is currently known.
+      - fieldId: 5
+        name: validatedCapacity
+        type: uint32
+        required: false
+        min: 1
+        description: Required iff validationAvailable; omitted when unknown.
+      - fieldId: 6
+        name: effectiveCapacity
+        type: uint32
+        required: true
+        description: Current host capacity-policy result; may be zero.
+      - fieldId: 7
+        name: appliedCapacity
+        type: uint32
+        required: true
+        description: Capacity currently applied to presentation; may be zero.
+      - fieldId: 8
+        name: layoutMode
+        type: string
+        required: true
+        maxLength: 64
+        description: One of the layout identifiers advertised by this instance.
+      - fieldId: 9
+        name: layoutSettling
+        type: bool
+        required: true
+        description: Whether the host reports layout settling.
+      - fieldId: 10
+        name: slots
+        type: array
+        required: true
+        array:
+          itemType: CastPresentationSlotState
+        description: Full bounded current slot set with no removed-session ghost binding.
+  CastAudioPolicyState:
+    kind: object
+    description: Selected intent and effective audio participation captured with the same session/slot projection.
+    fields:
+      - fieldId: 1
+        name: controlMode
+        type: enum
+        required: true
+        enumValues:
+          - automatic
+          - manual
+        description: Current control policy; writes do not implicitly reset it.
+      - fieldId: 2
+        name: mixMode
+        type: enum
+        required: true
+        enumValues:
+          - exclusive
+          - mix
+        description: Current mixing policy.
+      - fieldId: 3
+        name: enabledSessions
+        type: array
+        required: true
+        array:
+          itemType: CastSessionRef
+        description: Unique current session references with enabled intent.
+      - fieldId: 4
+        name: effectiveAudioSessions
+        type: array
+        required: true
+        array:
+          itemType: CastSessionRef
+        description: Unique current effective participants; neither set proves human-audible sound.
+  CastStopPresentationParams:
+    kind: object
+    description: One exact withdrawal intent; same runtime/client/command key deduplicates canonical parsed values.
+    fields:
+      - fieldId: 1
+        name: controlVersion
+        type: uint32
+        required: true
+        description: Explicit selected control version; P0 uses 1.
+      - fieldId: 2
+        name: runtimeInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case UUID of the targeted runtime epoch.
+      - fieldId: 3
+        name: clientInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case client UUID; not authorization.
+      - fieldId: 4
+        name: commandId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case UUID identifying one user intent.
+      - fieldId: 5
+        name: target
+        type: CastControlTarget
+        required: true
+        description: Original exact target checked atomically at mutation after admission.
+      - fieldId: 6
+        name: reason
+        type: string
+        required: false
+        maxLength: 64
+        description: Optional non-secret withdrawal reason.
+  CastSetSessionAudioEnabledParams:
+    kind: object
+    description: One explicit audio enable intent for an exact presentation; no toggle semantics.
+    fields:
+      - fieldId: 1
+        name: controlVersion
+        type: uint32
+        required: true
+        description: Explicit selected control version; P0 uses 1.
+      - fieldId: 2
+        name: runtimeInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case UUID of the targeted runtime epoch.
+      - fieldId: 3
+        name: clientInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case client UUID; not authorization.
+      - fieldId: 4
+        name: commandId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case UUID identifying one user intent.
+      - fieldId: 5
+        name: target
+        type: CastControlTarget
+        required: true
+        description: Original exact target checked atomically at mutation.
+      - fieldId: 6
+        name: enabled
+        type: bool
+        required: true
+        description: Explicit desired intent; applied does not imply effective playback.
+  CastGetControlOperationParams:
+    kind: object
+    description: Original deduplication key query; missing history is unknown outcome.
+    fields:
+      - fieldId: 1
+        name: controlVersion
+        type: uint32
+        required: true
+        description: Explicit selected control version; P0 uses 1.
+      - fieldId: 2
+        name: runtimeInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case UUID of the original runtime epoch.
+      - fieldId: 3
+        name: clientInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Original canonical lower-case client UUID.
+      - fieldId: 4
+        name: commandId
+        type: string
+        required: true
+        maxLength: 36
+        description: Original canonical lower-case command UUID.
+  CastControlOperation:
+    kind: object
+    description: Admitted queued or immutable terminal operation; terminal requires completedAt/statusCode/outcomeReason, P0
+      commit requires appliedRevision and P1 requires settingsResult.
+    fields:
+      - fieldId: 1
+        name: operationId
+        type: string
+        required: true
+        maxLength: 128
+        description: Nonempty opaque operation record ID; not media session identity.
+      - fieldId: 2
+        name: runtimeInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case runtime epoch UUID.
+      - fieldId: 3
+        name: clientInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case UUID of the submitting client.
+      - fieldId: 4
+        name: commandId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case original intent UUID.
+      - fieldId: 5
+        name: kind
+        type: enum
+        required: true
+        enumValues:
+          - stopPresentation
+          - setSessionAudioEnabled
+          - setPresentationSettings
+        description: Intent kind; settings is a global P1 operation with settingsResult and no presentation target.
+      - fieldId: 6
+        name: state
+        type: enum
+        required: true
+        enumValues:
+          - queued
+          - applied
+          - rejected
+          - failed
+        description: Admission or truthful terminal result; queued is not media success.
+      - fieldId: 7
+        name: submittedAt
+        type: string
+        required: true
+        maxLength: 64
+        description: UTC RFC3339 submission display time; expiry uses host monotonic time.
+      - fieldId: 8
+        name: target
+        type: CastControlTarget
+        required: false
+        description: Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings.
+      - fieldId: 9
+        name: completedAt
+        type: string
+        required: false
+        maxLength: 64
+        description: UTC RFC3339 time required for applied/rejected/failed.
+      - fieldId: 10
+        name: appliedRevision
+        type: string
+        required: false
+        maxLength: 20
+        description: Canonical decimal uint64 string required iff a P0 logical control commit occurred; settings-only metadata
+          uses settingsResult.settingsRevision instead.
+      - fieldId: 11
+        name: statusCode
+        type: uint32
+        required: false
+        description: Required terminal standard AXTP status code; applied uses SUCCESS and failures use non-success.
+      - fieldId: 12
+        name: outcomeReason
+        type: string
+        required: false
+        maxLength: 64
+        description: Required terminal bounded business reason; not a new numeric error space and never secret data.
+      - fieldId: 13
+        name: ownerCleanup
+        type: enum
+        required: false
+        enumValues:
+          - notApplicable
+          - pending
+          - complete
+          - failed
+        description: Cleanup observation at terminalization for the target owner only; not entire receiver exit.
+      - fieldId: 14
+        name: settingsResult
+        type: CastPresentationSettingsOperationResult
+        required: false
+        description: Required for kind=setPresentationSettings including queued/rejected/failed; reports
+          configuration/application/persistence separately.
+  CastSetPresentationSettingsParams:
+    kind: object
+    description: Global one-field settings intent; same-key dedup precedes owner-side optimistic version comparison and
+      persist never saves another temporary field.
+    fields:
+      - fieldId: 1
+        name: controlVersion
+        type: uint32
+        required: true
+        description: Selected control version; P1 uses 1 with separate capability.
+      - fieldId: 2
+        name: runtimeInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case runtime UUID; no automatic replay into a new epoch.
+      - fieldId: 3
+        name: clientInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case client UUID; not authorization.
+      - fieldId: 4
+        name: commandId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case UUID for this explicit settings intent.
+      - fieldId: 5
+        name: expectedSettingsRevision
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 optimistic version; rechecked after dedup and queueing.
+      - fieldId: 6
+        name: patch
+        type: CastPresentationSettingsPatch
+        required: true
+        description: Exactly one known supported setting key; empty/multiple/unknown keys are INVALID_ARGUMENT.
+      - fieldId: 7
+        name: persist
+        type: bool
+        required: true
+        description: Explicit save choice; true saves only the patch field before configuration commit and live apply.
+  CastPresentationSettingsPatch:
+    kind: object
+    description: All fields optional structurally but exactly one key required semantically; unknown patch keys rejected and
+      conditional choices come from capability.
+    fields:
+      - fieldId: 1
+        name: layoutMode
+        type: string
+        required: false
+        maxLength: 64
+        description: Nonempty declared layout identifier.
+      - fieldId: 2
+        name: audioControlMode
+        type: enum
+        required: false
+        enumValues:
+          - automatic
+          - manual
+        description: Declared audio control mode; same confirmed value does not reset selection.
+      - fieldId: 3
+        name: audioMixMode
+        type: enum
+        required: false
+        enumValues:
+          - exclusive
+          - mix
+        description: Declared audio mix mode; no implicit inverse-mode rollback.
+      - fieldId: 4
+        name: capacity
+        type: uint32
+        required: false
+        min: 1
+        description: One declared capacity choice; no global product maximum or default.
+      - fieldId: 5
+        name: enabledProtocols
+        type: array
+        required: false
+        array:
+          itemType: string
+        description: Duplicate-free set from declared hid/airplay/webcast protocols; empty only when minEnabledProtocols is
+          explicitly zero.
+      - fieldId: 6
+        name: profileHint
+        type: string
+        required: false
+        maxLength: 64
+        description: Nonempty declared opaque product profile identifier; not a wire profile.
+  CastPresentationSettingsValues:
+    kind: object
+    description: Supported setting values only; configured/known persisted projections are complete, while unconfirmed
+      applied fields are absent with issues.
+    fields:
+      - fieldId: 1
+        name: layoutMode
+        type: string
+        required: false
+        maxLength: 64
+        description: Declared layout policy identifier.
+      - fieldId: 2
+        name: audioControlMode
+        type: enum
+        required: false
+        enumValues:
+          - automatic
+          - manual
+        description: Adopted or desired control policy; not proof of sound.
+      - fieldId: 3
+        name: audioMixMode
+        type: enum
+        required: false
+        enumValues:
+          - exclusive
+          - mix
+        description: Adopted or desired audio mixing policy.
+      - fieldId: 4
+        name: capacity
+        type: uint32
+        required: false
+        min: 1
+        description: Desired capacity or actually adopted capacity according to containing projection; applied may be limited.
+      - fieldId: 5
+        name: enabledProtocols
+        type: array
+        required: false
+        array:
+          itemType: string
+        description: Adopted or desired enable policy; not receiver readiness.
+      - fieldId: 6
+        name: profileHint
+        type: string
+        required: false
+        maxLength: 64
+        description: Declared product combination profile identifier.
+  CastPresentationStartupSettings:
+    kind: object
+    description: Exactly the capability-declared restart-only intent accepted at this host startup; distinct from
+      effective/applied limits and stored values.
+    fields:
+      - fieldId: 1
+        name: layoutMode
+        type: string
+        required: false
+        maxLength: 64
+        description: Present only if this implementation declares layoutMode restart-only.
+      - fieldId: 2
+        name: audioControlMode
+        type: enum
+        required: false
+        enumValues:
+          - automatic
+          - manual
+        description: Present only if audioControlMode is restart-only.
+      - fieldId: 3
+        name: audioMixMode
+        type: enum
+        required: false
+        enumValues:
+          - exclusive
+          - mix
+        description: Present only if audioMixMode is restart-only.
+      - fieldId: 4
+        name: capacity
+        type: uint32
+        required: false
+        min: 1
+        description: Startup accepted capacity intent before runtime validation limitations.
+      - fieldId: 5
+        name: enabledProtocols
+        type: array
+        required: false
+        array:
+          itemType: string
+        description: Startup accepted receiver enable policy; does not claim Ready.
+      - fieldId: 6
+        name: profileHint
+        type: string
+        required: false
+        maxLength: 64
+        description: Startup accepted product profile when declared restart-only.
+  CastPresentationSettingsState:
+    kind: object
+    description: Full bounded settings state; desired/adopted/startup/stored facts and two independent event barriers must
+      never be conflated.
+    fields:
+      - fieldId: 1
+        name: settingsRevision
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 settings fact version within the runtime epoch.
+      - fieldId: 2
+        name: settingsEventSequence
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 settings publication barrier; independent of P0 eventSequence.
+      - fieldId: 3
+        name: configured
+        type: CastPresentationSettingsValues
+        required: true
+        description: Complete supported desired settings including temporary changes.
+      - fieldId: 4
+        name: applied
+        type: CastPresentationSettingsValues
+        required: true
+        description: Confirmed actually adopted values; unconfirmed fields omitted with issues.
+      - fieldId: 5
+        name: activeStartup
+        type: CastPresentationStartupSettings
+        required: true
+        description: Restart-only intent accepted at current startup; used to compute pendingRestart.
+      - fieldId: 6
+        name: pendingRestart
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Unique restart-only fields where configured differs from activeStartup; applied capacity limits do not
+          create permanent pending.
+      - fieldId: 7
+        name: persisted
+        type: bool
+        required: true
+        description: True iff desired settings equal known stored/startup projection; false if unknown and not a disk-write receipt.
+      - fieldId: 8
+        name: unsavedFields
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Configured fields differing from known stored values; all supported fields when storage projection unknown.
+      - fieldId: 9
+        name: unappliedFields
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Live fields differing from confirmed adopted policy; layout animation alone does not qualify.
+      - fieldId: 10
+        name: storageState
+        type: enum
+        required: true
+        enumValues:
+          - absent
+          - loaded
+          - saved
+          - invalid
+          - unavailable
+        description: Truthful store observation; invalid/unknown files are preserved rather than silently overwritten.
+      - fieldId: 11
+        name: lockedFields
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Unique supported field names currently locked by explicit deployment/authorization policy.
+      - fieldId: 12
+        name: applicationIssues
+        type: array
+        required: true
+        array:
+          itemType: CastPresentationSettingIssue
+        description: Safe field-specific limitation/failure/lock observations.
+      - fieldId: 13
+        name: persistedValues
+        type: CastPresentationSettingsValues
+        required: false
+        description: Complete known persistent startup projection; omitted if invalid/unavailable/unknown.
+      - fieldId: 14
+        name: storeRevision
+        type: string
+        required: false
+        maxLength: 20
+        description: Canonical decimal uint64 known valid store version; absent without valid file.
+      - fieldId: 15
+        name: appliedControlRevision
+        type: string
+        required: false
+        maxLength: 20
+        description: Associated P0 adopted-policy revision lower bound for cross-stream synchronization.
+      - fieldId: 16
+        name: persistError
+        type: string
+        required: false
+        maxLength: 512
+        description: Sanitized bounded storage diagnostic; no raw request/secret/private path.
+  CastPresentationSettingIssue:
+    kind: object
+    description: One safe supported-field observation; historical failure and current policy remain distinct.
+    fields:
+      - fieldId: 1
+        name: field
+        type: string
+        required: true
+        maxLength: 64
+        description: One supported setting field name.
+      - fieldId: 2
+        name: kind
+        type: enum
+        required: true
+        enumValues:
+          - limitedByValidation
+          - limitedByHardLimit
+          - liveApplyFailed
+          - startupFailed
+          - locked
+          - unknown
+        description: Structured limitation/failure classification.
+      - fieldId: 3
+        name: reason
+        type: string
+        required: false
+        maxLength: 128
+        description: Bounded sanitized reason; no secret/path leakage.
+      - fieldId: 4
+        name: statusCode
+        type: uint32
+        required: false
+        description: Optional standard AXTP numeric status.
+  CastPresentationSettingsCapability:
+    kind: object
+    description: Optional P1 field and effect partition; conditional choices/modes/minimum are required for corresponding
+      supported keys, never inferred defaults.
+    fields:
+      - fieldId: 1
+        name: fields
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Unique supported subset of the six settings keys.
+      - fieldId: 2
+        name: liveFields
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Live effect subset; disjoint from restartOnlyFields and together exactly fields.
+      - fieldId: 3
+        name: restartOnlyFields
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Restart-only subset; updates never automatically restart current media.
+      - fieldId: 4
+        name: supportsPersistence
+        type: bool
+        required: true
+        description: Whether explicit field-only save requests are supported.
+      - fieldId: 5
+        name: capacityChoices
+        type: array
+        required: false
+        array:
+          itemType: uint32
+        description: Nonempty unique positive choices required when capacity supported.
+      - fieldId: 6
+        name: layoutModes
+        type: array
+        required: false
+        array:
+          itemType: string
+        description: Nonempty unique bounded mode identifiers required when layoutMode supported.
+      - fieldId: 7
+        name: profileHints
+        type: array
+        required: false
+        array:
+          itemType: string
+        description: Nonempty unique bounded product profile identifiers required when profileHint supported.
+      - fieldId: 8
+        name: minEnabledProtocols
+        type: uint32
+        required: false
+        description: Required when enabledProtocols supported; zero explicitly permits empty if control/settings can remain
+          available independently.
+  CastPresentationSettingsOperationResult:
+    kind: object
+    description: Truthful independent configuration/application/persistence results; failed may still include
+      stored/configured commits.
+    fields:
+      - fieldId: 1
+        name: field
+        type: string
+        required: true
+        maxLength: 64
+        description: Unique requested setting field.
+      - fieldId: 2
+        name: settingsRevision
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 most recently confirmed settings revision; terminal uses completion/check version.
+      - fieldId: 3
+        name: configurationStatus
+        type: enum
+        required: true
+        enumValues:
+          - notCommitted
+          - unchanged
+          - committed
+        description: Whether this intent changed desired configuration.
+      - fieldId: 4
+        name: applicationStatus
+        type: enum
+        required: true
+        enumValues:
+          - notAttempted
+          - unchanged
+          - applied
+          - pendingRestart
+          - failed
+        description: Confirmed policy adoption or deferred restart intent; not media audibility/restart proof.
+      - fieldId: 5
+        name: persistenceStatus
+        type: enum
+        required: true
+        enumValues:
+          - notRequested
+          - pending
+          - unchanged
+          - stored
+          - failed
+        description: Explicit field-only storage outcome distinct from equality with known persistedValues.
+      - fieldId: 6
+        name: appliedControlRevision
+        type: string
+        required: false
+        maxLength: 20
+        description: Optional canonical decimal uint64 associated P0 policy revision.
+  CastSettingsEventContext:
+    kind: object
+    description: Independent settings event cursor; payload revision/sequence must match and this event never consumes P0 sequence.
+    fields:
+      - fieldId: 1
+        name: controlVersion
+        type: uint32
+        required: true
+        description: Selected control version; P1 uses 1.
+      - fieldId: 2
+        name: runtimeInstanceId
+        type: string
+        required: true
+        maxLength: 36
+        description: Canonical lower-case runtime epoch UUID.
+      - fieldId: 3
+        name: settingsRevision
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 settings state version.
+      - fieldId: 4
+        name: settingsEventSequence
+        type: string
+        required: true
+        maxLength: 20
+        description: Canonical decimal uint64 settings publication sequence; snapshot barrier may be zero.
+  CastPresentationSettingsChangedEvent:
+    kind: object
+    description: Complete settings state replacement in its own bounded ordered event stream; no P0 context or batch fields.
+    fields:
+      - fieldId: 1
+        name: settingsContext
+        type: CastSettingsEventContext
+        required: true
+        description: Independent required settings cursor matching payload versions.
+      - fieldId: 2
+        name: settings
+        type: CastPresentationSettingsState
+        required: true
+        description: Full post-commit settings state
+  CastReceiversChangedEvent:
+    kind: object
+    description: Full receiver-section replacement in one control group part.
+    fields:
+      - fieldId: 1
+        name: context
+        type: CastControlEventContext
+        required: true
+        description: Required v1 commit context.
+      - fieldId: 2
+        name: receivers
+        type: array
+        required: true
+        array:
+          itemType: CastReceiverState
+        description: Complete current bounded receiver collection.
+  CastSessionsChangedEvent:
+    kind: object
+    description: Full session-section replacement in one control group part.
+    fields:
+      - fieldId: 1
+        name: context
+        type: CastControlEventContext
+        required: true
+        description: Required v1 commit context.
+      - fieldId: 2
+        name: sessions
+        type: array
+        required: true
+        array:
+          itemType: CastMultiSessionState
+        description: Complete current bounded session collection.
+  CastPresentationChangedEvent:
+    kind: object
+    description: Full presentation-section replacement; never a receiver/session/audio aggregate.
+    fields:
+      - fieldId: 1
+        name: context
+        type: CastControlEventContext
+        required: true
+        description: Required v1 commit context.
+      - fieldId: 2
+        name: presentation
+        type: CastPresentationState
+        required: true
+        description: Complete current presentation state.
+  CastAudioPolicyChangedEvent:
+    kind: object
+    description: Full audio-policy-section replacement in one control group part.
+    fields:
+      - fieldId: 1
+        name: context
+        type: CastControlEventContext
+        required: true
+        description: Required v1 commit context.
+      - fieldId: 2
+        name: audioPolicy
+        type: CastAudioPolicyState
+        required: true
+        description: Complete selected/effective audio policy state.
+  CastControlOperationChangedEvent:
+    kind: object
+    description: One P0 per-session operation record with ordered control publication context; setPresentationSettings is
+      excluded from this event stream.
+    fields:
+      - fieldId: 1
+        name: context
+        type: CastControlEventContext
+        required: true
+        description: Required v1 commit context; may be an operation-only group.
+      - fieldId: 2
+        name: operation
+        type: CastControlOperation
+        required: true
+        description: One admitted queued or terminal operation record.
   GetDeviceInfoParams:
     kind: object
     description: Optional selector for the read-only device information snapshot.
@@ -9332,6 +10710,7 @@ methods:
       - SUCCESS
       - INVALID_ARGUMENT
       - UNAVAILABLE
+      - NOT_SUPPORTED
   - name: cast.setVideoStreamParams
     description: Request cast video stream parameter reconfiguration; an active stream is coordinated through close then
       open, while a source without an active stream is opened directly.
@@ -9364,6 +10743,143 @@ methods:
       - MEDIA_STREAM_START_FAILED
       - MEDIA_STREAM_STOP_FAILED
       - UNAVAILABLE
+  - name: cast.getControlCapabilities
+    description: Discover supported control versions, runtime epoch and bounded multi-presentation guarantees before
+      selecting a version.
+    methodId: 5653
+    bitOffset: 20
+    domain: cast
+    since: 1.0.0
+    status: draft
+    request:
+      type: Empty
+    response:
+      type: CastControlCapabilities
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - cast.presentation
+    events: []
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - UNAVAILABLE
+  - name: cast.stopPresentation
+    description: Withdraw one exact presentation after atomic owner-side fence validation; success returns an admitted
+      operation, not receiver shutdown.
+    methodId: 5654
+    bitOffset: 21
+    domain: cast
+    since: 1.0.0
+    status: draft
+    request:
+      type: CastStopPresentationParams
+    response:
+      type: CastControlOperation
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - cast.presentation
+      - cast.controlOperations
+    events:
+      - cast.sessionsChanged
+      - cast.presentationChanged
+      - cast.audioPolicyChanged
+      - cast.controlOperationChanged
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - INVALID_STATE
+      - BUSY
+      - UNAVAILABLE
+      - INTERNAL_ERROR
+  - name: cast.setSessionAudioEnabled
+    description: Set explicit enabled intent for one exact presented session; effective audio participation is reported separately.
+    methodId: 5655
+    bitOffset: 22
+    domain: cast
+    since: 1.0.0
+    status: draft
+    request:
+      type: CastSetSessionAudioEnabledParams
+    response:
+      type: CastControlOperation
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - cast.audioPolicy
+      - cast.controlOperations
+    events:
+      - cast.audioPolicyChanged
+      - cast.controlOperationChanged
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - INVALID_STATE
+      - BUSY
+      - UNAVAILABLE
+      - INTERNAL_ERROR
+  - name: cast.getControlOperation
+    description: Query the original intent by runtime, client and command identity; NOT_FOUND means unknown outcome rather
+      than not executed.
+    methodId: 5656
+    bitOffset: 23
+    domain: cast
+    since: 1.0.0
+    status: draft
+    request:
+      type: CastGetControlOperationParams
+    response:
+      type: CastControlOperation
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - cast.controlOperations
+    events: []
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - INVALID_STATE
+      - NOT_FOUND
+      - UNAVAILABLE
+  - name: cast.setPresentationSettings
+    description: Set exactly one supported host setting with optimistic revision, bounded dedup and explicit field-only
+      persistence; returns per-stage asynchronous results without automatic restart.
+    methodId: 5657
+    bitOffset: 24
+    domain: cast
+    since: 1.0.0
+    status: draft
+    request:
+      type: CastSetPresentationSettingsParams
+    response:
+      type: CastControlOperation
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - cast.presentationSettings
+      - cast.controlOperations
+    events:
+      - cast.presentationSettingsChanged
+      - cast.presentationChanged
+      - cast.audioPolicyChanged
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - INVALID_STATE
+      - OUT_OF_RANGE
+      - BUSY
+      - UNAVAILABLE
+      - INTERNAL_ERROR
   - name: device.getInfo
     description: Return the current endpoint main device identity, product, hardware, OS, software, AXTP runtime, and
       optional capability summary.
@@ -11058,6 +12574,103 @@ events:
       - diagnostics sample
     capabilities:
       - cast.flowControl
+  - name: cast.receiversChanged
+    description: Replace the receiver section after a logical control commit; not a full status event.
+    eventId: 5645
+    bitOffset: 12
+    domain: cast
+    since: 1.0.0
+    status: draft
+    payload:
+      type: CastReceiversChangedEvent
+    severity: info
+    trigger:
+      - receiver availability changed
+    capabilities:
+      - cast.presentation
+  - name: cast.sessionsChanged
+    description: Replace the current multi-session collection as one part of an atomic control commit group.
+    eventId: 5646
+    bitOffset: 13
+    domain: cast
+    since: 1.0.0
+    status: draft
+    payload:
+      type: CastSessionsChangedEvent
+    severity: info
+    trigger:
+      - session joined
+      - session removed
+      - session media state changed
+    capabilities:
+      - cast.presentation
+  - name: cast.presentationChanged
+    description: Replace only presentation slots, layout and capacity after a logical control commit.
+    eventId: 5647
+    bitOffset: 14
+    domain: cast
+    since: 1.0.0
+    status: draft
+    payload:
+      type: CastPresentationChangedEvent
+    severity: info
+    trigger:
+      - presentation binding changed
+      - lifecycle changed
+      - capacity changed
+      - layout changed
+    capabilities:
+      - cast.presentation
+  - name: cast.audioPolicyChanged
+    description: Replace audio policy intent and effective participation sets after a control commit.
+    eventId: 5648
+    bitOffset: 15
+    domain: cast
+    since: 1.0.0
+    status: draft
+    payload:
+      type: CastAudioPolicyChangedEvent
+    severity: info
+    trigger:
+      - enabled intent changed
+      - effective audio participation changed
+      - audio policy changed
+    capabilities:
+      - cast.audioPolicy
+  - name: cast.controlOperationChanged
+    description: Publish one admitted P0 per-session operation record; P1 settings progress uses RPC/query and its
+      independent settings event, never this sequence.
+    eventId: 5649
+    bitOffset: 16
+    domain: cast
+    since: 1.0.0
+    status: draft
+    payload:
+      type: CastControlOperationChangedEvent
+    severity: info
+    trigger:
+      - operation admitted
+      - operation terminal
+    capabilities:
+      - cast.controlOperations
+  - name: cast.presentationSettingsChanged
+    description: Replace complete settings state using independent settingsContext/settingsEventSequence; never consumes the
+      P0 eventSequence.
+    eventId: 5650
+    bitOffset: 17
+    domain: cast
+    since: 1.0.0
+    status: draft
+    payload:
+      type: CastPresentationSettingsChangedEvent
+    severity: info
+    trigger:
+      - desired setting committed
+      - adopted policy changed
+      - storage observation changed
+      - settings issue or lock changed
+    capabilities:
+      - cast.presentationSettings
   - name: device.enrollmentStateChanged
     description: Emitted after device.setEnrollmentState actually changes the enrollment state, or after a device-internal
       policy modifies it (e.g. pairing code expiry fallback, server-side revoke).
@@ -12779,6 +14392,39 @@ capabilities:
     status: draft
     type: object
     schema: CastStatusCapability
+  - name: cast.presentation
+    description: Optional concurrent receiver/session projection, atomic snapshots and exact presentation targets.
+    capabilityId: 5640
+    domain: cast
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: CastPresentationCapability
+  - name: cast.audioPolicy
+    description: Optional explicit per-session audio intent and separate effective participation reporting.
+    capabilityId: 5641
+    domain: cast
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: CastAudioPolicyCapability
+  - name: cast.controlOperations
+    description: Optional asynchronous operation query and bounded same-intent deduplication/retention guarantees.
+    capabilityId: 5642
+    domain: cast
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: CastControlOperationsCapability
+  - name: cast.presentationSettings
+    description: Optional one-field host settings with declared live/restart behavior, independent synchronization and
+      truthful field-only persistence/application results.
+    capabilityId: 5643
+    domain: cast
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: CastPresentationSettingsCapability
   - name: device.info
     description: Device supports read-only device information discovery.
     capabilityId: 257

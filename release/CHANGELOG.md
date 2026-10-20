@@ -4,6 +4,36 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## Unreleased — planned spec/v0.18.0
+
+Optional concurrent cast control P0 and complete P1 settings; registry entries remain draft. This is an
+additive spec change; protocol 1.0.0, wire 1 and product controlVersion=1 are
+independent. No tag, runtime release or downstream lock update is implied.
+
+- Adds five methods 0x1615–0x1619 (bits 20–24), six events 0x160D–0x1612
+  (bits 12–17) and four capabilities 0x1608–0x160B in their separate ID spaces.
+- Adds 33 object schemas (23 P0, 10 P1). Extends getStatus params with optional field 0x03,
+  CastStatus with optional fields 0x0A–0x0F, windowChanged with optional field
+  0x05 and CastStatusCapability with optional fields 0x03–0x04. All legacy IDs,
+  field shapes and single-source semantics are preserved.
+- Defines atomic six-section snapshots, full feature commit batches, strict
+  runtime/session/slot/binding/lifecycle fences, bounded dedup/result retention,
+  unknown outcomes and scoped owner cleanup in specs/45-cast-control.md.
+- Generates protocol IR, references, MCP metadata and paired JSON/TLV8 decimal
+  string boundary vectors. Introduces optional cast-control conformance C01–C11,
+  fixtures and an executable reference oracle. The separate optional cast-settings
+  profile adds C12/PS-01–PS-12 without expanding the P0 required set.
+- Downstream consumers should wait for an approved exact spec tag/commit, regenerate
+  runtime metadata/codecs with their own generators, then update Axent and NearCast
+  in that order. This repository does not implement media or product policy.
+- P1 adds field-only persistence before configuration/live application, truthful
+  partial results, startup versus desired/adopted/stored projections and an
+  independent settings stream. Optional fields append at CastControlCapabilities
+  0x0A and CastControlOperation 0x0E; the new operation kind has no session target.
+  Settings cursor JSON/TLV8 vectors preserve decimal strings. See
+  `release/CAST_CONTROL_P0_RELEASE.md` for the local verification
+  boundary and downstream migration contract.
+
 ## spec/v0.17.0
 
 Signage playlist item typed settings, PowerBI item support, and full playlist item refresh, merged through PR #39.

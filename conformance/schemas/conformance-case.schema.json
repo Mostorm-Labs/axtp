@@ -58,6 +58,16 @@
     { "required": ["scenarios"] }
   ],
   "$defs": {
+    "controlModel": {
+      "type": "object",
+      "required": ["action", "input", "expect"],
+      "additionalProperties": false,
+      "properties": {
+        "action": { "enum": ["discover", "capture", "install_snapshot", "receive_event", "flush_events", "admit", "execute", "query", "advance_clock", "rebind", "shutdown", "restart", "validate_value", "encode_pair", "assert_state", "validate_public", "legacy_projection", "settings_discover", "settings_admit", "settings_execute", "settings_complete_store", "settings_publish", "settings_receive", "settings_install", "settings_capture", "settings_flush", "settings_observe", "settings_store", "settings_restart", "settings_validate", "settings_state"] },
+        "input": { "type": "object", "additionalProperties": true },
+        "expect": { "type": "object", "minProperties": 1, "additionalProperties": true }
+      }
+    },
     "direction": {
       "type": "string",
       "enum": ["client_to_server", "server_to_client", "peer_to_runtime", "client_observes", "runtime_local"]
@@ -331,9 +341,11 @@
         "event": { "$ref": "#/$defs/event" },
         "error": { "$ref": "#/$defs/error" },
         "registry_lookup": { "$ref": "#/$defs/registryLookup" },
+        "control_model": { "$ref": "#/$defs/controlModel" },
         "expect": { "$ref": "#/$defs/expect" }
       },
       "oneOf": [
+        { "required": ["control_model"] },
         { "required": ["rpc"] },
         { "required": ["jsonrpc"] },
         { "required": ["control"] },

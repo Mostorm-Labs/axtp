@@ -25,6 +25,10 @@
 | `0x1605` | `cast.backend` | cast | draft | object | CastBackendCapability |
 | `0x1606` | `cast.flowControl` | cast | draft | object | CastFlowControlCapability |
 | `0x1607` | `cast.status` | cast | draft | object | CastStatusCapability |
+| `0x1608` | `cast.presentation` | cast | draft | object | CastPresentationCapability |
+| `0x1609` | `cast.audioPolicy` | cast | draft | object | CastAudioPolicyCapability |
+| `0x160A` | `cast.controlOperations` | cast | draft | object | CastControlOperationsCapability |
+| `0x160B` | `cast.presentationSettings` | cast | draft | object | CastPresentationSettingsCapability |
 | `0x1701` | `software.config` | software | draft | object | SoftwareConfigCapability |
 | `0x1702` | `software.updatePolicy` | software | draft | object | SoftwareUpdatePolicyCapability |
 | `0x1801` | `sport.eventDetection` | sport | draft | object | SportEventDetectionCapabilities |

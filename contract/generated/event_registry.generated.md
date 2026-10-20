@@ -37,6 +37,12 @@
 | `0x160A` | `cast.windowChanged` | cast | draft | CastWindowChangedEvent |
 | `0x160B` | `cast.backendChanged` | cast | draft | CastBackendChangedEvent |
 | `0x160C` | `cast.flowControlChanged` | cast | draft | CastFlowControlChangedEvent |
+| `0x160D` | `cast.receiversChanged` | cast | draft | CastReceiversChangedEvent |
+| `0x160E` | `cast.sessionsChanged` | cast | draft | CastSessionsChangedEvent |
+| `0x160F` | `cast.presentationChanged` | cast | draft | CastPresentationChangedEvent |
+| `0x1610` | `cast.audioPolicyChanged` | cast | draft | CastAudioPolicyChangedEvent |
+| `0x1611` | `cast.controlOperationChanged` | cast | draft | CastControlOperationChangedEvent |
+| `0x1612` | `cast.presentationSettingsChanged` | cast | draft | CastPresentationSettingsChangedEvent |
 | `0x1701` | `software.configChanged` | software | draft | SoftwareConfigChangedEvent |
 | `0x1702` | `software.updatePolicyChanged` | software | draft | SoftwareUpdatePolicyChangedEvent |
 | `0x1801` | `sport.eventDetectionStateChanged` | sport | draft | SportEventDetectionStateChangedEvent |

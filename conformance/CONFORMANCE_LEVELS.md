@@ -16,6 +16,15 @@ Conformance level 是测试入口，不是协议功能清单的替代品。具�
 
 仓库 manifest 还可以按 generated domain 定义细分 level；当前 `sport` level 使用 [profiles/sport.yaml](profiles/sport.yaml) 声明 VM33PRO 篮球事件检测配置行为。
 
+`cast-control` 是可选 L4 业务行为 level，覆盖三协议多路呈现控制 P0。
+它不扩大现有 L0/L1/L2 或 websocket-jsonrpc 的 required set。完整声明要求
+执行 C01–C11，并把 [参考模型](reference/cast-control.mjs) 中的替身 owner
+观察点接到实际 runtime；本仓库的模型通过不等于某个 runtime 已通过验收。
+
+`cast-settings` 是完整 P0/P1 的可选 L4 level，要求 C01–C12，包含
+PS-01–PS-12 的协议保证。设置流独立于 P0 序列；磁盘与政策 owner 使用
+替身验证。只声明 `cast-control` 的旧端不因此获得新的必选项。
+
 `endpoint-relay` 是独立的 optional behavior level，不改变 L0-L4 的传输/业务分层。Cloud、Agent、Gateway 或需要通过 `m.src` / `m.dst` 代理下级 Endpoint 的 runtime 可以额外声明它；普通直连设备或只实现 JSON_BINARY 的 MCU 不需要声明。
 
 ## L0: WebSocket JSON RPC Only
