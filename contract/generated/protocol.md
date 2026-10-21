@@ -1814,7 +1814,7 @@ Explicit exact-target primary or split intent with optimistic meeting revision a
 - bitOffset: `26`
 - Status: `draft`
 - Added in v1.0.0
-- Encodings: `json`, `tlv`
+- Encodings: `json`
 - Required Capabilities: `cast.meetingPresentation`, `cast.controlOperations`
 - Possible Events: `None`
 - Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `UNAVAILABLE`

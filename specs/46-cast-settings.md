@@ -8,6 +8,8 @@ Review inputs are the revised r1 §9 and UNIFIED_PRESENTATION_SETTINGS_PLAN.md
 P0/P1 implementation request. All new registry entries remain draft until a
 separate maturity/release decision. No automatic restart interface is introduced.
 
+The optional [meeting extension](48-cast-meeting-presentation.md) adds four separately advertised settings keys. The six base keys and all transaction rules below retain their meaning.
+
 ## Surface and capability conditions
 
 setPresentationSettings accepts CastSetPresentationSettingsParams and returns

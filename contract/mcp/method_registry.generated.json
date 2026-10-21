@@ -2456,8 +2456,7 @@
       "requestSchema": "CastSetPresentationFocusParams",
       "responseSchema": "CastControlOperation",
       "recommendedEncoding": [
-        "json",
-        "tlv"
+        "json"
       ],
       "capabilities": [
         "cast.meetingPresentation",

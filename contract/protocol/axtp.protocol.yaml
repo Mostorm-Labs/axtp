@@ -11388,7 +11388,6 @@ methods:
       type: CastControlOperation
     encodings:
       - json
-      - tlv
     capabilities:
       - cast.meetingPresentation
       - cast.controlOperations

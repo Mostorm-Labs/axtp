@@ -391,7 +391,7 @@ methods:
     rpc_op: request_response
     request_schema: CastSetPresentationFocusParams
     response_schema: CastControlOperation
-    recommended_encoding: [json, tlv]
+    recommended_encoding: [json]
     capabilities: [cast.meetingPresentation, cast.controlOperations]
     errors: [SUCCESS, NOT_SUPPORTED, INVALID_ARGUMENT, INVALID_STATE, BUSY, UNAVAILABLE]
 

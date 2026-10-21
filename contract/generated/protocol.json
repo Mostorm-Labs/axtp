@@ -15703,8 +15703,7 @@
         "type": "CastControlOperation"
       },
       "encodings": [
-        "json",
-        "tlv"
+        "json"
       ],
       "capabilities": [
         "cast.meetingPresentation",
