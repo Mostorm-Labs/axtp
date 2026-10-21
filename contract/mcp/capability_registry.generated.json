@@ -329,6 +329,18 @@
       "idHex": "0x160C"
     },
     {
+      "id": 5645,
+      "name": "cast.meetingPresentation",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Optional fixed main-plus-preview view with exact focus control and independently remembered audio-follow preference.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "CastMeetingPresentationCapability",
+      "idHex": "0x160D"
+    },
+    {
       "id": 5889,
       "name": "software.config",
       "domain": "software",

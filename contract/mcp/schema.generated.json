@@ -6439,6 +6439,14 @@
           "required": false,
           "deprecated": false,
           "description": "Required iff this independent backend method/event/status section is supported."
+        },
+        {
+          "id": 12,
+          "name": "meetingPresentation",
+          "type": "CastMeetingPresentationCapability",
+          "required": false,
+          "deprecated": false,
+          "description": "Explicit optional meeting focus and policy support."
         }
       ]
     },
@@ -6976,6 +6984,14 @@
             "itemType": "CastPresentationSlotState"
           },
           "description": "Full bounded current slot set with no removed-session ghost binding."
+        },
+        {
+          "id": 11,
+          "name": "meeting",
+          "type": "CastMeetingPresentationState",
+          "required": false,
+          "deprecated": false,
+          "description": "Present only when meeting capability is advertised; part of the existing P0 presentation commit."
         }
       ]
     },
@@ -7029,6 +7045,17 @@
             "itemType": "CastSessionRef"
           },
           "description": "Unique current effective participants; neither set proves human-audible sound."
+        },
+        {
+          "id": 5,
+          "name": "appliedGains",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "CastMeetingAudioGain"
+          },
+          "description": "Successfully applied weights aligned with effective participants; optional meeting extension."
         }
       ]
     },
@@ -7241,7 +7268,8 @@
           "enum": [
             "stopPresentation",
             "setSessionAudioEnabled",
-            "setPresentationSettings"
+            "setPresentationSettings",
+            "setPresentationFocus"
           ],
           "description": "Intent kind; settings is a global P1 operation with settingsResult and no presentation target."
         },
@@ -7468,6 +7496,46 @@
           "deprecated": false,
           "maxLength": 64,
           "description": "Nonempty declared opaque product profile identifier; not a wire profile."
+        },
+        {
+          "id": 7,
+          "name": "presentationEnabled",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Independent meeting interaction enable preference; default belongs to host."
+        },
+        {
+          "id": 8,
+          "name": "presentationMode",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "manual",
+            "automatic"
+          ],
+          "description": "Meeting visual entry policy; not global audio policy."
+        },
+        {
+          "id": 9,
+          "name": "presentationSidebar",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "left",
+            "right"
+          ],
+          "description": "Meeting rail position independent of base layoutMode."
+        },
+        {
+          "id": 10,
+          "name": "presentationAudioFollow",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Remembered follow preference independent of activity and global audio control mode."
         }
       ]
     },
@@ -7537,6 +7605,46 @@
           "deprecated": false,
           "maxLength": 64,
           "description": "Declared product combination profile identifier."
+        },
+        {
+          "id": 7,
+          "name": "presentationEnabled",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Independent meeting interaction enable preference; default belongs to host."
+        },
+        {
+          "id": 8,
+          "name": "presentationMode",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "manual",
+            "automatic"
+          ],
+          "description": "Meeting visual entry policy; not global audio policy."
+        },
+        {
+          "id": 9,
+          "name": "presentationSidebar",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "left",
+            "right"
+          ],
+          "description": "Meeting rail position independent of base layoutMode."
+        },
+        {
+          "id": 10,
+          "name": "presentationAudioFollow",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Remembered follow preference independent of activity and global audio control mode."
         }
       ]
     },
@@ -7606,6 +7714,46 @@
           "deprecated": false,
           "maxLength": 64,
           "description": "Startup accepted product profile when declared restart-only."
+        },
+        {
+          "id": 7,
+          "name": "presentationEnabled",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Independent meeting interaction enable preference; default belongs to host."
+        },
+        {
+          "id": 8,
+          "name": "presentationMode",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "manual",
+            "automatic"
+          ],
+          "description": "Meeting visual entry policy; not global audio policy."
+        },
+        {
+          "id": 9,
+          "name": "presentationSidebar",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "left",
+            "right"
+          ],
+          "description": "Meeting rail position independent of base layoutMode."
+        },
+        {
+          "id": 10,
+          "name": "presentationAudioFollow",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Remembered follow preference independent of activity and global audio control mode."
         }
       ]
     },
@@ -7834,7 +7982,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Unique supported subset of the six settings keys."
+          "description": "Unique supported settings keys; meeting extension adds four separately advertised keys."
         },
         {
           "id": 2,
@@ -8474,6 +8622,266 @@
             "independent-full-state"
           ],
           "description": "Backend events do not change P0 batch membership or P1 sequence."
+        }
+      ]
+    },
+    {
+      "name": "CastMeetingPresentationState",
+      "type": "object",
+      "description": "Meeting policy and transient emphasis captured at the existing P0 commit boundary; no media-quality claims.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Armed preference independent of active view."
+        },
+        {
+          "id": 2,
+          "name": "mode",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "manual",
+            "automatic"
+          ],
+          "description": "Visual entry policy independent of global audio modes."
+        },
+        {
+          "id": 3,
+          "name": "sidebar",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "left",
+            "right"
+          ],
+          "description": "Preview rail position."
+        },
+        {
+          "id": 4,
+          "name": "audioFollow",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Follow preference preserved while inactive."
+        },
+        {
+          "id": 5,
+          "name": "revision",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 meeting identity revision for optimistic commands."
+        },
+        {
+          "id": 6,
+          "name": "suspended",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Automatic entry paused until a new committed presentation admission or explicit focus."
+        },
+        {
+          "id": 7,
+          "name": "primary",
+          "type": "CastSessionRef",
+          "required": false,
+          "deprecated": false,
+          "description": "Current exact primary identity; omitted in base split."
+        },
+        {
+          "id": 8,
+          "name": "sidebarPage",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Zero-based preview page."
+        },
+        {
+          "id": 9,
+          "name": "sidebarPageCount",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "min": 1,
+          "description": "Current bounded page count including an empty page."
+        },
+        {
+          "id": 10,
+          "name": "mainSharePermille",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Fixed logical width share; this profile uses 840."
+        },
+        {
+          "id": 11,
+          "name": "audioFollowActive",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Whether follow policy currently has an eligible primary; not audible output."
+        }
+      ]
+    },
+    {
+      "name": "CastSetPresentationFocusParams",
+      "type": "object",
+      "description": "P0-style bounded async operation; dedup before optimistic revision check and exact owner fencing before mutation.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Explicit version uses 1."
+        },
+        {
+          "id": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 36,
+          "description": "Canonical lower-case runtime UUID."
+        },
+        {
+          "id": 3,
+          "name": "clientInstanceId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 36,
+          "description": "Canonical lower-case client UUID."
+        },
+        {
+          "id": 4,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 36,
+          "description": "Canonical lower-case intent UUID."
+        },
+        {
+          "id": 5,
+          "name": "target",
+          "type": "CastControlTarget",
+          "required": true,
+          "deprecated": false,
+          "description": "Exact admitted identity; split requires current primary."
+        },
+        {
+          "id": 6,
+          "name": "expectedMeetingRevision",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 optimistic meeting revision checked on owner after dedup."
+        },
+        {
+          "id": 7,
+          "name": "display",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "primary",
+            "split"
+          ],
+          "description": "Explicit desired display role; no toggle."
+        },
+        {
+          "id": 8,
+          "name": "sidebarPage",
+          "type": "uint32",
+          "required": false,
+          "deprecated": false,
+          "description": "Explicit page optional only with primary; validated against current membership before mutation."
+        }
+      ]
+    },
+    {
+      "name": "CastMeetingAudioGain",
+      "type": "object",
+      "description": "Observed applied audio branch weight separate from enabled intent and physical listening quality.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "session",
+          "type": "CastSessionRef",
+          "required": true,
+          "deprecated": false,
+          "description": "Exact audible participant."
+        },
+        {
+          "id": 2,
+          "name": "gainPpm",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Rounded linear gain parts per million in 0..1000000; not perceived loudness percent."
+        }
+      ]
+    },
+    {
+      "name": "CastMeetingPresentationCapability",
+      "type": "object",
+      "description": "Optional meeting focus and fixed rail policy; settings keys require explicit P1 declaration.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "modes",
+          "type": "array",
+          "required": true,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported visual identifiers manual and automatic."
+        },
+        {
+          "id": 2,
+          "name": "sidebars",
+          "type": "array",
+          "required": true,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported left and right rail positions."
+        },
+        {
+          "id": 3,
+          "name": "mainSharePermille",
+          "type": "uint32",
+          "required": true,
+          "deprecated": false,
+          "description": "Fixed logical main width share 840."
+        },
+        {
+          "id": 4,
+          "name": "supportsAudioFollow",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Explicit optional follow switch independent of global automatic/manual."
+        },
+        {
+          "id": 5,
+          "name": "supportsPaging",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Bounded preview paging without admission or media lifecycle changes."
         }
       ]
     },

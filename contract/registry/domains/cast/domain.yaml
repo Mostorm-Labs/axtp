@@ -381,6 +381,20 @@ methods:
     capabilities: [cast.webcastBackend]
     errors: [SUCCESS, NOT_SUPPORTED, INVALID_ARGUMENT, UNAVAILABLE]
 
+  - id: 0x161B
+    name: cast.setPresentationFocus
+    domain: cast
+    status: draft
+    bitOffset: 26
+    since: 1.0.0
+    description: Explicit exact-target primary or split intent with optimistic meeting revision and bounded dedup; never toggles or re-admits a source.
+    rpc_op: request_response
+    request_schema: CastSetPresentationFocusParams
+    response_schema: CastControlOperation
+    recommended_encoding: [json, tlv]
+    capabilities: [cast.meetingPresentation, cast.controlOperations]
+    errors: [SUCCESS, NOT_SUPPORTED, INVALID_ARGUMENT, INVALID_STATE, BUSY, UNAVAILABLE]
+
 events:
   - id: 0x1601
     name: cast.sessionIncoming
@@ -2869,6 +2883,8 @@ types:
 
       - { id: 0x0B, name: webcastBackend, type: CastWebCastBackendCapability, required: false, description: Required iff this independent backend method/event/status section is supported. }
 
+      - { id: 0x0C, name: meetingPresentation, type: CastMeetingPresentationCapability, required: false, description: Explicit optional meeting focus and policy support. }
+
   CastPresentationCapability:
     kind: object
     description: Supported presentation protocols and logical capture/target guarantees; no product layout algorithm.
@@ -2959,6 +2975,8 @@ types:
       - { id: 0x09, name: layoutSettling, type: bool, required: true, description: Whether the host reports layout settling. }
       - { id: 0x0A, name: slots, type: array, array: { item_type: CastPresentationSlotState }, required: true, description: Full bounded current slot set with no removed-session ghost binding. }
 
+      - { id: 0x0B, name: meeting, type: CastMeetingPresentationState, required: false, description: Present only when meeting capability is advertised; part of the existing P0 presentation commit. }
+
   CastAudioPolicyState:
     kind: object
     description: Selected intent and effective audio participation captured with the same session/slot projection.
@@ -2967,6 +2985,8 @@ types:
       - { id: 0x02, name: mixMode, type: enum, enum: [exclusive, mix], required: true, description: Current mixing policy. }
       - { id: 0x03, name: enabledSessions, type: array, array: { item_type: CastSessionRef }, required: true, description: Unique current session references with enabled intent. }
       - { id: 0x04, name: effectiveAudioSessions, type: array, array: { item_type: CastSessionRef }, required: true, description: Unique current effective participants; neither set proves human-audible sound. }
+
+      - { id: 0x05, name: appliedGains, type: array, array: { item_type: CastMeetingAudioGain }, required: false, description: Successfully applied weights aligned with effective participants; optional meeting extension. }
 
   CastStopPresentationParams:
     kind: object
@@ -3007,7 +3027,7 @@ types:
       - { id: 0x02, name: runtimeInstanceId, type: string, required: true, max_length: 36, description: Canonical lower-case runtime epoch UUID. }
       - { id: 0x03, name: clientInstanceId, type: string, required: true, max_length: 36, description: Canonical lower-case UUID of the submitting client. }
       - { id: 0x04, name: commandId, type: string, required: true, max_length: 36, description: Canonical lower-case original intent UUID. }
-      - { id: 0x05, name: kind, type: enum, enum: [stopPresentation, setSessionAudioEnabled, setPresentationSettings], required: true, description: Intent kind; settings is a global P1 operation with settingsResult and no presentation target. }
+      - { id: 0x05, name: kind, type: enum, enum: [stopPresentation, setSessionAudioEnabled, setPresentationSettings, setPresentationFocus], required: true, description: Intent kind; settings is a global P1 operation with settingsResult and no presentation target. }
       - { id: 0x06, name: state, type: enum, enum: [queued, applied, rejected, failed], required: true, description: Admission or truthful terminal result; queued is not media success. }
       - { id: 0x07, name: submittedAt, type: string, required: true, max_length: 64, description: UTC RFC3339 submission display time; expiry uses host monotonic time. }
       - { id: 0x08, name: target, type: CastControlTarget, required: false, description: Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings. }
@@ -3041,6 +3061,11 @@ types:
       - { id: 0x05, name: enabledProtocols, type: array, array: { item_type: string }, required: false, description: Duplicate-free set from declared hid/airplay/webcast protocols; empty only when minEnabledProtocols is explicitly zero. }
       - { id: 0x06, name: profileHint, type: string, required: false, max_length: 64, description: Nonempty declared opaque product profile identifier; not a wire profile. }
 
+      - { id: 0x07, name: presentationEnabled, type: bool, required: false, description: Independent meeting interaction enable preference; default belongs to host. }
+      - { id: 0x08, name: presentationMode, type: enum, enum: [manual, automatic], required: false, description: Meeting visual entry policy; not global audio policy. }
+      - { id: 0x09, name: presentationSidebar, type: enum, enum: [left, right], required: false, description: Meeting rail position independent of base layoutMode. }
+      - { id: 0x0A, name: presentationAudioFollow, type: bool, required: false, description: Remembered follow preference independent of activity and global audio control mode. }
+
   CastPresentationSettingsValues:
     kind: object
     description: Supported setting values only; configured/known persisted projections are complete, while unconfirmed applied fields are absent with issues.
@@ -3052,6 +3077,11 @@ types:
       - { id: 0x05, name: enabledProtocols, type: array, array: { item_type: string }, required: false, description: Adopted or desired enable policy; not receiver readiness. }
       - { id: 0x06, name: profileHint, type: string, required: false, max_length: 64, description: Declared product combination profile identifier. }
 
+      - { id: 0x07, name: presentationEnabled, type: bool, required: false, description: Independent meeting interaction enable preference; default belongs to host. }
+      - { id: 0x08, name: presentationMode, type: enum, enum: [manual, automatic], required: false, description: Meeting visual entry policy; not global audio policy. }
+      - { id: 0x09, name: presentationSidebar, type: enum, enum: [left, right], required: false, description: Meeting rail position independent of base layoutMode. }
+      - { id: 0x0A, name: presentationAudioFollow, type: bool, required: false, description: Remembered follow preference independent of activity and global audio control mode. }
+
   CastPresentationStartupSettings:
     kind: object
     description: Exactly the capability-declared restart-only intent accepted at this host startup; distinct from effective/applied limits and stored values.
@@ -3062,6 +3092,11 @@ types:
       - { id: 0x04, name: capacity, type: uint32, required: false, min: 1, description: Startup accepted capacity intent before runtime validation limitations. }
       - { id: 0x05, name: enabledProtocols, type: array, array: { item_type: string }, required: false, description: Startup accepted receiver enable policy; does not claim Ready. }
       - { id: 0x06, name: profileHint, type: string, required: false, max_length: 64, description: Startup accepted product profile when declared restart-only. }
+
+      - { id: 0x07, name: presentationEnabled, type: bool, required: false, description: Independent meeting interaction enable preference; default belongs to host. }
+      - { id: 0x08, name: presentationMode, type: enum, enum: [manual, automatic], required: false, description: Meeting visual entry policy; not global audio policy. }
+      - { id: 0x09, name: presentationSidebar, type: enum, enum: [left, right], required: false, description: Meeting rail position independent of base layoutMode. }
+      - { id: 0x0A, name: presentationAudioFollow, type: bool, required: false, description: Remembered follow preference independent of activity and global audio control mode. }
 
   CastPresentationSettingsState:
     kind: object
@@ -3097,7 +3132,7 @@ types:
     kind: object
     description: Optional P1 field and effect partition; conditional choices/modes/minimum are required for corresponding supported keys, never inferred defaults.
     fields:
-      - { id: 0x01, name: fields, type: array, array: { item_type: string }, required: true, description: Unique supported subset of the six settings keys. }
+      - { id: 0x01, name: fields, type: array, array: { item_type: string }, required: true, description: Unique supported settings keys; meeting extension adds four separately advertised keys. }
       - { id: 0x02, name: liveFields, type: array, array: { item_type: string }, required: true, description: Live effect subset; disjoint from restartOnlyFields and together exactly fields. }
       - { id: 0x03, name: restartOnlyFields, type: array, array: { item_type: string }, required: true, description: Restart-only subset; updates never automatically restart current media. }
       - { id: 0x04, name: supportsPersistence, type: bool, required: true, description: Whether explicit field-only save requests are supported. }
@@ -3231,6 +3266,52 @@ types:
       - { id: 0x04, name: sequenceModel, type: enum, enum: [independent-full-state], required: true, description: Backend events do not change P0 batch membership or P1 sequence. }
 
 
+  CastMeetingPresentationState:
+    kind: object
+    description: Meeting policy and transient emphasis captured at the existing P0 commit boundary; no media-quality claims.
+    fields:
+      - { id: 0x01, name: enabled, type: bool, required: true, description: Armed preference independent of active view. }
+      - { id: 0x02, name: mode, type: enum, enum: [manual, automatic], required: true, description: Visual entry policy independent of global audio modes. }
+      - { id: 0x03, name: sidebar, type: enum, enum: [left, right], required: true, description: Preview rail position. }
+      - { id: 0x04, name: audioFollow, type: bool, required: true, description: Follow preference preserved while inactive. }
+      - { id: 0x05, name: revision, type: string, required: true, max_length: 20, description: Canonical decimal uint64 meeting identity revision for optimistic commands. }
+      - { id: 0x06, name: suspended, type: bool, required: true, description: Automatic entry paused until a new committed presentation admission or explicit focus. }
+      - { id: 0x07, name: primary, type: CastSessionRef, required: false, description: Current exact primary identity; omitted in base split. }
+      - { id: 0x08, name: sidebarPage, type: uint32, required: true, description: Zero-based preview page. }
+      - { id: 0x09, name: sidebarPageCount, type: uint32, required: true, min: 1, description: Current bounded page count including an empty page. }
+      - { id: 0x0A, name: mainSharePermille, type: uint32, required: true, description: Fixed logical width share; this profile uses 840. }
+      - { id: 0x0B, name: audioFollowActive, type: bool, required: true, description: Whether follow policy currently has an eligible primary; not audible output. }
+
+  CastSetPresentationFocusParams:
+    kind: object
+    description: P0-style bounded async operation; dedup before optimistic revision check and exact owner fencing before mutation.
+    fields:
+      - { id: 0x01, name: controlVersion, type: uint32, required: true, description: Explicit version uses 1. }
+      - { id: 0x02, name: runtimeInstanceId, type: string, required: true, max_length: 36, description: Canonical lower-case runtime UUID. }
+      - { id: 0x03, name: clientInstanceId, type: string, required: true, max_length: 36, description: Canonical lower-case client UUID. }
+      - { id: 0x04, name: commandId, type: string, required: true, max_length: 36, description: Canonical lower-case intent UUID. }
+      - { id: 0x05, name: target, type: CastControlTarget, required: true, description: Exact admitted identity; split requires current primary. }
+      - { id: 0x06, name: expectedMeetingRevision, type: string, required: true, max_length: 20, description: Canonical decimal uint64 optimistic meeting revision checked on owner after dedup. }
+      - { id: 0x07, name: display, type: enum, enum: [primary, split], required: true, description: Explicit desired display role; no toggle. }
+      - { id: 0x08, name: sidebarPage, type: uint32, required: false, description: Explicit page optional only with primary; validated against current membership before mutation. }
+
+  CastMeetingAudioGain:
+    kind: object
+    description: Observed applied audio branch weight separate from enabled intent and physical listening quality.
+    fields:
+      - { id: 0x01, name: session, type: CastSessionRef, required: true, description: Exact audible participant. }
+      - { id: 0x02, name: gainPpm, type: uint32, required: true, description: Rounded linear gain parts per million in 0..1000000; not perceived loudness percent. }
+
+  CastMeetingPresentationCapability:
+    kind: object
+    description: Optional meeting focus and fixed rail policy; settings keys require explicit P1 declaration.
+    fields:
+      - { id: 0x01, name: modes, type: array, array: { item_type: string }, required: true, description: Supported visual identifiers manual and automatic. }
+      - { id: 0x02, name: sidebars, type: array, array: { item_type: string }, required: true, description: Supported left and right rail positions. }
+      - { id: 0x03, name: mainSharePermille, type: uint32, required: true, description: Fixed logical main width share 840. }
+      - { id: 0x04, name: supportsAudioFollow, type: bool, required: true, description: Explicit optional follow switch independent of global automatic/manual. }
+      - { id: 0x05, name: supportsPaging, type: bool, required: true, description: Bounded preview paging without admission or media lifecycle changes. }
+
 capabilities:
   - id: 0x1601
     name: cast.session
@@ -3339,3 +3420,12 @@ capabilities:
     description: Optional secret-free WebCast cloud/local backend state query and independent full-state changes.
     type: object
     schema: CastWebCastBackendCapability
+
+  - id: 0x160D
+    name: cast.meetingPresentation
+    domain: cast
+    status: draft
+    since: 1.0.0
+    description: Optional fixed main-plus-preview view with exact focus control and independently remembered audio-follow preference.
+    type: object
+    schema: CastMeetingPresentationCapability

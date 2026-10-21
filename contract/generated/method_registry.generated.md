@@ -83,6 +83,7 @@
 | `0x1618` | `cast.getControlOperation` | cast | draft | CastGetControlOperationParams | CastControlOperation | - |
 | `0x1619` | `cast.setPresentationSettings` | cast | draft | CastSetPresentationSettingsParams | CastControlOperation | - |
 | `0x161A` | `cast.getWebCastBackendState` | cast | draft | CastGetWebCastBackendStateParams | CastWebCastBackendSnapshot | - |
+| `0x161B` | `cast.setPresentationFocus` | cast | draft | CastSetPresentationFocusParams | CastControlOperation | - |
 | `0x1701` | `software.getConfig` | software | draft | SoftwareGetConfigParams | SoftwareConfig | - |
 | `0x1702` | `software.setConfig` | software | draft | SoftwareSetConfigParams | SoftwareSetConfigResult | - |
 | `0x1703` | `software.resetConfig` | software | draft | SoftwareResetConfigParams | SoftwareConfig | - |
