@@ -341,6 +341,18 @@
       "idHex": "0x160D"
     },
     {
+      "id": 5646,
+      "name": "cast.airplayControl",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Secret-free AirPlay authentication and discovery observation with live rename.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "CastAirPlayControlCapability",
+      "idHex": "0x160E"
+    },
+    {
       "id": 5889,
       "name": "software.config",
       "domain": "software",

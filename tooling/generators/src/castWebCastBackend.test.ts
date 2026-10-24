@@ -16,10 +16,11 @@ describe('optional independent WebCast backend contract',()=>{
   expect(source.types.CastControlCapabilities.fields.find((f:any)=>f.name==='webcastBackend')).toMatchObject({id:11,required:false});
   expect(source.types.CastWebCastBackendContext.fields.map((f:any)=>f.name)).toEqual(['controlVersion','runtimeInstanceId','backendRevision','backendEventSequence']);
  });
- it('retains every existing P0/P1 fact and legacy enum',()=>{
+ it('retains historical facts except the explicitly replaced unpublished control fields',()=>{
   const base=JSON.parse(fs.readFileSync(path.join(root,'conformance/fixtures/cast-control/webcast-backend-baseline.json'),'utf8'));
   for(const group of ['methods','events','capabilities'])for(const old of base[group])expect(source[group].find((x:any)=>x.name===old.name)).toEqual(old);
-  for(const [name,type] of Object.entries(base.types) as [string,any][])for(const old of type.fields)expect(source.types[name].fields.find((f:any)=>f.name===old.name)).toEqual(old);
+  const replaced=new Set(['CastStopSessionParams.sessionId','CastPresentationCapability.layoutModes','CastPresentationState.layoutMode','CastControlOperation.kind','CastPresentationSettingsPatch.layoutMode','CastPresentationSettingsValues.layoutMode','CastPresentationStartupSettings.layoutMode','CastPresentationSettingsCapability.fields','CastPresentationSettingsCapability.layoutModes']);
+  for(const [name,type] of Object.entries(base.types) as [string,any][])for(const old of type.fields)if(!replaced.has(`${name}.${old.name}`))expect(source.types[name].fields.find((f:any)=>f.name===old.name)).toEqual(old);
  });
  it('allows old P2P peers while cloud is offline and preserves both authorities on recovery',()=>{
   const s=sample();expect(validBackendSnapshot(s)).toBe(true);s.state.cloud=node('ready',true,1);s.state.selectedBackend='cloud';s.state.local.signaling=node('ready',true,2);expect(validBackendSnapshot(s)).toBe(true);

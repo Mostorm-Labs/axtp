@@ -1,5 +1,7 @@
 # Cast multi-presentation control v1
 
+The [unpublished control refresh](49-cast-control-refresh.md) replaces the earlier Layout semantics and adds aggregate legacy operations and secret-free AirPlay observations.
+
 This is the P0 semantic contract for optional `cast.presentation`,
 `cast.audioPolicy` and `cast.controlOperations`. Machine shapes and identifiers
 come from [cast registry](../contract/registry/domains/cast/domain.yaml).

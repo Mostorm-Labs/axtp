@@ -116,7 +116,7 @@ scenarios:
                   validationAvailable: false
                   effectiveCapacity: 3
                   appliedCapacity: 3
-                  layoutMode: fixed-ratio
+                  layoutMode: grid
                   layoutSettling: false
                   slots:
                     - slotId: 0
@@ -142,6 +142,7 @@ scenarios:
                         slotId: 2
                         bindingGeneration: "1"
                         lifecycleGeneration: "1"
+                  contentAdaptation: auto-fit
           expect:
             applied: false
       - id: part2
@@ -165,6 +166,7 @@ scenarios:
                   mixMode: exclusive
                   enabledSessions: []
                   effectiveAudioSessions: []
+                  masterMuted: false
           expect:
             applied: true
             eventSequence: "3"
@@ -201,7 +203,7 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
@@ -227,11 +229,13 @@ scenarios:
                       slotId: 2
                       bindingGeneration: "1"
                       lifecycleGeneration: "1"
+                contentAdaptation: auto-fit
               audioPolicy:
                 controlMode: manual
                 mixMode: exclusive
                 enabledSessions: []
                 effectiveAudioSessions: []
+                masterMuted: false
     assertions:
       - The observable result matches specs/45-cast-control.md.
   - name: missing_part
@@ -399,7 +403,7 @@ scenarios:
                   validationAvailable: false
                   effectiveCapacity: 3
                   appliedCapacity: 3
-                  layoutMode: fixed-ratio
+                  layoutMode: grid
                   layoutSettling: false
                   slots:
                     - slotId: 0
@@ -425,6 +429,7 @@ scenarios:
                         slotId: 2
                         bindingGeneration: "1"
                         lifecycleGeneration: "1"
+                  contentAdaptation: auto-fit
           expect:
             applied: false
       - id: last
@@ -448,6 +453,7 @@ scenarios:
                   mixMode: exclusive
                   enabledSessions: []
                   effectiveAudioSessions: []
+                  masterMuted: false
           expect:
             applied: true
     assertions:
@@ -555,7 +561,7 @@ scenarios:
                   validationAvailable: false
                   effectiveCapacity: 3
                   appliedCapacity: 3
-                  layoutMode: fixed-ratio
+                  layoutMode: grid
                   layoutSettling: false
                   slots:
                     - slotId: 0
@@ -581,6 +587,7 @@ scenarios:
                         slotId: 2
                         bindingGeneration: "1"
                         lifecycleGeneration: "1"
+                  contentAdaptation: auto-fit
           expect:
             resync: true
     assertions:
@@ -656,7 +663,7 @@ scenarios:
                   validationAvailable: false
                   effectiveCapacity: 3
                   appliedCapacity: 3
-                  layoutMode: fixed-ratio
+                  layoutMode: grid
                   layoutSettling: false
                   slots:
                     - slotId: 0
@@ -682,6 +689,7 @@ scenarios:
                         slotId: 2
                         bindingGeneration: "1"
                         lifecycleGeneration: "1"
+                  contentAdaptation: auto-fit
           expect:
             resync: true
     assertions:
@@ -759,7 +767,7 @@ scenarios:
                   validationAvailable: false
                   effectiveCapacity: 3
                   appliedCapacity: 3
-                  layoutMode: fixed-ratio
+                  layoutMode: grid
                   layoutSettling: false
                   slots:
                     - slotId: 0
@@ -785,6 +793,7 @@ scenarios:
                         slotId: 2
                         bindingGeneration: "1"
                         lifecycleGeneration: "1"
+                  contentAdaptation: auto-fit
             limits:
               maxEventBufferEvents: 1
           expect:

@@ -1,15 +1,60 @@
-# Cast meeting presentation extension (local development)
+# Cast meeting presentation (unpublished local development)
 
-Status: adopted for unpublished local engineering on user acceptance of NearCast r5 (2026-10-21). Existing release locks are unchanged.
+This current contract supersedes the earlier unpublished entry/suspension design.
+See [control refresh](49-cast-control-refresh.md). No release tag is created.
 
-The optional cast.meetingPresentation capability adds cast.setPresentationFocus with exact P0 target fencing, runtime/client/command dedup, bounded async operation query, and owner-side expectedMeetingRevision. display is primary or split, never toggle. split requires the exact current primary; sidebarPage is permitted only for primary and must be in range before any mutation. No operation re-admits, rebuilds or alters source identity/clocks. Existing presentationChanged/audioPolicyChanged P0 commit groups carry full replacement state, and getStatus with unifiedControl shares their barrier.
+`layoutMode` is `grid` or `presentation`; `contentAdaptation` is independently
+`fixed` or `auto-fit`. There is no public `presentationEnabled` feature gate.
+Grid is a layout, not a view. In Presentation, `meeting.view` is `sidebar` or
+`focus`; omit it and `primary` in Grid. Focus never changes native fullscreen.
 
-Four optional P1 keys are presentationEnabled, presentationMode, presentationSidebar, presentationAudioFollow, each declared live or restart-only by capability. Existing single-field patch, explicit persist, dedup-before-revision, save-before-configure, failure and independent settings barrier rules remain. Unknown patch keys still fail; old clients can ignore added optional fields and must not assume absent capability.
+`cast.setPresentationFocus` uses the existing exact P0 target, epoch, command
+identity, bounded operation query and `expectedMeetingRevision` checks. `display`
+is explicitly `sidebar`, `grid`, or `focus`, never toggle. `grid` and `focus`
+require the exact current primary. `sidebarPage` is permitted only with `sidebar`
+and must be validated against the resulting preview count before any mutation.
+`supportsFocusView` declares Focus support. Invalid targets/pages/revisions do
+not mutate anything. Source bindings, clocks and admissions are preserved.
 
-Presentation is independent of fixed-ratio/auto-fit-content. NearCast defaults enabled/manual/right/follow=true; a saved false survives restart and re-entry. Manual waits for explicit focus. Automatic immediately resolves existing admissions when enabled, follows successful new admissions, and display=split suspends until a new successful admission or explicit focus. Polls, auth, waiting pages, recovery and departures do not resume suspension. A same-value setting retry does not resume. Full withdrawal clears transient identities, not preferences. Primary/preview swapping preserves all current media and admission bindings. Left/right use fixed main width 840 permille; hidden pages keep their clocks and bindings alive.
+P1 exposes five independent preferences: `presentationMode` (primary selection),
+`presentationSidebar`, `presentationAudioFollow`, `presentationFocusOnDoubleClick`
+and `presentationGridOnDoubleClick`. Each uses the one-field patch, explicit
+persist, dedup-before-CAS, save-before-configure and independent settings barrier.
+NearCast's defaults are Grid, Auto-fit, Automatic, Right, Follow on, Focus on,
+Grid cycle off. Its shipping profile does not persist receiver preferences.
 
-Follow is a distinct preference, not a new meaning for global automatic/manual. When active, exclusive selects primary (including with global manual); mix gives the ready primary linear weight .84 and other allowed ready inputs a combined .16 divided equally. Only-ready-primary uses 1. Explicit mute is retained; absent or muted primary does not redistribute .84 to peers. The selected set is intent, not sound verification. Disabling follow or returning to split retains current selection and restores ordinary mix weights; later true admissions still use base automatic/manual. Other manual+mix sources must be enabled explicitly. Global mode reset semantics remain explicit; no inverse-mode compensation. Graph gain updates validate total <=1 and reduce before increases. Applied gainPpm is rounded observation, not perceived loudness.
+Automatic selects a genuinely new admission only while already in Presentation.
+It does not enter Presentation from Grid. Manual retains the chosen primary.
+Selecting Presentation explicitly uses the remembered live primary, otherwise
+the most recent presented source. Full withdrawal resets layout to Grid; a
+later source does not re-enter Presentation. Focus uses the same primary policy,
+with no separate automatic/manual switch. Preview geometry remains fixed 84/16.
 
-Persistence never stores primary identity, preview members, applied gains or secrets. Current policy/desired sound and applied graph state remain separate; late callbacks are fenced. Real source picture/audio qualification remains separate from schema/model tests.
+Grid source double-click enters Presentation Sidebar with that primary. Sidebar
+preview double-click replaces primary. Main-body double-click follows:
 
-The complete focus request currently declares JSON encoding only. Its display enum has no adopted TLV enum-width/value mapping; runtimes must reject unbound enum TLV rather than invent one. Existing target identity and boolean settings projections retain their generated TLV bindings. This does not change existing methods or their encoding declarations.
+| Focus entry | Include Grid | Sidebar main | Focus main |
+| --- | --- | --- | --- |
+| true (default) | false (default) | Focus | Sidebar |
+| false | true | Grid | Sidebar |
+| true | true | Focus | Grid |
+| false | false | No mutation | Sidebar |
+
+Disabling Focus while in Focus restores Sidebar. Explicit remote layout/view
+commands are independent of these gesture preferences. A no-op does not advance
+revisions. Sidebar left/right and paging preserve hidden sources and clocks.
+
+Audio follow is independent of base automatic/manual selection. Exclusive uses
+primary; mix gives an allowed ready primary .84 and the other selected ready
+sources a total .16 divided equally; primary alone uses 1. Explicit per-source
+mute is retained. Turning follow off or returning to Grid preserves selections
+and restores ordinary weights. Independent `masterMuted` gates all output,
+including later admissions, without destroying those selections. Gain updates
+reduce before increases. Applied gain is not a perceptual loudness guarantee.
+
+`presentationChanged` and `audioPolicyChanged` remain full P0 commit-group parts;
+settings has its own barrier associated by `appliedControlRevision`. Never save
+primary identities, source lists, gains or secrets. Focus requests declare JSON
+only until an explicit TLV enum binding is adopted; runtimes must reject an
+unbound enum instead of inventing a mapping. Real media/device acceptance is
+separate from schema and reference-model checks.

@@ -59,8 +59,11 @@ scenarios:
                     - 4
                     - 8
                   layoutModes:
-                    - fixed-ratio
-                    - auto-fit-content
+                    - grid
+                    - presentation
+                  contentAdaptations:
+                    - fixed
+                    - auto-fit
                 audioPolicy:
                   controlModes:
                     - automatic
@@ -151,7 +154,7 @@ scenarios:
                   validationAvailable: false
                   effectiveCapacity: 3
                   appliedCapacity: 3
-                  layoutMode: fixed-ratio
+                  layoutMode: grid
                   layoutSettling: false
                   slots:
                     - slotId: 0
@@ -184,6 +187,7 @@ scenarios:
                         slotId: 2
                         bindingGeneration: "1"
                         lifecycleGeneration: "1"
+                  contentAdaptation: auto-fit
                 audioPolicy:
                   controlMode: manual
                   mixMode: exclusive
@@ -191,6 +195,7 @@ scenarios:
                     - id: session-hid
                       generation: "9007199254740993"
                   effectiveAudioSessions: []
+                  masterMuted: false
           expect:
             safe: true
     assertions:

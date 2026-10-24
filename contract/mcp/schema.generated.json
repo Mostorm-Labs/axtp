@@ -2688,7 +2688,7 @@
           "required": false,
           "deprecated": false,
           "maxLength": 128,
-          "description": "Optional receiver-local session id; omitted means current active session."
+          "description": "Optional receiver-local session id; omitted stops all connections and authentication requests existing at the host execution boundary, without stopping listeners."
         },
         {
           "id": 2,
@@ -5737,6 +5737,14 @@
           "required": false,
           "deprecated": false,
           "description": "Explicit optional backend snapshot with its own barrier; not implied by unifiedControl or settings."
+        },
+        {
+          "id": 17,
+          "name": "airplay",
+          "type": "CastAirPlayControlState",
+          "required": false,
+          "deprecated": false,
+          "description": "Secret-free discovery and authentication state at the P0 snapshot boundary."
         }
       ]
     },
@@ -6447,6 +6455,14 @@
           "required": false,
           "deprecated": false,
           "description": "Explicit optional meeting focus and policy support."
+        },
+        {
+          "id": 13,
+          "name": "airplayControl",
+          "type": "CastAirPlayControlCapability",
+          "required": false,
+          "deprecated": false,
+          "description": "Secret-free authentication and discovery observation."
         }
       ]
     },
@@ -6511,7 +6527,18 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Supported layout identifiers; geometry remains host-owned."
+          "description": "Supported grid/presentation layouts."
+        },
+        {
+          "id": 7,
+          "name": "contentAdaptations",
+          "type": "array",
+          "required": true,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported fixed/auto-fit content adaptation."
         }
       ]
     },
@@ -6557,6 +6584,14 @@
           "required": true,
           "deprecated": false,
           "description": "Whether effective participants are reported separately from selected intent."
+        },
+        {
+          "id": 5,
+          "name": "supportsMasterMute",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Untargeted legacy mute controls an independent global output gate."
         }
       ]
     },
@@ -6960,11 +6995,14 @@
         {
           "id": 8,
           "name": "layoutMode",
-          "type": "string",
+          "type": "enum",
           "required": true,
           "deprecated": false,
-          "maxLength": 64,
-          "description": "One of the layout identifiers advertised by this instance."
+          "enum": [
+            "grid",
+            "presentation"
+          ],
+          "description": "Selected product layout; complete source withdrawal returns to grid."
         },
         {
           "id": 9,
@@ -6992,6 +7030,18 @@
           "required": false,
           "deprecated": false,
           "description": "Present only when meeting capability is advertised; part of the existing P0 presentation commit."
+        },
+        {
+          "id": 12,
+          "name": "contentAdaptation",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "fixed",
+            "auto-fit"
+          ],
+          "description": "Independent content adaptation; never changes the selected layout."
         }
       ]
     },
@@ -7056,6 +7106,14 @@
             "itemType": "CastMeetingAudioGain"
           },
           "description": "Successfully applied weights aligned with effective participants; optional meeting extension."
+        },
+        {
+          "id": 6,
+          "name": "masterMuted",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Global output gate including future admissions; does not erase per-session intent."
         }
       ]
     },
@@ -7438,11 +7496,14 @@
         {
           "id": 1,
           "name": "layoutMode",
-          "type": "string",
+          "type": "enum",
           "required": false,
           "deprecated": false,
-          "maxLength": 64,
-          "description": "Nonempty declared layout identifier."
+          "enum": [
+            "grid",
+            "presentation"
+          ],
+          "description": "Selected product layout; complete source withdrawal returns to grid."
         },
         {
           "id": 2,
@@ -7499,11 +7560,15 @@
         },
         {
           "id": 7,
-          "name": "presentationEnabled",
-          "type": "bool",
+          "name": "contentAdaptation",
+          "type": "enum",
           "required": false,
           "deprecated": false,
-          "description": "Independent meeting interaction enable preference; default belongs to host."
+          "enum": [
+            "fixed",
+            "auto-fit"
+          ],
+          "description": "Content aspect adaptation independent of Layout."
         },
         {
           "id": 8,
@@ -7536,6 +7601,22 @@
           "required": false,
           "deprecated": false,
           "description": "Remembered follow preference independent of activity and global audio control mode."
+        },
+        {
+          "id": 11,
+          "name": "presentationFocusOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus."
+        },
+        {
+          "id": 12,
+          "name": "presentationGridOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry."
         }
       ]
     },
@@ -7547,11 +7628,14 @@
         {
           "id": 1,
           "name": "layoutMode",
-          "type": "string",
+          "type": "enum",
           "required": false,
           "deprecated": false,
-          "maxLength": 64,
-          "description": "Declared layout policy identifier."
+          "enum": [
+            "grid",
+            "presentation"
+          ],
+          "description": "Selected product layout; complete source withdrawal returns to grid."
         },
         {
           "id": 2,
@@ -7608,11 +7692,15 @@
         },
         {
           "id": 7,
-          "name": "presentationEnabled",
-          "type": "bool",
+          "name": "contentAdaptation",
+          "type": "enum",
           "required": false,
           "deprecated": false,
-          "description": "Independent meeting interaction enable preference; default belongs to host."
+          "enum": [
+            "fixed",
+            "auto-fit"
+          ],
+          "description": "Content aspect adaptation independent of Layout."
         },
         {
           "id": 8,
@@ -7645,6 +7733,22 @@
           "required": false,
           "deprecated": false,
           "description": "Remembered follow preference independent of activity and global audio control mode."
+        },
+        {
+          "id": 11,
+          "name": "presentationFocusOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus."
+        },
+        {
+          "id": 12,
+          "name": "presentationGridOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry."
         }
       ]
     },
@@ -7656,11 +7760,14 @@
         {
           "id": 1,
           "name": "layoutMode",
-          "type": "string",
+          "type": "enum",
           "required": false,
           "deprecated": false,
-          "maxLength": 64,
-          "description": "Present only if this implementation declares layoutMode restart-only."
+          "enum": [
+            "grid",
+            "presentation"
+          ],
+          "description": "Selected product layout; complete source withdrawal returns to grid."
         },
         {
           "id": 2,
@@ -7717,11 +7824,15 @@
         },
         {
           "id": 7,
-          "name": "presentationEnabled",
-          "type": "bool",
+          "name": "contentAdaptation",
+          "type": "enum",
           "required": false,
           "deprecated": false,
-          "description": "Independent meeting interaction enable preference; default belongs to host."
+          "enum": [
+            "fixed",
+            "auto-fit"
+          ],
+          "description": "Content aspect adaptation independent of Layout."
         },
         {
           "id": 8,
@@ -7754,6 +7865,22 @@
           "required": false,
           "deprecated": false,
           "description": "Remembered follow preference independent of activity and global audio control mode."
+        },
+        {
+          "id": 11,
+          "name": "presentationFocusOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus."
+        },
+        {
+          "id": 12,
+          "name": "presentationGridOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry."
         }
       ]
     },
@@ -8034,7 +8161,18 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Nonempty unique bounded mode identifiers required when layoutMode supported."
+          "description": "Supported grid/presentation layouts."
+        },
+        {
+          "id": 10,
+          "name": "contentAdaptations",
+          "type": "array",
+          "required": false,
+          "deprecated": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported fixed/auto-fit content adaptation."
         },
         {
           "id": 7,
@@ -8631,14 +8769,6 @@
       "description": "Meeting policy and transient emphasis captured at the existing P0 commit boundary; no media-quality claims.",
       "fields": [
         {
-          "id": 1,
-          "name": "enabled",
-          "type": "bool",
-          "required": true,
-          "deprecated": false,
-          "description": "Armed preference independent of active view."
-        },
-        {
           "id": 2,
           "name": "mode",
           "type": "enum",
@@ -8648,7 +8778,7 @@
             "manual",
             "automatic"
           ],
-          "description": "Visual entry policy independent of global audio modes."
+          "description": "Primary selection policy inside Presentation only; never automatically enters it from Grid."
         },
         {
           "id": 3,
@@ -8678,14 +8808,6 @@
           "deprecated": false,
           "maxLength": 20,
           "description": "Canonical decimal uint64 meeting identity revision for optimistic commands."
-        },
-        {
-          "id": 6,
-          "name": "suspended",
-          "type": "bool",
-          "required": true,
-          "deprecated": false,
-          "description": "Automatic entry paused until a new committed presentation admission or explicit focus."
         },
         {
           "id": 7,
@@ -8727,6 +8849,34 @@
           "required": true,
           "deprecated": false,
           "description": "Whether follow policy currently has an eligible primary; not audible output."
+        },
+        {
+          "id": 12,
+          "name": "view",
+          "type": "enum",
+          "required": false,
+          "deprecated": false,
+          "enum": [
+            "sidebar",
+            "focus"
+          ],
+          "description": "Present only in Presentation layout; omitted in Grid."
+        },
+        {
+          "id": 13,
+          "name": "focusOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Main-body double-click Focus entry preference; absent means true. Explicit focus API remains independent."
+        },
+        {
+          "id": 14,
+          "name": "gridOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Include Grid in main-body double-click cycle; absent means false. With Focus enabled the cycle is Grid to Sidebar to Focus to Grid."
         }
       ]
     },
@@ -8794,10 +8944,11 @@
           "required": true,
           "deprecated": false,
           "enum": [
-            "primary",
-            "split"
+            "sidebar",
+            "grid",
+            "focus"
           ],
-          "description": "Explicit desired display role; no toggle."
+          "description": "Explicit desired view. Focus requires current primary and supportsFocusView capability; primary restores sidebar. No toggle."
         },
         {
           "id": 8,
@@ -8882,6 +9033,197 @@
           "required": true,
           "deprecated": false,
           "description": "Bounded preview paging without admission or media lifecycle changes."
+        },
+        {
+          "id": 6,
+          "name": "supportsFocusView",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Explicit support for focus display requests and meeting view observation; absence means unsupported."
+        }
+      ]
+    },
+    {
+      "name": "CastAirPlayControlCapability",
+      "type": "object",
+      "description": "Bounded secret-free authentication and discovery observation.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "supportsEvents",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "State participates in the P0 commit barrier."
+        },
+        {
+          "id": 2,
+          "name": "supportsLiveRename",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Safe discovery-only name reconfiguration."
+        },
+        {
+          "id": 3,
+          "name": "passwordPolicy",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "startup-only"
+          ],
+          "description": "Random-password protection changes through startup arguments only."
+        }
+      ]
+    },
+    {
+      "name": "CastAirPlayAuthenticationAttempt",
+      "type": "object",
+      "description": "Authentication identity is not a media session; never contains a password or client address.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "attemptId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 20,
+          "description": "Service-minted decimal uint64 attempt identity."
+        },
+        {
+          "id": 2,
+          "name": "challengeId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 challenge generation; zero before a challenge."
+        },
+        {
+          "id": 3,
+          "name": "displayRequestId",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 prompt occurrence; retrying the same challenge may change it."
+        },
+        {
+          "id": 4,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "incoming",
+            "waitingForPassword",
+            "authenticated",
+            "ended",
+            "failed",
+            "timedOut"
+          ],
+          "description": "Observed phase; transport closure alone never claims user cancellation."
+        },
+        {
+          "id": 5,
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 64,
+          "description": "Bounded non-sensitive reason."
+        }
+      ]
+    },
+    {
+      "name": "CastAirPlayControlState",
+      "type": "object",
+      "description": "Current discovery and bounded authentication observations without credentials.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Startup protocol enablement."
+        },
+        {
+          "id": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": true,
+          "deprecated": false,
+          "maxLength": 128,
+          "description": "Actual configured discovery name."
+        },
+        {
+          "id": 3,
+          "name": "publishState",
+          "type": "enum",
+          "required": true,
+          "deprecated": false,
+          "enum": [
+            "published",
+            "republishing",
+            "pending",
+            "failed",
+            "unpublished"
+          ],
+          "description": "Observed discovery publication state."
+        },
+        {
+          "id": 4,
+          "name": "randomPasswordEnabled",
+          "type": "bool",
+          "required": true,
+          "deprecated": false,
+          "description": "Startup random-password policy."
+        },
+        {
+          "id": 5,
+          "name": "attempts",
+          "type": "array",
+          "required": true,
+          "deprecated": false,
+          "array": {
+            "itemType": "CastAirPlayAuthenticationAttempt"
+          },
+          "description": "Bounded active and recently ended authentication attempts."
+        },
+        {
+          "id": 6,
+          "name": "observationDrops",
+          "type": "string",
+          "required": false,
+          "deprecated": false,
+          "maxLength": 20,
+          "description": "Decimal uint64 count of bounded authentication observations dropped before host commit; resynchronize state when it changes."
+        }
+      ]
+    },
+    {
+      "name": "CastAirPlayChangedEvent",
+      "type": "object",
+      "description": "Full AirPlay state replacement in one P0 commit group part.",
+      "fields": [
+        {
+          "id": 1,
+          "name": "context",
+          "type": "CastControlEventContext",
+          "required": true,
+          "deprecated": false,
+          "description": "Required atomic commit context."
+        },
+        {
+          "id": 2,
+          "name": "airplay",
+          "type": "CastAirPlayControlState",
+          "required": true,
+          "deprecated": false,
+          "description": "Complete secret-free state."
         }
       ]
     },

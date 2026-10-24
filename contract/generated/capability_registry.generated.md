@@ -31,6 +31,7 @@
 | `0x160B` | `cast.presentationSettings` | cast | draft | object | CastPresentationSettingsCapability |
 | `0x160C` | `cast.webcastBackend` | cast | draft | object | CastWebCastBackendCapability |
 | `0x160D` | `cast.meetingPresentation` | cast | draft | object | CastMeetingPresentationCapability |
+| `0x160E` | `cast.airplayControl` | cast | draft | object | CastAirPlayControlCapability |
 | `0x1701` | `software.config` | software | draft | object | SoftwareConfigCapability |
 | `0x1702` | `software.updatePolicy` | software | draft | object | SoftwareUpdatePolicyCapability |
 | `0x1801` | `sport.eventDetection` | sport | draft | object | SportEventDetectionCapabilities |

@@ -48,8 +48,11 @@ controlCapabilities:
       - 9
       - 16
     layoutModes:
-      - fixed-ratio
-      - auto-fit-content
+      - grid
+      - presentation
+    contentAdaptations:
+      - fixed
+      - auto-fit
   audioPolicy:
     controlModes:
       - automatic
@@ -95,12 +98,15 @@ controlCapabilities:
       - 9
       - 16
     layoutModes:
-      - fixed-ratio
-      - auto-fit-content
+      - grid
+      - presentation
     profileHints:
       - legacy
       - unified
     minEnabledProtocols: 1
+    contentAdaptations:
+      - fixed
+      - auto-fit
 snapshot:
   receiver:
     role: receiver
@@ -170,7 +176,7 @@ snapshot:
     validationAvailable: true
     effectiveCapacity: 4
     appliedCapacity: 4
-    layoutMode: fixed-ratio
+    layoutMode: grid
     layoutSettling: true
     slots:
       - slotId: 0
@@ -204,6 +210,7 @@ snapshot:
           bindingGeneration: "1"
           lifecycleGeneration: "1"
     validatedCapacity: 4
+    contentAdaptation: auto-fit
   audioPolicy:
     controlMode: manual
     mixMode: exclusive
@@ -211,6 +218,7 @@ snapshot:
       - id: session-hid
         generation: "9007199254740993"
     effectiveAudioSessions: []
+    masterMuted: false
 legacy:
   receiver:
     role: receiver
@@ -225,7 +233,7 @@ legacy:
     protocol: hid
     receiverPhase: rendering
 settingsDefaults:
-  layoutMode: fixed-ratio
+  layoutMode: grid
   audioControlMode: manual
   audioMixMode: exclusive
   capacity: 9
@@ -238,7 +246,7 @@ settings:
   settingsRevision: "7"
   settingsEventSequence: "0"
   configured:
-    layoutMode: fixed-ratio
+    layoutMode: grid
     audioControlMode: manual
     audioMixMode: exclusive
     capacity: 9
@@ -248,7 +256,7 @@ settings:
       - webcast
     profileHint: unified
   applied:
-    layoutMode: fixed-ratio
+    layoutMode: grid
     audioControlMode: manual
     audioMixMode: exclusive
     capacity: 4
@@ -274,7 +282,7 @@ settings:
     - field: capacity
       kind: limitedByValidation
   persistedValues:
-    layoutMode: fixed-ratio
+    layoutMode: grid
     audioControlMode: manual
     audioMixMode: exclusive
     capacity: 9

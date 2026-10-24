@@ -1,5 +1,7 @@
 # Cast control P0/P1 release preparation
 
+Current unpublished engineering contract: [control refresh](../specs/49-cast-control-refresh.md). Its Layout replacement is intentionally breaking within the development input; do not claim this is an additive published release. Formal release/version approval remains separate.
+
 The locally adopted [optional WebCast backend feature](../specs/47-cast-webcast-backend.md)
 adds a separate query/event/capability and independent cursor. It does not alter
 P0 batches, P1 settings sequences or legacy backend contracts. Publication remains

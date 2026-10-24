@@ -892,6 +892,26 @@
       "idHex": "0x1613"
     },
     {
+      "id": 5652,
+      "bitOffset": 19,
+      "name": "cast.airplayChanged",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Replace secret-free AirPlay discovery and authentication state as a P0 commit part.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "eventSchema": "CastAirPlayChangedEvent",
+      "severity": "info",
+      "trigger": [
+        "discovery changed",
+        "authentication attempt changed"
+      ],
+      "capabilities": [
+        "cast.airplayControl"
+      ],
+      "idHex": "0x1614"
+    },
+    {
       "id": 5889,
       "bitOffset": 0,
       "name": "software.configChanged",

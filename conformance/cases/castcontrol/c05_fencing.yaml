@@ -55,7 +55,7 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
@@ -88,6 +88,7 @@ scenarios:
                       slotId: 2
                       bindingGeneration: "1"
                       lifecycleGeneration: "1"
+                contentAdaptation: auto-fit
             cleanups: []
     assertions:
       - The observable result matches specs/45-cast-control.md.
@@ -136,7 +137,7 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
@@ -169,6 +170,7 @@ scenarios:
                       slotId: 2
                       bindingGeneration: "1"
                       lifecycleGeneration: "1"
+                contentAdaptation: auto-fit
             cleanups: []
     assertions:
       - The observable result matches specs/45-cast-control.md.
@@ -217,7 +219,7 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
@@ -250,6 +252,7 @@ scenarios:
                       slotId: 2
                       bindingGeneration: "1"
                       lifecycleGeneration: "1"
+                contentAdaptation: auto-fit
             cleanups: []
     assertions:
       - The observable result matches specs/45-cast-control.md.
@@ -298,7 +301,7 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
@@ -331,6 +334,7 @@ scenarios:
                       slotId: 2
                       bindingGeneration: "1"
                       lifecycleGeneration: "1"
+                contentAdaptation: auto-fit
             cleanups: []
     assertions:
       - The observable result matches specs/45-cast-control.md.
@@ -362,7 +366,7 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
@@ -395,6 +399,7 @@ scenarios:
                       slotId: 2
                       bindingGeneration: "1"
                       lifecycleGeneration: "1"
+                contentAdaptation: auto-fit
     assertions:
       - The observable result matches specs/45-cast-control.md.
   - name: queued_slot_reused
@@ -512,7 +517,7 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
@@ -545,6 +550,7 @@ scenarios:
                       slotId: 2
                       bindingGeneration: "1"
                       lifecycleGeneration: "1"
+                contentAdaptation: auto-fit
             cleanups: []
     assertions:
       - The required identity and record guarantees hold.

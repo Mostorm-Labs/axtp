@@ -91,14 +91,16 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots: []
+                contentAdaptation: auto-fit
               audioPolicy:
                 controlMode: manual
                 mixMode: exclusive
                 enabledSessions: []
                 effectiveAudioSessions: []
+                masterMuted: false
           expect:
             installed: true
     assertions:
@@ -130,7 +132,7 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
@@ -143,11 +145,13 @@ scenarios:
                       slotId: 0
                       bindingGeneration: "1"
                       lifecycleGeneration: "1"
+                contentAdaptation: auto-fit
               audioPolicy:
                 controlMode: manual
                 mixMode: exclusive
                 enabledSessions: []
                 effectiveAudioSessions: []
+                masterMuted: false
           expect:
             installed: true
     assertions:
@@ -274,7 +278,7 @@ scenarios:
                 validationAvailable: true
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
@@ -307,6 +311,7 @@ scenarios:
                       slotId: 2
                       bindingGeneration: "1"
                       lifecycleGeneration: "1"
+                contentAdaptation: auto-fit
           expect:
             resync: true
     assertions:
@@ -328,13 +333,14 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
                     bindingGeneration: "1"
                     occupied: false
                     target: null
+                contentAdaptation: auto-fit
           expect:
             resync: true
     assertions:
@@ -384,14 +390,16 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots: []
+                contentAdaptation: auto-fit
               audioPolicy:
                 controlMode: manual
                 mixMode: exclusive
                 enabledSessions: []
                 effectiveAudioSessions: []
+                masterMuted: false
           expect:
             installed: true
     assertions:

@@ -8,7 +8,7 @@ Review inputs are the revised r1 §9 and UNIFIED_PRESENTATION_SETTINGS_PLAN.md
 P0/P1 implementation request. All new registry entries remain draft until a
 separate maturity/release decision. No automatic restart interface is introduced.
 
-The optional [meeting extension](48-cast-meeting-presentation.md) adds four separately advertised settings keys. The six base keys and all transaction rules below retain their meaning.
+The optional [meeting extension](48-cast-meeting-presentation.md) adds five separately advertised preference keys. The seven base keys and transaction rules below use the [current control refresh](49-cast-control-refresh.md).
 
 ## Surface and capability conditions
 
@@ -20,8 +20,8 @@ getStatus appends optional presentationSettings; getControlCapabilities appends
 optional presentationSettings capability. Supporting P1 requires all these
 bindings, the descriptor and status section, not merely a method name.
 
-The six setting keys are layoutMode, audioControlMode, audioMixMode, capacity,
-enabledProtocols and profileHint. Patch MUST contain exactly one key, including
+The seven base setting keys are layoutMode, contentAdaptation, audioControlMode,
+audioMixMode, capacity, enabledProtocols and profileHint. Patch MUST contain exactly one key, including
 when its value equals the configured value. Empty, multi-key, unknown-key and
 wrong-type patches return INVALID_ARGUMENT. persist is a required boolean.
 No request implicitly saves another field's temporary modification. Global
@@ -30,8 +30,8 @@ settings operations have no presentation target.
 Capability fields is a unique subset of these keys. liveFields and
 restartOnlyFields MUST be disjoint, unique and together equal fields. The
 partition declares behavior; AXTP does not make NearCast's first policy global.
-StartupSettings permits all six optional keys, but activeStartup MUST contain
-exactly the supported restart-only keys. NearCast's first profile declares layout
+StartupSettings permits all supported optional keys, but activeStartup MUST contain
+exactly the supported restart-only keys. NearCast's first profile declares layout, content adaptation
 and audio modes live, capacity/protocol/profile restart-only. Another host may
 declare a different partition without inventing a new startup schema.
 
@@ -40,7 +40,8 @@ Conditional descriptor requirements:
 | Supported key | Required declaration and validation |
 |---|---|
 | capacity | Nonempty unique positive uint32 capacityChoices; requested value must be a member. |
-| layoutMode | Nonempty unique layoutModes of nonempty identifiers (max 64 UTF-8 bytes). |
+| layoutMode | Nonempty unique layoutModes containing grid and/or presentation. |
+| contentAdaptation | Nonempty unique contentAdaptations containing fixed and/or auto-fit. |
 | profileHint | Nonempty unique profileHints of nonempty opaque identifiers (max 64 bytes); these are product profiles, not wire/header profiles. |
 | enabledProtocols | Required uint32 minEnabledProtocols, no larger than the supported presentation.protocols set. Values are a duplicate-free subset of hid/airplay/webcast advertised there. Empty requires an explicit minimum of 0 and a host capable of keeping control/settings available independently. |
 | audioControlMode / audioMixMode | Modes come from audioPolicy.controlModes / mixModes; do not infer omitted modes from defaults. |

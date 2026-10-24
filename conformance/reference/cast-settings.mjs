@@ -3,7 +3,7 @@
 import { CastControlModel, decimal, validateValue, validateOperation } from "./cast-control.mjs";
 
 const copy = (v) => structuredClone(v);
-export const settingFields = ["layoutMode", "audioControlMode", "audioMixMode", "capacity", "enabledProtocols", "profileHint"];
+export const settingFields = ["layoutMode", "contentAdaptation", "presentationMode", "presentationSidebar", "presentationAudioFollow", "presentationFocusOnDoubleClick", "presentationGridOnDoubleClick", "audioControlMode", "audioMixMode", "capacity", "enabledProtocols", "profileHint"];
 const canonical = (v) => JSON.stringify(v, (key, value) => key === "enabledProtocols" && Array.isArray(value) ? [...value].sort()
   : value && typeof value === "object" && !Array.isArray(value) ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value);
 const equal = (a, b) => canonical(a) === canonical(b);
@@ -28,7 +28,7 @@ export function validateSettingsCapability(types, descriptor) {
   };
   const identifier = (v) => typeof v === "string" && v.length > 0 && Buffer.byteLength(v) <= 64;
   requireChoices("capacity", "capacityChoices", (v) => Number.isInteger(v) && v > 0 && v <= 0xffffffff);
-  requireChoices("layoutMode", "layoutModes", identifier); requireChoices("profileHint", "profileHints", identifier);
+  requireChoices("layoutMode", "layoutModes", identifier); requireChoices("contentAdaptation", "contentAdaptations", identifier); requireChoices("profileHint", "profileHints", identifier);
   if (cap.fields.includes("enabledProtocols")) check(Number.isInteger(cap.minEnabledProtocols) && cap.minEnabledProtocols >= 0 && cap.minEnabledProtocols <= descriptor.presentation.protocols.length, "conditional protocol minimum");
   if (cap.fields.includes("audioControlMode")) check(descriptor.audioPolicy.controlModes.length > 0 && descriptor.audioPolicy.controlModes.every((m) => ["automatic", "manual"].includes(m)), "control modes");
   if (cap.fields.includes("audioMixMode")) check(descriptor.audioPolicy.mixModes.length > 0 && descriptor.audioPolicy.mixModes.every((m) => ["exclusive", "mix"].includes(m)), "mix modes");

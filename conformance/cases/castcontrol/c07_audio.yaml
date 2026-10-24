@@ -68,6 +68,7 @@ scenarios:
                   - id: session-hid
                     generation: "9007199254740993"
                 effectiveAudioSessions: []
+                masterMuted: false
               presentation:
                 started: true
                 lifecycleGeneration: "1"
@@ -75,7 +76,7 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
@@ -108,6 +109,7 @@ scenarios:
                       slotId: 2
                       bindingGeneration: "1"
                       lifecycleGeneration: "1"
+                contentAdaptation: auto-fit
     assertions:
       - The observable result matches specs/45-cast-control.md.
   - name: exclusive_participation
@@ -153,7 +155,7 @@ scenarios:
                 validationAvailable: false
                 effectiveCapacity: 3
                 appliedCapacity: 3
-                layoutMode: fixed-ratio
+                layoutMode: grid
                 layoutSettling: false
                 slots:
                   - slotId: 0
@@ -186,6 +188,7 @@ scenarios:
                       slotId: 2
                       bindingGeneration: "1"
                       lifecycleGeneration: "1"
+                contentAdaptation: auto-fit
               sessions:
                 - session:
                     id: session-hid
@@ -245,5 +248,6 @@ scenarios:
                   - id: session-hid
                     generation: "9007199254740993"
                 effectiveAudioSessions: []
+                masterMuted: false
     assertions:
       - The observable result matches specs/45-cast-control.md.

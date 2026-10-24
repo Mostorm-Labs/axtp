@@ -15,17 +15,19 @@ const codes = Object.fromEntries(yaml("contract/registry/error/error_code.yaml")
 const c12 = yaml("conformance/cases/castcontrol/c12_settings.yaml");
 
 describe("P1 adoption and reference evidence", () => {
-  it("freezes all pre-existing P0 fields, IDs and bindings, with only the appended kind enum", () => {
+  it("preserves P0 IDs and bindings except adopted unpublished layout replacement", () => {
     const old = JSON.parse(fs.readFileSync(path.join(root, "conformance/fixtures/cast-control/p0-baseline.json"), "utf8"));
     for (const group of ["methods", "events", "capabilities"]) for (const fact of old[group]) {
       expect(domain[group].find((f: any) => f.name === fact.name)).toMatchObject(fact);
     }
     for (const [name, type] of Object.entries(old.types) as Array<[string, any]>) for (const field of type.fields) {
       const current = domain.types[name].fields.find((f: any) => f.name === field.name);
-      if (name === "CastControlOperation" && field.name === "kind") {
+      if (name === "CastPresentationState" && field.name === "layoutMode") {
+        expect(current).toMatchObject({id:field.id,type:"enum",enum:["grid","presentation"],required:true});
+      } else if (name === "CastControlOperation" && field.name === "kind") {
         const { enum: values, ...shape } = field;
         expect(current).toMatchObject(shape); expect(current.enum.slice(0, values.length)).toEqual(values);
-        expect(current.enum.slice(values.length)).toEqual(["setPresentationSettings"]);
+        expect(current.enum.slice(values.length)).toEqual(["setPresentationSettings","setPresentationFocus"]);
       } else expect(current).toMatchObject(field);
     }
   });
