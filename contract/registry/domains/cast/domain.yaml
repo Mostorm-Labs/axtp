@@ -1423,6 +1423,24 @@ types:
         default: false
         description: Whether authorized clients request plaintext PIN material.
 
+      - id: 0x02
+        name: protocol
+        type: enum
+        required: false
+        enum: [airplay, webcast]
+        description: Code owner to query; omitted means AirPlay for legacy compatibility.
+      - id: 0x03
+        name: includeSensitive
+        type: bool
+        required: false
+        description: Legacy alias of includeSecret; either true requests secret material.
+      - id: 0x04
+        name: attemptId
+        type: string
+        max_length: 20
+        required: false
+        description: Exact AirPlay authentication attempt; canonical decimal uint64 string.
+
   CastSetPinCodeConfigParams:
     kind: object
     description: Request to update cast PIN protection configuration.
@@ -1472,6 +1490,34 @@ types:
         required: false
         enum: [hidden, authorizedOnly, localUi, both]
         description: Visibility policy for the new PIN.
+
+  CastPinCodeChallenge:
+    kind: object
+    description: One live AirPlay authentication challenge, never a media session.
+    fields:
+      - id: 0x01
+        name: attemptId
+        type: string
+        max_length: 20
+        required: true
+        description: Authentication attempt identity; canonical decimal uint64 string.
+      - id: 0x02
+        name: challengeId
+        type: string
+        max_length: 20
+        required: true
+        description: Exact credential generation; canonical decimal uint64 string.
+      - id: 0x03
+        name: displayRequestId
+        type: string
+        max_length: 20
+        required: true
+        description: Display occurrence, independent of credential lifetime; canonical decimal uint64 string.
+      - id: 0x04
+        name: pinCode
+        type: string
+        required: false
+        description: Live secret, omitted unless explicitly requested or in a dedicated PIN event.
 
   CastPinCodeConfig:
     kind: object
@@ -1542,6 +1588,26 @@ types:
         required: false
         description: Whether sensitive fields were withheld in this snapshot.
 
+      - id: 0x0C
+        name: protocol
+        type: enum
+        required: false
+        enum: [airplay, webcast]
+        description: Credential owner, independent of the currently playing protocol.
+      - id: 0x0D
+        name: backend
+        type: enum
+        required: false
+        enum: [cloud, local, none]
+        description: Selected WebCast backend for new joins; none means no usable backend.
+      - id: 0x0E
+        name: challenges
+        type: array
+        required: false
+        array:
+          item_type: CastPinCodeChallenge
+        description: Active AirPlay challenges; plaintext only when requested or in dedicated PIN events.
+
   CastPinCodeChangedEvent:
     kind: object
     description: Event payload for PIN configuration or PIN state changes.
@@ -1570,6 +1636,12 @@ types:
         required: false
         max_length: 64
         description: Timestamp for this event.
+
+      - id: 0x05
+        name: challenge
+        type: CastPinCodeChallenge
+        required: false
+        description: Affected AirPlay identity; secret omitted after consumption or expiry.
 
   CastPinCodeRequiredEvent:
     kind: object
@@ -1609,6 +1681,12 @@ types:
         required: false
         max_length: 64
         description: Timestamp when PIN input was requested.
+
+      - id: 0x07
+        name: config
+        type: CastPinCodeConfig
+        required: false
+        description: Exact AirPlay code state for this occurrence, including challenge identity.
 
   CastPinCodeAuthFailedEvent:
     kind: object
