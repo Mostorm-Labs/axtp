@@ -5326,6 +5326,12 @@ schemas:
         type: bool
         required: false
         description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry.
+      - fieldId: 13
+        name: presentationAutoEnter
+        type: bool
+        required: false
+        description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid
+          suppresses entry until full withdrawal.
   CastPresentationSettingsValues:
     kind: object
     description: Supported setting values only; configured/known persisted projections are complete, while unconfirmed
@@ -5413,6 +5419,12 @@ schemas:
         type: bool
         required: false
         description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry.
+      - fieldId: 13
+        name: presentationAutoEnter
+        type: bool
+        required: false
+        description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid
+          suppresses entry until full withdrawal.
   CastPresentationStartupSettings:
     kind: object
     description: Exactly the capability-declared restart-only intent accepted at this host startup; distinct from
@@ -5500,6 +5512,12 @@ schemas:
         type: bool
         required: false
         description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry.
+      - fieldId: 13
+        name: presentationAutoEnter
+        type: bool
+        required: false
+        description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid
+          suppresses entry until full withdrawal.
   CastPresentationSettingsState:
     kind: object
     description: Full bounded settings state; desired/adopted/startup/stored facts and two independent event barriers must
@@ -6151,6 +6169,17 @@ schemas:
         required: false
         description: Include Grid in main-body double-click cycle; absent means false. With Focus enabled the cycle is Grid to
           Sidebar to Focus to Grid.
+      - fieldId: 15
+        name: autoEnter
+        type: bool
+        required: false
+        description: Automatic layout entry preference; absent means unsupported. Independent of primary selection.
+      - fieldId: 16
+        name: autoEnterSuppressed
+        type: bool
+        required: false
+        description: Explicit Grid suspends auto-entry for this source round; resets on complete withdrawal or explicit
+          re-enabling. Transient and never persisted.
   CastSetPresentationFocusParams:
     kind: object
     description: P0-style bounded async operation; dedup before optimistic revision check and exact owner fencing before mutation.

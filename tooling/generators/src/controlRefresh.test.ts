@@ -14,8 +14,13 @@ describe("adopted unpublished control refresh",()=>{
    expect(field(s,"presentationEnabled")).toBeUndefined();
    expect(field(s,"presentationSplitOnDoubleClick")).toBeUndefined();
    expect(field(s,"presentationGridOnDoubleClick").type).toBe("bool");
+   expect(field(s,"presentationAutoEnter")).toMatchObject({id:13,type:"bool",required:false});
+   validateValue(domain.types,s,{presentationAutoEnter:true});
+   expect(()=>validateValue(domain.types,s,{presentationAutoEnter:"true"})).toThrow();
   }
   expect(field("CastSetPresentationFocusParams","display").enum).toEqual(["sidebar","grid","focus"]);
+  expect(field("CastMeetingPresentationState","autoEnter")).toMatchObject({id:15,type:"bool",required:false});
+  expect(field("CastMeetingPresentationState","autoEnterSuppressed")).toMatchObject({id:16,type:"bool",required:false});
   expect(field("CastMeetingPresentationState","view").enum).toEqual(["sidebar","focus"]);
   expect(()=>validateValue(domain.types,"CastPresentationSettingsPatch",{layoutMode:"fixed-ratio"})).toThrow();
   validateValue(domain.types,"CastPresentationSettingsPatch",{layoutMode:"grid"});

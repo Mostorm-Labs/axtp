@@ -3,7 +3,7 @@
 import { CastControlModel, decimal, validateValue, validateOperation } from "./cast-control.mjs";
 
 const copy = (v) => structuredClone(v);
-export const settingFields = ["layoutMode", "contentAdaptation", "presentationMode", "presentationSidebar", "presentationAudioFollow", "presentationFocusOnDoubleClick", "presentationGridOnDoubleClick", "audioControlMode", "audioMixMode", "capacity", "enabledProtocols", "profileHint"];
+export const settingFields = ["layoutMode", "contentAdaptation", "presentationMode", "presentationSidebar", "presentationAudioFollow", "presentationFocusOnDoubleClick", "presentationGridOnDoubleClick", "presentationAutoEnter", "audioControlMode", "audioMixMode", "capacity", "enabledProtocols", "profileHint"];
 const canonical = (v) => JSON.stringify(v, (key, value) => key === "enabledProtocols" && Array.isArray(value) ? [...value].sort()
   : value && typeof value === "object" && !Array.isArray(value) ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value);
 const equal = (a, b) => canonical(a) === canonical(b);

@@ -7,7 +7,9 @@ of layout and native fullscreen. presentationEnabled is removed. display values
 are sidebar/grid/focus; meeting.view is omitted in Grid. Primary selection is
 automatic/manual inside Presentation only. Complete source withdrawal returns
 to Grid. Grid is not a view. presentationGridOnDoubleClick replaces the former
-Split-named setting. NearCast defaults Grid, Auto-fit, Automatic primary selection.
+Split-named setting. NearCast defaults Presentation, Auto-fit, auto-entry on, Automatic primary
+selection. The independent auto-entry preference and source-round suppression
+are defined in 48-cast-meeting-presentation.md.
 
 Untargeted legacy stopSession stops all connections existing at its finite owner
 execution boundary, including authentication and data-only sharing requests.

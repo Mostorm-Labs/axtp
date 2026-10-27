@@ -7770,6 +7770,14 @@
           "required": false,
           "deprecated": false,
           "description": "Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry."
+        },
+        {
+          "id": 13,
+          "name": "presentationAutoEnter",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal."
         }
       ]
     },
@@ -7902,6 +7910,14 @@
           "required": false,
           "deprecated": false,
           "description": "Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry."
+        },
+        {
+          "id": 13,
+          "name": "presentationAutoEnter",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal."
         }
       ]
     },
@@ -8034,6 +8050,14 @@
           "required": false,
           "deprecated": false,
           "description": "Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry."
+        },
+        {
+          "id": 13,
+          "name": "presentationAutoEnter",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal."
         }
       ]
     },
@@ -9030,6 +9054,22 @@
           "required": false,
           "deprecated": false,
           "description": "Include Grid in main-body double-click cycle; absent means false. With Focus enabled the cycle is Grid to Sidebar to Focus to Grid."
+        },
+        {
+          "id": 15,
+          "name": "autoEnter",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Automatic layout entry preference; absent means unsupported. Independent of primary selection."
+        },
+        {
+          "id": 16,
+          "name": "autoEnterSuppressed",
+          "type": "bool",
+          "required": false,
+          "deprecated": false,
+          "description": "Explicit Grid suspends auto-entry for this source round; resets on complete withdrawal or explicit re-enabling. Transient and never persisted."
         }
       ]
     },

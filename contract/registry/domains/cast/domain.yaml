@@ -3183,6 +3183,7 @@ types:
       - { id: 0x0A, name: presentationAudioFollow, type: bool, required: false, description: Remembered follow preference independent of activity and global audio control mode. }
       - { id: 0x0B, name: presentationFocusOnDoubleClick, type: bool, required: false, description: Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. }
       - { id: 0x0C, name: presentationGridOnDoubleClick, type: bool, required: false, description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. }
+      - { id: 0x0D, name: presentationAutoEnter, type: bool, required: false, description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. }
 
   CastPresentationSettingsValues:
     kind: object
@@ -3201,6 +3202,7 @@ types:
       - { id: 0x0A, name: presentationAudioFollow, type: bool, required: false, description: Remembered follow preference independent of activity and global audio control mode. }
       - { id: 0x0B, name: presentationFocusOnDoubleClick, type: bool, required: false, description: Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. }
       - { id: 0x0C, name: presentationGridOnDoubleClick, type: bool, required: false, description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. }
+      - { id: 0x0D, name: presentationAutoEnter, type: bool, required: false, description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. }
 
   CastPresentationStartupSettings:
     kind: object
@@ -3219,6 +3221,7 @@ types:
       - { id: 0x0A, name: presentationAudioFollow, type: bool, required: false, description: Remembered follow preference independent of activity and global audio control mode. }
       - { id: 0x0B, name: presentationFocusOnDoubleClick, type: bool, required: false, description: Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. }
       - { id: 0x0C, name: presentationGridOnDoubleClick, type: bool, required: false, description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. }
+      - { id: 0x0D, name: presentationAutoEnter, type: bool, required: false, description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. }
 
   CastPresentationSettingsState:
     kind: object
@@ -3406,6 +3409,8 @@ types:
       - { id: 0x0C, name: view, type: enum, enum: [sidebar, focus], required: false, description: Present only in Presentation layout; omitted in Grid. }
       - { id: 0x0D, name: focusOnDoubleClick, type: bool, required: false, description: Main-body double-click Focus entry preference; absent means true. Explicit focus API remains independent. }
       - { id: 0x0E, name: gridOnDoubleClick, type: bool, required: false, description: Include Grid in main-body double-click cycle; absent means false. With Focus enabled the cycle is Grid to Sidebar to Focus to Grid. }
+      - { id: 0x0F, name: autoEnter, type: bool, required: false, description: Automatic layout entry preference; absent means unsupported. Independent of primary selection. }
+      - { id: 0x10, name: autoEnterSuppressed, type: bool, required: false, description: Explicit Grid suspends auto-entry for this source round; resets on complete withdrawal or explicit re-enabling. Transient and never persisted. }
 
   CastSetPresentationFocusParams:
     kind: object
