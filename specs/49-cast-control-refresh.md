@@ -39,9 +39,10 @@ Default queries omit plaintext. Legacy cast.getStatus(includeSensitive=true) may
 include its AirPlay pinCode section; unifiedControl/airplay/webcastBackend state
 and events remain secret-free, even with includeSensitive.
 
-AirPlay returns live challenges with exact attemptId/challengeId/displayRequestId
-uint64 decimal strings. Optional attemptId narrows the query. A top-level pinCode
-is present only for exactly one active challenge. Consumption, replacement and
+AirPlay default scope=access returns the current prepared code even before any
+authentication request. The challenges array retains each active request and its
+exact attemptId/challengeId/displayRequestId and codeGeneration decimal uint64
+strings. Optional attemptId selects scope=challenge and returns only that request. Consumption, replacement and
 expiry clear the matching challenge and publish pinCodeChanged; every display
 occurrence publishes pinCodeRequired. UI display leases do not expire a credential.
 Transport loss is not proof of cancel, and must not rotate a retained password.
@@ -56,3 +57,27 @@ Dedicated PIN events may contain plaintext, carry redactionRequired=true and mus
 be redacted in diagnostic traffic, copy/export and persistent logs. An explicit
 credential display may show the value in memory. Reconnect queries authoritative
 current state; event delivery alone is not a durable credential history.
+
+## Prepared AirPlay access code (explicit user acceptance, 2026-10-27)
+
+Prepare at startup. A new request freezes the current access code and generation;
+RTSP Digest and pre-verification pairing PIN use the same prepared generation.
+Every actual media presentation admission rotates the access code once for future
+requests. Authentication success alone, a connected transport, failed admission,
+FLUSH, UI redisplay, duplicate observation or other protocols never rotate it.
+There is no claim that an admitted buffer proves actual visual/audio quality.
+
+Already pending requests retain their exact bound code, generation, nonce/SRP
+state and original expiry across another source's rotation. Do not change them
+in place. Failed-Digest limits and scoped retirement remain enforced. A bounded
+failure-triggered private challenge replacement is distinct from the public
+access-code generation. Generation identifiers never rely on the four digits
+changing. Stale presentation identities cannot trigger another rotation.
+
+scope=access pinCode is the code for new requests; scope=challenge pinCode is the
+specified pending request's code. Query returns both the prepared access metadata
+and active challenges when no selector is given. A retired challenge disappears
+without making the still-available access code disappear. Rotation failure makes
+new-join code unavailable, retaining already bound authentication/media ownership;
+there is no fixed-password fallback. Dedicated pinCodeChanged publishes the scope
+and codeGeneration. Merely preparing/changing a code must not open a password UI.
