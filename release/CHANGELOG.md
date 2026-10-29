@@ -4,11 +4,49 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
-## Unreleased — planned spec/v0.18.0
+## spec/v0.18.0
 
-Optional concurrent cast control P0 and complete P1 settings; registry entries remain draft. This is an
-additive spec change; protocol 1.0.0, wire 1 and product controlVersion=1 are
-independent. No tag, runtime release or downstream lock update is implied.
+### Protocol
+
+- Adds optional fenced multi-source cast control, atomic snapshots, operation tracking,
+  Presentation and independent content adaptation, WebCast backend state, and
+  scoped AirPlay and WebCast credential queries and events.
+- Adds Presentation automatic entry and primary selection as independent settings.
+  Prepared AirPlay access codes retain existing pending challenge generations.
+
+### Registry
+
+- Registers the multi-source control methods, events and capabilities alongside
+  the existing cast methods and legacy aggregate notifications.
+
+### Schemas
+
+- Defines bounded command, settings, credential, backend and presentation objects;
+  64-bit identities and revisions are encoded as decimal strings in JSON.
+
+### Conformance
+
+- Includes control and settings profiles, executable reference checks and JSON/TLV8
+  vectors. Runtime and product implementations require their own verification.
+
+### Migration
+
+- The unpublished development Layout contract is replaced: `layoutMode` now means
+  grid/presentation, `contentAdaptation` means fixed/auto-fit, and the former
+  `presentationEnabled` field is removed. Consumers of development snapshots must
+  migrate; the legacy aggregate cast interfaces retain their documented projection.
+- Dedicated credential events can contain secrets and require redaction. Explicit
+  sensitive queries must be handled separately from general status and diagnostics.
+
+### Runtime Impact
+
+- Runtime implementations must bind this exact spec tag and regenerate with their
+  own generators. P0/P1 capabilities are optional and do not imply device support.
+
+### Original P0/P1 scope
+
+Optional concurrent cast control P0 and P1 settings extend the published v0.17.0
+contract; protocol 1.0.0, wire 1 and product controlVersion=1 are independent.
 
 - Adds five methods 0x1615–0x1619 (bits 20–24), six events 0x160D–0x1612
   (bits 12–17) and four capabilities 0x1608–0x160B in their separate ID spaces.
@@ -23,7 +61,7 @@ independent. No tag, runtime release or downstream lock update is implied.
   string boundary vectors. Introduces optional cast-control conformance C01–C11,
   fixtures and an executable reference oracle. The separate optional cast-settings
   profile adds C12/PS-01–PS-12 without expanding the P0 required set.
-- Downstream consumers should wait for an approved exact spec tag/commit, regenerate
+- Downstream consumers should use an approved exact spec tag/commit, regenerate
   runtime metadata/codecs with their own generators, then update Axent and NearCast
   in that order. This repository does not implement media or product policy.
 - P1 adds field-only persistence before configuration/live application, truthful
