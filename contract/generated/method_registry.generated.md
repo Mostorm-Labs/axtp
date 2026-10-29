@@ -77,6 +77,13 @@
 | `0x1612` | `cast.getStatus` | cast | draft | CastGetStatusParams | CastStatus | - |
 | `0x1613` | `cast.setAudioDelay` | cast | draft | CastSetAudioDelayParams | CastAudioState | - |
 | `0x1614` | `cast.setVideoStreamParams` | cast | draft | CastSetVideoStreamParamsParams | CastSetVideoStreamParamsResult | - |
+| `0x1615` | `cast.getControlCapabilities` | cast | draft | Empty | CastControlCapabilities | - |
+| `0x1616` | `cast.stopPresentation` | cast | draft | CastStopPresentationParams | CastControlOperation | - |
+| `0x1617` | `cast.setSessionAudioEnabled` | cast | draft | CastSetSessionAudioEnabledParams | CastControlOperation | - |
+| `0x1618` | `cast.getControlOperation` | cast | draft | CastGetControlOperationParams | CastControlOperation | - |
+| `0x1619` | `cast.setPresentationSettings` | cast | draft | CastSetPresentationSettingsParams | CastControlOperation | - |
+| `0x161A` | `cast.getWebCastBackendState` | cast | draft | CastGetWebCastBackendStateParams | CastWebCastBackendSnapshot | - |
+| `0x161B` | `cast.setPresentationFocus` | cast | draft | CastSetPresentationFocusParams | CastControlOperation | - |
 | `0x1701` | `software.getConfig` | software | draft | SoftwareGetConfigParams | SoftwareConfig | - |
 | `0x1702` | `software.setConfig` | software | draft | SoftwareSetConfigParams | SoftwareSetConfigResult | - |
 | `0x1703` | `software.resetConfig` | software | draft | SoftwareResetConfigParams | SoftwareConfig | - |

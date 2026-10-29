@@ -2176,7 +2176,8 @@
       "errors": [
         "SUCCESS",
         "INVALID_ARGUMENT",
-        "UNAVAILABLE"
+        "UNAVAILABLE",
+        "NOT_SUPPORTED"
       ],
       "idHex": "0x1612"
     },
@@ -2247,6 +2248,230 @@
         "UNAVAILABLE"
       ],
       "idHex": "0x1614"
+    },
+    {
+      "id": 5653,
+      "bitOffset": 20,
+      "name": "cast.getControlCapabilities",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Discover supported control versions, runtime epoch and bounded multi-presentation guarantees before selecting a version.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "Empty",
+      "responseSchema": "CastControlCapabilities",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.presentation"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x1615"
+    },
+    {
+      "id": 5654,
+      "bitOffset": 21,
+      "name": "cast.stopPresentation",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Withdraw one exact presentation after atomic owner-side fence validation; success returns an admitted operation, not receiver shutdown.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastStopPresentationParams",
+      "responseSchema": "CastControlOperation",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.presentation",
+        "cast.controlOperations"
+      ],
+      "events": [
+        "cast.sessionsChanged",
+        "cast.presentationChanged",
+        "cast.audioPolicyChanged",
+        "cast.controlOperationChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "UNAVAILABLE",
+        "INTERNAL_ERROR"
+      ],
+      "idHex": "0x1616"
+    },
+    {
+      "id": 5655,
+      "bitOffset": 22,
+      "name": "cast.setSessionAudioEnabled",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Set explicit enabled intent for one exact presented session; effective audio participation is reported separately.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastSetSessionAudioEnabledParams",
+      "responseSchema": "CastControlOperation",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.audioPolicy",
+        "cast.controlOperations"
+      ],
+      "events": [
+        "cast.audioPolicyChanged",
+        "cast.controlOperationChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "UNAVAILABLE",
+        "INTERNAL_ERROR"
+      ],
+      "idHex": "0x1617"
+    },
+    {
+      "id": 5656,
+      "bitOffset": 23,
+      "name": "cast.getControlOperation",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Query the original intent by runtime, client and command identity; NOT_FOUND means unknown outcome rather than not executed.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastGetControlOperationParams",
+      "responseSchema": "CastControlOperation",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.controlOperations"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "NOT_FOUND",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x1618"
+    },
+    {
+      "id": 5657,
+      "bitOffset": 24,
+      "name": "cast.setPresentationSettings",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Set exactly one supported host setting with optimistic revision, bounded dedup and explicit field-only persistence; returns per-stage asynchronous results without automatic restart.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastSetPresentationSettingsParams",
+      "responseSchema": "CastControlOperation",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.presentationSettings",
+        "cast.controlOperations"
+      ],
+      "events": [
+        "cast.presentationSettingsChanged",
+        "cast.presentationChanged",
+        "cast.audioPolicyChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "OUT_OF_RANGE",
+        "BUSY",
+        "UNAVAILABLE",
+        "INTERNAL_ERROR"
+      ],
+      "idHex": "0x1619"
+    },
+    {
+      "id": 5658,
+      "bitOffset": 25,
+      "name": "cast.getWebCastBackendState",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Read a secret-free WebCast signaling backend snapshot and independent event barrier; selection for new joins is separate from retained peers.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastGetWebCastBackendStateParams",
+      "responseSchema": "CastWebCastBackendSnapshot",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.webcastBackend"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x161A"
+    },
+    {
+      "id": 5659,
+      "bitOffset": 26,
+      "name": "cast.setPresentationFocus",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Explicit exact-target primary or split intent with optimistic meeting revision and bounded dedup; never toggles or re-admits a source.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastSetPresentationFocusParams",
+      "responseSchema": "CastControlOperation",
+      "recommendedEncoding": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.meetingPresentation",
+        "cast.controlOperations"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x161B"
     },
     {
       "id": 5889,

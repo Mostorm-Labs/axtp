@@ -4,6 +4,74 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.18.0
+
+### Protocol
+
+- Adds optional fenced multi-source cast control, atomic snapshots, operation tracking,
+  Presentation and independent content adaptation, WebCast backend state, and
+  scoped AirPlay and WebCast credential queries and events.
+- Adds Presentation automatic entry and primary selection as independent settings.
+  Prepared AirPlay access codes retain existing pending challenge generations.
+
+### Registry
+
+- Registers the multi-source control methods, events and capabilities alongside
+  the existing cast methods and legacy aggregate notifications.
+
+### Schemas
+
+- Defines bounded command, settings, credential, backend and presentation objects;
+  64-bit identities and revisions are encoded as decimal strings in JSON.
+
+### Conformance
+
+- Includes control and settings profiles, executable reference checks and JSON/TLV8
+  vectors. Runtime and product implementations require their own verification.
+
+### Migration
+
+- The unpublished development Layout contract is replaced: `layoutMode` now means
+  grid/presentation, `contentAdaptation` means fixed/auto-fit, and the former
+  `presentationEnabled` field is removed. Consumers of development snapshots must
+  migrate; the legacy aggregate cast interfaces retain their documented projection.
+- Dedicated credential events can contain secrets and require redaction. Explicit
+  sensitive queries must be handled separately from general status and diagnostics.
+
+### Runtime Impact
+
+- Runtime implementations must bind this exact spec tag and regenerate with their
+  own generators. P0/P1 capabilities are optional and do not imply device support.
+
+### Original P0/P1 scope
+
+Optional concurrent cast control P0 and P1 settings extend the published v0.17.0
+contract; protocol 1.0.0, wire 1 and product controlVersion=1 are independent.
+
+- Adds five methods 0x1615–0x1619 (bits 20–24), six events 0x160D–0x1612
+  (bits 12–17) and four capabilities 0x1608–0x160B in their separate ID spaces.
+- Adds 33 object schemas (23 P0, 10 P1). Extends getStatus params with optional field 0x03,
+  CastStatus with optional fields 0x0A–0x0F, windowChanged with optional field
+  0x05 and CastStatusCapability with optional fields 0x03–0x04. All legacy IDs,
+  field shapes and single-source semantics are preserved.
+- Defines atomic six-section snapshots, full feature commit batches, strict
+  runtime/session/slot/binding/lifecycle fences, bounded dedup/result retention,
+  unknown outcomes and scoped owner cleanup in specs/45-cast-control.md.
+- Generates protocol IR, references, MCP metadata and paired JSON/TLV8 decimal
+  string boundary vectors. Introduces optional cast-control conformance C01–C11,
+  fixtures and an executable reference oracle. The separate optional cast-settings
+  profile adds C12/PS-01–PS-12 without expanding the P0 required set.
+- Downstream consumers should use an approved exact spec tag/commit, regenerate
+  runtime metadata/codecs with their own generators, then update Axent and NearCast
+  in that order. This repository does not implement media or product policy.
+- P1 adds field-only persistence before configuration/live application, truthful
+  partial results, startup versus desired/adopted/stored projections and an
+  independent settings stream. Optional fields append at CastControlCapabilities
+  0x0A and CastControlOperation 0x0E; the new operation kind has no session target.
+  Settings cursor JSON/TLV8 vectors preserve decimal strings. See
+  `release/CAST_CONTROL_P0_RELEASE.md` for the local verification
+  boundary and downstream migration contract.
+
 ## spec/v0.17.0
 
 Signage playlist item typed settings, PowerBI item support, and full playlist item refresh, merged through PR #39.

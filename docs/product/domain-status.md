@@ -17,7 +17,7 @@
 |---|---:|---|---:|---|---|
 | audio | 12 | ASK | 13 | 旁路高覆盖 / P0 stream | `audio.algorithm` 与 `audio.stream` 已进入 generated；后续按修订流程维护并补齐剩余 audio 草案确认。 |
 | auth | 3 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
-| cast | 7 | ASK / generated | 32 | P2 / 投屏接收端控制 | `cast.*` confirmed subset 已进入 generated；`cast.getStatus` 仅保留快照查询。PIN 格式、AirPlay 名称 schema、无窗口行为和快照裁剪策略作为后续修订项。 |
+| cast | 12 | ASK / generated | 47 | P0/P1 多路控制已采纳 | `cast.presentation`、`cast.audioPolicy`、`cast.controlOperations`、`cast.presentationSettings` 已登记；P0 原子快照/提交组及 P1 单字段配置、保存/应用部分结果、独立设置流见 specs/45-cast-control.md 与 specs/46-cast-settings.md。实际产品接入仍需下游实现验收。 |
 | camera | 7 | ASK | 0 | P3/P4 | 补产品/设备/legacy 确认。 |
 | capability | 1 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | device | 6 | ASK | 5 | P1 | `device.info`、`device.enrollment` 已进入 generated；继续补 `device.childDevice` 等通用底座确认。 |

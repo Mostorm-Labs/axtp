@@ -71,6 +71,37 @@ levels:
       - sport.config_status_only
       - sport.config_validation_atomicity
 
+  cast-control:
+    description: Optional P0 concurrent cast control with atomic snapshots, fenced writes and bounded operation recovery; introduced for planned spec/v0.18.0.
+    required_cases:
+      - castcontrol.c01_capability
+      - castcontrol.c02_snapshot
+      - castcontrol.c03_reconnect
+      - castcontrol.c04_feature_batch
+      - castcontrol.c05_fencing
+      - castcontrol.c06_dedup_result
+      - castcontrol.c07_audio
+      - castcontrol.c08_stop
+      - castcontrol.c09_encoding
+      - castcontrol.c10_legacy
+      - castcontrol.c11_privacy
+
+  cast-settings:
+    description: Optional combined P0/P1 host settings; preserves the independent P0 level and adds C12/PS-01-PS-12 protocol guarantees.
+    required_cases:
+      - castcontrol.c01_capability
+      - castcontrol.c02_snapshot
+      - castcontrol.c03_reconnect
+      - castcontrol.c04_feature_batch
+      - castcontrol.c05_fencing
+      - castcontrol.c06_dedup_result
+      - castcontrol.c07_audio
+      - castcontrol.c08_stop
+      - castcontrol.c09_encoding
+      - castcontrol.c10_legacy
+      - castcontrol.c11_privacy
+      - castcontrol.c12_settings
+
   framed-binary:
     description: Standard framed CONTROL, RPC and STREAM behavior.
     required_cases:
@@ -81,3 +112,8 @@ levels:
       - stream.stream_open
       - stream.stream_data
       - stream.stream_close
+
+  cast-webcast-backend:
+    description: Optional independent WebCast backend state and replacement event cursor.
+    required_cases:
+      - castwebcastbackend.wb01_state_event
