@@ -395,6 +395,65 @@ methods:
     capabilities: [cast.meetingPresentation, cast.controlOperations]
     errors: [SUCCESS, NOT_SUPPORTED, INVALID_ARGUMENT, INVALID_STATE, BUSY, UNAVAILABLE]
 
+  - id: 0x161C
+    name: cast.getTouchbackState
+    domain: cast
+    status: draft
+    bitOffset: 27
+    since: 1.0.0
+    description: Return per-target touchback gates, negotiated mode, and geometry fence state.
+    rpc_op: request_response
+    request_schema: CastTouchbackTargetRequest
+    response_schema: CastTouchbackState
+    recommended_encoding: [json, tlv]
+    capabilities: [cast.touchback]
+    errors: [SUCCESS, INVALID_ARGUMENT, NOT_FOUND, UNAVAILABLE]
+
+  - id: 0x161D
+    name: cast.setTouchbackEnabled
+    domain: cast
+    status: draft
+    bitOffset: 28
+    since: 1.0.0
+    description: Set the launcher/controller touchback gate for one cast target.
+    rpc_op: request_response
+    request_schema: CastTouchbackEnabledRequest
+    response_schema: CastTouchbackState
+    recommended_encoding: [json, tlv]
+    capabilities: [cast.touchback]
+    events: [cast.touchbackChanged]
+    errors: [SUCCESS, PERMISSION_DENIED, INVALID_ARGUMENT, INVALID_STATE, NOT_FOUND, UNAVAILABLE]
+
+  - id: 0x161E
+    name: cast.setTouchbackMode
+    domain: cast
+    status: draft
+    bitOffset: 29
+    since: 1.0.0
+    description: Request touch or mouse interpretation for one cast target; switching fences and reopens the input stream.
+    rpc_op: request_response
+    request_schema: CastTouchbackModeRequest
+    response_schema: CastTouchbackState
+    recommended_encoding: [json, tlv]
+    capabilities: [cast.touchback]
+    events: [cast.touchbackChanged]
+    errors: [SUCCESS, NOT_SUPPORTED, INVALID_ARGUMENT, INVALID_STATE, BUSY, NOT_FOUND, UNAVAILABLE]
+
+  - id: 0x161F
+    name: cast.setTouchbackResolutionPreference
+    domain: cast
+    status: draft
+    bitOffset: 30
+    since: 1.0.0
+    description: Set the touchback source-resolution preference for one cast target.
+    rpc_op: request_response
+    request_schema: CastTouchbackResolutionRequest
+    response_schema: CastTouchbackState
+    recommended_encoding: [json, tlv]
+    capabilities: [cast.touchback]
+    events: [cast.touchbackChanged]
+    errors: [SUCCESS, INVALID_ARGUMENT, INVALID_STATE, NOT_FOUND, UNAVAILABLE]
+
 events:
   - id: 0x1601
     name: cast.sessionIncoming
@@ -635,6 +694,18 @@ events:
     severity: info
     trigger: [discovery changed, authentication attempt changed]
     capabilities: [cast.airplayControl]
+
+  - id: 0x1615
+    name: cast.touchbackChanged
+    domain: cast
+    status: draft
+    bitOffset: 20
+    since: 1.0.0
+    description: Emitted when per-target touchback gates, mode, resolution, or geometry fencing changes.
+    event_schema: CastTouchbackChangedEvent
+    severity: info
+    trigger: [cast.setTouchbackEnabled, cast.setTouchbackMode, cast.setTouchbackResolutionPreference, stream open, stream close, disconnect]
+    capabilities: [cast.touchback]
 
 types:
   CastSourceSummary:
@@ -2666,6 +2737,7 @@ types:
 
       - { id: 0x10, name: webcastBackend, type: CastWebCastBackendSnapshot, required: false, description: Explicit optional backend snapshot with its own barrier; not implied by unifiedControl or settings. }
       - { id: 0x11, name: airplay, type: CastAirPlayControlState, required: false, description: Secret-free discovery and authentication state at the P0 snapshot boundary. }
+      - { id: 0x12, name: touchback, type: array, array: { item_type: CastTouchbackState }, required: false, description: Per-target Touchback state; omitted for AirPlay-only receivers. }
 
   CastSessionCapability:
     kind: object
@@ -2996,6 +3068,7 @@ types:
 
       - { id: 0x0C, name: meetingPresentation, type: CastMeetingPresentationCapability, required: false, description: Explicit optional meeting focus and policy support. }
       - { id: 0x0D, name: airplayControl, type: CastAirPlayControlCapability, required: false, description: Secret-free authentication and discovery observation. }
+      - { id: 0x0E, name: touchback, type: CastTouchbackCapability, required: false, description: Required when cast.touchback is supported; never advertised for AirPlay-only presentation targets. }
 
   CastPresentationCapability:
     kind: object
@@ -3184,6 +3257,11 @@ types:
       - { id: 0x0B, name: presentationFocusOnDoubleClick, type: bool, required: false, description: Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. }
       - { id: 0x0C, name: presentationGridOnDoubleClick, type: bool, required: false, description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. }
       - { id: 0x0D, name: presentationAutoEnter, type: bool, required: false, description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. }
+      - { id: 0x0E, name: canvasMode, type: enum, enum: [adaptive, fixed], required: false, description: Canvas sizing policy for normalized input geometry. }
+      - { id: 0x0F, name: baseWidth, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas width in pixels. }
+      - { id: 0x10, name: baseHeight, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas height in pixels. }
+      - { id: 0x11, name: maxWidth, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum width in pixels. }
+      - { id: 0x12, name: maxHeight, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum height in pixels. }
 
   CastPresentationSettingsValues:
     kind: object
@@ -3203,6 +3281,11 @@ types:
       - { id: 0x0B, name: presentationFocusOnDoubleClick, type: bool, required: false, description: Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. }
       - { id: 0x0C, name: presentationGridOnDoubleClick, type: bool, required: false, description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. }
       - { id: 0x0D, name: presentationAutoEnter, type: bool, required: false, description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. }
+      - { id: 0x0E, name: canvasMode, type: enum, enum: [adaptive, fixed], required: false, description: Canvas sizing policy for normalized input geometry. }
+      - { id: 0x0F, name: baseWidth, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas width in pixels. }
+      - { id: 0x10, name: baseHeight, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas height in pixels. }
+      - { id: 0x11, name: maxWidth, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum width in pixels. }
+      - { id: 0x12, name: maxHeight, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum height in pixels. }
 
   CastPresentationStartupSettings:
     kind: object
@@ -3222,6 +3305,11 @@ types:
       - { id: 0x0B, name: presentationFocusOnDoubleClick, type: bool, required: false, description: Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. }
       - { id: 0x0C, name: presentationGridOnDoubleClick, type: bool, required: false, description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. }
       - { id: 0x0D, name: presentationAutoEnter, type: bool, required: false, description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. }
+      - { id: 0x0E, name: canvasMode, type: enum, enum: [adaptive, fixed], required: false, description: Canvas sizing policy for normalized input geometry. }
+      - { id: 0x0F, name: baseWidth, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas width in pixels. }
+      - { id: 0x10, name: baseHeight, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas height in pixels. }
+      - { id: 0x11, name: maxWidth, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum width in pixels. }
+      - { id: 0x12, name: maxHeight, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum height in pixels. }
 
   CastPresentationSettingsState:
     kind: object
@@ -3266,6 +3354,9 @@ types:
       - { id: 0x0A, name: contentAdaptations, type: array, array: { item_type: string }, required: false, description: Supported fixed/auto-fit content adaptation. }
       - { id: 0x07, name: profileHints, type: array, array: { item_type: string }, required: false, description: Nonempty unique bounded product profile identifiers required when profileHint supported. }
       - { id: 0x08, name: minEnabledProtocols, type: uint32, required: false, description: Required when enabledProtocols supported; zero explicitly permits empty if control/settings can remain available independently. }
+      - { id: 0x0B, name: canvasModes, type: array, array: { item_type: string }, required: false, description: Supported canvas sizing modes, normally adaptive and fixed. }
+      - { id: 0x0C, name: canvasMaxWidth, type: uint32, required: false, min: 1, max: 16384, description: Maximum supported canvas width in pixels. }
+      - { id: 0x0D, name: canvasMaxHeight, type: uint32, required: false, min: 1, max: 16384, description: Maximum supported canvas height in pixels. }
 
   CastPresentationSettingsOperationResult:
     kind: object
@@ -3476,6 +3567,267 @@ types:
       - { id: 0x01, name: context, type: CastControlEventContext, required: true, description: Required atomic commit context. }
       - { id: 0x02, name: airplay, type: CastAirPlayControlState, required: true, description: Complete secret-free state. }
 
+  CastTouchbackTarget:
+    kind: object
+    description: Per-route target identity for touchback control.
+    fields:
+      - id: 0x01
+        name: sessionId
+        type: string
+        required: true
+        max_length: 128
+        description: Cast session identifier.
+      - id: 0x02
+        name: sessionGeneration
+        type: string
+        required: true
+        max_length: 32
+        description: Decimal-string session generation.
+      - id: 0x03
+        name: slotId
+        type: string
+        required: true
+        max_length: 128
+        description: Per-route slot identifier.
+      - id: 0x04
+        name: bindingGeneration
+        type: string
+        required: true
+        max_length: 32
+        description: Decimal-string binding generation.
+      - id: 0x05
+        name: lifecycleGeneration
+        type: string
+        required: true
+        max_length: 32
+        description: Decimal-string receiver lifecycle generation.
+
+  CastTouchbackTargetRequest:
+    kind: object
+    description: Selector for one cast target.
+    fields:
+      - id: 0x01
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Complete target identity and generation fence.
+
+  CastTouchbackState:
+    kind: object
+    description: Per-target touchback state with independent gates and geometry fencing.
+    fields:
+      - id: 0x01
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Complete target identity.
+      - id: 0x02
+        name: receiverOptIn
+        type: bool
+        required: true
+        description: Receiver-local touchback gate.
+      - id: 0x03
+        name: controllerRequested
+        type: bool
+        required: true
+        description: Launcher/controller requested gate.
+      - id: 0x04
+        name: effectiveEnabled
+        type: bool
+        required: true
+        description: Computed effective gate; true only when both gates allow input.
+      - id: 0x05
+        name: requestedMode
+        type: enum
+        enum: [touch, mouse]
+        required: true
+        description: Controller requested input interpretation.
+      - id: 0x06
+        name: negotiatedMode
+        type: enum
+        enum: [touch, mouse, none]
+        required: true
+        description: Mode accepted by the active stream, or none when closed.
+      - id: 0x07
+        name: resolutionPreference
+        type: enum
+        enum: [inherit, prefer1080p]
+        required: true
+        description: Preserve the sender's current source quality or request 1080p; TouchBatch coordinates remain normalized.
+      - id: 0x08
+        name: streamId
+        type: uint32
+        required: false
+        description: Active input.stream identifier.
+      - id: 0x09
+        name: epoch
+        type: uint32
+        required: false
+        description: Active input stream epoch.
+      - id: 0x0A
+        name: canvasRevision
+        type: string
+        required: true
+        max_length: 128
+        description: Canvas revision bound to this target.
+      - id: 0x0B
+        name: geometryRevision
+        type: string
+        required: true
+        max_length: 128
+        description: Geometry revision bound to this target.
+      - id: 0x0C
+        name: canvasToken
+        type: uint32
+        required: true
+        description: Canvas fence token.
+      - id: 0x0D
+        name: geometryToken
+        type: uint32
+        required: true
+        description: Geometry fence token.
+      - id: 0x0E
+        name: revision
+        type: string
+        required: true
+        max_length: 128
+        description: Monotonic touchback state revision.
+      - id: 0x0F
+        name: diagnosticReason
+        type: string
+        required: false
+        max_length: 256
+        description: Bounded diagnostic reason.
+
+  CastTouchbackEnabledRequest:
+    kind: object
+    description: Request to set the controller touchback gate for one target.
+    fields:
+      - id: 0x01
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Target identity and generation fence.
+      - id: 0x02
+        name: enabled
+        type: bool
+        required: true
+        description: Requested controller gate.
+      - id: 0x03
+        name: commandId
+        type: string
+        required: true
+        max_length: 128
+        description: Idempotency key.
+
+  CastTouchbackModeRequest:
+    kind: object
+    description: Request to set touchback mode for one target.
+    fields:
+      - id: 0x01
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Target identity and generation fence.
+      - id: 0x02
+        name: mode
+        type: enum
+        enum: [touch, mouse]
+        required: true
+        description: Requested input interpretation.
+      - id: 0x03
+        name: requirement
+        type: enum
+        enum: [preferred, required]
+        required: false
+        default: preferred
+        description: Whether a fallback mode is allowed.
+      - id: 0x04
+        name: commandId
+        type: string
+        required: true
+        max_length: 128
+        description: Idempotency key.
+
+  CastTouchbackResolutionRequest:
+    kind: object
+    description: Request to set touchback coordinate resolution preference.
+    fields:
+      - id: 0x01
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Target identity and generation fence.
+      - id: 0x02
+        name: resolutionPreference
+        type: enum
+        enum: [inherit, prefer1080p]
+        required: true
+        description: Requested sender source-quality preference; packet coordinates remain normalized.
+      - id: 0x03
+        name: commandId
+        type: string
+        required: true
+        max_length: 128
+        description: Idempotency key.
+
+  CastTouchbackChangedEvent:
+    kind: object
+    description: Per-target touchback state change event.
+    fields:
+      - id: 0x01
+        name: state
+        type: CastTouchbackState
+        required: true
+        description: Current target state.
+      - id: 0x02
+        name: changedFields
+        type: array
+        array:
+          item_type: string
+        required: true
+        description: Changed state fields.
+      - id: 0x03
+        name: accepted
+        type: bool
+        required: true
+        description: Whether the owner lane accepted the triggering request.
+
+  CastTouchbackCapability:
+    kind: object
+    description: Capability descriptor for cast.touchback; AirPlay receivers do not advertise this capability.
+    fields:
+      - id: 0x01
+        name: capability
+        type: string
+        required: true
+        max_length: 32
+        description: Fixed capability name cast.touchback.
+      - id: 0x02
+        name: protocols
+        type: array
+        array:
+          item_type: string
+        required: true
+        description: Protocol paths supporting touchback, such as webcast and hid; airplay is excluded.
+      - id: 0x03
+        name: supportedModes
+        type: array
+        array:
+          item_type: string
+        required: true
+        description: Supported input modes, with touch preferred by default.
+      - id: 0x04
+        name: supportsPerTarget
+        type: bool
+        required: true
+        description: Whether state is independently controlled for each route.
+      - id: 0x05
+        name: supportsControlPlane
+        type: bool
+        required: true
+        description: Whether launcher control-plane gate methods are supported.
+
 capabilities:
   - id: 0x1601
     name: cast.session
@@ -3601,3 +3953,12 @@ capabilities:
     description: Secret-free AirPlay authentication and discovery observation with live rename.
     type: object
     schema: CastAirPlayControlCapability
+
+  - id: 0x160F
+    name: cast.touchback
+    domain: cast
+    status: draft
+    since: 1.0.0
+    description: Device supports per-target touchback control and negotiated touch or mouse input; AirPlay is excluded.
+    type: object
+    schema: CastTouchbackCapability

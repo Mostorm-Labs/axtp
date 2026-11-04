@@ -4099,6 +4099,13 @@ schemas:
         type: CastAirPlayControlState
         required: false
         description: Secret-free discovery and authentication state at the P0 snapshot boundary.
+      - fieldId: 18
+        name: touchback
+        type: array
+        required: false
+        array:
+          itemType: CastTouchbackState
+        description: Per-target Touchback state; omitted for AirPlay-only receivers.
   CastSessionCapability:
     kind: object
     description: Capability descriptor for cast.session.
@@ -4566,6 +4573,11 @@ schemas:
         type: CastAirPlayControlCapability
         required: false
         description: Secret-free authentication and discovery observation.
+      - fieldId: 14
+        name: touchback
+        type: CastTouchbackCapability
+        required: false
+        description: Required when cast.touchback is supported; never advertised for AirPlay-only presentation targets.
   CastPresentationCapability:
     kind: object
     description: Supported presentation protocols and logical capture/target guarantees; no product layout algorithm.
@@ -5332,6 +5344,42 @@ schemas:
         required: false
         description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid
           suppresses entry until full withdrawal.
+      - fieldId: 14
+        name: canvasMode
+        type: enum
+        required: false
+        enumValues:
+          - adaptive
+          - fixed
+        description: Canvas sizing policy for normalized input geometry.
+      - fieldId: 15
+        name: baseWidth
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Fixed or preferred canvas width in pixels.
+      - fieldId: 16
+        name: baseHeight
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Fixed or preferred canvas height in pixels.
+      - fieldId: 17
+        name: maxWidth
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Adaptive canvas maximum width in pixels.
+      - fieldId: 18
+        name: maxHeight
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Adaptive canvas maximum height in pixels.
   CastPresentationSettingsValues:
     kind: object
     description: Supported setting values only; configured/known persisted projections are complete, while unconfirmed
@@ -5425,6 +5473,42 @@ schemas:
         required: false
         description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid
           suppresses entry until full withdrawal.
+      - fieldId: 14
+        name: canvasMode
+        type: enum
+        required: false
+        enumValues:
+          - adaptive
+          - fixed
+        description: Canvas sizing policy for normalized input geometry.
+      - fieldId: 15
+        name: baseWidth
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Fixed or preferred canvas width in pixels.
+      - fieldId: 16
+        name: baseHeight
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Fixed or preferred canvas height in pixels.
+      - fieldId: 17
+        name: maxWidth
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Adaptive canvas maximum width in pixels.
+      - fieldId: 18
+        name: maxHeight
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Adaptive canvas maximum height in pixels.
   CastPresentationStartupSettings:
     kind: object
     description: Exactly the capability-declared restart-only intent accepted at this host startup; distinct from
@@ -5518,6 +5602,42 @@ schemas:
         required: false
         description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid
           suppresses entry until full withdrawal.
+      - fieldId: 14
+        name: canvasMode
+        type: enum
+        required: false
+        enumValues:
+          - adaptive
+          - fixed
+        description: Canvas sizing policy for normalized input geometry.
+      - fieldId: 15
+        name: baseWidth
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Fixed or preferred canvas width in pixels.
+      - fieldId: 16
+        name: baseHeight
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Fixed or preferred canvas height in pixels.
+      - fieldId: 17
+        name: maxWidth
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Adaptive canvas maximum width in pixels.
+      - fieldId: 18
+        name: maxHeight
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Adaptive canvas maximum height in pixels.
   CastPresentationSettingsState:
     kind: object
     description: Full bounded settings state; desired/adopted/startup/stored facts and two independent event barriers must
@@ -5723,6 +5843,27 @@ schemas:
         required: false
         description: Required when enabledProtocols supported; zero explicitly permits empty if control/settings can remain
           available independently.
+      - fieldId: 11
+        name: canvasModes
+        type: array
+        required: false
+        array:
+          itemType: string
+        description: Supported canvas sizing modes
+      - fieldId: 12
+        name: canvasMaxWidth
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Maximum supported canvas width in pixels.
+      - fieldId: 13
+        name: canvasMaxHeight
+        type: uint32
+        required: false
+        min: 1
+        max: 16384
+        description: Maximum supported canvas height in pixels.
   CastPresentationSettingsOperationResult:
     kind: object
     description: Truthful independent configuration/application/persistence results; failed may still include
@@ -6405,6 +6546,272 @@ schemas:
         type: CastAirPlayControlState
         required: true
         description: Complete secret-free state.
+  CastTouchbackTarget:
+    kind: object
+    description: Per-route target identity for touchback control.
+    fields:
+      - fieldId: 1
+        name: sessionId
+        type: string
+        required: true
+        maxLength: 128
+        description: Cast session identifier.
+      - fieldId: 2
+        name: sessionGeneration
+        type: string
+        required: true
+        maxLength: 32
+        description: Decimal-string session generation.
+      - fieldId: 3
+        name: slotId
+        type: string
+        required: true
+        maxLength: 128
+        description: Per-route slot identifier.
+      - fieldId: 4
+        name: bindingGeneration
+        type: string
+        required: true
+        maxLength: 32
+        description: Decimal-string binding generation.
+      - fieldId: 5
+        name: lifecycleGeneration
+        type: string
+        required: true
+        maxLength: 32
+        description: Decimal-string receiver lifecycle generation.
+  CastTouchbackTargetRequest:
+    kind: object
+    description: Selector for one cast target.
+    fields:
+      - fieldId: 1
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Complete target identity and generation fence.
+  CastTouchbackState:
+    kind: object
+    description: Per-target touchback state with independent gates and geometry fencing.
+    fields:
+      - fieldId: 1
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Complete target identity.
+      - fieldId: 2
+        name: receiverOptIn
+        type: bool
+        required: true
+        description: Receiver-local touchback gate.
+      - fieldId: 3
+        name: controllerRequested
+        type: bool
+        required: true
+        description: Launcher/controller requested gate.
+      - fieldId: 4
+        name: effectiveEnabled
+        type: bool
+        required: true
+        description: Computed effective gate; true only when both gates allow input.
+      - fieldId: 5
+        name: requestedMode
+        type: enum
+        required: true
+        enumValues:
+          - touch
+          - mouse
+        description: Controller requested input interpretation.
+      - fieldId: 6
+        name: negotiatedMode
+        type: enum
+        required: true
+        enumValues:
+          - touch
+          - mouse
+          - none
+        description: Mode accepted by the active stream, or none when closed.
+      - fieldId: 7
+        name: resolutionPreference
+        type: enum
+        required: true
+        enumValues:
+          - inherit
+          - prefer1080p
+        description: Preserve the sender's current source quality or request 1080p; TouchBatch coordinates remain normalized.
+      - fieldId: 8
+        name: streamId
+        type: uint32
+        required: false
+        description: Active input.stream identifier.
+      - fieldId: 9
+        name: epoch
+        type: uint32
+        required: false
+        description: Active input stream epoch.
+      - fieldId: 10
+        name: canvasRevision
+        type: string
+        required: true
+        maxLength: 128
+        description: Canvas revision bound to this target.
+      - fieldId: 11
+        name: geometryRevision
+        type: string
+        required: true
+        maxLength: 128
+        description: Geometry revision bound to this target.
+      - fieldId: 12
+        name: canvasToken
+        type: uint32
+        required: true
+        description: Canvas fence token.
+      - fieldId: 13
+        name: geometryToken
+        type: uint32
+        required: true
+        description: Geometry fence token.
+      - fieldId: 14
+        name: revision
+        type: string
+        required: true
+        maxLength: 128
+        description: Monotonic touchback state revision.
+      - fieldId: 15
+        name: diagnosticReason
+        type: string
+        required: false
+        maxLength: 256
+        description: Bounded diagnostic reason.
+  CastTouchbackEnabledRequest:
+    kind: object
+    description: Request to set the controller touchback gate for one target.
+    fields:
+      - fieldId: 1
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Target identity and generation fence.
+      - fieldId: 2
+        name: enabled
+        type: bool
+        required: true
+        description: Requested controller gate.
+      - fieldId: 3
+        name: commandId
+        type: string
+        required: true
+        maxLength: 128
+        description: Idempotency key.
+  CastTouchbackModeRequest:
+    kind: object
+    description: Request to set touchback mode for one target.
+    fields:
+      - fieldId: 1
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Target identity and generation fence.
+      - fieldId: 2
+        name: mode
+        type: enum
+        required: true
+        enumValues:
+          - touch
+          - mouse
+        description: Requested input interpretation.
+      - fieldId: 3
+        name: requirement
+        type: enum
+        required: false
+        default: preferred
+        enumValues:
+          - preferred
+          - required
+        description: Whether a fallback mode is allowed.
+      - fieldId: 4
+        name: commandId
+        type: string
+        required: true
+        maxLength: 128
+        description: Idempotency key.
+  CastTouchbackResolutionRequest:
+    kind: object
+    description: Request to set touchback coordinate resolution preference.
+    fields:
+      - fieldId: 1
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Target identity and generation fence.
+      - fieldId: 2
+        name: resolutionPreference
+        type: enum
+        required: true
+        enumValues:
+          - inherit
+          - prefer1080p
+        description: Requested sender source-quality preference; packet coordinates remain normalized.
+      - fieldId: 3
+        name: commandId
+        type: string
+        required: true
+        maxLength: 128
+        description: Idempotency key.
+  CastTouchbackChangedEvent:
+    kind: object
+    description: Per-target touchback state change event.
+    fields:
+      - fieldId: 1
+        name: state
+        type: CastTouchbackState
+        required: true
+        description: Current target state.
+      - fieldId: 2
+        name: changedFields
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Changed state fields.
+      - fieldId: 3
+        name: accepted
+        type: bool
+        required: true
+        description: Whether the owner lane accepted the triggering request.
+  CastTouchbackCapability:
+    kind: object
+    description: Capability descriptor for cast.touchback; AirPlay receivers do not advertise this capability.
+    fields:
+      - fieldId: 1
+        name: capability
+        type: string
+        required: true
+        maxLength: 32
+        description: Fixed capability name cast.touchback.
+      - fieldId: 2
+        name: protocols
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Protocol paths supporting touchback, such as webcast and hid; airplay is excluded.
+      - fieldId: 3
+        name: supportedModes
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Supported input modes, with touch preferred by default.
+      - fieldId: 4
+        name: supportsPerTarget
+        type: bool
+        required: true
+        description: Whether state is independently controlled for each route.
+      - fieldId: 5
+        name: supportsControlPlane
+        type: bool
+        required: true
+        description: Whether launcher control-plane gate methods are supported.
   GetDeviceInfoParams:
     kind: object
     description: Optional selector for the read-only device information snapshot.
@@ -7237,6 +7644,361 @@ schemas:
         type: FirmwareUpdateErrorInfo
         required: false
         description: Error details when state is failed.
+  InputStreamTarget:
+    kind: object
+    description: Complete target identity used to fence an input stream against stale sessions and bindings.
+    fields:
+      - fieldId: 1
+        name: sessionId
+        type: string
+        required: true
+        maxLength: 128
+        description: Stable cast session identifier.
+      - fieldId: 2
+        name: sessionGeneration
+        type: string
+        required: true
+        maxLength: 32
+        description: Decimal-string session generation.
+      - fieldId: 3
+        name: slotId
+        type: string
+        required: true
+        maxLength: 128
+        description: Per-route or per-display slot identifier.
+      - fieldId: 4
+        name: bindingGeneration
+        type: string
+        required: true
+        maxLength: 32
+        description: Decimal-string binding generation for the selected route.
+      - fieldId: 5
+        name: lifecycleGeneration
+        type: string
+        required: true
+        maxLength: 32
+        description: Decimal-string receiver lifecycle generation.
+  InputOpenStreamParams:
+    kind: object
+    description: Request to open the canonical input.stream touchback business stream.
+    fields:
+      - fieldId: 1
+        name: controlVersion
+        type: uint32
+        required: true
+        description: Control-plane contract version.
+      - fieldId: 2
+        name: runtimeInstanceId
+        type: string
+        required: true
+        maxLength: 128
+        description: Runtime instance that owns the request.
+      - fieldId: 3
+        name: target
+        type: InputStreamTarget
+        required: true
+        description: Target identity and generation fence.
+      - fieldId: 4
+        name: streamKind
+        type: enum
+        required: true
+        enumValues:
+          - touchback
+        description: Business stream kind; v1 is touchback.
+      - fieldId: 5
+        name: format
+        type: enum
+        required: true
+        enumValues:
+          - touch-batch-v1
+        description: Canonical binary payload format after the AXTP STREAM header.
+      - fieldId: 6
+        name: preferredMode
+        type: enum
+        required: false
+        default: touch
+        enumValues:
+          - touch
+          - mouse
+        description: Preferred input interpretation; touch is the default.
+      - fieldId: 7
+        name: supportedModes
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Modes the requester can consume, normally touch and mouse.
+      - fieldId: 8
+        name: canvasRevision
+        type: string
+        required: true
+        maxLength: 128
+        description: Canvas revision used to produce normalized coordinates.
+      - fieldId: 9
+        name: geometryRevision
+        type: string
+        required: true
+        maxLength: 128
+        description: Geometry revision used to map the viewport.
+      - fieldId: 10
+        name: canvasToken
+        type: uint32
+        required: true
+        description: Numeric canvas fence token.
+      - fieldId: 11
+        name: geometryToken
+        type: uint32
+        required: true
+        description: Numeric geometry fence token.
+      - fieldId: 12
+        name: maxBatchEvents
+        type: uint16
+        required: false
+        description: Maximum touch events per batch accepted by the requester.
+      - fieldId: 13
+        name: maxFrameBytes
+        type: uint32
+        required: false
+        description: Maximum complete STREAM frame size accepted by the requester.
+      - fieldId: 14
+        name: maxContacts
+        type: uint16
+        required: false
+        description: Maximum simultaneous contacts supported by the requester.
+      - fieldId: 15
+        name: modeRequirement
+        type: enum
+        required: false
+        default: preferred
+        enumValues:
+          - preferred
+          - required
+        description: Whether preferredMode may fall back to another supported mode.
+      - fieldId: 16
+        name: commandId
+        type: string
+        required: true
+        maxLength: 128
+        description: Idempotency key for the open request.
+  InputOpenStreamResult:
+    kind: object
+    description: Result of input.openStream negotiation.
+    fields:
+      - fieldId: 1
+        name: streamId
+        type: uint32
+        required: true
+        description: AXTP STREAM identifier.
+      - fieldId: 2
+        name: epoch
+        type: uint32
+        required: true
+        description: Input ownership epoch; changes after reset and reopen.
+      - fieldId: 3
+        name: acceptedMode
+        type: enum
+        required: true
+        enumValues:
+          - touch
+          - mouse
+        description: Mode accepted for this stream.
+      - fieldId: 4
+        name: format
+        type: enum
+        required: true
+        enumValues:
+          - touch-batch-v1
+        description: Canonical binary payload format.
+      - fieldId: 5
+        name: canvasToken
+        type: uint32
+        required: true
+        description: Canvas token bound to this stream epoch.
+      - fieldId: 6
+        name: geometryToken
+        type: uint32
+        required: true
+        description: Geometry token bound to this stream epoch.
+      - fieldId: 7
+        name: maxBatchEvents
+        type: uint16
+        required: false
+        description: Maximum events per accepted batch.
+      - fieldId: 8
+        name: maxFrameBytes
+        type: uint32
+        required: false
+        description: Maximum complete STREAM frame size.
+      - fieldId: 9
+        name: maxContacts
+        type: uint16
+        required: false
+        description: Maximum simultaneous contacts.
+      - fieldId: 10
+        name: revision
+        type: string
+        required: true
+        maxLength: 128
+        description: Receiver input stream state revision.
+      - fieldId: 11
+        name: accepted
+        type: bool
+        required: true
+        description: Whether the owner lane accepted the request; true does not imply effective touchback enablement.
+  InputCloseStreamParams:
+    kind: object
+    description: Request to close an input.stream epoch and release active input state.
+    fields:
+      - fieldId: 1
+        name: controlVersion
+        type: uint32
+        required: true
+        description: Control-plane contract version.
+      - fieldId: 2
+        name: runtimeInstanceId
+        type: string
+        required: true
+        maxLength: 128
+        description: Runtime instance that owns the request.
+      - fieldId: 3
+        name: target
+        type: InputStreamTarget
+        required: true
+        description: Target identity and generation fence.
+      - fieldId: 4
+        name: streamKind
+        type: enum
+        required: true
+        enumValues:
+          - touchback
+        description: Business stream kind; v1 is touchback.
+      - fieldId: 5
+        name: streamId
+        type: uint32
+        required: true
+        description: AXTP STREAM identifier to close.
+      - fieldId: 6
+        name: epoch
+        type: uint32
+        required: true
+        description: Input ownership epoch to close.
+      - fieldId: 7
+        name: reason
+        type: enum
+        required: false
+        enumValues:
+          - requested
+          - route_changed
+          - disconnect
+          - timeout
+          - reset
+          - shutdown
+        description: Reason for closing the stream.
+      - fieldId: 8
+        name: finalSeqId
+        type: uint32
+        required: false
+        description: Last sequence number accepted before close.
+      - fieldId: 9
+        name: commandId
+        type: string
+        required: true
+        maxLength: 128
+        description: Idempotency key for the close request.
+  InputCloseStreamResult:
+    kind: object
+    description: Result of input.closeStream.
+    fields:
+      - fieldId: 1
+        name: streamId
+        type: uint32
+        required: true
+        description: AXTP STREAM identifier.
+      - fieldId: 2
+        name: epoch
+        type: uint32
+        required: true
+        description: Closed input ownership epoch.
+      - fieldId: 3
+        name: closed
+        type: bool
+        required: true
+        description: Whether the stream is now closed.
+      - fieldId: 4
+        name: alreadyClosed
+        type: bool
+        required: false
+        default: false
+        description: Whether the stream was already closed and the operation converged idempotently.
+      - fieldId: 5
+        name: revision
+        type: string
+        required: true
+        maxLength: 128
+        description: Receiver input stream state revision after close.
+  InputStreamCapability:
+    kind: object
+    description: Capability descriptor for input.stream.
+    fields:
+      - fieldId: 1
+        name: capability
+        type: string
+        required: true
+        maxLength: 32
+        description: Fixed capability name input.stream.
+      - fieldId: 2
+        name: direction
+        type: enum
+        required: true
+        enumValues:
+          - receiver_to_source
+        description: Touchback data flows from the receiver to the source.
+      - fieldId: 3
+        name: formats
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Supported input stream formats, including touch-batch-v1.
+      - fieldId: 4
+        name: inputModes
+        type: array
+        required: true
+        array:
+          itemType: string
+        description: Supported modes, including touch and mouse.
+      - fieldId: 5
+        name: reliability
+        type: enum
+        required: true
+        enumValues:
+          - ordered_reliable
+        description: Data-channel delivery requirement; ordinary packets have no application ACK.
+      - fieldId: 6
+        name: supportsReset
+        type: bool
+        required: true
+        description: Whether ordered reset frames are supported.
+      - fieldId: 7
+        name: supportsMoveCoalescing
+        type: bool
+        required: true
+        description: Whether move events may be coalesced while down/up/cancel ordering is preserved.
+      - fieldId: 8
+        name: maxBatchEvents
+        type: uint16
+        required: false
+        description: Advertised maximum events per batch.
+      - fieldId: 9
+        name: maxFrameBytes
+        type: uint32
+        required: false
+        description: Advertised maximum complete STREAM frame size.
+      - fieldId: 10
+        name: maxContacts
+        type: uint16
+        required: false
+        description: Advertised maximum simultaneous contacts.
   NetworkGetInterfacesParams:
     kind: object
     description: Selector for network interface enumeration.
@@ -11754,6 +12516,103 @@ methods:
       - INVALID_STATE
       - BUSY
       - UNAVAILABLE
+  - name: cast.getTouchbackState
+    description: Return per-target touchback gates, negotiated mode, and geometry fence state.
+    methodId: 5660
+    bitOffset: 27
+    domain: cast
+    since: 1.0.0
+    status: draft
+    request:
+      type: CastTouchbackTargetRequest
+    response:
+      type: CastTouchbackState
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - cast.touchback
+    events: []
+    errors:
+      - SUCCESS
+      - INVALID_ARGUMENT
+      - NOT_FOUND
+      - UNAVAILABLE
+  - name: cast.setTouchbackEnabled
+    description: Set the launcher/controller touchback gate for one cast target.
+    methodId: 5661
+    bitOffset: 28
+    domain: cast
+    since: 1.0.0
+    status: draft
+    request:
+      type: CastTouchbackEnabledRequest
+    response:
+      type: CastTouchbackState
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - cast.touchback
+    events:
+      - cast.touchbackChanged
+    errors:
+      - SUCCESS
+      - PERMISSION_DENIED
+      - INVALID_ARGUMENT
+      - INVALID_STATE
+      - NOT_FOUND
+      - UNAVAILABLE
+  - name: cast.setTouchbackMode
+    description: Request touch or mouse interpretation for one cast target; switching fences and reopens the input stream.
+    methodId: 5662
+    bitOffset: 29
+    domain: cast
+    since: 1.0.0
+    status: draft
+    request:
+      type: CastTouchbackModeRequest
+    response:
+      type: CastTouchbackState
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - cast.touchback
+    events:
+      - cast.touchbackChanged
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - INVALID_ARGUMENT
+      - INVALID_STATE
+      - BUSY
+      - NOT_FOUND
+      - UNAVAILABLE
+  - name: cast.setTouchbackResolutionPreference
+    description: Set the touchback source-resolution preference for one cast target.
+    methodId: 5663
+    bitOffset: 30
+    domain: cast
+    since: 1.0.0
+    status: draft
+    request:
+      type: CastTouchbackResolutionRequest
+    response:
+      type: CastTouchbackState
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - cast.touchback
+    events:
+      - cast.touchbackChanged
+    errors:
+      - SUCCESS
+      - INVALID_ARGUMENT
+      - INVALID_STATE
+      - NOT_FOUND
+      - UNAVAILABLE
   - name: device.getInfo
     description: Return the current endpoint main device identity, product, hardware, OS, software, AXTP runtime, and
       optional capability summary.
@@ -11943,6 +12802,56 @@ methods:
       - SUCCESS
       - NOT_FOUND
       - FW_TRANSFER_NOT_STARTED
+  - name: input.openStream
+    description: Open a negotiated input STREAM for a selected target and return the stream epoch, accepted mode, and canvas
+      fencing tokens.
+    methodId: 2561
+    bitOffset: 0
+    domain: input
+    since: 1.0.0
+    status: draft
+    request:
+      type: InputOpenStreamParams
+    response:
+      type: InputOpenStreamResult
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - input.stream
+    events: []
+    errors:
+      - SUCCESS
+      - NOT_SUPPORTED
+      - PERMISSION_DENIED
+      - INVALID_ARGUMENT
+      - INVALID_STATE
+      - BUSY
+      - UNAVAILABLE
+  - name: input.closeStream
+    description: Close a previously opened input STREAM and release any pressed contacts or buttons owned by its epoch.
+    methodId: 2562
+    bitOffset: 1
+    domain: input
+    since: 1.0.0
+    status: draft
+    request:
+      type: InputCloseStreamParams
+    response:
+      type: InputCloseStreamResult
+    encodings:
+      - json
+      - tlv
+    capabilities:
+      - input.stream
+    events: []
+    errors:
+      - SUCCESS
+      - STREAM_NOT_FOUND
+      - STREAM_CLOSED
+      - INVALID_ARGUMENT
+      - INVALID_STATE
+      - UNAVAILABLE
   - name: network.getInterfaces
     description: Return visible network interfaces and default interface identifiers.
     methodId: 3600
@@ -13579,6 +14488,25 @@ events:
       - authentication attempt changed
     capabilities:
       - cast.airplayControl
+  - name: cast.touchbackChanged
+    description: Emitted when per-target touchback gates, mode, resolution, or geometry fencing changes.
+    eventId: 5653
+    bitOffset: 20
+    domain: cast
+    since: 1.0.0
+    status: draft
+    payload:
+      type: CastTouchbackChangedEvent
+    severity: info
+    trigger:
+      - cast.setTouchbackEnabled
+      - cast.setTouchbackMode
+      - cast.setTouchbackResolutionPreference
+      - stream open
+      - stream close
+      - disconnect
+    capabilities:
+      - cast.touchback
   - name: device.enrollmentStateChanged
     description: Emitted after device.setEnrollmentState actually changes the enrollment state, or after a device-internal
       policy modifies it (e.g. pairing code expiry fallback, server-side revoke).
@@ -15358,6 +16286,14 @@ capabilities:
     status: draft
     type: object
     schema: CastAirPlayControlCapability
+  - name: cast.touchback
+    description: Device supports per-target touchback control and negotiated touch or mouse input; AirPlay is excluded.
+    capabilityId: 5647
+    domain: cast
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: CastTouchbackCapability
   - name: device.info
     description: Device supports read-only device information discovery.
     capabilityId: 257
@@ -15383,6 +16319,14 @@ capabilities:
     status: draft
     type: object
     schema: FirmwareUpdateCapabilities
+  - name: input.stream
+    description: Device supports negotiated receiver-to-source input STREAMs with touch and mouse interpretation.
+    capabilityId: 2561
+    domain: input
+    since: 1.0.0
+    status: draft
+    type: object
+    schema: InputStreamCapability
   - name: network.interface
     description: Device supports network interface enumeration and state observation.
     capabilityId: 3585

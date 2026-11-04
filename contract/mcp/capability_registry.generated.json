@@ -125,6 +125,18 @@
       "idHex": "0x0902"
     },
     {
+      "id": 2561,
+      "name": "input.stream",
+      "domain": "input",
+      "status": "draft",
+      "description": "Device supports negotiated receiver-to-source input STREAMs with touch and mouse interpretation.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "InputStreamCapability",
+      "idHex": "0x0A01"
+    },
+    {
       "id": 3329,
       "name": "signage.playlist",
       "domain": "signage",
@@ -351,6 +363,18 @@
       "type": "object",
       "schema": "CastAirPlayControlCapability",
       "idHex": "0x160E"
+    },
+    {
+      "id": 5647,
+      "name": "cast.touchback",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Device supports per-target touchback control and negotiated touch or mouse input; AirPlay is excluded.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "type": "object",
+      "schema": "CastTouchbackCapability",
+      "idHex": "0x160F"
     },
     {
       "id": 5889,

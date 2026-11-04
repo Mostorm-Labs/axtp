@@ -15,6 +15,7 @@
   - [cast Methods](#cast-methods)
   - [device Methods](#device-methods)
   - [firmware Methods](#firmware-methods)
+  - [input Methods](#input-methods)
   - [network Methods](#network-methods)
   - [signage Methods](#signage-methods)
   - [software Methods](#software-methods)
@@ -41,9 +42,10 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
-| cast | 27 | 20 |
+| cast | 31 | 21 |
 | device | 4 | 1 |
 | firmware | 4 | 2 |
+| input | 2 | 0 |
 | network | 18 | 8 |
 | signage | 6 | 1 |
 | software | 6 | 2 |
@@ -201,6 +203,7 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x0801 | video.stream | video | draft | object | VideoStreamCapabilities | Device supports real-time video STREAM setup, close, state, source state, key frame requests, and stats events. |
 | 0x0901 | audio.algorithm | audio | stable | object | AudioAlgorithmCapability | Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification. |
 | 0x0902 | audio.stream | audio | draft | object | AudioStreamCapabilities | Device supports real-time audio STREAM setup, close, state, source state, and stats events. |
+| 0x0A01 | input.stream | input | draft | object | InputStreamCapability | Device supports negotiated receiver-to-source input STREAMs with touch and mouse interpretation. |
 | 0x0D01 | signage.playlist | signage | draft | object | SignagePlaylistCapability | Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, playlist item refresh, and playlist config change notification. |
 | 0x0E01 | network.interface | network | draft | object | NetworkInterfaceCapability | Device supports network interface enumeration and state observation. |
 | 0x0E02 | network.ip | network | draft | object | NetworkIpCapability | Device supports IP configuration query, update, and change notification. |
@@ -220,6 +223,7 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x160C | cast.webcastBackend | cast | draft | object | CastWebCastBackendCapability | Optional secret-free WebCast cloud/local backend state query and independent full-state changes. |
 | 0x160D | cast.meetingPresentation | cast | draft | object | CastMeetingPresentationCapability | Optional fixed main-plus-preview view with exact focus control and independently remembered audio-follow preference. |
 | 0x160E | cast.airplayControl | cast | draft | object | CastAirPlayControlCapability | Secret-free AirPlay authentication and discovery observation with live rename. |
+| 0x160F | cast.touchback | cast | draft | object | CastTouchbackCapability | Device supports per-target touchback control and negotiated touch or mouse input; AirPlay is excluded. |
 | 0x1701 | software.config | software | draft | object | SoftwareConfigCapability | Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications. |
 | 0x1702 | software.updatePolicy | software | draft | object | SoftwareUpdatePolicyCapability | Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications. |
 | 0x1801 | sport.eventDetection | sport | draft | object | SportEventDetectionCapabilities | Device supports cross-sport event detection capability discovery, per-sport toggle control, runtime state events, and unified sport event delivery. |
@@ -232,9 +236,10 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | Domain | Methods |
 | ---- | ---- |
 | audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
-| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings<br>25: cast.getWebCastBackendState<br>26: cast.setPresentationFocus |
+| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings<br>25: cast.getWebCastBackendState<br>26: cast.setPresentationFocus<br>27: cast.getTouchbackState<br>28: cast.setTouchbackEnabled<br>29: cast.setTouchbackMode<br>30: cast.setTouchbackResolutionPreference |
 | device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
+| input | 0: input.openStream<br>1: input.closeStream |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
 | signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl<br>5: signage.getPlaylistItem |
 | software | 0: software.getConfig<br>1: software.setConfig<br>2: software.resetConfig<br>3: software.getUpdatePolicy<br>4: software.setUpdatePolicy<br>5: software.resetUpdatePolicy |
@@ -665,6 +670,10 @@ Type: `AudioStreamSourceState`
 - [cast.setPresentationSettings](#castsetpresentationsettings)
 - [cast.getWebCastBackendState](#castgetwebcastbackendstate)
 - [cast.setPresentationFocus](#castsetpresentationfocus)
+- [cast.getTouchbackState](#castgettouchbackstate)
+- [cast.setTouchbackEnabled](#castsettouchbackenabled)
+- [cast.setTouchbackMode](#castsettouchbackmode)
+- [cast.setTouchbackResolutionPreference](#castsettouchbackresolutionpreference)
 
 ---
 
@@ -1465,6 +1474,7 @@ Type: `CastStatus`
 | ?presentationSettings | CastPresentationSettingsState | 0x0F | Required only when P1 is supported and explicitly requested; combined P0/P1 capture shares one host commit boundary and keeps independent event barriers. | None | Omit if not used. |
 | ?webcastBackend | CastWebCastBackendSnapshot | 0x10 | Explicit optional backend snapshot with its own barrier; not implied by unifiedControl or settings. | None | Omit if not used. |
 | ?airplay | CastAirPlayControlState | 0x11 | Secret-free discovery and authentication state at the P0 snapshot boundary. | None | Omit if not used. |
+| ?touchback | Array<CastTouchbackState> | 0x12 | Per-target Touchback state; omitted for AirPlay-only receivers. | array.itemType=CastTouchbackState | Omit if not used. |
 
 ---
 
@@ -1591,6 +1601,7 @@ Type: `CastControlCapabilities`
 | ?webcastBackend | CastWebCastBackendCapability | 0x0B | Required iff this independent backend method/event/status section is supported. | None | Omit if not used. |
 | ?meetingPresentation | CastMeetingPresentationCapability | 0x0C | Explicit optional meeting focus and policy support. | None | Omit if not used. |
 | ?airplayControl | CastAirPlayControlCapability | 0x0D | Secret-free authentication and discovery observation. | None | Omit if not used. |
+| ?touchback | CastTouchbackCapability | 0x0E | Required when cast.touchback is supported; never advertised for AirPlay-only presentation targets. | None | Omit if not used. |
 
 ---
 
@@ -1875,6 +1886,197 @@ Type: `CastControlOperation`
 | ?outcomeReason | String | 0x0C | Required terminal bounded business reason; not a new numeric error space and never secret data. | maxLength=64 | Omit if not used. |
 | ?ownerCleanup | Enum | 0x0D | Cleanup observation at terminalization for the target owner only; not entire receiver exit. | enum=notApplicable/pending/complete/failed | Omit if not used. |
 | ?settingsResult | CastPresentationSettingsOperationResult | 0x0E | Required for kind=setPresentationSettings including queued/rejected/failed; reports configuration/application/persistence separately. | None | Omit if not used. |
+
+---
+
+### cast.getTouchbackState
+
+Return per-target touchback gates, negotiated mode, and geometry fence state.
+
+- Method ID: `0x161C`
+- Domain: `cast`
+- bitOffset: `27`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_FOUND`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastTouchbackTargetRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Complete target identity and generation fence. | None | N/A |
+
+#### Response Fields
+
+Type: `CastTouchbackState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Complete target identity. | None | N/A |
+| receiverOptIn | Boolean | 0x02 | Receiver-local touchback gate. | None | N/A |
+| controllerRequested | Boolean | 0x03 | Launcher/controller requested gate. | None | N/A |
+| effectiveEnabled | Boolean | 0x04 | Computed effective gate; true only when both gates allow input. | None | N/A |
+| requestedMode | Enum | 0x05 | Controller requested input interpretation. | enum=touch/mouse | N/A |
+| negotiatedMode | Enum | 0x06 | Mode accepted by the active stream, or none when closed. | enum=touch/mouse/none | N/A |
+| resolutionPreference | Enum | 0x07 | Preserve the sender's current source quality or request 1080p; TouchBatch coordinates remain normalized. | enum=inherit/prefer1080p | N/A |
+| ?streamId | UInt32 | 0x08 | Active input.stream identifier. | None | Omit if not used. |
+| ?epoch | UInt32 | 0x09 | Active input stream epoch. | None | Omit if not used. |
+| canvasRevision | String | 0x0A | Canvas revision bound to this target. | maxLength=128 | N/A |
+| geometryRevision | String | 0x0B | Geometry revision bound to this target. | maxLength=128 | N/A |
+| canvasToken | UInt32 | 0x0C | Canvas fence token. | None | N/A |
+| geometryToken | UInt32 | 0x0D | Geometry fence token. | None | N/A |
+| revision | String | 0x0E | Monotonic touchback state revision. | maxLength=128 | N/A |
+| ?diagnosticReason | String | 0x0F | Bounded diagnostic reason. | maxLength=256 | Omit if not used. |
+
+---
+
+### cast.setTouchbackEnabled
+
+Set the launcher/controller touchback gate for one cast target.
+
+- Method ID: `0x161D`
+- Domain: `cast`
+- bitOffset: `28`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `cast.touchbackChanged`
+- Possible Errors: `SUCCESS`, `PERMISSION_DENIED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `NOT_FOUND`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastTouchbackEnabledRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Target identity and generation fence. | None | N/A |
+| enabled | Boolean | 0x02 | Requested controller gate. | None | N/A |
+| commandId | String | 0x03 | Idempotency key. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `CastTouchbackState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Complete target identity. | None | N/A |
+| receiverOptIn | Boolean | 0x02 | Receiver-local touchback gate. | None | N/A |
+| controllerRequested | Boolean | 0x03 | Launcher/controller requested gate. | None | N/A |
+| effectiveEnabled | Boolean | 0x04 | Computed effective gate; true only when both gates allow input. | None | N/A |
+| requestedMode | Enum | 0x05 | Controller requested input interpretation. | enum=touch/mouse | N/A |
+| negotiatedMode | Enum | 0x06 | Mode accepted by the active stream, or none when closed. | enum=touch/mouse/none | N/A |
+| resolutionPreference | Enum | 0x07 | Preserve the sender's current source quality or request 1080p; TouchBatch coordinates remain normalized. | enum=inherit/prefer1080p | N/A |
+| ?streamId | UInt32 | 0x08 | Active input.stream identifier. | None | Omit if not used. |
+| ?epoch | UInt32 | 0x09 | Active input stream epoch. | None | Omit if not used. |
+| canvasRevision | String | 0x0A | Canvas revision bound to this target. | maxLength=128 | N/A |
+| geometryRevision | String | 0x0B | Geometry revision bound to this target. | maxLength=128 | N/A |
+| canvasToken | UInt32 | 0x0C | Canvas fence token. | None | N/A |
+| geometryToken | UInt32 | 0x0D | Geometry fence token. | None | N/A |
+| revision | String | 0x0E | Monotonic touchback state revision. | maxLength=128 | N/A |
+| ?diagnosticReason | String | 0x0F | Bounded diagnostic reason. | maxLength=256 | Omit if not used. |
+
+---
+
+### cast.setTouchbackMode
+
+Request touch or mouse interpretation for one cast target; switching fences and reopens the input stream.
+
+- Method ID: `0x161E`
+- Domain: `cast`
+- bitOffset: `29`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `cast.touchbackChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `NOT_FOUND`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastTouchbackModeRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Target identity and generation fence. | None | N/A |
+| mode | Enum | 0x02 | Requested input interpretation. | enum=touch/mouse | N/A |
+| ?requirement | Enum | 0x03 | Whether a fallback mode is allowed. | enum=preferred/required | Default: "preferred" |
+| commandId | String | 0x04 | Idempotency key. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `CastTouchbackState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Complete target identity. | None | N/A |
+| receiverOptIn | Boolean | 0x02 | Receiver-local touchback gate. | None | N/A |
+| controllerRequested | Boolean | 0x03 | Launcher/controller requested gate. | None | N/A |
+| effectiveEnabled | Boolean | 0x04 | Computed effective gate; true only when both gates allow input. | None | N/A |
+| requestedMode | Enum | 0x05 | Controller requested input interpretation. | enum=touch/mouse | N/A |
+| negotiatedMode | Enum | 0x06 | Mode accepted by the active stream, or none when closed. | enum=touch/mouse/none | N/A |
+| resolutionPreference | Enum | 0x07 | Preserve the sender's current source quality or request 1080p; TouchBatch coordinates remain normalized. | enum=inherit/prefer1080p | N/A |
+| ?streamId | UInt32 | 0x08 | Active input.stream identifier. | None | Omit if not used. |
+| ?epoch | UInt32 | 0x09 | Active input stream epoch. | None | Omit if not used. |
+| canvasRevision | String | 0x0A | Canvas revision bound to this target. | maxLength=128 | N/A |
+| geometryRevision | String | 0x0B | Geometry revision bound to this target. | maxLength=128 | N/A |
+| canvasToken | UInt32 | 0x0C | Canvas fence token. | None | N/A |
+| geometryToken | UInt32 | 0x0D | Geometry fence token. | None | N/A |
+| revision | String | 0x0E | Monotonic touchback state revision. | maxLength=128 | N/A |
+| ?diagnosticReason | String | 0x0F | Bounded diagnostic reason. | maxLength=256 | Omit if not used. |
+
+---
+
+### cast.setTouchbackResolutionPreference
+
+Set the touchback source-resolution preference for one cast target.
+
+- Method ID: `0x161F`
+- Domain: `cast`
+- bitOffset: `30`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `cast.touchbackChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `NOT_FOUND`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastTouchbackResolutionRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Target identity and generation fence. | None | N/A |
+| resolutionPreference | Enum | 0x02 | Requested sender source-quality preference; packet coordinates remain normalized. | enum=inherit/prefer1080p | N/A |
+| commandId | String | 0x03 | Idempotency key. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `CastTouchbackState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Complete target identity. | None | N/A |
+| receiverOptIn | Boolean | 0x02 | Receiver-local touchback gate. | None | N/A |
+| controllerRequested | Boolean | 0x03 | Launcher/controller requested gate. | None | N/A |
+| effectiveEnabled | Boolean | 0x04 | Computed effective gate; true only when both gates allow input. | None | N/A |
+| requestedMode | Enum | 0x05 | Controller requested input interpretation. | enum=touch/mouse | N/A |
+| negotiatedMode | Enum | 0x06 | Mode accepted by the active stream, or none when closed. | enum=touch/mouse/none | N/A |
+| resolutionPreference | Enum | 0x07 | Preserve the sender's current source quality or request 1080p; TouchBatch coordinates remain normalized. | enum=inherit/prefer1080p | N/A |
+| ?streamId | UInt32 | 0x08 | Active input.stream identifier. | None | Omit if not used. |
+| ?epoch | UInt32 | 0x09 | Active input stream epoch. | None | Omit if not used. |
+| canvasRevision | String | 0x0A | Canvas revision bound to this target. | maxLength=128 | N/A |
+| geometryRevision | String | 0x0B | Geometry revision bound to this target. | maxLength=128 | N/A |
+| canvasToken | UInt32 | 0x0C | Canvas fence token. | None | N/A |
+| geometryToken | UInt32 | 0x0D | Geometry fence token. | None | N/A |
+| revision | String | 0x0E | Monotonic touchback state revision. | maxLength=128 | N/A |
+| ?diagnosticReason | String | 0x0F | Bounded diagnostic reason. | maxLength=256 | Omit if not used. |
 
 ---
 
@@ -2186,6 +2388,116 @@ Type: `FinishUpdateResult`
 | updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
 | accepted | Boolean | 0x02 | Whether the device accepted the finish handoff. | None | N/A |
 | state | Enum | 0x03 | State after finish, normally verifying or failed. | None | N/A |
+
+---
+
+## input Methods
+
+### Methods in this domain
+
+- [input.openStream](#inputopenstream)
+- [input.closeStream](#inputclosestream)
+
+---
+
+### input.openStream
+
+Open a negotiated input STREAM for a selected target and return the stream epoch, accepted mode, and canvas fencing tokens.
+
+- Method ID: `0x0A01`
+- Domain: `input`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `input.stream`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `InputOpenStreamParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Control-plane contract version. | None | N/A |
+| runtimeInstanceId | String | 0x02 | Runtime instance that owns the request. | maxLength=128 | N/A |
+| target | InputStreamTarget | 0x03 | Target identity and generation fence. | None | N/A |
+| streamKind | Enum | 0x04 | Business stream kind; v1 is touchback. | enum=touchback | N/A |
+| format | Enum | 0x05 | Canonical binary payload format after the AXTP STREAM header. | enum=touch-batch-v1 | N/A |
+| ?preferredMode | Enum | 0x06 | Preferred input interpretation; touch is the default. | enum=touch/mouse | Default: "touch" |
+| supportedModes | Array<String> | 0x07 | Modes the requester can consume, normally touch and mouse. | array.itemType=string | N/A |
+| canvasRevision | String | 0x08 | Canvas revision used to produce normalized coordinates. | maxLength=128 | N/A |
+| geometryRevision | String | 0x09 | Geometry revision used to map the viewport. | maxLength=128 | N/A |
+| canvasToken | UInt32 | 0x0A | Numeric canvas fence token. | None | N/A |
+| geometryToken | UInt32 | 0x0B | Numeric geometry fence token. | None | N/A |
+| ?maxBatchEvents | UInt16 | 0x0C | Maximum touch events per batch accepted by the requester. | None | Omit if not used. |
+| ?maxFrameBytes | UInt32 | 0x0D | Maximum complete STREAM frame size accepted by the requester. | None | Omit if not used. |
+| ?maxContacts | UInt16 | 0x0E | Maximum simultaneous contacts supported by the requester. | None | Omit if not used. |
+| ?modeRequirement | Enum | 0x0F | Whether preferredMode may fall back to another supported mode. | enum=preferred/required | Default: "preferred" |
+| commandId | String | 0x10 | Idempotency key for the open request. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `InputOpenStreamResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | AXTP STREAM identifier. | None | N/A |
+| epoch | UInt32 | 0x02 | Input ownership epoch; changes after reset and reopen. | None | N/A |
+| acceptedMode | Enum | 0x03 | Mode accepted for this stream. | enum=touch/mouse | N/A |
+| format | Enum | 0x04 | Canonical binary payload format. | enum=touch-batch-v1 | N/A |
+| canvasToken | UInt32 | 0x05 | Canvas token bound to this stream epoch. | None | N/A |
+| geometryToken | UInt32 | 0x06 | Geometry token bound to this stream epoch. | None | N/A |
+| ?maxBatchEvents | UInt16 | 0x07 | Maximum events per accepted batch. | None | Omit if not used. |
+| ?maxFrameBytes | UInt32 | 0x08 | Maximum complete STREAM frame size. | None | Omit if not used. |
+| ?maxContacts | UInt16 | 0x09 | Maximum simultaneous contacts. | None | Omit if not used. |
+| revision | String | 0x0A | Receiver input stream state revision. | maxLength=128 | N/A |
+| accepted | Boolean | 0x0B | Whether the owner lane accepted the request; true does not imply effective touchback enablement. | None | N/A |
+
+---
+
+### input.closeStream
+
+Close a previously opened input STREAM and release any pressed contacts or buttons owned by its epoch.
+
+- Method ID: `0x0A02`
+- Domain: `input`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `input.stream`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `STREAM_CLOSED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `InputCloseStreamParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Control-plane contract version. | None | N/A |
+| runtimeInstanceId | String | 0x02 | Runtime instance that owns the request. | maxLength=128 | N/A |
+| target | InputStreamTarget | 0x03 | Target identity and generation fence. | None | N/A |
+| streamKind | Enum | 0x04 | Business stream kind; v1 is touchback. | enum=touchback | N/A |
+| streamId | UInt32 | 0x05 | AXTP STREAM identifier to close. | None | N/A |
+| epoch | UInt32 | 0x06 | Input ownership epoch to close. | None | N/A |
+| ?reason | Enum | 0x07 | Reason for closing the stream. | enum=requested/route_changed/disconnect/timeout/reset/shutdown | Omit if not used. |
+| ?finalSeqId | UInt32 | 0x08 | Last sequence number accepted before close. | None | Omit if not used. |
+| commandId | String | 0x09 | Idempotency key for the close request. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `InputCloseStreamResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | AXTP STREAM identifier. | None | N/A |
+| epoch | UInt32 | 0x02 | Closed input ownership epoch. | None | N/A |
+| closed | Boolean | 0x03 | Whether the stream is now closed. | None | N/A |
+| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already closed and the operation converged idempotently. | None | Default: false |
+| revision | String | 0x05 | Receiver input stream state revision after close. | maxLength=128 | N/A |
 
 ---
 
@@ -4246,6 +4558,7 @@ Type: `AudioStreamStatsReportedEvent`
 - [cast.presentationSettingsChanged](#castpresentationsettingschanged)
 - [cast.webcastBackendChanged](#castwebcastbackendchanged)
 - [cast.airplayChanged](#castairplaychanged)
+- [cast.touchbackChanged](#casttouchbackchanged)
 
 ---
 
@@ -4780,6 +5093,31 @@ Type: `CastAirPlayChangedEvent`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | context | CastControlEventContext | 0x01 | Required atomic commit context. | None | N/A |
 | airplay | CastAirPlayControlState | 0x02 | Complete secret-free state. | None | N/A |
+
+---
+
+### cast.touchbackChanged
+
+Emitted when per-target touchback gates, mode, resolution, or geometry fencing changes.
+
+- Event ID: `0x1615`
+- Domain: `cast`
+- bitOffset: `20`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `cast.setTouchbackEnabled`, `cast.setTouchbackMode`, `cast.setTouchbackResolutionPreference`, `stream open`, `stream close`, `disconnect`
+- Required Capabilities: `cast.touchback`
+
+#### Payload Fields
+
+Type: `CastTouchbackChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | CastTouchbackState | 0x01 | Current target state. | None | N/A |
+| changedFields | Array<String> | 0x02 | Changed state fields. | array.itemType=string | N/A |
+| accepted | Boolean | 0x03 | Whether the owner lane accepted the triggering request. | None | N/A |
 
 ---
 
@@ -6009,6 +6347,11 @@ All fields optional structurally but exactly one key required semantically; unkn
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
 | ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 | ?presentationAutoEnter | Boolean | 0x0D | Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. | None | Omit if not used. |
+| ?canvasMode | Enum | 0x0E | Canvas sizing policy for normalized input geometry. | enum=adaptive/fixed | Omit if not used. |
+| ?baseWidth | UInt32 | 0x0F | Fixed or preferred canvas width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?baseHeight | UInt32 | 0x10 | Fixed or preferred canvas height in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxWidth | UInt32 | 0x11 | Adaptive canvas maximum width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxHeight | UInt32 | 0x12 | Adaptive canvas maximum height in pixels. | min=1, max=16384 | Omit if not used. |
 
 ---
 
@@ -6056,6 +6399,11 @@ Supported setting values only; configured/known persisted projections are comple
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
 | ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 | ?presentationAutoEnter | Boolean | 0x0D | Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. | None | Omit if not used. |
+| ?canvasMode | Enum | 0x0E | Canvas sizing policy for normalized input geometry. | enum=adaptive/fixed | Omit if not used. |
+| ?baseWidth | UInt32 | 0x0F | Fixed or preferred canvas width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?baseHeight | UInt32 | 0x10 | Fixed or preferred canvas height in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxWidth | UInt32 | 0x11 | Adaptive canvas maximum width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxHeight | UInt32 | 0x12 | Adaptive canvas maximum height in pixels. | min=1, max=16384 | Omit if not used. |
 
 ---
 
@@ -6091,6 +6439,11 @@ Exactly the capability-declared restart-only intent accepted at this host startu
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
 | ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 | ?presentationAutoEnter | Boolean | 0x0D | Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. | None | Omit if not used. |
+| ?canvasMode | Enum | 0x0E | Canvas sizing policy for normalized input geometry. | enum=adaptive/fixed | Omit if not used. |
+| ?baseWidth | UInt32 | 0x0F | Fixed or preferred canvas width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?baseHeight | UInt32 | 0x10 | Fixed or preferred canvas height in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxWidth | UInt32 | 0x11 | Adaptive canvas maximum width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxHeight | UInt32 | 0x12 | Adaptive canvas maximum height in pixels. | min=1, max=16384 | Omit if not used. |
 
 ---
 
@@ -6205,6 +6558,20 @@ Summary of a cast source device or local AXTP sender.
 | ?address | String | 0x03 | Network or transport address summary when safe to expose. | maxLength=128 | Omit if not used. |
 | ?sourceId | String | 0x04 | Receiver-local source identifier. | maxLength=128 | Omit if not used. |
 | ?protocol | Enum | 0x05 | Protocol path that produced the source summary. | enum=airplay/hid/unknown | Omit if not used. |
+
+---
+
+## CastTouchbackTarget
+
+Per-route target identity for touchback control.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sessionId | String | 0x01 | Cast session identifier. | maxLength=128 | N/A |
+| sessionGeneration | String | 0x02 | Decimal-string session generation. | maxLength=32 | N/A |
+| slotId | String | 0x03 | Per-route slot identifier. | maxLength=128 | N/A |
+| bindingGeneration | String | 0x04 | Decimal-string binding generation. | maxLength=32 | N/A |
+| lifecycleGeneration | String | 0x05 | Decimal-string receiver lifecycle generation. | maxLength=32 | N/A |
 
 ---
 
@@ -6469,6 +6836,20 @@ Binding between a manifest file and a STREAM streamId.
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | fileId | String | 0x01 | Manifest-scoped file identifier. | maxLength=128 | N/A |
 | streamId | UInt32 | 0x02 | STREAM data plane stream identifier. | None | N/A |
+
+---
+
+## InputStreamTarget
+
+Complete target identity used to fence an input stream against stale sessions and bindings.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sessionId | String | 0x01 | Stable cast session identifier. | maxLength=128 | N/A |
+| sessionGeneration | String | 0x02 | Decimal-string session generation. | maxLength=32 | N/A |
+| slotId | String | 0x03 | Per-route or per-display slot identifier. | maxLength=128 | N/A |
+| bindingGeneration | String | 0x04 | Decimal-string binding generation for the selected route. | maxLength=32 | N/A |
+| lifecycleGeneration | String | 0x05 | Decimal-string receiver lifecycle generation. | maxLength=32 | N/A |
 
 ---
 

@@ -33,6 +33,8 @@
 | `0x0911` | `audio.closeStream` | audio | draft | AudioCloseStreamParams | AudioCloseStreamResult | - |
 | `0x0912` | `audio.getStreamState` | audio | draft | AudioGetStreamStateParams | AudioStreamState | - |
 | `0x0913` | `audio.getStreamSourceState` | audio | draft | AudioGetStreamSourceStateParams | AudioStreamSourceState | - |
+| `0x0A01` | `input.openStream` | input | draft | InputOpenStreamParams | InputOpenStreamResult | - |
+| `0x0A02` | `input.closeStream` | input | draft | InputCloseStreamParams | InputCloseStreamResult | - |
 | `0x0D01` | `signage.getPlaylistCapabilities` | signage | draft | SignageGetPlaylistCapabilitiesParams | SignagePlaylistCapabilitiesResult | - |
 | `0x0D02` | `signage.getPlaylistConfig` | signage | draft | SignageGetPlaylistConfigParams | SignagePlaylistConfigResult | - |
 | `0x0D03` | `signage.setPlaylistConfig` | signage | draft | SignageSetPlaylistConfigParams | SignageSetPlaylistConfigResult | - |
@@ -84,6 +86,10 @@
 | `0x1619` | `cast.setPresentationSettings` | cast | draft | CastSetPresentationSettingsParams | CastControlOperation | - |
 | `0x161A` | `cast.getWebCastBackendState` | cast | draft | CastGetWebCastBackendStateParams | CastWebCastBackendSnapshot | - |
 | `0x161B` | `cast.setPresentationFocus` | cast | draft | CastSetPresentationFocusParams | CastControlOperation | - |
+| `0x161C` | `cast.getTouchbackState` | cast | draft | CastTouchbackTargetRequest | CastTouchbackState | - |
+| `0x161D` | `cast.setTouchbackEnabled` | cast | draft | CastTouchbackEnabledRequest | CastTouchbackState | - |
+| `0x161E` | `cast.setTouchbackMode` | cast | draft | CastTouchbackModeRequest | CastTouchbackState | - |
+| `0x161F` | `cast.setTouchbackResolutionPreference` | cast | draft | CastTouchbackResolutionRequest | CastTouchbackState | - |
 | `0x1701` | `software.getConfig` | software | draft | SoftwareGetConfigParams | SoftwareConfig | - |
 | `0x1702` | `software.setConfig` | software | draft | SoftwareSetConfigParams | SoftwareSetConfigResult | - |
 | `0x1703` | `software.resetConfig` | software | draft | SoftwareResetConfigParams | SoftwareConfig | - |

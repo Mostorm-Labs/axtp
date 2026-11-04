@@ -942,6 +942,67 @@
       "idHex": "0x0913"
     },
     {
+      "id": 2561,
+      "bitOffset": 0,
+      "name": "input.openStream",
+      "domain": "input",
+      "status": "draft",
+      "description": "Open a negotiated input STREAM for a selected target and return the stream epoch, accepted mode, and canvas fencing tokens.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "InputOpenStreamParams",
+      "responseSchema": "InputOpenStreamResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "input.stream"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x0A01"
+    },
+    {
+      "id": 2562,
+      "bitOffset": 1,
+      "name": "input.closeStream",
+      "domain": "input",
+      "status": "draft",
+      "description": "Close a previously opened input STREAM and release any pressed contacts or buttons owned by its epoch.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "InputCloseStreamParams",
+      "responseSchema": "InputCloseStreamResult",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "input.stream"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x0A02"
+    },
+    {
       "id": 3329,
       "bitOffset": 0,
       "name": "signage.getPlaylistCapabilities",
@@ -2472,6 +2533,130 @@
         "UNAVAILABLE"
       ],
       "idHex": "0x161B"
+    },
+    {
+      "id": 5660,
+      "bitOffset": 27,
+      "name": "cast.getTouchbackState",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Return per-target touchback gates, negotiated mode, and geometry fence state.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastTouchbackTargetRequest",
+      "responseSchema": "CastTouchbackState",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x161C"
+    },
+    {
+      "id": 5661,
+      "bitOffset": 28,
+      "name": "cast.setTouchbackEnabled",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Set the launcher/controller touchback gate for one cast target.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastTouchbackEnabledRequest",
+      "responseSchema": "CastTouchbackState",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [
+        "cast.touchbackChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "PERMISSION_DENIED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "NOT_FOUND",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x161D"
+    },
+    {
+      "id": 5662,
+      "bitOffset": 29,
+      "name": "cast.setTouchbackMode",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Request touch or mouse interpretation for one cast target; switching fences and reopens the input stream.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastTouchbackModeRequest",
+      "responseSchema": "CastTouchbackState",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [
+        "cast.touchbackChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "NOT_FOUND",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x161E"
+    },
+    {
+      "id": 5663,
+      "bitOffset": 30,
+      "name": "cast.setTouchbackResolutionPreference",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Set the touchback source-resolution preference for one cast target.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "rpcOp": "request_response",
+      "requestSchema": "CastTouchbackResolutionRequest",
+      "responseSchema": "CastTouchbackState",
+      "recommendedEncoding": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [
+        "cast.touchbackChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "NOT_FOUND",
+        "UNAVAILABLE"
+      ],
+      "idHex": "0x161F"
     },
     {
       "id": 5889,

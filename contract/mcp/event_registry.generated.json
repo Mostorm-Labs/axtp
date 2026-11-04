@@ -912,6 +912,30 @@
       "idHex": "0x1614"
     },
     {
+      "id": 5653,
+      "bitOffset": 20,
+      "name": "cast.touchbackChanged",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Emitted when per-target touchback gates, mode, resolution, or geometry fencing changes.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "eventSchema": "CastTouchbackChangedEvent",
+      "severity": "info",
+      "trigger": [
+        "cast.setTouchbackEnabled",
+        "cast.setTouchbackMode",
+        "cast.setTouchbackResolutionPreference",
+        "stream open",
+        "stream close",
+        "disconnect"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "idHex": "0x1615"
+    },
+    {
       "id": 5889,
       "bitOffset": 0,
       "name": "software.configChanged",
