@@ -208,3 +208,18 @@ success:
   }
 }
 ```
+
+
+## Canvas extension for Touchback
+
+The v0.18 unified `cast.presentationSettings` schemas remain authoritative. The
+Touchback amendment adds optional append-only fields to
+`CastPresentationSettingsPatch`, `CastPresentationSettingsValues`, and
+`CastPresentationStartupSettings`: `canvasMode` (`adaptive` or `fixed`),
+`baseWidth`, `baseHeight`, `maxWidth`, and `maxHeight`. Width and height are
+positive `uint32` values bounded by 16384 per axis.
+
+`CastPresentationSettingsCapability` may advertise `canvasModes`,
+`canvasMaxWidth`, and `canvasMaxHeight`. A settings change fences the affected
+input stream, releases active contacts/buttons, and opens a new input epoch with
+new canvas and geometry tokens.
