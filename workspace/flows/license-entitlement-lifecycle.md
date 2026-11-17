@@ -31,7 +31,7 @@ Flow 文档不负责：
 |---|---|
 | Flow 目标 | 设备（launcher 接收桥 + axlic 身份）经 axtp 云反连 WebSocket JSON RPC 通道连接即注册，平台按默认策略自动签发 CBOR V1 签名凭证并下发、设备验签安装回执；此后吊销/换绑/策略变更经推（deliverCredential）拉（reconcile）双通道最终一致收敛。 |
 | 当前协议覆盖 | partial |
-| 涉及 domain.feature | `device.info`（generated，连接识别）；候选新域 `license.registration` / `license.credential-delivery` / `license.reconciliation`（拆分建议见 §8.2） |
+| 涉及 domain.feature | `device.info`（generated，连接识别）；候选新域 `license.registration` / `license.credentialDelivery` / `license.reconciliation`（拆分建议见 §8.2） |
 | 已有 adopted/generated | AXTP-WS-CLOUD-REVERSE 云反连传输（`axtp.protocol.yaml:155-169`）；session 握手 Hello → Identify → Identified；`device.getInfo`（0x0101，registry status: draft、已进 generated 输出；`DeviceIdentity.deviceId` fieldId 0x01）；common 段错误码（NOT_SUPPORTED / TIMEOUT / INVALID_ARGUMENT=0x000A / UNAVAILABLE=0x000F 等——对方仓契约所引 3/6/62 值与 registry 不符，见 OQ-6） |
 | 缺口 | license 域 5 方法：`license.registerIdentity` / `license.reportReceipt` / `license.reconcile`（D2S）与 `license.deliverCredential` / `license.resolveCredential`（S2D）；vendor 段错误码 0x7001–0x7006；domain 0x19 高字节注册。另有既有骨架草案 `workspace/protocol/system/system.license.md`（泛型 license 配置 CRUD 语义）与本场景语义不匹配、命名重叠待评审。 |
 | 是否需要新增协议草案 | yes（新 `license` 业务域） |
@@ -239,15 +239,15 @@ US7 策略发布批量修订（P3）：
 | Gap | Candidate domain.feature | Candidate method/event/schema | Routed skill | Review question |
 |---|---|---|---|---|
 | 设备注册（幂等、空参数、连接身份采纳、触发自动签发、credentialPending） | `license.registration` | `license.registerIdentity`（D2S，request_response） | `draft-business-protocol` | `[REVIEW-ASK]` deviceId 采纳格式校验属 license 域语义（非 device 域修订）；params 全字段 MUST 被忽略（纯演进预留）如何在 schema 表达 |
-| 凭证下发（串行、deliveryId/policyVersion/reason 通道侧元数据、cborBase64 不透明字节、0x7003 拒绝语义） | `license.credential-delivery` | `license.deliverCredential`（S2D，request_response） | `draft-business-protocol` | `[REVIEW-ASK]` S2D 方向方法在 registry 中如何归属实现方（逻辑服务端 = 设备侧实现，见 OQ-5）；负载上限（64KiB 工件 + Base64 膨胀）是否需 schema 约束注记 |
-| 安装/导出/拒绝回执（deliveryRef 闭环、采信条件、EXPORTED 不算安装） | `license.credential-delivery` | `license.reportReceipt`（D2S，request_response） | `draft-business-protocol` | `[REVIEW-ASK]` 采信条件属平台台账语义还是协议语义边界（建议：协议仅定义回执结构，采信判定为服务端行为） |
+| 凭证下发（串行、deliveryId/policyVersion/reason 通道侧元数据、cborBase64 不透明字节、0x7003 拒绝语义） | `license.credentialDelivery` | `license.deliverCredential`（S2D，request_response） | `draft-business-protocol` | `[REVIEW-ASK]` S2D 方向方法在 registry 中如何归属实现方（逻辑服务端 = 设备侧实现，见 OQ-5）；负载上限（64KiB 工件 + Base64 膨胀）是否需 schema 约束注记 |
+| 安装/导出/拒绝回执（deliveryRef 闭环、采信条件、EXPORTED 不算安装） | `license.credentialDelivery` | `license.reportReceipt`（D2S，request_response） | `draft-business-protocol` | `[REVIEW-ASK]` 采信条件属平台台账语义还是协议语义边界（建议：协议仅定义回执结构，采信判定为服务端行为） |
 | 对账（拉通道、三应答形态、双维度版本比对、补签受理） | `license.reconciliation` | `license.reconcile`（D2S，request_response） | `draft-business-protocol` | `[REVIEW-ASK]` 三应答形态（upToDate / 携带凭证 / reissueAccepted）是否需在协议层显式建模 vs 以字段缺席表达 |
 | 版本纯探测（队列 worker 前置探测、永不携带凭证字节） | `license.reconciliation` | `license.resolveCredential`（S2D，request_response） | `draft-business-protocol` | `[REVIEW-ASK]` 与 reconcile params 的对偶结构是否复用同一 schema（版本三元组） |
 | vendor 错误码 0x7001–0x7006（身份无效终态/设备不存在/凭证过旧/无授权/限流预留/内部错误） | `license`（域级 errors） | vendor 段错误码提案（段位 `0x7000-0x7EFF` 已预留，registry 未使用） | `draft-business-protocol` | `[REVIEW-ASK]` 0x7001 的"终态错误"语义（设备应重建本地身份）如何在错误码描述中规范表达；0x7005 限流码位保留不启用 |
 | license 业务域注册（domain 高字节 0x19、方法 ID 0x1901–0x1905 草案值） | `license`（新域） | domain registry 提案 | `draft-business-protocol` → adopt 流程 | `[REVIEW-ASK]` 0x19 为下一可用高字节，正式分配以评审为准；草案期方法用临时 ID `0xF000-0xFEFF` 联调、不写 registry（OQ-3） |
 | 既有 `system.license` 草案与本场景语义不匹配（泛型配置 CRUD vs 设备授权链生命周期） | —（命名治理） | — | 评审决定（不自动路由） | `[REVIEW-ASK]` 见 OQ-2：新立 `license` 域后 `workspace/protocol/system/system.license.md` 是否废弃/改名/收敛 |
 
-候选 feature 拆分建议（registration / credential-delivery / reconciliation 三文件，5 方法按生命周期归位）供草案阶段决策，也可合并为单一 `license.entitlement` 草案——拆分粒度由 `draft-business-protocol` 阶段定案。
+候选 feature 拆分建议（registration / credentialDelivery / reconciliation 三文件，5 方法按生命周期归位）供草案阶段决策，也可合并为单一 `license.entitlement` 草案——拆分粒度由 `draft-business-protocol` 阶段定案。已按此拆分起草：`workspace/protocol/license/license.registration.md` / `license.credentialDelivery.md` / `license.reconciliation.md`（status: draft，待人工评审后进入 Stage 30 采纳）。
 
 ### 8.3 Recommended Payload Boundaries
 
