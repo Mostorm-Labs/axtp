@@ -26,7 +26,7 @@
 | file | 2 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | firmware | 3 | ASK | 6 | 旁路高覆盖 | `firmware.update` P0 已进入 generated；后续补 firmware info/policy 与 P1/P2 更新能力确认。 |
 | input | 5 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
-| license | 3 | review-ok | 0 | P1 | `license.registration`、`license.credentialDelivery`、`license.reconciliation` 已采纳写入 domain 0x19（2026-11-18，5 方法 + 3 capability + 3 vendor 错误码）；待 Stage 50 生成刷新产物。 |
+| license | 3 | generated | 5 | P1 | `license.registration`、`license.credentialDelivery`、`license.reconciliation` 已采纳并生成（domain 0x19，2026-11-18：5 方法 + 3 capability + 3 vendor 错误码进入 IR/generated/mcp）。 |
 | log | 3 | ASK | 0 | 待排期 | 补产品/设备/legacy 确认。 |
 | network | 6 | ASK | 26 | 旁路高覆盖 | `network.interface`、`network.ip`、`network.wifi`、`network.ap` 已进入 generated；继续补蓝牙和服务端点草案确认。 |
 | output | 1 | ASK | 0 | P2b | 补产品/设备/legacy 确认。 |

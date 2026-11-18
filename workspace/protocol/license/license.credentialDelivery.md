@@ -1,7 +1,7 @@
 ---
-status: review-ok
-contract: false
-generated: false
+status: generated
+contract: true
+generated: true
 domain: license
 feature: license.credentialDelivery
 registry: contract/registry/domains/license/domain.yaml
@@ -10,7 +10,7 @@ lastReviewed: 2026-11-18
 
 # license.credentialDelivery
 
-> Adoption note (2026-11-18): 已采纳写入 `contract/registry/domains/license/domain.yaml`（domain `0x19`），源级校验 `validate:sources` 通过；generated 产物待 Stage 50 `generate-axtp-protocol` 刷新（届时本草案翻转为 `status: generated`）。后续语义变更 MUST 走 `amend-adopted-protocol`。
+> Adoption note (2026-11-18): 已采纳写入 `contract/registry/domains/license/domain.yaml`（domain `0x19`）并于同日完成 Stage 50 生成刷新——IR 与 generated/mcp 产物已含本域全部事实（本草案 `status: generated`）。后续语义变更 MUST 走 `amend-adopted-protocol`。
 
 **Registry item 分配**（本 feature 部分）：
 
@@ -31,11 +31,11 @@ lastReviewed: 2026-11-18
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 平台向设备串行下发签名授权凭证（云→设备），设备回报安装/导出/拒绝回执（设备→云），回执经采信条件推进台账收敛。 |
-| 当前状态 | review-ok（已采纳写入 registry，待 Stage 50 生成） |
-| 是否可直接实现 | 否。review-ok 阶段源 YAML 已落盘；正式实现以 registry / generated 为准。 |
+| 当前状态 | generated（已写入 registry 并刷新到 generated 产物） |
+| 是否可直接实现 | 是。正式实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准。 |
 | 主要交互 | RPC（云→设备下发 + 设备→云回执；零自定义事件） |
 | 是否使用 STREAM | 否 |
-| Registry readiness | adopted（sources 已写入并通过校验；generated 待刷新） |
+| Registry readiness | ready（registry + generated 均已刷新，validate/test 全绿） |
 | Conformance | needed |
 | 主要未决问题 | 无。 |
 
