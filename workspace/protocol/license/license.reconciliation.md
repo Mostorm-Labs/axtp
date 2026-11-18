@@ -45,7 +45,7 @@ lastReviewed: 2026-11-18
 
 下发是尽力而为的（超时 ≠ 失败），对账保证最终一致：设备上线/重连时必须发起对账，平台比对设备当前凭证版本与台账最新版本、设备已装策略行集版本与台账最新行集两个维度，返回台账最新凭证（或补签受理）。队列 worker 在下发前经 `license.resolveCredential` 纯探测设备持有版本，避免向已收敛设备重复下发大载荷。
 
-公共 RPC envelope、错误约定与 schema 展开遵循 [Protocol Draft Conventions](../draft-conventions.md)。业务场景与协议覆盖分析见 [license-entitlement-lifecycle flow](../../flows/license-entitlement-lifecycle.md)；接口素材来源：aw-saas-platform 仓 `apps/api/specs/001-license-entitlement-system/contracts/axtp-licensing-methods.md`。对账为权威、回执为受采信条件约束的加速信号；台账未收敛集路由与 sweep 兜底为平台内部行为，不入协议。
+公共 RPC envelope、错误约定与 schema 展开遵循 [Protocol Draft Conventions](../draft-conventions.md)。业务场景与协议覆盖分析见 [license-entitlement-lifecycle flow](../../flows/license-entitlement-lifecycle.md)；接口素材来源：aw-saas-platform 仓 001-license-entitlement-system 特性规格（`apps/api/specs/001-license-entitlement-system/` 目录）下 contracts/axtp-licensing-methods.md。对账为权威、回执为受采信条件约束的加速信号；台账未收敛集路由与 sweep 兜底为平台内部行为，不入协议。
 
 > 方向术语：本文以「设备→云 / 云→设备」描述调用方向。cloud-reverse 通道中设备为逻辑服务端（`contract/protocol/axtp.protocol.yaml:164-169`）——`resolveCredential` 为逻辑客户端（云）的正向调用、`reconcile` 为设备发起的反向 Request；SDK 实装角色模型存在待裁决矛盾（flow OQ-1），方向建模见 §11。
 

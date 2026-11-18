@@ -40,7 +40,7 @@ lastReviewed: 2026-11-18
 
 设备（接收桥 + 设备侧身份模块）经 `AXTP-WS-CLOUD-REVERSE` 通道反连、会话识别成功（`device.getInfo` 自报 deviceId）后，主动调用本方法完成设备主体注册。平台从连接上下文采纳 deviceId 登记主体，按唯一默认策略自动签发授权凭证（异步完成，凭证经 `license.deliverCredential` 推送或后续 `license.reconcile` 取得）。注册与工作空间归属解耦、与授权签发为独立记录的事实。
 
-公共 RPC envelope、错误约定与 schema 展开遵循 [Protocol Draft Conventions](../draft-conventions.md)。业务场景与协议覆盖分析见 [license-entitlement-lifecycle flow](../../flows/license-entitlement-lifecycle.md)；接口素材来源：aw-saas-platform 仓 `apps/api/specs/001-license-entitlement-system/contracts/axtp-licensing-methods.md`。
+公共 RPC envelope、错误约定与 schema 展开遵循 [Protocol Draft Conventions](../draft-conventions.md)。业务场景与协议覆盖分析见 [license-entitlement-lifecycle flow](../../flows/license-entitlement-lifecycle.md)；接口素材来源：aw-saas-platform 仓 001-license-entitlement-system 特性规格（`apps/api/specs/001-license-entitlement-system/` 目录）下 contracts/axtp-licensing-methods.md。
 
 > 方向术语：本文以「设备→云」描述调用方向。cloud-reverse 通道中设备为逻辑服务端（`contract/protocol/axtp.protocol.yaml:164-169`），设备→云调用为逻辑服务端发起的反向 Request；SDK 实装角色模型存在待裁决矛盾（flow OQ-1），方向建模见 §11。
 

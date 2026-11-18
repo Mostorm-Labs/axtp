@@ -251,7 +251,7 @@ US7 策略发布批量修订（P3）：
 
 ### 8.3 Recommended Payload Boundaries
 
-- 方法 schema 素材以对方仓契约为权威输入：aw-saas-platform 仓 `apps/api/specs/001-license-entitlement-system/contracts/axtp-licensing-methods.md`（5 方法 params/result + 错误码表 + 时序）——草案阶段引用改写为 `workspace/protocol/license/**` 规范格式，本 flow 不复制其 schema 细节。
+- 方法 schema 素材以对方仓契约为权威输入：aw-saas-platform 仓 001-license-entitlement-system 特性规格（`apps/api/specs/001-license-entitlement-system/` 目录）下 contracts/axtp-licensing-methods.md（5 方法 params/result + 错误码表 + 时序）——草案阶段引用改写为 `workspace/protocol/license/**` 规范格式，本 flow 不复制其 schema 细节。
 - 通道侧元数据 `deliveryId` / `policyVersion` / `reason` 为方法 schema 的协议字段（不在 CBOR 载荷内）；`cborBase64` 为不透明字节串（axlic 冻结合同），AXTP schema 只约束传输形态（string/Base64）与尺寸上限注记，不定义其内部结构。
 - `deviceId` 字段复用 `DeviceIdentity.deviceId` 既有语义（≤128 字符 string），license 域格式约束（`^dev_[0-9a-f]{32}$`）作为方法级校验注记写入草案。
 

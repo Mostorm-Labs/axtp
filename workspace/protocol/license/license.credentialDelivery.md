@@ -43,7 +43,7 @@ lastReviewed: 2026-11-18
 
 平台签发的授权凭证（CBOR V1 签名工件，axlic 冻结格式）经 `license.deliverCredential` 由云推送到设备；设备侧验证方验签、身份匹配、原子安装后，经 `license.reportReceipt` 回报结果。回执必须可关联平台真实下发尝试（`deliveryId` 闭环）且与选定工件一致才被采信；S2D 调用响应的 ACK 与回执走同一采信逻辑，重复到达幂等。
 
-公共 RPC envelope、错误约定与 schema 展开遵循 [Protocol Draft Conventions](../draft-conventions.md)。业务场景与协议覆盖分析见 [license-entitlement-lifecycle flow](../../flows/license-entitlement-lifecycle.md)；接口素材来源：aw-saas-platform 仓 `apps/api/specs/001-license-entitlement-system/contracts/axtp-licensing-methods.md`。凭证字节格式合同权威在 axlic 仓（P17/P20 冻结面），本草案只约束通道传输形态，不定义 CBOR 内部结构。
+公共 RPC envelope、错误约定与 schema 展开遵循 [Protocol Draft Conventions](../draft-conventions.md)。业务场景与协议覆盖分析见 [license-entitlement-lifecycle flow](../../flows/license-entitlement-lifecycle.md)；接口素材来源：aw-saas-platform 仓 001-license-entitlement-system 特性规格（`apps/api/specs/001-license-entitlement-system/` 目录）下 contracts/axtp-licensing-methods.md。凭证字节格式合同权威在 axlic 仓（P17/P20 冻结面），本草案只约束通道传输形态，不定义 CBOR 内部结构。
 
 > 方向术语：本文以「云→设备 / 设备→云」描述调用方向。cloud-reverse 通道中设备为逻辑服务端（`contract/protocol/axtp.protocol.yaml:164-169`）——`deliverCredential` 为逻辑客户端（云）的正向调用、`reportReceipt` 为设备发起的反向 Request；SDK 实装角色模型存在待裁决矛盾（flow OQ-1），方向建模见 §11。
 
