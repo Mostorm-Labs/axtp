@@ -21,7 +21,7 @@ lastReviewed: 2026-11-17
 | 是否使用 STREAM | 否 |
 | Registry readiness | none（license 域未注册；方法/错误码 ID 均 `TBD after adoption`） |
 | Conformance | needed |
-| 主要未决问题 | 三应答形态的协议层建模（字段缺席 vs 显式建模）、`LicenseCredentialInfo` 跨 feature 复用、专属错误码落位（见 §11）。 |
+| 主要未决问题 | 设计裁决已定案（三应答字段缺席+互斥、共享 `LicenseCredentialInfo`、版本三元组复用 `LicenseVersionTriple`、vendor 段错误码，见 §11）；仅剩流程性等待采纳。 |
 
 ## 1. 功能说明
 
@@ -66,9 +66,7 @@ lastReviewed: 2026-11-17
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `deviceId` | string | yes | `^dev_[0-9a-f]{32}$` | none | 设备主体标识（校验字段）。 |
-| `authorityRevision` | uint32 | no | ≥ 0 | 省略 | 设备当前凭证修订号——**无凭证时版本三元组整体省略**。 |
-| `credentialGeneration` | uint32 | no | ≥ 0 | 省略 | 设备当前凭证代次。 |
-| `policyVersion` | uint32 | no | ≥ 0 | 省略 | 设备已安装策略行集版本（来源：下发/对账捎带，设备本地持久化）。 |
+| `version` | `LicenseVersionTriple` | no | 见 §6.3 | 省略 | 设备当前持有版本三元组（修订号/代次/策略版本）——**无凭证时整体省略**（复用共享 schema，§11 decided）。 |
 
 #### 3.1.2 返回结果 Result：`ReconcileResult`
 
@@ -79,7 +77,7 @@ lastReviewed: 2026-11-17
 | `credential` | `LicenseCredentialInfo` | no | 见 §6.2 | 省略 | 台账最新凭证（upToDate=false 且已有工件时）。 |
 | `reissueAccepted` | bool | no | true / false | 省略 | 补签受理形态标志（应签而未签/清权未产出/聚合漂移——无凭证字节可返回时），与 `credential` 互斥。 |
 
-三应答形态（互斥）：
+三应答形态（互斥）。**建模已定案**：字段缺席 + 互斥规则（§11 decided，2026-11-18），不引入显式变体/discriminator。
 
 | 形态 | 字段组合 | 语义 |
 |---|---|---|
@@ -97,9 +95,11 @@ request:
   "method": "license.reconcile",
   "params": {
     "deviceId": "dev_0123456789abcdef0123456789abcdef",
-    "authorityRevision": 3,
-    "credentialGeneration": 7,
-    "policyVersion": 1
+    "version": {
+      "authorityRevision": 3,
+      "credentialGeneration": 7,
+      "policyVersion": 1
+    }
   }
 }
 ```
@@ -190,9 +190,7 @@ success:
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `hasCredential` | bool | yes | true / false | none | 设备是否持有凭证。 |
-| `authorityRevision` | uint32 | no | ≥ 0 | 省略 | hasCredential=true 时必填（结构 = `ReconcileParams` 版本三元组的对偶）。 |
-| `credentialGeneration` | uint32 | no | ≥ 0 | 省略 | 同上。 |
-| `policyVersion` | uint32 | no | ≥ 0 | 省略 | 设备已装行集版本（本地持久化值上报）。 |
+| `version` | `LicenseVersionTriple` | no | 见 §6.3 | 省略 | hasCredential=true 时必填——与 `ReconcileParams.version` 同构复用（§11 decided）。 |
 
 #### 3.2.3 d block 示例
 
@@ -219,9 +217,11 @@ success:
   },
   "result": {
     "hasCredential": true,
-    "authorityRevision": 3,
-    "credentialGeneration": 7,
-    "policyVersion": 1
+    "version": {
+      "authorityRevision": 3,
+      "credentialGeneration": 7,
+      "policyVersion": 1
+    }
   }
 }
 ```
@@ -244,7 +244,7 @@ success:
 #### 3.2.6 规则
 
 - 纯探测：result 为设备持有版本上报，本方法 MUST NOT 携带凭证字节。
-- 版本三元组与 `license.reconcile` params 结构对偶（三字段齐备或整体省略），是否复用同一 schema 见 §11。
+- 版本三元组与 `license.reconcile` params 复用同一共享 schema `LicenseVersionTriple`（§11 decided，2026-11-18）。
 
 ## 4. 事件 Events
 
@@ -256,7 +256,7 @@ success:
 
 Capability name（候选）: `license.reconciliation`。`[REVIEW-DRAFT]`
 
-`resolveCredential` 为设备侧实现（云→设备调用），capability 面向设备侧声明版本持久化与上报能力；`reconcile` 为云侧实现，capability 归属随双向 RPC 建模（flow OQ-5）定案，见 §11。
+`resolveCredential` 为设备侧实现（云→设备调用），capability 面向设备侧声明版本持久化与上报能力。OQ-5 已裁决（2026-11-18）：按业务域登记方法、不加「实现方」标注位；capability 维持设备侧声明，`reconcile` 等云侧实现方法不设 capability（见 §11）。
 
 | 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -267,17 +267,18 @@ Capability name（候选）: `license.reconciliation`。`[REVIEW-DRAFT]`
 
 ### 6.1 Schema 层级速览
 
-方法字段表已在方法小节直接展开；本章集中展开跨方法复用对象 `LicenseCredentialInfo`。
+方法字段表已在方法小节直接展开；本章集中展开跨方法/跨草案复用对象 `LicenseCredentialInfo` 与 `LicenseVersionTriple`。
 
 | Schema | 用途 | 定义位置 |
 |---|---|---|
-| `ReconcileParams` | 对账请求（deviceId + 可选版本三元组） | §3.1.1 |
-| `ReconcileResult` | 对账三形态应答 | §3.1.2 |
+| `ReconcileParams` | 对账请求（deviceId + 可选 version 三元组） | §3.1.1 |
+| `ReconcileResult` | 对账三形态应答（字段缺席 + 互斥，已定案） | §3.1.2 |
 | `ResolveCredentialParams` | 探测请求（deviceId） | §3.2.1 |
-| `ResolveCredentialResult` | 探测应答（hasCredential + 版本三元组） | §3.2.2 |
-| `LicenseCredentialInfo` | 台账最新凭证对象（reconcile result 内嵌） | §6.2 |
+| `ResolveCredentialResult` | 探测应答（hasCredential + version 三元组） | §3.2.2 |
+| `LicenseCredentialInfo` | 台账最新凭证对象（reconcile result 内嵌；**被 `license.credentialDelivery` 复用**，§11 decided） | §6.2 |
+| `LicenseVersionTriple` | 版本三元组（`ReconcileParams.version` 与 `ResolveCredentialResult.version` 复用，§11 decided） | §6.3 |
 
-### 6.2 请求与响应 Schemas：`LicenseCredentialInfo`
+### 6.2 请求与响应 Schemas：`LicenseCredentialInfo`（跨草案共享）
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -286,6 +287,16 @@ Capability name（候选）: `license.reconciliation`。`[REVIEW-DRAFT]`
 | `credentialGeneration` | uint32 | yes | ≥ 0 | none | 凭证代次。 |
 | `reason` | string enum | yes | `ISSUE` / `REVISE` / `REVOKE` | none | 签发语义（REVOKE = 空权益集清权凭证）。 |
 | `cborBase64` | string | yes | Base64（RFC 4648）；工件 ≤ 64 KiB → 编码后 ≤ 87384 字符（含填充） | none | 不透明凭证字节（axlic 冻结 CBOR V1 工件）。 |
+
+### 6.3 共享对象：`LicenseVersionTriple`
+
+| 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
+|---|---|---:|---|---|---|
+| `authorityRevision` | uint32 | yes | ≥ 0 | none | 凭证修订号。 |
+| `credentialGeneration` | uint32 | yes | ≥ 0 | none | 凭证代次。 |
+| `policyVersion` | uint32 | yes | ≥ 0 | none | 设备已安装策略行集版本（本地持久化值）。 |
+
+复用范围（§11 decided，2026-11-18）：`ReconcileParams.version`（设备上报）与 `ResolveCredentialResult.version`（探测应答）同构复用；三字段要么齐备、要么随 `version` 整体省略。
 
 ## 7. 交互流程示例 Flow Examples
 
@@ -305,7 +316,7 @@ Capability name（候选）: `license.reconciliation`。`[REVIEW-DRAFT]`
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
-| `LICENSE_DEVICE_NOT_FOUND`（候选） | deviceId 无法定位主体。 | 候选码倾向 vendor 段（对方仓提案 0x7002）；正式 errorCode `TBD after adoption` `[REVIEW-ASK]`。 |
+| `LICENSE_DEVICE_NOT_FOUND`（候选） | deviceId 无法定位主体。 | **已裁决 vendor 段**（对方仓提案 0x7002；2026-11-18 用户裁决）；正式 errorCode `TBD after adoption`（采纳时随 specs/30-registry.md vendor 段规则一并定码）。 |
 
 对方仓候选码 0x7004–0x7006（NOT_ENTITLED / RATE_LIMITED / INTERNAL）不进本提案，处置口径见 `license.registration` §8。
 
@@ -328,12 +339,12 @@ Capability name（候选）: `license.reconciliation`。`[REVIEW-DRAFT]`
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|
-| 三应答形态的协议层建模：字段缺席表达（当前草案）vs 显式 result 变体（discriminator）？ | schema | 字段缺席 + 互斥规则（简单、JSON 友好）；TLV 演进时再评估变体 | open `[REVIEW-DRAFT]` |
-| `LicenseCredentialInfo` 与 `license.credentialDelivery` 的下发字段是否抽取共享 schema（credentialId/版本对/reason/cborBase64 高度重合）？ | schema | 建议共享 `LicenseCredentialInfo`（下发 params 平铺 vs 内嵌对象在采纳时定形态） | open `[REVIEW-DRAFT]` |
-| 专属错误码落位（vendor 段 vs 共享码） | registry | 倾向 vendor 段（用户倾向已记录） | open `[REVIEW-ASK]` |
-| 云侧实现方法（reconcile）的 capability 表达与双向 RPC registry 建模 | registry / capability | 随 flow OQ-5 定案 | open |
-| 探测应答版本三元组与 reconcile params 是否复用同一 schema | schema | 复用同一对象（对偶结构） | open `[REVIEW-DRAFT]` |
-| 与 `system.license` 草案命名冲突（同 license.registration §11） | registry | 随域级评审一并处置（flow OQ-2） | open |
+| 三应答形态的协议层建模：字段缺席表达 vs 显式 result 变体（discriminator）？ | schema | **已裁决：字段缺席 + 互斥规则**（§3.1.2 已标注）；TLV 演进时再评估变体 | decided（2026-11-18 用户裁决）`[REVIEW-OK]` |
+| `LicenseCredentialInfo` 是否抽共享 schema 供 `license.credentialDelivery` 复用？ | schema | **已裁决：抽共享**——下发 params 内嵌 credential 对象与本草案 §6.2 同构（credentialDelivery §3.1.1 已按此更新） | decided（2026-11-18）`[REVIEW-OK]` |
+| 专属错误码落位（vendor 段 vs 共享码） | registry | **已裁决：vendor 段**（对方仓提案 0x7001–0x7006）；采纳时补 specs/30-registry.md vendor 段规则 | decided（2026-11-18）`[REVIEW-OK]` |
+| 云侧实现方法（reconcile）的 capability 表达与双向 RPC registry 建模 | registry / capability | **已裁决：按业务域登记方法，不加「实现方」标注位**——capability 维持设备侧声明（本 feature capability 描述设备版本持久化上报能力）；随 flow OQ-5 关闭 | decided（2026-11-18）`[REVIEW-OK]` |
+| 探测应答版本三元组与 reconcile params 是否复用同一 schema | schema | **已裁决：复用**——抽共享 `LicenseVersionTriple`（§6.3 已定义，两处引用） | decided（2026-11-18）`[REVIEW-OK]` |
+| 与 `system.license` 草案命名冲突（同 license.registration §11） | registry | **已裁决：新域定案时标记 superseded**（Stage 30 执行） | decided（执行时点 = Stage 30）`[REVIEW-OK]` |
 
 ## 附录 C. Registry 草案输入
 
@@ -385,16 +396,8 @@ types:
         required: true
         max_length: 36
       - id: TBD after adoption
-        name: authorityRevision
-        type: uint32
-        required: false
-      - id: TBD after adoption
-        name: credentialGeneration
-        type: uint32
-        required: false
-      - id: TBD after adoption
-        name: policyVersion
-        type: uint32
+        name: version
+        type: LicenseVersionTriple    # 共享 schema（本文件 types 内定义；§11 decided）
         required: false
   ReconcileResult:
     kind: object
@@ -417,6 +420,7 @@ types:
         required: false
   LicenseCredentialInfo:
     kind: object
+    description: Shared credential object reused by license.reconcile result and license.credentialDelivery params.
     fields:
       - id: TBD after adoption
         name: credentialId
@@ -441,6 +445,22 @@ types:
         type: string
         required: true
         max_length: 87384         # 64KiB 工件 Base64（含填充）上限 [REVIEW-DRAFT]
+  LicenseVersionTriple:
+    kind: object
+    description: Shared version triple reused by ReconcileParams.version and ResolveCredentialResult.version.
+    fields:
+      - id: TBD after adoption
+        name: authorityRevision
+        type: uint32
+        required: true
+      - id: TBD after adoption
+        name: credentialGeneration
+        type: uint32
+        required: true
+      - id: TBD after adoption
+        name: policyVersion
+        type: uint32
+        required: true
   LicenseReconciliationCapabilities:
     kind: object
     fields:

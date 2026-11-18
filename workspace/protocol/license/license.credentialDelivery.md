@@ -21,7 +21,7 @@ lastReviewed: 2026-11-17
 | 是否使用 STREAM | 否 |
 | Registry readiness | none（license 域未注册；方法/错误码 ID 均 `TBD after adoption`） |
 | Conformance | needed |
-| 主要未决问题 | 专属错误码落位（vendor 段 vs 共享码）、`errorCode` 字段形态（候选名 string vs 数值）、capability 建模方向（见 §11）。 |
+| 主要未决问题 | 设计裁决已定案（vendor 段错误码、errorCode 字符串名、假回执 accepted=false、共享 `LicenseCredentialInfo` 内嵌结构，见 §11）；仅剩流程性等待采纳。 |
 
 ## 1. 功能说明
 
@@ -65,13 +65,11 @@ lastReviewed: 2026-11-17
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `credentialId` | string | yes | uuid 格式 | none | 凭证工件标识（平台台账主键口径）。 |
 | `deliveryId` | string | yes | 平台下发尝试标识 | none | 当次下发尝试 id——设备回执 `reportReceipt.deliveryRef` 原样引用（采信条件闭环来源）。 |
-| `authorityRevision` | uint32 | yes | ≥ 0 | none | 凭证修订号（版本轴第一维）。 |
-| `credentialGeneration` | uint32 | yes | ≥ 0 | none | 凭证代次（版本轴第二维，同修订轴重签时递增）。 |
 | `policyVersion` | uint32 | yes | ≥ 0 | none | 凭证来源策略行集版本（通道侧元数据，不在 CBOR 载荷内）；设备本地持久化后于对账/探测上报。清权凭证取签发时策略当前版本（设备侧版本轴占位）。 |
-| `reason` | string enum | yes | `ISSUE` / `REVISE` / `REVOKE` | none | 下发语义：新签 / 修订（含 Grant 级吊销剩余重算、批量修订）/ 清权（空权益集）。 |
-| `cborBase64` | string | yes | Base64（RFC 4648）；工件 ≤ 64 KiB → 编码后 ≤ 87384 字符（含填充） | none | 不透明凭证字节（axlic 冻结 CBOR V1 工件）；本协议不定义其内部结构。 |
+| `credential` | `LicenseCredentialInfo` | yes | 见 `license.reconciliation` §6.2（共享 schema） | none | 凭证对象（credentialId / authorityRevision / credentialGeneration / reason / cborBase64）——与 `license.reconcile` 应答内嵌对象**同构共享**（§11 decided，2026-11-18）。 |
+
+凭证五字段（credentialId / 修订号 / 代次 / reason / cborBase64）的取值与语义统一由共享对象 `LicenseCredentialInfo` 定义（见 `license.reconciliation` §6.2），此处不重复展开。
 
 #### 3.1.2 返回结果 Result：`DeliverCredentialResult`
 
@@ -89,13 +87,15 @@ request:
   "id": 201,
   "method": "license.deliverCredential",
   "params": {
-    "credentialId": "3f9d2c68-7b4e-4f2a-9c1d-5e8a7b6c4d21",
     "deliveryId": "d-8a41c7",
-    "authorityRevision": 4,
-    "credentialGeneration": 8,
     "policyVersion": 1,
-    "reason": "ISSUE",
-    "cborBase64": "o2JheExpY2Vuc2UuY3JlZGVudGlhbAE…（截断示意，≤87384 字符）"
+    "credential": {
+      "credentialId": "3f9d2c68-7b4e-4f2a-9c1d-5e8a7b6c4d21",
+      "authorityRevision": 4,
+      "credentialGeneration": 8,
+      "reason": "ISSUE",
+      "cborBase64": "o2JheExpY2Vuc2UuY3JlZGVudGlhbAE…（截断示意，≤87384 字符）"
+    }
   }
 }
 ```
@@ -228,7 +228,8 @@ success:
 | 错误 | 场景 | 返回建议 |
 |---|---|---|
 | `INVALID_ARGUMENT` | 字段非法（如 REJECTED 缺 errorCode）。 | 返回字段路径。 |
-| `NOT_FOUND`（占位） | credentialId 无法反查台账（离线导出场景缺省 deliveryRef 时）。 | accepted=false 同义表达亦可，二选一在 §11 定案。`[REVIEW-DRAFT]` |
+
+已定案：回执不满足采信条件（无法关联真实下发尝试 / 工件不符，含离线导出 credentialId 反查失败）以 `accepted=false` **业务应答**表达，MUST NOT 使用 NOT_FOUND 通道错误（§11 decided，2026-11-18）。
 
 #### 3.2.6 规则
 
@@ -247,7 +248,7 @@ success:
 
 Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 
-`deliverCredential` / `resolveCredential` 为设备侧实现（云→设备调用），capability 面向设备侧声明接收/安装能力，建模相对自然；`reportReceipt` 为云侧实现，capability 归属随双向 RPC 建模（flow OQ-5）定案，见 §11。
+`deliverCredential` / `resolveCredential` 为设备侧实现（云→设备调用），capability 面向设备侧声明接收/安装能力。OQ-5 已裁决（2026-11-18）：按业务域登记方法、不加「实现方」标注位；capability 维持设备侧声明，`reportReceipt` 等云侧实现方法不设 capability（见 §11）。
 
 | 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -262,7 +263,8 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 
 | Schema | 用途 | 定义位置 |
 |---|---|---|
-| `DeliverCredentialParams` | 下发请求（工件 + 通道侧元数据） | §3.1.1 |
+| `DeliverCredentialParams` | 下发请求（deliveryId / policyVersion + 内嵌共享凭证对象） | §3.1.1 |
+| `LicenseCredentialInfo` | 共享凭证对象（与 `license.reconciliation` 同一定义） | `license.reconciliation` §6.2 |
 | `DeliverCredentialResult` | 下发应答（accepted / errorCode） | §3.1.2 |
 | `ReportReceiptParams` | 回执请求（outcome / deliveryRef 闭环） | §3.2.1 |
 | `ReportReceiptResult` | 回执受理结果 | §3.2.2 |
@@ -282,7 +284,7 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
-| `LICENSE_CREDENTIAL_STALE`（候选） | 凭证版本低于设备高水位（防回滚）或验签失败——设备拒绝下发/REJECTED 回执的唯一拒绝码。 | 候选码倾向 vendor 段（对方仓提案 0x7003）；正式 errorCode `TBD after adoption` `[REVIEW-ASK]`。 |
+| `LICENSE_CREDENTIAL_STALE`（候选） | 凭证版本低于设备高水位（防回滚）或验签失败——设备拒绝下发/REJECTED 回执的唯一拒绝码。 | **已裁决 vendor 段**（对方仓提案 0x7003；2026-11-18 用户裁决）；正式 errorCode `TBD after adoption`（采纳时随 specs/30-registry.md vendor 段规则一并定码）。 |
 | `LICENSE_DEVICE_NOT_FOUND`（候选，关联） | deviceId 无法定位主体（回执/探测侧）——详见 `license.reconciliation` 草案 §8。 | 同上（对方仓提案 0x7002）。 |
 
 对方仓候选码 0x7004–0x7006（NOT_ENTITLED / RATE_LIMITED / INTERNAL）不进本提案，处置口径见 `license.registration` §8。
@@ -306,11 +308,12 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|
-| 专属错误码落位：vendor 段（对方仓提案 0x7001–0x7006）还是共享码/业务段？ | registry | 倾向 vendor 段（用户倾向已记录）；采纳时补 specs/30-registry.md vendor 段规则 | open `[REVIEW-ASK]` |
-| result 中 `errorCode` 字段形态：候选错误名 string（对方仓契约形态）vs 采纳后数值？ | schema | 草案按候选名 string；采纳后若定码可评估数值化 | open `[REVIEW-DRAFT]` |
-| 采信不满足时「accepted=false 应答 vs NOT_FOUND 通道错误」二选一 | schema / 语义 | 建议 accepted=false（业务语义、台账不变可观测） | open `[REVIEW-DRAFT]` |
-| 云侧实现方法（reportReceipt）的 capability 表达与双向 RPC registry 建模 | registry / capability | 随 flow OQ-5 定案 | open |
-| 与 `system.license` 草案命名冲突（同 license.registration §11） | registry | 随域级评审一并处置（flow OQ-2） | open |
+| 专属错误码落位：vendor 段（对方仓提案 0x7001–0x7006）还是共享码/业务段？ | registry | **已裁决：vendor 段**——采纳时补 specs/30-registry.md vendor 段规则；码值 TBD after adoption | decided（2026-11-18 用户裁决）`[REVIEW-OK]` |
+| result 中 `errorCode` 字段形态：候选错误名 string（对方仓契约形态）vs 采纳后数值？ | schema | **已裁决：字符串错误名**（与对方仓契约一致）；采纳定码后再评估数值化 | decided（2026-11-18）`[REVIEW-OK]` |
+| 采信不满足时「accepted=false 应答 vs NOT_FOUND 通道错误」二选一 | schema / 语义 | **已裁决：accepted=false 业务应答**（业务语义、台账不变可观测；§3.2.5 已按此收口） | decided（2026-11-18）`[REVIEW-OK]` |
+| 凭证字段共享 schema：抽共享 `LicenseCredentialInfo`（下发 params 内嵌 credential 对象，与对账应答同构） | schema | **已裁决：抽共享**——§3.1.1 / §3.1.3 / 附录 C 已按内嵌结构更新 | decided（2026-11-18）`[REVIEW-OK]` |
+| 云侧实现方法（reportReceipt）的 capability 表达与双向 RPC registry 建模 | registry / capability | **已裁决：按业务域登记方法，不加「实现方」标注位**——capability 维持设备侧声明（本 feature capability 描述设备接收/验签/安装能力），云侧实现方法不设 capability；随 flow OQ-5 关闭 | decided（2026-11-18）`[REVIEW-OK]` |
+| 与 `system.license` 草案命名冲突（同 license.registration §11） | registry | **已裁决：新域定案时标记 superseded**（Stage 30 执行） | decided（执行时点 = Stage 30）`[REVIEW-OK]` |
 
 ## 附录 C. Registry 草案输入
 
@@ -342,7 +345,7 @@ methods:
     request_schema: ReportReceiptParams
     response_schema: ReportReceiptResult
     recommended_encoding: [json]
-    errors: [SUCCESS, INVALID_ARGUMENT, NOT_FOUND]
+    errors: [SUCCESS, INVALID_ARGUMENT]        # 采信不满足走 accepted=false 业务应答（§11 decided），不用 NOT_FOUND
 capabilities:
   - id: TBD after adoption
     name: license.credentialDelivery
@@ -357,37 +360,18 @@ types:
     kind: object
     fields:
       - id: TBD after adoption
-        name: credentialId
-        type: string
-        required: true
-        max_length: 36
-      - id: TBD after adoption
         name: deliveryId
         type: string
         required: true
         max_length: 64            # 候选上限，采纳时定 [REVIEW-DRAFT]
       - id: TBD after adoption
-        name: authorityRevision
-        type: uint32
-        required: true
-      - id: TBD after adoption
-        name: credentialGeneration
-        type: uint32
-        required: true
-      - id: TBD after adoption
         name: policyVersion
         type: uint32
         required: true
       - id: TBD after adoption
-        name: reason
-        type: enum
-        enum: [ISSUE, REVISE, REVOKE]
+        name: credential
+        type: LicenseCredentialInfo   # 共享 schema，定义见 license.reconciliation 附录 C（§11 decided）
         required: true
-      - id: TBD after adoption
-        name: cborBase64
-        type: string
-        required: true
-        max_length: 87384         # 64KiB 工件 Base64（含填充）上限 [REVIEW-DRAFT]
   ReportReceiptParams:
     kind: object
     fields:

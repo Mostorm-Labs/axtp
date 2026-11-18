@@ -21,7 +21,7 @@ lastReviewed: 2026-11-17
 | 是否使用 STREAM | 否 |
 | Registry readiness | none（license 域未注册；方法/错误码 ID 均 `TBD after adoption`） |
 | Conformance | needed |
-| 主要未决问题 | 专属错误码落位（vendor 段 vs 共享码）、capability 建模方向、与既有 `system.license` 草案的命名冲突（见 §11）。 |
+| 主要未决问题 | 设计裁决已定案（错误码 vendor 段、Empty 复用、按业务域登记、system.license 标记取代，见 §11）；仅剩流程性等待（人工评审收口后进入 Stage 30 采纳）。 |
 
 ## 1. 功能说明
 
@@ -54,7 +54,7 @@ lastReviewed: 2026-11-17
 | 项 | 内容 |
 |---|---|
 | 调用类型 | command |
-| Params Schema | `Empty`（候选——空对象，演进预留；见 3.1.6 规则） |
+| Params Schema | `Empty`（已定案复用；空对象，演进预留——见 3.1.6 规则） |
 | Result Schema | `RegisterIdentityResult` |
 | 是否触发事件 | 否（零自定义事件，见 §4） |
 | 幂等性 / 异步性 | 同步受理、幂等（deviceId 命中即 EXISTING）；自动签发异步完成，凭证勿在此同步等待 |
@@ -64,7 +64,7 @@ lastReviewed: 2026-11-17
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| （无业务字段） | — | — | — | — | 空对象。deviceId 恒取连接上下文（识别绑定的自报身份），请求不携带、也无法覆盖。是否复用已注册 `Empty` schema 或定义 feature 专属空 params（演进预留）见 §11。 |
+| （无业务字段） | — | — | — | — | 空对象。deviceId 恒取连接上下文（识别绑定的自报身份），请求不携带、也无法覆盖。已定案：复用已注册 `Empty` schema（§11 decided）。 |
 
 #### 3.1.2 返回结果 Result：`RegisterIdentityResult`
 
@@ -151,7 +151,7 @@ error（采纳格式校验失败——终态错误示意）:
 
 Capability name（候选）: `license.registration`。`[REVIEW-DRAFT]`
 
-本方法为云侧实现（设备→云调用），capability 的设备侧语义为「设备完成识别后会主动发起注册」；云侧方法的 capability 表达方式（是否声明、由谁声明）依赖双向 RPC 的 registry 建模定案（flow OQ-5），见 §11。
+本方法为云侧实现（设备→云调用），capability 的设备侧语义为「设备完成识别后会主动发起注册」。OQ-5 已裁决（2026-11-18）：按业务域登记方法、不加「实现方」标注位；capability 维持设备侧声明，云侧实现方法不设 capability（见 §11）。
 
 | 能力字段 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
@@ -210,12 +210,12 @@ Capability name（候选）: `license.registration`。`[REVIEW-DRAFT]`
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|
-| 专属错误码落位：vendor 段（对方仓提案 0x7001–0x7006）还是复用共享错误码？ | registry | 倾向 vendor 段（跨仓对齐成本最低）；本仓无先例，采纳时需补 specs/30-registry.md vendor 段使用规则 | open（用户倾向已记录）`[REVIEW-ASK]` |
-| 空 params 复用已注册 `Empty` schema，还是定义 feature 专属空 params（演进预留语义入 schema）？ | schema | 复用 `Empty` + 规则层表达「忽略全部字段」 | open `[REVIEW-DRAFT]` |
-| 云侧实现方法的 capability 表达（设备声明注册意愿 vs 云声明受理能力）与双向 RPC 的 registry 建模 | registry / capability | 随 flow OQ-5 一并定案 | open |
-| 与既有 `workspace/protocol/system/system.license.md` 草案的命名冲突处置（泛型配置 CRUD 语义 vs 设备授权链语义） | registry / 命名治理 | 新立 license 域；旧草案废弃/改名待评审（flow OQ-2） | open |
-| cloud-reverse 角色模型矛盾（协议 IR helloSender=Device vs SDK 实装）对方向描述的影响 | spec 一致性 | 以 flow OQ-1 裁决为准，必要时 `amend-adopted-protocol` | open |
-| 方法命名与对方仓契约一致性（`license.registerIdentity`） | 跨仓对齐 | 保持同名对齐 | open `[REVIEW-DRAFT]` |
+| 专属错误码落位：vendor 段（对方仓提案 0x7001–0x7006）还是复用共享错误码？ | registry | **已裁决：vendor 段**——采纳时在 specs/30-registry.md 补 vendor 段使用规则；码值仍 `TBD after adoption` | decided（2026-11-18 用户裁决）`[REVIEW-OK]` |
+| 空 params 复用已注册 `Empty` schema，还是定义 feature 专属空 params（演进预留语义入 schema）？ | schema | **已裁决：复用 `Empty`**——「忽略全部字段」由方法规则层承载（§3.1.6） | decided（2026-11-18）`[REVIEW-OK]` |
+| 云侧实现方法的 capability 表达（设备声明注册意愿 vs 云声明受理能力）与双向 RPC 的 registry 建模 | registry / capability | **已裁决：按业务域登记方法，不加「实现方」标注位**——capability 维持设备侧声明（本 feature 的 `license.registration` 为设备侧行为声明），云侧实现方法不设 capability；随 flow OQ-5 关闭 | decided（2026-11-18）`[REVIEW-OK]` |
+| 与既有 `workspace/protocol/system/system.license.md` 草案的命名冲突处置（泛型配置 CRUD 语义 vs 设备授权链语义） | registry / 命名治理 | **已裁决：新 license 域定案（Stage 30 采纳）时将旧草案标记 superseded**；本轮仅记录决定 | decided（执行时点 = Stage 30）`[REVIEW-OK]` |
+| cloud-reverse 角色模型矛盾（协议 IR helloSender=Device vs SDK 实装）对方向描述的影响 | spec 一致性 | 不阻塞本草案；以 flow OQ-1 裁决为准，必要时 `amend-adopted-protocol` | open（axtp 维护事项） |
+| 方法命名与对方仓契约一致性（`license.registerIdentity`） | 跨仓对齐 | 保持同名对齐 | open `[REVIEW-DRAFT]`（随人工评审收口） |
 
 ## 附录 C. Registry 草案输入
 
@@ -232,7 +232,7 @@ methods:
     since: TBD after adoption
     description: Register the device subject from the connection identity (idempotent) and accept automatic entitlement issuance.
     rpc_op: request_response
-    request_schema: Empty            # 候选复用已注册 Empty；或定义专属空 params，见 §11
+    request_schema: Empty            # 已定案复用已注册 Empty（§11 decided，2026-11-18）
     response_schema: RegisterIdentityResult
     recommended_encoding: [json]     # cloud-reverse 通道仅 JSON；TLV 为演进 [REVIEW-ASK]
     errors: [SUCCESS, INVALID_ARGUMENT, UNAVAILABLE]   # 候选 LICENSE_IDENTITY_INVALID 待定码
