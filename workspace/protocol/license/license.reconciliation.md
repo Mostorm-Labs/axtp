@@ -1,27 +1,45 @@
 ---
-status: draft
+status: review-ok
 contract: false
 generated: false
 domain: license
 feature: license.reconciliation
-registry:
-lastReviewed: 2026-11-17
+registry: contract/registry/domains/license/domain.yaml
+lastReviewed: 2026-11-18
 ---
 
 # license.reconciliation
+
+> Adoption note (2026-11-18): 已采纳写入 `contract/registry/domains/license/domain.yaml`（domain `0x19`），源级校验 `validate:sources` 通过；generated 产物待 Stage 50 `generate-axtp-protocol` 刷新（届时本草案翻转为 `status: generated`）。后续语义变更 MUST 走 `amend-adopted-protocol`。
+
+**Registry item 分配**（本 feature 部分）：
+
+| Registry item | New assignment | Binding |
+|---|---|---|
+| method `license.reconcile` | id `0x1903`, bitOffset `2`, since `1.0.0` | `contract/registry/domains/license/domain.yaml` |
+| method `license.resolveCredential` | id `0x1905`, bitOffset `4`, since `1.0.0` | 同上 |
+| capability `license.reconciliation` | id `0x1903` | 同上 |
+| schema `ReconcileParams` | fieldIds `0x01`–`0x02` | 同上 |
+| schema `ReconcileResult` | fieldIds `0x01`–`0x04` | 同上 |
+| schema `ResolveCredentialParams` | fieldId `0x01` | 同上 |
+| schema `ResolveCredentialResult` | fieldIds `0x01`–`0x02` | 同上 |
+| schema `LicenseCredentialInfo` | fieldIds `0x01`–`0x05` | 同上 |
+| schema `LicenseVersionTriple` | fieldIds `0x01`–`0x03` | 同上 |
+| schema `LicenseReconciliationCapabilities` | fieldId `0x01` | 同上 |
+| vendor error `LICENSE_DEVICE_NOT_FOUND` | id `0x7002`（domain: vendor） | `contract/registry/error/error_code.yaml` |
 
 ## 0. 速读结论
 
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 设备上线/重连对账（拉通道，双维度版本比对、三应答形态）与队列 worker 下发前版本纯探测（永不携带凭证字节）。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。draft 阶段仅供评审；正式实现以 registry / generated 为准。 |
+| 当前状态 | review-ok（已采纳写入 registry，待 Stage 50 生成） |
+| 是否可直接实现 | 否。review-ok 阶段源 YAML 已落盘；正式实现以 registry / generated 为准。 |
 | 主要交互 | RPC（设备→云对账 + 云→设备探测；零自定义事件） |
 | 是否使用 STREAM | 否 |
-| Registry readiness | none（license 域未注册；方法/错误码 ID 均 `TBD after adoption`） |
+| Registry readiness | adopted（sources 已写入并通过校验；generated 待刷新） |
 | Conformance | needed |
-| 主要未决问题 | 设计裁决已定案（三应答字段缺席+互斥、共享 `LicenseCredentialInfo`、版本三元组复用 `LicenseVersionTriple`、vendor 段错误码，见 §11）；仅剩流程性等待采纳。 |
+| 主要未决问题 | 无。 |
 
 ## 1. 功能说明
 
@@ -316,7 +334,7 @@ Capability name（候选）: `license.reconciliation`。`[REVIEW-DRAFT]`
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
-| `LICENSE_DEVICE_NOT_FOUND`（候选） | deviceId 无法定位主体。 | **已裁决 vendor 段**（对方仓提案 0x7002；2026-11-18 用户裁决）；正式 errorCode `TBD after adoption`（采纳时随 specs/30-registry.md vendor 段规则一并定码）。 |
+| `LICENSE_DEVICE_NOT_FOUND` | deviceId 无法定位主体。 | **已采纳：0x7002**（domain: vendor，`contract/registry/error/error_code.yaml`，2026-11-18）。 |
 
 对方仓候选码 0x7004–0x7006（NOT_ENTITLED / RATE_LIMITED / INTERNAL）不进本提案，处置口径见 `license.registration` §8。
 
@@ -328,7 +346,7 @@ Capability name（候选）: `license.reconciliation`。`[REVIEW-DRAFT]`
 
 | 类型 | 要点 |
 |---|---|
-| registry readiness | none——license 域未注册；方法与错误码 ID `TBD after adoption`。 |
+| registry readiness | adopted——已写入 `contract/registry/domains/license/domain.yaml`（0x1903/0x1905）与 `error_code.yaml`（0x7002）；generated 待 Stage 50 刷新。 |
 | conformance focus | 三应答形态互斥、漂移形态不返回旧凭证捎带新行集版本、应签而未签形态不答 upToDate=true、探测永不携带凭证字节、版本三元组整体省略规则。 |
 | happy path | 离线演进后上线对账取最新凭证；无凭证设备对账受理补签。 |
 | boundary case | 无凭证（三元组省略）；放弃送达链主动对账仍触发清权补签。 |
@@ -346,43 +364,43 @@ Capability name（候选）: `license.reconciliation`。`[REVIEW-DRAFT]`
 | 探测应答版本三元组与 reconcile params 是否复用同一 schema | schema | **已裁决：复用**——抽共享 `LicenseVersionTriple`（§6.3 已定义，两处引用） | decided（2026-11-18）`[REVIEW-OK]` |
 | 与 `system.license` 草案命名冲突（同 license.registration §11） | registry | **已裁决：新域定案时标记 superseded**（Stage 30 执行） | decided（执行时点 = Stage 30）`[REVIEW-OK]` |
 
-## 附录 C. Registry 草案输入
+## 附录 C. Registry 草案输入（已采纳定稿）
 
-候选输入——非正式事实；全部 ID `TBD after adoption`。对方仓提案素材（domain `0x19`、方法 `0x1903`/`0x1905`、错误码 `0x7002`）仅作提案记录，正式值以 registry 评审为准。
+已采纳（2026-11-18）——以下为实际分配值，与 `contract/registry/domains/license/domain.yaml` 一致。
 
 ```yaml
-# contract/registry/domains/license/domain.yaml 候选片段（TBD after adoption）
+# contract/registry/domains/license/domain.yaml（节选——本 feature 部分，实际分配值）
 methods:
-  - id: TBD after adoption
+  - id: 0x1903
     name: license.reconcile
     domain: license
     status: draft
-    bitOffset: TBD after adoption
-    since: TBD after adoption
+    bitOffset: 2
+    since: 1.0.0
     description: Pull-channel reconciliation on device online/reconnect; compares credential and policy-rowset versions and answers in one of three forms.
     rpc_op: request_response
     request_schema: ReconcileParams
     response_schema: ReconcileResult
     recommended_encoding: [json]
-    errors: [SUCCESS, INVALID_ARGUMENT, NOT_FOUND]   # 候选 LICENSE_DEVICE_NOT_FOUND 待定码
-  - id: TBD after adoption
+    errors: [SUCCESS, INVALID_ARGUMENT, NOT_FOUND, LICENSE_DEVICE_NOT_FOUND]   # 0x7002（domain: vendor）
+  - id: 0x1905
     name: license.resolveCredential
     domain: license
     status: draft
-    bitOffset: TBD after adoption
-    since: TBD after adoption
+    bitOffset: 4
+    since: 1.0.0
     description: Pure pre-delivery version probe; returns the device-held version triple and never carries credential bytes.
     rpc_op: request_response
     request_schema: ResolveCredentialParams
     response_schema: ResolveCredentialResult
     recommended_encoding: [json]
-    errors: [SUCCESS, INVALID_ARGUMENT, NOT_FOUND]
+    errors: [SUCCESS, INVALID_ARGUMENT, NOT_FOUND, LICENSE_DEVICE_NOT_FOUND]
 capabilities:
-  - id: TBD after adoption
+  - id: 0x1903
     name: license.reconciliation
     domain: license
     status: draft
-    since: TBD after adoption
+    since: 1.0.0
     description: 设备对账与版本持久化上报能力声明。
     type: object
     schema: LicenseReconciliationCapabilities
@@ -390,81 +408,100 @@ types:
   ReconcileParams:
     kind: object
     fields:
-      - id: TBD after adoption
+      - id: 0x01
         name: deviceId
         type: string
         required: true
         max_length: 36
-      - id: TBD after adoption
+      - id: 0x02
         name: version
-        type: LicenseVersionTriple    # 共享 schema（本文件 types 内定义；§11 decided）
+        type: LicenseVersionTriple    # 共享 schema（域内单文件定义，§11 decided）
         required: false
   ReconcileResult:
     kind: object
     fields:
-      - id: TBD after adoption
+      - id: 0x01
         name: upToDate
         type: bool
         required: true
-      - id: TBD after adoption
+      - id: 0x02
         name: policyVersion
         type: uint32
         required: false
-      - id: TBD after adoption
+      - id: 0x03
         name: credential
         type: LicenseCredentialInfo
         required: false
-      - id: TBD after adoption
+      - id: 0x04
         name: reissueAccepted
         type: bool
+        required: false
+  ResolveCredentialParams:
+    kind: object
+    fields:
+      - id: 0x01
+        name: deviceId
+        type: string
+        required: true
+        max_length: 36
+  ResolveCredentialResult:
+    kind: object
+    fields:
+      - id: 0x01
+        name: hasCredential
+        type: bool
+        required: true
+      - id: 0x02
+        name: version
+        type: LicenseVersionTriple
         required: false
   LicenseCredentialInfo:
     kind: object
     description: Shared credential object reused by license.reconcile result and license.credentialDelivery params.
     fields:
-      - id: TBD after adoption
+      - id: 0x01
         name: credentialId
         type: string
         required: true
         max_length: 36
-      - id: TBD after adoption
+      - id: 0x02
         name: authorityRevision
         type: uint32
         required: true
-      - id: TBD after adoption
+      - id: 0x03
         name: credentialGeneration
         type: uint32
         required: true
-      - id: TBD after adoption
+      - id: 0x04
         name: reason
         type: enum
         enum: [ISSUE, REVISE, REVOKE]
         required: true
-      - id: TBD after adoption
+      - id: 0x05
         name: cborBase64
         type: string
         required: true
-        max_length: 87384         # 64KiB 工件 Base64（含填充）上限（2026-11-18 已确认，随采纳定稿）
+        max_length: 87384         # 64KiB 工件 Base64（含填充）上限（2026-11-18 已确认）
   LicenseVersionTriple:
     kind: object
     description: Shared version triple reused by ReconcileParams.version and ResolveCredentialResult.version.
     fields:
-      - id: TBD after adoption
+      - id: 0x01
         name: authorityRevision
         type: uint32
         required: true
-      - id: TBD after adoption
+      - id: 0x02
         name: credentialGeneration
         type: uint32
         required: true
-      - id: TBD after adoption
+      - id: 0x03
         name: policyVersion
         type: uint32
         required: true
   LicenseReconciliationCapabilities:
     kind: object
     fields:
-      - id: TBD after adoption
+      - id: 0x01
         name: persistentPolicyVersion
         type: bool
         required: true

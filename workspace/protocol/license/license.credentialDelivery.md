@@ -1,27 +1,43 @@
 ---
-status: draft
+status: review-ok
 contract: false
 generated: false
 domain: license
 feature: license.credentialDelivery
-registry:
-lastReviewed: 2026-11-17
+registry: contract/registry/domains/license/domain.yaml
+lastReviewed: 2026-11-18
 ---
 
 # license.credentialDelivery
+
+> Adoption note (2026-11-18): 已采纳写入 `contract/registry/domains/license/domain.yaml`（domain `0x19`），源级校验 `validate:sources` 通过；generated 产物待 Stage 50 `generate-axtp-protocol` 刷新（届时本草案翻转为 `status: generated`）。后续语义变更 MUST 走 `amend-adopted-protocol`。
+
+**Registry item 分配**（本 feature 部分）：
+
+| Registry item | New assignment | Binding |
+|---|---|---|
+| method `license.reportReceipt` | id `0x1902`, bitOffset `1`, since `1.0.0` | `contract/registry/domains/license/domain.yaml` |
+| method `license.deliverCredential` | id `0x1904`, bitOffset `3`, since `1.0.0` | 同上 |
+| capability `license.credentialDelivery` | id `0x1902` | 同上 |
+| schema `DeliverCredentialParams` | fieldIds `0x01`–`0x03` | 同上 |
+| schema `DeliverCredentialResult` | fieldIds `0x01`–`0x02` | 同上 |
+| schema `ReportReceiptParams` | fieldIds `0x01`–`0x05` | 同上 |
+| schema `ReportReceiptResult` | fieldId `0x01` | 同上 |
+| schema `LicenseCredentialDeliveryCapabilities` | fieldIds `0x01`–`0x03` | 同上 |
+| vendor error `LICENSE_CREDENTIAL_STALE` | id `0x7003`（domain: vendor） | `contract/registry/error/error_code.yaml` |
 
 ## 0. 速读结论
 
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 平台向设备串行下发签名授权凭证（云→设备），设备回报安装/导出/拒绝回执（设备→云），回执经采信条件推进台账收敛。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。draft 阶段仅供评审；正式实现以 registry / generated 为准。 |
+| 当前状态 | review-ok（已采纳写入 registry，待 Stage 50 生成） |
+| 是否可直接实现 | 否。review-ok 阶段源 YAML 已落盘；正式实现以 registry / generated 为准。 |
 | 主要交互 | RPC（云→设备下发 + 设备→云回执；零自定义事件） |
 | 是否使用 STREAM | 否 |
-| Registry readiness | none（license 域未注册；方法/错误码 ID 均 `TBD after adoption`） |
+| Registry readiness | adopted（sources 已写入并通过校验；generated 待刷新） |
 | Conformance | needed |
-| 主要未决问题 | 设计裁决已定案（vendor 段错误码、errorCode 字符串名、假回执 accepted=false、共享 `LicenseCredentialInfo` 内嵌结构，见 §11）；仅剩流程性等待采纳。 |
+| 主要未决问题 | 无。 |
 
 ## 1. 功能说明
 
@@ -284,8 +300,8 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
-| `LICENSE_CREDENTIAL_STALE`（候选） | 凭证版本低于设备高水位（防回滚）或验签失败——设备拒绝下发/REJECTED 回执的唯一拒绝码。 | **已裁决 vendor 段**（对方仓提案 0x7003；2026-11-18 用户裁决）；正式 errorCode `TBD after adoption`（采纳时随 specs/30-registry.md vendor 段规则一并定码）。 |
-| `LICENSE_DEVICE_NOT_FOUND`（候选，关联） | deviceId 无法定位主体（回执/探测侧）——详见 `license.reconciliation` 草案 §8。 | 同上（对方仓提案 0x7002）。 |
+| `LICENSE_CREDENTIAL_STALE` | 凭证版本低于设备高水位（防回滚）或验签失败——设备拒绝下发/REJECTED 回执的唯一拒绝码。 | **已采纳：0x7003**（domain: vendor，`contract/registry/error/error_code.yaml`，2026-11-18）。 |
+| `LICENSE_DEVICE_NOT_FOUND`（关联） | deviceId 无法定位主体（回执/探测侧）——详见 `license.reconciliation` 草案 §8。 | **已采纳：0x7002**（domain: vendor）。 |
 
 对方仓候选码 0x7004–0x7006（NOT_ENTITLED / RATE_LIMITED / INTERNAL）不进本提案，处置口径见 `license.registration` §8。
 
@@ -297,7 +313,7 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 
 | 类型 | 要点 |
 |---|---|
-| registry readiness | none——license 域未注册；方法与错误码 ID `TBD after adoption`。 |
+| registry readiness | adopted——已写入 `contract/registry/domains/license/domain.yaml`（0x1902/0x1904）与 `error_code.yaml`（0x7003）；generated 待 Stage 50 刷新。 |
 | conformance focus | 串行下发不变量（同设备至多一张在途）、超时=结果未知、回执采信条件、EXPORTED 不算安装、ACK 与回执同一采信逻辑幂等。 |
 | happy path | ISSUE 下发 → INSTALLED 回执 → accepted=true 收敛。 |
 | boundary case | 空权益集清权凭证（reason=REVOKE）为合法工件必须可安装；Base64 大载荷（≈87KB）通道承载。 |
@@ -315,43 +331,43 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 | 云侧实现方法（reportReceipt）的 capability 表达与双向 RPC registry 建模 | registry / capability | **已裁决：按业务域登记方法，不加「实现方」标注位**——capability 维持设备侧声明（本 feature capability 描述设备接收/验签/安装能力），云侧实现方法不设 capability；随 flow OQ-5 关闭 | decided（2026-11-18）`[REVIEW-OK]` |
 | 与 `system.license` 草案命名冲突（同 license.registration §11） | registry | **已裁决：新域定案时标记 superseded**（Stage 30 执行） | decided（执行时点 = Stage 30）`[REVIEW-OK]` |
 
-## 附录 C. Registry 草案输入
+## 附录 C. Registry 草案输入（已采纳定稿）
 
-候选输入——非正式事实；全部 ID `TBD after adoption`。对方仓提案素材（domain `0x19`、方法 `0x1904`/`0x1902`、错误码 `0x7003`）仅作提案记录，正式值以 registry 评审为准。
+已采纳（2026-11-18）——以下为实际分配值，与 `contract/registry/domains/license/domain.yaml` 一致。
 
 ```yaml
-# contract/registry/domains/license/domain.yaml 候选片段（TBD after adoption）
+# contract/registry/domains/license/domain.yaml（节选——本 feature 部分，实际分配值）
 methods:
-  - id: TBD after adoption
+  - id: 0x1904
     name: license.deliverCredential
     domain: license
     status: draft
-    bitOffset: TBD after adoption
-    since: TBD after adoption
+    bitOffset: 3
+    since: 1.0.0
     description: Push one signed credential artifact to the device with channel-side metadata; the device verifies, matches, and atomically installs it.
     rpc_op: request_response
     request_schema: DeliverCredentialParams
     response_schema: DeliverCredentialResult
     recommended_encoding: [json]
-    errors: [SUCCESS, INVALID_ARGUMENT]        # 候选 LICENSE_CREDENTIAL_STALE 待定码（result 形态业务拒绝）
-  - id: TBD after adoption
+    errors: [SUCCESS, INVALID_ARGUMENT]        # LICENSE_CREDENTIAL_STALE 走 result 形态业务拒绝（0x7003）
+  - id: 0x1902
     name: license.reportReceipt
     domain: license
     status: draft
-    bitOffset: TBD after adoption
-    since: TBD after adoption
+    bitOffset: 1
+    since: 1.0.0
     description: Report an install/export/reject receipt for a delivery attempt; accepted only when it correlates to a real platform delivery.
     rpc_op: request_response
     request_schema: ReportReceiptParams
     response_schema: ReportReceiptResult
     recommended_encoding: [json]
-    errors: [SUCCESS, INVALID_ARGUMENT]        # 采信不满足走 accepted=false 业务应答（§11 decided），不用 NOT_FOUND
+    errors: [SUCCESS, INVALID_ARGUMENT]        # 采信不满足走 accepted=false 业务应答，不用 NOT_FOUND
 capabilities:
-  - id: TBD after adoption
+  - id: 0x1902
     name: license.credentialDelivery
     domain: license
     status: draft
-    since: TBD after adoption
+    since: 1.0.0
     description: 设备侧凭证接收、验签安装与回执能力声明。
     type: object
     schema: LicenseCredentialDeliveryCapabilities
@@ -359,43 +375,43 @@ types:
   DeliverCredentialParams:
     kind: object
     fields:
-      - id: TBD after adoption
+      - id: 0x01
         name: deliveryId
         type: string
         required: true
-        max_length: 64            # 候选上限，采纳时定 [REVIEW-DRAFT]
-      - id: TBD after adoption
+        max_length: 64
+      - id: 0x02
         name: policyVersion
         type: uint32
         required: true
-      - id: TBD after adoption
+      - id: 0x03
         name: credential
-        type: LicenseCredentialInfo   # 共享 schema，定义见 license.reconciliation 附录 C（§11 decided）
+        type: LicenseCredentialInfo   # 共享 schema（域内单文件定义，§11 decided）
         required: true
   ReportReceiptParams:
     kind: object
     fields:
-      - id: TBD after adoption
+      - id: 0x01
         name: deviceId
         type: string
         required: true
         max_length: 36
-      - id: TBD after adoption
+      - id: 0x02
         name: credentialId
         type: string
         required: true
         max_length: 36
-      - id: TBD after adoption
+      - id: 0x03
         name: outcome
         type: enum
         enum: [INSTALLED, EXPORTED, REJECTED]
         required: true
-      - id: TBD after adoption
+      - id: 0x04
         name: errorCode
         type: string
         required: false           # REJECTED 时必填（规则层表达）
         max_length: 64
-      - id: TBD after adoption
+      - id: 0x05
         name: deliveryRef
         type: string
         required: false
@@ -403,17 +419,17 @@ types:
   LicenseCredentialDeliveryCapabilities:
     kind: object
     fields:
-      - id: TBD after adoption
+      - id: 0x01
         name: maxArtifactBytes
         type: uint32
         required: true
         max: 65536
-      - id: TBD after adoption
+      - id: 0x02
         name: maxEntitlements
         type: uint32
         required: true
         max: 256
-      - id: TBD after adoption
+      - id: 0x03
         name: supportedReasons
         type: array
         array:

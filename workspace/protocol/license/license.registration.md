@@ -1,27 +1,40 @@
 ---
-status: draft
+status: review-ok
 contract: false
 generated: false
 domain: license
 feature: license.registration
-registry:
-lastReviewed: 2026-11-17
+registry: contract/registry/domains/license/domain.yaml
+lastReviewed: 2026-11-18
 ---
 
 # license.registration
+
+> Adoption note (2026-11-18): 已采纳写入 `contract/registry/domains/license/domain.yaml`（domain `0x19`），源级校验 `validate:sources` 通过；generated 产物待 Stage 50 `generate-axtp-protocol` 刷新（届时本草案翻转为 `status: generated`）。后续语义变更 MUST 走 `amend-adopted-protocol`。
+
+**Registry item 分配**（本 feature 部分）：
+
+| Registry item | New assignment | Binding |
+|---|---|---|
+| domain `license` | high_byte `0x19` | `contract/registry/core/domain_registry.yaml` |
+| method `license.registerIdentity` | id `0x1901`, bitOffset `0`, since `1.0.0` | `contract/registry/domains/license/domain.yaml` |
+| capability `license.registration` | id `0x1901` | 同上 |
+| schema `RegisterIdentityResult` | fieldIds `0x01`–`0x03` | 同上 |
+| schema `LicenseRegistrationCapabilities` | fieldId `0x01` | 同上 |
+| vendor error `LICENSE_IDENTITY_INVALID` | id `0x7001`（domain: vendor） | `contract/registry/error/error_code.yaml` |
 
 ## 0. 速读结论
 
 | 项目 | 内容 |
 |---|---|
 | 这个能力做什么 | 设备经云反连通道识别成功后向平台注册设备主体（幂等），触发平台按默认策略自动签发授权凭证（异步受理）。 |
-| 当前状态 | draft |
-| 是否可直接实现 | 否。draft 阶段仅供评审；正式实现以 registry / generated 为准。 |
+| 当前状态 | review-ok（已采纳写入 registry，待 Stage 50 生成） |
+| 是否可直接实现 | 否。review-ok 阶段源 YAML 已落盘；正式实现以 registry / generated 为准。 |
 | 主要交互 | RPC（设备→云调用；零自定义事件） |
 | 是否使用 STREAM | 否 |
-| Registry readiness | none（license 域未注册；方法/错误码 ID 均 `TBD after adoption`） |
+| Registry readiness | adopted（sources 已写入并通过校验；generated 待刷新） |
 | Conformance | needed |
-| 主要未决问题 | 设计裁决已定案（错误码 vendor 段、Empty 复用、按业务域登记、system.license 标记取代，见 §11）；仅剩流程性等待（人工评审收口后进入 Stage 30 采纳）。 |
+| 主要未决问题 | 无（OQ-1 helloSender 属 axtp 维护事项，不在本域范围）。 |
 
 ## 1. 功能说明
 
@@ -181,7 +194,7 @@ Capability name（候选）: `license.registration`。`[REVIEW-DRAFT]`
 
 | 错误 | 适用场景 | 说明 |
 |---|---|---|
-| `LICENSE_IDENTITY_INVALID`（候选） | deviceId 采纳校验失败：格式不符（终态——设备重建本地身份后重试，非可重试暂态）或已被其他主体占用。 | 候选码倾向 vendor 段（对方仓提案 0x7001；本仓 vendor 段零使用先例，采纳时需在 specs/30-registry.md 补 vendor 段使用规则）`[REVIEW-ASK]`；正式 errorCode `TBD after adoption`。 |
+| `LICENSE_IDENTITY_INVALID` | deviceId 采纳校验失败：格式不符（终态——设备重建本地身份后重试，非可重试暂态）或已被其他主体占用。 | **已采纳：0x7001**（domain: vendor，`contract/registry/error/error_code.yaml`，2026-11-18；specs/30-registry.md vendor 段使用规则已同步登记）。 |
 
 其余对方仓候选码不进本提案（处置口径，另两份草案 §8 同引）：
 
@@ -199,7 +212,7 @@ Capability name（候选）: `license.registration`。`[REVIEW-DRAFT]`
 
 | 类型 | 要点 |
 |---|---|
-| registry readiness | none——license 域未注册（候选高字节 0x19 待评审）；方法与错误码 ID `TBD after adoption`。 |
+| registry readiness | adopted——已写入 `contract/registry/domains/license/domain.yaml`（0x1901）与 `error_code.yaml`（0x7001），domain 0x19 已注册；generated 待 Stage 50 刷新。 |
 | conformance focus | 幂等（重复注册不产生重复主体）、params 全字段忽略（连接身份不可被参数覆盖）、吊销主体重注册不恢复授权。 |
 | happy path | 首次注册返回 REGISTERED + credentialPending=true；重连再注册返回 EXISTING。 |
 | boundary case | 非 axlic 客户端自报任意非空串：识别成功但注册恒拒（终态 0x7001 候选语义）——「识别成功 × 采纳永拒」组合失效模式的契约出口。 |
@@ -217,31 +230,31 @@ Capability name（候选）: `license.registration`。`[REVIEW-DRAFT]`
 | cloud-reverse 角色模型矛盾（协议 IR helloSender=Device vs SDK 实装）对方向描述的影响 | spec 一致性 | 不阻塞本草案；以 flow OQ-1 裁决为准，必要时 `amend-adopted-protocol` | open（axtp 维护事项） |
 | 方法命名与对方仓契约一致性（`license.registerIdentity`） | 跨仓对齐 | 保持同名对齐（对方平台已按此实现） | decided（2026-11-18 用户确认）`[REVIEW-OK]` |
 
-## 附录 C. Registry 草案输入
+## 附录 C. Registry 草案输入（已采纳定稿）
 
-候选输入——非正式事实；全部 ID `TBD after adoption`。对方仓提案素材（domain `0x19`、方法 `0x1901`、错误码 `0x7001`）仅作提案记录，正式值以 registry 评审为准。
+已采纳（2026-11-18）——以下为实际分配值，与 `contract/registry/domains/license/domain.yaml` 一致。
 
 ```yaml
-# contract/registry/domains/license/domain.yaml 候选片段（TBD after adoption）
+# contract/registry/domains/license/domain.yaml（节选——本 feature 部分，实际分配值）
 methods:
-  - id: TBD after adoption
+  - id: 0x1901
     name: license.registerIdentity
     domain: license
     status: draft
-    bitOffset: TBD after adoption
-    since: TBD after adoption
+    bitOffset: 0
+    since: 1.0.0
     description: Register the device subject from the connection identity (idempotent) and accept automatic entitlement issuance.
     rpc_op: request_response
-    request_schema: Empty            # 已定案复用已注册 Empty（§11 decided，2026-11-18）
+    request_schema: Empty            # 复用已注册 Empty（§11 decided）
     response_schema: RegisterIdentityResult
-    recommended_encoding: [json]     # cloud-reverse 通道仅 JSON；TLV 为演进 [REVIEW-ASK]
-    errors: [SUCCESS, INVALID_ARGUMENT, UNAVAILABLE]   # 候选 LICENSE_IDENTITY_INVALID 待定码
+    recommended_encoding: [json]     # cloud-reverse 通道仅 JSON；TLV 为演进
+    errors: [SUCCESS, INVALID_ARGUMENT, UNAVAILABLE, LICENSE_IDENTITY_INVALID]   # 0x7001（domain: vendor）
 capabilities:
-  - id: TBD after adoption
+  - id: 0x1901
     name: license.registration
     domain: license
     status: draft
-    since: TBD after adoption
+    since: 1.0.0
     description: 设备注册流程支持声明（识别成功后主动发起注册）。
     type: object
     schema: LicenseRegistrationCapabilities
@@ -249,24 +262,24 @@ types:
   RegisterIdentityResult:
     kind: object
     fields:
-      - id: TBD after adoption       # schema-local fieldId，采纳时自 0x01 起分配
+      - id: 0x01
         name: deviceId
         type: string
         required: true
         max_length: 36
-      - id: TBD after adoption
+      - id: 0x02
         name: status
         type: enum
         enum: [REGISTERED, EXISTING]
         required: true
-      - id: TBD after adoption
+      - id: 0x03
         name: credentialPending
         type: bool
         required: true
   LicenseRegistrationCapabilities:
     kind: object
     fields:
-      - id: TBD after adoption
+      - id: 0x01
         name: deviceIdFormat
         type: string
         required: true
