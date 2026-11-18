@@ -215,7 +215,7 @@ Capability name（候选）: `license.registration`。`[REVIEW-DRAFT]`
 | 云侧实现方法的 capability 表达（设备声明注册意愿 vs 云声明受理能力）与双向 RPC 的 registry 建模 | registry / capability | **已裁决：按业务域登记方法，不加「实现方」标注位**——capability 维持设备侧声明（本 feature 的 `license.registration` 为设备侧行为声明），云侧实现方法不设 capability；随 flow OQ-5 关闭 | decided（2026-11-18）`[REVIEW-OK]` |
 | 与既有 `workspace/protocol/system/system.license.md` 草案的命名冲突处置（泛型配置 CRUD 语义 vs 设备授权链语义） | registry / 命名治理 | **已裁决：新 license 域定案（Stage 30 采纳）时将旧草案标记 superseded**；本轮仅记录决定 | decided（执行时点 = Stage 30）`[REVIEW-OK]` |
 | cloud-reverse 角色模型矛盾（协议 IR helloSender=Device vs SDK 实装）对方向描述的影响 | spec 一致性 | 不阻塞本草案；以 flow OQ-1 裁决为准，必要时 `amend-adopted-protocol` | open（axtp 维护事项） |
-| 方法命名与对方仓契约一致性（`license.registerIdentity`） | 跨仓对齐 | 保持同名对齐 | open `[REVIEW-DRAFT]`（随人工评审收口） |
+| 方法命名与对方仓契约一致性（`license.registerIdentity`） | 跨仓对齐 | 保持同名对齐（对方平台已按此实现） | decided（2026-11-18 用户确认）`[REVIEW-OK]` |
 
 ## 附录 C. Registry 草案输入
 

@@ -444,7 +444,7 @@ types:
         name: cborBase64
         type: string
         required: true
-        max_length: 87384         # 64KiB 工件 Base64（含填充）上限 [REVIEW-DRAFT]
+        max_length: 87384         # 64KiB 工件 Base64（含填充）上限（2026-11-18 已确认，随采纳定稿）
   LicenseVersionTriple:
     kind: object
     description: Shared version triple reused by ReconcileParams.version and ResolveCredentialResult.version.

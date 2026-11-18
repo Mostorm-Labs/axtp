@@ -239,7 +239,7 @@ US7 策略发布批量修订（P3）：
 | Gap | Candidate domain.feature | Candidate method/event/schema | Routed skill | Review question |
 |---|---|---|---|---|
 | 设备注册（幂等、空参数、连接身份采纳、触发自动签发、credentialPending） | `license.registration` | `license.registerIdentity`（D2S，request_response） | `draft-business-protocol` | 已裁决（2026-11-18）：deviceId 格式校验属 license 域语义；params 复用已注册 `Empty`、全字段忽略由规则层承载 |
-| 凭证下发（串行、deliveryId/policyVersion/reason 通道侧元数据、cborBase64 不透明字节、0x7003 拒绝语义） | `license.credentialDelivery` | `license.deliverCredential`（S2D，request_response） | `draft-business-protocol` | 方向建模已裁决（按业务域登记，OQ-5）；凭证字段已裁决抽共享 `LicenseCredentialInfo` 内嵌结构；剩余 `[REVIEW-ASK]`：负载上限（64KiB 工件 + Base64 膨胀）是否需 schema 约束注记 |
+| 凭证下发（串行、deliveryId/policyVersion/reason 通道侧元数据、cborBase64 不透明字节、0x7003 拒绝语义） | `license.credentialDelivery` | `license.deliverCredential`（S2D，request_response） | `draft-business-protocol` | 方向建模已裁决（按业务域登记，OQ-5）；凭证字段已裁决抽共享 `LicenseCredentialInfo` 内嵌结构；负载上限已确认（2026-11-18）：`cborBase64` `max_length: 87384`（64KiB 工件 Base64 含填充），随采纳定稿 |
 | 安装/导出/拒绝回执（deliveryRef 闭环、采信条件、EXPORTED 不算安装） | `license.credentialDelivery` | `license.reportReceipt`（D2S，request_response） | `draft-business-protocol` | 协议仅定义回执结构、采信判定为服务端行为；已裁决（2026-11-18）：采信不满足以 `accepted=false` 业务应答（不用 NOT_FOUND） |
 | 对账（拉通道、三应答形态、双维度版本比对、补签受理） | `license.reconciliation` | `license.reconcile`（D2S，request_response） | `draft-business-protocol` | 已裁决（2026-11-18）：三应答形态以字段缺席 + 互斥规则表达（不引入显式变体） |
 | 版本纯探测（队列 worker 前置探测、永不携带凭证字节） | `license.reconciliation` | `license.resolveCredential`（S2D，request_response） | `draft-business-protocol` | 已裁决（2026-11-18）：版本三元组与 reconcile params 复用共享 `LicenseVersionTriple` |
