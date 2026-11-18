@@ -4,6 +4,58 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.19.0
+
+### Protocol
+
+- Adds the `license` business domain (0x19) for the device entitlement licensing
+  lifecycle over the cloud-reverse channel: identity registration, signed
+  credential delivery and receipts, and reconciliation with a pure pre-delivery
+  version probe.
+- All five methods are RPC request/response over JSON with zero custom events;
+  the credential artifact (frozen CBOR V1) travels as an opaque Base64 string.
+
+### Registry
+
+- Registers domain `license` at high byte `0x19`; methods `0x1901`–`0x1905`
+  (registerIdentity, reportReceipt, reconcile, deliverCredential,
+  resolveCredential) with bitOffsets 0–4, capabilities `0x1901`–`0x1903`
+  (registration, credentialDelivery, reconciliation), and 14 schemas including
+  the shared `LicenseCredentialInfo` and `LicenseVersionTriple`.
+- Adds the first vendor-segment error codes `0x7001` LICENSE_IDENTITY_INVALID
+  (terminal, device must rebuild its local identity), `0x7002`
+  LICENSE_DEVICE_NOT_FOUND and `0x7003` LICENSE_CREDENTIAL_STALE
+  (anti-rollback), registered with `domain: vendor` per the new vendor-segment
+  usage rule documented in specs/30-registry.md.
+
+### Schemas
+
+- Defines registration results (REGISTERED/EXISTING, credentialPending),
+  delivery params with an embedded shared credential object, receipts
+  (INSTALLED/EXPORTED/REJECTED with deliveryRef correlation), the mutually
+  exclusive three-form reconcile answer (upToDate / credential /
+  reissueAccepted), and the device-held version triple.
+
+### Conformance
+
+- No conformance cases yet for the license domain; runtime verification relies
+  on the generated contract and cross-repo golden vectors from the peer
+  credential verifier.
+
+### Migration
+
+- Supersedes the never-adopted `system.license` skeleton draft (marked
+  deprecated); its generic license-config semantics do not project onto this
+  domain. No adopted facts changed, so no wire migration is required.
+
+### Runtime Impact
+
+- Runtime implementations targeting license must bind this exact spec tag.
+  Business source: aw-saas-platform `001-license-entitlement-system`; its
+  quoted global error values must be corrected against this registry (flow
+  OQ-6), and the cloud-reverse `helloSender` contradiction (flow OQ-1) remains
+  open for SDK-side verification.
+
 ## spec/v0.18.0
 
 ### Protocol
