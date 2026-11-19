@@ -4,6 +4,75 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.19.1
+
+### Protocol
+
+- Amends the license domain device-identity semantics to align with the
+  upstream entitlement licensing spec's device-identity rulings: `deviceId` is
+  assigned by the platform at first registration
+  (`^axldev_[0-9a-f]{32}$`, 40 characters) and must be persisted and
+  self-reported by the device on later connections; the device's outward
+  identity is the `identity_value` public key (`^[0-9a-f]{128}$`), self-reported
+  in dual form (unregistered = identity_value / registered = deviceId) with the
+  identification layer only checking non-empty.
+- All S2D calls (deliverCredential, resolveCredential, T2 online push, online
+  judgment) now use dual-key fallback addressing: the registered deviceId
+  first, with identity-mapping fallback covering the first-registration
+  same-connection window.
+- `license.registerIdentity` becomes re-resolution idempotent: an identity_value
+  or deviceId hit always returns the same deviceId; `0x7001` rejects only when
+  both dual-form patterns fail to match or the identity_value is already mapped
+  to another subject (terminal-error semantics preserved).
+
+### Registry
+
+- Updates `contract/registry/domains/license/domain.yaml`: the four `deviceId`
+  fields (RegisterIdentityResult, ReportReceiptParams, ReconcileParams,
+  ResolveCredentialParams) move to `max_length: 40` with platform-assigned /
+  current self-reported addressing value descriptions;
+  `registerIdentity`/`deliverCredential` method descriptions reflect
+  platform assignment and dual-key fallback addressing.
+- Updates `contract/registry/error/error_code.yaml`: `0x7001`
+  LICENSE_IDENTITY_INVALID adopts the dual-form pattern and
+  identity-occupied semantics.
+- All method/capability/error IDs, field IDs, bitOffsets and names are
+  unchanged (draft-status breaking correction); generated artifacts
+  (protocol IR, generated docs, MCP JSON) refreshed via the generator only.
+
+### Schemas
+
+- `LicenseRegistrationCapabilities.deviceIdFormat` becomes a dual-form format
+  declaration (identity_value or platform-assigned deviceId), `max_length`
+  32 → 64; the license flow document and the three license protocol drafts
+  are re-reviewed (coverage complete) with adoption/revision history recorded.
+
+### Conformance
+
+- Refreshes the generator protocol snapshots
+  (`protocol.generated.json` / `protocol.generated.md`) for the amended
+  deviceId facts; no new conformance cases (license conformance remains
+  covered by cross-repo golden vectors from the peer credential verifier).
+
+### Migration
+
+- Draft-status breaking correction with no wire migration: every ID, field
+  ID, bitOffset and name is preserved. Runtimes that validated the former
+  `dev_`-prefixed 36-character constraint must update to the platform-assigned
+  `axldev_` 40-character form and the dual-form registration adoption rules.
+
+### Runtime Impact
+
+- Runtime implementations targeting the license domain must bind this exact
+  spec tag; the upstream platform's method contract must be corrected against
+  this registry (its quoted global error values and the former device-local
+  identity wording do not match; flow OQ-6/OQ-7).
+- Documentation scrub: upstream repository identity (repository name, internal
+  paths, review rounds, requirement/story IDs) is removed from the license
+  flow document, protocol drafts, and this changelog; upstream inputs are
+  referenced only as the anonymous "upstream entitlement licensing spec".
+- Back-fills seven missing flow-plan index rows in `workspace/flows/README.md`.
+
 ## spec/v0.19.0
 
 ### Protocol
@@ -51,10 +120,10 @@ Current repository path note: conformance cases now live at the root `conformanc
 ### Runtime Impact
 
 - Runtime implementations targeting license must bind this exact spec tag.
-  Business source: aw-saas-platform `001-license-entitlement-system`; its
-  quoted global error values must be corrected against this registry (flow
-  OQ-6), and the cloud-reverse `helloSender` contradiction (flow OQ-1) remains
-  open for SDK-side verification.
+  Business source: upstream entitlement licensing spec; its quoted global error
+  values must be corrected against this registry (flow OQ-6), and the
+  cloud-reverse `helloSender` contradiction (flow OQ-1) remains open for
+  SDK-side verification.
 
 ## spec/v0.18.0
 
