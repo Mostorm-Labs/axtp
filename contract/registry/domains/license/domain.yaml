@@ -8,7 +8,7 @@ methods:
     status: draft
     bitOffset: 0
     since: 1.0.0
-    description: Register the device subject from the connection identity (idempotent) and accept automatic entitlement issuance.
+    description: Register the device subject from the dual-form connection identity (idempotent); the platform assigns the deviceId on first registration and accepts automatic entitlement issuance.
     rpc_op: request_response
     request_schema: Empty
     response_schema: RegisterIdentityResult
@@ -50,7 +50,7 @@ methods:
     status: draft
     bitOffset: 3
     since: 1.0.0
-    description: Push one signed credential artifact to the device with channel-side metadata; the device verifies, matches, and atomically installs it.
+    description: Push one signed credential artifact to the device over dual-key fallback addressing (deviceId first, identity fallback) with channel-side metadata; the device verifies, matches, and atomically installs it.
     rpc_op: request_response
     request_schema: DeliverCredentialParams
     response_schema: DeliverCredentialResult
@@ -81,8 +81,8 @@ types:
         name: deviceId
         type: string
         required: true
-        max_length: 36
-        description: Adopted device subject identifier (dev_ followed by 32 lowercase hex), equal to the connection identity.
+        max_length: 40
+        description: Platform-assigned device subject identifier (axldev_ followed by 32 lowercase hex), returned on registration; the device must persist it and self-report it on later connections (non-authoritative reference; the authoritative identity is the identity_value public key).
       - id: 0x02
         name: status
         type: enum
@@ -103,8 +103,8 @@ types:
         name: deviceId
         type: string
         required: true
-        max_length: 36
-        description: Reporting device subject identifier.
+        max_length: 40
+        description: Connection addressing key current self-reported value (registered form, axldev_ prefix); cross-validated against the connection identity.
       - id: 0x02
         name: credentialId
         type: string
@@ -148,8 +148,8 @@ types:
         name: deviceId
         type: string
         required: true
-        max_length: 36
-        description: Device subject identifier (validation field).
+        max_length: 40
+        description: Connection addressing key current self-reported value (registered form, axldev_ prefix); filled with the current self-reported value also when the platform addresses via the identity fallback.
       - id: 0x02
         name: version
         type: LicenseVersionTriple
@@ -189,8 +189,8 @@ types:
         name: deviceId
         type: string
         required: true
-        max_length: 36
-        description: Device subject identifier; the same string as the connection addressing key.
+        max_length: 40
+        description: Connection addressing key current self-reported value (registered form, axldev_ prefix); the same string as the connection addressing key, also under the platform identity-fallback addressing.
 
   ResolveCredentialResult:
     kind: object
@@ -305,8 +305,8 @@ types:
         name: deviceIdFormat
         type: string
         required: true
-        max_length: 32
-        description: Format declaration of the self-reported deviceId accepted by registration adoption.
+        max_length: 64
+        description: Dual-form format declaration of the self-reported connection identity accepted by registration adoption (unregistered identity_value ^[0-9a-f]{128}$ or platform-assigned deviceId ^axldev_[0-9a-f]{32}$).
 
   LicenseCredentialDeliveryCapabilities:
     kind: object

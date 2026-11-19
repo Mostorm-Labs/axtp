@@ -5,7 +5,7 @@ generated: true
 domain: license
 feature: license.credentialDelivery
 registry: contract/registry/domains/license/domain.yaml
-lastReviewed: 2026-11-18
+lastReviewed: 2026-11-19
 ---
 
 # license.credentialDelivery
@@ -43,7 +43,7 @@ lastReviewed: 2026-11-18
 
 平台签发的授权凭证（CBOR V1 签名工件，axlic 冻结格式）经 `license.deliverCredential` 由云推送到设备；设备侧验证方验签、身份匹配、原子安装后，经 `license.reportReceipt` 回报结果。回执必须可关联平台真实下发尝试（`deliveryId` 闭环）且与选定工件一致才被采信；S2D 调用响应的 ACK 与回执走同一采信逻辑，重复到达幂等。
 
-公共 RPC envelope、错误约定与 schema 展开遵循 [Protocol Draft Conventions](../draft-conventions.md)。业务场景与协议覆盖分析见 [license-entitlement-lifecycle flow](../../flows/license-entitlement-lifecycle.md)；接口素材来源：aw-saas-platform 仓 001-license-entitlement-system 特性规格（`apps/api/specs/001-license-entitlement-system/` 目录）下 contracts/axtp-licensing-methods.md。凭证字节格式合同权威在 axlic 仓（P17/P20 冻结面），本草案只约束通道传输形态，不定义 CBOR 内部结构。
+公共 RPC envelope、错误约定与 schema 展开遵循 [Protocol Draft Conventions](../draft-conventions.md)。业务场景与协议覆盖分析见 [license-entitlement-lifecycle flow](../../flows/license-entitlement-lifecycle.md)；接口素材来源：上游业务规格（设备权益授权系统，平台侧特性规格）的设备通道方法契约。凭证字节格式合同权威在设备侧验证方冻结合同（axlic 冻结面），本草案只约束通道传输形态，不定义 CBOR 内部结构。
 
 > 方向术语：本文以「云→设备 / 设备→云」描述调用方向。cloud-reverse 通道中设备为逻辑服务端（`contract/protocol/axtp.protocol.yaml:164-169`）——`deliverCredential` 为逻辑客户端（云）的正向调用、`reportReceipt` 为设备发起的反向 Request；SDK 实装角色模型存在待裁决矛盾（flow OQ-1），方向建模见 §11。
 
@@ -74,7 +74,7 @@ lastReviewed: 2026-11-18
 | Params Schema | `DeliverCredentialParams` |
 | Result Schema | `DeliverCredentialResult` |
 | 是否触发事件 | 否（零自定义事件，见 §4） |
-| 幂等性 / 异步性 | 平台侧串行约束（同设备同时刻至多一张在途凭证）；超时/断连 = 结果未知（非失败，等对账收敛） |
+| 幂等性 / 异步性 | 平台侧串行约束（同设备同时刻至多一张在途凭证）；超时/断连 = 结果未知（非失败，等对账收敛）；平台侧**双键回退寻址**（优先已注册 deviceId，未命中经 identity 映射回退 identity_value——首注册同连接窗口；设备侧对寻址无感知） |
 | 常见错误 | 设备拒绝以 `accepted=false` + `errorCode` 表达（候选 `LICENSE_CREDENTIAL_STALE`）；通道级错误沿用通用错误 |
 
 #### 3.1.1 请求参数 Params：`DeliverCredentialParams`
@@ -147,7 +147,7 @@ success:
 }
 ```
 
-读法：设备拒绝（防回滚/验签失败）以**业务 result** 表达——`status.ok=true` + `accepted=false` + 候选错误名（与对方仓契约及 `reportReceipt` 的 accepted=false 形态一致）；`LICENSE_CREDENTIAL_STALE` 正式 errorCode `TBD after adoption`（倾向 vendor 段，见 §8）。通道级错误（载荷字段非法等）才走 `status.ok=false` + 通用码。`[REVIEW-DRAFT]`
+读法：设备拒绝（防回滚/验签失败）以**业务 result** 表达——`status.ok=true` + `accepted=false` + 错误名（与上游契约及 `reportReceipt` 的 accepted=false 形态一致）；`LICENSE_CREDENTIAL_STALE` = **0x7003**（vendor 段，已采纳，见 §8）。通道级错误（载荷字段非法等）才走 `status.ok=false` + 通用码。
 
 #### 3.1.4 可能触发的事件
 
@@ -168,7 +168,8 @@ success:
 - 下发结果未知（通道超时/断连）MUST 归为「结果未知」而非失败：不判失败、不触发旧版重发覆盖新版本，等待对账收敛。
 - 本调用响应 accepted=true 可作为安装确认（DEVICE_ACK）依据——平台对本方法响应 ACK 与 `reportReceipt` 走同一采信逻辑（deliveryRef = 当次 deliveryId），二者重复到达幂等、acknowledged 指针只进不退。
 - `policyVersion` / `deliveryId` / `reason` 为通道侧元数据（axlic 冻结载荷不可增字段），不进入 CBOR 工件。
-- 设备侧验签、身份匹配（deviceId 绑定）、原子安装与权益判定是设备内部行为（axlic 冻结合同）；验证失败 fail-closed 判无权限，不得导致接收桥变砖。
+- 本调用为 S2D：平台侧统一**双键回退寻址**——优先已注册 deviceId，未命中经 identity 映射回退 identity_value（首注册同连接窗口），设备侧对寻址无感知。
+- 设备侧验签、身份匹配（凭证载荷 device_id 与本地保存的注册引用比对）、原子安装与权益判定是设备内部行为（axlic 冻结合同）；验证失败 fail-closed 判无权限，不得导致接收桥变砖。
 
 ### 3.2 `license.reportReceipt`
 
@@ -187,7 +188,7 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `deviceId` | string | yes | `^dev_[0-9a-f]{32}$` | none | 设备主体标识（校验字段，与连接身份一致）。 |
+| `deviceId` | string | yes | `^axldev_[0-9a-f]{32}$` | none | = 连接寻址键当前自报值（已注册形态，平台分配）；交叉校验 params.deviceId === context.deviceUniqueId。 |
 | `credentialId` | string | yes | uuid 格式 | none | 回执针对的凭证工件标识。 |
 | `outcome` | string enum | yes | `INSTALLED` / `EXPORTED` / `REJECTED` | none | 安装确认 / 离线导出记录 / 拒绝。 |
 | `errorCode` | string | no | 候选 `LICENSE_CREDENTIAL_STALE` | none | outcome=REJECTED 时必填；亦为设备拒绝 `deliverCredential` 的唯一拒绝码。 |
@@ -208,7 +209,7 @@ request:
   "id": 202,
   "method": "license.reportReceipt",
   "params": {
-    "deviceId": "dev_0123456789abcdef0123456789abcdef",
+    "deviceId": "axldev_0123456789abcdef0123456789abcdef",
     "credentialId": "3f9d2c68-7b4e-4f2a-9c1d-5e8a7b6c4d21",
     "outcome": "INSTALLED",
     "deliveryRef": "d-8a41c7"
@@ -303,7 +304,7 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 | `LICENSE_CREDENTIAL_STALE` | 凭证版本低于设备高水位（防回滚）或验签失败——设备拒绝下发/REJECTED 回执的唯一拒绝码。 | **已采纳：0x7003**（domain: vendor，`contract/registry/error/error_code.yaml`，2026-11-18）。 |
 | `LICENSE_DEVICE_NOT_FOUND`（关联） | deviceId 无法定位主体（回执/探测侧）——详见 `license.reconciliation` 草案 §8。 | **已采纳：0x7002**（domain: vendor）。 |
 
-对方仓候选码 0x7004–0x7006（NOT_ENTITLED / RATE_LIMITED / INTERNAL）不进本提案，处置口径见 `license.registration` §8。
+上游候选码 0x7004–0x7006（NOT_ENTITLED / RATE_LIMITED / INTERNAL）不进本提案，处置口径见 `license.registration` §8。
 
 ## 9. Legacy 映射
 
@@ -313,23 +314,30 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 
 | 类型 | 要点 |
 |---|---|
-| registry readiness | adopted——已写入 `contract/registry/domains/license/domain.yaml`（0x1902/0x1904）与 `error_code.yaml`（0x7003）；generated 待 Stage 50 刷新。 |
+| registry readiness | adopted + amended——已写入 `contract/registry/domains/license/domain.yaml`（0x1902/0x1904）与 `error_code.yaml`（0x7003）；2026-11-19 amend（deviceId/双键回退）已刷新 generated。 |
 | conformance focus | 串行下发不变量（同设备至多一张在途）、超时=结果未知、回执采信条件、EXPORTED 不算安装、ACK 与回执同一采信逻辑幂等。 |
 | happy path | ISSUE 下发 → INSTALLED 回执 → accepted=true 收敛。 |
 | boundary case | 空权益集清权凭证（reason=REVOKE）为合法工件必须可安装；Base64 大载荷（≈87KB）通道承载。 |
 | error case | 防回滚拒绝（旧版本凭证）；不可关联回执 accepted=false；REJECTED 缺 errorCode 拒请求。 |
-| compatibility | 仅 JSON 编码；`errorCode`/`deliveryRef` 字段语义与对方仓契约对齐（其数值码引用误引已登记 flow OQ-6，以 registry 值为准）。 |
+| compatibility | 仅 JSON 编码；`errorCode`/`deliveryRef` 字段语义与上游契约对齐（其数值码引用误引已登记 flow OQ-6，以 registry 值为准）。 |
 
 ## 11. 待确认问题
 
 | 问题 | 影响 | 当前建议 | 状态 |
 |---|---|---|---|
-| 专属错误码落位：vendor 段（对方仓提案 0x7001–0x7006）还是共享码/业务段？ | registry | **已裁决：vendor 段**——采纳时补 specs/30-registry.md vendor 段规则；码值 TBD after adoption | decided（2026-11-18 用户裁决）`[REVIEW-OK]` |
-| result 中 `errorCode` 字段形态：候选错误名 string（对方仓契约形态）vs 采纳后数值？ | schema | **已裁决：字符串错误名**（与对方仓契约一致）；采纳定码后再评估数值化 | decided（2026-11-18）`[REVIEW-OK]` |
+| 专属错误码落位：vendor 段（上游提案 0x7001–0x7006）还是共享码/业务段？ | registry | **已裁决：vendor 段**——specs/30-registry.md vendor 段规则已登记；0x7003 已采纳 | decided（2026-11-18 用户裁决）`[REVIEW-OK]` |
+| result 中 `errorCode` 字段形态：候选错误名 string（上游契约形态）vs 采纳后数值？ | schema | **已裁决：字符串错误名**（与上游契约一致）；采纳定码后再评估数值化 | decided（2026-11-18）`[REVIEW-OK]` |
 | 采信不满足时「accepted=false 应答 vs NOT_FOUND 通道错误」二选一 | schema / 语义 | **已裁决：accepted=false 业务应答**（业务语义、台账不变可观测；§3.2.5 已按此收口） | decided（2026-11-18）`[REVIEW-OK]` |
 | 凭证字段共享 schema：抽共享 `LicenseCredentialInfo`（下发 params 内嵌 credential 对象，与对账应答同构） | schema | **已裁决：抽共享**——§3.1.1 / §3.1.3 / 附录 C 已按内嵌结构更新 | decided（2026-11-18）`[REVIEW-OK]` |
 | 云侧实现方法（reportReceipt）的 capability 表达与双向 RPC registry 建模 | registry / capability | **已裁决：按业务域登记方法，不加「实现方」标注位**——capability 维持设备侧声明（本 feature capability 描述设备接收/验签/安装能力），云侧实现方法不设 capability；随 flow OQ-5 关闭 | decided（2026-11-18）`[REVIEW-OK]` |
 | 与 `system.license` 草案命名冲突（同 license.registration §11） | registry | **已裁决：新域定案时标记 superseded**（Stage 30 执行） | decided（执行时点 = Stage 30）`[REVIEW-OK]` |
+
+## 修订记录
+
+| 日期 | 变更 | 理由 / 来源 | 兼容性决策 |
+|---|---|---|---|
+| 2026-11-18 | 初版采纳（0x1902 / 0x1904 / capability 0x1902 / vendor 0x7003），随 v0.19.0 生成发布。 | Stage 30 采纳。 | — |
+| 2026-11-19 | `ReportReceiptParams.deviceId` 格式改 `^axldev_[0-9a-f]{32}$`（40 字符，max_length 36→40），语义 = 连接寻址键当前自报值（已注册形态）；`deliverCredential` 补平台侧双键回退寻址规则（优先 deviceId，未命中回退 identity_value）；设备侧身份匹配口径改为「凭证载荷 device_id 与本地注册引用比对」。 | 同步上游设备身份定案（flow OQ-7）。 | draft 状态下 breaking correction——id/fieldId/bitOffset/name/status/since 全部保持；YAML 仅改 max_length 与 description；generated 产物经 Stage 50 重新生成。 |
 
 ## 附录 C. Registry 草案输入（已采纳定稿）
 
@@ -395,7 +403,7 @@ types:
         name: deviceId
         type: string
         required: true
-        max_length: 36
+        max_length: 40
       - id: 0x02
         name: credentialId
         type: string
