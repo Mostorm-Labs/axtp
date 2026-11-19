@@ -1485,7 +1485,7 @@
       "name": "LICENSE_IDENTITY_INVALID",
       "domain": "vendor",
       "status": "draft",
-      "description": "License registration identity adoption failed (malformed deviceId or already occupied by another subject); terminal error, the device must rebuild its local identity before retrying. Used by the license business domain.",
+      "description": "License registration identity adoption failed — the dual-form patterns (unregistered identity_value ^[0-9a-f]{128}$ or platform-assigned deviceId ^axldev_[0-9a-f]{32}$) both fail to match, or the identity_value is already mapped to another subject; terminal error, the device must rebuild its local identity before retrying. Used by the license business domain.",
       "deprecated": false,
       "retryable": false,
       "idHex": "0x7001"

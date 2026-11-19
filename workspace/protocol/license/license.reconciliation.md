@@ -5,7 +5,7 @@ generated: true
 domain: license
 feature: license.reconciliation
 registry: contract/registry/domains/license/domain.yaml
-lastReviewed: 2026-11-18
+lastReviewed: 2026-11-19
 ---
 
 # license.reconciliation
@@ -45,7 +45,7 @@ lastReviewed: 2026-11-18
 
 下发是尽力而为的（超时 ≠ 失败），对账保证最终一致：设备上线/重连时必须发起对账，平台比对设备当前凭证版本与台账最新版本、设备已装策略行集版本与台账最新行集两个维度，返回台账最新凭证（或补签受理）。队列 worker 在下发前经 `license.resolveCredential` 纯探测设备持有版本，避免向已收敛设备重复下发大载荷。
 
-公共 RPC envelope、错误约定与 schema 展开遵循 [Protocol Draft Conventions](../draft-conventions.md)。业务场景与协议覆盖分析见 [license-entitlement-lifecycle flow](../../flows/license-entitlement-lifecycle.md)；接口素材来源：aw-saas-platform 仓 001-license-entitlement-system 特性规格（`apps/api/specs/001-license-entitlement-system/` 目录）下 contracts/axtp-licensing-methods.md。对账为权威、回执为受采信条件约束的加速信号；台账未收敛集路由与 sweep 兜底为平台内部行为，不入协议。
+公共 RPC envelope、错误约定与 schema 展开遵循 [Protocol Draft Conventions](../draft-conventions.md)。业务场景与协议覆盖分析见 [license-entitlement-lifecycle flow](../../flows/license-entitlement-lifecycle.md)；接口素材来源：上游业务规格（设备权益授权系统，平台侧特性规格）的设备通道方法契约。对账为权威、回执为受采信条件约束的加速信号；台账未收敛集路由与 sweep 兜底为平台内部行为，不入协议。
 
 > 方向术语：本文以「设备→云 / 云→设备」描述调用方向。cloud-reverse 通道中设备为逻辑服务端（`contract/protocol/axtp.protocol.yaml:164-169`）——`resolveCredential` 为逻辑客户端（云）的正向调用、`reconcile` 为设备发起的反向 Request；SDK 实装角色模型存在待裁决矛盾（flow OQ-1），方向建模见 §11。
 
@@ -83,7 +83,7 @@ lastReviewed: 2026-11-18
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `deviceId` | string | yes | `^dev_[0-9a-f]{32}$` | none | 设备主体标识（校验字段）。 |
+| `deviceId` | string | yes | `^axldev_[0-9a-f]{32}$` | none | = 连接寻址键当前自报值（已注册形态，平台分配）；平台回退寻址时该字段填连接当前自报值。 |
 | `version` | `LicenseVersionTriple` | no | 见 §6.3 | 省略 | 设备当前持有版本三元组（修订号/代次/策略版本）——**无凭证时整体省略**（复用共享 schema，§11 decided）。 |
 
 #### 3.1.2 返回结果 Result：`ReconcileResult`
@@ -112,7 +112,7 @@ request:
   "id": 301,
   "method": "license.reconcile",
   "params": {
-    "deviceId": "dev_0123456789abcdef0123456789abcdef",
+    "deviceId": "axldev_0123456789abcdef0123456789abcdef",
     "version": {
       "authorityRevision": 3,
       "credentialGeneration": 7,
@@ -201,7 +201,7 @@ success:
 
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
-| `deviceId` | string | yes | `^dev_[0-9a-f]{32}$` | none | 校验字段，与连接寻址键同一字符串。 |
+| `deviceId` | string | yes | `^axldev_[0-9a-f]{32}$` | none | = 连接寻址键当前自报值（已注册形态，平台分配）；平台回退寻址（经 identity 映射）时该字段填连接当前自报值——与 `reportReceipt` / `reconcile` 口径一致。 |
 
 #### 3.2.2 返回结果 Result：`ResolveCredentialResult`
 
@@ -219,7 +219,7 @@ request:
   "id": 302,
   "method": "license.resolveCredential",
   "params": {
-    "deviceId": "dev_0123456789abcdef0123456789abcdef"
+    "deviceId": "axldev_0123456789abcdef0123456789abcdef"
   }
 }
 ```
@@ -336,7 +336,7 @@ Capability name（候选）: `license.reconciliation`。`[REVIEW-DRAFT]`
 |---|---|---|
 | `LICENSE_DEVICE_NOT_FOUND` | deviceId 无法定位主体。 | **已采纳：0x7002**（domain: vendor，`contract/registry/error/error_code.yaml`，2026-11-18）。 |
 
-对方仓候选码 0x7004–0x7006（NOT_ENTITLED / RATE_LIMITED / INTERNAL）不进本提案，处置口径见 `license.registration` §8。
+上游候选码 0x7004–0x7006（NOT_ENTITLED / RATE_LIMITED / INTERNAL）不进本提案，处置口径见 `license.registration` §8。
 
 ## 9. Legacy 映射
 
@@ -346,7 +346,7 @@ Capability name（候选）: `license.reconciliation`。`[REVIEW-DRAFT]`
 
 | 类型 | 要点 |
 |---|---|
-| registry readiness | adopted——已写入 `contract/registry/domains/license/domain.yaml`（0x1903/0x1905）与 `error_code.yaml`（0x7002）；generated 待 Stage 50 刷新。 |
+| registry readiness | adopted + amended——已写入 `contract/registry/domains/license/domain.yaml`（0x1903/0x1905）与 `error_code.yaml`（0x7002）；2026-11-19 amend（deviceId 口径）已刷新 generated。 |
 | conformance focus | 三应答形态互斥、漂移形态不返回旧凭证捎带新行集版本、应签而未签形态不答 upToDate=true、探测永不携带凭证字节、版本三元组整体省略规则。 |
 | happy path | 离线演进后上线对账取最新凭证；无凭证设备对账受理补签。 |
 | boundary case | 无凭证（三元组省略）；放弃送达链主动对账仍触发清权补签。 |
@@ -359,10 +359,17 @@ Capability name（候选）: `license.reconciliation`。`[REVIEW-DRAFT]`
 |---|---|---|---|
 | 三应答形态的协议层建模：字段缺席表达 vs 显式 result 变体（discriminator）？ | schema | **已裁决：字段缺席 + 互斥规则**（§3.1.2 已标注）；TLV 演进时再评估变体 | decided（2026-11-18 用户裁决）`[REVIEW-OK]` |
 | `LicenseCredentialInfo` 是否抽共享 schema 供 `license.credentialDelivery` 复用？ | schema | **已裁决：抽共享**——下发 params 内嵌 credential 对象与本草案 §6.2 同构（credentialDelivery §3.1.1 已按此更新） | decided（2026-11-18）`[REVIEW-OK]` |
-| 专属错误码落位（vendor 段 vs 共享码） | registry | **已裁决：vendor 段**（对方仓提案 0x7001–0x7006）；采纳时补 specs/30-registry.md vendor 段规则 | decided（2026-11-18）`[REVIEW-OK]` |
+| 专属错误码落位（vendor 段 vs 共享码） | registry | **已裁决：vendor 段**（上游提案 0x7001–0x7006）；specs/30-registry.md vendor 段规则已登记，0x7002 已采纳 | decided（2026-11-18）`[REVIEW-OK]` |
 | 云侧实现方法（reconcile）的 capability 表达与双向 RPC registry 建模 | registry / capability | **已裁决：按业务域登记方法，不加「实现方」标注位**——capability 维持设备侧声明（本 feature capability 描述设备版本持久化上报能力）；随 flow OQ-5 关闭 | decided（2026-11-18）`[REVIEW-OK]` |
 | 探测应答版本三元组与 reconcile params 是否复用同一 schema | schema | **已裁决：复用**——抽共享 `LicenseVersionTriple`（§6.3 已定义，两处引用） | decided（2026-11-18）`[REVIEW-OK]` |
 | 与 `system.license` 草案命名冲突（同 license.registration §11） | registry | **已裁决：新域定案时标记 superseded**（Stage 30 执行） | decided（执行时点 = Stage 30）`[REVIEW-OK]` |
+
+## 修订记录
+
+| 日期 | 变更 | 理由 / 来源 | 兼容性决策 |
+|---|---|---|---|
+| 2026-11-18 | 初版采纳（0x1903 / 0x1905 / capability 0x1903 / vendor 0x7002），随 v0.19.0 生成发布。 | Stage 30 采纳。 | — |
+| 2026-11-19 | `ReconcileParams.deviceId` / `ResolveCredentialParams.deviceId` 格式改 `^axldev_[0-9a-f]{32}$`（40 字符，max_length 36→40），语义 = 连接寻址键当前自报值（已注册形态，平台分配）；补平台回退寻址时该字段填连接当前自报值的口径。 | 同步上游设备身份定案（flow OQ-7）。 | draft 状态下 breaking correction——id/fieldId/bitOffset/name/status/since 全部保持；YAML 仅改 max_length 与 description；generated 产物经 Stage 50 重新生成。 |
 
 ## 附录 C. Registry 草案输入（已采纳定稿）
 
@@ -412,7 +419,7 @@ types:
         name: deviceId
         type: string
         required: true
-        max_length: 36
+        max_length: 40
       - id: 0x02
         name: version
         type: LicenseVersionTriple    # 共享 schema（域内单文件定义，§11 decided）
@@ -443,7 +450,7 @@ types:
         name: deviceId
         type: string
         required: true
-        max_length: 36
+        max_length: 40
   ResolveCredentialResult:
     kind: object
     fields:

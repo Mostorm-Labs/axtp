@@ -10669,8 +10669,8 @@
           "type": "string",
           "required": true,
           "deprecated": false,
-          "maxLength": 36,
-          "description": "Adopted device subject identifier (dev_ followed by 32 lowercase hex), equal to the connection identity."
+          "maxLength": 40,
+          "description": "Platform-assigned device subject identifier (axldev_ followed by 32 lowercase hex), returned on registration; the device must persist it and self-report it on later connections (non-authoritative reference; the authoritative identity is the identity_value public key)."
         },
         {
           "id": 2,
@@ -10705,8 +10705,8 @@
           "type": "string",
           "required": true,
           "deprecated": false,
-          "maxLength": 36,
-          "description": "Reporting device subject identifier."
+          "maxLength": 40,
+          "description": "Connection addressing key current self-reported value (registered form, axldev_ prefix); cross-validated against the connection identity."
         },
         {
           "id": 2,
@@ -10776,8 +10776,8 @@
           "type": "string",
           "required": true,
           "deprecated": false,
-          "maxLength": 36,
-          "description": "Device subject identifier (validation field)."
+          "maxLength": 40,
+          "description": "Connection addressing key current self-reported value (registered form, axldev_ prefix); filled with the current self-reported value also when the platform addresses via the identity fallback."
         },
         {
           "id": 2,
@@ -10839,8 +10839,8 @@
           "type": "string",
           "required": true,
           "deprecated": false,
-          "maxLength": 36,
-          "description": "Device subject identifier; the same string as the connection addressing key."
+          "maxLength": 40,
+          "description": "Connection addressing key current self-reported value (registered form, axldev_ prefix); the same string as the connection addressing key, also under the platform identity-fallback addressing."
         }
       ]
     },
@@ -11019,8 +11019,8 @@
           "type": "string",
           "required": true,
           "deprecated": false,
-          "maxLength": 32,
-          "description": "Format declaration of the self-reported deviceId accepted by registration adoption."
+          "maxLength": 64,
+          "description": "Dual-form format declaration of the self-reported connection identity accepted by registration adoption (unregistered identity_value ^[0-9a-f]{128}$ or platform-assigned deviceId ^axldev_[0-9a-f]{32}$)."
         }
       ]
     },
