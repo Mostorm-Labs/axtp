@@ -18,7 +18,7 @@ AXTP owns the observable contract, identities, limits, synchronization and error
 
 设备管理员可以在控制台或 Launcher 单独设置布局选择、调试设置、最小化、最大化、
 Cast Code 和顶栏底板，并设置出现方式和下次启动的窗口模式。新安装的 NearCast
-首次接收时以全屏呈现，画面顶部默认只常显布局选择。其他元素与底板默认隐藏。
+首次接收时以全屏呈现，点击画面后显示布局选择，空闲 4 秒后隐藏。其他元素与底板默认隐藏。
 只开启最小化时，最小化按钮使用最右侧位置。
 连接认证使用独立的顶部验证码弹窗。Launcher 通过控制面读写配置，配置由接收端保存。
 协议流程见 [窗口设置流程](../flows/cast-presentation-settings.md#接收窗口设置流程)。

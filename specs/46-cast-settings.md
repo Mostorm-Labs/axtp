@@ -82,7 +82,8 @@ Changing fullscreen interactively updates the regular `window` observation.
 The startup preference remains independent of interactive fullscreen, layout,
 media dimensions, receiver admission and input permission.
 
-NearCast defaults to `topBarTrigger=always` with only the layout selector
+In NearCast, both click modes hide the top bar after four seconds of inactivity.
+NearCast defaults to `topBarTrigger=canvas-click` with only the layout selector
 enabled. The five other visibility switches default to false. The default
 startup window mode is `fullscreen`.
 With no session or sharing request, the receiver can listen with a hidden window.
