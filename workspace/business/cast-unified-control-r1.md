@@ -40,6 +40,10 @@ proposals, [P0 contract](../../specs/45-cast-control.md) and
 remain registry `draft`; adoption into source is distinct from release maturity.
 No legacy numeric mapping is invented. No new MVP requirement is introduced.
 
+## 接收端控制面启动配置
+
+部署人员可从调试器或启动器保存 WS 端口和监听范围，供接收端重启后使用。控制台分别显示正在使用的值和下次启动的配置。端口默认 7020，局域网监听默认关闭。保存成功后可继续当前调试和投屏，重启由操作者发起。控制台通过能力查询识别支持版本，保存和恢复由接收端完成。操作过程见 [接收端启动配置协议](../protocol/cast/cast.receiverSettings.md)。
+
 ## Execution closure
 
 Repository: github / Mostorm-Labs/axtp. Task anchor: the baseline above, ancestor

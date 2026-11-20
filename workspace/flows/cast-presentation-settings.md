@@ -12,6 +12,10 @@ and [adoption](../protocol/cast/cast.presentationSettings.md) own message semant
 
 字段定义和接收端默认值见 [窗口设置合同](../../specs/46-cast-settings.md#receiver-window-preferences)。
 
+## 接收端 WS 启动配置
+
+启动器和调试器可以读取正在监听的端口、本次启动是否监听局域网，以及下次启动的已保存意图。保存单字段用本机接收端的存储版本校验。操作者确认重启后，启动器按接收端返回的就绪地址和端口重新连接。完整的读、写、重启和异常恢复见 [接收端设置流程](../protocol/cast/cast.receiverSettings.md)。
+
 ## S1: Discovery and two-barrier synchronization
 
 Subscribe P0 participating events and presentationSettingsChanged. Discover the
