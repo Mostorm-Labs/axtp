@@ -27,7 +27,7 @@ wrong-type patches return INVALID_ARGUMENT. persist is a required boolean.
 No request implicitly saves another field's temporary modification. Global
 settings operations have no presentation target.
 
-Capability fields is a unique subset of these keys. liveFields and
+Capability fields is a unique subset of the base and adopted extension keys. liveFields and
 restartOnlyFields MUST be disjoint, unique and together equal fields. The
 partition declares behavior; AXTP does not make NearCast's first policy global.
 StartupSettings permits all supported optional keys, but activeStartup MUST contain
@@ -53,6 +53,76 @@ locks are reported through lockedFields and field issues and rechecked at
 execution. A locked write returns INVALID_STATE / SETTINGS_LOCKED. AXTP does not
 declare historical CLI arguments permanently locked or prescribe startup priority.
 No product capacity list, filesystem path or default profile is a global limit.
+
+### Receiver window preferences
+
+Hosts with a local receiving window MAY advertise the following keys in
+`presentationSettings.fields`. Clients discover each key before writing it
+and use the advertised `liveFields` and `restartOnlyFields` partition.
+For compatibility, `always` is available when both `topBarTrigger` and
+`topBarShowBackground` are advertised. Earlier hosts support the three
+original trigger values.
+
+| Key | Values | Effect when supported |
+|---|---|---|
+| `topBarTrigger` | `always`, `none`, `top-click`, `canvas-click` | Live. `always` shows the selected elements and background when the receiver window is visible. `none` suppresses them. `top-click` reveals them on a local click or tap in the top strip. `canvas-click` accepts a local click or tap anywhere in the canvas. Pointer motion alone cannot reveal them. |
+| `topBarShowLayout` | Boolean | Live. Shows the layout selector when the receiver supports layout selection. |
+| `topBarShowDebug` | Boolean | Live. Shows the debug settings button. Its visibility grants no additional protocol privileges. |
+| `topBarShowMinimize` | Boolean | Live. Shows the minimize button at the right edge if the maximize button is hidden. |
+| `topBarShowMaximize` | Boolean | Live. Shows the rightmost window size button. |
+| `topBarShowCastCode` | Boolean | Live. Shows the Cast Code in the receiver window. Standalone pairing and authentication popups keep their display leases. |
+| `topBarShowBackground` | Boolean | Live. Shows the full-width backing strip independently of the other controls. An element may appear over the picture without the strip. |
+| `startupWindowMode` | `fullscreen`, `windowed` | Restart-only. Selects the initial native size and mode of the next receiver window. Settings writes do not show an idle window, resize the current window or interrupt its media. |
+
+Each write uses the single-field patch and settings revision rules below.
+A live write reports `applied` after the window owner adopts the policy.
+A saved restart-only value appears in `persistedValues`, while
+`activeStartup` retains the previous startup intent until a new runtime starts.
+Changing fullscreen interactively updates the regular `window` observation.
+The startup preference remains independent of interactive fullscreen, layout,
+media dimensions, receiver admission and input permission.
+
+In NearCast, both click modes hide the top bar after four seconds of inactivity.
+NearCast defaults to `topBarTrigger=canvas-click` with only the layout selector
+enabled. The five other visibility switches default to false. The default
+startup window mode is `fullscreen`.
+With no session or sharing request, the receiver can listen with a hidden window.
+Clients without the extension can continue using the existing launch and control API.
+
+## Receiver startup preferences
+
+The optional `cast.receiverSettings` feature registers three JSON RPCs:
+`cast.getReceiverSettings` (`0x1624`), `cast.setReceiverSettings` (`0x1625`),
+and `cast.restoreReceiverSettings` (`0x1626`). Discover the methods through
+`cast.getControlCapabilities.methods`. The registry owns the request and
+response types. This feature uses the process epoch and store revision for
+synchronous writes, independently of the P1 operation journal and its
+`expectedSettingsRevision`.
+
+`controlPort` is a JSON integer between 1 and 65535 inclusive, with default
+7020. `controlListenOnLan` is Boolean with default false. False selects
+loopback-only listening. True enables listening on the local network. Both
+fields MUST be declared in `restartOnlyFields` when supported, MUST be saved
+with `persist: true`, and take effect at the next start. The server accepts
+exactly one patch key. Saving MUST NOT rebind the listener, disconnect the
+active control session or initiate a restart.
+
+`configured` gives next-launch endpoint values, including defaults. `applied`
+gives the current listener values. `persistedOverrides` contains explicit
+stored overrides and may omit even supported fields. `pendingRestart` lists
+the restart-only fields whose configured values differ from the applied
+values. After an explicit restart, a startup override may make the applied
+value differ from the stored value. A successful write reports persistence
+and application separately and includes the observed settings.
+
+Clients MUST use the last read runtime instance and canonical decimal
+`storeRevision` as `expectedStoreRevision` for each write or restore. Stale
+versions or instances are rejected. Failed storage writes leave configured
+and applied values intact. Clients re-read the state after a conflict or
+an unknown outcome and never automatically replay a write with a fresh
+revision. An authorized local startup manager may restart and reconnect
+using the verified effective endpoint. See the
+[generated method registry](../contract/generated/method_registry.generated.md) for the request and response schemas.
 
 ## Settings facts and revisions
 

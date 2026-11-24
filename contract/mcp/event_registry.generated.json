@@ -912,6 +912,50 @@
       "idHex": "0x1614"
     },
     {
+      "id": 5653,
+      "bitOffset": 20,
+      "name": "cast.touchbackChanged",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Per-target gate, input lifecycle, accepted types, source quality or geometry changed.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "eventSchema": "CastTouchbackChangedEvent",
+      "severity": "info",
+      "trigger": [
+        "cast.setTouchbackEnabled",
+        "cast.setTouchbackResolutionPreference",
+        "cast.setInputMode",
+        "stream open",
+        "stream close",
+        "disconnect"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "idHex": "0x1615"
+    },
+    {
+      "id": 5654,
+      "bitOffset": 21,
+      "name": "cast.touchbackMasterChanged",
+      "domain": "cast",
+      "status": "draft",
+      "description": "Receiver-wide input gate changed; clients replace the full state and resnapshot target gates.",
+      "since": "1.0.0",
+      "deprecated": false,
+      "eventSchema": "CastTouchbackMasterChangedEvent",
+      "severity": "info",
+      "trigger": [
+        "cast.setTouchbackMaster",
+        "receiver local gate changed"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "idHex": "0x1616"
+    },
+    {
       "id": 5889,
       "bitOffset": 0,
       "name": "software.configChanged",
