@@ -4,6 +4,41 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.20.0
+
+### Protocol
+
+- Adds the R2 typed input stream for receiver-to-source input. Stream open
+  negotiates event types and limits for an immutable input context.
+- Specifies complete multi-contact Touch samples, Mouse pointer events,
+  Standard Framed Binary transport, and owned input release on reset or close.
+- Defines per-target touchback permission and output policy, independent
+  receiver top-bar visibility, and persistent receiver startup settings.
+
+### Registry and Schemas
+
+- Adds input.openStream, input.closeStream, input.stream, the typed sample
+  and stream context schemas, and the cast control and settings contracts.
+- Retains the license domain from spec/v0.19.1. Regenerates Protocol IR,
+  registry references, MCP schema and test vectors from the source facts.
+
+### Conformance
+
+- Adds typed Touch and Mouse control and frame cases, including multi-contact
+  boundaries, malformed input, state release and receiver settings.
+
+### Migration and Compatibility
+
+- Existing Standard Framed Binary framing and published method IDs remain
+  available. Peers use the negotiated typed stream capability for R2 input.
+- Replace the fixed-mode touchback development drafts with the R2 typed input
+  contract. The development draft wire payloads do not interoperate with R2.
+
+### Runtime Impact
+
+- Regenerate language runtime artifacts from this exact release. NearCast
+  and Axent adopt the matching C++ runtime before packaging a formal build.
+
 ## spec/v0.19.1
 
 ### Protocol

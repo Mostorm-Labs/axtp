@@ -395,6 +395,150 @@ methods:
     capabilities: [cast.meetingPresentation, cast.controlOperations]
     errors: [SUCCESS, NOT_SUPPORTED, INVALID_ARGUMENT, INVALID_STATE, BUSY, UNAVAILABLE]
 
+  - id: 0x161C
+    name: cast.getTouchbackState
+    domain: cast
+    status: draft
+    bitOffset: 27
+    since: 1.0.0
+    description: Return per-target gates, actual input lifecycle, accepted types and presentation state.
+    rpc_op: request_response
+    request_schema: CastTouchbackTargetRequest
+    response_schema: CastTouchbackState
+    recommended_encoding: [json, tlv]
+    capabilities: [cast.touchback]
+    errors: [SUCCESS, INVALID_ARGUMENT, NOT_FOUND, UNAVAILABLE]
+
+  - id: 0x161D
+    name: cast.setTouchbackEnabled
+    domain: cast
+    status: draft
+    bitOffset: 28
+    since: 1.0.0
+    description: Set the launcher/controller touchback gate for one cast target.
+    rpc_op: request_response
+    request_schema: CastTouchbackEnabledRequest
+    response_schema: CastTouchbackState
+    recommended_encoding: [json, tlv]
+    capabilities: [cast.touchback]
+    events: [cast.touchbackChanged]
+    errors: [SUCCESS, PERMISSION_DENIED, INVALID_ARGUMENT, INVALID_STATE, NOT_FOUND, UNAVAILABLE]
+
+  - id: 0x161F
+    name: cast.setTouchbackResolutionPreference
+    domain: cast
+    status: draft
+    bitOffset: 30
+    since: 1.0.0
+    description: Set the touchback source-resolution preference for one cast target.
+    rpc_op: request_response
+    request_schema: CastTouchbackResolutionRequest
+    response_schema: CastTouchbackState
+    recommended_encoding: [json, tlv]
+    capabilities: [cast.touchback]
+    events: [cast.touchbackChanged]
+    errors: [SUCCESS, INVALID_ARGUMENT, INVALID_STATE, NOT_FOUND, UNAVAILABLE]
+
+  - id: 0x1620
+    name: cast.getInputMode
+    domain: cast
+    status: draft
+    bitOffset: 31
+    since: 1.0.0
+    description: Query receiver input interpretation, gesture settings and authenticated source metadata.
+    rpc_op: request_response
+    request_schema: CastTouchbackTargetRequest
+    response_schema: CastInputModeState
+    recommended_encoding: [json]
+    capabilities: [cast.touchback]
+    errors: [SUCCESS, INVALID_ARGUMENT, INVALID_STATE, BUSY, NOT_SUPPORTED, UNAVAILABLE]
+
+  - id: 0x1621
+    name: cast.setInputMode
+    domain: cast
+    status: draft
+    bitOffset: 32
+    since: 1.0.0
+    description: Set receiver input interpretation or gesture settings; never changes the typed input wire format.
+    rpc_op: request_response
+    request_schema: CastSetInputModeRequest
+    response_schema: CastInputModeState
+    recommended_encoding: [json]
+    capabilities: [cast.touchback]
+    events: [cast.touchbackChanged]
+    errors: [SUCCESS, INVALID_ARGUMENT, INVALID_STATE, BUSY, NOT_SUPPORTED, UNAVAILABLE]
+
+  - id: 0x1622
+    name: cast.getTouchbackMaster
+    domain: cast
+    status: draft
+    bitOffset: 33
+    since: 1.0.0
+    description: Query the receiver-wide input gate; enabled does not grant per-target consent.
+    rpc_op: request_response
+    request_schema: CastTouchbackMasterQuery
+    response_schema: CastTouchbackMasterState
+    recommended_encoding: [json]
+    capabilities: [cast.touchback]
+    errors: [SUCCESS, INVALID_ARGUMENT, INVALID_STATE, BUSY, NOT_SUPPORTED, UNAVAILABLE]
+
+  - id: 0x1623
+    name: cast.setTouchbackMaster
+    domain: cast
+    status: draft
+    bitOffset: 34
+    since: 1.0.0
+    description: Set the receiver-wide input gate; disabling releases all input owners and enabling never replays input.
+    rpc_op: request_response
+    request_schema: CastSetTouchbackMasterRequest
+    response_schema: CastTouchbackMasterState
+    recommended_encoding: [json]
+    capabilities: [cast.touchback]
+    events: [cast.touchbackMasterChanged]
+    errors: [SUCCESS, INVALID_ARGUMENT, INVALID_STATE, BUSY, NOT_SUPPORTED, UNAVAILABLE]
+
+  - id: 0x1624
+    name: cast.getReceiverSettings
+    domain: cast
+    status: draft
+    bitOffset: 35
+    since: 1.0.0
+    description: Read configured and applied receiver startup preferences and the persisted override revision.
+    rpc_op: request_response
+    request_schema: Empty
+    response_schema: CastReceiverSettingsState
+    recommended_encoding: [json]
+    capabilities: [cast.receiverSettings]
+    errors: [SUCCESS, INVALID_ARGUMENT, UNAVAILABLE]
+
+  - id: 0x1625
+    name: cast.setReceiverSettings
+    domain: cast
+    status: draft
+    bitOffset: 36
+    since: 1.0.0
+    description: Update one receiver preference with runtime and store revision checks. Saving an endpoint change takes effect at next startup.
+    rpc_op: request_response
+    request_schema: CastSetReceiverSettingsParams
+    response_schema: CastReceiverSettingsWriteResult
+    recommended_encoding: [json]
+    capabilities: [cast.receiverSettings]
+    errors: [SUCCESS, INVALID_ARGUMENT, INVALID_STATE, BUSY, UNAVAILABLE, INTERNAL_ERROR]
+
+  - id: 0x1626
+    name: cast.restoreReceiverSettings
+    domain: cast
+    status: draft
+    bitOffset: 37
+    since: 1.0.0
+    description: Restore receiver settings defaults or an available backup after the runtime and store revision checks.
+    rpc_op: request_response
+    request_schema: CastRestoreReceiverSettingsParams
+    response_schema: CastReceiverSettingsWriteResult
+    recommended_encoding: [json]
+    capabilities: [cast.receiverSettings]
+    errors: [SUCCESS, INVALID_ARGUMENT, INVALID_STATE, BUSY, UNAVAILABLE, INTERNAL_ERROR]
+
 events:
   - id: 0x1601
     name: cast.sessionIncoming
@@ -635,6 +779,30 @@ events:
     severity: info
     trigger: [discovery changed, authentication attempt changed]
     capabilities: [cast.airplayControl]
+
+  - id: 0x1615
+    name: cast.touchbackChanged
+    domain: cast
+    status: draft
+    bitOffset: 20
+    since: 1.0.0
+    description: Per-target gate, input lifecycle, accepted types, source quality or geometry changed.
+    event_schema: CastTouchbackChangedEvent
+    severity: info
+    trigger: [cast.setTouchbackEnabled, cast.setTouchbackResolutionPreference, cast.setInputMode, stream open, stream close, disconnect]
+    capabilities: [cast.touchback]
+
+  - id: 0x1616
+    name: cast.touchbackMasterChanged
+    domain: cast
+    status: draft
+    bitOffset: 21
+    since: 1.0.0
+    description: Receiver-wide input gate changed; clients replace the full state and resnapshot target gates.
+    event_schema: CastTouchbackMasterChangedEvent
+    severity: info
+    trigger: [cast.setTouchbackMaster, receiver local gate changed]
+    capabilities: [cast.touchback]
 
 types:
   CastSourceSummary:
@@ -2666,6 +2834,7 @@ types:
 
       - { id: 0x10, name: webcastBackend, type: CastWebCastBackendSnapshot, required: false, description: Explicit optional backend snapshot with its own barrier; not implied by unifiedControl or settings. }
       - { id: 0x11, name: airplay, type: CastAirPlayControlState, required: false, description: Secret-free discovery and authentication state at the P0 snapshot boundary. }
+      - { id: 0x12, name: touchback, type: array, array: { item_type: CastTouchbackState }, required: false, description: Per-target Touchback state; omitted for AirPlay-only receivers. }
 
   CastSessionCapability:
     kind: object
@@ -2996,6 +3165,7 @@ types:
 
       - { id: 0x0C, name: meetingPresentation, type: CastMeetingPresentationCapability, required: false, description: Explicit optional meeting focus and policy support. }
       - { id: 0x0D, name: airplayControl, type: CastAirPlayControlCapability, required: false, description: Secret-free authentication and discovery observation. }
+      - { id: 0x0E, name: touchback, type: CastTouchbackCapability, required: false, description: Required when cast.touchback is supported; never advertised for AirPlay-only presentation targets. }
 
   CastPresentationCapability:
     kind: object
@@ -3184,6 +3354,19 @@ types:
       - { id: 0x0B, name: presentationFocusOnDoubleClick, type: bool, required: false, description: Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. }
       - { id: 0x0C, name: presentationGridOnDoubleClick, type: bool, required: false, description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. }
       - { id: 0x0D, name: presentationAutoEnter, type: bool, required: false, description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. }
+      - { id: 0x0E, name: canvasMode, type: enum, enum: [adaptive, fixed], required: false, description: Canvas sizing policy for normalized input geometry. }
+      - { id: 0x0F, name: baseWidth, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas width in pixels. }
+      - { id: 0x10, name: baseHeight, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas height in pixels. }
+      - { id: 0x11, name: maxWidth, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum width in pixels. }
+      - { id: 0x12, name: maxHeight, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum height in pixels. }
+      - { id: 0x13, name: topBarTrigger, type: enum, enum: [none, top-click, canvas-click, always], required: false, description: Timing for appearance of the enabled receiver controls and background. }
+      - { id: 0x14, name: topBarShowCastCode, type: bool, required: false, description: Whether the regular Cast Code appears in the visible receiver top bar. }
+      - { id: 0x15, name: topBarShowDebug, type: bool, required: false, description: Whether the visible receiver top bar offers the local debugging entry. }
+      - { id: 0x16, name: startupWindowMode, type: enum, enum: [fullscreen, windowed], required: false, description: Restart-only initial local receiver window mode. }
+      - { id: 0x17, name: topBarShowLayout, type: bool, required: false, description: Whether to show the layout selector at the left of the receiver chrome. }
+      - { id: 0x18, name: topBarShowMinimize, type: bool, required: false, description: Whether to show the window minimize button. }
+      - { id: 0x19, name: topBarShowMaximize, type: bool, required: false, description: Whether to show the window maximize button. }
+      - { id: 0x1A, name: topBarShowBackground, type: bool, required: false, description: Whether to show the full-width top bar background independently of its elements. }
 
   CastPresentationSettingsValues:
     kind: object
@@ -3203,6 +3386,106 @@ types:
       - { id: 0x0B, name: presentationFocusOnDoubleClick, type: bool, required: false, description: Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. }
       - { id: 0x0C, name: presentationGridOnDoubleClick, type: bool, required: false, description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. }
       - { id: 0x0D, name: presentationAutoEnter, type: bool, required: false, description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. }
+      - { id: 0x0E, name: canvasMode, type: enum, enum: [adaptive, fixed], required: false, description: Canvas sizing policy for normalized input geometry. }
+      - { id: 0x0F, name: baseWidth, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas width in pixels. }
+      - { id: 0x10, name: baseHeight, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas height in pixels. }
+      - { id: 0x11, name: maxWidth, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum width in pixels. }
+      - { id: 0x12, name: maxHeight, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum height in pixels. }
+      - { id: 0x13, name: topBarTrigger, type: enum, enum: [none, top-click, canvas-click, always], required: false, description: Timing for appearance of the enabled receiver controls and background. }
+      - { id: 0x14, name: topBarShowCastCode, type: bool, required: false, description: Whether the regular Cast Code appears in the visible receiver top bar. }
+      - { id: 0x15, name: topBarShowDebug, type: bool, required: false, description: Whether the visible receiver top bar offers the local debugging entry. }
+      - { id: 0x16, name: startupWindowMode, type: enum, enum: [fullscreen, windowed], required: false, description: Restart-only initial local receiver window mode. }
+      - { id: 0x17, name: topBarShowLayout, type: bool, required: false, description: Whether to show the layout selector at the left of the receiver chrome. }
+      - { id: 0x18, name: topBarShowMinimize, type: bool, required: false, description: Whether to show the window minimize button. }
+      - { id: 0x19, name: topBarShowMaximize, type: bool, required: false, description: Whether to show the window maximize button. }
+      - { id: 0x1A, name: topBarShowBackground, type: bool, required: false, description: Whether to show the full-width top bar background independently of its elements. }
+
+  CastReceiverPreferenceValues:
+    kind: object
+    description: Receiver preference values. A mutation patch contains exactly one declared field.
+    fields:
+      - { id: 0x01, name: airplayName, type: string, required: false, max_length: 63, description: AirPlay name preference. An empty configured name requests automatic naming. }
+      - { id: 0x02, name: airplayRandomPassword, type: bool, required: false, description: AirPlay random-password policy. Contains no current password. }
+      - { id: 0x03, name: controlPort, type: uint32, required: false, min: 1, max: 65535, description: WebSocket control port. Default is 7020. Changes apply on the next start. }
+      - { id: 0x04, name: controlListenOnLan, type: bool, required: false, description: Local-network WebSocket listener. Default is false for loopback only. Changes apply on the next start. }
+
+  CastReceiverPersistedOverrides:
+    kind: object
+    description: Explicit receiver store overrides spanning presentation and receiver preferences. Omitted fields use defaults at next launch.
+    fields:
+      - { id: 0x01, name: layoutMode, type: enum, enum: [grid, presentation], required: false, description: Selected product layout; complete source withdrawal returns to grid. }
+      - { id: 0x02, name: audioControlMode, type: enum, enum: [automatic, manual], required: false, description: Adopted or desired control policy; not proof of sound. }
+      - { id: 0x03, name: audioMixMode, type: enum, enum: [exclusive, mix], required: false, description: Adopted or desired audio mixing policy. }
+      - { id: 0x04, name: capacity, type: uint32, required: false, min: 1, description: Desired capacity or actually adopted capacity according to containing projection; applied may be limited. }
+      - { id: 0x05, name: enabledProtocols, type: array, array: { item_type: string }, required: false, description: Adopted or desired enable policy; not receiver readiness. }
+      - { id: 0x06, name: profileHint, type: string, required: false, max_length: 64, description: Declared product combination profile identifier. }
+      - { id: 0x07, name: contentAdaptation, type: enum, enum: [fixed, auto-fit], required: false, description: Content aspect adaptation independent of Layout. }
+      - { id: 0x08, name: presentationMode, type: enum, enum: [manual, automatic], required: false, description: Meeting visual entry policy; not global audio policy. }
+      - { id: 0x09, name: presentationSidebar, type: enum, enum: [left, right], required: false, description: Meeting rail position independent of base layoutMode. }
+      - { id: 0x0A, name: presentationAudioFollow, type: bool, required: false, description: Remembered follow preference independent of activity and global audio control mode. }
+      - { id: 0x0B, name: presentationFocusOnDoubleClick, type: bool, required: false, description: Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. }
+      - { id: 0x0C, name: presentationGridOnDoubleClick, type: bool, required: false, description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. }
+      - { id: 0x0D, name: presentationAutoEnter, type: bool, required: false, description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. }
+      - { id: 0x0E, name: canvasMode, type: enum, enum: [adaptive, fixed], required: false, description: Canvas sizing policy for normalized input geometry. }
+      - { id: 0x0F, name: baseWidth, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas width in pixels. }
+      - { id: 0x10, name: baseHeight, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas height in pixels. }
+      - { id: 0x11, name: maxWidth, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum width in pixels. }
+      - { id: 0x12, name: maxHeight, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum height in pixels. }
+      - { id: 0x13, name: topBarTrigger, type: enum, enum: [none, top-click, canvas-click, always], required: false, description: Timing for appearance of the enabled receiver controls and background. }
+      - { id: 0x14, name: topBarShowCastCode, type: bool, required: false, description: Whether the regular Cast Code appears in the visible receiver top bar. }
+      - { id: 0x15, name: topBarShowDebug, type: bool, required: false, description: Whether the visible receiver top bar offers the local debugging entry. }
+      - { id: 0x16, name: startupWindowMode, type: enum, enum: [fullscreen, windowed], required: false, description: Restart-only initial local receiver window mode. }
+      - { id: 0x17, name: topBarShowLayout, type: bool, required: false, description: Whether to show the layout selector at the left of the receiver chrome. }
+      - { id: 0x18, name: topBarShowMinimize, type: bool, required: false, description: Whether to show the window minimize button. }
+      - { id: 0x19, name: topBarShowMaximize, type: bool, required: false, description: Whether to show the window maximize button. }
+      - { id: 0x1A, name: topBarShowBackground, type: bool, required: false, description: Whether to show the full-width top bar background independently of its elements. }
+      - { id: 0x1B, name: airplayName, type: string, required: false, max_length: 63, description: AirPlay name preference. An empty configured name requests automatic naming. }
+      - { id: 0x1C, name: airplayRandomPassword, type: bool, required: false, description: AirPlay random-password policy. Contains no current password. }
+      - { id: 0x1D, name: controlPort, type: uint32, required: false, min: 1, max: 65535, description: WebSocket control port. Default is 7020. Changes apply on the next start. }
+      - { id: 0x1E, name: controlListenOnLan, type: bool, required: false, description: Local-network WebSocket listener. Default is false for loopback only. Changes apply on the next start. }
+
+  CastReceiverSettingsState:
+    kind: object
+    description: Active and next-start receiver preferences plus a secret-free store observation.
+    fields:
+      - { id: 0x01, name: runtimeInstanceId, type: string, required: true, max_length: 36, description: Canonical UUID for this receiver process lifetime. }
+      - { id: 0x02, name: storeRevision, type: string, required: true, max_length: 20, description: Canonical decimal uint64 store revision or zero when absent. }
+      - { id: 0x03, name: storageState, type: enum, enum: [absent, loaded, saved, invalid, unavailable], required: true, description: Observed condition of the saved settings. }
+      - { id: 0x04, name: backupAvailable, type: bool, required: true, description: A valid settings backup is available. }
+      - { id: 0x05, name: recoveredFromBackup, type: bool, required: true, description: The settings were read from a backup. }
+      - { id: 0x06, name: supportsPersistence, type: bool, required: true, description: The store and current listener policy permit an explicit save. }
+      - { id: 0x07, name: restartOnlyFields, type: array, array: { item_type: string }, required: true, description: Supported fields applied at restart. Includes both WS keys when supported. }
+      - { id: 0x08, name: configured, type: CastReceiverPreferenceValues, required: true, description: Configured preferences. For the WS endpoint this is next-start intent including defaults. }
+      - { id: 0x09, name: applied, type: CastReceiverPreferenceValues, required: true, description: Observed AirPlay state and currently listening WebSocket endpoint values. }
+      - { id: 0x0A, name: airplayEnabled, type: bool, required: true, description: AirPlay is enabled in this receiver instance. }
+      - { id: 0x0B, name: publishState, type: enum, enum: [published, republishing, pending, failed, unpublished], required: true, description: Observed AirPlay discovery state. }
+      - { id: 0x0C, name: pendingRestart, type: array, array: { item_type: string }, required: true, description: Restart-only fields with a configured value different from its applied value. }
+      - { id: 0x0D, name: persistedOverrides, type: CastReceiverPersistedOverrides, required: true, description: Explicit settings store values without defaults. }
+
+  CastSetReceiverSettingsParams:
+    kind: object
+    description: Exact single-field mutation with a store version precondition. WebSocket endpoint fields require persistence.
+    fields:
+      - { id: 0x01, name: runtimeInstanceId, type: string, required: true, max_length: 36, description: Instance UUID from the last settings read. }
+      - { id: 0x02, name: expectedStoreRevision, type: string, required: true, max_length: 20, description: Exact last read store revision as canonical decimal uint64. }
+      - { id: 0x03, name: persist, type: bool, required: true, description: Explicit save request. True is mandatory for either WebSocket endpoint field. }
+      - { id: 0x04, name: patch, type: CastReceiverPreferenceValues, required: true, description: Exactly one supported field. Unknown and multiple keys are invalid. }
+
+  CastRestoreReceiverSettingsParams:
+    kind: object
+    description: Revision-checked restore request for the receiver settings store.
+    fields:
+      - { id: 0x01, name: runtimeInstanceId, type: string, required: true, max_length: 36, description: Instance UUID from the last settings read. }
+      - { id: 0x02, name: expectedStoreRevision, type: string, required: true, max_length: 20, description: Exact last read store revision as canonical decimal uint64. }
+      - { id: 0x03, name: source, type: enum, enum: [defaults, backup], required: true, description: Reset saved overrides or restore the available backup. }
+
+  CastReceiverSettingsWriteResult:
+    kind: object
+    description: A successful preference update or restore with separate storage and runtime results.
+    fields:
+      - { id: 0x01, name: persistenceStatus, type: enum, enum: [notRequested, unchanged, stored], required: true, description: Save outcome. Stored confirms the write completed. }
+      - { id: 0x02, name: applicationStatus, type: enum, enum: [unchanged, applied, pending, pendingRestart, failed], required: true, description: Runtime application state. Pending restart confirms no listener restart yet. }
+      - { id: 0x03, name: settings, type: CastReceiverSettingsState, required: true, description: Post-operation settings observation and new revision when saved. }
 
   CastPresentationStartupSettings:
     kind: object
@@ -3222,6 +3505,19 @@ types:
       - { id: 0x0B, name: presentationFocusOnDoubleClick, type: bool, required: false, description: Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. }
       - { id: 0x0C, name: presentationGridOnDoubleClick, type: bool, required: false, description: Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. }
       - { id: 0x0D, name: presentationAutoEnter, type: bool, required: false, description: Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. }
+      - { id: 0x0E, name: canvasMode, type: enum, enum: [adaptive, fixed], required: false, description: Canvas sizing policy for normalized input geometry. }
+      - { id: 0x0F, name: baseWidth, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas width in pixels. }
+      - { id: 0x10, name: baseHeight, type: uint32, required: false, min: 1, max: 16384, description: Fixed or preferred canvas height in pixels. }
+      - { id: 0x11, name: maxWidth, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum width in pixels. }
+      - { id: 0x12, name: maxHeight, type: uint32, required: false, min: 1, max: 16384, description: Adaptive canvas maximum height in pixels. }
+      - { id: 0x13, name: topBarTrigger, type: enum, enum: [none, top-click, canvas-click, always], required: false, description: Timing for appearance of the enabled receiver controls and background. }
+      - { id: 0x14, name: topBarShowCastCode, type: bool, required: false, description: Whether the regular Cast Code appears in the visible receiver top bar. }
+      - { id: 0x15, name: topBarShowDebug, type: bool, required: false, description: Whether the visible receiver top bar offers the local debugging entry. }
+      - { id: 0x16, name: startupWindowMode, type: enum, enum: [fullscreen, windowed], required: false, description: Restart-only initial local receiver window mode. }
+      - { id: 0x17, name: topBarShowLayout, type: bool, required: false, description: Whether to show the layout selector at the left of the receiver chrome. }
+      - { id: 0x18, name: topBarShowMinimize, type: bool, required: false, description: Whether to show the window minimize button. }
+      - { id: 0x19, name: topBarShowMaximize, type: bool, required: false, description: Whether to show the window maximize button. }
+      - { id: 0x1A, name: topBarShowBackground, type: bool, required: false, description: Whether to show the full-width top bar background independently of its elements. }
 
   CastPresentationSettingsState:
     kind: object
@@ -3257,7 +3553,7 @@ types:
     kind: object
     description: Optional P1 field and effect partition; conditional choices/modes/minimum are required for corresponding supported keys, never inferred defaults.
     fields:
-      - { id: 0x01, name: fields, type: array, array: { item_type: string }, required: true, description: Unique supported settings keys; meeting extension adds four separately advertised keys. }
+      - { id: 0x01, name: fields, type: array, array: { item_type: string }, required: true, description: Unique supported settings keys including independently advertised extensions. }
       - { id: 0x02, name: liveFields, type: array, array: { item_type: string }, required: true, description: Live effect subset; disjoint from restartOnlyFields and together exactly fields. }
       - { id: 0x03, name: restartOnlyFields, type: array, array: { item_type: string }, required: true, description: Restart-only subset; updates never automatically restart current media. }
       - { id: 0x04, name: supportsPersistence, type: bool, required: true, description: Whether explicit field-only save requests are supported. }
@@ -3266,6 +3562,9 @@ types:
       - { id: 0x0A, name: contentAdaptations, type: array, array: { item_type: string }, required: false, description: Supported fixed/auto-fit content adaptation. }
       - { id: 0x07, name: profileHints, type: array, array: { item_type: string }, required: false, description: Nonempty unique bounded product profile identifiers required when profileHint supported. }
       - { id: 0x08, name: minEnabledProtocols, type: uint32, required: false, description: Required when enabledProtocols supported; zero explicitly permits empty if control/settings can remain available independently. }
+      - { id: 0x0B, name: canvasModes, type: array, array: { item_type: string }, required: false, description: Supported canvas sizing modes, normally adaptive and fixed. }
+      - { id: 0x0C, name: canvasMaxWidth, type: uint32, required: false, min: 1, max: 16384, description: Maximum supported canvas width in pixels. }
+      - { id: 0x0D, name: canvasMaxHeight, type: uint32, required: false, min: 1, max: 16384, description: Maximum supported canvas height in pixels. }
 
   CastPresentationSettingsOperationResult:
     kind: object
@@ -3476,6 +3775,331 @@ types:
       - { id: 0x01, name: context, type: CastControlEventContext, required: true, description: Required atomic commit context. }
       - { id: 0x02, name: airplay, type: CastAirPlayControlState, required: true, description: Complete secret-free state. }
 
+  CastTouchbackTarget:
+    kind: object
+    description: Per-route target identity for touchback control.
+    fields:
+      - id: 0x01
+        name: sessionId
+        type: string
+        required: true
+        max_length: 128
+        description: Cast session identifier.
+      - id: 0x02
+        name: sessionGeneration
+        type: string
+        required: true
+        max_length: 32
+        description: Decimal-string session generation.
+      - id: 0x03
+        name: slotId
+        type: string
+        required: true
+        max_length: 128
+        description: Per-route slot identifier.
+      - id: 0x04
+        name: bindingGeneration
+        type: string
+        required: true
+        max_length: 32
+        description: Decimal-string binding generation.
+      - id: 0x05
+        name: lifecycleGeneration
+        type: string
+        required: true
+        max_length: 32
+        description: Decimal-string receiver lifecycle generation.
+
+  CastTouchbackTargetRequest:
+    kind: object
+    description: Selector for one cast target.
+    fields:
+      - id: 0x01
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Complete target identity and generation fence.
+
+  CastTouchbackState:
+    kind: object
+    description: Per-target touchback state with independent gates and geometry fencing.
+    fields:
+      - id: 1
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Complete target identity.
+      - id: 2
+        name: receiverOptIn
+        type: bool
+        required: true
+        description: Receiver-local touchback gate.
+      - id: 3
+        name: controllerRequested
+        type: bool
+        required: true
+        description: Launcher/controller requested gate.
+      - id: 4
+        name: effectiveEnabled
+        type: bool
+        required: true
+        description: Computed effective gate; true only when both gates allow input.
+      - id: 7
+        name: resolutionPreference
+        type: enum
+        enum:
+          - inherit
+          - prefer1080p
+        required: true
+        description: Independent source quality preference; normalized input layout does not change.
+      - id: 8
+        name: streamId
+        type: uint32
+        required: false
+        description: Active input.stream identifier.
+      - id: 10
+        name: canvasRevision
+        type: string
+        required: true
+        max_length: 128
+        description: Canvas revision bound to this target.
+      - id: 11
+        name: geometryRevision
+        type: string
+        required: true
+        max_length: 128
+        description: Geometry revision bound to this target.
+      - id: 14
+        name: revision
+        type: string
+        required: true
+        max_length: 128
+        description: Monotonic touchback state revision.
+      - id: 15
+        name: diagnosticReason
+        type: string
+        required: false
+        max_length: 256
+        description: Bounded diagnostic reason.
+      - id: 16
+        name: acceptedInputTypes
+        type: array
+        required: true
+        description: Actual accepted types while active; empty otherwise.
+        array:
+          item_type: string
+      - id: 17
+        name: lifecycleState
+        type: enum
+        required: true
+        description: Truthful per-target input owner lifecycle.
+        enum:
+          - inactive
+          - opening
+          - active
+          - closing
+          - faulted
+          - cleanup_blocked
+      - id: 18
+        name: format
+        type: string
+        required: false
+        description: Actual opened format when a context exists.
+        max_length: 64
+      - id: 19
+        name: resolutionState
+        type: enum
+        required: false
+        enum: [inherit, pending, applied, degraded, unsupported, failed]
+        description: Actual source-quality request state, separate from input readiness and geometry.
+    retired_field_ids:
+      - 5
+      - 6
+      - 9
+      - 12
+      - 13
+
+  CastTouchbackEnabledRequest:
+    kind: object
+    description: Request to set the controller touchback gate for one target.
+    fields:
+      - id: 0x01
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Target identity and generation fence.
+      - id: 0x02
+        name: enabled
+        type: bool
+        required: true
+        description: Requested controller gate.
+      - id: 0x03
+        name: commandId
+        type: string
+        required: true
+        max_length: 128
+        description: Idempotency key.
+
+  CastTouchbackResolutionRequest:
+    kind: object
+    description: Request to set touchback coordinate resolution preference.
+    fields:
+      - id: 0x01
+        name: target
+        type: CastTouchbackTarget
+        required: true
+        description: Target identity and generation fence.
+      - id: 0x02
+        name: resolutionPreference
+        type: enum
+        enum: [inherit, prefer1080p]
+        required: true
+        description: Requested sender source-quality preference; packet coordinates remain normalized.
+      - id: 0x03
+        name: commandId
+        type: string
+        required: true
+        max_length: 128
+        description: Idempotency key.
+
+  CastTouchbackChangedEvent:
+    kind: object
+    description: Per-target touchback state change event.
+    fields:
+      - id: 0x01
+        name: state
+        type: CastTouchbackState
+        required: true
+        description: Current target state.
+      - id: 0x02
+        name: changedFields
+        type: array
+        array:
+          item_type: string
+        required: true
+        description: Changed state fields.
+      - id: 0x03
+        name: accepted
+        type: bool
+        required: true
+        description: Whether the owner lane accepted the triggering request.
+
+  CastGestureSettings:
+    kind: object
+    description: Receiver touch-to-mouse interpretation; physical wheel input never uses scrollSpeed. Omitted scrollSpeed means 1x.
+    fields:
+      - { id: 1, name: rightClick, type: enum, enum: [two-finger-tap, long-press, both], required: true, description: Enabled right-click gesture. }
+      - { id: 2, name: rightHoldMs, type: uint32, min: 600, max: 2000, required: true, description: Stationary hold threshold in milliseconds. }
+      - { id: 3, name: scrollDirection, type: enum, enum: [follow-finger, reverse], required: true, description: Receiver gesture direction mapping. }
+      - { id: 4, name: feedback, type: bool, required: true, description: Show local gesture feedback. }
+      - { id: 5, name: scrollSpeed, type: number, min: 0.5, max: 4, required: false, description: Finite gesture scroll multiplier; defaults to 1. }
+
+  CastInputSourceInfo:
+    kind: object
+    description: Authenticated integration metadata; never substitutes for consent or openStream acceptance.
+    fields:
+      - { id: 1, name: platform, type: string, max_length: 64, required: true, description: Actual source platform or unknown. }
+      - { id: 2, name: clientKind, type: string, max_length: 64, required: true, description: Actual integration kind or unknown. }
+      - { id: 3, name: product, type: string, max_length: 128, required: true, description: Actual integration product or unknown. }
+      - { id: 4, name: displaySurface, type: string, max_length: 64, required: true, description: Actual selected display surface or unknown. }
+      - { id: 5, name: displayRole, type: string, max_length: 64, required: false, description: Observed display role when available. }
+
+  CastInputModeState:
+    kind: object
+    description: Receiver interpretation policy and observed lifecycle for an exact target; native never means a different wire packet mode.
+    fields:
+      - { id: 1, name: target, type: CastTouchbackTarget, required: true, description: Exact generation-fenced target. }
+      - { id: 2, name: inputMode, type: enum, enum: [native, touch-to-mouse], required: true, description: Receiver input interpretation policy. }
+      - { id: 3, name: gestureSettings, type: CastGestureSettings, required: true, description: Effective receiver gesture settings. }
+      - { id: 4, name: switching, type: bool, required: true, description: Owner switch is pending; acceptance is not activation proof. }
+      - { id: 5, name: supported, type: bool, required: true, description: Source can offer the receiver input path. }
+      - { id: 6, name: source, type: CastInputSourceInfo, required: true, description: Authenticated source metadata. }
+      - { id: 7, name: gestureControlSupported, type: bool, required: true, description: Source supports receiver touch-to-mouse interpretation. }
+      - { id: 8, name: state, type: CastTouchbackState, required: true, description: Current per-target gates and input lifecycle. }
+
+  CastSetInputModeRequest:
+    kind: object
+    description: Set at least one of inputMode and gestureSettings atomically for the exact target. Unknown optional fields are ignored. Command identity is scoped to the current runtime with bounded dedup.
+    fields:
+      - { id: 1, name: target, type: CastTouchbackTarget, required: true, description: Exact generation-fenced target. }
+      - { id: 2, name: commandId, type: string, max_length: 128, required: true, description: Nonempty idempotency key; reuse with different method or content conflicts. }
+      - { id: 3, name: inputMode, type: enum, enum: [native, touch-to-mouse], required: false, description: Receiver interpretation policy. }
+      - { id: 4, name: gestureSettings, type: CastGestureSettings, required: false, description: Full receiver gesture settings. }
+      - { id: 5, name: controlVersion, type: uint32, required: true, description: Must be 1. }
+      - { id: 6, name: runtimeInstanceId, type: string, max_length: 36, required: true, description: Current receiver runtime UUID from capabilities. }
+
+  CastTouchbackMasterQuery:
+    kind: object
+    description: Empty query for the receiver-wide input gate.
+    fields: []
+
+  CastTouchbackMasterState:
+    kind: object
+    description: Runtime-scoped receiver gate and monotonic canonical decimal revision. Turning on grants no target consent; turning off begins owner cleanup.
+    fields:
+      - { id: 1, name: enabled, type: bool, required: true, description: Receiver-wide input gate intent. }
+      - { id: 2, name: revision, type: string, max_length: 20, required: true, description: Canonical uint64 decimal gate revision. }
+      - { id: 3, name: runtimeInstanceId, type: string, max_length: 36, required: true, description: Receiver runtime UUID; revisions only compare within this instance. }
+
+  CastSetTouchbackMasterRequest:
+    kind: object
+    description: Runtime-fenced receiver-wide gate request with bounded dedup. Cleanup is observed through each target lifecycle, not implied by success.
+    fields:
+      - { id: 1, name: enabled, type: bool, required: true, description: Requested receiver input gate. }
+      - { id: 2, name: commandId, type: string, max_length: 128, required: true, description: Nonempty idempotency key; reuse with different method or content conflicts. }
+      - { id: 3, name: controlVersion, type: uint32, required: true, description: Must be 1. }
+      - { id: 4, name: runtimeInstanceId, type: string, max_length: 36, required: true, description: Current receiver runtime UUID from capabilities. }
+
+  CastTouchbackMasterChangedEvent:
+    kind: object
+    description: Replace receiver-wide gate state; gaps or reconnect require a fresh query.
+    fields:
+      - { id: 1, name: state, type: CastTouchbackMasterState, required: true, description: Current complete receiver-wide gate state. }
+
+  CastTouchbackCapability:
+    kind: object
+    description: Capability descriptor for cast.touchback; AirPlay receivers do not advertise this capability.
+    fields:
+      - id: 1
+        name: capability
+        type: string
+        required: true
+        max_length: 32
+        description: Fixed capability name cast.touchback.
+      - id: 2
+        name: protocols
+        type: array
+        array:
+          item_type: string
+        required: true
+        description: Protocol paths supporting touchback, such as webcast and hid; airplay is excluded.
+      - id: 4
+        name: supportsPerTarget
+        type: bool
+        required: true
+        description: Whether state is independently controlled for each route.
+      - id: 5
+        name: supportsControlPlane
+        type: bool
+        required: true
+        description: Whether launcher control-plane gate methods are supported.
+      - id: 6
+        name: inputTypes
+        type: array
+        required: true
+        description: Actually implemented capture semantics for the product route.
+        array:
+          item_type: string
+      - id: 7
+        name: formats
+        type: array
+        required: true
+        description: Explicit supported typed input formats.
+        array:
+          item_type: string
+    retired_field_ids:
+      - 3
+
 capabilities:
   - id: 0x1601
     name: cast.session
@@ -3601,3 +4225,26 @@ capabilities:
     description: Secret-free AirPlay authentication and discovery observation with live rename.
     type: object
     schema: CastAirPlayControlCapability
+
+  - id: 0x160F
+    name: cast.touchback
+    domain: cast
+    status: draft
+    since: 1.0.0
+    description: Per-target input gate and presentation policy; event semantics are explicit and AirPlay is excluded.
+    type: object
+    schema: CastTouchbackCapability
+
+  - id: 0x1610
+    name: cast.receiverSettings
+    domain: cast
+    status: draft
+    since: 1.0.0
+    description: Optional receiver preference methods discovered by name. The state declares supported restart-only fields and current save availability.
+    type: bool
+
+retired_allocations:
+  - kind: method
+    id: 5662
+    domain: cast
+    bitOffset: 29
