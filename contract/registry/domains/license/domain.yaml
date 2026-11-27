@@ -36,7 +36,7 @@ methods:
     status: draft
     bitOffset: 2
     since: 1.0.0
-    description: Pull-channel reconciliation on device online/reconnect; compares credential and policy-rowset versions and answers in one of three forms.
+    description: Pull-channel reconciliation on device online/reconnect; compares the held credential version pair against the ledger and answers in one of three forms.
     rpc_op: request_response
     request_schema: ReconcileParams
     response_schema: ReconcileResult
@@ -64,7 +64,7 @@ methods:
     status: draft
     bitOffset: 4
     since: 1.0.0
-    description: Pure pre-delivery version probe; returns the device-held version triple and never carries credential bytes.
+    description: Pure pre-delivery version probe; returns the device-held version pair and never carries credential bytes.
     rpc_op: request_response
     request_schema: ResolveCredentialParams
     response_schema: ResolveCredentialResult
@@ -152,9 +152,9 @@ types:
         description: Connection addressing key current self-reported value (registered form, axldev_ prefix); filled with the current self-reported value also when the platform addresses via the identity fallback.
       - id: 0x02
         name: version
-        type: LicenseVersionTriple
+        type: LicenseVersionPair
         required: false
-        description: Device-held version triple; omitted entirely when the device holds no credential.
+        description: Device-held version pair; omitted entirely when the device holds no credential.
 
   ReconcileResult:
     kind: object
@@ -165,11 +165,6 @@ types:
         type: bool
         required: true
         description: True only when the device pointer is self-consistent and the aggregate matches the ledger.
-      - id: 0x02
-        name: policyVersion
-        type: uint32
-        required: false
-        description: Current policy rowset revision; returned alongside the credential for device-side persistence.
       - id: 0x03
         name: credential
         type: LicenseCredentialInfo
@@ -180,6 +175,8 @@ types:
         type: bool
         required: false
         description: Reissue acceptance form; present only when issuance must rerun asynchronously and no credential bytes are returned.
+    retired_field_ids:
+      - 0x02
 
   ResolveCredentialParams:
     kind: object
@@ -203,9 +200,9 @@ types:
         description: Whether the device currently holds a credential.
       - id: 0x02
         name: version
-        type: LicenseVersionTriple
+        type: LicenseVersionPair
         required: false
-        description: Held version triple; required when hasCredential is true.
+        description: Held version pair; required when hasCredential is true.
 
   DeliverCredentialParams:
     kind: object
@@ -217,16 +214,13 @@ types:
         required: true
         max_length: 64
         description: Platform delivery attempt identifier, echoed by reportReceipt.deliveryRef.
-      - id: 0x02
-        name: policyVersion
-        type: uint32
-        required: true
-        description: Policy rowset revision of the credential source; channel-side metadata persisted by the device.
       - id: 0x03
         name: credential
         type: LicenseCredentialInfo
         required: true
         description: Signed credential object shared with the reconcile answer.
+    retired_field_ids:
+      - 0x02
 
   DeliverCredentialResult:
     kind: object
@@ -277,9 +271,9 @@ types:
         max_length: 87384
         description: Opaque signed credential bytes (frozen CBOR V1 artifact, at most 64 KiB before Base64 encoding with padding).
 
-  LicenseVersionTriple:
+  LicenseVersionPair:
     kind: object
-    description: Shared version triple reused by reconcile params and the resolveCredential answer.
+    description: Shared version pair reused by reconcile params and the resolveCredential answer.
     fields:
       - id: 0x01
         name: authorityRevision
@@ -291,11 +285,8 @@ types:
         type: uint32
         required: true
         description: Credential generation.
-      - id: 0x03
-        name: policyVersion
-        type: uint32
-        required: true
-        description: Installed policy rowset revision persisted by the device.
+    retired_field_ids:
+      - 0x03
 
   LicenseRegistrationCapabilities:
     kind: object
@@ -337,10 +328,10 @@ types:
     description: Device-side declaration of reconciliation and version reporting support.
     fields:
       - id: 0x01
-        name: persistentPolicyVersion
+        name: persistentHeldVersion
         type: bool
         required: true
-        description: Whether the device persists policyVersion locally for reconcile and probe reporting.
+        description: Whether the device persists the held (authorityRevision, credentialGeneration) pair locally for reconcile and probe reporting.
 
 capabilities:
   - id: 0x1901
@@ -366,6 +357,6 @@ capabilities:
     domain: license
     status: draft
     since: 1.0.0
-    description: Device persists credential and policy-rowset versions and reports them for reconciliation and pre-delivery probes.
+    description: Device persists the held credential version pair and reports it for reconciliation and pre-delivery probes.
     type: object
     schema: LicenseReconciliationCapabilities

@@ -5,7 +5,7 @@ generated: true
 domain: license
 feature: license.credentialDelivery
 registry: contract/registry/domains/license/domain.yaml
-lastReviewed: 2026-11-19
+lastReviewed: 2026-11-27
 ---
 
 # license.credentialDelivery
@@ -19,7 +19,7 @@ lastReviewed: 2026-11-19
 | method `license.reportReceipt` | id `0x1902`, bitOffset `1`, since `1.0.0` | `contract/registry/domains/license/domain.yaml` |
 | method `license.deliverCredential` | id `0x1904`, bitOffset `3`, since `1.0.0` | 同上 |
 | capability `license.credentialDelivery` | id `0x1902` | 同上 |
-| schema `DeliverCredentialParams` | fieldIds `0x01`–`0x03` | 同上 |
+| schema `DeliverCredentialParams` | fieldIds `0x01`–`0x03`（`0x02` 已移除且不复用） | 同上 |
 | schema `DeliverCredentialResult` | fieldIds `0x01`–`0x02` | 同上 |
 | schema `ReportReceiptParams` | fieldIds `0x01`–`0x05` | 同上 |
 | schema `ReportReceiptResult` | fieldId `0x01` | 同上 |
@@ -35,7 +35,7 @@ lastReviewed: 2026-11-19
 | 是否可直接实现 | 是。正式实现合同以 `contract/protocol/axtp.protocol.yaml` / `contract/generated/**` 为准。 |
 | 主要交互 | RPC（云→设备下发 + 设备→云回执；零自定义事件） |
 | 是否使用 STREAM | 否 |
-| Registry readiness | ready（registry + generated 均已刷新，validate/test 全绿） |
+| Registry readiness | ready（registry + generated 均已刷新，validate/test 全绿；2026-11-27 amend（移除 policyVersion）已重新生成） |
 | Conformance | needed |
 | 主要未决问题 | 无。 |
 
@@ -82,7 +82,6 @@ lastReviewed: 2026-11-19
 | 字段名 | 类型 | 必填 | 取值范围 / 枚举 | 默认值 | 说明 |
 |---|---|---:|---|---|---|
 | `deliveryId` | string | yes | 平台下发尝试标识 | none | 当次下发尝试 id——设备回执 `reportReceipt.deliveryRef` 原样引用（采信条件闭环来源）。 |
-| `policyVersion` | uint32 | yes | ≥ 0 | none | 凭证来源策略行集版本（通道侧元数据，不在 CBOR 载荷内）；设备本地持久化后于对账/探测上报。清权凭证取签发时策略当前版本（设备侧版本轴占位）。 |
 | `credential` | `LicenseCredentialInfo` | yes | 见 `license.reconciliation` §6.2（共享 schema） | none | 凭证对象（credentialId / authorityRevision / credentialGeneration / reason / cborBase64）——与 `license.reconcile` 应答内嵌对象**同构共享**（§11 decided，2026-11-18）。 |
 
 凭证五字段（credentialId / 修订号 / 代次 / reason / cborBase64）的取值与语义统一由共享对象 `LicenseCredentialInfo` 定义（见 `license.reconciliation` §6.2），此处不重复展开。
@@ -104,7 +103,6 @@ request:
   "method": "license.deliverCredential",
   "params": {
     "deliveryId": "d-8a41c7",
-    "policyVersion": 1,
     "credential": {
       "credentialId": "3f9d2c68-7b4e-4f2a-9c1d-5e8a7b6c4d21",
       "authorityRevision": 4,
@@ -167,7 +165,7 @@ success:
 - 串行下发：同设备同时刻至多一张在途凭证；多授权来源在平台侧聚合为一份凭证，设备对多 Grant 无感知。
 - 下发结果未知（通道超时/断连）MUST 归为「结果未知」而非失败：不判失败、不触发旧版重发覆盖新版本，等待对账收敛。
 - 本调用响应 accepted=true 可作为安装确认（DEVICE_ACK）依据——平台对本方法响应 ACK 与 `reportReceipt` 走同一采信逻辑（deliveryRef = 当次 deliveryId），二者重复到达幂等、acknowledged 指针只进不退。
-- `policyVersion` / `deliveryId` / `reason` 为通道侧元数据（axlic 冻结载荷不可增字段），不进入 CBOR 工件。
+- `deliveryId` / `reason` 为通道侧元数据（axlic 冻结载荷不可增字段），不进入 CBOR 工件。
 - 本调用为 S2D：平台侧统一**双键回退寻址**——优先已注册 deviceId，未命中经 identity 映射回退 identity_value（首注册同连接窗口），设备侧对寻址无感知。
 - 设备侧验签、身份匹配（凭证载荷 device_id 与本地保存的注册引用比对）、原子安装与权益判定是设备内部行为（axlic 冻结合同）；验证失败 fail-closed 判无权限，不得导致接收桥变砖。
 
@@ -280,7 +278,7 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 
 | Schema | 用途 | 定义位置 |
 |---|---|---|
-| `DeliverCredentialParams` | 下发请求（deliveryId / policyVersion + 内嵌共享凭证对象） | §3.1.1 |
+| `DeliverCredentialParams` | 下发请求（deliveryId + 内嵌共享凭证对象） | §3.1.1 |
 | `LicenseCredentialInfo` | 共享凭证对象（与 `license.reconciliation` 同一定义） | `license.reconciliation` §6.2 |
 | `DeliverCredentialResult` | 下发应答（accepted / errorCode） | §3.1.2 |
 | `ReportReceiptParams` | 回执请求（outcome / deliveryRef 闭环） | §3.2.1 |
@@ -314,12 +312,12 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 
 | 类型 | 要点 |
 |---|---|
-| registry readiness | adopted + amended——已写入 `contract/registry/domains/license/domain.yaml`（0x1902/0x1904）与 `error_code.yaml`（0x7003）；2026-11-19 amend（deviceId/双键回退）已刷新 generated。 |
+| registry readiness | adopted + amended——已写入 `contract/registry/domains/license/domain.yaml`（0x1902/0x1904）与 `error_code.yaml`（0x7003）；2026-11-19 amend（deviceId/双键回退）、2026-11-27 amend（移除 policyVersion）已刷新 generated。 |
 | conformance focus | 串行下发不变量（同设备至多一张在途）、超时=结果未知、回执采信条件、EXPORTED 不算安装、ACK 与回执同一采信逻辑幂等。 |
 | happy path | ISSUE 下发 → INSTALLED 回执 → accepted=true 收敛。 |
 | boundary case | 空权益集清权凭证（reason=REVOKE）为合法工件必须可安装；Base64 大载荷（≈87KB）通道承载。 |
 | error case | 防回滚拒绝（旧版本凭证）；不可关联回执 accepted=false；REJECTED 缺 errorCode 拒请求。 |
-| compatibility | 仅 JSON 编码；`errorCode`/`deliveryRef` 字段语义与上游契约对齐（其数值码引用误引已登记 flow OQ-6，以 registry 值为准）。 |
+| compatibility | 仅 JSON 编码；通道侧不再承载 policyVersion（draft 状态 breaking correction，已移除的 fieldId 不复用）；`errorCode`/`deliveryRef` 字段语义与上游契约对齐（其数值码引用误引已登记 flow OQ-6，以 registry 值为准）。 |
 
 ## 11. 待确认问题
 
@@ -338,6 +336,7 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 |---|---|---|---|
 | 2026-11-18 | 初版采纳（0x1902 / 0x1904 / capability 0x1902 / vendor 0x7003），随 v0.19.0 生成发布。 | Stage 30 采纳。 | — |
 | 2026-11-19 | `ReportReceiptParams.deviceId` 格式改 `^axldev_[0-9a-f]{32}$`（40 字符，max_length 36→40），语义 = 连接寻址键当前自报值（已注册形态）；`deliverCredential` 补平台侧双键回退寻址规则（优先 deviceId，未命中回退 identity_value）；设备侧身份匹配口径改为「凭证载荷 device_id 与本地注册引用比对」。 | 同步上游设备身份定案（flow OQ-7）。 | draft 状态下 breaking correction——id/fieldId/bitOffset/name/status/since 全部保持；YAML 仅改 max_length 与 description；generated 产物经 Stage 50 重新生成。 |
+| 2026-11-27 | 删除 `DeliverCredentialParams.policyVersion`（`0x02`，原必填）；params 收敛为 `{ deliveryId, credential }`；通道侧元数据只保留 `deliveryId` 与 `reason`。 | 同 `license.reconciliation` 修订记录（2026-11-27）：上游授权数据模型不存在「策略行集版本」概念。 | draft 状态下 breaking correction。方法与 capability ID、bitOffset、status/since、其余 fieldId（`0x01`、`0x03`）和 name 全部保持；已移除的 fieldId `0x02` 登记为 `retired_field_ids` 不复用；generated 产物经 Stage 50 重新生成。 |
 
 ## 附录 C. Registry 草案输入（已采纳定稿）
 
@@ -388,14 +387,12 @@ types:
         type: string
         required: true
         max_length: 64
-      - id: 0x02
-        name: policyVersion
-        type: uint32
-        required: true
       - id: 0x03
         name: credential
         type: LicenseCredentialInfo   # 共享 schema（域内单文件定义，§11 decided）
         required: true
+    retired_field_ids:
+      - 0x02
   ReportReceiptParams:
     kind: object
     fields:

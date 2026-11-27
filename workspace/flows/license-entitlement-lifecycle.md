@@ -4,11 +4,11 @@
 > Scope: 设备权益授权（license）全生命周期——云反连接入识别、连接即注册、凭证自动签发与下发、安装回执、对账收敛、吊销/清权、凭证解绑换绑、策略批量修订的设备 ↔ 平台协议交互
 > Source inputs: 上游业务规格（设备权益授权系统，平台侧特性规格——业务语义权威）、`contract/generated/protocol.md`、`contract/protocol/axtp.protocol.yaml`、`contract/registry/domains/device/domain.yaml`、`workspace/protocol/system/system.license.md`
 > Protocol lifecycle: Stage 10 `plan-protocol-flow`
-> Re-reviewed: 2026-11-19——同步上游设备身份定案（平台分配 deviceId / 双态自报 / S2D 双键回退寻址 / 0x7001 双态判定），coverage 复核为 complete
+> Re-reviewed: 2026-11-27——同步上游收敛语义定案（移除通道侧 policyVersion，对账只比对凭证版本对并以平台端重新评估为准），coverage 复核为 complete；2026-11-19 同步上游设备身份定案（平台分配 deviceId / 双态自报 / S2D 双键回退寻址 / 0x7001 双态判定）
 
 本文根据上游权益授权系统（平台侧）业务规格，梳理设备经 axtp 云反连通道"连接即注册即获凭证"、以及此后吊销/策略变更经推拉双通道对账收敛的 AXTP 交互流程，判断每一步协议覆盖状态并识别缺口。
 
-本文不是最终协议事实源；已采纳事实以 `contract/registry/**/*.yaml`、`contract/registry/domains/**/*.yaml`、`contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**` 为准。license 域事实已于 2026-11-18 采纳（domain `0x19`、方法 `0x1901`–`0x1905`、capability `0x1901`–`0x1903`、vendor 错误码 `0x7001`–`0x7003`）并于 2026-11-19 经 `amend-adopted-protocol` 完成 deviceId 口径修正；本场景协议覆盖 complete。后续语义变更 MUST 走 `workspace/protocol/license/**` 草案修订 + `amend-adopted-protocol`。
+本文不是最终协议事实源；已采纳事实以 `contract/registry/**/*.yaml`、`contract/registry/domains/**/*.yaml`、`contract/protocol/axtp.protocol.yaml` 和 `contract/generated/**` 为准。license 域事实已于 2026-11-18 采纳（domain `0x19`、方法 `0x1901`–`0x1905`、capability `0x1901`–`0x1903`、vendor 错误码 `0x7001`–`0x7003`）并于 2026-11-19（deviceId 口径修正）、2026-11-27（移除 policyVersion）经 `amend-adopted-protocol` 修订；本场景协议覆盖 complete。后续语义变更 MUST 走 `workspace/protocol/license/**` 草案修订 + `amend-adopted-protocol`。
 
 Flow 文档负责：
 
@@ -69,10 +69,10 @@ Flow 文档不负责：
 - **多 Grant 聚合为一份凭证**：设备可同时持有多个有效 Grant，聚合投影（entitlement_id 去重 + merge_mode 合并）后每设备每时刻仅一份在途聚合凭证；设备对多授权来源无感知。
 - **串行下发、超时 ≠ 失败**：同设备同时刻至多一张在途凭证；通道超时/断连归"结果未知"，等对账收敛，不判失败、不重发覆盖新版本。
 - **回执采信条件**：回执必须可关联平台真实下发尝试（deliveryId 闭环）且工件一致才被采信；EXPORTED 不视为安装成功；不可关联假回执被拦截，可关联假回执（冒用连接持真 deliveryId）为本期已知风险（通道鉴权为演进项）。
-- **对账为权威**：比对凭证版本 (authorityRevision, credentialGeneration) 与策略行集版本（policyVersion = revision_no）两个维度；reconcile 有三种应答形态：upToDate=true / 携带最新凭证 / 补签受理（reissueAccepted，不携带凭证字节）。台账未收敛集四类（①指针未收敛 ②有 Grant 无凭证/零授权链 ③REVOKED 未清权 ④聚合漂移）各有路由触发动作。
+- **对账为权威**：比对设备上报的凭证版本对 (authorityRevision, credentialGeneration) 与台账选定凭证，并对版本对已一致的设备叠加平台端重新评估（权益与选定凭证不一致即需重签）；reconcile 有三种应答形态：upToDate=true / 携带最新凭证 / 补签受理（reissueAccepted，不携带凭证字节）。台账未收敛集四类（①指针未收敛 ②有 Grant 无凭证/零授权链 ③REVOKED 未清权 ④聚合漂移）各有路由触发动作。
 - **吊销双粒度、台账即时生效**：Grant 级吊销按剩余 Grant 重算聚合凭证（reason=REVISE，权益收窄）；设备级吊销终结全部 Grant + 清权凭证（空权益集，reason=REVOKE）；权威态 REVOKED 超过 N×SLA 未收敛自动转"放弃送达"**粘性终态**（晚到收敛回执仍采信但不翻回、链不可恢复）；吊销后重注册不恢复任何授权（恢复仅经管理面 RESTORED 分支）。
 - **凭证演进单调防回滚**：(修订号, 代次) 字典序单调不回退；设备拒绝版本低于本地高水位的凭证（0x7003 LICENSE_CREDENTIAL_STALE）。
-- **通道侧元数据**：`policyVersion`（行集版本）与 `deliveryId` 不在 CBOR 载荷内（axlic 冻结合同不可增字段），由通道消息捎带、设备本地持久化后经 reconcile / resolveCredential 上报。
+- **通道侧元数据**：`deliveryId` 不在 CBOR 载荷内（axlic 冻结合同不可增字段），由通道消息捎带；设备本地持久化并经 reconcile / resolveCredential 上报的是凭证自身的版本对 (authorityRevision, credentialGeneration)，不存在独立的策略行集版本。
 - **通道滥用定案**：D2S responder 不加独立限流（千级设备并发上线为合法场景，重放幂等无危害）；凭证字节本身非机密（签名体系 + 设备身份绑定使其装不进他机）；付费期再收紧通道鉴权。
 - **方法命名与实装策略**：WS-JSON 线上走字符串方法名（SDK 不校验注册表），平台实现不被注册表阻塞；domain `0x19`、方法 ID `0x1901`–`0x1905`、capability `0x1901`–`0x1903` 已采纳注册（上游"不得长期维护私设方法语义"的对齐要求已满足）。
 
@@ -113,9 +113,9 @@ Flow 文档不负责：
 | 设备识别：取双态自报值作为连接寻址键 | generated | S2D `device.getInfo` → `result.identity.deviceId`（string, required, max 128；未注册=identity_value / 已注册=axldev deviceId，识别层仅校验非空） | `contract/registry/domains/device/domain.yaml:6,163`（registry status: draft）；`contract/generated/protocol.md:1892` | implement |
 | 设备注册（幂等、空参数、平台分配 deviceId、双态正则、触发自动签发） | generated | `license.registerIdentity`（D2S，0x1901） | `contract/registry/domains/license/domain.yaml`；`contract/generated/protocol.md` §license | implement |
 | 自动签发（快照聚合展开 → 封存 → OpenBao 签名 → 登记） | local-only | —（平台内部签发链，无协议调用） | 上游平台签发链内部设计 | no action（平台实现） |
-| 凭证下发（双键回退寻址、串行、deliveryId/policyVersion/reason 捎带、cborBase64） | generated | `license.deliverCredential`（S2D，0x1904） | `contract/registry/domains/license/domain.yaml`；`contract/generated/protocol.md` §license | implement |
+| 凭证下发（双键回退寻址、串行、deliveryId/reason 捎带、cborBase64） | generated | `license.deliverCredential`（S2D，0x1904） | `contract/registry/domains/license/domain.yaml`；`contract/generated/protocol.md` §license | implement |
 | 安装/导出/拒绝回执（deliveryRef 闭环、采信条件） | generated | `license.reportReceipt`（D2S，0x1902） | `contract/registry/domains/license/domain.yaml`；`contract/generated/protocol.md` §license | implement |
-| 对账（拉通道、三应答形态、双维度比对） | generated | `license.reconcile`（D2S，0x1903） | `contract/registry/domains/license/domain.yaml`；`contract/generated/protocol.md` §license | implement |
+| 对账（拉通道、三应答形态、凭证版本对比对 + 平台端重新评估） | generated | `license.reconcile`（D2S，0x1903） | `contract/registry/domains/license/domain.yaml`；`contract/generated/protocol.md` §license | implement |
 | 版本探测（队列 worker 下发前纯探测、永不携带凭证字节） | generated | `license.resolveCredential`（S2D，0x1905） | `contract/registry/domains/license/domain.yaml`；`contract/generated/protocol.md` §license | implement |
 | 通用错误（参数非法 / 不可用 / 不支持 / 超时） | generated | common 段：INVALID_ARGUMENT(0x000A)、UNAVAILABLE(0x000F)、NOT_SUPPORTED(0x0003)、TIMEOUT(0x0006) 等（registry 事实；SDK 内部 RpcMethodNotFound/RpcResponseTimeout 非 registry 错误，见 OQ-6） | `contract/registry/error/error_code.yaml:72,108`；`contract/generated/protocol.md` §errors | implement |
 | licensing vendor 错误码（0x7001 双态身份无效/占用、0x7002 设备不存在、0x7003 凭证过旧防回滚） | generated | vendor 段已注册 0x7001–0x7003；上游候选码 0x7004–0x7006（NOT_ENTITLED / RATE_LIMITED / INTERNAL）维持不注册处置（见 `license.registration` §8） | `contract/registry/error/error_code.yaml`（0x7001–0x7003）；`specs/30-registry.md` vendor 段规则 | implement |
@@ -154,7 +154,7 @@ sequenceDiagram
     Note over LI: acknowledged 指针推进 → 已确认收敛
 
     Note over LI: ——离线期间台账演进(吊销/策略发布)——
-    BR->>GW: 重连后 D2S license.reconcile(版本三元组) [generated]
+    BR->>GW: 重连后 D2S license.reconcile(版本对) [generated]
     GW-->>BR: upToDate=false + 最新凭证(REVISE/REVOKE) 或补签受理(reissueAccepted)
     BR->>GW: reportReceipt(INSTALLED)
     Note over LI: 清权凭证收敛 → 权益判定全部无权限
@@ -178,8 +178,8 @@ sequenceDiagram
 | 3 | 平台网关 | 连接识别：取双态自报值作寻址键 | 会话 ready | S2D `device.getInfo` | `result.identity.deviceId`（未注册=identity_value / 已注册=axldev deviceId，识别层仅校验非空） | 连接入册，deviceUniqueId = 当前自报值 | generated | 识别失败重试耗尽断开（身份未就绪非异常） |
 | 4 | 接收桥 | 发起注册 | 识别成功 | D2S `license.registerIdentity` | params = `{}`（自报值恒取连接上下文） | REGISTERED/EXISTING + credentialPending；响应返回**平台分配 deviceId**（设备 MUST 持久化，后续连接自报该值）；触发自动签发（异步） | generated | 0x7001 双态正则均不匹配 = **终态**（重建本地身份）；identity_value 占用同码 |
 | 5 | license 域 | 自动签发 | 注册受理 | —（local-only） | 多 Grant 聚合投影 → 封存 → OpenBao 签名 | 台账新增聚合凭证 + 下发指针 selected | local-only | 签发最终失败 → 未收敛集②，reconcile/sweep 补签（受理形态） |
-| 6 | 平台网关 | 凭证下发（推通道、串行、双键回退寻址） | 凭证已登记、设备在线 | S2D `license.deliverCredential` | credentialId, deliveryId, authorityRevision, credentialGeneration, policyVersion, reason=ISSUE, cborBase64 | 设备收到唯一聚合凭证 | generated | 超时/断连 = 结果未知（不判失败，等对账）；accepted=false + 0x7003 防回滚 |
-| 7 | axlic | 验签 / 身份匹配 / 原子安装 | 凭证字节到达 | —（设备侧 local-only） | CBOR V1 冻结合同校验 | 本地权益判定生效；持久化 policyVersion | local-only | 验证失败 fail-closed 判无权限，不阻断接收桥更新 |
+| 6 | 平台网关 | 凭证下发（推通道、串行、双键回退寻址） | 凭证已登记、设备在线 | S2D `license.deliverCredential` | credentialId, deliveryId, authorityRevision, credentialGeneration, reason=ISSUE, cborBase64 | 设备收到唯一聚合凭证 | generated | 超时/断连 = 结果未知（不判失败，等对账）；accepted=false + 0x7003 防回滚 |
+| 7 | axlic | 验签 / 身份匹配 / 原子安装 | 凭证字节到达 | —（设备侧 local-only） | CBOR V1 冻结合同校验 | 本地权益判定生效；持久化凭证版本对 | local-only | 验证失败 fail-closed 判无权限，不阻断接收桥更新 |
 | 8 | 接收桥 | 回执安装确认 | 已安装 | D2S `license.reportReceipt` | deviceId（连接当前自报值）, credentialId, outcome=INSTALLED, deliveryRef=deliveryId | acknowledged 指针推进 → 已确认收敛 | generated | 不可关联/工件不符 → accepted=false 台账不变 |
 
 吊销 / 换绑（P2）：
@@ -197,13 +197,15 @@ sequenceDiagram
 
 | Step | Actor | Action | Capability / precondition | Protocol call/event | Payload fields | Result / state change | Coverage | Error / fallback |
 |---:|---|---|---|---|---|---|---|---|
-| 15 | 接收桥 | 上线/重连对账（拉通道，必须执行） | 会话 ready | D2S `license.reconcile` | deviceId（连接当前自报值）, authorityRevision, credentialGeneration, policyVersion（无凭证时三元组省略） | 三应答形态之一（见下） | generated | 0x7002 设备不存在；全局错误码沿用 |
-| 16 | 平台网关 | 对账应答①：台账最新凭证 | 台账版本更新 | `license.reconcile` result | upToDate=false + policyVersion + credential{credentialId, 版本对, reason, cborBase64} | 设备安装最新版（单调不回退、不重复） | generated | ④a/④b 漂移形态 MUST NOT 旧凭证捎带新行集版本 → 转补签受理 |
+| 15 | 接收桥 | 上线/重连对账（拉通道，必须执行） | 会话 ready | D2S `license.reconcile` | deviceId（连接当前自报值）, version{authorityRevision, credentialGeneration}（无凭证时 version 省略） | 三应答形态之一（见下） | generated | 0x7002 设备不存在；全局错误码沿用 |
+| 16 | 平台网关 | 对账应答①：台账最新凭证 | 台账版本更新 | `license.reconcile` result | upToDate=false + credential{credentialId, 版本对, reason, cborBase64} | 设备安装最新版（单调不回退、不重复） | generated | ④ 聚合漂移（版本对已一致但重评估结果不同）MUST NOT 返回旧凭证 → 转补签受理 |
 | 17 | 平台网关 | 对账应答②：补签受理 | 未收敛集②③④命中（签发失败/零授权链/清权未产出/聚合漂移） | `license.reconcile` result | upToDate=false + reissueAccepted=true（无凭证字节） | 异步重走签发链，产物经推送或后续对账取得 | generated | 幂等键防重；放弃链主动 reconcile 仍可触发清权补签 |
 | 18 | 平台网关 | 对账应答③：已最新 | 指针自洽且聚合一致 | `license.reconcile` result | upToDate=true | 设备保持现状 | generated | 零授权链/未清权形态 MUST NOT 应答 upToDate=true |
-| 19 | 队列 worker | 下发前版本纯探测 | sweep/上线触发投递 | S2D `license.resolveCredential` | deviceId（连接当前自报值；平台回退寻址时填连接当前自报值） | hasCredential + 版本三元组 → 平台比对决定是否下发 | generated | 永不返回凭证字节（探测与下发载荷语义分离）；0x7002 |
+| 19 | 队列 worker | 下发前版本纯探测 | sweep/上线触发投递 | S2D `license.resolveCredential` | deviceId（连接当前自报值；平台回退寻址时填连接当前自报值） | hasCredential + 版本对 → 平台比对决定是否下发 | generated | 永不返回凭证字节（探测与下发载荷语义分离）；0x7002 |
 
 策略发布批量修订（P3）：
+
+> 策略发布、行集校验及其 revision 是平台内部的业务概念（non-protocol），不进入 AXTP 协议；通道侧只承载凭证自身的版本对 (authorityRevision, credentialGeneration)，策略发布引起的权益变化经重签后的凭证（reason=REVISE）下发。
 
 | Step | Actor | Action | Capability / precondition | Protocol call/event | Payload fields | Result / state change | Coverage | Error / fallback |
 |---:|---|---|---|---|---|---|---|---|
@@ -215,7 +217,7 @@ sequenceDiagram
 | State change | Trigger | Event needed | Payload | Client handling | Coverage |
 |---|---|---|---|---|---|
 | unregistered → registered（REGISTERED/EXISTING） | registerIdentity 受理 | **无 axtp 事件**——Request/Response 即答（credentialPending 表达未收敛） | status + deviceId（平台分配）+ credentialPending | 设备持久化 deviceId，等待 S2D 推送或后续 reconcile | generated |
-| 台账新增/修订凭证（ISSUE/REVISE/REVOKE） | 自动签发/吊销剩余重算/批量修订/清权 | **无 axtp 事件**——S2D `deliverCredential` 主动调用承载 | 凭证 + 版本对 + policyVersion + reason | 设备验签安装并回执 | generated |
+| 台账新增/修订凭证（ISSUE/REVISE/REVOKE） | 自动签发/吊销剩余重算/批量修订/清权 | **无 axtp 事件**——S2D `deliverCredential` 主动调用承载 | 凭证 + 版本对 + reason | 设备验签安装并回执 | generated |
 | acknowledged 指针推进（→ CONVERGED） | INSTALLED 回执且满足采信条件 | 无 | deliveryRef 闭环 | accepted=true；指针只进不退 | generated |
 | authority ACTIVE → REVOKED（台账即时） | 设备级吊销/解绑/换绑 from 端 | 无（协议面经 reason=REVOKE 凭证表达） | 清权凭证 | 设备安装后全判无权限 | local-only + generated |
 | 送达观测态 → ABANDONED（粘性终态） | REVOKED 超 N×收敛 SLA 未确认 | 无 | —（台账派生） | 晚到回执仍采信但观测态不翻回；设备仍可 reconcile 取清权凭证 | local-only |
@@ -235,7 +237,7 @@ sequenceDiagram
 | `device.getInfo`（0x0101） | 连接识别：取 `result.identity.deviceId`（DeviceIdentity fieldId 0x01，string，required，max 128；双态自报——未注册=identity_value / 已注册=axldev deviceId）作为连接寻址键 | `contract/registry/domains/device/domain.yaml:6,163`；`contract/generated/protocol.md:1892` |
 | `license.registerIdentity`（0x1901，D2S） | 设备主体注册（幂等、平台分配 deviceId、双态正则采纳、触发自动签发） | `contract/registry/domains/license/domain.yaml`；`contract/generated/protocol.md` §license |
 | `license.reportReceipt`（0x1902，D2S） | 安装/导出/拒绝回执上报（采信条件） | 同上 |
-| `license.reconcile`（0x1903，D2S） | 对账拉通道（三应答形态、双维度比对） | 同上 |
+| `license.reconcile`（0x1903，D2S） | 对账拉通道（三应答形态、凭证版本对比对） | 同上 |
 | `license.deliverCredential`（0x1904，S2D） | 凭证下发（双键回退寻址、串行、通道侧元数据捎带） | 同上 |
 | `license.resolveCredential`（0x1905，S2D） | 下发前版本纯探测（永不携带凭证字节） | 同上 |
 | capability `license.registration` / `license.credentialDelivery` / `license.reconciliation`（0x1901–0x1903） | 设备侧能力声明（注册意愿 / 接收验签安装 / 版本持久化上报） | `contract/registry/domains/license/domain.yaml` |
@@ -247,10 +249,10 @@ sequenceDiagram
 | 原 Gap | domain.feature | 方法/错误码 | 处置结果 |
 |---|---|---|---|
 | 设备注册（幂等、空参数、连接身份采纳、触发自动签发、credentialPending） | `license.registration` | `license.registerIdentity`（D2S，request_response） | **已采纳**（2026-11-18，0x1901）；deviceId 格式校验属 license 域语义；params 复用已注册 `Empty`、全字段忽略由规则层承载；2026-11-19 修正为平台分配 deviceId + 双态正则（OQ-7） |
-| 凭证下发（串行、deliveryId/policyVersion/reason 通道侧元数据、cborBase64 不透明字节、0x7003 拒绝语义） | `license.credentialDelivery` | `license.deliverCredential`（S2D，request_response） | **已采纳**（0x1904）；凭证字段抽共享 `LicenseCredentialInfo` 内嵌结构；`cborBase64` `max_length: 87384`（64KiB 工件 Base64 含填充）；2026-11-19 补双键回退寻址注记 |
+| 凭证下发（串行、deliveryId/reason 通道侧元数据、cborBase64 不透明字节、0x7003 拒绝语义） | `license.credentialDelivery` | `license.deliverCredential`（S2D，request_response） | **已采纳**（0x1904）；凭证字段抽共享 `LicenseCredentialInfo` 内嵌结构；`cborBase64` `max_length: 87384`（64KiB 工件 Base64 含填充）；2026-11-19 补双键回退寻址注记；2026-11-27 移除 policyVersion |
 | 安装/导出/拒绝回执（deliveryRef 闭环、采信条件、EXPORTED 不算安装） | `license.credentialDelivery` | `license.reportReceipt`（D2S，request_response） | **已采纳**（0x1902）；采信不满足以 `accepted=false` 业务应答（不用 NOT_FOUND）；deviceId 字段 2026-11-19 改 axldev 格式（连接当前自报值） |
-| 对账（拉通道、三应答形态、双维度版本比对、补签受理） | `license.reconciliation` | `license.reconcile`（D2S，request_response） | **已采纳**（0x1903）；三应答形态以字段缺席 + 互斥规则表达（不引入显式变体）；deviceId 字段 2026-11-19 改 axldev 格式（连接当前自报值） |
-| 版本纯探测（队列 worker 前置探测、永不携带凭证字节） | `license.reconciliation` | `license.resolveCredential`（S2D，request_response） | **已采纳**（0x1905）；版本三元组与 reconcile params 复用共享 `LicenseVersionTriple`；deviceId 字段 2026-11-19 改 axldev 格式 + 平台回退寻址口径 |
+| 对账（拉通道、三应答形态、凭证版本对比对、补签受理） | `license.reconciliation` | `license.reconcile`（D2S，request_response） | **已采纳**（0x1903）；三应答形态以字段缺席 + 互斥规则表达（不引入显式变体）；deviceId 字段 2026-11-19 改 axldev 格式（连接当前自报值）；2026-11-27 移除应答 policyVersion |
+| 版本纯探测（队列 worker 前置探测、永不携带凭证字节） | `license.reconciliation` | `license.resolveCredential`（S2D，request_response） | **已采纳**（0x1905）；版本对与 reconcile params 复用共享 `LicenseVersionPair`；deviceId 字段 2026-11-19 改 axldev 格式 + 平台回退寻址口径 |
 | vendor 错误码 0x7001–0x7003（双态身份无效终态/设备不存在/凭证过旧） | `license`（域级 errors） | vendor 段错误码 | **已采纳**（0x7001–0x7003）；0x7005 限流码位保留不启用；vendor 段使用规则已写入 specs/30-registry.md；0x7001 描述 2026-11-19 改双态正则 + identity_value 占用语义 |
 | license 业务域注册（domain 高字节 0x19、方法 ID 0x1901–0x1905） | `license`（新域） | domain registry | **已采纳**（0x19 已注册 `contract/registry/core/domain_registry.yaml`；OQ-3 关闭） |
 | 既有 `system.license` 草案与本场景语义不匹配（泛型配置 CRUD vs 设备授权链生命周期） | —（命名治理） | — | **已处置**（2026-11-18 Stage 30 采纳时将 `system.license.md` 标记 superseded/deprecated，OQ-2 关闭） |
@@ -260,7 +262,7 @@ feature 拆分（registration / credentialDelivery / reconciliation 三文件，
 ### 8.3 Recommended Payload Boundaries
 
 - 方法 schema 素材以上游业务规格契约为权威输入（5 方法 params/result + 错误码表 + 时序）——已改写为 `workspace/protocol/license/**` 规范格式并采纳，本 flow 不复制其 schema 细节。
-- 通道侧元数据 `deliveryId` / `policyVersion` / `reason` 为方法 schema 的协议字段（不在 CBOR 载荷内）；`cborBase64` 为不透明字节串（axlic 冻结合同），AXTP schema 只约束传输形态（string/Base64）与尺寸上限注记，不定义其内部结构。
+- 通道侧元数据 `deliveryId` / `reason` 为方法 schema 的协议字段（不在 CBOR 载荷内）；`cborBase64` 为不透明字节串（axlic 冻结合同），AXTP schema 只约束传输形态（string/Base64）与尺寸上限注记，不定义其内部结构。
 - `deviceId` 字段复用 `DeviceIdentity.deviceId` 既有语义（≤128 字符 string），license 域格式约束（`^axldev_[0-9a-f]{32}$`，40 字符，平台注册时分配）与未注册连接自报 identity_value（`^[0-9a-f]{128}$`）双态口径作为方法级校验注记写入草案；reportReceipt / reconcile / resolveCredential 的 `params.deviceId` = 连接寻址键当前自报值。
 
 ## 9. Test / Conformance Notes
@@ -273,7 +275,7 @@ feature 拆分（registration / credentialDelivery / reconciliation 三文件，
 | 防回滚 | 设备持有高版本凭证 | 收到 (revision, generation) 低于高水位的 `deliverCredential` | accepted=false + 0x7003 LICENSE_CREDENTIAL_STALE | vendor 错误码 0x7003（已采纳） |
 | 假回执不采信 | 台账存在某设备下发历史 | 提交无法关联真实下发尝试（无 deliveryId 对应/工件不符）的 `reportReceipt` | accepted=false，台账送达观测态不变 | `license.reportReceipt`（0x1902） |
 | 吊销收敛 | 在线设备持有有效凭证 | 管理员设备级吊销 | 台账即时 REVOKED，清权凭证(REVOKE)下发，SLA 周期内收敛；超 N×SLA → 放弃送达（粘性） | `license.deliverCredential`（0x1904）+ 平台台账（local-only） |
-| 对账收敛 | 设备离线期间台账两次演进 | 上线 `reconcile`（版本三元组） | 返回台账最新凭证（不取旧版、不重复安装），版本单调递增 | `license.reconcile`（0x1903） |
+| 对账收敛 | 设备离线期间台账两次演进 | 上线 `reconcile`（版本对） | 返回台账最新凭证（不取旧版、不重复安装），版本单调递增 | `license.reconcile`（0x1903） |
 | 补签受理形态 | 有效授权存在但签发最终失败（或零授权链/清权未产出/聚合漂移） | 设备 `reconcile` | `{upToDate:false, reissueAccepted:true}`（不携带凭证字节），MUST NOT upToDate=true | `license.reconcile`（0x1903） |
 | 下发超时 ≠ 失败 | 凭证在途 | 通道超时/断连 | 归结果未知（等对账），不判失败、不重发覆盖新版本 | `license.deliverCredential`（0x1904） |
 | 事件路径 | — | — | **不适用**——licensing 域零自定义事件（SDK broker 约束），全部 Request/Response | 本 flow §7 设计约束 |

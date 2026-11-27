@@ -464,7 +464,7 @@
       "name": "license.reconciliation",
       "domain": "license",
       "status": "draft",
-      "description": "Device persists credential and policy-rowset versions and reports them for reconciliation and pre-delivery probes.",
+      "description": "Device persists the held credential version pair and reports it for reconciliation and pre-delivery probes.",
       "since": "1.0.0",
       "deprecated": false,
       "type": "object",
