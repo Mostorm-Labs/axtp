@@ -205,6 +205,8 @@ sequenceDiagram
 
 策略发布批量修订（P3）：
 
+> 策略发布、行集校验及其 revision 是平台内部的业务概念（non-protocol），不进入 AXTP 协议；通道侧只承载凭证自身的版本对 (authorityRevision, credentialGeneration)，策略发布引起的权益变化经重签后的凭证（reason=REVISE）下发。
+
 | Step | Actor | Action | Capability / precondition | Protocol call/event | Payload fields | Result / state change | Coverage | Error / fallback |
 |---:|---|---|---|---|---|---|---|---|
 | 20 | 管理员 | 目录登记/退役 + 策略发布（REST） | 管理会话 | —（non-protocol） | 行集校验 fail-closed | revision 版本+1 → POLICY_PUBLISHED 进程内事件 | non-protocol | 校验失败整体拒绝（422），无半发布版本 |

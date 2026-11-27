@@ -317,7 +317,7 @@ Capability name（候选）: `license.credentialDelivery`。`[REVIEW-DRAFT]`
 | happy path | ISSUE 下发 → INSTALLED 回执 → accepted=true 收敛。 |
 | boundary case | 空权益集清权凭证（reason=REVOKE）为合法工件必须可安装；Base64 大载荷（≈87KB）通道承载。 |
 | error case | 防回滚拒绝（旧版本凭证）；不可关联回执 accepted=false；REJECTED 缺 errorCode 拒请求。 |
-| compatibility | 仅 JSON 编码；`errorCode`/`deliveryRef` 字段语义与上游契约对齐（其数值码引用误引已登记 flow OQ-6，以 registry 值为准）。 |
+| compatibility | 仅 JSON 编码；通道侧不再承载 policyVersion（draft 状态 breaking correction，已移除的 fieldId 不复用）；`errorCode`/`deliveryRef` 字段语义与上游契约对齐（其数值码引用误引已登记 flow OQ-6，以 registry 值为准）。 |
 
 ## 11. 待确认问题
 

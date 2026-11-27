@@ -29,9 +29,11 @@ Current repository path note: conformance cases now live at the root `conformanc
   to `persistentHeldVersion`; refreshes the `license.reconcile`,
   `license.resolveCredential` and `license.reconciliation` descriptions.
 - Records the removed field IDs as `retired_field_ids` so they are never
-  reused. Method, capability and error IDs, bitOffsets and all remaining
-  field IDs and names are unchanged (draft-status breaking correction);
-  generated artifacts are refreshed via the generator only.
+  reused. As a draft-status breaking correction, method, capability and
+  error IDs and bitOffsets are unchanged and no surviving field ID was
+  renumbered; the only renamed surviving field is `persistentPolicyVersion`
+  → `persistentHeldVersion` (0x01). Generated artifacts are refreshed via
+  the generator only.
 
 ### Schemas
 
@@ -55,9 +57,14 @@ Current repository path note: conformance cases now live at the root `conformanc
   `policyVersion` in `license.deliverCredential`, stop returning it from
   `license.reconcile`, and report only the version pair from
   `license.reconcile` and `license.resolveCredential`.
-- Upgrade the device side before the platform: the new runtime ignores a
-  surplus `policyVersion` field, while the previous platform-side bridge
-  required it.
+- Device runtimes must also rename the `license.reconciliation` capability
+  key `persistentPolicyVersion` to `persistentHeldVersion`.
+- Upgrade the device side before the platform. The previous device-side
+  bridge required `policyVersion` in `license.deliverCredential` and rejects
+  a delivery without it, while the new runtime ignores the surplus field.
+- A device upgraded first reports `version` without `policyVersion`. The
+  previous contract marked that field as required, so device-to-platform
+  calls in that window rely on the platform not validating it.
 
 ### Runtime Impact
 

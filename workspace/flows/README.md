@@ -59,7 +59,7 @@ workspace/business/<requirement>.md 或业务场景 / UI 原型 / 用户 story
 | Camera Lens Control | [camera-lens-control.md](camera-lens-control.md) | flow design | 缺口已路由到 `camera.ptz` / `camera.zoom` / `camera.focus` 草案，待采纳评审。 |
 | Cast Presentation Settings (P1) | [cast-presentation-settings.md](cast-presentation-settings.md) | 已复审（2026-10-20） | 规范合同在 `specs/46-cast-settings.md`，采纳草案 `cast.presentationSettings`。 |
 | Cast Unified Control (P0/F1–F6) | [cast-unified-control.md](cast-unified-control.md) | 已复审（2026-10-20） | 规范合同在 `specs/45-cast-control.md`；对应事实已随 v0.18.0 采纳。 |
-| License Entitlement Lifecycle | [license-entitlement-lifecycle.md](license-entitlement-lifecycle.md) | flow design（coverage complete，2026-11-19 复审） | license 域已采纳（5 方法 + 3 capability + vendor 错误码 0x7001–0x7003）；后续语义变更走 `amend-adopted-protocol`。 |
+| License Entitlement Lifecycle | [license-entitlement-lifecycle.md](license-entitlement-lifecycle.md) | flow design（coverage complete，2026-11-27 复审） | license 域已采纳（5 方法 + 3 capability + vendor 错误码 0x7001–0x7003）；后续语义变更走 `amend-adopted-protocol`。 |
 | NearHub Launcher Digital Signage Device Management | [signage-device-management.md](signage-device-management.md) | 已进入 protocol draft | 继续确认 signage、network、firmware、log 等 legacy 映射。 |
 | NA20/NT10 Device Streaming Audio And Video | [device-streaming-audio-video.md](device-streaming-audio-video.md) | 已进入 protocol draft | 采纳 `video.stream` / `audio.stream` 和媒体 STREAM profile。 |
 | Video Framing Modes | [video-framing-modes.md](video-framing-modes.md) | flow design | 缺口已路由到 `video.framing` 草案（联动 `camera.ptz`），待采纳评审。 |
