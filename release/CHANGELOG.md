@@ -4,6 +4,67 @@ This changelog records AXTP Spec releases published with `spec/vMAJOR.MINOR.PATC
 
 Current repository path note: conformance cases now live at the root `conformance/` directory. Older release entries may mention their historical paths.
 
+## spec/v0.21.0
+
+### Protocol
+
+- Removes the channel-side `policyVersion` metadata from the license domain:
+  the upstream entitlement data model has no policy-rowset revision (one
+  credential may aggregate several licenses), and convergence is decided by
+  the credential version pair plus platform-side re-evaluation.
+- `license.deliverCredential` params become `{ deliveryId, credential }`.
+- `license.reconcile` no longer returns `policyVersion`; the device-held
+  `version` and the `license.resolveCredential` answer become the
+  `(authorityRevision, credentialGeneration)` pair.
+- The `license.reconciliation` capability now declares whether the device
+  persists the held version pair (`persistentHeldVersion`).
+
+### Registry
+
+- Updates `contract/registry/domains/license/domain.yaml`: removes
+  `DeliverCredentialParams.policyVersion` (0x02) and
+  `ReconcileResult.policyVersion` (0x02); renames the shared
+  `LicenseVersionTriple` to `LicenseVersionPair` without `policyVersion`
+  (0x03); renames `LicenseReconciliationCapabilities.persistentPolicyVersion`
+  to `persistentHeldVersion`; refreshes the `license.reconcile`,
+  `license.resolveCredential` and `license.reconciliation` descriptions.
+- Records the removed field IDs as `retired_field_ids` so they are never
+  reused. Method, capability and error IDs, bitOffsets and all remaining
+  field IDs and names are unchanged (draft-status breaking correction);
+  generated artifacts are refreshed via the generator only.
+
+### Schemas
+
+- `DeliverCredentialParams` keeps `deliveryId` (0x01) and `credential`
+  (0x03); `ReconcileResult` keeps `upToDate` (0x01), `credential` (0x03)
+  and `reissueAccepted` (0x04); `LicenseVersionPair` keeps
+  `authorityRevision` (0x01) and `credentialGeneration` (0x02). The license
+  flow document and the two affected license protocol drafts are re-reviewed
+  with the revision history recorded.
+
+### Conformance
+
+- Refreshes the generator protocol snapshots
+  (`protocol.generated.json` / `protocol.generated.md`) for the version-pair
+  facts; no new conformance cases (license conformance remains covered by
+  cross-repo golden vectors from the peer credential verifier).
+
+### Migration
+
+- Draft-status breaking correction. Runtimes must stop sending
+  `policyVersion` in `license.deliverCredential`, stop returning it from
+  `license.reconcile`, and report only the version pair from
+  `license.reconcile` and `license.resolveCredential`.
+- Upgrade the device side before the platform: the new runtime ignores a
+  surplus `policyVersion` field, while the previous platform-side bridge
+  required it.
+
+### Runtime Impact
+
+- Runtime implementations targeting the license domain must bind this exact
+  spec tag; the upstream platform adopts the version-pair contract against
+  this registry.
+
 ## spec/v0.20.0
 
 ### Protocol
